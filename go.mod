@@ -8,16 +8,12 @@ require (
 	github.com/filecoin-project/lotus v0.6.1
 	github.com/filecoin-project/specs-actors v0.9.7
 	github.com/go-pg/pg/v10 v10.0.1
-	github.com/gocraft/work v0.5.1 // indirect
-	github.com/gomodule/redigo v1.8.2 // indirect
 	github.com/ipfs/go-cid v0.0.7
 	github.com/ipfs/go-log/v2 v2.1.2-0.20200626104915-0016c0b4b3e4
 	github.com/lib/pq v1.8.0
 	github.com/multiformats/go-multiaddr v0.3.1
-	github.com/robfig/cron v1.2.0 // indirect
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/whyrusleeping/cbor-gen v0.0.0-20200826160007-0b9f6c5fb163
-	github.com/whyrusleeping/pubsub v0.0.0-20131020042734-02de8aa2db3d
 	go.opentelemetry.io/otel v0.11.0
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 )

@@ -3,35 +3,33 @@ package services
 import (
 	"container/list"
 	"context"
-	"github.com/filecoin-project/lotus/api"
-	"github.com/filecoin-project/lotus/chain/store"
-	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/visor/storage"
-	"github.com/go-pg/pg/v10"
-	"github.com/ipfs/go-cid"
+	"github.com/filecoin-project/visor/model/blocks"
+
+	pg "github.com/go-pg/pg/v10"
+	cid "github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
-	"github.com/whyrusleeping/pubsub"
-	"go.opentelemetry.io/otel/api/trace"
+	trace "go.opentelemetry.io/otel/api/trace"
+
+	api "github.com/filecoin-project/lotus/api"
+	store "github.com/filecoin-project/lotus/chain/store"
+	types "github.com/filecoin-project/lotus/chain/types"
+	storage "github.com/filecoin-project/visor/storage"
 )
 
+var log = logging.Logger("indexer")
+
 // TODO figure our if you want this or the init handler
-func NewIndexer(s *storage.Database, p *Publisher, n api.FullNode) *Indexer {
+func NewIndexer(s *storage.Database, n api.FullNode) *Indexer {
 	return &Indexer{
 		storage: s,
 		node:    n,
-		pub:     p,
-		log:     logging.Logger("visor/services/indexer"),
 	}
 }
 
 type Indexer struct {
 	storage *storage.Database
 	node    api.FullNode
-	pub     *Publisher
 
-	events *pubsub.PubSub
-
-	log    *logging.ZapEventLogger
 	tracer trace.Tracer
 
 	startingHeight int64
@@ -43,8 +41,10 @@ type Indexer struct {
 }
 
 // InitHandler initializes Indexer with state needed to start sycning head events
-func (i *Indexer) InitHandler(ctx context.Context, eventSub *pubsub.PubSub) error {
-	logging.SetLogLevel("*", "debug")
+func (i *Indexer) InitHandler(ctx context.Context) error {
+	if err := logging.SetLogLevel("*", "debug"); err != nil {
+		return err
+	}
 
 	gen, err := i.node.ChainGetGenesis(ctx)
 	if err != nil {
@@ -61,15 +61,13 @@ func (i *Indexer) InitHandler(ctx context.Context, eventSub *pubsub.PubSub) erro
 	i.startingHeight = height
 	i.finality = finality
 
-	i.events = eventSub
-
-	i.log.Infow("initialized Indexer", "startingBlock", blk.String(), "startingHeight", height, "finality", finality)
+	log.Infow("initialized Indexer", "startingBlock", blk.String(), "startingHeight", height, "finality", finality)
 	return nil
 }
 
 // Start runs the Indexer and can be aborted by context cancellation
 func (i *Indexer) Start(ctx context.Context) {
-	i.log.Info("starting Indexer")
+	log.Info("starting Indexer")
 	hc, err := i.node.ChainNotify(ctx)
 	if err != nil {
 		panic(err)
@@ -78,15 +76,14 @@ func (i *Indexer) Start(ctx context.Context) {
 		for {
 			select {
 			case <-ctx.Done():
-				i.log.Info("stopping Indexer")
+				log.Info("stopping Indexer")
 				return
 			case headEvents, ok := <-hc:
 				if !ok {
-					i.log.Warn("ChainNotify channel closed")
+					log.Warn("ChainNotify channel closed")
 					return
 				}
-				// NB: this is where we could us a worker pool of size one.
-				if err := i.sync(ctx, headEvents); err != nil {
+				if err := i.index(ctx, headEvents); err != nil {
 					panic(err)
 				}
 			}
@@ -94,33 +91,31 @@ func (i *Indexer) Start(ctx context.Context) {
 	}()
 }
 
-func (i *Indexer) sync(ctx context.Context, headEvents []*api.HeadChange) error {
-	for _, event := range headEvents {
-		i.log.Debugw("sync", "event", event.Type)
-		switch event.Type {
+func (i *Indexer) index(ctx context.Context, headEvents []*api.HeadChange) error {
+	for _, head := range headEvents {
+		log.Debugw("index", "event", head.Type)
+		switch head.Type {
 		case store.HCCurrent:
 			fallthrough
 		case store.HCApply:
-			tosync, err := i.collectUnsyncedBlocks(ctx, event.Val, i.startingHeight)
+			// collect all blocks to index starting from head and walking down the chain
+			toIndex, err := i.collectBlocksToIndex(ctx, head.Val, i.startingHeight)
 			if err != nil {
 				return err
 			}
 
-			if len(tosync) == 0 {
+			// if there are no new blocks short circuit
+			if toIndex.Size() == 0 {
 				return nil
 			}
 
-			if err := i.pub.Publish(ctx, BlockHeaderPayload{
-				headers: tosync,
-				task:    true,
-			}); err != nil {
+			// persist the blocks to storage
+			if err := toIndex.Persist(ctx, i.storage.DB); err != nil {
 				return err
 			}
 
-			i.startingBlock, i.startingHeight, err = i.mostRecentlySyncedBlockHeight(ctx)
-			if err != nil {
-				return err
-			}
+			// keep the heights block we have seen so we don't recollect it.
+			i.startingBlock, i.startingHeight = toIndex.Highest()
 		case store.HCRevert:
 
 			// TODO
@@ -129,18 +124,89 @@ func (i *Indexer) sync(ctx context.Context, headEvents []*api.HeadChange) error 
 	return nil
 }
 
+// TODO put this somewhere else, maybe in the model?
+type UnindexedBlockData struct {
+	has     map[cid.Cid]struct{}
+	highest *types.BlockHeader
+
+	blks              blocks.BlockHeaders
+	synced            blocks.BlocksSynced
+	parents           blocks.BlockParents
+	drandEntries      blocks.DrandEntries
+	drandBlockEntries blocks.DrandBlockEntries
+}
+
+func (u *UnindexedBlockData) Highest() (cid.Cid, int64) {
+	return u.highest.Cid(), int64(u.highest.Height)
+}
+
+func (u *UnindexedBlockData) Add(bh *types.BlockHeader) {
+	u.has[bh.Cid()] = struct{}{}
+
+	if u.highest == nil {
+		u.highest = bh
+	} else if u.highest.Height < bh.Height {
+		u.highest = bh
+	}
+
+	u.blks = append(u.blks, blocks.NewBlockHeader(bh))
+	u.synced = append(u.synced, blocks.NewBlockSynced(bh))
+	u.parents = append(u.parents, blocks.NewBlockParents(bh)...)
+	u.drandEntries = append(u.drandEntries, blocks.NewDrandEnties(bh)...)
+	u.drandBlockEntries = append(u.drandBlockEntries, blocks.NewDrandBlockEntries(bh)...)
+}
+
+func (u *UnindexedBlockData) Has(bh *types.BlockHeader) bool {
+	_, has := u.has[bh.Cid()]
+	return has
+}
+
+func (u *UnindexedBlockData) Persist(ctx context.Context, db *pg.DB) error {
+	tx, err := db.BeginContext(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := tx.Close(); err != nil {
+			log.Errorw("closing unsynced block data transaction", "error", err.Error())
+		}
+	}()
+
+	if err := u.blks.PersistWithTx(ctx, tx); err != nil {
+		return err
+	}
+	if err := u.synced.PersistWithTx(ctx, tx); err != nil {
+		return err
+	}
+	if err := u.parents.PersistWithTx(ctx, tx); err != nil {
+		return err
+	}
+	if err := u.drandEntries.PersistWithTx(ctx, tx); err != nil {
+		return err
+	}
+	if err := u.drandBlockEntries.PersistWithTx(ctx, tx); err != nil {
+		return err
+	}
+
+	return tx.CommitContext(ctx)
+}
+
+func (u *UnindexedBlockData) Size() int {
+	return len(u.has)
+}
+
 // Read Operations //
 
 // TODO not sure if returning a map here is required, it gets passed to the publisher and then storage
 // which doesn't need the CID key. I think we are just doing this for deduplication.
-func (i *Indexer) collectUnsyncedBlocks(ctx context.Context, head *types.TipSet, maxHeight int64) (map[cid.Cid]*types.BlockHeader, error) {
+func (i *Indexer) collectBlocksToIndex(ctx context.Context, head *types.TipSet, maxHeight int64) (*UnindexedBlockData, error) {
 	// get at most finality blocks not exceeding maxHeight. These are blocks we have in the database but have not processed.
 	// Now we are going to walk down the chain from `head` until we have visited all blocks not in the database.
-	synced, err := i.storage.IncompleteBlockProcessTasks(ctx, int(maxHeight), i.finality)
+	synced, err := i.storage.UnprocessedIndexedBlocks(ctx, int(maxHeight), i.finality)
 	if err != nil {
 		return nil, err
 	}
-	i.log.Infow("collect synced blocks", "count", len(synced))
+	log.Infow("collect synced blocks", "count", len(synced))
 	// well, this is complete shit
 	has := make(map[cid.Cid]struct{})
 	for _, c := range synced {
@@ -152,7 +218,7 @@ func (i *Indexer) collectUnsyncedBlocks(ctx context.Context, head *types.TipSet,
 	}
 	// walk backwards from head until we find a block that we have
 
-	toSync := map[cid.Cid]*types.BlockHeader{}
+	toSync := &UnindexedBlockData{}
 	toVisit := list.New()
 
 	for _, header := range head.Blocks() {
@@ -162,13 +228,14 @@ func (i *Indexer) collectUnsyncedBlocks(ctx context.Context, head *types.TipSet,
 	for toVisit.Len() > 0 {
 		bh := toVisit.Remove(toVisit.Back()).(*types.BlockHeader)
 		_, has := has[bh.Cid()]
-		if _, seen := toSync[bh.Cid()]; seen || has {
+		if seen := toSync.Has(bh); seen || has {
 			continue
 		}
 
-		toSync[bh.Cid()] = bh
-		if len(toSync)%500 == 10 {
-			i.log.Debugw("to visit", "toVisit", toVisit.Len(), "toSync", len(toSync), "current_height", bh.Height)
+		toSync.Add(bh)
+
+		if len(toSync.blks)%500 == 10 {
+			log.Debugw("to visit", "toVisit", toVisit.Len(), "toSync", len(toSync.blks), "current_height", bh.Height)
 		}
 
 		if bh.Height == 0 {
@@ -185,12 +252,12 @@ func (i *Indexer) collectUnsyncedBlocks(ctx context.Context, head *types.TipSet,
 		}
 	}
 
-	i.log.Debugw("collected unsynced blocks", "count", len(toSync))
+	log.Debugw("collected unsynced blocks", "count", len(toSync.blks))
 	return toSync, nil
 }
 
 func (i *Indexer) mostRecentlySyncedBlockHeight(ctx context.Context) (cid.Cid, int64, error) {
-	task, err := i.storage.MostRecentCompletedBlockProcessTask(ctx)
+	task, err := i.storage.MostRecentProcessedBlock(ctx)
 	if err != nil {
 		if err == pg.ErrNoRows {
 			return i.genesis.Cids()[0], 0, nil
