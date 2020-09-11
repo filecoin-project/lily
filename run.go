@@ -1,9 +1,9 @@
 package main
 
 import (
-	//"github.com/frrist/visor/model"
-	"github.com/filecoin-project/visor/services"
-	"github.com/filecoin-project/visor/storage"
+	"context"
+	indexer2 "github.com/filecoin-project/visor/services/indexer"
+	processor2 "github.com/filecoin-project/visor/services/processor"
 	_ "net/http/pprof"
 	"os"
 
@@ -12,12 +12,23 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
 
+	lens "github.com/filecoin-project/visor/lens/lotus"
 	vapi "github.com/filecoin-project/visor/lens/lotus"
+	"github.com/filecoin-project/visor/storage"
 )
 
 var runCmd = &cli.Command{
 	Name:  "run",
 	Usage: "Start visor",
+	Subcommands: []*cli.Command{
+		processorCmd,
+		indexerCmd,
+	},
+}
+
+var processorCmd = &cli.Command{
+	Name:  "processor",
+	Usage: "Non-singleton processor of the lotus blockchain",
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:  "max-batch",
@@ -30,47 +41,21 @@ var runCmd = &cli.Command{
 			return err
 		}
 
-		if err := logging.SetLogLevel("rpc", "error"); err != nil {
-			return err
-		}
-
-		/*
-			traceFn := metrics.InitTracer()
-			defer traceFn()
-		*/
-
-		ctx, api, closer, err := vapi.GetFullNodeAPI(cctx)
+		ctx, rctx, err := setupStorageAndAPI(cctx)
 		if err != nil {
 			return err
 		}
-		defer closer()
+		defer func() {
+			rctx.closer()
+			if err := rctx.db.Close(); err != nil {
+				log.Errorw("closing base", "error", err)
+			}
+		}()
 
-		db, err := storage.NewDatabase(ctx, cctx.String("db"))
-		if err != nil {
+		processor := processor2.NewProcessor(rctx.db, rctx.api)
+		if err := processor.InitHandler(ctx, cctx.Int("max-batch")); err != nil {
 			return err
 		}
-		defer db.Close()
-
-		if err := db.CreateSchema(); err != nil {
-			return err
-		}
-
-		publisher := services.NewPublisher(db)
-		scheduler := services.NewScheduler(api, publisher)
-		indexer := services.NewIndexer(db, api)
-		processor := services.NewProcessor(db, indexer, scheduler, api)
-
-		if err := indexer.InitHandler(ctx); err != nil {
-			return err
-		}
-
-		if err := processor.InitHandler(ctx, 10); err != nil {
-			return err
-		}
-
-		// TODO make these separate commands, indexer should run on a single instance
-		// and the processor can run on N instances since it pulls work from the queue.
-		indexer.Start(ctx)
 		processor.Start(ctx)
 
 		if err := logging.SetLogLevel("rpc", "error"); err != nil {
@@ -81,4 +66,69 @@ var runCmd = &cli.Command{
 		os.Exit(0)
 		return nil
 	},
+}
+
+var indexerCmd = &cli.Command{
+	Name:  "indexer",
+	Usage: "Singleton indexer of the lotus blockchain",
+	Action: func(cctx *cli.Context) error {
+		ll := cctx.String("log-level")
+		if err := logging.SetLogLevel("*", ll); err != nil {
+			return err
+		}
+
+		if err := logging.SetLogLevel("rpc", "error"); err != nil {
+			return err
+		}
+
+		ctx, rctx, err := setupStorageAndAPI(cctx)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			rctx.closer()
+			if err := rctx.db.Close(); err != nil {
+				log.Errorw("closing statebase", "error", err)
+			}
+		}()
+
+		if err := rctx.db.CreateSchema(); err != nil {
+			return err
+		}
+
+		indexer := indexer2.NewIndexer(rctx.db, rctx.api)
+		if err := indexer.InitHandler(ctx); err != nil {
+			return err
+		}
+		// TODO if the lotus daemon hangs up Start will exit. It should restart and wait for lotus to come back online.
+		indexer.Start(ctx)
+
+		if err := logging.SetLogLevel("rpc", "error"); err != nil {
+			return err
+		}
+
+		<-ctx.Done()
+		os.Exit(0)
+		return nil
+	},
+}
+
+type RunContext struct {
+	api    lens.API
+	closer lens.APICloser
+	db     *storage.Database
+}
+
+func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error) {
+	ctx, api, closer, err := vapi.GetFullNodeAPI(cctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	db, err := storage.NewDatabase(ctx, cctx.String("db"))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return ctx, &RunContext{api, closer, db}, nil
 }

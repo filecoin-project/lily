@@ -1,9 +1,10 @@
-package services
+package processor
 
 import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/filecoin-project/visor/services/indexer"
 
 	"github.com/gocraft/work"
 	"github.com/gomodule/redigo/redis"
@@ -59,7 +60,7 @@ type Scheduler struct {
 	minerActorQueue *work.Enqueuer
 }
 
-func (s *Scheduler) EnqueueMinerActorJob(ai ActorInfo) (*work.Job, error) {
+func (s *Scheduler) EnqueueMinerActorJob(ai indexer.ActorInfo) (*work.Job, error) {
 	// TODO assert this is a miner actor only.
 	tsB, err := ai.TipSet.MarshalJSON()
 	if err != nil {

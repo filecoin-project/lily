@@ -1,10 +1,9 @@
-package services
+package indexer
 
 import (
 	"container/list"
 	"context"
 	lotus_api "github.com/filecoin-project/lotus/api"
-
 	pg "github.com/go-pg/pg/v10"
 	cid "github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -188,8 +187,8 @@ func (i *Indexer) collectBlocksToIndex(ctx context.Context, head *types.TipSet, 
 
 		toSync.Add(bh)
 
-		if len(toSync.blks)%500 == 10 {
-			log.Debugw("to visit", "toVisit", toVisit.Len(), "toSync", len(toSync.blks), "current_height", bh.Height)
+		if toSync.Size()%500 == 10 {
+			log.Debugw("to visit", "toVisit", toVisit.Len(), "toSync", toSync.Size(), "current_height", bh.Height)
 		}
 
 		if bh.Height == 0 {
@@ -206,7 +205,7 @@ func (i *Indexer) collectBlocksToIndex(ctx context.Context, head *types.TipSet, 
 		}
 	}
 
-	log.Debugw("collected unsynced blocks", "count", len(toSync.blks))
+	log.Debugw("collected unsynced blocks", "count", toSync.Size())
 	return toSync, nil
 }
 
