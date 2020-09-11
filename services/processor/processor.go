@@ -154,12 +154,8 @@ func (p *Processor) collectActorChanges(ctx context.Context, blks []*types.Block
 }
 
 func (p *Processor) collectBlocksToProcess(ctx context.Context, batch int) ([]*types.BlockHeader, error) {
-	// TODO the collect and mark as processing operations need to be atomic.
-	blks, err := p.storage.CollectBlocksForProcessing(ctx, batch)
+	blks, err := p.storage.CollectAndMarkBlocksAsProcessing(ctx, batch)
 	if err != nil {
-		return nil, err
-	}
-	if err := p.storage.MarkBlocksAsProcessing(ctx, blks); err != nil {
 		return nil, err
 	}
 

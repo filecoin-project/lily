@@ -123,31 +123,6 @@ func (i *Indexer) index(ctx context.Context, headEvents []*lotus_api.HeadChange)
 	return nil
 }
 
-func (i *Indexer) collectBlocksToProcess(ctx context.Context, batch int) ([]*types.BlockHeader, error) {
-	// TODO the collect and mark as processing operations need to be atomic.
-	blks, err := i.storage.CollectBlocksForProcessing(ctx, batch)
-	if err != nil {
-		return nil, err
-	}
-	if err := i.storage.MarkBlocksAsProcessing(ctx, blks); err != nil {
-		return nil, err
-	}
-
-	out := make([]*types.BlockHeader, len(blks))
-	for idx, blk := range blks {
-		blkCid, err := cid.Decode(blk.Cid)
-		if err != nil {
-			return nil, err
-		}
-		header, err := i.node.ChainGetBlock(ctx, blkCid)
-		if err != nil {
-			return nil, err
-		}
-		out[idx] = header
-	}
-	return out, nil
-}
-
 // Read Operations //
 
 // TODO not sure if returning a map here is required, it gets passed to the publisher and then storage

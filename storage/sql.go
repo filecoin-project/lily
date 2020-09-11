@@ -80,10 +80,12 @@ func (d *Database) MostRecentProcessedBlock(ctx context.Context) (*blocks.BlockS
 	return blkSynced, nil
 }
 
-func (d *Database) CollectBlocksForProcessing(ctx context.Context, batch int) (blocks.BlocksSynced, error) {
+func (d *Database) CollectAndMarkBlocksAsProcessing(ctx context.Context, batch int) (blocks.BlocksSynced, error) {
 	var blks blocks.BlocksSynced
-	if _, err := d.DB.QueryContext(ctx, &blks,
-		`with toProcess as (
+	processedAt := time.Now()
+	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		if _, err := tx.QueryContext(ctx, &blks,
+			`with toProcess as (
 					select cid, height, rank() over (order by height) as rnk
 					from blocks_synced
 					where completed_at is null and
@@ -92,29 +94,24 @@ func (d *Database) CollectBlocksForProcessing(ctx context.Context, batch int) (b
 				)
 				select cid
 				from toProcess
-				where rnk <= ?`,
-		batch,
-	); err != nil {
-		return nil, xerrors.Errorf("collecting blocks for processing: %w", err)
+				where rnk <= ?
+				for update skip locked`, // ensure that only a single process can select and update blocks as processing.
+			batch,
+		); err != nil {
+			return err
+		}
+		for _, blk := range blks {
+			if _, err := tx.ModelContext(ctx, blk).Set("processed_at = ?", processedAt).
+				WherePK().
+				Update(); err != nil {
+				return xerrors.Errorf("marking block as processed: %w", err)
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 	return blks, nil
-}
-
-func (d *Database) MarkBlocksAsProcessing(ctx context.Context, blks blocks.BlocksSynced) error {
-	tx, err := d.DB.BeginContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	processedAt := time.Now()
-	for _, blk := range blks {
-		if _, err := tx.ModelContext(ctx, blk).Set("processed_at = ?", processedAt).
-			WherePK().
-			Update(); err != nil {
-			return xerrors.Errorf("marking block as processed: %w", err)
-		}
-	}
-	return tx.CommitContext(ctx)
 }
 
 func (d *Database) MarkBlocksAsProcessed(ctx context.Context, blks blocks.BlocksSynced) error {
