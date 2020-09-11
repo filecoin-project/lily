@@ -1,0 +1,7 @@
+FROM golang:1.12-alpine
+
+RUN apk add --update git;
+RUN go get github.com/gocraft/work/cmd/workwebui && \
+  go install github.com/gocraft/work/cmd/workwebui
+
+CMD workwebui -redis="$REDIS_HOSTS" -ns="work" -listen="0.0.0.0:8181"

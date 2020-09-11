@@ -5,18 +5,19 @@ import (
 	"fmt"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
+	"golang.org/x/xerrors"
 )
 
 type DrandEntrie struct {
-	Round uint64 `pg:",pk,notnull"`
+	Round uint64 `pg:",pk,use_zero"`
 	Data  []byte `pg:",notnull"`
 }
 
 func (de *DrandEntrie) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx).
+	if _, err := tx.ModelContext(ctx, de).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return err
+		return xerrors.Errorf("persisting drand entries: %w", err)
 	}
 	return nil
 }
@@ -42,7 +43,7 @@ func (des DrandEntries) Persist(ctx context.Context, db *pg.DB) error {
 
 	for _, ent := range des {
 		if err := ent.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("persist drand entries: %v", err)
+			return err
 		}
 	}
 	return tx.CommitContext(ctx)
@@ -69,15 +70,15 @@ func NewDrandBlockEntries(header *types.BlockHeader) DrandBlockEntries {
 }
 
 type DrandBlockEntrie struct {
-	Round uint64 `pg:",pk,notnull"`
+	Round uint64 `pg:",pk,use_zero"`
 	Block string `pg:",notnull"`
 }
 
 func (dbe *DrandBlockEntrie) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx).
+	if _, err := tx.ModelContext(ctx, dbe).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return err
+		return xerrors.Errorf("persisting drand block entries: %w", err)
 	}
 	return nil
 }
@@ -92,7 +93,7 @@ func (dbes DrandBlockEntries) Persist(ctx context.Context, db *pg.DB) error {
 
 	for _, ent := range dbes {
 		if err := ent.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("persist drand block entries: %v", err)
+			return xerrors.Errorf("persist drand block entries: %w", err)
 		}
 	}
 	return tx.CommitContext(ctx)
@@ -101,7 +102,7 @@ func (dbes DrandBlockEntries) Persist(ctx context.Context, db *pg.DB) error {
 func (dbes DrandBlockEntries) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	for _, ent := range dbes {
 		if err := ent.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("persist drand block entries: %v", err)
+			return xerrors.Errorf("persist drand block entries: %w", err)
 		}
 	}
 	return nil

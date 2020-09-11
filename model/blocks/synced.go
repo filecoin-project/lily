@@ -3,6 +3,7 @@ package blocks
 import (
 	"context"
 	"fmt"
+	"golang.org/x/xerrors"
 	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
@@ -21,16 +22,17 @@ type BlockSynced struct {
 	tableName struct{} `pg:"blocks_synced"`
 
 	Cid         string    `pg:",pk,notnull"`
-	Height      int64     `pg:",notnull"`
+	Height      int64     `pg:",use_zero"`
 	SyncedAt    time.Time `pg:",notnull"`
 	ProcessedAt time.Time
+	CompletedAt time.Time
 }
 
 func (bs *BlockSynced) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx).
+	if _, err := tx.ModelContext(ctx, bs).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return err
+		return xerrors.Errorf("persisting block synced: %w", err)
 	}
 	return nil
 }

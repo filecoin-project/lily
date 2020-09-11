@@ -3,8 +3,11 @@ package blocks
 import (
 	"context"
 	"fmt"
-	"github.com/filecoin-project/lotus/chain/types"
+
 	"github.com/go-pg/pg/v10"
+	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 type BlockHeader struct {
@@ -44,7 +47,7 @@ func (bh *BlockHeader) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	if _, err := tx.ModelContext(ctx, bh).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return err
+		return xerrors.Errorf("persisting block header: %w", err)
 	}
 	return nil
 }

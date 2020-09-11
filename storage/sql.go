@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
@@ -59,7 +60,7 @@ func (d *Database) UnprocessedIndexedBlocks(ctx context.Context, maxHeight, limi
 	var blkSynced blocks.BlocksSynced
 	if err := d.DB.ModelContext(ctx, &blkSynced).
 		Where("height <= ?", maxHeight).
-		Where("processes_at is null").
+		Where("processed_at is null").
 		Order("height desc").
 		Limit(limit).
 		Select(); err != nil {
@@ -77,4 +78,58 @@ func (d *Database) MostRecentProcessedBlock(ctx context.Context) (*blocks.BlockS
 		return nil, err
 	}
 	return blkSynced, nil
+}
+
+func (d *Database) CollectBlocksForProcessing(ctx context.Context, batch int) (blocks.BlocksSynced, error) {
+	var blks blocks.BlocksSynced
+	if _, err := d.DB.QueryContext(ctx, &blks,
+		`with toProcess as (
+					select cid, height, rank() over (order by height) as rnk
+					from blocks_synced
+					where completed_at is null and
+					processed_at is null and
+					height > 0
+				)
+				select cid
+				from toProcess
+				where rnk <= ?`,
+		batch,
+	); err != nil {
+		return nil, xerrors.Errorf("collecting blocks for processing: %w", err)
+	}
+	return blks, nil
+}
+
+func (d *Database) MarkBlocksAsProcessing(ctx context.Context, blks blocks.BlocksSynced) error {
+	tx, err := d.DB.BeginContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	processedAt := time.Now()
+	for _, blk := range blks {
+		if _, err := tx.ModelContext(ctx, blk).Set("processed_at = ?", processedAt).
+			WherePK().
+			Update(); err != nil {
+			return xerrors.Errorf("marking block as processed: %w", err)
+		}
+	}
+	return tx.CommitContext(ctx)
+}
+
+func (d *Database) MarkBlocksAsProcessed(ctx context.Context, blks blocks.BlocksSynced) error {
+	tx, err := d.DB.BeginContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	completedAt := time.Now()
+	for _, blk := range blks {
+		if _, err := tx.ModelContext(ctx, &blk).Set("completed_at = ?", completedAt).
+			WherePK().
+			Update(); err != nil {
+			return err
+		}
+	}
+	return tx.CommitContext(ctx)
 }

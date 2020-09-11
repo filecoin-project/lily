@@ -3,23 +3,23 @@ package services
 import (
 	"container/list"
 	"context"
-	"github.com/filecoin-project/visor/model/blocks"
+	lotus_api "github.com/filecoin-project/lotus/api"
 
 	pg "github.com/go-pg/pg/v10"
 	cid "github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	trace "go.opentelemetry.io/otel/api/trace"
 
-	api "github.com/filecoin-project/lotus/api"
 	store "github.com/filecoin-project/lotus/chain/store"
 	types "github.com/filecoin-project/lotus/chain/types"
+	api "github.com/filecoin-project/visor/lens/lotus"
 	storage "github.com/filecoin-project/visor/storage"
 )
 
 var log = logging.Logger("indexer")
 
 // TODO figure our if you want this or the init handler
-func NewIndexer(s *storage.Database, n api.FullNode) *Indexer {
+func NewIndexer(s *storage.Database, n api.API) *Indexer {
 	return &Indexer{
 		storage: s,
 		node:    n,
@@ -28,7 +28,7 @@ func NewIndexer(s *storage.Database, n api.FullNode) *Indexer {
 
 type Indexer struct {
 	storage *storage.Database
-	node    api.FullNode
+	node    api.API
 
 	tracer trace.Tracer
 
@@ -91,7 +91,7 @@ func (i *Indexer) Start(ctx context.Context) {
 	}()
 }
 
-func (i *Indexer) index(ctx context.Context, headEvents []*api.HeadChange) error {
+func (i *Indexer) index(ctx context.Context, headEvents []*lotus_api.HeadChange) error {
 	for _, head := range headEvents {
 		log.Debugw("index", "event", head.Type)
 		switch head.Type {
@@ -124,75 +124,29 @@ func (i *Indexer) index(ctx context.Context, headEvents []*api.HeadChange) error
 	return nil
 }
 
-// TODO put this somewhere else, maybe in the model?
-type UnindexedBlockData struct {
-	has     map[cid.Cid]struct{}
-	highest *types.BlockHeader
-
-	blks              blocks.BlockHeaders
-	synced            blocks.BlocksSynced
-	parents           blocks.BlockParents
-	drandEntries      blocks.DrandEntries
-	drandBlockEntries blocks.DrandBlockEntries
-}
-
-func (u *UnindexedBlockData) Highest() (cid.Cid, int64) {
-	return u.highest.Cid(), int64(u.highest.Height)
-}
-
-func (u *UnindexedBlockData) Add(bh *types.BlockHeader) {
-	u.has[bh.Cid()] = struct{}{}
-
-	if u.highest == nil {
-		u.highest = bh
-	} else if u.highest.Height < bh.Height {
-		u.highest = bh
-	}
-
-	u.blks = append(u.blks, blocks.NewBlockHeader(bh))
-	u.synced = append(u.synced, blocks.NewBlockSynced(bh))
-	u.parents = append(u.parents, blocks.NewBlockParents(bh)...)
-	u.drandEntries = append(u.drandEntries, blocks.NewDrandEnties(bh)...)
-	u.drandBlockEntries = append(u.drandBlockEntries, blocks.NewDrandBlockEntries(bh)...)
-}
-
-func (u *UnindexedBlockData) Has(bh *types.BlockHeader) bool {
-	_, has := u.has[bh.Cid()]
-	return has
-}
-
-func (u *UnindexedBlockData) Persist(ctx context.Context, db *pg.DB) error {
-	tx, err := db.BeginContext(ctx)
+func (i *Indexer) collectBlocksToProcess(ctx context.Context, batch int) ([]*types.BlockHeader, error) {
+	// TODO the collect and mark as processing operations need to be atomic.
+	blks, err := i.storage.CollectBlocksForProcessing(ctx, batch)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer func() {
-		if err := tx.Close(); err != nil {
-			log.Errorw("closing unsynced block data transaction", "error", err.Error())
+	if err := i.storage.MarkBlocksAsProcessing(ctx, blks); err != nil {
+		return nil, err
+	}
+
+	out := make([]*types.BlockHeader, len(blks))
+	for idx, blk := range blks {
+		blkCid, err := cid.Decode(blk.Cid)
+		if err != nil {
+			return nil, err
 		}
-	}()
-
-	if err := u.blks.PersistWithTx(ctx, tx); err != nil {
-		return err
+		header, err := i.node.ChainGetBlock(ctx, blkCid)
+		if err != nil {
+			return nil, err
+		}
+		out[idx] = header
 	}
-	if err := u.synced.PersistWithTx(ctx, tx); err != nil {
-		return err
-	}
-	if err := u.parents.PersistWithTx(ctx, tx); err != nil {
-		return err
-	}
-	if err := u.drandEntries.PersistWithTx(ctx, tx); err != nil {
-		return err
-	}
-	if err := u.drandBlockEntries.PersistWithTx(ctx, tx); err != nil {
-		return err
-	}
-
-	return tx.CommitContext(ctx)
-}
-
-func (u *UnindexedBlockData) Size() int {
-	return len(u.has)
+	return out, nil
 }
 
 // Read Operations //
@@ -218,7 +172,7 @@ func (i *Indexer) collectBlocksToIndex(ctx context.Context, head *types.TipSet, 
 	}
 	// walk backwards from head until we find a block that we have
 
-	toSync := &UnindexedBlockData{}
+	toSync := NewUnindexedBlockData()
 	toVisit := list.New()
 
 	for _, header := range head.Blocks() {

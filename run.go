@@ -30,16 +30,20 @@ var runCmd = &cli.Command{
 			return err
 		}
 
+		if err := logging.SetLogLevel("rpc", "error"); err != nil {
+			return err
+		}
+
 		/*
 			traceFn := metrics.InitTracer()
 			defer traceFn()
 		*/
 
-		//ctx, api, closer, err := vapi.GetFullNodeAPI(cctx)
-		//if err != nil {
-		//return err
-		//}
-		//defer closer()
+		ctx, api, closer, err := vapi.GetFullNodeAPI(cctx)
+		if err != nil {
+			return err
+		}
+		defer closer()
 
 		db, err := storage.NewDatabase(ctx, cctx.String("db"))
 		if err != nil {
@@ -51,12 +55,27 @@ var runCmd = &cli.Command{
 			return err
 		}
 
-		mgr := services.NewServiceManager(api, db)
-		if err := mgr.Run(ctx); err != nil {
+		publisher := services.NewPublisher(db)
+		scheduler := services.NewScheduler(api, publisher)
+		indexer := services.NewIndexer(db, api)
+		processor := services.NewProcessor(db, indexer, scheduler, api)
+
+		if err := indexer.InitHandler(ctx); err != nil {
 			return err
 		}
 
-		logging.SetLogLevel("rpc", "info")
+		if err := processor.InitHandler(ctx, 10); err != nil {
+			return err
+		}
+
+		// TODO make these separate commands, indexer should run on a single instance
+		// and the processor can run on N instances since it pulls work from the queue.
+		indexer.Start(ctx)
+		processor.Start(ctx)
+
+		if err := logging.SetLogLevel("rpc", "error"); err != nil {
+			return err
+		}
 
 		<-ctx.Done()
 		os.Exit(0)

@@ -13,15 +13,19 @@ import (
 	manet "github.com/multiformats/go-multiaddr/net"
 
 	"github.com/filecoin-project/go-jsonrpc"
-	"github.com/filecoin-project/lotus/api"
+	lotus_api "github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/api/client"
 	lcli "github.com/filecoin-project/lotus/cli"
 )
 
 var log = logging.Logger("visor/lens/lotus")
 
-func GetFullNodeAPI(cctx *cli.Context) (context.Context, api.FullNode, jsonrpc.ClientCloser, error) {
-	var api api.FullNode
+type API lotus_api.FullNode
+type APICloser jsonrpc.ClientCloser
+type HeadChange lotus_api.HeadChange
+
+func GetFullNodeAPI(cctx *cli.Context) (context.Context, API, APICloser, error) {
+	var api lotus_api.FullNode
 	var closer jsonrpc.ClientCloser
 	var err error
 
@@ -50,10 +54,10 @@ func GetFullNodeAPI(cctx *cli.Context) (context.Context, api.FullNode, jsonrpc.C
 	}
 	log.Infof("Lotus API version: %s", v.Version)
 
-	return ctx, api, closer, nil
+	return ctx, api, APICloser(closer), nil
 }
 
-func getFullNodeAPIUsingCredentials(ctx context.Context, listenAddr, token string) (api.FullNode, jsonrpc.ClientCloser, error) {
+func getFullNodeAPIUsingCredentials(ctx context.Context, listenAddr, token string) (lotus_api.FullNode, jsonrpc.ClientCloser, error) {
 	parsedAddr, err := ma.NewMultiaddr(listenAddr)
 	if err != nil {
 		return nil, nil, err
@@ -66,6 +70,7 @@ func getFullNodeAPIUsingCredentials(ctx context.Context, listenAddr, token strin
 
 	return client.NewFullNodeRPC(ctx, apiURI(addr), apiHeaders(token))
 }
+
 func apiURI(addr string) string {
 	return "ws://" + addr + "/rpc/v0"
 }

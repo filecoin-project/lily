@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
+	"golang.org/x/xerrors"
 )
 
 type BlockParent struct {
@@ -15,7 +16,7 @@ func (bp *BlockParent) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	if _, err := tx.ModelContext(ctx, bp).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return err
+		return xerrors.Errorf("persisting block parents: %w", err)
 	}
 	return nil
 }
