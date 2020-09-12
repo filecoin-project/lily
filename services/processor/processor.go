@@ -8,7 +8,6 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/api"
 	types "github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/filecoin-project/visor/storage"
 
 	"github.com/gocraft/work"
@@ -18,6 +17,7 @@ import (
 )
 
 func NewProcessor(db *storage.Database, n api.FullNode) *Processor {
+	// TODO I don't like how these are buried in here.
 	p := NewPublisher(db)
 	s := NewScheduler(n, p)
 	return &Processor{
@@ -59,6 +59,8 @@ func (p *Processor) InitHandler(ctx context.Context, batchSize int) error {
 	p.genesis = gen
 	p.batchSize = batchSize
 
+	p.scheduler.Start()
+
 	p.log.Infow("initialized processor", "genesis", gen.String())
 	return nil
 }
@@ -87,7 +89,7 @@ func (p *Processor) Start(ctx context.Context) {
 					panic(err)
 				}
 
-				if err := p.dispatchTasks(ctx, actorChanges); err != nil {
+				if err := p.scheduler.Dispatch(actorChanges); err != nil {
 					panic(err)
 				}
 			}
@@ -95,20 +97,8 @@ func (p *Processor) Start(ctx context.Context) {
 	}()
 }
 
-func (p *Processor) dispatchTasks(ctx context.Context, changes map[cid.Cid]map[types.TipSetKey][]indexer.ActorInfo) error {
-	for _, mactors := range changes[builtin.StorageMinerActorCodeID] {
-		p.log.Infow("Dispatching Miner Tasks", "count", len(mactors))
-		for _, mactor := range mactors {
-			if _, err := p.scheduler.EnqueueMinerActorJob(mactor); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func (p *Processor) collectActorChanges(ctx context.Context, blks []*types.BlockHeader) (map[cid.Cid]map[types.TipSetKey][]indexer.ActorInfo, error) {
-	out := make(map[cid.Cid]map[types.TipSetKey][]indexer.ActorInfo)
+func (p *Processor) collectActorChanges(ctx context.Context, blks []*types.BlockHeader) (map[types.TipSetKey][]indexer.ActorInfo, error) {
+	out := make(map[types.TipSetKey][]indexer.ActorInfo)
 	for _, blk := range blks {
 		pts, err := p.node.ChainGetTipSet(ctx, types.NewTipSetKey(blk.Parents...))
 		if err != nil {
@@ -138,11 +128,7 @@ func (p *Processor) collectActorChanges(ctx context.Context, blks []*types.Block
 			}
 			// TODO track null rounds
 
-			_, ok := out[act.Code]
-			if !ok {
-				out[act.Code] = map[types.TipSetKey][]indexer.ActorInfo{}
-			}
-			out[act.Code][pts.Key()] = append(out[act.Code][pts.Key()], indexer.ActorInfo{
+			out[pts.Key()] = append(out[pts.Key()], indexer.ActorInfo{
 				Actor:        act,
 				Address:      addr,
 				TipSet:       pts.Key(),

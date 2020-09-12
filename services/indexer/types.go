@@ -14,6 +14,8 @@ import (
 	"github.com/filecoin-project/visor/model/blocks"
 )
 
+type ActorTips map[types.TipSetKey][]ActorInfo
+
 type ActorInfo struct {
 	Actor        types.Actor
 	Address      address.Address

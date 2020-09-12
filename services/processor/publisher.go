@@ -2,6 +2,7 @@ package processor
 
 import (
 	"context"
+	"github.com/filecoin-project/visor/services/processor/tasks/miner"
 
 	logging "github.com/ipfs/go-log/v2"
 
@@ -22,10 +23,10 @@ type Publisher struct {
 
 func (p *Publisher) Publish(ctx context.Context, payload interface{}) error {
 	switch v := payload.(type) {
-	case *MinerProcessResult:
+	case *miner.MinerProcessResult:
 		// TODO actually store the thing
-		p.log.Errorw("Storing MinerProcessResult", "address", v.addr.String())
-		// do stuff
+		p.log.Errorw("Storing MinerProcessResult", "address", v.String())
+		// do stuff..
 	}
 	return nil
 }
