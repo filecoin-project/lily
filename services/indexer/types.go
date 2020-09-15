@@ -17,10 +17,11 @@ import (
 type ActorTips map[types.TipSetKey][]ActorInfo
 
 type ActorInfo struct {
-	Actor        types.Actor
-	Address      address.Address
-	TipSet       types.TipSetKey
-	ParentTipset types.TipSetKey
+	Actor           types.Actor
+	Address         address.Address
+	ParentStateRoot cid.Cid
+	TipSet          types.TipSetKey
+	ParentTipset    types.TipSetKey
 }
 
 func NewUnindexedBlockData() *UnindexedBlockData {

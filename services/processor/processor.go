@@ -3,6 +3,7 @@ package processor
 import (
 	"context"
 	"github.com/filecoin-project/visor/services/indexer"
+	"strings"
 	"time"
 
 	"github.com/filecoin-project/go-address"
@@ -117,22 +118,29 @@ func (p *Processor) collectActorChanges(ctx context.Context, blks []*types.Block
 			}
 
 			_, err = p.node.StateGetActor(ctx, addr, pts.Key())
-			if err == types.ErrActorNotFound {
-				// TODO consider tracking deleted actors
-				continue
+			if err != nil {
+				if strings.Contains(err.Error(), "actor not found") {
+					// TODO consider tracking deleted actors
+					continue
+				}
+				return nil, err
 			}
 			_, err = p.node.StateGetActor(ctx, addr, pts.Parents())
-			if err == types.ErrActorNotFound {
-				// TODO consider tracking deleted actors
-				continue
+			if err != nil {
+				if strings.Contains(err.Error(), "actor not found") {
+					// TODO consider tracking deleted actors
+					continue
+				}
+				return nil, err
 			}
-			// TODO track null rounds
 
+			// TODO track null rounds
 			out[pts.Key()] = append(out[pts.Key()], indexer.ActorInfo{
-				Actor:        act,
-				Address:      addr,
-				TipSet:       pts.Key(),
-				ParentTipset: pts.Parents(),
+				Actor:           act,
+				Address:         addr,
+				TipSet:          pts.Key(),
+				ParentTipset:    pts.Parents(),
+				ParentStateRoot: pts.ParentState(),
 			})
 		}
 	}

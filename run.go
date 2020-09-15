@@ -32,7 +32,7 @@ var processorCmd = &cli.Command{
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:  "max-batch",
-			Value: 50,
+			Value: 500,
 		},
 	},
 	Action: func(cctx *cli.Context) error {
@@ -51,6 +51,10 @@ var processorCmd = &cli.Command{
 				log.Errorw("closing base", "error", err)
 			}
 		}()
+
+		if err := rctx.db.CreateSchema(); err != nil {
+			return err
+		}
 
 		processor := processor2.NewProcessor(rctx.db, rctx.api)
 		if err := processor.InitHandler(ctx, cctx.Int("max-batch")); err != nil {

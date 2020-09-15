@@ -42,7 +42,6 @@ func NewBlockHeader(bh *types.BlockHeader) *BlockHeader {
 	}
 }
 
-//func (bh *BlockHeader) Persist(ctx context.Context, headers map[cid.Cid]*types.BlockHeader) error {
 func (bh *BlockHeader) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	if _, err := tx.ModelContext(ctx, bh).
 		OnConflict("do nothing").

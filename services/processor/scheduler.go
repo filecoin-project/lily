@@ -26,7 +26,7 @@ var redisPool = &redis.Pool{
 }
 
 func NewScheduler(node lapi.FullNode, publisher *Publisher) *Scheduler {
-	minerPool, minerQueue := miner.Setup(1, MinerTaskName, MinerPoolName, redisPool, node, publisher.Publish)
+	minerPool, minerQueue := miner.Setup(64, MinerTaskName, MinerPoolName, redisPool, node, publisher.Publish)
 
 	pools := []*work.WorkerPool{minerPool}
 	queues := map[string]*work.Enqueuer{
@@ -83,9 +83,10 @@ func (s *Scheduler) queueMinerTask(info indexer.ActorInfo) (*work.Job, error) {
 		return nil, err
 	}
 	return s.queues[MinerTaskName].Enqueue(MinerTaskName, work.Q{
-		"ts":      string(tsB),
-		"pts":     string(ptsB),
-		"head":    info.Actor.Head.String(),
-		"address": info.Address.String(),
+		"ts":        string(tsB),
+		"pts":       string(ptsB),
+		"head":      info.Actor.Head.String(),
+		"address":   info.Address.String(),
+		"stateroot": info.ParentStateRoot.String(),
 	})
 }

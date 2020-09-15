@@ -2,13 +2,13 @@ package storage
 
 import (
 	"context"
+	"github.com/filecoin-project/visor/model/actors/miner"
 	"time"
 
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/visor/model/actors"
 	"github.com/filecoin-project/visor/model/blocks"
 )
 
@@ -18,8 +18,10 @@ var models = []interface{}{
 	(*blocks.BlockParent)(nil),
 	(*blocks.DrandEntrie)(nil),
 	(*blocks.DrandBlockEntrie)(nil),
-	(*actors.MinerPower)(nil),
-	(*actors.MinerState)(nil),
+	(*miner.MinerPower)(nil),
+	(*miner.MinerState)(nil),
+	(*miner.MinerSectorInfo)(nil),
+	(*miner.MinerPreCommitInfo)(nil),
 }
 
 func NewDatabase(ctx context.Context, url string) (*Database, error) {

@@ -19,6 +19,8 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	api "github.com/filecoin-project/visor/lens/lotus"
+
+	minermodel "github.com/filecoin-project/visor/model/actors/miner"
 )
 
 func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, node api.API, pubF func(ctx context.Context, payload interface{}) error) (*work.WorkerPool, *work.Enqueuer) {
@@ -36,8 +38,10 @@ func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, n
 	// log all task
 	pool.Middleware((*ProcessMinerTask).Log)
 
-	// register task method
-	pool.Job(taskName, (*ProcessMinerTask).Task)
+	// register task method and don't allow retying
+	pool.JobWithOptions(taskName, work.JobOptions{
+		MaxFails: 1,
+	}, (*ProcessMinerTask).Task)
 
 	return pool, queue
 }
@@ -48,10 +52,11 @@ type ProcessMinerTask struct {
 
 	pubFn func(ctx context.Context, payload interface{}) error
 
-	maddr  address.Address
-	head   cid.Cid
-	tsKey  types.TipSetKey
-	ptsKey types.TipSetKey
+	maddr     address.Address
+	head      cid.Cid
+	tsKey     types.TipSetKey
+	ptsKey    types.TipSetKey
+	stateroot cid.Cid
 }
 
 func (mac *ProcessMinerTask) Log(job *work.Job, next work.NextMiddlewareFunc) error {
@@ -66,6 +71,11 @@ func (mac *ProcessMinerTask) ParseArgs(job *work.Job) error {
 	}
 
 	headStr := job.ArgString("head")
+	if err := job.ArgError(); err != nil {
+		return err
+	}
+
+	srStr := job.ArgString("stateroot")
 	if err := job.ArgError(); err != nil {
 		return err
 	}
@@ -90,6 +100,11 @@ func (mac *ProcessMinerTask) ParseArgs(job *work.Job) error {
 		return err
 	}
 
+	mstateroot, err := cid.Decode(srStr)
+	if err != nil {
+		return err
+	}
+
 	var tsKey types.TipSetKey
 	if err := tsKey.UnmarshalJSON([]byte(tsStr)); err != nil {
 		return err
@@ -104,6 +119,7 @@ func (mac *ProcessMinerTask) ParseArgs(job *work.Job) error {
 	mac.head = mhead
 	mac.tsKey = tsKey
 	mac.ptsKey = ptsKey
+	mac.stateroot = mstateroot
 	return nil
 }
 
@@ -166,37 +182,20 @@ func (mac *ProcessMinerTask) Task(job *work.Job) error {
 	// TODO we still need to do a little bit more processing here around sectors to get all the info we need, but this is okay for spike.
 
 	// It is the responsibility of the publisher to store this information, job is considered success if this doesn't error.
-	return mac.pubFn(ctx, &MinerProcessResult{
-		ts:               mac.tsKey,
-		pts:              mac.ptsKey,
-		addr:             mac.maddr,
-		actor:            mactor,
-		state:            mstate,
-		info:             minfo,
-		power:            minerPower,
-		preCommitChanges: preCommitChanges,
-		sectorChanges:    sectorChanges,
-		partitionDiff:    partitionsDiff,
+	// TODO separate the success of the publish function writing to the DB from the job.
+	return mac.pubFn(ctx, &minermodel.MinerTaskResult{
+		Ts:               mac.tsKey,
+		Pts:              mac.ptsKey,
+		Addr:             mac.maddr,
+		StateRoot:        mac.stateroot,
+		Actor:            mactor,
+		State:            mstate,
+		Info:             minfo,
+		Power:            minerPower,
+		PreCommitChanges: preCommitChanges,
+		SectorChanges:    sectorChanges,
+		PartitionDiff:    partitionsDiff,
 	})
-}
-
-type MinerProcessResult struct {
-	ts  types.TipSetKey
-	pts types.TipSetKey
-
-	addr  address.Address
-	actor *types.Actor
-
-	state            miner.State
-	info             *miner.MinerInfo
-	power            *lapi.MinerPower
-	preCommitChanges *state.MinerPreCommitChanges
-	sectorChanges    *state.MinerSectorChanges
-	partitionDiff    map[uint64]*PartitionStatus
-}
-
-func (mpr *MinerProcessResult) String() string {
-	return fmt.Sprintf("%s", mpr.addr)
 }
 
 func minerPreCommitChanges(ctx context.Context, node api.API, maddr address.Address, ts, pts types.TipSetKey) (*state.MinerPreCommitChanges, error) {
@@ -225,7 +224,7 @@ func minerSectorChanges(ctx context.Context, node api.API, maddr address.Address
 	return out, nil
 }
 
-func minerPartitionsDiff(ctx context.Context, node api.API, maddr address.Address, ts, pts types.TipSetKey) (map[uint64]*PartitionStatus, error) {
+func minerPartitionsDiff(ctx context.Context, node api.API, maddr address.Address, ts, pts types.TipSetKey) (map[uint64]*minermodel.PartitionStatus, error) {
 	store := api.NewAPIIpldStore(ctx, node)
 
 	curMiner, err := minerStateAt(ctx, node, maddr, ts)
@@ -277,7 +276,7 @@ func minerPartitionsDiff(ctx context.Context, node api.API, maddr address.Addres
 	//
 	// walk all miner partitions and calculate their differences
 	//
-	out := make(map[uint64]*PartitionStatus)
+	out := make(map[uint64]*minermodel.PartitionStatus)
 	// TODO this can be optimized by inspecting the miner state for partitions that have changed and only inspecting those.
 	// FIXME: account for curPartition array having partitions not found in prevPartition array.
 	var prevPart miner.Partition
@@ -301,15 +300,7 @@ func minerPartitionsDiff(ctx context.Context, node api.API, maddr address.Addres
 	return out, nil
 }
 
-type PartitionStatus struct {
-	Terminated bitfield.BitField
-	Expired    bitfield.BitField
-	Faulted    bitfield.BitField
-	InRecovery bitfield.BitField
-	Recovered  bitfield.BitField
-}
-
-func diffPartition(store *api.APIIpldStore, prevPart, curPart miner.Partition) (*PartitionStatus, error) {
+func diffPartition(store *api.APIIpldStore, prevPart, curPart miner.Partition) (*minermodel.PartitionStatus, error) {
 	// all the sectors that were in previous but not in current
 	allRemovedSectors, err := bitfield.SubtractBitField(prevPart.Sectors, curPart.Sectors)
 	if err != nil {
@@ -370,7 +361,7 @@ func diffPartition(store *api.APIIpldStore, prevPart, curPart miner.Partition) (
 		return nil, err
 	}
 
-	return &PartitionStatus{
+	return &minermodel.PartitionStatus{
 		Terminated: terminated,
 		Expired:    expired,
 		Faulted:    faults,
