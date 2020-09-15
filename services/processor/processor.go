@@ -2,29 +2,33 @@ package processor
 
 import (
 	"context"
-	"github.com/filecoin-project/sentinel-visor/services/indexer"
 	"strings"
 	"time"
+
+	"github.com/gocraft/work"
+	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
+	"go.opentelemetry.io/otel/api/trace"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/api"
 	types "github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/sentinel-visor/storage"
 
-	"github.com/gocraft/work"
-	"github.com/ipfs/go-cid"
-	logging "github.com/ipfs/go-log/v2"
-	"go.opentelemetry.io/otel/api/trace"
+	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/sentinel-visor/services/indexer"
 )
 
 func NewProcessor(db *storage.Database, n api.FullNode) *Processor {
 	// TODO I don't like how these are buried in here.
-	p := NewPublisher(db)
-	s := NewScheduler(n, p)
+	pubCh := make(chan model.Persistable)
+	p := NewPublisher(db, pubCh)
+	s := NewScheduler(n, pubCh)
 	return &Processor{
 		storage:   db,
 		node:      n,
 		scheduler: s,
+		publisher: p,
 		log:       logging.Logger("processor"),
 	}
 }
@@ -34,6 +38,7 @@ type Processor struct {
 	node    api.FullNode
 
 	scheduler *Scheduler
+	publisher *Publisher
 
 	log    *logging.ZapEventLogger
 	tracer trace.Tracer
@@ -60,6 +65,7 @@ func (p *Processor) InitHandler(ctx context.Context, batchSize int) error {
 	p.genesis = gen
 	p.batchSize = batchSize
 
+	p.publisher.Start(ctx)
 	p.scheduler.Start()
 
 	p.log.Infow("initialized processor", "genesis", gen.String())

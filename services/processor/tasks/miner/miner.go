@@ -24,7 +24,7 @@ import (
 	minermodel "github.com/filecoin-project/sentinel-visor/model/actors/miner"
 )
 
-func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, node api.API, pubF func(ctx context.Context, persistable model.Persistable) error) (*work.WorkerPool, *work.Enqueuer) {
+func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, node api.API, pubCh chan<- model.Persistable) (*work.WorkerPool, *work.Enqueuer) {
 	pool := work.NewWorkerPool(ProcessMinerTask{}, concurrency, poolName, redisPool)
 	queue := work.NewEnqueuer(poolName, redisPool)
 
@@ -32,7 +32,7 @@ func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, n
 	// adding fields via a closure gives the workers access to the lotus api, a global could also be used here
 	pool.Middleware(func(mt *ProcessMinerTask, job *work.Job, next work.NextMiddlewareFunc) error {
 		mt.node = node
-		mt.pubFn = pubF
+		mt.pubCh = pubCh
 		mt.log = logging.Logger("minertask")
 		return next()
 	})
@@ -52,7 +52,7 @@ type ProcessMinerTask struct {
 	node lapi.FullNode
 	log  *logging.ZapEventLogger
 
-	pubFn func(ctx context.Context, persistable model.Persistable) error
+	pubCh chan<- model.Persistable
 
 	maddr     address.Address
 	head      cid.Cid
@@ -183,9 +183,7 @@ func (mac *ProcessMinerTask) Task(job *work.Job) error {
 
 	// TODO we still need to do a little bit more processing here around sectors to get all the info we need, but this is okay for spike.
 
-	// It is the responsibility of the publisher to store this information, job is considered success if this doesn't error.
-	// TODO separate the success of the publish function writing to the DB from the job.
-	return mac.pubFn(ctx, &minermodel.MinerTaskResult{
+	mac.pubCh <- &minermodel.MinerTaskResult{
 		Ts:               mac.tsKey,
 		Pts:              mac.ptsKey,
 		Addr:             mac.maddr,
@@ -197,7 +195,8 @@ func (mac *ProcessMinerTask) Task(job *work.Job) error {
 		PreCommitChanges: preCommitChanges,
 		SectorChanges:    sectorChanges,
 		PartitionDiff:    partitionsDiff,
-	})
+	}
+	return nil
 }
 
 func minerPreCommitChanges(ctx context.Context, node api.API, maddr address.Address, ts, pts types.TipSetKey) (*state.MinerPreCommitChanges, error) {
