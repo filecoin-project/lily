@@ -9,20 +9,37 @@ import (
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
-func NewPublisher(s *storage.Database) *Publisher {
+func NewPublisher(s *storage.Database, pubCh <-chan model.Persistable) *Publisher {
 	return &Publisher{
 		storage: s,
+		pubCh:   pubCh,
 		log:     logging.Logger("publisher"),
 	}
 }
 
 type Publisher struct {
 	storage *storage.Database
+	pubCh   <-chan model.Persistable
 	log     *logging.ZapEventLogger
 }
 
-func (p *Publisher) Publish(ctx context.Context, payload model.Persistable) error {
-	// TODO explore use of channel.
-	// TODO buffer and use routine.
-	return payload.Persist(ctx, p.storage.DB)
+func (p *Publisher) Start(ctx context.Context) {
+	p.log.Info("starting publisher")
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				p.log.Info("stopping publisher")
+				return
+			case persistable := <-p.pubCh:
+				go func() {
+					if err := persistable.Persist(ctx, p.storage.DB); err != nil {
+						// TODO handle this case with a retry
+						p.log.Error("persisting", "error", err.Error())
+					}
+				}()
+			}
+		}
+	}()
+
 }

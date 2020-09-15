@@ -12,6 +12,9 @@ import (
 )
 
 // TODO extract this to a common location in lotus and reuse the code
+// TODO add a caching layer to this, the ChainReadObj method is spensive!
+// -- e.g. HAMTs between two tipsets are mostly the same so cachine will improve diffing performance
+// -- prior art here! https://github.com/filecoin-project/lotus/blob/master/lib/cachebs/cachebs.go
 
 // APIIpldStore is required for AMT and HAMT access.
 type APIIpldStore struct {

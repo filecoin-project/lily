@@ -1,13 +1,15 @@
 package processor
 
 import (
-	lapi "github.com/filecoin-project/lotus/api"
-	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/miner"
-	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/gocraft/work"
 	"github.com/gomodule/redigo/redis"
 
+	lapi "github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/specs-actors/actors/builtin"
+
+	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/services/indexer"
+	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/miner"
 )
 
 const (
@@ -25,8 +27,8 @@ var redisPool = &redis.Pool{
 	},
 }
 
-func NewScheduler(node lapi.FullNode, publisher *Publisher) *Scheduler {
-	minerPool, minerQueue := miner.Setup(64, MinerTaskName, MinerPoolName, redisPool, node, publisher.Publish)
+func NewScheduler(node lapi.FullNode, pubCh chan<- model.Persistable) *Scheduler {
+	minerPool, minerQueue := miner.Setup(64, MinerTaskName, MinerPoolName, redisPool, node, pubCh)
 
 	pools := []*work.WorkerPool{minerPool}
 	queues := map[string]*work.Enqueuer{
@@ -64,7 +66,8 @@ func (s *Scheduler) Dispatch(tips indexer.ActorTips) error {
 		for _, actor := range actors {
 			switch actor.Actor.Code {
 			case builtin.StorageMinerActorCodeID:
-				if _, err := s.queueMinerTask(actor); err != nil {
+				_, err := s.queueMinerTask(actor)
+				if err != nil {
 					return err
 				}
 			case builtin.StorageMarketActorCodeID:
