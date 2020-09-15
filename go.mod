@@ -16,6 +16,7 @@ require (
 	github.com/lib/pq v1.8.0
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/robfig/cron v1.2.0 // indirect
+	github.com/stretchr/testify v1.6.1
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/whyrusleeping/cbor-gen v0.0.0-20200826160007-0b9f6c5fb163
 	go.opentelemetry.io/otel v0.11.0
