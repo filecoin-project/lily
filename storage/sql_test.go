@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-pg/pg/v10"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // may want to change this to use a named schema such as lotus
@@ -400,24 +401,18 @@ func TestCreateSchema(t *testing.T) {
 		t.Run(table.name, func(t *testing.T) {
 			var exists bool
 			_, err := db.DB.QueryOne(pg.Scan(&exists), `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema=? AND table_name=?)`, PGSchema, table.name)
-			if assert.NoError(t, err, "table: %q", table.name) {
-				assert.True(t, exists, "table: %q", table.name)
-			}
+			require.NoError(t, err, "table: %q", table.name)
+			assert.True(t, exists, "table: %q", table.name)
 
 			for _, col := range table.columns {
 				var datatype string
 				var nullable bool
 				res, err := db.DB.QueryOne(pg.Scan(&datatype, &nullable), `SELECT data_type, is_nullable='YES' FROM information_schema.columns WHERE table_schema=? AND table_name=? AND column_name=?`, PGSchema, table.name, col.name)
-				if !assert.NoError(t, err, "querying column: %q", col.name) {
-					return
-				}
-				if !assert.Equal(t, 1, res.RowsReturned(), "column %q not found", col.name) {
-					return
-				}
+				require.NoError(t, err, "querying column: %q", col.name)
+				require.Equal(t, 1, res.RowsReturned(), "column %q not found", col.name)
 				assert.Equal(t, col.datatype, datatype, "column %q datatype", col.name)
 				assert.Equal(t, col.nullable, nullable, "column %q nullable", col.name)
 			}
-
 		})
 	}
 }
