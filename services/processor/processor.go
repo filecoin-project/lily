@@ -2,14 +2,14 @@ package processor
 
 import (
 	"context"
-	"github.com/filecoin-project/visor/services/indexer"
+	"github.com/filecoin-project/sentinel-visor/services/indexer"
 	"strings"
 	"time"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/api"
 	types "github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/visor/storage"
+	"github.com/filecoin-project/sentinel-visor/storage"
 
 	"github.com/gocraft/work"
 	"github.com/ipfs/go-cid"

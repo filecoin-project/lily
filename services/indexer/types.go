@@ -11,7 +11,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
 
-	"github.com/filecoin-project/visor/model/blocks"
+	"github.com/filecoin-project/sentinel-visor/model/blocks"
 )
 
 type ActorTips map[types.TipSetKey][]ActorInfo

@@ -2,12 +2,12 @@ package processor
 
 import (
 	lapi "github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/miner"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
-	"github.com/filecoin-project/visor/services/processor/tasks/miner"
 	"github.com/gocraft/work"
 	"github.com/gomodule/redigo/redis"
 
-	"github.com/filecoin-project/visor/services/indexer"
+	"github.com/filecoin-project/sentinel-visor/services/indexer"
 )
 
 const (
@@ -67,6 +67,8 @@ func (s *Scheduler) Dispatch(tips indexer.ActorTips) error {
 				if _, err := s.queueMinerTask(actor); err != nil {
 					return err
 				}
+			case builtin.StorageMarketActorCodeID:
+				//process market actor
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-module github.com/filecoin-project/visor
+module github.com/filecoin-project/sentinel-visor
 
 go 1.14
 

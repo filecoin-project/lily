@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	indexer2 "github.com/filecoin-project/visor/services/indexer"
-	processor2 "github.com/filecoin-project/visor/services/processor"
 	_ "net/http/pprof"
 	"os"
 
@@ -12,9 +10,11 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
 
-	lens "github.com/filecoin-project/visor/lens/lotus"
-	vapi "github.com/filecoin-project/visor/lens/lotus"
-	"github.com/filecoin-project/visor/storage"
+	lens "github.com/filecoin-project/sentinel-visor/lens/lotus"
+	vapi "github.com/filecoin-project/sentinel-visor/lens/lotus"
+	indexer2 "github.com/filecoin-project/sentinel-visor/services/indexer"
+	processor2 "github.com/filecoin-project/sentinel-visor/services/processor"
+	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
 var runCmd = &cli.Command{

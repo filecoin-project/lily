@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/gomodule/redigo/redis"
 
 	"github.com/gocraft/work"
@@ -16,14 +17,14 @@ import (
 	lapi "github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/events/state"
 	"github.com/filecoin-project/lotus/chain/types"
+	api "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
-	api "github.com/filecoin-project/visor/lens/lotus"
 
-	minermodel "github.com/filecoin-project/visor/model/actors/miner"
+	minermodel "github.com/filecoin-project/sentinel-visor/model/actors/miner"
 )
 
-func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, node api.API, pubF func(ctx context.Context, payload interface{}) error) (*work.WorkerPool, *work.Enqueuer) {
+func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, node api.API, pubF func(ctx context.Context, persistable model.Persistable) error) (*work.WorkerPool, *work.Enqueuer) {
 	pool := work.NewWorkerPool(ProcessMinerTask{}, concurrency, poolName, redisPool)
 	queue := work.NewEnqueuer(poolName, redisPool)
 
@@ -35,6 +36,7 @@ func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, n
 		mt.log = logging.Logger("minertask")
 		return next()
 	})
+	logging.SetLogLevel("minertask", "info")
 	// log all task
 	pool.Middleware((*ProcessMinerTask).Log)
 
@@ -50,7 +52,7 @@ type ProcessMinerTask struct {
 	node lapi.FullNode
 	log  *logging.ZapEventLogger
 
-	pubFn func(ctx context.Context, payload interface{}) error
+	pubFn func(ctx context.Context, persistable model.Persistable) error
 
 	maddr     address.Address
 	head      cid.Cid

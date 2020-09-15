@@ -11,8 +11,8 @@ import (
 
 	store "github.com/filecoin-project/lotus/chain/store"
 	types "github.com/filecoin-project/lotus/chain/types"
-	api "github.com/filecoin-project/visor/lens/lotus"
-	storage "github.com/filecoin-project/visor/storage"
+	api "github.com/filecoin-project/sentinel-visor/lens/lotus"
+	storage "github.com/filecoin-project/sentinel-visor/storage"
 )
 
 var log = logging.Logger("indexer")
