@@ -31,6 +31,8 @@ func NewDatabase(ctx context.Context, url string) (*Database, error) {
 	}
 
 	db := pg.Connect(opt)
+	db = db.WithContext(ctx)
+
 	// Check if connection credentials are valid and PostgreSQL is up and running.
 	if err := db.Ping(ctx); err != nil {
 		return nil, xerrors.Errorf("ping database: %w", err)
