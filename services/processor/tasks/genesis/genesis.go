@@ -3,6 +3,8 @@ package genesis
 import (
 	"bytes"
 	"context"
+	"strconv"
+
 	"github.com/gocraft/work"
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
@@ -16,6 +18,7 @@ import (
 
 	api "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	"github.com/filecoin-project/sentinel-visor/model"
+	marketmodel "github.com/filecoin-project/sentinel-visor/model/actors/market"
 	minermodel "github.com/filecoin-project/sentinel-visor/model/actors/miner"
 	genesismodel "github.com/filecoin-project/sentinel-visor/model/genesis"
 )
@@ -113,6 +116,11 @@ func (p *ProcessGenesisSingletonTask) Task(job *work.Job) error {
 		case builtin.StoragePowerActorCodeID:
 			// TODO
 		case builtin.StorageMarketActorCodeID:
+			res, err := p.storageMarketState(ctx)
+			if err != nil {
+				return err
+			}
+			result.SetMarket(res)
 		case builtin.StorageMinerActorCodeID:
 			res, err := p.storageMinerState(ctx, addr, genesisAct)
 			if err != nil {
@@ -205,5 +213,50 @@ func (p *ProcessGenesisSingletonTask) storageMinerState(ctx context.Context, add
 		PowerModel:   powerModel,
 		SectorModels: sectorsModel,
 		DealModels:   dealsModel,
+	}, nil
+}
+
+func (p *ProcessGenesisSingletonTask) storageMarketState(ctx context.Context) (*genesismodel.GenesisMarketTaskResult, error) {
+	dealStates, err := p.node.StateMarketDeals(ctx, p.genesis)
+	if err != nil {
+		return nil, err
+	}
+
+	states := make(marketmodel.MarketDealStates, len(dealStates))
+	proposals := make(marketmodel.MarketDealProposals, len(dealStates))
+	idx := 0
+	for idStr, deal := range dealStates {
+		dealID, err := strconv.ParseUint(idStr, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		states[idx] = &marketmodel.MarketDealState{
+			DealID:           dealID,
+			SectorStartEpoch: int64(deal.State.SectorStartEpoch),
+			LastUpdateEpoch:  int64(deal.State.LastUpdatedEpoch),
+			SlashEpoch:       int64(deal.State.SlashEpoch),
+			StateRoot:        p.stateroot.String(),
+		}
+		proposals[idx] = &marketmodel.MarketDealProposal{
+			DealID:               dealID,
+			StateRoot:            p.stateroot.String(),
+			PaddedPieceSize:      uint64(deal.Proposal.PieceSize),
+			UnpaddedPieceSize:    uint64(deal.Proposal.PieceSize.Unpadded()),
+			StartEpoch:           int64(deal.Proposal.StartEpoch),
+			EndEpoch:             int64(deal.Proposal.EndEpoch),
+			ClientID:             deal.Proposal.Client.String(),
+			ProviderID:           deal.Proposal.Provider.String(),
+			ClientCollateral:     deal.Proposal.ClientCollateral.String(),
+			ProviderCollateral:   deal.Proposal.ProviderCollateral.String(),
+			StoragePricePerEpoch: deal.Proposal.StoragePricePerEpoch.String(),
+			PieceCID:             deal.Proposal.PieceCID.String(),
+			IsVerified:           deal.Proposal.VerifiedDeal,
+			Label:                deal.Proposal.Label,
+		}
+		idx++
+	}
+	return &genesismodel.GenesisMarketTaskResult{
+		states,
+		proposals,
 	}, nil
 }

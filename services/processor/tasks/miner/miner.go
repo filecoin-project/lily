@@ -62,7 +62,7 @@ type ProcessMinerTask struct {
 }
 
 func (mac *ProcessMinerTask) Log(job *work.Job, next work.NextMiddlewareFunc) error {
-	mac.log.Infow("Starting Job", "name", job.Name, "Args", job.Args)
+	mac.log.Infow("Starting Miner Task", "name", job.Name, "Args", job.Args)
 	return next()
 }
 
