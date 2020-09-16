@@ -10,7 +10,8 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
 
-	lens "github.com/filecoin-project/sentinel-visor/lens/lotus"
+	lens "github.com/filecoin-project/sentinel-visor/lens"
+	lotuslens "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	vapi "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	indexer2 "github.com/filecoin-project/sentinel-visor/services/indexer"
 	processor2 "github.com/filecoin-project/sentinel-visor/services/processor"
@@ -128,7 +129,7 @@ var indexerCmd = &cli.Command{
 
 type RunContext struct {
 	api    lens.API
-	closer lens.APICloser
+	closer lotuslens.APICloser
 	db     *storage.Database
 }
 

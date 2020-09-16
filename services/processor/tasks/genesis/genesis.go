@@ -11,19 +11,18 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 
 	"github.com/filecoin-project/go-address"
-	lapi "github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 
-	api "github.com/filecoin-project/sentinel-visor/lens/lotus"
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
 	marketmodel "github.com/filecoin-project/sentinel-visor/model/actors/market"
 	minermodel "github.com/filecoin-project/sentinel-visor/model/actors/miner"
 	genesismodel "github.com/filecoin-project/sentinel-visor/model/genesis"
 )
 
-func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, node api.API, pubCh chan<- model.Persistable) (*work.WorkerPool, *work.Enqueuer) {
+func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, node lens.API, pubCh chan<- model.Persistable) (*work.WorkerPool, *work.Enqueuer) {
 	pool := work.NewWorkerPool(ProcessGenesisSingletonTask{}, concurrency, poolName, redisPool)
 	queue := work.NewEnqueuer(poolName, redisPool)
 
@@ -48,7 +47,7 @@ func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, n
 }
 
 type ProcessGenesisSingletonTask struct {
-	node lapi.FullNode
+	node lens.API
 	log  *logging.ZapEventLogger
 
 	pubCh chan<- model.Persistable
@@ -144,8 +143,6 @@ func (p *ProcessGenesisSingletonTask) Task(job *work.Job) error {
 }
 
 func (p *ProcessGenesisSingletonTask) storageMinerState(ctx context.Context, addr address.Address, act *types.Actor) (*genesismodel.GenesisMinerTaskResult, error) {
-	store := api.NewAPIIpldStore(ctx, p.node)
-
 	// actual miner actor state and miner info
 	var mstate miner.State
 	astb, err := p.node.ChainReadObj(ctx, act.Head)
@@ -155,7 +152,7 @@ func (p *ProcessGenesisSingletonTask) storageMinerState(ctx context.Context, add
 	if err := mstate.UnmarshalCBOR(bytes.NewReader(astb)); err != nil {
 		return nil, err
 	}
-	minfo, err := mstate.GetInfo(store)
+	minfo, err := mstate.GetInfo(p.node.Store())
 	if err != nil {
 		return nil, err
 	}

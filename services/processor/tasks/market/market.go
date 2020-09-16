@@ -9,16 +9,15 @@ import (
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 
-	lapi "github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/events/state"
 	"github.com/filecoin-project/lotus/chain/types"
 
-	api "github.com/filecoin-project/sentinel-visor/lens/lotus"
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
 	marketmodel "github.com/filecoin-project/sentinel-visor/model/actors/market"
 )
 
-func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, node api.API, pubCh chan<- model.Persistable) (*work.WorkerPool, *work.Enqueuer) {
+func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, node lens.API, pubCh chan<- model.Persistable) (*work.WorkerPool, *work.Enqueuer) {
 	pool := work.NewWorkerPool(ProcessMarketTask{}, concurrency, poolName, redisPool)
 	queue := work.NewEnqueuer(poolName, redisPool)
 
@@ -43,7 +42,7 @@ func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, n
 }
 
 type ProcessMarketTask struct {
-	node lapi.FullNode
+	node lens.API
 	log  *logging.ZapEventLogger
 
 	pubCh chan<- model.Persistable

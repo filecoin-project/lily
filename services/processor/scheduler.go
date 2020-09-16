@@ -5,10 +5,10 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
 
-	lapi "github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/services/indexer"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/genesis"
@@ -37,7 +37,7 @@ var redisPool = &redis.Pool{
 	},
 }
 
-func NewScheduler(node lapi.FullNode, pubCh chan<- model.Persistable) *Scheduler {
+func NewScheduler(node lens.API, pubCh chan<- model.Persistable) *Scheduler {
 	genesisPool, genesisQueue := genesis.Setup(1, GenesisTaskName, GensisPoolName, redisPool, node, pubCh)
 	minerPool, minerQueue := miner.Setup(64, MinerTaskName, MinerPoolName, redisPool, node, pubCh)
 	marketPool, marketQueue := market.Setup(64, MarketTaskName, MarketPoolName, redisPool, node, pubCh)

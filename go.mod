@@ -11,6 +11,7 @@ require (
 	github.com/go-pg/pg/v10 v10.0.1
 	github.com/gocraft/work v0.5.1
 	github.com/gomodule/redigo v1.8.2
+	github.com/hashicorp/golang-lru v0.5.4
 	github.com/ipfs/go-cid v0.0.7
 	github.com/ipfs/go-log/v2 v2.1.2-0.20200626104915-0016c0b4b3e4
 	github.com/lib/pq v1.8.0
