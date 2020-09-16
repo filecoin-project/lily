@@ -37,7 +37,7 @@ func (ms *MinerState) Persist(ctx context.Context, db *pg.DB) error {
 
 }
 
-func (ms *MinerState) PersistWitTx(ctx context.Context, tx *pg.Tx) error {
+func (ms *MinerState) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	if _, err := tx.ModelContext(ctx, ms).
 		OnConflict("do nothing").
 		Insert(); err != nil {

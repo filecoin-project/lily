@@ -37,7 +37,7 @@ func main() {
 			&cli.StringFlag{
 				Name:    "log-level",
 				EnvVars: []string{"GOLOG_LOG_LEVEL"},
-				Value:   "info",
+				Value:   "debug",
 			},
 		},
 		Commands: []*cli.Command{

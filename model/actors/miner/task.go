@@ -38,7 +38,7 @@ type MinerTaskResult struct {
 
 func (mtr *MinerTaskResult) Persist(ctx context.Context, db *pg.DB) error {
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		if err := NewMinerStateModel(mtr).PersistWitTx(ctx, tx); err != nil {
+		if err := NewMinerStateModel(mtr).PersistWithTx(ctx, tx); err != nil {
 			return err
 		}
 		if err := NewMinerPowerModel(mtr).PersistWithTx(ctx, tx); err != nil {

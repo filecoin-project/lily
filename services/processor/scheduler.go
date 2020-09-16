@@ -3,16 +3,22 @@ package processor
 import (
 	"github.com/gocraft/work"
 	"github.com/gomodule/redigo/redis"
+	"github.com/ipfs/go-cid"
 
 	lapi "github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/services/indexer"
+	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/genesis"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/miner"
 )
 
 const (
+	GenesisTaskName = "process_genesis"
+	GensisPoolName  = "genesis_tasks"
+
 	MinerTaskName = "process_miner"
 	MinerPoolName = "miner_actor_tasks"
 )
@@ -28,11 +34,13 @@ var redisPool = &redis.Pool{
 }
 
 func NewScheduler(node lapi.FullNode, pubCh chan<- model.Persistable) *Scheduler {
+	genesisPool, genesisQueue := genesis.Setup(1, GenesisTaskName, GensisPoolName, redisPool, node, pubCh)
 	minerPool, minerQueue := miner.Setup(64, MinerTaskName, MinerPoolName, redisPool, node, pubCh)
 
-	pools := []*work.WorkerPool{minerPool}
+	pools := []*work.WorkerPool{genesisPool, minerPool}
 	queues := map[string]*work.Enqueuer{
-		MinerTaskName: minerQueue,
+		GenesisTaskName: genesisQueue,
+		MinerTaskName:   minerQueue,
 	}
 
 	return &Scheduler{
@@ -93,5 +101,16 @@ func (s *Scheduler) queueMinerTask(info indexer.ActorInfo) (*work.Job, error) {
 		"head":      info.Actor.Head.String(),
 		"address":   info.Address.String(),
 		"stateroot": info.ParentStateRoot.String(),
+	})
+}
+
+func (s *Scheduler) queueGenesisTask(genesisTs types.TipSetKey, genesisRoot cid.Cid) (*work.Job, error) {
+	tsB, err := genesisTs.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return s.queues[GenesisTaskName].EnqueueUnique(GenesisTaskName, work.Q{
+		"ts":        string(tsB),
+		"stateroot": genesisRoot.String(),
 	})
 }
