@@ -12,6 +12,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/services/indexer"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/genesis"
+	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/market"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/miner"
 )
 
@@ -21,12 +22,15 @@ const (
 
 	MinerTaskName = "process_miner"
 	MinerPoolName = "miner_actor_tasks"
+
+	MarketTaskName = "process_market"
+	MarketPoolName = "market_actor_tasks"
 )
 
 // Make a redis pool
 var redisPool = &redis.Pool{
-	MaxActive: 64,
-	MaxIdle:   64,
+	MaxActive: 128,
+	MaxIdle:   128,
 	Wait:      true,
 	Dial: func() (redis.Conn, error) {
 		return redis.Dial("tcp", ":6379")
@@ -36,11 +40,13 @@ var redisPool = &redis.Pool{
 func NewScheduler(node lapi.FullNode, pubCh chan<- model.Persistable) *Scheduler {
 	genesisPool, genesisQueue := genesis.Setup(1, GenesisTaskName, GensisPoolName, redisPool, node, pubCh)
 	minerPool, minerQueue := miner.Setup(64, MinerTaskName, MinerPoolName, redisPool, node, pubCh)
+	marketPool, marketQueue := market.Setup(64, MarketTaskName, MarketPoolName, redisPool, node, pubCh)
 
-	pools := []*work.WorkerPool{genesisPool, minerPool}
+	pools := []*work.WorkerPool{genesisPool, minerPool, marketPool}
 	queues := map[string]*work.Enqueuer{
 		GenesisTaskName: genesisQueue,
 		MinerTaskName:   minerQueue,
+		MarketTaskName:  marketQueue,
 	}
 
 	return &Scheduler{
@@ -79,7 +85,10 @@ func (s *Scheduler) Dispatch(tips indexer.ActorTips) error {
 					return err
 				}
 			case builtin.StorageMarketActorCodeID:
-				//process market actor
+				_, err := s.queueMarketTask(actor)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -102,6 +111,25 @@ func (s *Scheduler) queueMinerTask(info indexer.ActorInfo) (*work.Job, error) {
 		"address":   info.Address.String(),
 		"stateroot": info.ParentStateRoot.String(),
 	})
+}
+
+func (s *Scheduler) queueMarketTask(info indexer.ActorInfo) (*work.Job, error) {
+	tsB, err := info.TipSet.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	ptsB, err := info.ParentTipset.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return s.queues[MarketTaskName].Enqueue(MarketTaskName, work.Q{
+		"ts":        string(tsB),
+		"pts":       string(ptsB),
+		"head":      info.Actor.Head.String(),
+		"address":   info.Address.String(),
+		"stateroot": info.ParentStateRoot.String(),
+	})
+
 }
 
 func (s *Scheduler) queueGenesisTask(genesisTs types.TipSetKey, genesisRoot cid.Cid) (*work.Job, error) {

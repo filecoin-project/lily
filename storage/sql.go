@@ -8,6 +8,7 @@ import (
 	"github.com/go-pg/pg/v10/orm"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
 )
@@ -16,13 +17,18 @@ var models = []interface{}{
 	(*blocks.BlockHeader)(nil),
 	(*blocks.BlockSynced)(nil),
 	(*blocks.BlockParent)(nil),
+
 	(*blocks.DrandEntrie)(nil),
 	(*blocks.DrandBlockEntrie)(nil),
+
 	(*miner.MinerPower)(nil),
 	(*miner.MinerState)(nil),
 	(*miner.MinerDealSector)(nil),
 	(*miner.MinerSectorInfo)(nil),
 	(*miner.MinerPreCommitInfo)(nil),
+
+	(*market.MarketDealProposal)(nil),
+	(*market.MarketDealState)(nil),
 }
 
 func NewDatabase(ctx context.Context, url string) (*Database, error) {
