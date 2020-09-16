@@ -57,6 +57,9 @@ func (p *Processor) InitHandler(ctx context.Context, batchSize int) error {
 		return err
 	}
 
+	p.publisher.Start(ctx)
+	p.scheduler.Start()
+
 	gen, err := p.node.ChainGetGenesis(ctx)
 	if err != nil {
 		return err
@@ -65,8 +68,9 @@ func (p *Processor) InitHandler(ctx context.Context, batchSize int) error {
 	p.genesis = gen
 	p.batchSize = batchSize
 
-	p.publisher.Start(ctx)
-	p.scheduler.Start()
+	if _, err := p.scheduler.queueGenesisTask(gen.Key(), gen.ParentState()); err != nil {
+		return err
+	}
 
 	p.log.Infow("initialized processor", "genesis", gen.String())
 	return nil

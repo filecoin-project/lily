@@ -20,6 +20,7 @@ var models = []interface{}{
 	(*blocks.DrandBlockEntrie)(nil),
 	(*miner.MinerPower)(nil),
 	(*miner.MinerState)(nil),
+	(*miner.MinerDealSector)(nil),
 	(*miner.MinerSectorInfo)(nil),
 	(*miner.MinerPreCommitInfo)(nil),
 }

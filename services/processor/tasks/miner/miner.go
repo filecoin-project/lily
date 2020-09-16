@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/gomodule/redigo/redis"
 
 	"github.com/gocraft/work"
+	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/xerrors"
@@ -17,10 +16,11 @@ import (
 	lapi "github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/events/state"
 	"github.com/filecoin-project/lotus/chain/types"
-	api "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
+	api "github.com/filecoin-project/sentinel-visor/lens/lotus"
+	"github.com/filecoin-project/sentinel-visor/model"
 	minermodel "github.com/filecoin-project/sentinel-visor/model/actors/miner"
 )
 
