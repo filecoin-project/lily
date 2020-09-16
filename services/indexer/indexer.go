@@ -64,30 +64,30 @@ func (i *Indexer) InitHandler(ctx context.Context) error {
 	return nil
 }
 
-// Start runs the Indexer and can be aborted by context cancellation
-func (i *Indexer) Start(ctx context.Context) {
+// Start runs the Indexer which blocks processing chain events until the context is cancelled or the api closes the
+// connection.
+func (i *Indexer) Start(ctx context.Context) error {
 	log.Info("starting Indexer")
 	hc, err := i.node.ChainNotify(ctx)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				log.Info("stopping Indexer")
-				return
-			case headEvents, ok := <-hc:
-				if !ok {
-					log.Warn("ChainNotify channel closed")
-					return
-				}
-				if err := i.index(ctx, headEvents); err != nil {
-					panic(err)
-				}
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info("stopping Indexer")
+			return nil
+		case headEvents, ok := <-hc:
+			if !ok {
+				log.Warn("ChainNotify channel closed, stopping Indexer")
+				return nil
+			}
+			if err := i.index(ctx, headEvents); err != nil {
+				return err
 			}
 		}
-	}()
+	}
 }
 
 func (i *Indexer) index(ctx context.Context, headEvents []*lotus_api.HeadChange) error {

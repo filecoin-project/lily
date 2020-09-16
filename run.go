@@ -104,16 +104,25 @@ var indexerCmd = &cli.Command{
 		if err := indexer.InitHandler(ctx); err != nil {
 			return err
 		}
-		// TODO if the lotus daemon hangs up Start will exit. It should restart and wait for lotus to come back online.
-		indexer.Start(ctx)
 
 		if err := logging.SetLogLevel("rpc", "error"); err != nil {
 			return err
 		}
 
-		<-ctx.Done()
-		os.Exit(0)
-		return nil
+		// Start the indexer and wait for it to complete or to be cancelled.
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			// TODO if the lotus daemon hangs up Start will exit. It should restart and wait for lotus to come back online.
+			err = indexer.Start(ctx)
+		}()
+
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-done:
+			return err
+		}
 	},
 }
 
