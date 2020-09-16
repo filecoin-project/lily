@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"context"
 	lotus_api "github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/sentinel-visor/lens"
 	pg "github.com/go-pg/pg/v10"
 	cid "github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -11,14 +12,13 @@ import (
 
 	store "github.com/filecoin-project/lotus/chain/store"
 	types "github.com/filecoin-project/lotus/chain/types"
-	api "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	storage "github.com/filecoin-project/sentinel-visor/storage"
 )
 
 var log = logging.Logger("indexer")
 
 // TODO figure our if you want this or the init handler
-func NewIndexer(s *storage.Database, n api.API) *Indexer {
+func NewIndexer(s *storage.Database, n lens.API) *Indexer {
 	return &Indexer{
 		storage: s,
 		node:    n,
@@ -27,7 +27,7 @@ func NewIndexer(s *storage.Database, n api.API) *Indexer {
 
 type Indexer struct {
 	storage *storage.Database
-	node    api.API
+	node    lens.API
 
 	tracer trace.Tracer
 

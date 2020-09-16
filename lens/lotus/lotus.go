@@ -3,6 +3,7 @@ package lotus
 import (
 	"context"
 	"fmt"
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"net/http"
 	"strings"
 
@@ -20,11 +21,9 @@ import (
 
 var log = logging.Logger("visor/lens/lotus")
 
-type API lotus_api.FullNode
 type APICloser jsonrpc.ClientCloser
-type HeadChange lotus_api.HeadChange
 
-func GetFullNodeAPI(cctx *cli.Context) (context.Context, API, APICloser, error) {
+func GetFullNodeAPI(cctx *cli.Context) (context.Context, lens.API, APICloser, error) {
 	var api lotus_api.FullNode
 	var closer jsonrpc.ClientCloser
 	var err error
@@ -54,7 +53,9 @@ func GetFullNodeAPI(cctx *cli.Context) (context.Context, API, APICloser, error) 
 	}
 	log.Infof("Lotus API version: %s", v.Version)
 
-	return ctx, api, APICloser(closer), nil
+	lensAPI := NewAPIWrapper(api, NewCacheCtxStore(ctx, api, 10_000))
+
+	return ctx, lensAPI, APICloser(closer), nil
 }
 
 func getFullNodeAPIUsingCredentials(ctx context.Context, listenAddr, token string) (lotus_api.FullNode, jsonrpc.ClientCloser, error) {

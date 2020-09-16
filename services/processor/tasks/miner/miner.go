@@ -13,18 +13,17 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
-	lapi "github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/events/state"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
-	api "github.com/filecoin-project/sentinel-visor/lens/lotus"
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
 	minermodel "github.com/filecoin-project/sentinel-visor/model/actors/miner"
 )
 
-func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, node api.API, pubCh chan<- model.Persistable) (*work.WorkerPool, *work.Enqueuer) {
+func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, node lens.API, pubCh chan<- model.Persistable) (*work.WorkerPool, *work.Enqueuer) {
 	pool := work.NewWorkerPool(ProcessMinerTask{}, concurrency, poolName, redisPool)
 	queue := work.NewEnqueuer(poolName, redisPool)
 
@@ -49,7 +48,7 @@ func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, n
 }
 
 type ProcessMinerTask struct {
-	node lapi.FullNode
+	node lens.API
 	log  *logging.ZapEventLogger
 
 	pubCh chan<- model.Persistable
@@ -134,7 +133,6 @@ func (mac *ProcessMinerTask) Task(job *work.Job) error {
 	// - processing is incomplete, see below TODO about sector inspection.
 	// - need caching infront of the lotus api to avoid refetching power for same tipset.
 	ctx := context.TODO()
-	store := api.NewAPIIpldStore(ctx, mac.node)
 
 	// generic actor state of the miner.
 	mactor, err := mac.node.StateGetActor(ctx, mac.maddr, mac.tsKey)
@@ -151,7 +149,7 @@ func (mac *ProcessMinerTask) Task(job *work.Job) error {
 	if err := mstate.UnmarshalCBOR(bytes.NewReader(astb)); err != nil {
 		return err
 	}
-	minfo, err := mstate.GetInfo(store)
+	minfo, err := mstate.GetInfo(mac.node.Store())
 	if err != nil {
 		return err
 	}
@@ -199,7 +197,7 @@ func (mac *ProcessMinerTask) Task(job *work.Job) error {
 	return nil
 }
 
-func minerPreCommitChanges(ctx context.Context, node api.API, maddr address.Address, ts, pts types.TipSetKey) (*state.MinerPreCommitChanges, error) {
+func minerPreCommitChanges(ctx context.Context, node lens.API, maddr address.Address, ts, pts types.TipSetKey) (*state.MinerPreCommitChanges, error) {
 	pred := state.NewStatePredicates(node)
 	changed, val, err := pred.OnMinerActorChange(maddr, pred.OnMinerPreCommitChange())(ctx, pts, ts)
 	if err != nil {
@@ -212,7 +210,7 @@ func minerPreCommitChanges(ctx context.Context, node api.API, maddr address.Addr
 	return out, nil
 }
 
-func minerSectorChanges(ctx context.Context, node api.API, maddr address.Address, ts, pts types.TipSetKey) (*state.MinerSectorChanges, error) {
+func minerSectorChanges(ctx context.Context, node lens.API, maddr address.Address, ts, pts types.TipSetKey) (*state.MinerSectorChanges, error) {
 	pred := state.NewStatePredicates(node)
 	changed, val, err := pred.OnMinerActorChange(maddr, pred.OnMinerSectorChange())(ctx, pts, ts)
 	if err != nil {
@@ -225,8 +223,7 @@ func minerSectorChanges(ctx context.Context, node api.API, maddr address.Address
 	return out, nil
 }
 
-func minerPartitionsDiff(ctx context.Context, node api.API, maddr address.Address, ts, pts types.TipSetKey) (map[uint64]*minermodel.PartitionStatus, error) {
-	store := api.NewAPIIpldStore(ctx, node)
+func minerPartitionsDiff(ctx context.Context, node lens.API, maddr address.Address, ts, pts types.TipSetKey) (map[uint64]*minermodel.PartitionStatus, error) {
 
 	curMiner, err := minerStateAt(ctx, node, maddr, ts)
 	if err != nil {
@@ -242,16 +239,16 @@ func minerPartitionsDiff(ctx context.Context, node api.API, maddr address.Addres
 	//
 	// load the prev deadline and partitions
 	//
-	prevDls, err := prevMiner.LoadDeadlines(store)
+	prevDls, err := prevMiner.LoadDeadlines(node.Store())
 	if err != nil {
 		return nil, err
 	}
 	var prevDl miner.Deadline
-	if err := store.Get(ctx, prevDls.Due[dlIdx], &prevDl); err != nil {
+	if err := node.Store().Get(ctx, prevDls.Due[dlIdx], &prevDl); err != nil {
 		return nil, err
 	}
 
-	prevPartitions, err := prevDl.PartitionsArray(store)
+	prevPartitions, err := prevDl.PartitionsArray(node.Store())
 	if err != nil {
 		return nil, err
 	}
@@ -259,17 +256,17 @@ func minerPartitionsDiff(ctx context.Context, node api.API, maddr address.Addres
 	//
 	// load the cur deadline and partitions
 	//
-	curDls, err := curMiner.LoadDeadlines(store)
+	curDls, err := curMiner.LoadDeadlines(node.Store())
 	if err != nil {
 		return nil, err
 	}
 
 	var curDl miner.Deadline
-	if err := store.Get(ctx, curDls.Due[dlIdx], &curDl); err != nil {
+	if err := node.Store().Get(ctx, curDls.Due[dlIdx], &curDl); err != nil {
 		return nil, err
 	}
 
-	curPartitions, err := curDl.PartitionsArray(store)
+	curPartitions, err := curDl.PartitionsArray(node.Store())
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +285,7 @@ func minerPartitionsDiff(ctx context.Context, node api.API, maddr address.Addres
 		} else if !found {
 			panic("Undefined behaviour when a partition is removed.")
 		}
-		partitionDiff, err := diffPartition(store, prevPart, curPart)
+		partitionDiff, err := diffPartition(node.Store(), prevPart, curPart)
 		if err != nil {
 			return err
 		}
@@ -301,7 +298,7 @@ func minerPartitionsDiff(ctx context.Context, node api.API, maddr address.Addres
 	return out, nil
 }
 
-func diffPartition(store *api.APIIpldStore, prevPart, curPart miner.Partition) (*minermodel.PartitionStatus, error) {
+func diffPartition(store adt.Store, prevPart, curPart miner.Partition) (*minermodel.PartitionStatus, error) {
 	// all the sectors that were in previous but not in current
 	allRemovedSectors, err := bitfield.SubtractBitField(prevPart.Sectors, curPart.Sectors)
 	if err != nil {
@@ -371,7 +368,7 @@ func diffPartition(store *api.APIIpldStore, prevPart, curPart miner.Partition) (
 	}, nil
 }
 
-func minerStateAt(ctx context.Context, node api.API, maddr address.Address, tskey types.TipSetKey) (miner.State, error) {
+func minerStateAt(ctx context.Context, node lens.API, maddr address.Address, tskey types.TipSetKey) (miner.State, error) {
 	prevActor, err := node.StateGetActor(ctx, maddr, tskey)
 	if err != nil {
 		return miner.State{}, err

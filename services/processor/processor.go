@@ -13,15 +13,15 @@ import (
 	"go.opentelemetry.io/otel/api/trace"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/lotus/api"
 	types "github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/sentinel-visor/storage"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/services/indexer"
 )
 
-func NewProcessor(db *storage.Database, n api.FullNode) *Processor {
+func NewProcessor(db *storage.Database, n lens.API) *Processor {
 	// TODO I don't like how these are buried in here.
 	pubCh := make(chan model.Persistable)
 	p := NewPublisher(db, pubCh)
@@ -37,7 +37,7 @@ func NewProcessor(db *storage.Database, n api.FullNode) *Processor {
 
 type Processor struct {
 	storage *storage.Database
-	node    api.FullNode
+	node    lens.API
 
 	scheduler *Scheduler
 	publisher *Publisher
