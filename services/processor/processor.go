@@ -2,7 +2,9 @@ package processor
 
 import (
 	"context"
+	"github.com/filecoin-project/lotus/lib/parmap"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gocraft/work"
@@ -94,11 +96,14 @@ func (p *Processor) Start(ctx context.Context) {
 					time.Sleep(time.Second * 30)
 					continue
 				}
+				p.log.Infow("collected blocks for processing", "count", len(blksToProcess))
 
 				actorChanges, err := p.collectActorChanges(ctx, blksToProcess)
 				if err != nil {
 					panic(err)
 				}
+
+				p.log.Infow("collected actor changes")
 
 				if err := p.scheduler.Dispatch(actorChanges); err != nil {
 					panic(err)
@@ -110,21 +115,25 @@ func (p *Processor) Start(ctx context.Context) {
 
 func (p *Processor) collectActorChanges(ctx context.Context, blks []*types.BlockHeader) (map[types.TipSetKey][]indexer.ActorInfo, error) {
 	out := make(map[types.TipSetKey][]indexer.ActorInfo)
-	for _, blk := range blks {
+	var outMu sync.Mutex
+	parmap.Par(25, blks, func(blk *types.BlockHeader) {
 		pts, err := p.node.ChainGetTipSet(ctx, types.NewTipSetKey(blk.Parents...))
 		if err != nil {
-			return nil, err
+			p.log.Error(err)
+			return
 		}
 
 		changes, err := p.node.StateChangedActors(ctx, pts.ParentState(), blk.ParentStateRoot)
 		if err != nil {
-			return nil, err
+			p.log.Error(err)
+			return
 		}
 
 		for str, act := range changes {
 			addr, err := address.NewFromString(str)
 			if err != nil {
-				return nil, err
+				p.log.Error(err)
+				continue
 			}
 
 			_, err = p.node.StateGetActor(ctx, addr, pts.Key())
@@ -133,7 +142,8 @@ func (p *Processor) collectActorChanges(ctx context.Context, blks []*types.Block
 					// TODO consider tracking deleted actors
 					continue
 				}
-				return nil, err
+				p.log.Error(err)
+				return
 			}
 			_, err = p.node.StateGetActor(ctx, addr, pts.Parents())
 			if err != nil {
@@ -141,10 +151,12 @@ func (p *Processor) collectActorChanges(ctx context.Context, blks []*types.Block
 					// TODO consider tracking deleted actors
 					continue
 				}
-				return nil, err
+				p.log.Error(err)
+				return
 			}
 
 			// TODO track null rounds
+			outMu.Lock()
 			out[pts.Key()] = append(out[pts.Key()], indexer.ActorInfo{
 				Actor:           act,
 				Address:         addr,
@@ -152,8 +164,10 @@ func (p *Processor) collectActorChanges(ctx context.Context, blks []*types.Block
 				ParentTipset:    pts.Parents(),
 				ParentStateRoot: pts.ParentState(),
 			})
+			outMu.Unlock()
 		}
-	}
+
+	})
 	return out, nil
 }
 
