@@ -68,61 +68,53 @@ func (u *UnindexedBlockData) Has(bh *types.BlockHeader) bool {
 }
 
 func (u *UnindexedBlockData) Persist(ctx context.Context, db *pg.DB) error {
-	log.Infow("Persist unindexed block data", "count", u.Size())
-	tx, err := db.BeginContext(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err := tx.Close(); err != nil {
-			log.Errorw("closing unsynced block data transaction", "error", err.Error())
-		}
-	}()
+	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		log.Infow("Persist unindexed block data", "count", u.Size())
+		grp, ctx := errgroup.WithContext(ctx)
 
-	grp, ctx := errgroup.WithContext(ctx)
+		grp.Go(func() error {
+			if err := u.blks.PersistWithTx(ctx, tx); err != nil {
+				return err
+			}
+			return nil
+		})
 
-	grp.Go(func() error {
-		if err := u.blks.PersistWithTx(ctx, tx); err != nil {
-			return err
+		grp.Go(func() error {
+			if err := u.synced.PersistWithTx(ctx, tx); err != nil {
+				return err
+			}
+			return nil
+		})
+
+		grp.Go(func() error {
+			if err := u.parents.PersistWithTx(ctx, tx); err != nil {
+				return err
+			}
+			return nil
+		})
+
+		grp.Go(func() error {
+			if err := u.drandEntries.PersistWithTx(ctx, tx); err != nil {
+				return err
+			}
+			return nil
+		})
+
+		grp.Go(func() error {
+			if err := u.drandBlockEntries.PersistWithTx(ctx, tx); err != nil {
+				return err
+			}
+			return nil
+		})
+
+		if err := grp.Wait(); err != nil {
+			log.Info("Rollback unindexed block data", "error", err)
+			return tx.RollbackContext(ctx)
 		}
+
+		log.Info("Commit unindexed block data")
 		return nil
 	})
-
-	grp.Go(func() error {
-		if err := u.synced.PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
-		return nil
-	})
-
-	grp.Go(func() error {
-		if err := u.parents.PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
-		return nil
-	})
-
-	grp.Go(func() error {
-		if err := u.drandEntries.PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
-		return nil
-	})
-
-	grp.Go(func() error {
-		if err := u.drandBlockEntries.PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
-		return nil
-	})
-
-	if err := grp.Wait(); err != nil {
-		log.Info("Rollback unindexed block data", "error", err)
-		return tx.RollbackContext(ctx)
-	}
-
-	log.Info("Commit unindexed block data")
-	return tx.CommitContext(ctx)
 }
 
 func (u *UnindexedBlockData) Size() int {

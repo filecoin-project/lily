@@ -54,17 +54,14 @@ func (bh *BlockHeader) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 type BlockHeaders []*BlockHeader
 
 func (bh BlockHeaders) Persist(ctx context.Context, db *pg.DB) error {
-	tx, err := db.BeginContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, h := range bh {
-		if err := h.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("persist headers: %v", err)
+	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		for _, h := range bh {
+			if err := h.PersistWithTx(ctx, tx); err != nil {
+				return fmt.Errorf("persist headers: %v", err)
+			}
 		}
-	}
-	return tx.CommitContext(ctx)
+		return nil
+	})
 }
 
 func (bh BlockHeaders) PersistWithTx(ctx context.Context, tx *pg.Tx) error {

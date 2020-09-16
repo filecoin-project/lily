@@ -57,19 +57,14 @@ func NewMinerSectorInfos(res *MinerTaskResult) MinerSectorInfos {
 type MinerSectorInfos []*MinerSectorInfo
 
 func (msis MinerSectorInfos) Persist(ctx context.Context, db *pg.DB) error {
-	if len(msis) == 0 {
-		return nil
-	}
-	tx, err := db.BeginContext(ctx)
-	if err != nil {
-		return err
-	}
-	for _, msi := range msis {
-		if err := msi.PersistWithTx(ctx, tx); err != nil {
-			return err
+	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		for _, msi := range msis {
+			if err := msi.PersistWithTx(ctx, tx); err != nil {
+				return err
+			}
 		}
-	}
-	return tx.CommitContext(ctx)
+		return nil
+	})
 }
 
 func (msis MinerSectorInfos) PersistWithTx(ctx context.Context, tx *pg.Tx) error {

@@ -37,25 +37,23 @@ type MinerTaskResult struct {
 }
 
 func (mtr *MinerTaskResult) Persist(ctx context.Context, db *pg.DB) error {
-	tx, err := db.BeginContext(ctx)
-	if err != nil {
-		return err
-	}
-	if err := NewMinerStateModel(mtr).PersistWitTx(ctx, tx); err != nil {
-		return err
-	}
-	if err := NewMinerPowerModel(mtr).PersistWithTx(ctx, tx); err != nil {
-		return err
-	}
-	if mtr.PreCommitChanges != nil {
-		if err := NewMinerPreCommitInfos(mtr).PersistWithTx(ctx, tx); err != nil {
+	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		if err := NewMinerStateModel(mtr).PersistWitTx(ctx, tx); err != nil {
 			return err
 		}
-	}
-	if mtr.SectorChanges != nil {
-		if err := NewMinerSectorInfos(mtr).PersistWithTx(ctx, tx); err != nil {
+		if err := NewMinerPowerModel(mtr).PersistWithTx(ctx, tx); err != nil {
 			return err
 		}
-	}
-	return tx.CommitContext(ctx)
+		if mtr.PreCommitChanges != nil {
+			if err := NewMinerPreCommitInfos(mtr).PersistWithTx(ctx, tx); err != nil {
+				return err
+			}
+		}
+		if mtr.SectorChanges != nil {
+			if err := NewMinerSectorInfos(mtr).PersistWithTx(ctx, tx); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

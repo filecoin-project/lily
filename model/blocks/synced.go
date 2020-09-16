@@ -40,16 +40,14 @@ func (bs *BlockSynced) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 type BlocksSynced []*BlockSynced
 
 func (bss BlocksSynced) Persist(ctx context.Context, db *pg.DB) error {
-	tx, err := db.BeginContext(ctx)
-	if err != nil {
-		return err
-	}
-	for _, bs := range bss {
-		if err := bs.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("persist blocks synced: %v", err)
+	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		for _, bs := range bss {
+			if err := bs.PersistWithTx(ctx, tx); err != nil {
+				return fmt.Errorf("persist blocks synced: %v", err)
+			}
 		}
-	}
-	return tx.CommitContext(ctx)
+		return nil
+	})
 }
 
 func (bss BlocksSynced) PersistWithTx(ctx context.Context, tx *pg.Tx) error {

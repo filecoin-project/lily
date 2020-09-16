@@ -26,16 +26,15 @@ type MinerState struct {
 }
 
 func (ms *MinerState) Persist(ctx context.Context, db *pg.DB) error {
-	tx, err := db.BeginContext(ctx)
-	if err != nil {
-		return err
-	}
-	if _, err := tx.ModelContext(ctx, ms).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting miner power: %w", err)
-	}
-	return tx.CommitContext(ctx)
+	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		if _, err := tx.ModelContext(ctx, ms).
+			OnConflict("do nothing").
+			Insert(); err != nil {
+			return xerrors.Errorf("persisting miner power: %w", err)
+		}
+		return nil
+	})
+
 }
 
 func (ms *MinerState) PersistWitTx(ctx context.Context, tx *pg.Tx) error {
