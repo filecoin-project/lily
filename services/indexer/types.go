@@ -109,7 +109,7 @@ func (u *UnindexedBlockData) Persist(ctx context.Context, db *pg.DB) error {
 
 		if err := grp.Wait(); err != nil {
 			log.Info("Rollback unindexed block data", "error", err)
-			return tx.RollbackContext(ctx)
+			return err
 		}
 
 		log.Info("Commit unindexed block data")
