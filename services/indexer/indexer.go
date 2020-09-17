@@ -194,7 +194,7 @@ func (i *Indexer) mostRecentlySyncedBlockHeight(ctx context.Context) (cid.Cid, i
 	ctx, span := global.Tracer("").Start(ctx, "Indexer.mostRecentlySyncedBlockHeight")
 	defer span.End()
 
-	task, err := i.storage.MostRecentProcessedBlock(ctx)
+	task, err := i.storage.MostRecentSyncedBlock(ctx)
 	if err != nil {
 		if err == pg.ErrNoRows {
 			return i.genesis.Cids()[0], 0, nil

@@ -98,7 +98,7 @@ func (d *Database) UnprocessedIndexedBlocks(ctx context.Context, maxHeight, limi
 	return blkSynced, nil
 }
 
-func (d *Database) MostRecentProcessedBlock(ctx context.Context) (*blocks.BlockSynced, error) {
+func (d *Database) MostRecentSyncedBlock(ctx context.Context) (*blocks.BlockSynced, error) {
 	blkSynced := &blocks.BlockSynced{}
 	if err := d.DB.ModelContext(ctx, blkSynced).
 		Order("height desc").
