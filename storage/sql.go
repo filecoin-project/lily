@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
+	"github.com/filecoin-project/sentinel-visor/model/messages"
 )
 
 var models = []interface{}{
@@ -29,6 +30,10 @@ var models = []interface{}{
 
 	(*market.MarketDealProposal)(nil),
 	(*market.MarketDealState)(nil),
+
+	(*messages.Message)(nil),
+	(*messages.BlockMessage)(nil),
+	(*messages.Receipt)(nil),
 }
 
 func NewDatabase(ctx context.Context, url string) (*Database, error) {

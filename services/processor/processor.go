@@ -161,7 +161,7 @@ func (p *Processor) collectActorChanges(ctx context.Context, blks []*types.Block
 				Actor:           act,
 				Address:         addr,
 				TipSet:          pts.Key(),
-				ParentTipset:    pts.Parents(),
+				ParentTipSet:    pts.Parents(),
 				ParentStateRoot: pts.ParentState(),
 			})
 			outMu.Unlock()

@@ -13,6 +13,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/services/indexer"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/genesis"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/market"
+	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/message"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/miner"
 )
 
@@ -25,6 +26,9 @@ const (
 
 	MarketTaskName = "process_market"
 	MarketPoolName = "market_actor_tasks"
+
+	MessageTaskName = "process_message"
+	MessagePoolName = "message_tasks"
 )
 
 // Make a redis pool
@@ -41,12 +45,14 @@ func NewScheduler(node lens.API, pubCh chan<- model.Persistable) *Scheduler {
 	genesisPool, genesisQueue := genesis.Setup(1, GenesisTaskName, GensisPoolName, redisPool, node, pubCh)
 	minerPool, minerQueue := miner.Setup(64, MinerTaskName, MinerPoolName, redisPool, node, pubCh)
 	marketPool, marketQueue := market.Setup(64, MarketTaskName, MarketPoolName, redisPool, node, pubCh)
+	msgPool, msgQueue := message.Setup(64, MessageTaskName, MessagePoolName, redisPool, node, pubCh)
 
-	pools := []*work.WorkerPool{genesisPool, minerPool, marketPool}
+	pools := []*work.WorkerPool{genesisPool, minerPool, marketPool, msgPool}
 	queues := map[string]*work.Enqueuer{
 		GenesisTaskName: genesisQueue,
 		MinerTaskName:   minerQueue,
 		MarketTaskName:  marketQueue,
+		MessageTaskName: msgQueue,
 	}
 
 	return &Scheduler{
@@ -76,7 +82,12 @@ func (s *Scheduler) Stop() {
 }
 
 func (s *Scheduler) Dispatch(tips indexer.ActorTips) error {
-	for _, actors := range tips {
+	for ts, actors := range tips {
+		// TODO this is pretty ugly, need some local cache of tsKey to ts in here somewhere.
+		_, err := s.queueMessageTask(ts, actors[0].ParentStateRoot)
+		if err != nil {
+			return err
+		}
 		for _, actor := range actors {
 			switch actor.Actor.Code {
 			case builtin.StorageMinerActorCodeID:
@@ -100,7 +111,7 @@ func (s *Scheduler) queueMinerTask(info indexer.ActorInfo) (*work.Job, error) {
 	if err != nil {
 		return nil, err
 	}
-	ptsB, err := info.ParentTipset.MarshalJSON()
+	ptsB, err := info.ParentTipSet.MarshalJSON()
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +129,7 @@ func (s *Scheduler) queueMarketTask(info indexer.ActorInfo) (*work.Job, error) {
 	if err != nil {
 		return nil, err
 	}
-	ptsB, err := info.ParentTipset.MarshalJSON()
+	ptsB, err := info.ParentTipSet.MarshalJSON()
 	if err != nil {
 		return nil, err
 	}
@@ -140,5 +151,16 @@ func (s *Scheduler) queueGenesisTask(genesisTs types.TipSetKey, genesisRoot cid.
 	return s.queues[GenesisTaskName].EnqueueUnique(GenesisTaskName, work.Q{
 		"ts":        string(tsB),
 		"stateroot": genesisRoot.String(),
+	})
+}
+
+func (s *Scheduler) queueMessageTask(ts types.TipSetKey, st cid.Cid) (*work.Job, error) {
+	tsB, err := ts.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return s.queues[MessageTaskName].Enqueue(MessageTaskName, work.Q{
+		"ts":        string(tsB),
+		"stateroot": st.String(),
 	})
 }

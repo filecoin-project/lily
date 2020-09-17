@@ -33,7 +33,7 @@ var processorCmd = &cli.Command{
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:  "max-batch",
-			Value: 50,
+			Value: 10,
 		},
 	},
 	Action: func(cctx *cli.Context) error {
