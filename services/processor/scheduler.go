@@ -1,9 +1,11 @@
 package processor
 
 import (
+	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/common"
 	"github.com/gocraft/work"
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
+	"strconv"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
@@ -37,6 +39,9 @@ const (
 
 	RewardTaskName = "process_reward"
 	RewardPoolName = "reward_tasks"
+
+	CommonTaskName = "process_common"
+	CommonPoolName = "common_actor_tasks"
 )
 
 // Make a redis pool
@@ -56,8 +61,9 @@ func NewScheduler(node lens.API, pubCh chan<- model.Persistable) *Scheduler {
 	msgPool, msgQueue := message.Setup(64, MessageTaskName, MessagePoolName, redisPool, node, pubCh)
 	powerPool, powerQueue := power.Setup(64, PowerTaskName, PowerPoolName, redisPool, node, pubCh)
 	rwdPool, rwdQueue := reward.Setup(4, RewardTaskName, RewardPoolName, redisPool, node, pubCh)
+	comPool, comQueue := common.Setup(64, CommonTaskName, CommonPoolName, redisPool, node, pubCh)
 
-	pools := []*work.WorkerPool{genesisPool, minerPool, marketPool, powerPool, msgPool, rwdPool}
+	pools := []*work.WorkerPool{genesisPool, minerPool, marketPool, powerPool, msgPool, rwdPool, comPool}
 
 	queues := map[string]*work.Enqueuer{
 		GenesisTaskName: genesisQueue,
@@ -66,6 +72,7 @@ func NewScheduler(node lens.API, pubCh chan<- model.Persistable) *Scheduler {
 		MessageTaskName: msgQueue,
 		PowerTaskName:   powerQueue,
 		RewardTaskName:  rwdQueue,
+		CommonTaskName:  comQueue,
 	}
 
 	return &Scheduler{
@@ -102,6 +109,10 @@ func (s *Scheduler) Dispatch(tips indexer.ActorTips) error {
 			return err
 		}
 		for _, actor := range actors {
+			_, err := s.queueCommonTask(actor)
+			if err != nil {
+				return err
+			}
 			switch actor.Actor.Code {
 			case builtin.StorageMinerActorCodeID:
 				_, err := s.queueMinerTask(actor)
@@ -216,11 +227,33 @@ func (s *Scheduler) queueRewardTask(info indexer.ActorInfo) (*work.Job, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return s.queues[RewardTaskName].Enqueue(RewardTaskName, work.Q{
 		"ts":        string(tsB),
 		"pts":       string(ptsB),
 		"head":      info.Actor.Head.String(),
 		"stateroot": info.ParentStateRoot.String(),
 	})
+}
 
+func (s *Scheduler) queueCommonTask(info indexer.ActorInfo) (*work.Job, error) {
+	tsB, err := info.TipSet.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	ptsB, err := info.ParentTipSet.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	return s.queues[CommonTaskName].Enqueue(CommonTaskName, work.Q{
+		"ts":        string(tsB),
+		"pts":       string(ptsB),
+		"stateroot": info.ParentStateRoot.String(),
+		"address":   info.Address.String(),
+		"head":      info.Actor.Head.String(),
+		"code":      info.Actor.Code.String(),
+		"balance":   info.Actor.Balance.String(),
+		"nonce":     strconv.FormatUint(info.Actor.Nonce, 10),
+	})
 }

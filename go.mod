@@ -6,6 +6,7 @@ require (
 	github.com/filecoin-project/go-address v0.0.3
 	github.com/filecoin-project/go-bitfield v0.2.0
 	github.com/filecoin-project/go-jsonrpc v0.1.2-0.20200822201400-474f4fdccc52
+	github.com/filecoin-project/go-state-types v0.0.0-20200905071437-95828685f9df
 	github.com/filecoin-project/lotus v0.6.1
 	github.com/filecoin-project/specs-actors v0.9.7
 	github.com/go-pg/pg/v10 v10.0.7
