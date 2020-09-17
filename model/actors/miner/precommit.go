@@ -65,19 +65,14 @@ func NewMinerPreCommitInfos(res *MinerTaskResult) MinerPreCommitInfos {
 type MinerPreCommitInfos []*MinerPreCommitInfo
 
 func (mpis MinerPreCommitInfos) Persist(ctx context.Context, db *pg.DB) error {
-	if len(mpis) == 0 {
-		return nil
-	}
-	tx, err := db.BeginContext(ctx)
-	if err != nil {
-		return err
-	}
-	for _, mpi := range mpis {
-		if err := mpi.PersistWithTx(ctx, tx); err != nil {
-			return err
+	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		for _, mpi := range mpis {
+			if err := mpi.PersistWithTx(ctx, tx); err != nil {
+				return err
+			}
 		}
-	}
-	return tx.CommitContext(ctx)
+		return nil
+	})
 }
 
 func (mpis MinerPreCommitInfos) PersistWithTx(ctx context.Context, tx *pg.Tx) error {

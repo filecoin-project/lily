@@ -36,17 +36,14 @@ func NewDrandEnties(header *types.BlockHeader) DrandEntries {
 type DrandEntries []*DrandEntrie
 
 func (des DrandEntries) Persist(ctx context.Context, db *pg.DB) error {
-	tx, err := db.BeginContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, ent := range des {
-		if err := ent.PersistWithTx(ctx, tx); err != nil {
-			return err
+	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		for _, ent := range des {
+			if err := ent.PersistWithTx(ctx, tx); err != nil {
+				return err
+			}
 		}
-	}
-	return tx.CommitContext(ctx)
+		return nil
+	})
 }
 
 func (des DrandEntries) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
@@ -86,17 +83,14 @@ func (dbe *DrandBlockEntrie) PersistWithTx(ctx context.Context, tx *pg.Tx) error
 type DrandBlockEntries []*DrandBlockEntrie
 
 func (dbes DrandBlockEntries) Persist(ctx context.Context, db *pg.DB) error {
-	tx, err := db.BeginContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, ent := range dbes {
-		if err := ent.PersistWithTx(ctx, tx); err != nil {
-			return xerrors.Errorf("persist drand block entries: %w", err)
+	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		for _, ent := range dbes {
+			if err := ent.PersistWithTx(ctx, tx); err != nil {
+				return xerrors.Errorf("persist drand block entries: %w", err)
+			}
 		}
-	}
-	return tx.CommitContext(ctx)
+		return nil
+	})
 }
 
 func (dbes DrandBlockEntries) PersistWithTx(ctx context.Context, tx *pg.Tx) error {

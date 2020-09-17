@@ -35,16 +35,14 @@ func NewBlockParents(header *types.BlockHeader) BlockParents {
 }
 
 func (bps BlockParents) Persist(ctx context.Context, db *pg.DB) error {
-	tx, err := db.BeginContext(ctx)
-	if err != nil {
-		return err
-	}
-	for _, p := range bps {
-		if err := p.PersistWithTx(ctx, tx); err != nil {
-			return nil
+	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		for _, p := range bps {
+			if err := p.PersistWithTx(ctx, tx); err != nil {
+				return nil
+			}
 		}
-	}
-	return tx.CommitContext(ctx)
+		return nil
+	})
 }
 
 func (bps BlockParents) PersistWithTx(ctx context.Context, tx *pg.Tx) error {

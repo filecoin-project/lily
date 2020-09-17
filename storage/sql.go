@@ -119,18 +119,15 @@ func (d *Database) CollectAndMarkBlocksAsProcessing(ctx context.Context, batch i
 }
 
 func (d *Database) MarkBlocksAsProcessed(ctx context.Context, blks blocks.BlocksSynced) error {
-	tx, err := d.DB.BeginContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	completedAt := time.Now()
-	for _, blk := range blks {
-		if _, err := tx.ModelContext(ctx, &blk).Set("completed_at = ?", completedAt).
-			WherePK().
-			Update(); err != nil {
-			return err
+	return d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		completedAt := time.Now()
+		for _, blk := range blks {
+			if _, err := tx.ModelContext(ctx, &blk).Set("completed_at = ?", completedAt).
+				WherePK().
+				Update(); err != nil {
+				return err
+			}
 		}
-	}
-	return tx.CommitContext(ctx)
+		return nil
+	})
 }
