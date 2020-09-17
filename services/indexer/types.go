@@ -21,7 +21,7 @@ type ActorInfo struct {
 	Address         address.Address
 	ParentStateRoot cid.Cid
 	TipSet          types.TipSetKey
-	ParentTipset    types.TipSetKey
+	ParentTipSet    types.TipSetKey
 }
 
 func NewUnindexedBlockData() *UnindexedBlockData {
