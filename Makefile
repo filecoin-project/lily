@@ -1,5 +1,5 @@
 PG_IMAGE?=postgres:10
-REDIS_IMAGE?=redis
+REDIS_IMAGE?=redis:6
 
 .PHONY: deps
 deps:
@@ -7,29 +7,15 @@ deps:
 
 # test starts dependencies and runs all tests
 .PHONY: test
-test: pgstart redisstart testfull redisstop pgstop
+test: dockerup testfull dockerdown
 
-# pgstart starts postgres in docker
-.PHONY: pgstart
-pgstart:
-	docker run -d --name pg -p 5432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust $(PG_IMAGE)
-	sleep 10
+.PHONY: dockerup
+dockerup:
+	docker-compose up -d
 
-# pgstop stops postgres in docker
-.PHONY: pgstop
-pgstop:
-	docker rm -fv pg || true
-
-# redisstart starts redis in docker
-.PHONY: redisstart
-redisstart:
-	docker run -d --name redis -p 6379:6379 $(REDIS_IMAGE)
-	sleep 10
-
-# redisstop stops redis in docker
-.PHONY: redisstop
-redisstop:
-	docker rm -fv redis || true
+.PHONY: dockerdown
+dockerdown:
+	docker-compose down
 
 # testfull runs all tests
 .PHONY: testfull

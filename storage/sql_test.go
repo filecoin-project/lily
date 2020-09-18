@@ -382,7 +382,7 @@ func TestCreateSchema(t *testing.T) {
 		t.Skip("short testing specified")
 	}
 
-	db, err := NewDatabase(context.Background(), "postgres://postgres@localhost:5432/postgres?sslmode=disable")
+	db, err := NewDatabase(context.Background(), "postgres://postgres:password@localhost:5432/postgres?sslmode=disable")
 	if !assert.NoError(t, err, "connecting to database") {
 		return
 	}
