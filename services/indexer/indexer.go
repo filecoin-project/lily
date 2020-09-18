@@ -3,8 +3,8 @@ package indexer
 import (
 	"container/list"
 	"context"
+
 	lotus_api "github.com/filecoin-project/lotus/api"
-	"github.com/filecoin-project/sentinel-visor/lens"
 	pg "github.com/go-pg/pg/v10"
 	cid "github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -14,6 +14,7 @@ import (
 
 	store "github.com/filecoin-project/lotus/chain/store"
 	types "github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/sentinel-visor/lens"
 	storage "github.com/filecoin-project/sentinel-visor/storage"
 )
 

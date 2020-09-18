@@ -15,6 +15,8 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/power"
 	"github.com/filecoin-project/specs-actors/actors/builtin/verifreg"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
+
+	"github.com/go-pg/pg/v10"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -66,9 +68,12 @@ func TestIndex(t *testing.T) {
 	head, err := node.ChainHead(ctx)
 	require.NoError(t, err, "chain head")
 
-	t.Logf("collecting chain cids")
-	cids, err := collectChainCids(node, head)
-	require.NoError(t, err, "collect chain cids")
+	t.Logf("collecting chain blocks")
+	bhs, err := collectBlockHeaders(node, head)
+	require.NoError(t, err, "collect chain blocks")
+
+	cids := bhs.Cids()
+	rounds := bhs.Rounds()
 
 	t.Logf("initializing indexer")
 	idx := NewIndexer(db, node)
@@ -84,39 +89,101 @@ func TestIndex(t *testing.T) {
 	require.NoError(t, err, "index")
 
 	t.Run("blocks_synced", func(t *testing.T) {
-		var bs *blocks.BlockSynced
+		var count int
+		_, err := db.DB.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM blocks_synced`)
+		require.NoError(t, err)
+		assert.Equal(t, len(cids), count)
+
+		var m *blocks.BlockSynced
 		for _, cid := range cids {
-			exists, err := db.DB.Model(bs).Where("cid = ?", cid).Exists()
+			exists, err := db.DB.Model(m).Where("cid = ?", cid).Exists()
 			require.NoError(t, err)
 			assert.True(t, exists, "cid: %s", cid)
 		}
 	})
 
 	t.Run("block_headers", func(t *testing.T) {
-		var bh *blocks.BlockHeader
+		var count int
+		_, err := db.DB.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM block_headers`)
+		require.NoError(t, err)
+		assert.Equal(t, len(cids), count)
+
+		var m *blocks.BlockHeader
 		for _, cid := range cids {
-			exists, err := db.DB.Model(bh).Where("cid = ?", cid).Exists()
+			exists, err := db.DB.Model(m).Where("cid = ?", cid).Exists()
 			require.NoError(t, err)
 			assert.True(t, exists, "cid: %s", cid)
 		}
 	})
 
 	t.Run("block_parents", func(t *testing.T) {
-		var bp *blocks.BlockParent
+		var count int
+		_, err := db.DB.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM block_parents`)
+		require.NoError(t, err)
+		assert.Equal(t, len(cids), count)
+
+		var m *blocks.BlockParent
 		for _, cid := range cids {
-			exists, err := db.DB.Model(bp).Where("block = ?", cid).Exists()
+			exists, err := db.DB.Model(m).Where("block = ?", cid).Exists()
 			require.NoError(t, err)
 			assert.True(t, exists, "block: %s", cid)
 		}
 	})
+
+	t.Run("drand_entries", func(t *testing.T) {
+		var count int
+		_, err := db.DB.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM drand_entries`)
+		require.NoError(t, err)
+		assert.Equal(t, len(rounds), count)
+
+		var m *blocks.DrandEntrie
+		for _, round := range rounds {
+			exists, err := db.DB.Model(m).Where("round = ?", round).Exists()
+			require.NoError(t, err)
+			assert.True(t, exists, "round: %d", round)
+		}
+	})
+
+	t.Run("drand_block_entries", func(t *testing.T) {
+		var count int
+		_, err := db.DB.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM drand_block_entries`)
+		require.NoError(t, err)
+		assert.Equal(t, len(rounds), count)
+
+		var m *blocks.DrandBlockEntrie
+		for _, round := range rounds {
+			exists, err := db.DB.Model(m).Where("round = ?", round).Exists()
+			require.NoError(t, err)
+			assert.True(t, exists, "round: %d", round)
+		}
+	})
+
 }
 
-// collectChainCids walks the chain to collect cids that should be indexed
-func collectChainCids(n lens.API, ts *types.TipSet) ([]string, error) {
+type blockHeaderList []*types.BlockHeader
+
+func (b blockHeaderList) Cids() []string {
 	var cids []string
-	for _, c := range ts.Cids() {
-		cids = append(cids, c.String())
+	for _, bh := range b {
+		cids = append(cids, bh.Cid().String())
 	}
+	return cids
+}
+
+func (b blockHeaderList) Rounds() []uint64 {
+	var rounds []uint64
+	for _, bh := range b {
+		for _, ent := range bh.BeaconEntries {
+			rounds = append(rounds, ent.Round)
+		}
+	}
+
+	return rounds
+}
+
+// collectBlockHeaders walks the chain to collect blocks that should be indexed
+func collectBlockHeaders(n lens.API, ts *types.TipSet) (blockHeaderList, error) {
+	blocks := ts.Blocks()
 
 	for _, bh := range ts.Blocks() {
 		if bh.Height == 0 {
@@ -128,14 +195,14 @@ func collectChainCids(n lens.API, ts *types.TipSet) ([]string, error) {
 			return nil, err
 		}
 
-		pcids, err := collectChainCids(n, parent)
+		pblocks, err := collectBlockHeaders(n, parent)
 		if err != nil {
 			return nil, err
 		}
-		cids = append(cids, pcids...)
+		blocks = append(blocks, pblocks...)
 
 	}
-	return cids, nil
+	return blocks, nil
 }
 
 // truncateBlockTables ensures the indexing tables are empty

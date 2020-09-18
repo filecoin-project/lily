@@ -21,15 +21,15 @@ services:
     depends_on:
       - redis
 
-  # workerui:
-  #   restart: always
-  #   environment:
-  #     - REDIS_HOSTS=redis://redis:6379
-  #   build:
-  #       context: .
-  #       dockerfile: Dockerfile.worker
-  #   ports:
-  #     - "8181:8181"
+  workerui:
+    restart: always
+    environment:
+      - REDIS_HOSTS=redis://redis:6379
+    build:
+        context: .
+        dockerfile: Dockerfile.worker
+    ports:
+      - "8181:8181"
 
   timescaledb:
     container_name: timescaledb
