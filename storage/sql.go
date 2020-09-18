@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"github.com/filecoin-project/sentinel-visor/model/actors/common"
 	"time"
 
 	"github.com/go-pg/pg/v10"
@@ -10,6 +9,8 @@ import (
 	"github.com/go-pg/pgext"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/sentinel-visor/model/actors/common"
+	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
 	"github.com/filecoin-project/sentinel-visor/model/actors/power"
@@ -43,6 +44,8 @@ var models = []interface{}{
 	(*reward.ChainReward)(nil),
 	(*common.Actor)(nil),
 	(*common.ActorState)(nil),
+
+	(*init_.IdAddress)(nil),
 }
 
 func NewDatabase(ctx context.Context, url string) (*Database, error) {
