@@ -3,7 +3,9 @@ package market
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-pg/pg/v10"
+	"github.com/opentracing/opentracing-go"
 )
 
 type MarketDealProposal struct {
@@ -39,6 +41,8 @@ func (dp *MarketDealProposal) PersistWithTx(ctx context.Context, tx *pg.Tx) erro
 type MarketDealProposals []*MarketDealProposal
 
 func (dps MarketDealProposals) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MarketDealProposals.PersistWithTx", opentracing.Tags{"count": len(dps)})
+	defer span.Finish()
 	for _, dp := range dps {
 		if err := dp.PersistWithTx(ctx, tx); err != nil {
 			return err

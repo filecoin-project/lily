@@ -39,6 +39,11 @@ func main() {
 				EnvVars: []string{"GOLOG_LOG_LEVEL"},
 				Value:   "debug",
 			},
+			&cli.BoolFlag{
+				Name:    "tracing",
+				EnvVars: []string{"VISOR_TRACING"},
+				Value:   true,
+			},
 		},
 		Commands: []*cli.Command{
 			runCmd,

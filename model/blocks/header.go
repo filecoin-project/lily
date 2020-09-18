@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-pg/pg/v10"
-	"golang.org/x/xerrors"
-
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/go-pg/pg/v10"
+	"github.com/opentracing/opentracing-go"
+	"golang.org/x/xerrors"
 )
 
 type BlockHeader struct {
@@ -55,16 +55,13 @@ type BlockHeaders []*BlockHeader
 
 func (bh BlockHeaders) Persist(ctx context.Context, db *pg.DB) error {
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		for _, h := range bh {
-			if err := h.PersistWithTx(ctx, tx); err != nil {
-				return fmt.Errorf("persist headers: %v", err)
-			}
-		}
-		return nil
+		return bh.PersistWithTx(ctx, tx)
 	})
 }
 
 func (bh BlockHeaders) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "BlockHeaders.PersistWithTx", opentracing.Tags{"count": len(bh)})
+	defer span.Finish()
 	for _, h := range bh {
 		if err := h.PersistWithTx(ctx, tx); err != nil {
 			return fmt.Errorf("persist headers: %v", err)

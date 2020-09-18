@@ -3,11 +3,12 @@ package blocks
 import (
 	"context"
 	"fmt"
-	"golang.org/x/xerrors"
 	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
+	"github.com/opentracing/opentracing-go"
+	"golang.org/x/xerrors"
 )
 
 func NewBlockSynced(header *types.BlockHeader) *BlockSynced {
@@ -41,16 +42,13 @@ type BlocksSynced []*BlockSynced
 
 func (bss BlocksSynced) Persist(ctx context.Context, db *pg.DB) error {
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		for _, bs := range bss {
-			if err := bs.PersistWithTx(ctx, tx); err != nil {
-				return fmt.Errorf("persist blocks synced: %v", err)
-			}
-		}
-		return nil
+		return bss.PersistWithTx(ctx, tx)
 	})
 }
 
 func (bss BlocksSynced) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "BlocksSynced.PersistWithTx", opentracing.Tags{"count": len(bss)})
+	defer span.Finish()
 	for _, bs := range bss {
 		if err := bs.PersistWithTx(ctx, tx); err != nil {
 			return fmt.Errorf("persist blocks synced: %v", err)

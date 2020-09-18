@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/go-pg/pg/v10"
+	"github.com/opentracing/opentracing-go"
 )
 
 type Receipt struct {
@@ -30,6 +31,8 @@ func (r *Receipt) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 type Receipts []*Receipt
 
 func (rs Receipts) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Receipts.PersistWithTx", opentracing.Tags{"count": len(rs)})
+	defer span.Finish()
 	for _, r := range rs {
 		if err := r.PersistWithTx(ctx, tx); err != nil {
 			return err

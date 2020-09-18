@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/go-pg/pg/v10"
+	"github.com/opentracing/opentracing-go"
 )
 
 type BlockMessage struct {
@@ -24,6 +25,8 @@ func (bm *BlockMessage) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 type BlockMessages []*BlockMessage
 
 func (bms BlockMessages) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "BlockMessages.PersistWithTx", opentracing.Tags{"count": len(bms)})
+	defer span.Finish()
 	for _, bm := range bms {
 		if err := bm.PersistWithTx(ctx, tx); err != nil {
 			return err

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-pg/pg/v10"
+	"github.com/opentracing/opentracing-go"
 	"golang.org/x/xerrors"
 )
 
@@ -25,16 +26,13 @@ type MinerPower struct {
 
 func (mp *MinerPower) Persist(ctx context.Context, db *pg.DB) error {
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		if _, err := tx.ModelContext(ctx, mp).
-			OnConflict("do nothing").
-			Insert(); err != nil {
-			return xerrors.Errorf("persisting miner power: %w", err)
-		}
-		return nil
+		return mp.PersistWithTx(ctx, tx)
 	})
 }
 
 func (mp *MinerPower) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MinerPower.PersistWithTx")
+	defer span.Finish()
 	if _, err := tx.ModelContext(ctx, mp).
 		OnConflict("do nothing").
 		Insert(); err != nil {

@@ -2,7 +2,9 @@ package miner
 
 import (
 	"context"
+
 	"github.com/go-pg/pg/v10"
+	"github.com/opentracing/opentracing-go"
 	"golang.org/x/xerrors"
 )
 
@@ -66,16 +68,13 @@ type MinerPreCommitInfos []*MinerPreCommitInfo
 
 func (mpis MinerPreCommitInfos) Persist(ctx context.Context, db *pg.DB) error {
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		for _, mpi := range mpis {
-			if err := mpi.PersistWithTx(ctx, tx); err != nil {
-				return err
-			}
-		}
-		return nil
+		return mpis.PersistWithTx(ctx, tx)
 	})
 }
 
 func (mpis MinerPreCommitInfos) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MinerPreCommitInfos.PersistWithTx", opentracing.Tags{"count": len(mpis)})
+	defer span.Finish()
 	for _, mpi := range mpis {
 		if err := mpi.PersistWithTx(ctx, tx); err != nil {
 			return err

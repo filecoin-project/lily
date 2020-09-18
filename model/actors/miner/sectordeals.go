@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/go-pg/pg/v10"
+	"github.com/opentracing/opentracing-go"
 )
 
 type MinerDealSector struct {
@@ -25,6 +26,8 @@ func (ds *MinerDealSector) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 type MinerDealSectors []*MinerDealSector
 
 func (dss MinerDealSectors) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MinerDealSectors.PersistWithTx", opentracing.Tags{"count": len(dss)})
+	defer span.Finish()
 	for _, ds := range dss {
 		if err := ds.PersistWithTx(ctx, tx); err != nil {
 			return err

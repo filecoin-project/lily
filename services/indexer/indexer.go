@@ -8,7 +8,7 @@ import (
 	pg "github.com/go-pg/pg/v10"
 	cid "github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
-	trace "go.opentelemetry.io/otel/api/trace"
+	"github.com/opentracing/opentracing-go"
 
 	store "github.com/filecoin-project/lotus/chain/store"
 	types "github.com/filecoin-project/lotus/chain/types"
@@ -28,8 +28,6 @@ func NewIndexer(s *storage.Database, n lens.API) *Indexer {
 type Indexer struct {
 	storage *storage.Database
 	node    lens.API
-
-	tracer trace.Tracer
 
 	startingHeight int64
 	startingBlock  cid.Cid
@@ -91,6 +89,9 @@ func (i *Indexer) Start(ctx context.Context) error {
 }
 
 func (i *Indexer) index(ctx context.Context, headEvents []*lotus_api.HeadChange) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Indexer.index")
+	defer span.Finish()
+
 	for _, head := range headEvents {
 		log.Debugw("index", "event", head.Type)
 		switch head.Type {
@@ -128,6 +129,9 @@ func (i *Indexer) index(ctx context.Context, headEvents []*lotus_api.HeadChange)
 // TODO not sure if returning a map here is required, it gets passed to the publisher and then storage
 // which doesn't need the CID key. I think we are just doing this for deduplication.
 func (i *Indexer) collectBlocksToIndex(ctx context.Context, head *types.TipSet, maxHeight int64) (*UnindexedBlockData, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Indexer.CollectBlocks", opentracing.Tags{"height": head.Height})
+	defer span.Finish()
+
 	// get at most finality blocks not exceeding maxHeight. These are blocks we have in the database but have not processed.
 	// Now we are going to walk down the chain from `head` until we have visited all blocks not in the database.
 	synced, err := i.storage.UnprocessedIndexedBlocks(ctx, int(maxHeight), i.finality)
@@ -185,6 +189,9 @@ func (i *Indexer) collectBlocksToIndex(ctx context.Context, head *types.TipSet, 
 }
 
 func (i *Indexer) mostRecentlySyncedBlockHeight(ctx context.Context) (cid.Cid, int64, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "Indexer.mostRecentlySyncedBlockHeight")
+	defer span.Finish()
+
 	task, err := i.storage.MostRecentProcessedBlock(ctx)
 	if err != nil {
 		if err == pg.ErrNoRows {

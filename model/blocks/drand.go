@@ -3,8 +3,10 @@ package blocks
 import (
 	"context"
 	"fmt"
+
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
+	"github.com/opentracing/opentracing-go"
 	"golang.org/x/xerrors"
 )
 
@@ -37,16 +39,13 @@ type DrandEntries []*DrandEntrie
 
 func (des DrandEntries) Persist(ctx context.Context, db *pg.DB) error {
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		for _, ent := range des {
-			if err := ent.PersistWithTx(ctx, tx); err != nil {
-				return err
-			}
-		}
-		return nil
+		return des.PersistWithTx(ctx, tx)
 	})
 }
 
 func (des DrandEntries) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "DrandEntries.PersistWithTx", opentracing.Tags{"count": len(des)})
+	defer span.Finish()
 	for _, ent := range des {
 		if err := ent.PersistWithTx(ctx, tx); err != nil {
 			return fmt.Errorf("persist drand entries: %v", err)
@@ -84,16 +83,13 @@ type DrandBlockEntries []*DrandBlockEntrie
 
 func (dbes DrandBlockEntries) Persist(ctx context.Context, db *pg.DB) error {
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		for _, ent := range dbes {
-			if err := ent.PersistWithTx(ctx, tx); err != nil {
-				return xerrors.Errorf("persist drand block entries: %w", err)
-			}
-		}
-		return nil
+		return dbes.PersistWithTx(ctx, tx)
 	})
 }
 
 func (dbes DrandBlockEntries) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "DrandBlockEntries.PersistWithTx", opentracing.Tags{"count": len(dbes)})
+	defer span.Finish()
 	for _, ent := range dbes {
 		if err := ent.PersistWithTx(ctx, tx); err != nil {
 			return xerrors.Errorf("persist drand block entries: %w", err)

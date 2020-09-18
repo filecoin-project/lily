@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+
 	"github.com/filecoin-project/lotus/api"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/ipfs/go-cid"
+	"github.com/opentracing/opentracing-go"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
@@ -34,9 +36,11 @@ func (cs *CacheCtxStore) Context() context.Context {
 }
 
 func (cs *CacheCtxStore) Get(ctx context.Context, c cid.Cid, out interface{}) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "CacheCtxStore.Get")
+	defer span.Finish()
 	cu, ok := out.(cbg.CBORUnmarshaler)
 	if !ok {
-		return fmt.Errorf("out paramater does not implement CBORUnmarshaler")
+		return fmt.Errorf("out parameter does not implement CBORUnmarshaler")
 	}
 
 	// hit :)

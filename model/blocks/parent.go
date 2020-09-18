@@ -2,8 +2,10 @@ package blocks
 
 import (
 	"context"
+
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
+	"github.com/opentracing/opentracing-go"
 	"golang.org/x/xerrors"
 )
 
@@ -36,16 +38,13 @@ func NewBlockParents(header *types.BlockHeader) BlockParents {
 
 func (bps BlockParents) Persist(ctx context.Context, db *pg.DB) error {
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		for _, p := range bps {
-			if err := p.PersistWithTx(ctx, tx); err != nil {
-				return nil
-			}
-		}
-		return nil
+		return bps.PersistWithTx(ctx, tx)
 	})
 }
 
 func (bps BlockParents) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "BlockParents.PersistWithTx", opentracing.Tags{"count": len(bps)})
+	defer span.Finish()
 	for _, p := range bps {
 		if err := p.PersistWithTx(ctx, tx); err != nil {
 			return nil

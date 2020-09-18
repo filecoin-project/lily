@@ -2,7 +2,9 @@ package miner
 
 import (
 	"context"
+
 	"github.com/go-pg/pg/v10"
+	"github.com/opentracing/opentracing-go"
 	"golang.org/x/xerrors"
 )
 
@@ -58,16 +60,13 @@ type MinerSectorInfos []*MinerSectorInfo
 
 func (msis MinerSectorInfos) Persist(ctx context.Context, db *pg.DB) error {
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		for _, msi := range msis {
-			if err := msi.PersistWithTx(ctx, tx); err != nil {
-				return err
-			}
-		}
-		return nil
+		return msis.PersistWithTx(ctx, tx)
 	})
 }
 
 func (msis MinerSectorInfos) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MinerSectorInfos.PersistWithTx", opentracing.Tags{"count": len(msis)})
+	defer span.Finish()
 	for _, msi := range msis {
 		if err := msi.PersistWithTx(ctx, tx); err != nil {
 			return err

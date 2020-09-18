@@ -2,12 +2,17 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"io"
 	_ "net/http/pprof"
 	"os"
 
 	_ "github.com/lib/pq"
 
 	logging "github.com/ipfs/go-log/v2"
+	"github.com/opentracing/opentracing-go"
+	"github.com/uber/jaeger-client-go"
+	jconfig "github.com/uber/jaeger-client-go/config"
 	"github.com/urfave/cli/v2"
 
 	lens "github.com/filecoin-project/sentinel-visor/lens"
@@ -40,6 +45,15 @@ var processorCmd = &cli.Command{
 		ll := cctx.String("log-level")
 		if err := logging.SetLogLevel("*", ll); err != nil {
 			return err
+		}
+
+		if cctx.Bool("tracing") {
+			closer, err := setupTracing()
+			if err != nil {
+				log.Errorw("failed to initialize tracing subsystem", "error", err)
+				return err
+			}
+			defer closer.Close()
 		}
 
 		ctx, rctx, err := setupStorageAndAPI(cctx)
@@ -84,6 +98,15 @@ var indexerCmd = &cli.Command{
 
 		if err := logging.SetLogLevel("rpc", "error"); err != nil {
 			return err
+		}
+
+		if cctx.Bool("tracing") {
+			closer, err := setupTracing()
+			if err != nil {
+				log.Errorw("failed to initialize tracing subsystem", "error", err)
+				return err
+			}
+			defer closer.Close()
 		}
 
 		ctx, rctx, err := setupStorageAndAPI(cctx)
@@ -145,4 +168,48 @@ func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error)
 	}
 
 	return ctx, &RunContext{api, closer, db}, nil
+}
+
+func setupTracing() (io.Closer, error) {
+	// Read config from env, see https://github.com/jaegertracing/jaeger-client-go#environment-variables
+	jaegerConfig, err := jconfig.FromEnv()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get jaeger config from environment: %w", err)
+	}
+
+	if jaegerConfig.ServiceName == "" {
+		jaegerConfig.ServiceName = "sentinel-visor"
+	}
+
+	traceLogger := logging.Logger("tracing")
+
+	// Setup the standard remote reporter based on env vars.
+	remoteReporter, err := jaegerConfig.Reporter.NewReporter(jaegerConfig.ServiceName, jaeger.NewNullMetrics(), &jaegerLogger{logger: traceLogger})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new jaeger reporter: %w", err)
+	}
+
+	// Construct a new tracer.
+	tracer, closer, err := jaegerConfig.NewTracer(jconfig.Reporter(remoteReporter))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new jager tracer: %w", err)
+	}
+
+	opentracing.SetGlobalTracer(tracer)
+
+	return closer, nil
+}
+
+type jaegerLogger struct {
+	logger logging.EventLogger
+}
+
+// Error logs a message at error priority
+func (l *jaegerLogger) Error(msg string) {
+	l.logger.Error(msg)
+}
+
+// Infof logs a message at info priority
+func (l *jaegerLogger) Infof(msg string, args ...interface{}) {
+	l.logger.Infof(msg, args...)
 }
