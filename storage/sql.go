@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"github.com/filecoin-project/sentinel-visor/model/actors/power"
 	"time"
 
 	"github.com/go-pg/pg/v10"
@@ -12,6 +11,8 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
+	"github.com/filecoin-project/sentinel-visor/model/actors/power"
+	"github.com/filecoin-project/sentinel-visor/model/actors/reward"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
 	"github.com/filecoin-project/sentinel-visor/model/messages"
 )
@@ -38,6 +39,7 @@ var models = []interface{}{
 	(*messages.Receipt)(nil),
 
 	(*power.ChainPower)(nil),
+	(*reward.ChainReward)(nil),
 }
 
 func NewDatabase(ctx context.Context, url string) (*Database, error) {
