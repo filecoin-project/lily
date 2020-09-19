@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/go-pg/pg/v10"
-	"github.com/opentracing/opentracing-go"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 )
 
 type MarketDealState struct {
@@ -29,8 +31,8 @@ func (ds *MarketDealState) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 type MarketDealStates []*MarketDealState
 
 func (dss MarketDealStates) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "MarketDealStates.PersistWithTx", opentracing.Tags{"count": len(dss)})
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "MarketDealStates.PersistWithTx", trace.WithAttributes(label.Int("count", len(dss))))
+	defer span.End()
 	for _, ds := range dss {
 		if err := ds.PersistWithTx(ctx, tx); err != nil {
 			return err

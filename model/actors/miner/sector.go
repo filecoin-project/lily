@@ -4,7 +4,9 @@ import (
 	"context"
 
 	"github.com/go-pg/pg/v10"
-	"github.com/opentracing/opentracing-go"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 )
 
@@ -65,8 +67,8 @@ func (msis MinerSectorInfos) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (msis MinerSectorInfos) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "MinerSectorInfos.PersistWithTx", opentracing.Tags{"count": len(msis)})
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "MinerSectorInfos.PersistWithTx", trace.WithAttributes(label.Int("count", len(msis))))
+	defer span.End()
 	for _, msi := range msis {
 		if err := msi.PersistWithTx(ctx, tx); err != nil {
 			return err

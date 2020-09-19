@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/go-pg/pg/v10"
-	"github.com/opentracing/opentracing-go"
+	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 )
 
@@ -34,8 +34,8 @@ func (ms *MinerState) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (ms *MinerState) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "MinerTaskResult.PersistWithTx")
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "MinerTaskResult.PersistWithTx")
+	defer span.End()
 	if _, err := tx.ModelContext(ctx, ms).
 		OnConflict("do nothing").
 		Insert(); err != nil {

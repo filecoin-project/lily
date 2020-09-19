@@ -8,7 +8,9 @@ import (
 	pg "github.com/go-pg/pg/v10"
 	cid "github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
-	"github.com/opentracing/opentracing-go"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 
 	store "github.com/filecoin-project/lotus/chain/store"
 	types "github.com/filecoin-project/lotus/chain/types"
@@ -89,8 +91,8 @@ func (i *Indexer) Start(ctx context.Context) error {
 }
 
 func (i *Indexer) index(ctx context.Context, headEvents []*lotus_api.HeadChange) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "Indexer.index")
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "Indexer.index")
+	defer span.End()
 
 	for _, head := range headEvents {
 		log.Debugw("index", "event", head.Type)
@@ -129,8 +131,8 @@ func (i *Indexer) index(ctx context.Context, headEvents []*lotus_api.HeadChange)
 // TODO not sure if returning a map here is required, it gets passed to the publisher and then storage
 // which doesn't need the CID key. I think we are just doing this for deduplication.
 func (i *Indexer) collectBlocksToIndex(ctx context.Context, head *types.TipSet, maxHeight int64) (*UnindexedBlockData, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "Indexer.CollectBlocks", opentracing.Tags{"height": head.Height})
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "Indexer.CollectBlocks", trace.WithAttributes(label.Int64("height", int64(head.Height()))))
+	defer span.End()
 
 	// get at most finality blocks not exceeding maxHeight. These are blocks we have in the database but have not processed.
 	// Now we are going to walk down the chain from `head` until we have visited all blocks not in the database.
@@ -189,8 +191,8 @@ func (i *Indexer) collectBlocksToIndex(ctx context.Context, head *types.TipSet, 
 }
 
 func (i *Indexer) mostRecentlySyncedBlockHeight(ctx context.Context) (cid.Cid, int64, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "Indexer.mostRecentlySyncedBlockHeight")
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "Indexer.mostRecentlySyncedBlockHeight")
+	defer span.End()
 
 	task, err := i.storage.MostRecentProcessedBlock(ctx)
 	if err != nil {

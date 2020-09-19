@@ -44,6 +44,31 @@ func main() {
 				EnvVars: []string{"VISOR_TRACING"},
 				Value:   true,
 			},
+			&cli.StringFlag{
+				Name:    "jaeger-agent-host",
+				EnvVars: []string{"JAEGER_AGENT_HOST"},
+				Value:   "localhost",
+			},
+			&cli.IntFlag{
+				Name:    "jaeger-agent-port",
+				EnvVars: []string{"JAEGER_AGENT_PORT"},
+				Value:   6831,
+			},
+			&cli.StringFlag{
+				Name:    "jaeger-service-name",
+				EnvVars: []string{"JAEGER_SERVICE_NAME"},
+				Value:   "sentinel-visor",
+			},
+			&cli.StringFlag{
+				Name:    "jaeger-sampler-type",
+				EnvVars: []string{"JAEGER_SAMPLER_TYPE"},
+				Value:   "probabilistic",
+			},
+			&cli.Float64Flag{
+				Name:    "jaeger-sampler-param",
+				EnvVars: []string{"JAEGER_SAMPLER_PARAM"},
+				Value:   0.0001,
+			},
 		},
 		Commands: []*cli.Command{
 			runCmd,

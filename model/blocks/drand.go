@@ -6,7 +6,9 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
-	"github.com/opentracing/opentracing-go"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 )
 
@@ -44,8 +46,8 @@ func (des DrandEntries) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (des DrandEntries) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "DrandEntries.PersistWithTx", opentracing.Tags{"count": len(des)})
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "DrandEntries.PersistWithTx", trace.WithAttributes(label.Int("count", len(des))))
+	defer span.End()
 	for _, ent := range des {
 		if err := ent.PersistWithTx(ctx, tx); err != nil {
 			return fmt.Errorf("persist drand entries: %v", err)
@@ -88,8 +90,8 @@ func (dbes DrandBlockEntries) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (dbes DrandBlockEntries) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "DrandBlockEntries.PersistWithTx", opentracing.Tags{"count": len(dbes)})
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "DrandBlockEntries.PersistWithTx", trace.WithAttributes(label.Int("count", len(dbes))))
+	defer span.End()
 	for _, ent := range dbes {
 		if err := ent.PersistWithTx(ctx, tx); err != nil {
 			return xerrors.Errorf("persist drand block entries: %w", err)

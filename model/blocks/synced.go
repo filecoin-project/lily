@@ -7,7 +7,9 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
-	"github.com/opentracing/opentracing-go"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 )
 
@@ -47,8 +49,8 @@ func (bss BlocksSynced) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (bss BlocksSynced) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "BlocksSynced.PersistWithTx", opentracing.Tags{"count": len(bss)})
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "BlocksSynced.PersistWithTx", trace.WithAttributes(label.Int("count", len(bss))))
+	defer span.End()
 	for _, bs := range bss {
 		if err := bs.PersistWithTx(ctx, tx); err != nil {
 			return fmt.Errorf("persist blocks synced: %v", err)

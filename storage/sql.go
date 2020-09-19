@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
+	"github.com/go-pg/pgext"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
@@ -44,6 +45,7 @@ func NewDatabase(ctx context.Context, url string) (*Database, error) {
 
 	db := pg.Connect(opt)
 	db = db.WithContext(ctx)
+	db.AddQueryHook(&pgext.OpenTelemetryHook{})
 
 	// Check if connection credentials are valid and PostgreSQL is up and running.
 	if err := db.Ping(ctx); err != nil {

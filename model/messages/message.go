@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/go-pg/pg/v10"
-	"github.com/opentracing/opentracing-go"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 )
 
 type Message struct {
@@ -37,8 +39,8 @@ func (m *Message) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 type Messages []*Message
 
 func (ms Messages) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "Messages.PersistWithTx", opentracing.Tags{"count": len(ms)})
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "Messages.PersistWithTx", trace.WithAttributes(label.Int("count", len(ms))))
+	defer span.End()
 	for _, m := range ms {
 		if err := m.PersistWithTx(ctx, tx); err != nil {
 			return err

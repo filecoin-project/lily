@@ -56,5 +56,4 @@ services:
 
 volumes:
   timescaledb:
-  grafana-data:
   redis-data:

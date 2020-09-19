@@ -6,7 +6,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
 	"github.com/go-pg/pg/v10"
-	"github.com/opentracing/opentracing-go"
+	"go.opentelemetry.io/otel/api/global"
 )
 
 type ProcessGenesisSingletonResult struct {
@@ -15,8 +15,8 @@ type ProcessGenesisSingletonResult struct {
 }
 
 func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, db *pg.DB) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "ProcessGenesisSingletonResult.Persist")
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "ProcessGenesisSingletonResult.Persist")
+	defer span.End()
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		for _, res := range r.minerResults {
 			if err := res.StateModel.PersistWithTx(ctx, tx); err != nil {

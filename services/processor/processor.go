@@ -10,7 +10,7 @@ import (
 	"github.com/gocraft/work"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
-	"github.com/opentracing/opentracing-go"
+	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 
 	"github.com/filecoin-project/go-address"
@@ -98,8 +98,8 @@ func (p *Processor) Start(ctx context.Context) {
 }
 
 func (p *Processor) process(ctx context.Context) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "Processor.process")
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "Processor.process")
+	defer span.End()
 
 	blksToProcess, err := p.collectBlocksToProcess(ctx, p.batchSize)
 	if err != nil {
@@ -131,8 +131,8 @@ func (p *Processor) collectActorChanges(ctx context.Context, blks []*types.Block
 	out := make(map[types.TipSetKey][]indexer.ActorInfo)
 	var outMu sync.Mutex
 	parmap.Par(25, blks, func(blk *types.BlockHeader) {
-		span, ctx := opentracing.StartSpanFromContext(ctx, "Processor.collectActorChanges")
-		defer span.Finish()
+		ctx, span := global.Tracer("").Start(ctx, "Processor.collectActorChanges")
+		defer span.End()
 
 		pts, err := p.node.ChainGetTipSet(ctx, types.NewTipSetKey(blk.Parents...))
 		if err != nil {
@@ -190,8 +190,8 @@ func (p *Processor) collectActorChanges(ctx context.Context, blks []*types.Block
 }
 
 func (p *Processor) collectBlocksToProcess(ctx context.Context, batch int) ([]*types.BlockHeader, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "Processor.collectBlocksToProcess")
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "Processor.collectBlocksToProcess")
+	defer span.End()
 
 	blks, err := p.storage.CollectAndMarkBlocksAsProcessing(ctx, batch)
 	if err != nil {

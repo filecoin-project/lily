@@ -20,17 +20,27 @@ A **Visor** process collects _permanent_ Filecoin chain meterics from a [**Lotus
 
 The global flag `--tracing=<bool>` turns tracing on or off. It is on by default.
 
-Tracing expects a Jaeger server to be available. Configure the Jaeger settings using [environment variables](https://github.com/jaegertracing/jaeger-client-go#environment-variables). The most important are:
+Tracing expects a Jaeger server to be available. Configure the Jaeger settings using the following subset of the standard Jaeger [environment variables](https://github.com/jaegertracing/jaeger-client-go#environment-variables):
 
  * `JAEGER_SERVICE_NAME` - name of the service (defaults to `sentinel-visor`).
  * `JAEGER_AGENT_HOST` - hostname for communicating with Jaeger agent via UDP (defaults to `localhost`).
  * `JAEGER_AGENT_PORT` - port for communicating with Jaeger agent via UDP (defaults to `6831`).
+ * `JAEGER_SAMPLER_TYPE` - type of sampling to use, either `probabilistic` or `const` (defaults to `probabilistic`).
+ * `JAEGER_SAMPLER_PARAM` - numeric parameter used to configure the sampler type (defaults to `0.0001`).
 
-By default visor queries the Jaeger agent to determine what level of sampling is required (known as the `remote` sampling type). During testing it can be easier to override to remove sampling by setting
+These variables may also be set using equivalent cli flags.
+
+By default visor uses probabilistic sampling with a rate of 0.0001. During testing it can be easier to override to remove sampling by setting
 the following environment variables:
 
 ```
   JAEGER_SAMPLER_TYPE=const JAEGER_SAMPLER_PARAM=1
+```
+
+or by specifying the following flags:
+
+```
+  --jaeger-sampler-type=const jaeger-sampler-param=1
 ```
 
 ## Code of Conduct

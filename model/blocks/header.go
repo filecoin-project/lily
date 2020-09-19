@@ -6,7 +6,9 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
-	"github.com/opentracing/opentracing-go"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 )
 
@@ -60,8 +62,8 @@ func (bh BlockHeaders) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (bh BlockHeaders) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "BlockHeaders.PersistWithTx", opentracing.Tags{"count": len(bh)})
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "BlockHeaders.PersistWithTx", trace.WithAttributes(label.Int("count", len(bh))))
+	defer span.End()
 	for _, h := range bh {
 		if err := h.PersistWithTx(ctx, tx); err != nil {
 			return fmt.Errorf("persist headers: %v", err)

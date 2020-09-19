@@ -11,7 +11,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
-	"github.com/opentracing/opentracing-go"
+	"go.opentelemetry.io/otel/api/global"
 )
 
 type PartitionStatus struct {
@@ -39,8 +39,8 @@ type MinerTaskResult struct {
 }
 
 func (mtr *MinerTaskResult) Persist(ctx context.Context, db *pg.DB) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "MinerTaskResult.Persist")
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "MinerTaskResult.Persist")
+	defer span.End()
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		if err := NewMinerStateModel(mtr).PersistWithTx(ctx, tx); err != nil {
 			return err

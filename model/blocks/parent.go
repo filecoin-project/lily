@@ -5,7 +5,9 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
-	"github.com/opentracing/opentracing-go"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 )
 
@@ -43,8 +45,8 @@ func (bps BlockParents) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (bps BlockParents) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "BlockParents.PersistWithTx", opentracing.Tags{"count": len(bps)})
-	defer span.Finish()
+	ctx, span := global.Tracer("").Start(ctx, "BlockParents.PersistWithTx", trace.WithAttributes(label.Int("count", len(bps))))
+	defer span.End()
 	for _, p := range bps {
 		if err := p.PersistWithTx(ctx, tx); err != nil {
 			return nil
