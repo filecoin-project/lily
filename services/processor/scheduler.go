@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/power"
 	"github.com/gocraft/work"
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
@@ -29,6 +30,9 @@ const (
 
 	MessageTaskName = "process_message"
 	MessagePoolName = "message_tasks"
+
+	PowerTaskName = "process_power"
+	PowerPoolName = "power_actor_tasks"
 )
 
 // Make a redis pool
@@ -46,13 +50,15 @@ func NewScheduler(node lens.API, pubCh chan<- model.Persistable) *Scheduler {
 	minerPool, minerQueue := miner.Setup(64, MinerTaskName, MinerPoolName, redisPool, node, pubCh)
 	marketPool, marketQueue := market.Setup(64, MarketTaskName, MarketPoolName, redisPool, node, pubCh)
 	msgPool, msgQueue := message.Setup(64, MessageTaskName, MessagePoolName, redisPool, node, pubCh)
+	powerPool, powerQueue := power.Setup(64, PowerTaskName, PowerPoolName, redisPool, node, pubCh)
 
-	pools := []*work.WorkerPool{genesisPool, minerPool, marketPool, msgPool}
+	pools := []*work.WorkerPool{genesisPool, minerPool, marketPool, powerPool, msgPool}
 	queues := map[string]*work.Enqueuer{
 		GenesisTaskName: genesisQueue,
 		MinerTaskName:   minerQueue,
 		MarketTaskName:  marketQueue,
 		MessageTaskName: msgQueue,
+		PowerTaskName:   powerQueue,
 	}
 
 	return &Scheduler{
@@ -100,6 +106,11 @@ func (s *Scheduler) Dispatch(tips indexer.ActorTips) error {
 				if err != nil {
 					return err
 				}
+			case builtin.StoragePowerActorCodeID:
+				_, err := s.queuePowerTask(actor)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -122,6 +133,25 @@ func (s *Scheduler) queueMinerTask(info indexer.ActorInfo) (*work.Job, error) {
 		"address":   info.Address.String(),
 		"stateroot": info.ParentStateRoot.String(),
 	})
+}
+
+func (s *Scheduler) queuePowerTask(info indexer.ActorInfo) (*work.Job, error) {
+	tsB, err := info.TipSet.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	ptsB, err := info.ParentTipSet.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return s.queues[PowerTaskName].Enqueue(PowerTaskName, work.Q{
+		"ts":        string(tsB),
+		"pts":       string(ptsB),
+		"head":      info.Actor.Head.String(),
+		"address":   info.Address.String(),
+		"stateroot": info.ParentStateRoot.String(),
+	})
+
 }
 
 func (s *Scheduler) queueMarketTask(info indexer.ActorInfo) (*work.Job, error) {
