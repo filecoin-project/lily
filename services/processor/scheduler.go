@@ -58,7 +58,7 @@ func init() {
 	if maxIdlStr := os.Getenv(EnvRedisMaxIdle); maxIdlStr != "" {
 		max, err := strconv.ParseInt(maxIdlStr, 10, 64)
 		if err != nil {
-			log.Errorw("setting redis max idel", "error", err)
+			log.Errorw("setting redis max idle", "error", err)
 		} else {
 			RedisMaxIdle = max
 		}
