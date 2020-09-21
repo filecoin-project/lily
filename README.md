@@ -8,6 +8,20 @@ A **Visor** process collects _permanent_ Filecoin chain meterics from a [**Lotus
 
 ## Getting Started
 
+Clone the repo and build the dependencies:
+
+```console
+$ git clone git@github.com:filecoin-project/sentinel-visor.git
+$ cd sentinel-visor
+$ make deps
+```
+
+Build the `sentinel-visor` binary to the root of the project directory:
+
+```console
+$ make build
+```
+
 ### Usage
 
 ```
@@ -15,6 +29,11 @@ A **Visor** process collects _permanent_ Filecoin chain meterics from a [**Lotus
 
   Use 'sentinel-visor help <command>' to learn more about each command.
 ```
+
+Use the following env vars to configure the lotus node that visor reads from, and the database that it writes to:
+
+- `LOTUS_PATH` - path to the lotus data dir. _default: `~/.lotus`_
+- `LOTUS_DB` - database connection . _default: `postgres://postgres:password@localhost:5432/postgres?sslmode=disable`_
 
 ### Configuring Tracing
 
