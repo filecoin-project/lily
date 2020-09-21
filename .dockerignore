@@ -1,7 +1,6 @@
 /.circleci
 /.github
 /extern/filecoin-ffi
-/visor
 /Dockerfile*
 /docker-compose*
 /sentinel-visor
