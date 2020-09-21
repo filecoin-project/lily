@@ -10,6 +10,7 @@ import (
 	"github.com/gocraft/work"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 
 	"github.com/filecoin-project/go-address"
@@ -87,25 +88,8 @@ func (p *Processor) Start(ctx context.Context) {
 				p.log.Info("stopping processor")
 				return
 			default:
-				blksToProcess, err := p.collectBlocksToProcess(ctx, p.batchSize)
+				err := p.process(ctx)
 				if err != nil {
-					panic(err)
-				}
-
-				if len(blksToProcess) == 0 {
-					time.Sleep(time.Second * 30)
-					continue
-				}
-				p.log.Infow("collected blocks for processing", "count", len(blksToProcess))
-
-				actorChanges, err := p.collectActorChanges(ctx, blksToProcess)
-				if err != nil {
-					panic(err)
-				}
-
-				p.log.Infow("collected actor changes")
-
-				if err := p.scheduler.Dispatch(actorChanges); err != nil {
 					panic(err)
 				}
 			}
@@ -113,10 +97,43 @@ func (p *Processor) Start(ctx context.Context) {
 	}()
 }
 
+func (p *Processor) process(ctx context.Context) error {
+	ctx, span := global.Tracer("").Start(ctx, "Processor.process")
+	defer span.End()
+
+	blksToProcess, err := p.collectBlocksToProcess(ctx, p.batchSize)
+	if err != nil {
+		panic(err)
+	}
+
+	if len(blksToProcess) == 0 {
+		time.Sleep(time.Second * 30)
+		return nil
+	}
+	p.log.Infow("collected blocks for processing", "count", len(blksToProcess))
+
+	actorChanges, err := p.collectActorChanges(ctx, blksToProcess)
+	if err != nil {
+		return err
+	}
+
+	p.log.Infow("collected actor changes")
+
+	if err := p.scheduler.Dispatch(actorChanges); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (p *Processor) collectActorChanges(ctx context.Context, blks []*types.BlockHeader) (map[types.TipSetKey][]indexer.ActorInfo, error) {
+
 	out := make(map[types.TipSetKey][]indexer.ActorInfo)
 	var outMu sync.Mutex
 	parmap.Par(25, blks, func(blk *types.BlockHeader) {
+		ctx, span := global.Tracer("").Start(ctx, "Processor.collectActorChanges")
+		defer span.End()
+
 		pts, err := p.node.ChainGetTipSet(ctx, types.NewTipSetKey(blk.Parents...))
 		if err != nil {
 			p.log.Error(err)
@@ -145,6 +162,7 @@ func (p *Processor) collectActorChanges(ctx context.Context, blks []*types.Block
 				p.log.Error(err)
 				return
 			}
+
 			_, err = p.node.StateGetActor(ctx, addr, pts.Parents())
 			if err != nil {
 				if strings.Contains(err.Error(), "actor not found") {
@@ -172,6 +190,9 @@ func (p *Processor) collectActorChanges(ctx context.Context, blks []*types.Block
 }
 
 func (p *Processor) collectBlocksToProcess(ctx context.Context, batch int) ([]*types.BlockHeader, error) {
+	ctx, span := global.Tracer("").Start(ctx, "Processor.collectBlocksToProcess")
+	defer span.End()
+
 	blks, err := p.storage.CollectAndMarkBlocksAsProcessing(ctx, batch)
 	if err != nil {
 		return nil, err
@@ -183,6 +204,7 @@ func (p *Processor) collectBlocksToProcess(ctx context.Context, batch int) ([]*t
 		if err != nil {
 			return nil, err
 		}
+
 		header, err := p.node.ChainGetBlock(ctx, blkCid)
 		if err != nil {
 			return nil, err

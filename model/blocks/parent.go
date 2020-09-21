@@ -2,8 +2,12 @@ package blocks
 
 import (
 	"context"
+
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 )
 
@@ -36,16 +40,13 @@ func NewBlockParents(header *types.BlockHeader) BlockParents {
 
 func (bps BlockParents) Persist(ctx context.Context, db *pg.DB) error {
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		for _, p := range bps {
-			if err := p.PersistWithTx(ctx, tx); err != nil {
-				return nil
-			}
-		}
-		return nil
+		return bps.PersistWithTx(ctx, tx)
 	})
 }
 
 func (bps BlockParents) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "BlockParents.PersistWithTx", trace.WithAttributes(label.Int("count", len(bps))))
+	defer span.End()
 	for _, p := range bps {
 		if err := p.PersistWithTx(ctx, tx); err != nil {
 			return nil

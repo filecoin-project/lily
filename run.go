@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	_ "net/http/pprof"
 	"os"
 
@@ -9,6 +10,8 @@ import (
 
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
+	"go.opentelemetry.io/otel/exporters/trace/jaeger"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	lens "github.com/filecoin-project/sentinel-visor/lens"
 	lotuslens "github.com/filecoin-project/sentinel-visor/lens/lotus"
@@ -40,6 +43,20 @@ var processorCmd = &cli.Command{
 		ll := cctx.String("log-level")
 		if err := logging.SetLogLevel("*", ll); err != nil {
 			return err
+		}
+
+		if cctx.Bool("tracing") {
+			jcfg, err := jaegerConfigFromCliContext(cctx)
+			if err != nil {
+				log.Errorw("failed to initialize tracing subsystem", "error", err)
+				return err
+			}
+			closer, err := setupTracing(jcfg)
+			if err != nil {
+				log.Errorw("failed to initialize tracing subsystem", "error", err)
+				return err
+			}
+			defer closer()
 		}
 
 		ctx, rctx, err := setupStorageAndAPI(cctx)
@@ -84,6 +101,20 @@ var indexerCmd = &cli.Command{
 
 		if err := logging.SetLogLevel("rpc", "error"); err != nil {
 			return err
+		}
+
+		if cctx.Bool("tracing") {
+			jcfg, err := jaegerConfigFromCliContext(cctx)
+			if err != nil {
+				log.Errorw("failed to initialize tracing subsystem", "error", err)
+				return err
+			}
+			closer, err := setupTracing(jcfg)
+			if err != nil {
+				log.Errorw("failed to initialize tracing subsystem", "error", err)
+				return err
+			}
+			defer closer()
 		}
 
 		ctx, rctx, err := setupStorageAndAPI(cctx)
@@ -145,4 +176,47 @@ func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error)
 	}
 
 	return ctx, &RunContext{api, closer, db}, nil
+}
+
+func setupTracing(cfg *jaegerConfig) (func(), error) {
+	closer, err := jaeger.InstallNewPipeline(
+		jaeger.WithAgentEndpoint(cfg.AgentEndpoint),
+		jaeger.WithProcess(jaeger.Process{
+			ServiceName: cfg.ServiceName,
+		}),
+		jaeger.WithSDK(&sdktrace.Config{DefaultSampler: cfg.Sampler}),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return closer, err
+}
+
+type jaegerConfig struct {
+	ServiceName   string
+	AgentEndpoint string
+	Sampler       sdktrace.Sampler
+}
+
+func jaegerConfigFromCliContext(cctx *cli.Context) (*jaegerConfig, error) {
+	cfg := jaegerConfig{
+		ServiceName:   cctx.String("jaeger-service-name"),
+		AgentEndpoint: fmt.Sprintf("%s:%d", cctx.String("jaeger-agent-host"), cctx.Int("jaeger-agent-port")),
+	}
+
+	switch cctx.String("jaeger-sampler-type") {
+	case "probabilistic":
+		cfg.Sampler = sdktrace.ProbabilitySampler(cctx.Float64("jaeger-sampler-param"))
+	case "const":
+		if cctx.Float64("jaeger-sampler-param") == 1 {
+			cfg.Sampler = sdktrace.AlwaysSample()
+		} else {
+			cfg.Sampler = sdktrace.NeverSample()
+		}
+	default:
+		return nil, fmt.Errorf("unsupported jaeger-sampler-type option: %s", cctx.String("jaeger-sampler-type"))
+	}
+
+	return &cfg, nil
 }

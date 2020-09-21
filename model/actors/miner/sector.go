@@ -2,7 +2,11 @@ package miner
 
 import (
 	"context"
+
 	"github.com/go-pg/pg/v10"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 )
 
@@ -58,16 +62,13 @@ type MinerSectorInfos []*MinerSectorInfo
 
 func (msis MinerSectorInfos) Persist(ctx context.Context, db *pg.DB) error {
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		for _, msi := range msis {
-			if err := msi.PersistWithTx(ctx, tx); err != nil {
-				return err
-			}
-		}
-		return nil
+		return msis.PersistWithTx(ctx, tx)
 	})
 }
 
 func (msis MinerSectorInfos) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerSectorInfos.PersistWithTx", trace.WithAttributes(label.Int("count", len(msis))))
+	defer span.End()
 	for _, msi := range msis {
 		if err := msi.PersistWithTx(ctx, tx); err != nil {
 			return err

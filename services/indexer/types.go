@@ -5,6 +5,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/go-pg/pg/v10"
+	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/ipfs/go-cid"
 
@@ -68,6 +69,9 @@ func (u *UnindexedBlockData) Has(bh *types.BlockHeader) bool {
 }
 
 func (u *UnindexedBlockData) Persist(ctx context.Context, db *pg.DB) error {
+	ctx, span := global.Tracer("").Start(ctx, "Indexer.PersistBlockData")
+	defer span.End()
+
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		log.Infow("Persist unindexed block data", "count", u.Size())
 		grp, ctx := errgroup.WithContext(ctx)

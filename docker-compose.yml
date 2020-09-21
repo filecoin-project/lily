@@ -2,9 +2,13 @@ version: '3.5'
 services:
   redis:
     container_name: redis
-    image: redis
+    image: redis:6
     ports:
       - "6379:6379"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - redis-data:/var/lib/redis
 
   redis-commander:
     container_name: redis-commander
@@ -14,7 +18,9 @@ services:
     - REDIS_HOSTS=local:redis:6379
     ports:
     - "8081:8081"
-      
+    depends_on:
+      - redis
+
   workerui:
     restart: always
     environment:
@@ -24,3 +30,30 @@ services:
         dockerfile: Dockerfile.worker
     ports:
       - "8181:8181"
+
+  timescaledb:
+    container_name: timescaledb
+    image: timescale/timescaledb:latest-pg10
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - timescaledb:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  jaeger:
+    container_name: jaeger
+    image: jaegertracing/all-in-one:1.19
+    ports:
+      - "6831:6831/udp"
+      - "5778:5778"
+      - "16686:16686"
+
+volumes:
+  timescaledb:
+  redis-data:

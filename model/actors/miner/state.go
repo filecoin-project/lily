@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-pg/pg/v10"
+	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 )
 
@@ -27,17 +28,14 @@ type MinerState struct {
 
 func (ms *MinerState) Persist(ctx context.Context, db *pg.DB) error {
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		if _, err := tx.ModelContext(ctx, ms).
-			OnConflict("do nothing").
-			Insert(); err != nil {
-			return xerrors.Errorf("persisting miner power: %w", err)
-		}
-		return nil
+		return ms.PersistWithTx(ctx, tx)
 	})
 
 }
 
 func (ms *MinerState) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerTaskResult.PersistWithTx")
+	defer span.End()
 	if _, err := tx.ModelContext(ctx, ms).
 		OnConflict("do nothing").
 		Insert(); err != nil {

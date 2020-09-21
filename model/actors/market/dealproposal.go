@@ -3,7 +3,11 @@ package market
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-pg/pg/v10"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 )
 
 type MarketDealProposal struct {
@@ -39,6 +43,8 @@ func (dp *MarketDealProposal) PersistWithTx(ctx context.Context, tx *pg.Tx) erro
 type MarketDealProposals []*MarketDealProposal
 
 func (dps MarketDealProposals) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "MarketDealProposals.PersistWithTx", trace.WithAttributes(label.Int("count", len(dps))))
+	defer span.End()
 	for _, dp := range dps {
 		if err := dp.PersistWithTx(ctx, tx); err != nil {
 			return err
