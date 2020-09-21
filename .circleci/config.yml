@@ -13,16 +13,8 @@ jobs:
       - run: sudo apt-get update
       - run: sudo apt-get install -y pkg-config jq mesa-opencl-icd ocl-icd-opencl-dev
       - run: make deps
-      - restore_cache:
-          key: go-mod-v1-{{ checksum "go.sum" }}
-      - run: go mod download
-      - save_cache:
-          name: 'go module cache'
-          key: go-mod-v1-{{ checksum "go.sum" }}
-          paths:
-            - '/go/pkg/mod'
-      - run: make testshort
       - run: make build
+      - run: make testshort
 
   docker-build:
     executor: golang
