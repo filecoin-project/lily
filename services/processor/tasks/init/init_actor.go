@@ -6,13 +6,15 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/events/state"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/model"
-	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	"github.com/gocraft/work"
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opentelemetry.io/otel/api/global"
+
+	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/model"
+	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
 )
 
 func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, node lens.API, pubCh chan<- model.Persistable) (*work.WorkerPool, *work.Enqueuer) {
@@ -109,7 +111,9 @@ func (p *ProcessInitActorTask) Task(job *work.Job) error {
 		return err
 	}
 
-	ctx := context.TODO()
+	ctx := context.Background()
+	ctx, span := global.Tracer("").Start(ctx, "ProcessInitActorTask.Task")
+	defer span.End()
 
 	pred := state.NewStatePredicates(p.node)
 	stateDiff := pred.OnInitActorChange(pred.OnAddressMapChange())

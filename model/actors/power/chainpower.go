@@ -3,7 +3,9 @@ package power
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-pg/pg/v10"
+	"go.opentelemetry.io/otel/api/global"
 )
 
 type ChainPower struct {
@@ -32,6 +34,8 @@ func (cp *ChainPower) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (cp *ChainPower) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "ChainPower.PersistWithTx")
+	defer span.End()
 	if _, err := tx.ModelContext(ctx, cp).
 		OnConflict("do nothing").
 		Insert(); err != nil {

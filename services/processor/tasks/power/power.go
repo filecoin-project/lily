@@ -8,13 +8,14 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/filecoin-project/specs-actors/actors/builtin/power"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
 	powermodel "github.com/filecoin-project/sentinel-visor/model/actors/power"
 )
@@ -124,7 +125,9 @@ func (ppt *ProcessPowerTask) Task(job *work.Job) error {
 	if err := ppt.ParseArgs(job); err != nil {
 		return err
 	}
-	ctx := context.TODO()
+	ctx := context.Background()
+	ctx, span := global.Tracer("").Start(ctx, "ProcessPowerTask.Task")
+	defer span.End()
 
 	powerActor, err := ppt.node.StateGetActor(ctx, builtin.StoragePowerActorAddr, ppt.tsKey)
 	if err != nil {

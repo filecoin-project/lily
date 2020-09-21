@@ -3,11 +3,12 @@ package genesis
 import (
 	"context"
 
+	"github.com/go-pg/pg/v10"
+	"go.opentelemetry.io/otel/api/global"
+
 	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
-	"github.com/go-pg/pg/v10"
-	"go.opentelemetry.io/otel/api/global"
 )
 
 type ProcessGenesisSingletonResult struct {

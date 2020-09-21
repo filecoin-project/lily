@@ -9,6 +9,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-address"
@@ -132,7 +133,9 @@ func (mac *ProcessMinerTask) Task(job *work.Job) error {
 	// - all processing below can and probably should be done in parallel.
 	// - processing is incomplete, see below TODO about sector inspection.
 	// - need caching infront of the lotus api to avoid refetching power for same tipset.
-	ctx := context.TODO()
+	ctx := context.Background()
+	ctx, span := global.Tracer("").Start(ctx, "ProcessMinerTask.Task")
+	defer span.End()
 
 	// generic actor state of the miner.
 	mactor, err := mac.node.StateGetActor(ctx, mac.maddr, mac.tsKey)

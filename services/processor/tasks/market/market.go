@@ -2,12 +2,13 @@ package market
 
 import (
 	"context"
-	"golang.org/x/xerrors"
 
 	"github.com/gocraft/work"
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opentelemetry.io/otel/api/global"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lotus/chain/events/state"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -111,7 +112,9 @@ func (pmt *ProcessMarketTask) Task(job *work.Job) error {
 		return err
 	}
 
-	ctx := context.TODO()
+	ctx := context.Background()
+	ctx, span := global.Tracer("").Start(ctx, "ProcessMarketTask.Task")
+	defer span.End()
 
 	proposals, err := pmt.marketDealProposalChanges(ctx)
 	if err != nil {
