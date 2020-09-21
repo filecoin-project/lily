@@ -1,13 +1,15 @@
 package processor
 
 import (
-	"github.com/gocraft/work"
-	"github.com/gomodule/redigo/redis"
-	"github.com/ipfs/go-cid"
+	"os"
 	"strconv"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
+	"github.com/gocraft/work"
+	"github.com/gomodule/redigo/redis"
+	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -21,6 +23,55 @@ import (
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/power"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/reward"
 )
+
+var log = logging.Logger("scheduler")
+
+const (
+	EnvRedisMaxActive = "VISOR_REDIS_MAX_ACTIVE"
+	EnvRedisMaxIdle   = "VISOR_REDIS_MAX_IDLE"
+	EnvRedisNetwork   = "VISOR_REDIS_NETWORK"
+	EnvRedisAddress   = "VISOR_REDIS_ADDRESS"
+)
+
+var (
+	RedisMaxActive int64
+	RedisMaxIdle   int64
+	RedisNetwork   string
+	RedisAddress   string
+)
+
+func init() {
+	RedisMaxActive = 128
+	RedisMaxIdle = 128
+	RedisNetwork = "tcp"
+	RedisAddress = ":6379"
+
+	if maxActiveStr := os.Getenv(EnvRedisMaxActive); maxActiveStr != "" {
+		max, err := strconv.ParseInt(maxActiveStr, 10, 64)
+		if err != nil {
+			log.Errorw("setting redis max active", "error", err)
+		} else {
+			RedisMaxActive = max
+		}
+	}
+
+	if maxIdlStr := os.Getenv(EnvRedisMaxIdle); maxIdlStr != "" {
+		max, err := strconv.ParseInt(maxIdlStr, 10, 64)
+		if err != nil {
+			log.Errorw("setting redis max idel", "error", err)
+		} else {
+			RedisMaxIdle = max
+		}
+	}
+
+	if network := os.Getenv(EnvRedisNetwork); network != "" {
+		RedisNetwork = network
+	}
+
+	if address := os.Getenv(EnvRedisAddress); address != "" {
+		RedisAddress = address
+	}
+}
 
 const (
 	GenesisTaskName = "process_genesis"
@@ -48,17 +99,17 @@ const (
 	CommonPoolName = "common_actor_tasks"
 )
 
-// Make a redis pool
-var redisPool = &redis.Pool{
-	MaxActive: 128,
-	MaxIdle:   128,
-	Wait:      true,
-	Dial: func() (redis.Conn, error) {
-		return redis.Dial("tcp", ":6379")
-	},
-}
-
 func NewScheduler(node lens.API, pubCh chan<- model.Persistable) *Scheduler {
+	// Make a redis pool
+	var redisPool = &redis.Pool{
+		MaxActive: int(RedisMaxActive),
+		MaxIdle:   int(RedisMaxIdle),
+		Wait:      true,
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial(RedisNetwork, RedisAddress)
+		},
+	}
+
 	genesisPool, genesisQueue := genesis.Setup(1, GenesisTaskName, GenesisPoolName, redisPool, node, pubCh)
 	minerPool, minerQueue := miner.Setup(64, MinerTaskName, MinerPoolName, redisPool, node, pubCh)
 	marketPool, marketQueue := market.Setup(64, MarketTaskName, MarketPoolName, redisPool, node, pubCh)
