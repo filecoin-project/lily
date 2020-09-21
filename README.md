@@ -8,15 +8,19 @@ A **Visor** process collects _permanent_ Filecoin chain meterics from a [**Lotus
 
 ## Getting Started
 
-Clone the repo and run `make build`:
+Clone the repo and build the dependencies:
 
 ```console
 $ git clone git@github.com:filecoin-project/sentinel-visor.git
 $ cd sentinel-visor
-$ make build
+$ make deps
 ```
 
-This will fetch the git modules, build the filecoin-ffi, and build a `sentinel-visor` binary to the root of the project directory.
+Build the `sentinel-visor` binary to the root of the project directory:
+
+```console
+$ make build
+```
 
 ### Usage
 
