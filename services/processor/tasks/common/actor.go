@@ -3,19 +3,21 @@ package common
 import (
 	"context"
 	"encoding/json"
+	"strconv"
+
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/big"
 	lapi "github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/gocraft/work"
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
-	"strconv"
+	"go.opentelemetry.io/otel/api/global"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/model"
 	commonmodel "github.com/filecoin-project/sentinel-visor/model/actors/common"
 )
 
@@ -162,7 +164,9 @@ func (p *ProcessActorTask) Task(job *work.Job) error {
 		return err
 	}
 
-	ctx := context.TODO()
+	ctx := context.Background()
+	ctx, span := global.Tracer("").Start(ctx, "ProcessActorTask.Task")
+	defer span.End()
 
 	ast, err := p.node.StateReadState(ctx, p.addr, p.tsKey)
 	if err != nil {

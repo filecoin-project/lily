@@ -3,24 +3,25 @@ package genesis
 import (
 	"bytes"
 	"context"
-	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
-	"github.com/filecoin-project/specs-actors/actors/util/adt"
-	typegen "github.com/whyrusleeping/cbor-gen"
 	"strconv"
 
 	"github.com/gocraft/work"
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	typegen "github.com/whyrusleeping/cbor-gen"
+	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	init_ "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
+	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
+	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	marketmodel "github.com/filecoin-project/sentinel-visor/model/actors/market"
 	minermodel "github.com/filecoin-project/sentinel-visor/model/actors/miner"
 	genesismodel "github.com/filecoin-project/sentinel-visor/model/genesis"
@@ -94,7 +95,9 @@ func (p *ProcessGenesisSingletonTask) Task(job *work.Job) error {
 	if err := p.ParseArgs(job); err != nil {
 		return err
 	}
-	ctx := context.TODO()
+	ctx := context.Background()
+	ctx, span := global.Tracer("").Start(ctx, "ProcessGenesisSingletonTask.Task")
+	defer span.End()
 
 	genesisAddrs, err := p.node.StateListActors(ctx, p.genesis)
 	if err != nil {

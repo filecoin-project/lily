@@ -7,6 +7,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/lotus/chain/types"
 
@@ -85,7 +86,9 @@ func (pm *ProcessMessageTask) Task(job *work.Job) error {
 		return err
 	}
 
-	ctx := context.TODO()
+	ctx := context.Background()
+	ctx, span := global.Tracer("").Start(ctx, "ProcessMessageTask.Task")
+	defer span.End()
 
 	msgs, blkMsgs, err := pm.fetchMessages(ctx)
 	if err != nil {

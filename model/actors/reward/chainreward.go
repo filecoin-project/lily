@@ -2,7 +2,9 @@ package reward
 
 import (
 	"context"
+
 	"github.com/go-pg/pg/v10"
+	"go.opentelemetry.io/otel/api/global"
 )
 
 type ChainReward struct {
@@ -20,6 +22,8 @@ type ChainReward struct {
 }
 
 func (r *ChainReward) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "ChainReward.PersistWithTx")
+	defer span.End()
 	if _, err := tx.ModelContext(ctx, r).
 		OnConflict("do nothing").
 		Insert(); err != nil {

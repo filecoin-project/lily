@@ -3,10 +3,12 @@ package reward
 import (
 	"bytes"
 	"context"
+
 	"github.com/gocraft/work"
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin/reward"
@@ -98,7 +100,9 @@ func (p *ProcessRewardTask) Task(job *work.Job) error {
 		return err
 	}
 
-	ctx := context.TODO()
+	ctx := context.Background()
+	ctx, span := global.Tracer("").Start(ctx, "ProcessRewardTask.Task")
+	defer span.End()
 
 	rewardStateRaw, err := p.node.ChainReadObj(ctx, p.head)
 	if err != nil {

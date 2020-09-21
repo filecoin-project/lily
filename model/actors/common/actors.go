@@ -2,7 +2,9 @@ package common
 
 import (
 	"context"
+
 	"github.com/go-pg/pg/v10"
+	"go.opentelemetry.io/otel/api/global"
 )
 
 type Actor struct {
@@ -15,6 +17,8 @@ type Actor struct {
 }
 
 func (a *Actor) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "Actor.PersistWithTx")
+	defer span.End()
 	if _, err := tx.ModelContext(ctx, a).
 		OnConflict("do nothing").
 		Insert(); err != nil {
@@ -30,6 +34,8 @@ type ActorState struct {
 }
 
 func (s *ActorState) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "ActorState.PersistWithTx")
+	defer span.End()
 	if _, err := tx.ModelContext(ctx, s).
 		OnConflict("do nothing").
 		Insert(); err != nil {

@@ -114,3 +114,9 @@ func (aw *APIWrapper) StateMinerSectors(ctx context.Context, addr address.Addres
 	defer span.End()
 	return aw.FullNode.StateMinerSectors(ctx, addr, filter, filterOut, tsk)
 }
+
+func (aw *APIWrapper) StateReadState(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*api.ActorState, error) {
+	ctx, span := global.Tracer("").Start(ctx, "Lotus.StateReadState")
+	defer span.End()
+	return aw.FullNode.StateReadState(ctx, actor, tsk)
+}

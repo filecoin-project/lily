@@ -2,7 +2,11 @@ package init
 
 import (
 	"context"
+
 	"github.com/go-pg/pg/v10"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 )
 
 type IdAddress struct {
@@ -23,6 +27,8 @@ func (ia *IdAddress) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 type IdAddressList []*IdAddress
 
 func (ias IdAddressList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "IdAddressList.PersistWithTx", trace.WithAttributes(label.Int("count", len(ias))))
+	defer span.End()
 	for _, ia := range ias {
 		if err := ia.PersistWithTx(ctx, tx); err != nil {
 			return err
