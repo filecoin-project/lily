@@ -10,8 +10,8 @@ jobs:
     executor: golang
     steps:
       - checkout
-      - run: apt-get update
-      - run: apt-get install -y jq mesa-opencl-icd ocl-icd-opencl-dev
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y jq mesa-opencl-icd ocl-icd-opencl-dev
       - run: make deps
       - restore_cache:
           key: go-mod-v1-{{ checksum "go.sum" }}
