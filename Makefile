@@ -18,11 +18,6 @@ build: sentinel-visor
 deps:
 	git submodule update --init --recursive
 
-.PHONY: sentinel-visor
-sentinel-visor: extern/filecoin-ffi/.install-filcrypto
-	rm -f ./sentinel-visor
-	go build -o sentinel-visor .
-
 # test starts dependencies and runs all tests
 .PHONY: test
 test: dockerup testfull dockerdown
