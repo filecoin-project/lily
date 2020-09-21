@@ -3,6 +3,9 @@ package genesis
 import (
 	"bytes"
 	"context"
+	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
+	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	typegen "github.com/whyrusleeping/cbor-gen"
 	"strconv"
 
 	"github.com/gocraft/work"
@@ -13,6 +16,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
+	init_ "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -107,7 +111,11 @@ func (p *ProcessGenesisSingletonTask) Task(job *work.Job) error {
 		case builtin.SystemActorCodeID:
 			// TODO
 		case builtin.InitActorCodeID:
-			// TODO
+			res, err := p.initActorState(ctx)
+			if err != nil {
+				return err
+			}
+			result.SetInitActor(res)
 		case builtin.CronActorCodeID:
 			// TODO
 		case builtin.AccountActorCodeID:
@@ -211,6 +219,48 @@ func (p *ProcessGenesisSingletonTask) storageMinerState(ctx context.Context, add
 		SectorModels: sectorsModel,
 		DealModels:   dealsModel,
 	}, nil
+}
+
+func (p *ProcessGenesisSingletonTask) initActorState(ctx context.Context) (*genesismodel.GenesisInitActorTaskResult, error) {
+	initActor, err := p.node.StateGetActor(ctx, builtin.InitActorAddr, p.genesis)
+	if err != nil {
+		return nil, err
+	}
+	initActorRaw, err := p.node.ChainReadObj(ctx, initActor.Head)
+	if err != nil {
+		return nil, err
+	}
+	var initActorState init_.State
+	if err := initActorState.UnmarshalCBOR(bytes.NewReader(initActorRaw)); err != nil {
+		return nil, err
+	}
+
+	addrMap, err := adt.AsMap(p.node.Store(), initActorState.AddressMap)
+	if err != nil {
+		return nil, err
+	}
+
+	out := initmodel.IdAddressList{}
+	var actorID typegen.CborInt
+	if err := addrMap.ForEach(&actorID, func(key string) error {
+		longAddr, err := address.NewFromBytes([]byte(key))
+		if err != nil {
+			return err
+		}
+		shortAddr, err := address.NewIDAddress(uint64(actorID))
+		if err != nil {
+			return err
+		}
+		out = append(out, &initmodel.IdAddress{
+			ID:        shortAddr.String(),
+			Address:   longAddr.String(),
+			StateRoot: p.stateroot.String(),
+		})
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return &genesismodel.GenesisInitActorTaskResult{AddressMap: out}, nil
 }
 
 func (p *ProcessGenesisSingletonTask) storageMarketState(ctx context.Context) (*genesismodel.GenesisMarketTaskResult, error) {

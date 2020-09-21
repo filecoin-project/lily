@@ -2,7 +2,6 @@ package processor
 
 import (
 	"context"
-	"github.com/filecoin-project/lotus/lib/parmap"
 	"strings"
 	"sync"
 	"time"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	types "github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/lib/parmap"
 	"github.com/filecoin-project/sentinel-visor/storage"
 
 	"github.com/filecoin-project/sentinel-visor/lens"

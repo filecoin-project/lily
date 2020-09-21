@@ -3,6 +3,7 @@ package genesis
 import (
 	"context"
 
+	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
 	"github.com/go-pg/pg/v10"
@@ -10,8 +11,9 @@ import (
 )
 
 type ProcessGenesisSingletonResult struct {
-	minerResults []*GenesisMinerTaskResult
-	marketResult *GenesisMarketTaskResult
+	minerResults    []*GenesisMinerTaskResult
+	marketResult    *GenesisMarketTaskResult
+	initActorResult *GenesisInitActorTaskResult
 }
 
 func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, db *pg.DB) error {
@@ -40,6 +42,11 @@ func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, db *pg.DB) 
 				return err
 			}
 		}
+		if r.initActorResult != nil {
+			if err := r.initActorResult.AddressMap.PersistWithTx(ctx, tx); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 }
@@ -55,6 +62,13 @@ func (r *ProcessGenesisSingletonResult) SetMarket(m *GenesisMarketTaskResult) {
 	r.marketResult = m
 }
 
+func (r *ProcessGenesisSingletonResult) SetInitActor(m *GenesisInitActorTaskResult) {
+	if r.initActorResult != nil {
+		panic("Genesis InitActor State already set, developer error!!!")
+	}
+	r.initActorResult = m
+}
+
 type GenesisMinerTaskResult struct {
 	StateModel   *miner.MinerState
 	PowerModel   *miner.MinerPower
@@ -65,4 +79,8 @@ type GenesisMinerTaskResult struct {
 type GenesisMarketTaskResult struct {
 	DealModels     market.MarketDealStates
 	ProposalModesl market.MarketDealProposals
+}
+
+type GenesisInitActorTaskResult struct {
+	AddressMap init_.IdAddressList
 }

@@ -26,7 +26,7 @@ func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, n
 	pool.Middleware(func(mt *ProcessMarketTask, job *work.Job, next work.NextMiddlewareFunc) error {
 		mt.node = node
 		mt.pubCh = pubCh
-		mt.log = logging.Logger("minertask")
+		mt.log = logging.Logger("markettask")
 		return next()
 	})
 	logging.SetLogLevel("markettask", "info")

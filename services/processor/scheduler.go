@@ -4,6 +4,7 @@ import (
 	"github.com/gocraft/work"
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
+	"strconv"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
@@ -11,7 +12,9 @@ import (
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/services/indexer"
+	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/common"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/genesis"
+	init_ "github.com/filecoin-project/sentinel-visor/services/processor/tasks/init"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/market"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/message"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/miner"
@@ -21,7 +24,10 @@ import (
 
 const (
 	GenesisTaskName = "process_genesis"
-	GensisPoolName  = "genesis_tasks"
+	GenesisPoolName = "genesis_tasks"
+
+	InitActorTaskName = "process_init_actor"
+	InitActorPoolName = "init_actor_tasks"
 
 	MinerTaskName = "process_miner"
 	MinerPoolName = "miner_actor_tasks"
@@ -37,6 +43,9 @@ const (
 
 	RewardTaskName = "process_reward"
 	RewardPoolName = "reward_tasks"
+
+	CommonTaskName = "process_common"
+	CommonPoolName = "common_actor_tasks"
 )
 
 // Make a redis pool
@@ -50,22 +59,26 @@ var redisPool = &redis.Pool{
 }
 
 func NewScheduler(node lens.API, pubCh chan<- model.Persistable) *Scheduler {
-	genesisPool, genesisQueue := genesis.Setup(1, GenesisTaskName, GensisPoolName, redisPool, node, pubCh)
+	genesisPool, genesisQueue := genesis.Setup(1, GenesisTaskName, GenesisPoolName, redisPool, node, pubCh)
 	minerPool, minerQueue := miner.Setup(64, MinerTaskName, MinerPoolName, redisPool, node, pubCh)
 	marketPool, marketQueue := market.Setup(64, MarketTaskName, MarketPoolName, redisPool, node, pubCh)
 	msgPool, msgQueue := message.Setup(64, MessageTaskName, MessagePoolName, redisPool, node, pubCh)
 	powerPool, powerQueue := power.Setup(64, PowerTaskName, PowerPoolName, redisPool, node, pubCh)
 	rwdPool, rwdQueue := reward.Setup(4, RewardTaskName, RewardPoolName, redisPool, node, pubCh)
+	comPool, comQueue := common.Setup(64, CommonTaskName, CommonPoolName, redisPool, node, pubCh)
+	initPool, initQueue := init_.Setup(64, InitActorTaskName, InitActorPoolName, redisPool, node, pubCh)
 
-	pools := []*work.WorkerPool{genesisPool, minerPool, marketPool, powerPool, msgPool, rwdPool}
+	pools := []*work.WorkerPool{genesisPool, minerPool, marketPool, powerPool, msgPool, rwdPool, comPool, initPool}
 
 	queues := map[string]*work.Enqueuer{
-		GenesisTaskName: genesisQueue,
-		MinerTaskName:   minerQueue,
-		MarketTaskName:  marketQueue,
-		MessageTaskName: msgQueue,
-		PowerTaskName:   powerQueue,
-		RewardTaskName:  rwdQueue,
+		GenesisTaskName:   genesisQueue,
+		MinerTaskName:     minerQueue,
+		MarketTaskName:    marketQueue,
+		MessageTaskName:   msgQueue,
+		PowerTaskName:     powerQueue,
+		RewardTaskName:    rwdQueue,
+		CommonTaskName:    comQueue,
+		InitActorTaskName: initQueue,
 	}
 
 	return &Scheduler{
@@ -102,7 +115,16 @@ func (s *Scheduler) Dispatch(tips indexer.ActorTips) error {
 			return err
 		}
 		for _, actor := range actors {
+			_, err := s.queueCommonTask(actor)
+			if err != nil {
+				return err
+			}
 			switch actor.Actor.Code {
+			case builtin.InitActorCodeID:
+				_, err := s.queueInitTask(actor)
+				if err != nil {
+					return err
+				}
 			case builtin.StorageMinerActorCodeID:
 				_, err := s.queueMinerTask(actor)
 				if err != nil {
@@ -182,6 +204,24 @@ func (s *Scheduler) queueMarketTask(info indexer.ActorInfo) (*work.Job, error) {
 		"address":   info.Address.String(),
 		"stateroot": info.ParentStateRoot.String(),
 	})
+}
+
+func (s *Scheduler) queueInitTask(info indexer.ActorInfo) (*work.Job, error) {
+	tsB, err := info.TipSet.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	ptsB, err := info.ParentTipSet.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return s.queues[InitActorTaskName].Enqueue(InitActorTaskName, work.Q{
+		"ts":        string(tsB),
+		"pts":       string(ptsB),
+		"head":      info.Actor.Head.String(),
+		"address":   info.Address.String(),
+		"stateroot": info.ParentStateRoot.String(),
+	})
 
 }
 
@@ -216,11 +256,33 @@ func (s *Scheduler) queueRewardTask(info indexer.ActorInfo) (*work.Job, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return s.queues[RewardTaskName].Enqueue(RewardTaskName, work.Q{
 		"ts":        string(tsB),
 		"pts":       string(ptsB),
 		"head":      info.Actor.Head.String(),
 		"stateroot": info.ParentStateRoot.String(),
 	})
+}
 
+func (s *Scheduler) queueCommonTask(info indexer.ActorInfo) (*work.Job, error) {
+	tsB, err := info.TipSet.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	ptsB, err := info.ParentTipSet.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	return s.queues[CommonTaskName].Enqueue(CommonTaskName, work.Q{
+		"ts":        string(tsB),
+		"pts":       string(ptsB),
+		"stateroot": info.ParentStateRoot.String(),
+		"address":   info.Address.String(),
+		"head":      info.Actor.Head.String(),
+		"code":      info.Actor.Code.String(),
+		"balance":   info.Actor.Balance.String(),
+		"nonce":     strconv.FormatUint(info.Actor.Nonce, 10),
+	})
 }
