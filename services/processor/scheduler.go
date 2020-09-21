@@ -1,7 +1,6 @@
 package processor
 
 import (
-	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/power"
 	"github.com/gocraft/work"
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
@@ -16,6 +15,8 @@ import (
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/market"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/message"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/miner"
+	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/power"
+	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/reward"
 )
 
 const (
@@ -33,6 +34,9 @@ const (
 
 	PowerTaskName = "process_power"
 	PowerPoolName = "power_actor_tasks"
+
+	RewardTaskName = "process_reward"
+	RewardPoolName = "reward_tasks"
 )
 
 // Make a redis pool
@@ -51,14 +55,17 @@ func NewScheduler(node lens.API, pubCh chan<- model.Persistable) *Scheduler {
 	marketPool, marketQueue := market.Setup(64, MarketTaskName, MarketPoolName, redisPool, node, pubCh)
 	msgPool, msgQueue := message.Setup(64, MessageTaskName, MessagePoolName, redisPool, node, pubCh)
 	powerPool, powerQueue := power.Setup(64, PowerTaskName, PowerPoolName, redisPool, node, pubCh)
+	rwdPool, rwdQueue := reward.Setup(4, RewardTaskName, RewardPoolName, redisPool, node, pubCh)
 
-	pools := []*work.WorkerPool{genesisPool, minerPool, marketPool, powerPool, msgPool}
+	pools := []*work.WorkerPool{genesisPool, minerPool, marketPool, powerPool, msgPool, rwdPool}
+
 	queues := map[string]*work.Enqueuer{
 		GenesisTaskName: genesisQueue,
 		MinerTaskName:   minerQueue,
 		MarketTaskName:  marketQueue,
 		MessageTaskName: msgQueue,
 		PowerTaskName:   powerQueue,
+		RewardTaskName:  rwdQueue,
 	}
 
 	return &Scheduler{
@@ -108,6 +115,11 @@ func (s *Scheduler) Dispatch(tips indexer.ActorTips) error {
 				}
 			case builtin.StoragePowerActorCodeID:
 				_, err := s.queuePowerTask(actor)
+				if err != nil {
+					return err
+				}
+			case builtin.RewardActorCodeID:
+				_, err := s.queueRewardTask(actor)
 				if err != nil {
 					return err
 				}
@@ -193,4 +205,22 @@ func (s *Scheduler) queueMessageTask(ts types.TipSetKey, st cid.Cid) (*work.Job,
 		"ts":        string(tsB),
 		"stateroot": st.String(),
 	})
+}
+
+func (s *Scheduler) queueRewardTask(info indexer.ActorInfo) (*work.Job, error) {
+	tsB, err := info.TipSet.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	ptsB, err := info.ParentTipSet.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return s.queues[RewardTaskName].Enqueue(RewardTaskName, work.Q{
+		"ts":        string(tsB),
+		"pts":       string(ptsB),
+		"head":      info.Actor.Head.String(),
+		"stateroot": info.ParentStateRoot.String(),
+	})
+
 }
