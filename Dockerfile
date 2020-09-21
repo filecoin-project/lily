@@ -1,5 +1,5 @@
 # Builder
-FROM golang:1.14.9 as builder
+FROM golang:1.15.2 as builder
 
 # Install deps for filecoin-project/filecoin-ffi
 RUN apt-get update
