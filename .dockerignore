@@ -1,5 +1,6 @@
 /.circleci
 /.github
+/build/*
 /extern/filecoin-ffi
 /Dockerfile*
 /docker-compose*

@@ -7,7 +7,7 @@ RUN apt-get install -y jq mesa-opencl-icd ocl-icd-opencl-dev
 
 WORKDIR /go/src/github.com/filecoin-project/sentinel-visor
 COPY . /go/src/github.com/filecoin-project/sentinel-visor
-RUN make build
+RUN make deps && make build
 
 # Runner
 FROM buildpack-deps:buster-curl
