@@ -4,12 +4,6 @@ executors:
   golang:
     docker:
       - image: cimg/go:1.15.2
-    working_directory: '/go/src/github.com/filecoin-project/sentinel-visor'
-  dockerizer:
-    docker:
-      - image: cimg/go:1.15.2
-    environment:
-      IMAGE_NAME: filecoin/sentinel-visor
 
 jobs:
   test:
@@ -31,7 +25,7 @@ jobs:
       - run: make build
 
   docker-build:
-    executor: dockerizer
+    executor: golang
     steps:
       - checkout
       - setup_remote_docker:
@@ -39,7 +33,7 @@ jobs:
       - run:
           name: Build Docker image
           command: |
-            docker build -t $IMAGE_NAME .
+            docker build -t filecoin/sentinel-visor .
 
 workflows:
   version: 2
