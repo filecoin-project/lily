@@ -3,6 +3,7 @@ module github.com/filecoin-project/sentinel-visor
 go 1.14
 
 require (
+	github.com/dgraph-io/badger/v2 v2.0.3
 	github.com/filecoin-project/go-address v0.0.3
 	github.com/filecoin-project/go-bitfield v0.2.0
 	github.com/filecoin-project/go-jsonrpc v0.1.2-0.20200822201400-474f4fdccc52
@@ -15,6 +16,8 @@ require (
 	github.com/gomodule/redigo v1.8.2
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/ipfs/go-cid v0.0.7
+	github.com/ipfs/go-ds-badger2 v0.1.1-0.20200708190120-187fc06f714e
+	github.com/ipfs/go-ipfs-blockstore v1.0.1
 	github.com/ipfs/go-log/v2 v2.1.2-0.20200626104915-0016c0b4b3e4
 	github.com/lib/pq v1.8.0
 	github.com/multiformats/go-multiaddr v0.3.1

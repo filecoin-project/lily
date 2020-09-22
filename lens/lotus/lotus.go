@@ -53,14 +53,22 @@ func GetFullNodeAPI(cctx *cli.Context) (context.Context, lens.API, APICloser, er
 	}
 	log.Infof("Lotus API version: %s", v.Version)
 
-	cacheStore, err := NewCacheCtxStore(ctx, api, 10_000)
+	bsapi, bscloser, err := NewBlockstoreBackedAPI(cctx.String("repo"), api)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	cacheStore, err := NewCacheCtxStore(ctx, bsapi, 10_000)
 	if err != nil {
 		return nil, nil, nil, xerrors.Errorf("new cache store: %w", err)
 	}
 
-	lensAPI := NewAPIWrapper(api, cacheStore)
+	lensAPI := NewAPIWrapper(bsapi, cacheStore)
 
-	return ctx, lensAPI, APICloser(closer), nil
+	return ctx, lensAPI, APICloser(func() {
+		closer()
+		bscloser.Close()
+	}), nil
 }
 
 func getFullNodeAPIUsingCredentials(ctx context.Context, listenAddr, token string) (lotus_api.FullNode, jsonrpc.ClientCloser, error) {
