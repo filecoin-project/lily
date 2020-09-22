@@ -10,6 +10,7 @@ import (
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"go.opentelemetry.io/otel/api/global"
+	"golang.org/x/xerrors"
 )
 
 type CacheCtxStore struct {
@@ -18,17 +19,17 @@ type CacheCtxStore struct {
 	api   api.FullNode
 }
 
-func NewCacheCtxStore(ctx context.Context, api api.FullNode, size int) *CacheCtxStore {
+func NewCacheCtxStore(ctx context.Context, api api.FullNode, size int) (*CacheCtxStore, error) {
 	ac, err := lru.NewARC(size)
 	if err != nil {
-		panic(err)
+		return nil, xerrors.Errorf("new arc cache: %w", err)
 	}
 
 	return &CacheCtxStore{
 		cache: ac,
 		ctx:   ctx,
 		api:   api,
-	}
+	}, nil
 }
 
 func (cs *CacheCtxStore) Context() context.Context {
@@ -52,11 +53,11 @@ func (cs *CacheCtxStore) Get(ctx context.Context, c cid.Cid, out interface{}) er
 	// miss :(
 	raw, err := cs.api.ChainReadObj(ctx, c)
 	if err != nil {
-		return err
+		return xerrors.Errorf("read obj: %w", err)
 	}
 
 	if err := cu.UnmarshalCBOR(bytes.NewReader(raw)); err != nil {
-		return err
+		return xerrors.Errorf("unmarshal obj: %w", err)
 	}
 
 	cs.cache.Add(c, raw)

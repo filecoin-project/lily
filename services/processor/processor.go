@@ -11,6 +11,7 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-address"
 	types "github.com/filecoin-project/lotus/chain/types"
@@ -65,38 +66,36 @@ func (p *Processor) InitHandler(ctx context.Context, batchSize int) error {
 
 	gen, err := p.node.ChainGetGenesis(ctx)
 	if err != nil {
-		return err
+		return xerrors.Errorf("get genesis: %w", err)
 	}
 
 	p.genesis = gen
 	p.batchSize = batchSize
 
 	if _, err := p.scheduler.queueGenesisTask(gen.Key(), gen.ParentState()); err != nil {
-		return err
+		return xerrors.Errorf("queue genesis task: %w", err)
 	}
 
 	p.log.Infow("initialized processor", "genesis", gen.String())
 	return nil
 }
 
-func (p *Processor) Start(ctx context.Context) {
+func (p *Processor) Start(ctx context.Context) error {
 	p.log.Info("starting processor")
-	go func() {
-		// Ensure the scheduler stops the workers and associated processes before exiting.
-		defer p.scheduler.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				p.log.Info("stopping processor")
-				return
-			default:
-				err := p.process(ctx)
-				if err != nil {
-					panic(err)
-				}
+	// Ensure the scheduler stops the workers and associated processes before exiting.
+	defer p.scheduler.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			p.log.Info("stopping processor")
+			return nil
+		default:
+			err := p.process(ctx)
+			if err != nil {
+				return xerrors.Errorf("process: %w", err)
 			}
 		}
-	}()
+	}
 }
 
 func (p *Processor) process(ctx context.Context) error {
@@ -105,10 +104,11 @@ func (p *Processor) process(ctx context.Context) error {
 
 	blksToProcess, err := p.collectBlocksToProcess(ctx, p.batchSize)
 	if err != nil {
-		panic(err)
+		return xerrors.Errorf("collect blocks: %w", err)
 	}
 
 	if len(blksToProcess) == 0 {
+		p.log.Info("no blocks to process, waiting 30 seconds")
 		time.Sleep(time.Second * 30)
 		return nil
 	}
@@ -116,13 +116,13 @@ func (p *Processor) process(ctx context.Context) error {
 
 	actorChanges, err := p.collectActorChanges(ctx, blksToProcess)
 	if err != nil {
-		return err
+		return xerrors.Errorf("collect actor changes: %w", err)
 	}
 
 	p.log.Infow("collected actor changes")
 
 	if err := p.scheduler.Dispatch(actorChanges); err != nil {
-		return err
+		return xerrors.Errorf("dispatch: %w", err)
 	}
 
 	return nil
@@ -204,12 +204,12 @@ func (p *Processor) collectBlocksToProcess(ctx context.Context, batch int) ([]*t
 	for idx, blk := range blks {
 		blkCid, err := cid.Decode(blk.Cid)
 		if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("decode cid: %w", err)
 		}
 
 		header, err := p.node.ChainGetBlock(ctx, blkCid)
 		if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("get block: %w", err)
 		}
 		out[idx] = header
 	}

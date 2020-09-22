@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	_ "net/http/pprof"
-	"os"
-
-	_ "github.com/lib/pq"
 
 	logging "github.com/ipfs/go-log/v2"
+	_ "github.com/lib/pq"
 	"github.com/urfave/cli/v2"
 	"go.opentelemetry.io/otel/exporters/trace/jaeger"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"golang.org/x/xerrors"
 
 	lens "github.com/filecoin-project/sentinel-visor/lens"
 	lotuslens "github.com/filecoin-project/sentinel-visor/lens/lotus"
@@ -42,51 +41,59 @@ var processorCmd = &cli.Command{
 	Action: func(cctx *cli.Context) error {
 		ll := cctx.String("log-level")
 		if err := logging.SetLogLevel("*", ll); err != nil {
-			return err
+			return xerrors.Errorf("set log level: %w", err)
+		}
+
+		if err := logging.SetLogLevel("rpc", "error"); err != nil {
+			return xerrors.Errorf("set rpc log level: %w", err)
 		}
 
 		if cctx.Bool("tracing") {
 			jcfg, err := jaegerConfigFromCliContext(cctx)
 			if err != nil {
-				log.Errorw("failed to initialize tracing subsystem", "error", err)
-				return err
+				return xerrors.Errorf("read jeager config: %w", err)
 			}
 			closer, err := setupTracing(jcfg)
 			if err != nil {
-				log.Errorw("failed to initialize tracing subsystem", "error", err)
-				return err
+				return xerrors.Errorf("initialize tracing subsystem: %w", err)
 			}
 			defer closer()
 		}
 
 		ctx, rctx, err := setupStorageAndAPI(cctx)
 		if err != nil {
-			return err
+			return xerrors.Errorf("setup storage and api: %w", err)
 		}
 		defer func() {
 			rctx.closer()
 			if err := rctx.db.Close(); err != nil {
-				log.Errorw("closing base", "error", err)
+				log.Errorw("close database", "error", err)
 			}
 		}()
 
 		if err := rctx.db.CreateSchema(); err != nil {
-			return err
+			return xerrors.Errorf("create schema: %w", err)
 		}
 
 		processor := processor2.NewProcessor(rctx.db, rctx.api)
 		if err := processor.InitHandler(ctx, cctx.Int("max-batch")); err != nil {
-			return err
-		}
-		processor.Start(ctx)
-
-		if err := logging.SetLogLevel("rpc", "error"); err != nil {
-			return err
+			return xerrors.Errorf("init processor: %w", err)
 		}
 
-		<-ctx.Done()
-		os.Exit(0)
-		return nil
+		// Start the processor and wait for it to complete or to be cancelled.
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			err = processor.Start(ctx)
+		}()
+
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-done:
+			return err
+		}
+
 	},
 }
 
@@ -96,23 +103,21 @@ var indexerCmd = &cli.Command{
 	Action: func(cctx *cli.Context) error {
 		ll := cctx.String("log-level")
 		if err := logging.SetLogLevel("*", ll); err != nil {
-			return err
+			return xerrors.Errorf("set log level: %w", err)
 		}
 
 		if err := logging.SetLogLevel("rpc", "error"); err != nil {
-			return err
+			return xerrors.Errorf("set rpc log level: %w", err)
 		}
 
 		if cctx.Bool("tracing") {
 			jcfg, err := jaegerConfigFromCliContext(cctx)
 			if err != nil {
-				log.Errorw("failed to initialize tracing subsystem", "error", err)
-				return err
+				return xerrors.Errorf("read jeager config: %w", err)
 			}
 			closer, err := setupTracing(jcfg)
 			if err != nil {
-				log.Errorw("failed to initialize tracing subsystem", "error", err)
-				return err
+				return xerrors.Errorf("initialize tracing subsystem: %w", err)
 			}
 			defer closer()
 		}
@@ -124,21 +129,17 @@ var indexerCmd = &cli.Command{
 		defer func() {
 			rctx.closer()
 			if err := rctx.db.Close(); err != nil {
-				log.Errorw("closing statebase", "error", err)
+				log.Errorw("close database", "error", err)
 			}
 		}()
 
 		if err := rctx.db.CreateSchema(); err != nil {
-			return err
+			return xerrors.Errorf("create schema: %w", err)
 		}
 
 		indexer := indexer2.NewIndexer(rctx.db, rctx.api)
 		if err := indexer.InitHandler(ctx); err != nil {
-			return err
-		}
-
-		if err := logging.SetLogLevel("rpc", "error"); err != nil {
-			return err
+			return xerrors.Errorf("init indexer: %w", err)
 		}
 
 		// Start the indexer and wait for it to complete or to be cancelled.
@@ -167,12 +168,12 @@ type RunContext struct {
 func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error) {
 	ctx, api, closer, err := vapi.GetFullNodeAPI(cctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, xerrors.Errorf("get node api: %w", err)
 	}
 
 	db, err := storage.NewDatabase(ctx, cctx.String("db"), cctx.Int("db-pool-size"))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, xerrors.Errorf("connect database: %w", err)
 	}
 
 	return ctx, &RunContext{api, closer, db}, nil
@@ -187,10 +188,10 @@ func setupTracing(cfg *jaegerConfig) (func(), error) {
 		jaeger.WithSDK(&sdktrace.Config{DefaultSampler: cfg.Sampler}),
 	)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("install jaeger pipeline: %w", err)
 	}
 
-	return closer, err
+	return closer, nil
 }
 
 type jaegerConfig struct {
