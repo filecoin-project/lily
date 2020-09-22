@@ -195,9 +195,9 @@ func (i *Indexer) mostRecentlySyncedBlockHeight(ctx context.Context) (cid.Cid, i
 	task, err := i.storage.MostRecentSyncedBlock(ctx)
 	if err != nil {
 		if err == pg.ErrNoRows {
-			return i.genesis.Cids()[0], 0, xerrors.Errorf("query recent synced: %w", err)
+			return i.genesis.Cids()[0], 0, nil
 		}
-		return cid.Undef, 0, err
+		return cid.Undef, 0, xerrors.Errorf("query recent synced: %w", err)
 	}
 	c, err := cid.Decode(task.Cid)
 	if err != nil {
