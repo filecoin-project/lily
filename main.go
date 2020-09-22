@@ -71,7 +71,8 @@ func main() {
 			},
 		},
 		Commands: []*cli.Command{
-			runCmd,
+			processCmd,
+			indexCmd,
 		},
 	}
 

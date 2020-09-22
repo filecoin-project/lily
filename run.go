@@ -21,18 +21,9 @@ import (
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
-var runCmd = &cli.Command{
-	Name:  "run",
-	Usage: "Start visor",
-	Subcommands: []*cli.Command{
-		processorCmd,
-		indexerCmd,
-	},
-}
-
-var processorCmd = &cli.Command{
-	Name:  "processor",
-	Usage: "Non-singleton processor of the lotus blockchain",
+var processCmd = &cli.Command{
+	Name:  "process",
+	Usage: "Process indexed blocks of the lotus blockchain",
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:  "max-batch",
@@ -90,9 +81,9 @@ var processorCmd = &cli.Command{
 	},
 }
 
-var indexerCmd = &cli.Command{
-	Name:  "indexer",
-	Usage: "Singleton indexer of the lotus blockchain",
+var indexCmd = &cli.Command{
+	Name:  "index",
+	Usage: "Index the lotus blockchain",
 	Action: func(cctx *cli.Context) error {
 		ll := cctx.String("log-level")
 		if err := logging.SetLogLevel("*", ll); err != nil {
