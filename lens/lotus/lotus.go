@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/urfave/cli/v2"
-
 	logging "github.com/ipfs/go-log/v2"
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr/net"
+	"github.com/urfave/cli/v2"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-jsonrpc"
 	lotus_api "github.com/filecoin-project/lotus/api"
@@ -36,12 +36,12 @@ func GetFullNodeAPI(cctx *cli.Context) (context.Context, lens.API, APICloser, er
 
 		api, closer, err = getFullNodeAPIUsingCredentials(cctx.Context, toks[1], toks[0])
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, xerrors.Errorf("get full node api with credentials: %w", err)
 		}
 	} else {
 		api, closer, err = lcli.GetFullNodeAPI(cctx)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, xerrors.Errorf("get full node api: %w", err)
 		}
 	}
 
@@ -49,11 +49,16 @@ func GetFullNodeAPI(cctx *cli.Context) (context.Context, lens.API, APICloser, er
 
 	v, err := api.Version(ctx)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, xerrors.Errorf("api version: %w", err)
 	}
 	log.Infof("Lotus API version: %s", v.Version)
 
-	lensAPI := NewAPIWrapper(api, NewCacheCtxStore(ctx, api, 10_000))
+	cacheStore, err := NewCacheCtxStore(ctx, api, 10_000)
+	if err != nil {
+		return nil, nil, nil, xerrors.Errorf("new cache store: %w", err)
+	}
+
+	lensAPI := NewAPIWrapper(api, cacheStore)
 
 	return ctx, lensAPI, APICloser(closer), nil
 }
@@ -61,12 +66,12 @@ func GetFullNodeAPI(cctx *cli.Context) (context.Context, lens.API, APICloser, er
 func getFullNodeAPIUsingCredentials(ctx context.Context, listenAddr, token string) (lotus_api.FullNode, jsonrpc.ClientCloser, error) {
 	parsedAddr, err := ma.NewMultiaddr(listenAddr)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, xerrors.Errorf("parse listen address: %w", err)
 	}
 
 	_, addr, err := manet.DialArgs(parsedAddr)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, xerrors.Errorf("dial multiaddress: %w", err)
 	}
 
 	return client.NewFullNodeRPC(ctx, apiURI(addr), apiHeaders(token))

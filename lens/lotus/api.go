@@ -7,10 +7,11 @@ import (
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	cid "github.com/ipfs/go-cid"
 	"go.opentelemetry.io/otel/api/global"
+
+	"github.com/filecoin-project/sentinel-visor/lens"
 )
 
 func NewAPIWrapper(node api.FullNode, store adt.Store) *APIWrapper {

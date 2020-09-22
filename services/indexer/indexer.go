@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+	"golang.org/x/xerrors"
 
 	store "github.com/filecoin-project/lotus/chain/store"
 	types "github.com/filecoin-project/lotus/chain/types"
@@ -42,18 +43,14 @@ type Indexer struct {
 
 // InitHandler initializes Indexer with state needed to start sycning head events
 func (i *Indexer) InitHandler(ctx context.Context) error {
-	if err := logging.SetLogLevel("*", "debug"); err != nil {
-		return err
-	}
-
 	gen, err := i.node.ChainGetGenesis(ctx)
 	if err != nil {
-		return err
+		return xerrors.Errorf("get genesis: %w", err)
 	}
 	i.genesis = gen
 	blk, height, err := i.mostRecentlySyncedBlockHeight(ctx)
 	if err != nil {
-		return err
+		return xerrors.Errorf("get synced block height: %w", err)
 	}
 
 	finality := 1400
@@ -71,7 +68,7 @@ func (i *Indexer) Start(ctx context.Context) error {
 	log.Info("starting Indexer")
 	hc, err := i.node.ChainNotify(ctx)
 	if err != nil {
-		return err
+		return xerrors.Errorf("chain notify: %w", err)
 	}
 
 	for {
@@ -85,7 +82,7 @@ func (i *Indexer) Start(ctx context.Context) error {
 				return nil
 			}
 			if err := i.index(ctx, headEvents); err != nil {
-				return err
+				return xerrors.Errorf("index: %w", err)
 			}
 		}
 	}
@@ -104,7 +101,7 @@ func (i *Indexer) index(ctx context.Context, headEvents []*lotus_api.HeadChange)
 			// collect all blocks to index starting from head and walking down the chain
 			toIndex, err := i.collectBlocksToIndex(ctx, head.Val, i.startingHeight)
 			if err != nil {
-				return err
+				return xerrors.Errorf("collect blocks: %w", err)
 			}
 
 			// if there are no new blocks short circuit
@@ -114,7 +111,7 @@ func (i *Indexer) index(ctx context.Context, headEvents []*lotus_api.HeadChange)
 
 			// persist the blocks to storage
 			if err := toIndex.Persist(ctx, i.storage.DB); err != nil {
-				return err
+				return xerrors.Errorf("persist: %w", err)
 			}
 
 			// keep the heights block we have seen so we don't recollect it.
@@ -139,7 +136,7 @@ func (i *Indexer) collectBlocksToIndex(ctx context.Context, head *types.TipSet, 
 	// Now we are going to walk down the chain from `head` until we have visited all blocks not in the database.
 	synced, err := i.storage.UnprocessedIndexedBlocks(ctx, int(maxHeight), i.finality)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("get unprocessed blocks: %w", err)
 	}
 	log.Infow("collect synced blocks", "count", len(synced))
 	// well, this is complete shit
@@ -147,7 +144,7 @@ func (i *Indexer) collectBlocksToIndex(ctx context.Context, head *types.TipSet, 
 	for _, c := range synced {
 		key, err := cid.Decode(c.Cid)
 		if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("decode cid: %w", err)
 		}
 		has[key] = struct{}{}
 	}
@@ -179,7 +176,7 @@ func (i *Indexer) collectBlocksToIndex(ctx context.Context, head *types.TipSet, 
 
 		pts, err := i.node.ChainGetTipSet(ctx, types.NewTipSetKey(bh.Parents...))
 		if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("get tipset: %w", err)
 		}
 
 		for _, header := range pts.Blocks() {
@@ -198,13 +195,13 @@ func (i *Indexer) mostRecentlySyncedBlockHeight(ctx context.Context) (cid.Cid, i
 	task, err := i.storage.MostRecentSyncedBlock(ctx)
 	if err != nil {
 		if err == pg.ErrNoRows {
-			return i.genesis.Cids()[0], 0, nil
+			return i.genesis.Cids()[0], 0, xerrors.Errorf("query recent synced: %w", err)
 		}
 		return cid.Undef, 0, err
 	}
 	c, err := cid.Decode(task.Cid)
 	if err != nil {
-		panic(err)
+		return cid.Undef, 0, xerrors.Errorf("decode cid: %w", err)
 	}
 	return c, task.Height, nil
 }

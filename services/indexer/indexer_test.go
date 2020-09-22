@@ -51,7 +51,7 @@ func TestIndex(t *testing.T) {
 		t.Skip("short testing specified but this test requires external dependencies")
 	}
 
-	db, err := storage.NewDatabase(context.Background(), "postgres://postgres:password@localhost:5432/postgres?sslmode=disable")
+	db, err := storage.NewDatabase(context.Background(), "postgres://postgres:password@localhost:5432/postgres?sslmode=disable", 10)
 	require.NoError(t, err, "connecting to database")
 
 	t.Logf("truncating database tables")
