@@ -1,5 +1,5 @@
 # Sentinel Visor
-[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/filecoin-project/sentinel-visor)
+[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/filecoin-project/sentinel-visor) [![docker build status](https://img.shields.io/docker/cloud/build/filecoin/sentinel-visor?style=flat-square)](https://hub.docker.com/repository/docker/filecoin/sentinel-visor) [![CI build](https://img.shields.io/circleci/build/gh/filecoin-project/sentinel-visor?label=ci%20build&style=flat-square)](https://app.circleci.com/pipelines/github/filecoin-project/sentinel-visor)
 
 A component of [**Sentinel**](https://github.com/filecoin-project/sentinel), a collection of services which monitor the health and function of the Filecoin network. 
 
