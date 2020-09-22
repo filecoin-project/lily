@@ -82,6 +82,8 @@ func (p *Processor) InitHandler(ctx context.Context, batchSize int) error {
 func (p *Processor) Start(ctx context.Context) {
 	p.log.Info("starting processor")
 	go func() {
+		// Ensure the scheduler stops the workers and associated processes before exiting.
+		defer p.scheduler.Stop()
 		for {
 			select {
 			case <-ctx.Done():
