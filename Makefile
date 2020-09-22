@@ -2,6 +2,9 @@ PG_IMAGE?=postgres:10
 REDIS_IMAGE?=redis:6
 COMMIT := $(shell git rev-parse --short HEAD)
 
+# GITVERSION is the nearest tag plus number of commits and short form of most recent commit since the tag, if any
+GITVERSION=$(shell git describe --always --tag --dirty)
+
 unexport GOFLAGS
 
 MODULES:=
@@ -9,6 +12,12 @@ CLEAN:=
 BINS:=
 
 GOFLAGS:=
+
+ldflags=-X=github.com/filecoin-project/sentinel-visor/version.GitVersion=$(GITVERSION)
+ifneq ($(strip $(LDFLAGS)),)
+	ldflags+=-extldflags=$(LDFLAGS)
+endif
+GOFLAGS+=-ldflags="$(ldflags)"
 
 .PHONY: all
 all: build
