@@ -1,0 +1,5 @@
+#!/bin/bash
+# Docker hub does a recursive clone, then checks the branch out,
+# so when a PR adds a submodule (or updates it), it fails.
+# See: https://stackoverflow.com/questions/58690455/how-to-correctly-initialize-git-submodules-in-dockerfile-for-docker-cloud
+git submodule update --init
