@@ -48,8 +48,9 @@ var models = []interface{}{
 	(*init_.IdAddress)(nil),
 }
 
-func NewDatabase(ctx context.Context, url string) (*Database, error) {
+func NewDatabase(ctx context.Context, url string, poolSize int) (*Database, error) {
 	opt, err := pg.ParseURL(url)
+	opt.PoolSize = poolSize
 	if err != nil {
 		return nil, xerrors.Errorf("parse database URL: %w", err)
 	}

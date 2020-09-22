@@ -170,7 +170,7 @@ func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error)
 		return nil, nil, err
 	}
 
-	db, err := storage.NewDatabase(ctx, cctx.String("db"))
+	db, err := storage.NewDatabase(ctx, cctx.String("db"), cctx.Int("db-pool-size"))
 	if err != nil {
 		return nil, nil, err
 	}
