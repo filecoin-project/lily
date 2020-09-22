@@ -149,8 +149,10 @@ func (pmt *ProcessMarketTask) marketDealStateChanges(ctx context.Context) (marke
 		// indicates a developer error or breaking change in lotus
 		return nil, xerrors.Errorf("Unknown type returned by Deal State AMT predicate: %T", val)
 	}
+
 	out := make(marketmodel.MarketDealStates, len(changes.Added)+len(changes.Modified))
-	for idx, add := range changes.Added {
+	idx := 0
+	for _, add := range changes.Added {
 		out[idx] = &marketmodel.MarketDealState{
 			DealID:           uint64(add.ID),
 			StateRoot:        pmt.stateroot.String(),
@@ -158,8 +160,9 @@ func (pmt *ProcessMarketTask) marketDealStateChanges(ctx context.Context) (marke
 			LastUpdateEpoch:  int64(add.Deal.LastUpdatedEpoch),
 			SlashEpoch:       int64(add.Deal.SlashEpoch),
 		}
+		idx++
 	}
-	for idx, mod := range changes.Modified {
+	for _, mod := range changes.Modified {
 		out[idx] = &marketmodel.MarketDealState{
 			DealID:           uint64(mod.ID),
 			SectorStartEpoch: int64(mod.To.SectorStartEpoch),
@@ -167,6 +170,7 @@ func (pmt *ProcessMarketTask) marketDealStateChanges(ctx context.Context) (marke
 			SlashEpoch:       int64(mod.To.SlashEpoch),
 			StateRoot:        pmt.stateroot.String(),
 		}
+		idx++
 	}
 	return out, nil
 }
