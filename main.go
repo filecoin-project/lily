@@ -34,6 +34,11 @@ func main() {
 				EnvVars: []string{"LOTUS_DB"},
 				Value:   "postgres://postgres:password@localhost:5432/postgres?sslmode=disable",
 			},
+			&cli.IntFlag{
+				Name:    "db-pool-size",
+				EnvVars: []string{"LOTUS_DB_POOL_SIZE"},
+				Value:   75,
+			},
 			&cli.StringFlag{
 				Name:    "log-level",
 				EnvVars: []string{"GOLOG_LOG_LEVEL"},
