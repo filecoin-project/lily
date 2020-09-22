@@ -1,0 +1,35 @@
+version: 2.1
+
+executors:
+  golang:
+    docker:
+      - image: cimg/go:1.15.2
+
+jobs:
+  test:
+    executor: golang
+    steps:
+      - checkout
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y pkg-config jq mesa-opencl-icd ocl-icd-opencl-dev
+      - run: make deps
+      - run: make build
+      - run: make testshort
+
+  docker-build:
+    executor: golang
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: "18.09.3"
+      - run:
+          name: Build Docker image
+          command: |
+            docker build -t filecoin/sentinel-visor .
+
+workflows:
+  version: 2
+  check:
+    jobs:
+      - test
+      - docker-build
