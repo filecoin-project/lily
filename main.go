@@ -5,6 +5,8 @@ import (
 
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
+
+	"github.com/filecoin-project/sentinel-visor/version"
 )
 
 var log = logging.Logger("visor")
@@ -17,7 +19,7 @@ func main() {
 	app := &cli.App{
 		Name:    "visor",
 		Usage:   "Filecoin Chain Monitoring Utility",
-		Version: "v0.0.0",
+		Version: version.String(),
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "repo",
