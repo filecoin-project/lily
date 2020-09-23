@@ -205,6 +205,8 @@ func (s *Scheduler) queueMinerTask(info indexer.ActorInfo) (*work.Job, error) {
 }
 
 func (s *Scheduler) queuePowerTask(info indexer.ActorInfo) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, tasks.PowerPoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := info.TipSet.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)
@@ -224,6 +226,8 @@ func (s *Scheduler) queuePowerTask(info indexer.ActorInfo) (*work.Job, error) {
 }
 
 func (s *Scheduler) queueMarketTask(info indexer.ActorInfo) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, tasks.MarketPoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := info.TipSet.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)
@@ -242,6 +246,8 @@ func (s *Scheduler) queueMarketTask(info indexer.ActorInfo) (*work.Job, error) {
 }
 
 func (s *Scheduler) queueInitTask(info indexer.ActorInfo) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, tasks.InitActorPoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := info.TipSet.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)
@@ -261,6 +267,8 @@ func (s *Scheduler) queueInitTask(info indexer.ActorInfo) (*work.Job, error) {
 }
 
 func (s *Scheduler) queueGenesisTask(genesisTs types.TipSetKey, genesisRoot cid.Cid) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, tasks.GenesisPoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := genesisTs.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)
@@ -272,6 +280,8 @@ func (s *Scheduler) queueGenesisTask(genesisTs types.TipSetKey, genesisRoot cid.
 }
 
 func (s *Scheduler) queueMessageTask(ts types.TipSetKey, st cid.Cid) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, tasks.MessagePoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := ts.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)
@@ -283,6 +293,8 @@ func (s *Scheduler) queueMessageTask(ts types.TipSetKey, st cid.Cid) (*work.Job,
 }
 
 func (s *Scheduler) queueRewardTask(info indexer.ActorInfo) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, tasks.RewardPoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := info.TipSet.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)
@@ -301,6 +313,8 @@ func (s *Scheduler) queueRewardTask(info indexer.ActorInfo) (*work.Job, error) {
 }
 
 func (s *Scheduler) queueCommonTask(info indexer.ActorInfo) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, tasks.CommonPoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := info.TipSet.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)
