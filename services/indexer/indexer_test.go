@@ -23,6 +23,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
 	"github.com/filecoin-project/sentinel-visor/storage"
+	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 
 func init() {
@@ -47,11 +48,11 @@ func (nodeWrapper) Store() adt.Store {
 }
 
 func TestIndex(t *testing.T) {
-	if testing.Short() {
-		t.Skip("short testing specified but this test requires external dependencies")
+	if testing.Short() || !testutil.DatabaseAvailable() {
+		t.Skip("short testing requested or VISOR_TEST_DB not set")
 	}
 
-	db, err := storage.NewDatabase(context.Background(), "postgres://postgres:password@localhost:5432/postgres?sslmode=disable", 10)
+	db, err := storage.NewDatabase(context.Background(), testutil.Database(), 10)
 	require.NoError(t, err, "connecting to database")
 
 	t.Logf("truncating database tables")
