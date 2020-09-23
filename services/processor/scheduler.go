@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"context"
 	"os"
 	"strconv"
 
@@ -10,9 +11,12 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/services/indexer"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/common"
@@ -204,6 +208,8 @@ func (s *Scheduler) Dispatch(tips indexer.ActorTips) error {
 }
 
 func (s *Scheduler) queueMinerTask(info indexer.ActorInfo) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, MinerPoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := info.TipSet.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)

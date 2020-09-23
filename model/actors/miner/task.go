@@ -11,7 +11,12 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
+
+	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/services/processor"
 )
 
 type PartitionStatus struct {
@@ -41,6 +46,10 @@ type MinerTaskResult struct {
 func (mtr *MinerTaskResult) Persist(ctx context.Context, db *pg.DB) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerTaskResult.Persist")
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskNS, processor.MinerPoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(-1))
+
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		if err := NewMinerStateModel(mtr).PersistWithTx(ctx, tx); err != nil {
 			return err
