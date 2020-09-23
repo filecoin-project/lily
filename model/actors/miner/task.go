@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/services/processor"
+	"github.com/filecoin-project/sentinel-visor/tasks"
 )
 
 type PartitionStatus struct {
@@ -47,7 +47,7 @@ func (mtr *MinerTaskResult) Persist(ctx context.Context, db *pg.DB) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerTaskResult.Persist")
 	defer span.End()
 
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskNS, processor.MinerPoolName))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskNS, tasks.MinerPoolName))
 	stats.Record(ctx, metrics.TaskQueueLen.M(-1))
 
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
