@@ -3,12 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	_ "net/http/pprof"
 	"strings"
+	"time"
 
+	"contrib.go.opencensus.io/exporter/prometheus"
 	logging "github.com/ipfs/go-log/v2"
 	_ "github.com/lib/pq"
+	prom "github.com/prometheus/client_golang/prometheus"
 	"github.com/urfave/cli/v2"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/zpages"
 	"go.opentelemetry.io/otel/exporters/trace/jaeger"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"golang.org/x/xerrors"
@@ -16,6 +22,7 @@ import (
 	lens "github.com/filecoin-project/sentinel-visor/lens"
 	lotuslens "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	vapi "github.com/filecoin-project/sentinel-visor/lens/lotus"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	indexer2 "github.com/filecoin-project/sentinel-visor/services/indexer"
 	processor2 "github.com/filecoin-project/sentinel-visor/services/processor"
 	"github.com/filecoin-project/sentinel-visor/storage"
@@ -34,6 +41,10 @@ var processCmd = &cli.Command{
 		err := setupLogging(cctx)
 		if err != nil {
 			return xerrors.Errorf("setup logging: %w", err)
+		}
+
+		if err := setupMetrics(); err != nil {
+			return xerrors.Errorf("setup metrics: %w", err)
 		}
 
 		if cctx.Bool("tracing") {
@@ -232,5 +243,38 @@ func setupLogging(cctx *cli.Context) error {
 
 	}
 
+	return nil
+}
+
+func setupMetrics() error {
+	// setup Prometheus
+	registry := prom.NewRegistry()
+	goCollector := prom.NewGoCollector()
+	procCollector := prom.NewProcessCollector(prom.ProcessCollectorOpts{})
+	registry.MustRegister(goCollector, procCollector)
+	pe, err := prometheus.NewExporter(prometheus.Options{
+		Namespace: "visor",
+		Registry:  registry,
+	})
+	if err != nil {
+		return err
+	}
+
+	// register prometheus with opencensus
+	view.RegisterExporter(pe)
+	view.SetReportingPeriod(2 * time.Second)
+
+	// register the metrics views of interest
+	if err := view.Register(metrics.DefaultViews...); err != nil {
+		return err
+	}
+	go func() {
+		mux := http.NewServeMux()
+		zpages.Handle(mux, "/debug")
+		mux.Handle("/metrics", pe)
+		if err := http.ListenAndServe(":9991", mux); err != nil {
+			log.Fatalf("Failed to run Prometheus /metrics endpoint: %v", err)
+		}
+	}()
 	return nil
 }
