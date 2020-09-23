@@ -57,10 +57,6 @@ type Processor struct {
 }
 
 func (p *Processor) InitHandler(ctx context.Context, batchSize int) error {
-	if err := logging.SetLogLevel("*", "debug"); err != nil {
-		return err
-	}
-
 	p.publisher.Start(ctx)
 	p.scheduler.Start()
 

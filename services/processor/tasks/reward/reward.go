@@ -30,7 +30,6 @@ func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, n
 		mt.log = logging.Logger("rewardtask")
 		return next()
 	})
-	logging.SetLogLevel("rewardtask", "debug")
 	// log all task
 	pool.Middleware((*ProcessRewardTask).Log)
 
