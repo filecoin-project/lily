@@ -220,8 +220,8 @@ func (p *Processor) recordDBStats(ctx context.Context) {
 	pstats := p.storage.DB.PoolStats()
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ConnState, "total"))
 	stats.Record(ctx, metrics.DBConns.M(int64(pstats.TotalConns)))
-	ctx, _ = tag.New(ctx, tag.Update(metrics.ConnState, "idle"))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ConnState, "idle"))
 	stats.Record(ctx, metrics.DBConns.M(int64(pstats.IdleConns)))
-	ctx, _ = tag.New(ctx, tag.Update(metrics.ConnState, "stale"))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ConnState, "stale"))
 	stats.Record(ctx, metrics.DBConns.M(int64(pstats.StaleConns)))
 }
