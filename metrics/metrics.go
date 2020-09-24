@@ -24,7 +24,7 @@ var (
 var (
 	TaskQueueLenView = &view.View{
 		Measure: TaskQueueLen,
-		Aggregation: view.Sum(),
+		Aggregation: view.Count(),
 		TagKeys: []tag.Key{TaskNS},
 	}
 	PersistDurationView = &view.View{
