@@ -35,7 +35,9 @@ func (r *ChainReward) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	stats.Record(ctx, metrics.TaskQueueLen.M(-1))
 
 	start := time.Now()
-	defer stats.Record(ctx, metrics.PersistDuration.M(metrics.SinceInMilliseconds(start)))
+	defer func() {
+		stats.Record(ctx, metrics.PersistDuration.M(metrics.SinceInMilliseconds(start)))
+	}()
 
 	if _, err := tx.ModelContext(ctx, r).
 		OnConflict("do nothing").

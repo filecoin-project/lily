@@ -39,7 +39,9 @@ func (cp *ChainPower) Persist(ctx context.Context, db *pg.DB) error {
 	stats.Record(ctx, metrics.TaskQueueLen.M(-1))
 
 	start := time.Now()
-	defer stats.Record(ctx, metrics.PersistDuration.M(metrics.SinceInMilliseconds(start)))
+	defer func() {
+		stats.Record(ctx, metrics.PersistDuration.M(metrics.SinceInMilliseconds(start)))
+	}()
 
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		return cp.PersistWithTx(ctx, tx)

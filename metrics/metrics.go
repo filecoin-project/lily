@@ -12,11 +12,13 @@ var defaultMillisecondsDistribution = view.Distribution(0.01, 0.05, 0.1, 0.3, 0.
 
 var (
 	TaskNS, _ = tag.NewKey("namespace")
+	ConnState, _ = tag.NewKey("conn_state")
 )
 
 var (
 	TaskQueueLen = stats.Int64("task_queue_len", "Length of a task queue", stats.UnitDimensionless)
 	PersistDuration = stats.Float64("persist_duration_ms", "Duration of a models persist operation", stats.UnitMilliseconds)
+	DBConns = stats.Int64("db_conns", "Database connections held", stats.UnitDimensionless)
 )
 
 var (
@@ -30,11 +32,17 @@ var (
 		Aggregation: defaultMillisecondsDistribution,
 		TagKeys: []tag.Key{TaskNS},
 	}
+	DBConnsView = &view.View{
+		Measure: DBConns,
+		Aggregation: view.Count(),
+		TagKeys: []tag.Key{ConnState},
+	}
 )
 
 var DefaultViews = append([]*view.View{
 	TaskQueueLenView,
 	PersistDurationView,
+	DBConnsView,
 })
 
 // SinceInMilliseconds returns the duration of time since the provide time as a float64.
