@@ -2,6 +2,7 @@ package reward
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-pg/pg/v10"
 	"go.opencensus.io/stats"
@@ -32,6 +33,9 @@ func (r *ChainReward) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskNS, tasks.RewardPoolName))
 	stats.Record(ctx, metrics.TaskQueueLen.M(-1))
+
+	start := time.Now()
+	defer stats.Record(ctx, metrics.PersistDuration.M(metrics.SinceInMilliseconds(start)))
 
 	if _, err := tx.ModelContext(ctx, r).
 		OnConflict("do nothing").
