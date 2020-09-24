@@ -218,10 +218,16 @@ func (p *Processor) collectBlocksToProcess(ctx context.Context, batch int) ([]*t
 
 func (p *Processor) recordDBStats(ctx context.Context) {
 	pstats := p.storage.DB.PoolStats()
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ConnState, "total"))
-	stats.Record(ctx, metrics.DBConns.M(int64(pstats.TotalConns)))
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ConnState, "idle"))
-	stats.Record(ctx, metrics.DBConns.M(int64(pstats.IdleConns)))
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ConnState, "stale"))
-	stats.Record(ctx, metrics.DBConns.M(int64(pstats.StaleConns)))
+	{
+		ctx, _ = tag.New(ctx, tag.Upsert(metrics.ConnState, "total"))
+		stats.Record(ctx, metrics.DBConns.M(int64(pstats.TotalConns)))
+	}
+	{
+		ctx, _ = tag.New(ctx, tag.Upsert(metrics.ConnState, "idle"))
+		stats.Record(ctx, metrics.DBConns.M(int64(pstats.IdleConns)))
+	}
+	{
+		ctx, _ = tag.New(ctx, tag.Upsert(metrics.ConnState, "stale"))
+		stats.Record(ctx, metrics.DBConns.M(int64(pstats.StaleConns)))
+	}
 }
