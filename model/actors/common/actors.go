@@ -30,7 +30,7 @@ func (a *Actor) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 type ActorState struct {
 	Head  string `pg:",pk,notnull"`
 	Code  string `pg:",pk,notnull"`
-	State string `pg:",notnull"`
+	State string `pg:",type:jsonb,notnull"`
 }
 
 func (s *ActorState) PersistWithTx(ctx context.Context, tx *pg.Tx) error {

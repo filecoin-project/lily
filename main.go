@@ -6,6 +6,7 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
 
+	"github.com/filecoin-project/sentinel-visor/commands"
 	"github.com/filecoin-project/sentinel-visor/version"
 )
 
@@ -83,10 +84,16 @@ func main() {
 				EnvVars: []string{"JAEGER_SAMPLER_PARAM"},
 				Value:   0.0001,
 			},
+			&cli.BoolFlag{
+				Name:    "allow-schema-migration",
+				EnvVars: []string{"LOTUS_ALLOW_SCHEMA_MIGRATION"},
+				Value:   false,
+			},
 		},
 		Commands: []*cli.Command{
-			processCmd,
-			indexCmd,
+			commands.Process,
+			commands.Index,
+			commands.Migrate,
 		},
 	}
 
