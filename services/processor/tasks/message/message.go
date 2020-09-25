@@ -28,7 +28,6 @@ func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, n
 		mt.log = logging.Logger("messagetask")
 		return next()
 	})
-	logging.SetLogLevel("messagetask", "info")
 	// log all task
 	pool.Middleware((*ProcessMessageTask).Log)
 

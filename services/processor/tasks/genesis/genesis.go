@@ -39,7 +39,6 @@ func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, n
 		mt.log = logging.Logger("genesistask")
 		return next()
 	})
-	logging.SetLogLevel("genesistask", "info")
 	// log all task
 	pool.Middleware((*ProcessGenesisSingletonTask).Log)
 

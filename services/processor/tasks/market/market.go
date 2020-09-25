@@ -30,7 +30,6 @@ func Setup(concurrency uint, taskName, poolName string, redisPool *redis.Pool, n
 		mt.log = logging.Logger("markettask")
 		return next()
 	})
-	logging.SetLogLevel("markettask", "info")
 	// log all task
 	pool.Middleware((*ProcessMarketTask).Log)
 

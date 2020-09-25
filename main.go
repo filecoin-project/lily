@@ -45,6 +45,13 @@ func main() {
 				Name:    "log-level",
 				EnvVars: []string{"GOLOG_LOG_LEVEL"},
 				Value:   "debug",
+				Usage:   "Set the default log level for all loggers to `LEVEL`",
+			},
+			&cli.StringFlag{
+				Name:    "log-level-named",
+				EnvVars: []string{"VISOR_LOG_LEVEL_NAMED"},
+				Value:   "",
+				Usage:   "A comma delimited list of named loggers and log levels formatted as name:level, for example 'logger1:debug,logger2:info'",
 			},
 			&cli.BoolFlag{
 				Name:    "tracing",

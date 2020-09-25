@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	_ "net/http/pprof"
+	"strings"
 
 	logging "github.com/ipfs/go-log/v2"
 	_ "github.com/lib/pq"
@@ -30,13 +31,9 @@ var processCmd = &cli.Command{
 		},
 	},
 	Action: func(cctx *cli.Context) error {
-		ll := cctx.String("log-level")
-		if err := logging.SetLogLevel("*", ll); err != nil {
-			return xerrors.Errorf("set log level: %w", err)
-		}
-
-		if err := logging.SetLogLevel("rpc", "error"); err != nil {
-			return xerrors.Errorf("set rpc log level: %w", err)
+		err := setupLogging(cctx)
+		if err != nil {
+			return xerrors.Errorf("setup logging: %w", err)
 		}
 
 		if cctx.Bool("tracing") {
@@ -92,13 +89,9 @@ var indexCmd = &cli.Command{
 	Name:  "index",
 	Usage: "Index the lotus blockchain",
 	Action: func(cctx *cli.Context) error {
-		ll := cctx.String("log-level")
-		if err := logging.SetLogLevel("*", ll); err != nil {
-			return xerrors.Errorf("set log level: %w", err)
-		}
-
-		if err := logging.SetLogLevel("rpc", "error"); err != nil {
-			return xerrors.Errorf("set rpc log level: %w", err)
+		err := setupLogging(cctx)
+		if err != nil {
+			return xerrors.Errorf("setup logging: %w", err)
 		}
 
 		if cctx.Bool("tracing") {
@@ -211,4 +204,33 @@ func jaegerConfigFromCliContext(cctx *cli.Context) (*jaegerConfig, error) {
 	}
 
 	return &cfg, nil
+}
+
+func setupLogging(cctx *cli.Context) error {
+	ll := cctx.String("log-level")
+	if err := logging.SetLogLevel("*", ll); err != nil {
+		return xerrors.Errorf("set log level: %w", err)
+	}
+
+	if err := logging.SetLogLevel("rpc", "error"); err != nil {
+		return xerrors.Errorf("set rpc log level: %w", err)
+	}
+
+	llnamed := cctx.String("log-level-named")
+	if llnamed == "" {
+		return nil
+	}
+
+	for _, llname := range strings.Split(llnamed, ",") {
+		parts := strings.Split(llname, ":")
+		if len(parts) != 2 {
+			return xerrors.Errorf("invalid named log level format: %q", llname)
+		}
+		if err := logging.SetLogLevel(parts[0], parts[1]); err != nil {
+			return xerrors.Errorf("set named log level %q to %q: %w", parts[0], parts[1], err)
+		}
+
+	}
+
+	return nil
 }
