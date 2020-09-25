@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/pprof"
 	_ "net/http/pprof"
 	"strings"
 	"time"
@@ -272,6 +273,16 @@ func setupMetrics() error {
 		mux := http.NewServeMux()
 		zpages.Handle(mux, "/debug")
 		mux.Handle("/metrics", pe)
+		mux.HandleFunc("/debug/pprof/", pprof.Index)
+		mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+		mux.Handle("/debug/pprof/block", pprof.Handler("block"))
+		mux.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+		mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
+		mux.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
+		mux.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
 		if err := http.ListenAndServe(":9991", mux); err != nil {
 			log.Fatalf("Failed to run Prometheus /metrics endpoint: %v", err)
 		}
