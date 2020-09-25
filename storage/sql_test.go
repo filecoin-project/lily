@@ -8,6 +8,8 @@ import (
 	"github.com/go-pg/pg/v10"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 
 // may want to change this to use a named schema such as lotus
@@ -378,11 +380,11 @@ var expectedTables = []struct {
 }
 
 func TestCreateSchema(t *testing.T) {
-	if testing.Short() {
-		t.Skip("short testing specified")
+	if testing.Short() || !testutil.DatabaseAvailable() {
+		t.Skip("short testing requested or VISOR_TEST_DB not set")
 	}
 
-	db, err := NewDatabase(context.Background(), "postgres://postgres:password@localhost:5432/postgres?sslmode=disable", 10)
+	db, err := NewDatabase(context.Background(), testutil.Database(), 10)
 	if !assert.NoError(t, err, "connecting to database") {
 		return
 	}
