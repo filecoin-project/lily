@@ -12,7 +12,7 @@ RUN make deps && make build
 # Runner
 FROM buildpack-deps:buster-curl
 # Grab the things
-COPY --from=builder /go/src/github.com/filecoin-project/sentinel-visor/sentinel-visor /usr/bin/
+COPY --from=builder /go/src/github.com/filecoin-project/sentinel-visor/visor /usr/bin/
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libOpenCL.so* /lib/
 
 ENTRYPOINT ["/usr/bin/sentinel-visor"]

@@ -23,7 +23,7 @@ GOFLAGS+=-ldflags="$(ldflags)"
 all: build
 
 .PHONY: build
-build: sentinel-visor
+build: visor
 
 ## FFI
 
@@ -73,12 +73,12 @@ testfull:
 testshort:
 	go test -short ./... -v
 
-.PHONY: sentinel-visor
-sentinel-visor:
-	rm -f sentinel-visor
-	go build $(GOFLAGS) -o sentinel-visor .
+.PHONY: visor
+visor:
+	rm -f visor
+	go build $(GOFLAGS) -o visor .
 
-BINS+=sentinel-visor
+BINS+=visor
 
 .PHONY: docker-image
 docker-image:
