@@ -1,7 +1,6 @@
 package power
 
 import (
-	"bytes"
 	"context"
 
 	"github.com/gocraft/work"
@@ -9,11 +8,12 @@ import (
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel/api/global"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/lotus/chain/actors/builtin/power"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
-	"github.com/filecoin-project/specs-actors/actors/builtin/power"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -56,12 +56,12 @@ type ProcessPowerTask struct {
 	stateroot cid.Cid
 }
 
-func (ppt *ProcessPowerTask) Log(job *work.Job, next work.NextMiddlewareFunc) error {
-	ppt.log.Infow("Starting job", "name", job.Name, "args", job.Args)
+func (p *ProcessPowerTask) Log(job *work.Job, next work.NextMiddlewareFunc) error {
+	p.log.Infow("Starting job", "name", job.Name, "args", job.Args)
 	return next()
 }
 
-func (ppt *ProcessPowerTask) ParseArgs(job *work.Job) error {
+func (p *ProcessPowerTask) ParseArgs(job *work.Job) error {
 	addrStr := job.ArgString("address")
 	if err := job.ArgError(); err != nil {
 		return err
@@ -112,51 +112,64 @@ func (ppt *ProcessPowerTask) ParseArgs(job *work.Job) error {
 		return err
 	}
 
-	ppt.maddr = maddr
-	ppt.head = mhead
-	ppt.tsKey = tsKey
-	ppt.ptsKey = ptsKey
-	ppt.stateroot = mstateroot
+	p.maddr = maddr
+	p.head = mhead
+	p.tsKey = tsKey
+	p.ptsKey = ptsKey
+	p.stateroot = mstateroot
 	return nil
 }
 
-func (ppt *ProcessPowerTask) Task(job *work.Job) error {
-	if err := ppt.ParseArgs(job); err != nil {
+func (p *ProcessPowerTask) Task(job *work.Job) error {
+	if err := p.ParseArgs(job); err != nil {
 		return err
 	}
 	ctx := context.Background()
 	ctx, span := global.Tracer("").Start(ctx, "ProcessPowerTask.Task")
 	defer span.End()
 
-	powerActor, err := ppt.node.StateGetActor(ctx, builtin.StoragePowerActorAddr, ppt.tsKey)
+	powerActor, err := p.node.StateGetActor(ctx, builtin.StoragePowerActorAddr, p.tsKey)
+	if err != nil {
+		return xerrors.Errorf("loading power actor: %w", err)
+	}
+
+	pstate, err := power.Load(p.node.Store(), powerActor)
+	if err != nil {
+		return xerrors.Errorf("loading power actor state: %w", err)
+	}
+
+	locked, err := pstate.TotalLocked()
+	if err != nil {
+		return err
+	}
+	pow, err := pstate.TotalPower()
+	if err != nil {
+		return err
+	}
+	commit, err := pstate.TotalCommitted()
+	if err != nil {
+		return err
+	}
+	smoothed, err := pstate.TotalPowerSmoothed()
+	if err != nil {
+		return err
+	}
+	participating, total, err := pstate.MinerCounts()
 	if err != nil {
 		return err
 	}
 
-	powerStateRaw, err := ppt.node.ChainReadObj(ctx, powerActor.Head)
-	if err != nil {
-		return err
-	}
-
-	var powerActorState power.State
-	if err := powerActorState.UnmarshalCBOR(bytes.NewReader(powerStateRaw)); err != nil {
-		return err
-	}
-
-	ppt.pubCh <- &powermodel.ChainPower{
-		StateRoot:                  ppt.stateroot.String(),
-		NewRawBytesPower:           powerActorState.ThisEpochRawBytePower.String(),
-		NewQABytesPower:            powerActorState.ThisEpochQualityAdjPower.String(),
-		NewPledgeCollateral:        powerActorState.ThisEpochPledgeCollateral.String(),
-		TotalRawBytesPower:         powerActorState.TotalRawBytePower.String(),
-		TotalRawBytesCommitted:     powerActorState.TotalBytesCommitted.String(),
-		TotalQABytesPower:          powerActorState.TotalQualityAdjPower.String(),
-		TotalQABytesCommitted:      powerActorState.TotalQABytesCommitted.String(),
-		TotalPledgeCollateral:      powerActorState.TotalPledgeCollateral.String(),
-		QASmoothedPositionEstimate: powerActorState.ThisEpochQAPowerSmoothed.PositionEstimate.String(),
-		QASmoothedVelocityEstimate: powerActorState.ThisEpochQAPowerSmoothed.VelocityEstimate.String(),
-		MinerCount:                 powerActorState.MinerCount,
-		MinimumConsensusMinerCount: powerActorState.MinerAboveMinPowerCount,
+	p.pubCh <- &powermodel.ChainPower{
+		StateRoot:                  p.stateroot.String(),
+		TotalRawBytesPower:         pow.RawBytePower.String(),
+		TotalQABytesPower:          pow.QualityAdjPower.String(),
+		TotalRawBytesCommitted:     commit.RawBytePower.String(),
+		TotalQABytesCommitted:      commit.QualityAdjPower.String(),
+		TotalPledgeCollateral:      locked.String(),
+		QASmoothedPositionEstimate: smoothed.PositionEstimate.String(),
+		QASmoothedVelocityEstimate: smoothed.VelocityEstimate.String(),
+		MinerCount:                 total,
+		ParticipatingMinerCount:    participating,
 	}
 	return nil
 }

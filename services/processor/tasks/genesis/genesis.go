@@ -1,7 +1,6 @@
 package genesis
 
 import (
-	"bytes"
 	"context"
 	"strconv"
 
@@ -9,15 +8,14 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
-	typegen "github.com/whyrusleeping/cbor-gen"
 	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-state-types/abi"
+	init_ "github.com/filecoin-project/lotus/chain/actors/builtin/init"
+	"github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
-	init_ "github.com/filecoin-project/specs-actors/actors/builtin/init"
-	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
-	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -113,7 +111,7 @@ func (p *ProcessGenesisSingletonTask) Task(job *work.Job) error {
 		case builtin.SystemActorCodeID:
 			// TODO
 		case builtin.InitActorCodeID:
-			res, err := p.initActorState(ctx)
+			res, err := p.initActorState(genesisAct)
 			if err != nil {
 				return err
 			}
@@ -154,15 +152,7 @@ func (p *ProcessGenesisSingletonTask) Task(job *work.Job) error {
 
 func (p *ProcessGenesisSingletonTask) storageMinerState(ctx context.Context, addr address.Address, act *types.Actor) (*genesismodel.GenesisMinerTaskResult, error) {
 	// actual miner actor state and miner info
-	var mstate miner.State
-	astb, err := p.node.ChainReadObj(ctx, act.Head)
-	if err != nil {
-		return nil, err
-	}
-	if err := mstate.UnmarshalCBOR(bytes.NewReader(astb)); err != nil {
-		return nil, err
-	}
-	minfo, err := mstate.GetInfo(p.node.Store())
+	mstate, err := miner.Load(p.node.Store(), act)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +164,15 @@ func (p *ProcessGenesisSingletonTask) storageMinerState(ctx context.Context, add
 		return nil, err
 	}
 
-	msectors, err := p.node.StateMinerSectors(ctx, addr, nil, true, p.genesis)
+	msectors, err := mstate.LoadSectors(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	minfo, err := mstate.Info()
+	if err != nil {
+		return nil, err
+	}
 
 	powerModel := &minermodel.MinerPower{
 		MinerID:              addr.String(),
@@ -187,7 +185,7 @@ func (p *ProcessGenesisSingletonTask) storageMinerState(ctx context.Context, add
 		MinerID:    addr.String(),
 		OwnerID:    minfo.Owner.String(),
 		WorkerID:   minfo.Worker.String(),
-		PeerID:     minfo.PeerId,
+		PeerID:     minfo.PeerId.String(),
 		SectorSize: minfo.SectorSize.ShortString(),
 	}
 
@@ -196,21 +194,21 @@ func (p *ProcessGenesisSingletonTask) storageMinerState(ctx context.Context, add
 	for idx, sector := range msectors {
 		sectorsModel[idx] = &minermodel.MinerSectorInfo{
 			MinerID:               addr.String(),
-			SectorID:              uint64(sector.ID),
+			SectorID:              uint64(sector.SectorNumber),
 			StateRoot:             p.stateroot.String(),
-			SealedCID:             sector.Info.SealedCID.String(),
-			ActivationEpoch:       int64(sector.Info.Activation),
-			ExpirationEpoch:       int64(sector.Info.Expiration),
-			DealWeight:            sector.Info.DealWeight.String(),
-			VerifiedDealWeight:    sector.Info.VerifiedDealWeight.String(),
-			InitialPledge:         sector.Info.InitialPledge.String(),
-			ExpectedDayReward:     sector.Info.ExpectedDayReward.String(),
-			ExpectedStoragePledge: sector.Info.ExpectedStoragePledge.String(),
+			SealedCID:             sector.SealedCID.String(),
+			ActivationEpoch:       int64(sector.Activation),
+			ExpirationEpoch:       int64(sector.Expiration),
+			DealWeight:            sector.DealWeight.String(),
+			VerifiedDealWeight:    sector.VerifiedDealWeight.String(),
+			InitialPledge:         sector.InitialPledge.String(),
+			ExpectedDayReward:     sector.ExpectedDayReward.String(),
+			ExpectedStoragePledge: sector.ExpectedStoragePledge.String(),
 		}
-		for _, dealID := range sector.Info.DealIDs {
+		for _, dealID := range sector.DealIDs {
 			dealsModel = append(dealsModel, &minermodel.MinerDealSector{
 				MinerID:  addr.String(),
-				SectorID: uint64(sector.ID),
+				SectorID: uint64(sector.SectorNumber),
 				DealID:   uint64(dealID),
 			})
 		}
@@ -223,39 +221,17 @@ func (p *ProcessGenesisSingletonTask) storageMinerState(ctx context.Context, add
 	}, nil
 }
 
-func (p *ProcessGenesisSingletonTask) initActorState(ctx context.Context) (*genesismodel.GenesisInitActorTaskResult, error) {
-	initActor, err := p.node.StateGetActor(ctx, builtin.InitActorAddr, p.genesis)
-	if err != nil {
-		return nil, err
-	}
-	initActorRaw, err := p.node.ChainReadObj(ctx, initActor.Head)
-	if err != nil {
-		return nil, err
-	}
-	var initActorState init_.State
-	if err := initActorState.UnmarshalCBOR(bytes.NewReader(initActorRaw)); err != nil {
-		return nil, err
-	}
-
-	addrMap, err := adt.AsMap(p.node.Store(), initActorState.AddressMap)
+func (p *ProcessGenesisSingletonTask) initActorState(act *types.Actor) (*genesismodel.GenesisInitActorTaskResult, error) {
+	initActorState, err := init_.Load(p.node.Store(), act)
 	if err != nil {
 		return nil, err
 	}
 
 	out := initmodel.IdAddressList{}
-	var actorID typegen.CborInt
-	if err := addrMap.ForEach(&actorID, func(key string) error {
-		longAddr, err := address.NewFromBytes([]byte(key))
-		if err != nil {
-			return err
-		}
-		shortAddr, err := address.NewIDAddress(uint64(actorID))
-		if err != nil {
-			return err
-		}
+	if err := initActorState.ForEachActor(func(id abi.ActorID, addr address.Address) error {
 		out = append(out, &initmodel.IdAddress{
-			ID:        shortAddr.String(),
-			Address:   longAddr.String(),
+			ID:        id.String(),
+			Address:   addr.String(),
 			StateRoot: p.stateroot.String(),
 		})
 		return nil

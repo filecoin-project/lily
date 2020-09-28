@@ -9,22 +9,21 @@ import (
 )
 
 type ChainPower struct {
-	StateRoot           string `pg:",pk"`
-	NewRawBytesPower    string `pg:",notnull"`
-	NewQABytesPower     string `pg:",notnull"`
-	NewPledgeCollateral string `pg:",notnull"`
+	StateRoot string `pg:",pk"`
 
-	TotalRawBytesPower     string `pg:",notnull"`
+	TotalRawBytesPower string `pg:",notnull"`
+	TotalQABytesPower  string `pg:",notnull"`
+
 	TotalRawBytesCommitted string `pg:",notnull"`
-	TotalQABytesPower      string `pg:",notnull"`
 	TotalQABytesCommitted  string `pg:",notnull"`
-	TotalPledgeCollateral  string `pg:",notnull"`
+
+	TotalPledgeCollateral string `pg:",notnull"`
 
 	QASmoothedPositionEstimate string `pg:",notnull"`
 	QASmoothedVelocityEstimate string `pg:",notnull"`
 
-	MinerCount                 int64 `pg:",use_zero"`
-	MinimumConsensusMinerCount int64 `pg:",use_zero"`
+	MinerCount              uint64 `pg:",use_zero"`
+	ParticipatingMinerCount uint64 `pg:",use_zero"`
 }
 
 func (cp *ChainPower) Persist(ctx context.Context, db *pg.DB) error {

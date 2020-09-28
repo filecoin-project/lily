@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
+	market "github.com/filecoin-project/lotus/chain/actors/builtin/market"
 	"github.com/filecoin-project/lotus/chain/events/state"
 	"github.com/filecoin-project/lotus/chain/types"
 
@@ -143,7 +144,7 @@ func (pmt *ProcessMarketTask) marketDealStateChanges(ctx context.Context) (marke
 	if !changed {
 		return nil, nil
 	}
-	changes, ok := val.(*state.MarketDealStateChanges)
+	changes, ok := val.(*market.DealStateChanges)
 	if !ok {
 		// indicates a developer error or breaking change in lotus
 		return nil, xerrors.Errorf("Unknown type returned by Deal State AMT predicate: %T", val)
@@ -184,7 +185,7 @@ func (pmt *ProcessMarketTask) marketDealProposalChanges(ctx context.Context) (ma
 	if !changed {
 		return nil, nil
 	}
-	changes, ok := val.(*state.MarketDealProposalChanges)
+	changes, ok := val.(*market.DealProposalChanges)
 	if !ok {
 		// indicates a developer error or breaking change in lotus
 		return nil, xerrors.Errorf("Unknown type returned by Deal Proposal AMT predicate: %T", val)
