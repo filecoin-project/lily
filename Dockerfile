@@ -15,5 +15,5 @@ FROM buildpack-deps:buster-curl
 COPY --from=builder /go/src/github.com/filecoin-project/sentinel-visor/visor /usr/bin/
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libOpenCL.so* /lib/
 
-ENTRYPOINT ["/usr/bin/sentinel-visor"]
+ENTRYPOINT ["/usr/bin/visor"]
 CMD ["--help"]
