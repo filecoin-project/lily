@@ -9,6 +9,8 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	_ "github.com/lib/pq"
 	"github.com/urfave/cli/v2"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/exporters/trace/jaeger"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"golang.org/x/xerrors"
@@ -35,18 +37,11 @@ var processCmd = &cli.Command{
 		if err != nil {
 			return xerrors.Errorf("setup logging: %w", err)
 		}
-
-		if cctx.Bool("tracing") {
-			jcfg, err := jaegerConfigFromCliContext(cctx)
-			if err != nil {
-				return xerrors.Errorf("read jeager config: %w", err)
-			}
-			closer, err := setupTracing(jcfg)
-			if err != nil {
-				return xerrors.Errorf("initialize tracing subsystem: %w", err)
-			}
-			defer closer()
+		tcloser, err := setupTracing(cctx)
+		if err != nil {
+			return xerrors.Errorf("setup tracing: %w", err)
 		}
+		defer tcloser()
 
 		ctx, rctx, err := setupStorageAndAPI(cctx)
 		if err != nil {
@@ -94,17 +89,11 @@ var indexCmd = &cli.Command{
 			return xerrors.Errorf("setup logging: %w", err)
 		}
 
-		if cctx.Bool("tracing") {
-			jcfg, err := jaegerConfigFromCliContext(cctx)
-			if err != nil {
-				return xerrors.Errorf("read jeager config: %w", err)
-			}
-			closer, err := setupTracing(jcfg)
-			if err != nil {
-				return xerrors.Errorf("initialize tracing subsystem: %w", err)
-			}
-			defer closer()
+		tcloser, err := setupTracing(cctx)
+		if err != nil {
+			return xerrors.Errorf("setup tracing: %w", err)
 		}
+		defer tcloser()
 
 		ctx, rctx, err := setupStorageAndAPI(cctx)
 		if err != nil {
@@ -163,13 +152,23 @@ func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error)
 	return ctx, &RunContext{api, closer, db}, nil
 }
 
-func setupTracing(cfg *jaegerConfig) (func(), error) {
+func setupTracing(cctx *cli.Context) (func(), error) {
+	if !cctx.Bool("tracing") {
+		global.SetTracerProvider(trace.NoopTracerProvider())
+
+	}
+
+	jcfg, err := jaegerConfigFromCliContext(cctx)
+	if err != nil {
+		return nil, xerrors.Errorf("read jeager config: %w", err)
+	}
+
 	closer, err := jaeger.InstallNewPipeline(
-		jaeger.WithAgentEndpoint(cfg.AgentEndpoint),
+		jaeger.WithAgentEndpoint(jcfg.AgentEndpoint),
 		jaeger.WithProcess(jaeger.Process{
-			ServiceName: cfg.ServiceName,
+			ServiceName: jcfg.ServiceName,
 		}),
-		jaeger.WithSDK(&sdktrace.Config{DefaultSampler: cfg.Sampler}),
+		jaeger.WithSDK(&sdktrace.Config{DefaultSampler: jcfg.Sampler}),
 	)
 	if err != nil {
 		return nil, xerrors.Errorf("install jaeger pipeline: %w", err)
@@ -192,7 +191,7 @@ func jaegerConfigFromCliContext(cctx *cli.Context) (*jaegerConfig, error) {
 
 	switch cctx.String("jaeger-sampler-type") {
 	case "probabilistic":
-		cfg.Sampler = sdktrace.ProbabilitySampler(cctx.Float64("jaeger-sampler-param"))
+		cfg.Sampler = sdktrace.ParentBased(sdktrace.TraceIDRatioBased(cctx.Float64("jaeger-sampler-param")))
 	case "const":
 		if cctx.Float64("jaeger-sampler-param") == 1 {
 			cfg.Sampler = sdktrace.AlwaysSample()
