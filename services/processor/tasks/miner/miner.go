@@ -377,11 +377,8 @@ func minerStateAt(ctx context.Context, node lens.API, maddr address.Address, tsk
 	}
 	var out miner.State
 	// Get the miner state info
-	astb, err := node.ChainReadObj(ctx, prevActor.Head)
+	err = node.Store().Get(ctx, prevActor.Head, out)
 	if err != nil {
-		return miner.State{}, err
-	}
-	if err := out.UnmarshalCBOR(bytes.NewReader(astb)); err != nil {
 		return miner.State{}, err
 	}
 	return out, nil
