@@ -3,13 +3,15 @@ package lotus
 import (
 	"context"
 
+	cid "github.com/ipfs/go-cid"
+	"go.opentelemetry.io/otel/api/global"
+
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/lotus/api"
+	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
-	cid "github.com/ipfs/go-cid"
-	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 )
@@ -110,10 +112,10 @@ func (aw *APIWrapper) StateMinerPower(ctx context.Context, addr address.Address,
 	return aw.FullNode.StateMinerPower(ctx, addr, tsk)
 }
 
-func (aw *APIWrapper) StateMinerSectors(ctx context.Context, addr address.Address, filter *bitfield.BitField, filterOut bool, tsk types.TipSetKey) ([]*api.ChainSectorInfo, error) {
+func (aw *APIWrapper) StateMinerSectors(ctx context.Context, addr address.Address, filter *bitfield.BitField, tsk types.TipSetKey) ([]*miner.SectorOnChainInfo, error) {
 	ctx, span := global.Tracer("").Start(ctx, "Lotus.StateMinerSectors")
 	defer span.End()
-	return aw.FullNode.StateMinerSectors(ctx, addr, filter, filterOut, tsk)
+	return aw.FullNode.StateMinerSectors(ctx, addr, filter, tsk)
 }
 
 func (aw *APIWrapper) StateReadState(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*api.ActorState, error) {

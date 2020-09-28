@@ -3,15 +3,15 @@ package miner
 import (
 	"context"
 
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-bitfield"
-	"github.com/filecoin-project/lotus/api"
-	"github.com/filecoin-project/lotus/chain/events/state"
-	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
 	"go.opentelemetry.io/otel/api/global"
+
+	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-bitfield"
+	"github.com/filecoin-project/lotus/api"
+	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 type PartitionStatus struct {
@@ -31,10 +31,10 @@ type MinerTaskResult struct {
 	Actor *types.Actor
 
 	State            miner.State
-	Info             *miner.MinerInfo
+	Info             miner.MinerInfo
 	Power            *api.MinerPower
-	PreCommitChanges *state.MinerPreCommitChanges
-	SectorChanges    *state.MinerSectorChanges
+	PreCommitChanges *miner.PreCommitChanges
+	SectorChanges    *miner.SectorChanges
 	PartitionDiff    map[uint64]*PartitionStatus
 }
 

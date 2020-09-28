@@ -13,7 +13,7 @@ func NewMinerStateModel(res *MinerTaskResult) *MinerState {
 		MinerID:    res.Addr.String(),
 		OwnerID:    res.Info.Owner.String(),
 		WorkerID:   res.Info.Worker.String(),
-		PeerID:     res.Info.PeerId,
+		PeerID:     res.Info.PeerId.String(),
 		SectorSize: res.Info.SectorSize.ShortString(),
 	}
 }
@@ -22,7 +22,7 @@ type MinerState struct {
 	MinerID    string `pg:",pk,notnull"`
 	OwnerID    string `pg:",notnull"`
 	WorkerID   string `pg:",notnull"`
-	PeerID     []byte
+	PeerID     string
 	SectorSize string `pg:",notnull"`
 }
 

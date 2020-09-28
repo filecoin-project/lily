@@ -16,11 +16,11 @@ import (
 	"github.com/filecoin-project/go-address"
 	types "github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/lib/parmap"
-	"github.com/filecoin-project/sentinel-visor/storage"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/services/indexer"
+	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
 func NewProcessor(db *storage.Database, n lens.API) *Processor {

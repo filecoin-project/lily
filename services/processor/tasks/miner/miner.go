@@ -1,7 +1,6 @@
 package miner
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 
@@ -13,11 +12,8 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-bitfield"
-	"github.com/filecoin-project/lotus/chain/events/state"
+	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
-	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -60,12 +56,12 @@ type ProcessMinerTask struct {
 	stateroot cid.Cid
 }
 
-func (mac *ProcessMinerTask) Log(job *work.Job, next work.NextMiddlewareFunc) error {
-	mac.log.Infow("Starting Miner Task", "name", job.Name, "Args", job.Args)
+func (p *ProcessMinerTask) Log(job *work.Job, next work.NextMiddlewareFunc) error {
+	p.log.Infow("Starting Miner Task", "name", job.Name, "Args", job.Args)
 	return next()
 }
 
-func (mac *ProcessMinerTask) ParseArgs(job *work.Job) error {
+func (p *ProcessMinerTask) ParseArgs(job *work.Job) error {
 	addrStr := job.ArgString("address")
 	if err := job.ArgError(); err != nil {
 		return err
@@ -116,16 +112,16 @@ func (mac *ProcessMinerTask) ParseArgs(job *work.Job) error {
 		return err
 	}
 
-	mac.maddr = maddr
-	mac.head = mhead
-	mac.tsKey = tsKey
-	mac.ptsKey = ptsKey
-	mac.stateroot = mstateroot
+	p.maddr = maddr
+	p.head = mhead
+	p.tsKey = tsKey
+	p.ptsKey = ptsKey
+	p.stateroot = mstateroot
 	return nil
 }
 
-func (mac *ProcessMinerTask) Task(job *work.Job) error {
-	if err := mac.ParseArgs(job); err != nil {
+func (p *ProcessMinerTask) Task(job *work.Job) error {
+	if err := p.ParseArgs(job); err != nil {
 		return err
 	}
 	// TODO:
@@ -136,60 +132,64 @@ func (mac *ProcessMinerTask) Task(job *work.Job) error {
 	ctx, span := global.Tracer("").Start(ctx, "ProcessMinerTask.Task")
 	defer span.End()
 
-	// generic actor state of the miner.
-	mactor, err := mac.node.StateGetActor(ctx, mac.maddr, mac.tsKey)
+	curActor, err := p.node.StateGetActor(ctx, p.maddr, p.tsKey)
 	if err != nil {
-		return err
+		return xerrors.Errorf("loading current miner actor: %w", err)
 	}
 
-	// actual miner actor state and miner info
-	var mstate miner.State
-	astb, err := mac.node.ChainReadObj(ctx, mactor.Head)
+	curState, err := miner.Load(p.node.Store(), curActor)
 	if err != nil {
-		return err
+		return xerrors.Errorf("loading current miner state: %w", err)
 	}
-	if err := mstate.UnmarshalCBOR(bytes.NewReader(astb)); err != nil {
-		return err
-	}
-	minfo, err := mstate.GetInfo(mac.node.Store())
+
+	minfo, err := curState.Info()
 	if err != nil {
-		return err
+		return xerrors.Errorf("loading miner info: %w", err)
 	}
 
 	// miner raw and qual power
-	// TODO this needs caching so we don't re-fetch the power actors claim table for every tipset.
-	minerPower, err := mac.node.StateMinerPower(ctx, mac.maddr, mac.tsKey)
+	// TODO this needs caching so we don't re-fetch the power actors claim table (that holds this info) for every tipset.
+	minerPower, err := p.node.StateMinerPower(ctx, p.maddr, p.tsKey)
 	if err != nil {
-		return err
+		return xerrors.Errorf("loading miner power: %w", err)
 	}
 
-	// miner precommits added and removed
-	preCommitChanges, err := minerPreCommitChanges(ctx, mac.node, mac.maddr, mac.tsKey, mac.ptsKey)
+	// needed for diffing.
+	prevActor, err := p.node.StateGetActor(ctx, p.maddr, p.ptsKey)
 	if err != nil {
-		return fmt.Errorf("precommit changes: %v", err)
+		return xerrors.Errorf("loading previous miner actor: %w", err)
 	}
 
-	// miner sectors added, removed, and extended
-	sectorChanges, err := minerSectorChanges(ctx, mac.node, mac.maddr, mac.tsKey, mac.ptsKey)
+	prevState, err := miner.Load(p.node.Store(), prevActor)
 	if err != nil {
-		return fmt.Errorf("sector changes: %v", err)
+		return xerrors.Errorf("loading previous miner actor state: %w", err)
+	}
+
+	preCommitChanges, err := miner.DiffPreCommits(prevState, curState)
+	if err != nil {
+		return xerrors.Errorf("diffing miner precommits: %w", err)
+	}
+
+	sectorChanges, err := miner.DiffSectors(prevState, curState)
+	if err != nil {
+		return xerrors.Errorf("diffing miner sectors: %w", err)
 	}
 
 	// miner partition changes
-	partitionsDiff, err := minerPartitionsDiff(ctx, mac.node, mac.maddr, mac.tsKey, mac.ptsKey)
+	partitionsDiff, err := p.minerPartitionsDiff(ctx, prevState, curState)
 	if err != nil {
-		return fmt.Errorf("partition diff: %v", err)
+		return fmt.Errorf("diffing miner partitions: %v", err)
 	}
 
 	// TODO we still need to do a little bit more processing here around sectors to get all the info we need, but this is okay for spike.
 
-	mac.pubCh <- &minermodel.MinerTaskResult{
-		Ts:               mac.tsKey,
-		Pts:              mac.ptsKey,
-		Addr:             mac.maddr,
-		StateRoot:        mac.stateroot,
-		Actor:            mactor,
-		State:            mstate,
+	p.pubCh <- &minermodel.MinerTaskResult{
+		Ts:               p.tsKey,
+		Pts:              p.ptsKey,
+		Addr:             p.maddr,
+		StateRoot:        p.stateroot,
+		Actor:            curActor,
+		State:            curState,
 		Info:             minfo,
 		Power:            minerPower,
 		PreCommitChanges: preCommitChanges,
@@ -199,190 +199,6 @@ func (mac *ProcessMinerTask) Task(job *work.Job) error {
 	return nil
 }
 
-func minerPreCommitChanges(ctx context.Context, node lens.API, maddr address.Address, ts, pts types.TipSetKey) (*state.MinerPreCommitChanges, error) {
-	pred := state.NewStatePredicates(node)
-	changed, val, err := pred.OnMinerActorChange(maddr, pred.OnMinerPreCommitChange())(ctx, pts, ts)
-	if err != nil {
-		return nil, xerrors.Errorf("Failed to diff miner precommit amt: %w", err)
-	}
-	if !changed {
-		return nil, nil
-	}
-	out := val.(*state.MinerPreCommitChanges)
-	return out, nil
-}
-
-func minerSectorChanges(ctx context.Context, node lens.API, maddr address.Address, ts, pts types.TipSetKey) (*state.MinerSectorChanges, error) {
-	pred := state.NewStatePredicates(node)
-	changed, val, err := pred.OnMinerActorChange(maddr, pred.OnMinerSectorChange())(ctx, pts, ts)
-	if err != nil {
-		return nil, xerrors.Errorf("Failed to diff miner sectors amt: %w", err)
-	}
-	if !changed {
-		return nil, nil
-	}
-	out := val.(*state.MinerSectorChanges)
-	return out, nil
-}
-
-func minerPartitionsDiff(ctx context.Context, node lens.API, maddr address.Address, ts, pts types.TipSetKey) (map[uint64]*minermodel.PartitionStatus, error) {
-
-	curMiner, err := minerStateAt(ctx, node, maddr, ts)
-	if err != nil {
-		return nil, err
-	}
-
-	prevMiner, err := minerStateAt(ctx, node, maddr, pts)
-	if err != nil {
-		return nil, err
-	}
-	dlIdx := prevMiner.CurrentDeadline
-
-	//
-	// load the prev deadline and partitions
-	//
-	prevDls, err := prevMiner.LoadDeadlines(node.Store())
-	if err != nil {
-		return nil, err
-	}
-	var prevDl miner.Deadline
-	if err := node.Store().Get(ctx, prevDls.Due[dlIdx], &prevDl); err != nil {
-		return nil, err
-	}
-
-	prevPartitions, err := prevDl.PartitionsArray(node.Store())
-	if err != nil {
-		return nil, err
-	}
-
-	//
-	// load the cur deadline and partitions
-	//
-	curDls, err := curMiner.LoadDeadlines(node.Store())
-	if err != nil {
-		return nil, err
-	}
-
-	var curDl miner.Deadline
-	if err := node.Store().Get(ctx, curDls.Due[dlIdx], &curDl); err != nil {
-		return nil, err
-	}
-
-	curPartitions, err := curDl.PartitionsArray(node.Store())
-	if err != nil {
-		return nil, err
-	}
-
-	//
-	// walk all miner partitions and calculate their differences
-	//
-	out := make(map[uint64]*minermodel.PartitionStatus)
-	// TODO this can be optimized by inspecting the miner state for partitions that have changed and only inspecting those.
-	// FIXME: account for curPartition array having partitions not found in prevPartition array.
-	var prevPart miner.Partition
-	if err := prevPartitions.ForEach(&prevPart, func(i int64) error {
-		var curPart miner.Partition
-		if found, err := curPartitions.Get(uint64(i), &curPart); err != nil {
-			return err
-		} else if !found {
-			panic("Undefined behaviour when a partition is removed.")
-		}
-		partitionDiff, err := diffPartition(node.Store(), prevPart, curPart)
-		if err != nil {
-			return err
-		}
-		out[uint64(i)] = partitionDiff
-
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func diffPartition(store adt.Store, prevPart, curPart miner.Partition) (*minermodel.PartitionStatus, error) {
-	// all the sectors that were in previous but not in current
-	allRemovedSectors, err := bitfield.SubtractBitField(prevPart.Sectors, curPart.Sectors)
-	if err != nil {
-		return nil, err
-	}
-
-	// list of sectors that were terminated before their expiration.
-	terminatedEarlyArr, err := adt.AsArray(store, curPart.EarlyTerminated)
-	if err != nil {
-		return nil, err
-	}
-
-	expired := bitfield.New()
-	var bf bitfield.BitField
-	if err := terminatedEarlyArr.ForEach(&bf, func(i int64) error {
-		// expired = all removals - termination
-		expirations, err := bitfield.SubtractBitField(allRemovedSectors, bf)
-		if err != nil {
-			return err
-		}
-		// merge with expired sectors from other epochs
-		expired, err = bitfield.MergeBitFields(expirations, expired)
-		if err != nil {
-			return nil
-		}
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-
-	// terminated = all removals - expired
-	terminated, err := bitfield.SubtractBitField(allRemovedSectors, expired)
-	if err != nil {
-		return nil, err
-	}
-
-	// faults in current but not previous
-	faults, err := bitfield.SubtractBitField(curPart.Recoveries, prevPart.Recoveries)
-	if err != nil {
-		return nil, err
-	}
-
-	// recoveries in current but not previous
-	inRecovery, err := bitfield.SubtractBitField(curPart.Recoveries, prevPart.Recoveries)
-	if err != nil {
-		return nil, err
-	}
-
-	// all current good sectors
-	newActiveSectors, err := curPart.ActiveSectors()
-	if err != nil {
-		return nil, err
-	}
-
-	// sectors that were previously fault and are now currently active are considered recovered.
-	recovered, err := bitfield.IntersectBitField(prevPart.Faults, newActiveSectors)
-	if err != nil {
-		return nil, err
-	}
-
-	return &minermodel.PartitionStatus{
-		Terminated: terminated,
-		Expired:    expired,
-		Faulted:    faults,
-		InRecovery: inRecovery,
-		Recovered:  recovered,
-	}, nil
-}
-
-func minerStateAt(ctx context.Context, node lens.API, maddr address.Address, tskey types.TipSetKey) (miner.State, error) {
-	prevActor, err := node.StateGetActor(ctx, maddr, tskey)
-	if err != nil {
-		return miner.State{}, err
-	}
-	var out miner.State
-	// Get the miner state info
-	astb, err := node.ChainReadObj(ctx, prevActor.Head)
-	if err != nil {
-		return miner.State{}, err
-	}
-	if err := out.UnmarshalCBOR(bytes.NewReader(astb)); err != nil {
-		return miner.State{}, err
-	}
-	return out, nil
+func (p *ProcessMinerTask) minerPartitionsDiff(ctx context.Context, prevState, curState miner.State) (map[uint64]*minermodel.PartitionStatus, error) {
+	panic("NYI")
 }
