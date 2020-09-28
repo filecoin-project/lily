@@ -21,11 +21,13 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/actors/reward"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
 	"github.com/filecoin-project/sentinel-visor/model/messages"
+	"github.com/filecoin-project/sentinel-visor/model/visor"
 )
+
+var timeNow = time.Now
 
 var models = []interface{}{
 	(*blocks.BlockHeader)(nil),
-	(*blocks.BlockSynced)(nil),
 	(*blocks.BlockParent)(nil),
 
 	(*blocks.DrandEntrie)(nil),
@@ -50,6 +52,10 @@ var models = []interface{}{
 	(*common.ActorState)(nil),
 
 	(*init_.IdAddress)(nil),
+
+	(*visor.ProcessingStateChange)(nil),
+	(*visor.ProcessingActor)(nil),
+	(*visor.ProcessingMessage)(nil),
 }
 
 var log = logging.Logger("storage")
@@ -131,7 +137,7 @@ func connect(ctx context.Context, opt *pg.Options) (*pg.DB, error) {
 
 func (d *Database) Close(ctx context.Context) error {
 	// Advisory locks are automatically closed at end of session but its still good practice to close explicitly
-	if err := SchemaLock.UnlockShared(ctx, d.DB); err != nil {
+	if err := SchemaLock.UnlockShared(ctx, d.DB); err != nil && !errors.Is(err, context.Canceled) {
 		log.Errorf("failed to release schema lock: %v", err)
 	}
 
@@ -153,8 +159,32 @@ func (d *Database) UnprocessedIndexedBlocks(ctx context.Context, maxHeight, limi
 	return blkSynced, nil
 }
 
+func (d *Database) UnprocessedIndexedTipSets(ctx context.Context, maxHeight, limit int) (visor.ProcessingStateChangeList, error) {
+	var blkSynced visor.ProcessingStateChangeList
+	if err := d.DB.ModelContext(ctx, &blkSynced).
+		Where("height <= ?", maxHeight).
+		Where("claimed_until is null").
+		Order("height desc").
+		Limit(limit).
+		Select(); err != nil {
+		return nil, err
+	}
+	return blkSynced, nil
+}
+
 func (d *Database) MostRecentSyncedBlock(ctx context.Context) (*blocks.BlockSynced, error) {
-	blkSynced := &blocks.BlockSynced{}
+	var blkSynced *blocks.BlockSynced
+	if err := d.DB.ModelContext(ctx, blkSynced).
+		Order("height desc").
+		Limit(1).
+		Select(); err != nil {
+		return nil, err
+	}
+	return blkSynced, nil
+}
+
+func (d *Database) MostRecentAddedTipSet(ctx context.Context) (*visor.ProcessingStateChange, error) {
+	blkSynced := &visor.ProcessingStateChange{}
 	if err := d.DB.ModelContext(ctx, blkSynced).
 		Order("height desc").
 		Limit(1).
@@ -166,7 +196,7 @@ func (d *Database) MostRecentSyncedBlock(ctx context.Context) (*blocks.BlockSync
 
 func (d *Database) CollectAndMarkBlocksAsProcessing(ctx context.Context, batch int) (blocks.BlocksSynced, error) {
 	var blks blocks.BlocksSynced
-	processedAt := time.Now()
+	processedAt := timeNow()
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		if _, err := tx.QueryContext(ctx, &blks,
 			`with toProcess as (
@@ -198,9 +228,9 @@ func (d *Database) CollectAndMarkBlocksAsProcessing(ctx context.Context, batch i
 	return blks, nil
 }
 
-func (d *Database) MarkBlocksAsProcessed(ctx context.Context, blks blocks.BlocksSynced) error {
+func (d *Database) MarkBlocksAsProcessed(ctx context.Context, blks visor.ProcessingStateChangeList) error {
 	return d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		completedAt := time.Now()
+		completedAt := timeNow()
 		for _, blk := range blks {
 			if _, err := tx.ModelContext(ctx, &blk).Set("completed_at = ?", completedAt).
 				WherePK().
@@ -288,4 +318,169 @@ func verifyModel(ctx context.Context, db *pg.DB, m *orm.Table) error {
 
 func stripQuotes(s types.Safe) string {
 	return strings.Trim(string(s), `"`)
+}
+
+func (d *Database) LeaseStateChanges(ctx context.Context, claimUntil time.Time, batchSize int, maxHeight int64) (visor.ProcessingStateChangeList, error) {
+	var blocks visor.ProcessingStateChangeList
+
+	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		_, err := tx.QueryContext(ctx, &blocks, `
+WITH leased AS (
+    UPDATE visor_processing_statechanges
+    SET claimed_until = ?
+    FROM (
+	    SELECT *
+	    FROM visor_processing_statechanges
+	    WHERE completed_at IS null AND
+	          (claimed_until IS null OR claimed_until < ?) AND
+	          height >= 0 AND height <= ?
+	    ORDER BY height DESC
+	    LIMIT ?
+	    FOR UPDATE SKIP LOCKED
+	) candidates
+	WHERE visor_processing_statechanges.tip_set = candidates.tip_set AND visor_processing_statechanges.height = candidates.height
+    RETURNING visor_processing_statechanges.tip_set, visor_processing_statechanges.height
+)
+SELECT tip_set,height FROM leased;
+    `, claimUntil, timeNow(), maxHeight, batchSize)
+
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return blocks, nil
+}
+
+func (d *Database) MarkStateChangeComplete(ctx context.Context, tsk string, height int64, completedAt time.Time, errorsDetected string) error {
+	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		_, err := tx.ExecContext(ctx, `
+    UPDATE visor_processing_statechanges
+    SET claimed_until = null,
+        completed_at = ?,
+        errors_detected = ?
+    WHERE tip_set = ? AND height = ?
+`, completedAt, errorsDetected, tsk, height)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *Database) LeaseActors(ctx context.Context, claimUntil time.Time, batchSize int, maxHeight int64, codes []string) (visor.ProcessingActorList, error) {
+	var actors visor.ProcessingActorList
+
+	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		_, err := tx.QueryContext(ctx, &actors, `
+WITH leased AS (
+    UPDATE visor_processing_actors a
+    SET claimed_until = ?
+    FROM (
+	    SELECT *
+	    FROM visor_processing_actors
+	    WHERE completed_at IS null AND
+	          (claimed_until IS null OR claimed_until < ?) AND
+	          height > 0 AND height <= ? AND
+	          code IN (?)
+	    ORDER BY height DESC
+	    LIMIT ?
+	    FOR UPDATE SKIP LOCKED
+	) candidates
+	WHERE a.head = candidates.head AND a.code = candidates.code
+    RETURNING a.head, a.code, a.nonce, a.balance, a.address, a.parent_state_root, a.tip_set, a.parent_tip_set)
+SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set from leased;
+    `, claimUntil, timeNow(), maxHeight, pg.In(codes), batchSize)
+
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return actors, nil
+}
+
+func (d *Database) MarkActorComplete(ctx context.Context, head string, code string, completedAt time.Time, errorsDetected string) error {
+	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		_, err := tx.ExecContext(ctx, `
+    UPDATE visor_processing_actors
+    SET claimed_until = null,
+        completed_at = ?,
+        errors_detected = ?
+    WHERE head = ? AND code = ?
+`, completedAt, errorsDetected, head, code)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *Database) LeaseTipSetMessages(ctx context.Context, claimUntil time.Time, batchSize int, maxHeight int64) (visor.ProcessingMessageList, error) {
+	var messages visor.ProcessingMessageList
+
+	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		_, err := tx.QueryContext(ctx, &messages, `
+WITH leased AS (
+    UPDATE visor_processing_messages
+    SET claimed_until = ?
+    FROM (
+	    SELECT *
+	    FROM visor_processing_messages
+	    WHERE completed_at IS null AND
+	          (claimed_until IS null OR claimed_until < ?) AND
+	          height > 0 AND height <= ?
+	    ORDER BY height DESC
+	    LIMIT ?
+	    FOR UPDATE SKIP LOCKED
+	) candidates
+	WHERE visor_processing_messages.tip_set = candidates.tip_set AND visor_processing_messages.height = candidates.height
+    RETURNING visor_processing_messages.tip_set, visor_processing_messages.height
+)
+SELECT tip_set,height FROM leased;
+    `, claimUntil, timeNow(), maxHeight, batchSize)
+
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return messages, nil
+}
+
+func (d *Database) MarkTipSetMessagesComplete(ctx context.Context, tipset string, height int64, completedAt time.Time, errorsDetected string) error {
+	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		_, err := tx.ExecContext(ctx, `
+    UPDATE visor_processing_messages
+    SET claimed_until = null,
+        completed_at = ?,
+        errors_detected = ?
+    WHERE tip_set = ? AND height = ?
+`, completedAt, errorsDetected, tipset, height)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -7,6 +7,7 @@ import (
 	indexer2 "github.com/filecoin-project/sentinel-visor/services/indexer"
 )
 
+// TODO: rework to use new scheduler with just indexing tasks
 var Index = &cli.Command{
 	Name:  "index",
 	Usage: "Index the lotus blockchain",

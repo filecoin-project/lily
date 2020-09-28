@@ -154,3 +154,29 @@ func setupLogging(cctx *cli.Context) error {
 
 	return nil
 }
+
+const (
+	ChainHeadIndexerLockID    = 9898981111
+	ChainHistoryIndexerLockID = 9898981112
+)
+
+func NewGlobalSingleton(id int64, d *storage.Database) *GlobalSingleton {
+	return &GlobalSingleton{
+		LockID:  storage.AdvisoryLock(id),
+		Storage: d,
+	}
+}
+
+// GlobalSingleton is a task locker that ensures only one task can run across all processes
+type GlobalSingleton struct {
+	LockID  storage.AdvisoryLock
+	Storage *storage.Database
+}
+
+func (g *GlobalSingleton) Lock(ctx context.Context) error {
+	return g.LockID.LockExclusive(ctx, g.Storage.DB)
+}
+
+func (g *GlobalSingleton) Unlock(ctx context.Context) error {
+	return g.LockID.UnlockExclusive(ctx, g.Storage.DB)
+}

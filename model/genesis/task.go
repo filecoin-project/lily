@@ -39,7 +39,7 @@ func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, db *pg.DB) 
 			if err := r.marketResult.DealModels.PersistWithTx(ctx, tx); err != nil {
 				return err
 			}
-			if err := r.marketResult.ProposalModesl.PersistWithTx(ctx, tx); err != nil {
+			if err := r.marketResult.ProposalModels.PersistWithTx(ctx, tx); err != nil {
 				return err
 			}
 		}
@@ -79,7 +79,7 @@ type GenesisMinerTaskResult struct {
 
 type GenesisMarketTaskResult struct {
 	DealModels     market.MarketDealStates
-	ProposalModesl market.MarketDealProposals
+	ProposalModels market.MarketDealProposals
 }
 
 type GenesisInitActorTaskResult struct {
