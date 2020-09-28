@@ -23,7 +23,7 @@ GOFLAGS+=-ldflags="$(ldflags)"
 all: build
 
 .PHONY: build
-build: visor
+build: deps visor
 
 ## FFI
 
