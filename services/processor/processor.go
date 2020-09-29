@@ -9,6 +9,8 @@ import (
 	"github.com/gocraft/work"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"golang.org/x/xerrors"
@@ -16,11 +18,12 @@ import (
 	"github.com/filecoin-project/go-address"
 	types "github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/lib/parmap"
+	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/storage"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/services/indexer"
-	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
 func NewProcessor(db *storage.Database, n lens.API) *Processor {
@@ -86,6 +89,7 @@ func (p *Processor) Start(ctx context.Context) error {
 			p.log.Info("stopping processor")
 			return nil
 		default:
+			p.recordDBStats(ctx)
 			err := p.process(ctx)
 			if err != nil {
 				return xerrors.Errorf("process: %w", err)
@@ -210,4 +214,20 @@ func (p *Processor) collectBlocksToProcess(ctx context.Context, batch int) ([]*t
 		out[idx] = header
 	}
 	return out, nil
+}
+
+func (p *Processor) recordDBStats(ctx context.Context) {
+	pstats := p.storage.DB.PoolStats()
+	{
+		ctx, _ = tag.New(ctx, tag.Upsert(metrics.ConnState, "total"))
+		stats.Record(ctx, metrics.DBConns.M(int64(pstats.TotalConns)))
+	}
+	{
+		ctx, _ = tag.New(ctx, tag.Upsert(metrics.ConnState, "idle"))
+		stats.Record(ctx, metrics.DBConns.M(int64(pstats.IdleConns)))
+	}
+	{
+		ctx, _ = tag.New(ctx, tag.Upsert(metrics.ConnState, "stale"))
+		stats.Record(ctx, metrics.DBConns.M(int64(pstats.StaleConns)))
+	}
 }
