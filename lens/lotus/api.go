@@ -2,7 +2,10 @@ package lotus
 
 import (
 	"context"
+	"os"
+	"strconv"
 
+	lru "github.com/hashicorp/golang-lru"
 	cid "github.com/ipfs/go-cid"
 	"go.opentelemetry.io/otel/api/global"
 
@@ -18,11 +21,68 @@ import (
 	"github.com/filecoin-project/sentinel-visor/lens"
 )
 
-func NewAPIWrapper(node api.FullNode, store adt.Store) *APIWrapper {
+const (
+	EnvBlockCacheSize  = "VISOR_API_BLK_CACHE"
+	EnvTipSetCacheSize = "VISOR_API_TS_CACHE"
+	EnvObjCacheSize    = "VISOR_API_OBJ_CACHE"
+)
+
+var (
+	BlkCacheSize int64
+	TsCacheSize  int64
+	ObjCacheSize int64
+)
+
+func init() {
+	BlkCacheSize = 1_000
+	TsCacheSize = 1_000
+	ObjCacheSize = 1_000
+
+	if blkCacheStr := os.Getenv(EnvBlockCacheSize); blkCacheStr != "" {
+		blkSize, err := strconv.ParseInt(blkCacheStr, 10, 64)
+		if err != nil {
+			log.Errorw("setting api block cache size", "error", err)
+		} else {
+			BlkCacheSize = blkSize
+		}
+	}
+
+	if tsCacheStr := os.Getenv(EnvTipSetCacheSize); tsCacheStr != "" {
+		tsSize, err := strconv.ParseInt(tsCacheStr, 10, 64)
+		if err != nil {
+			log.Errorw("setting api tipset cache size", "error", err)
+		} else {
+			TsCacheSize = tsSize
+		}
+	}
+	if objCacheStr := os.Getenv(EnvObjCacheSize); objCacheStr != "" {
+		objSize, err := strconv.ParseInt(objCacheStr, 10, 64)
+		if err != nil {
+			log.Errorw("setting api obj cache size", "error", err)
+		} else {
+			ObjCacheSize = objSize
+		}
+	}
+}
+
+func NewAPIWrapper(node api.FullNode, store adt.Store) (*APIWrapper, error) {
+	blkCache, err := lru.NewARC(int(BlkCacheSize))
+	if err != nil {
+		return nil, err
+	}
+	tsCache, err := lru.NewARC(int(TsCacheSize))
+	if err != nil {
+		return nil, err
+	}
+	objCache, err := lru.NewARC(int(ObjCacheSize))
 	return &APIWrapper{
 		FullNode: node,
 		store:    store,
-	}
+
+		blkCache: blkCache,
+		tsCache:  tsCache,
+		objCache: objCache,
+	}, nil
 }
 
 var _ lens.API = &APIWrapper{}
@@ -30,6 +90,10 @@ var _ lens.API = &APIWrapper{}
 type APIWrapper struct {
 	api.FullNode
 	store adt.Store
+
+	blkCache *lru.ARCCache
+	tsCache  *lru.ARCCache
+	objCache *lru.ARCCache
 }
 
 func (aw *APIWrapper) Store() adt.Store {
@@ -39,7 +103,16 @@ func (aw *APIWrapper) Store() adt.Store {
 func (aw *APIWrapper) ChainGetBlock(ctx context.Context, msg cid.Cid) (*types.BlockHeader, error) {
 	ctx, span := global.Tracer("").Start(ctx, "Lotus.ChainGetBlock")
 	defer span.End()
-	return aw.FullNode.ChainGetBlock(ctx, msg)
+	v, hit := aw.blkCache.Get(msg)
+	if hit {
+		return v.(*types.BlockHeader), nil
+	}
+	blk, err := aw.FullNode.ChainGetBlock(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+	aw.blkCache.Add(msg, blk)
+	return blk, nil
 }
 
 func (aw *APIWrapper) ChainGetBlockMessages(ctx context.Context, msg cid.Cid) (*api.BlockMessages, error) {
@@ -69,7 +142,16 @@ func (aw *APIWrapper) ChainGetParentReceipts(ctx context.Context, bcid cid.Cid) 
 func (aw *APIWrapper) ChainGetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error) {
 	ctx, span := global.Tracer("").Start(ctx, "Lotus.ChainGetTipSet")
 	defer span.End()
-	return aw.FullNode.ChainGetTipSet(ctx, tsk)
+	v, hit := aw.tsCache.Get(tsk)
+	if hit {
+		return v.(*types.TipSet), nil
+	}
+	ts, err := aw.FullNode.ChainGetTipSet(ctx, tsk)
+	if err != nil {
+		return nil, err
+	}
+	aw.tsCache.Add(tsk, ts)
+	return ts, nil
 }
 
 func (aw *APIWrapper) ChainNotify(ctx context.Context) (<-chan []*api.HeadChange, error) {
@@ -81,7 +163,16 @@ func (aw *APIWrapper) ChainNotify(ctx context.Context) (<-chan []*api.HeadChange
 func (aw *APIWrapper) ChainReadObj(ctx context.Context, obj cid.Cid) ([]byte, error) {
 	ctx, span := global.Tracer("").Start(ctx, "Lotus.ChainReadObj")
 	defer span.End()
-	return aw.FullNode.ChainReadObj(ctx, obj)
+	v, hit := aw.objCache.Get(obj)
+	if hit {
+		return v.([]byte), nil
+	}
+	raw, err := aw.FullNode.ChainReadObj(ctx, obj)
+	if err != nil {
+		return nil, err
+	}
+	aw.objCache.Add(obj, raw)
+	return raw, nil
 }
 
 func (aw *APIWrapper) StateChangedActors(ctx context.Context, old cid.Cid, new cid.Cid) (map[string]types.Actor, error) {
