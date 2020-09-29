@@ -12,7 +12,7 @@ import (
 
 // GetSchemaVersions returns the schema version in the database and the latest schema version defined by the available
 // migrations.
-func (d *Database) GetSchemaVersions(ctx context.Context) (int64, int64, error) {
+func (d *Database) GetSchemaVersions(ctx context.Context) (int, int, error) {
 	// If we're already connected then use that connection
 	if d.DB != nil {
 		return getSchemaVersions(ctx, d.DB)
@@ -29,7 +29,7 @@ func (d *Database) GetSchemaVersions(ctx context.Context) (int64, int64, error) 
 
 // getSchemaVersions returns the schema version in the database and the schema version defined by the available
 // migrations.
-func getSchemaVersions(ctx context.Context, db *pg.DB) (int64, int64, error) {
+func getSchemaVersions(ctx context.Context, db *pg.DB) (int, int, error) {
 	// Run the migration init to ensure we always have a migrations table
 	_, _, err := migrations.Run(db, "init")
 	if err != nil {
@@ -50,7 +50,7 @@ func getSchemaVersions(ctx context.Context, db *pg.DB) (int64, int64, error) {
 		}
 	}
 
-	return dbVersion, desiredVersion, nil
+	return int(dbVersion), int(desiredVersion), nil
 }
 
 // MigrateSchema migrates the database schema to the latest version based on the list of migrations available
@@ -86,11 +86,11 @@ func (d *Database) MigrateSchema(ctx context.Context) error {
 	}()
 
 	log.Infof("running schema migration from version %d to version %d", dbVersion, latestVersion)
-	_, dbVersion, err = migrations.Run(db, "up")
+	_, newDBVersion, err := migrations.Run(db, "up")
 	if err != nil {
 		return xerrors.Errorf("run migration: %w", err)
 	}
-	log.Infof("current database schema is now version %d", dbVersion)
+	log.Infof("current database schema is now version %d", newDBVersion)
 	return nil
 }
 
@@ -109,11 +109,11 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target int) error {
 	}
 	log.Infof("current database schema is version %d", dbVersion)
 
-	if latestVersion < int64(target) {
+	if latestVersion < target {
 		return xerrors.Errorf("no migrations found for version %d", target)
 	}
 
-	if dbVersion == int64(target) {
+	if dbVersion == target {
 		return xerrors.Errorf("database schema is already at version %d", dbVersion)
 	}
 
@@ -131,13 +131,14 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target int) error {
 	}()
 
 	// Do we need to rollback schema version
-	if dbVersion > int64(target) {
-		for dbVersion > int64(target) {
+	if dbVersion > target {
+		for dbVersion > target {
 			log.Warnf("running destructive schema migration from version %d to version %d", dbVersion, dbVersion-1)
-			_, dbVersion, err = migrations.Run(db, "down")
+			_, newDBVersion, err := migrations.Run(db, "down")
 			if err != nil {
 				return xerrors.Errorf("run migration: %w", err)
 			}
+			dbVersion = int(newDBVersion)
 			log.Infof("current database schema is now version %d", dbVersion)
 		}
 		return nil
@@ -145,11 +146,11 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target int) error {
 
 	// Need to advance schema version
 	log.Infof("running schema migration from version %d to version %d", dbVersion, target)
-	_, dbVersion, err = migrations.Run(db, "up", strconv.Itoa(target))
+	_, newDBVersion, err := migrations.Run(db, "up", strconv.Itoa(target))
 	if err != nil {
 		return xerrors.Errorf("run migration: %w", err)
 	}
-	log.Infof("current database schema is now version %d", dbVersion)
+	log.Infof("current database schema is now version %d", newDBVersion)
 
 	return nil
 }

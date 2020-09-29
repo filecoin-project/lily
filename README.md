@@ -79,7 +79,7 @@ Visor also verifies that the schema is compatible when the index or process subc
 
 To migrate a database schema to the latest version, run:
 
-    sentinel-visor migrate --latest
+    visor migrate --latest
 
 Visor will only migrate a schema if it determines that it has exclusive access to the database. 
 
@@ -89,7 +89,7 @@ Visor can also be configured to automatically migrate the database when indexing
 
 To revert to an earlier version, run:
 
-    sentinel-visor migrate --to <version>
+    visor migrate --to <version>
 
 **WARNING: reverting a migration is very likely to lose data in tables and columns that are not present in the earlier version**
 

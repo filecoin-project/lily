@@ -86,7 +86,7 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name:    "allow-schema-migration",
-				EnvVars: []string{"LOTUS_ALLOW_SCHEMA_MIGRATION"},
+				EnvVars: []string{"VISOR_ALLOW_SCHEMA_MIGRATION"},
 				Value:   false,
 			},
 		},
