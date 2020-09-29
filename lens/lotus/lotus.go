@@ -58,7 +58,10 @@ func GetFullNodeAPI(cctx *cli.Context) (context.Context, lens.API, APICloser, er
 		return nil, nil, nil, xerrors.Errorf("new cache store: %w", err)
 	}
 
-	lensAPI := NewAPIWrapper(api, cacheStore)
+	lensAPI, err := NewAPIWrapper(api, cacheStore)
+	if err != nil {
+		return nil, nil, nil, xerrors.Errorf("new api wrapper: %w", err)
+	}
 
 	return ctx, lensAPI, APICloser(closer), nil
 }
