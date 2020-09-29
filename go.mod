@@ -9,6 +9,7 @@ require (
 	github.com/filecoin-project/go-state-types v0.0.0-20200905071437-95828685f9df
 	github.com/filecoin-project/lotus v0.6.1
 	github.com/filecoin-project/specs-actors v0.9.7
+	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.3.1
 	github.com/go-pg/pgext v0.1.4
 	github.com/gocraft/work v0.5.1
@@ -25,6 +26,7 @@ require (
 	go.opentelemetry.io/otel v0.12.0
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.12.0
 	go.opentelemetry.io/otel/sdk v0.12.0
+	golang.org/x/exp v0.0.0-20200924195034-c827fd4f18b9 // indirect
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 )

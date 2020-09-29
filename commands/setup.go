@@ -1,7 +1,8 @@
-package main
+package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	_ "net/http/pprof"
 	"strings"
@@ -18,119 +19,10 @@ import (
 	lens "github.com/filecoin-project/sentinel-visor/lens"
 	lotuslens "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	vapi "github.com/filecoin-project/sentinel-visor/lens/lotus"
-	indexer2 "github.com/filecoin-project/sentinel-visor/services/indexer"
-	processor2 "github.com/filecoin-project/sentinel-visor/services/processor"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
-var processCmd = &cli.Command{
-	Name:  "process",
-	Usage: "Process indexed blocks of the lotus blockchain",
-	Flags: []cli.Flag{
-		&cli.IntFlag{
-			Name:  "max-batch",
-			Value: 10,
-		},
-	},
-	Action: func(cctx *cli.Context) error {
-		err := setupLogging(cctx)
-		if err != nil {
-			return xerrors.Errorf("setup logging: %w", err)
-		}
-		tcloser, err := setupTracing(cctx)
-		if err != nil {
-			return xerrors.Errorf("setup tracing: %w", err)
-		}
-		defer tcloser()
-
-		ctx, rctx, err := setupStorageAndAPI(cctx)
-		if err != nil {
-			return xerrors.Errorf("setup storage and api: %w", err)
-		}
-		defer func() {
-			rctx.closer()
-			if err := rctx.db.Close(); err != nil {
-				log.Errorw("close database", "error", err)
-			}
-		}()
-
-		if err := rctx.db.CreateSchema(); err != nil {
-			return xerrors.Errorf("create schema: %w", err)
-		}
-
-		processor := processor2.NewProcessor(rctx.db, rctx.api)
-		if err := processor.InitHandler(ctx, cctx.Int("max-batch")); err != nil {
-			return xerrors.Errorf("init processor: %w", err)
-		}
-
-		// Start the processor and wait for it to complete or to be cancelled.
-		done := make(chan struct{})
-		go func() {
-			defer close(done)
-			err = processor.Start(ctx)
-		}()
-
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-done:
-			return err
-		}
-
-	},
-}
-
-var indexCmd = &cli.Command{
-	Name:  "index",
-	Usage: "Index the lotus blockchain",
-	Action: func(cctx *cli.Context) error {
-		err := setupLogging(cctx)
-		if err != nil {
-			return xerrors.Errorf("setup logging: %w", err)
-		}
-
-		tcloser, err := setupTracing(cctx)
-		if err != nil {
-			return xerrors.Errorf("setup tracing: %w", err)
-		}
-		defer tcloser()
-
-		ctx, rctx, err := setupStorageAndAPI(cctx)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			rctx.closer()
-			if err := rctx.db.Close(); err != nil {
-				log.Errorw("close database", "error", err)
-			}
-		}()
-
-		if err := rctx.db.CreateSchema(); err != nil {
-			return xerrors.Errorf("create schema: %w", err)
-		}
-
-		indexer := indexer2.NewIndexer(rctx.db, rctx.api)
-		if err := indexer.InitHandler(ctx); err != nil {
-			return xerrors.Errorf("init indexer: %w", err)
-		}
-
-		// Start the indexer and wait for it to complete or to be cancelled.
-		done := make(chan struct{})
-		go func() {
-			defer close(done)
-			// TODO if the lotus daemon hangs up Start will exit. It should restart and wait for lotus to come back online.
-			err = indexer.Start(ctx)
-		}()
-
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-done:
-			return err
-		}
-	},
-}
+var log = logging.Logger("visor")
 
 type RunContext struct {
 	api    lens.API
@@ -146,7 +38,37 @@ func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error)
 
 	db, err := storage.NewDatabase(ctx, cctx.String("db"), cctx.Int("db-pool-size"))
 	if err != nil {
-		return nil, nil, xerrors.Errorf("connect database: %w", err)
+		closer()
+		return nil, nil, xerrors.Errorf("new database: %w", err)
+	}
+
+	if err := db.Connect(ctx); err != nil {
+		if !errors.Is(err, storage.ErrSchemaTooOld) || !cctx.Bool("allow-schema-migration") {
+			return nil, nil, xerrors.Errorf("connect database: %w", err)
+		}
+
+		log.Infof("connect database: %v", err.Error())
+
+		// Schema is out of data and we're allowed to do schema migrations
+		log.Info("Migrating schema to latest version")
+		err := db.MigrateSchema(ctx)
+		if err != nil {
+			closer()
+			return nil, nil, xerrors.Errorf("migrate schema: %w", err)
+		}
+
+		// Try to connect again
+		if err := db.Connect(ctx); err != nil {
+			closer()
+			return nil, nil, xerrors.Errorf("connect database: %w", err)
+		}
+	}
+
+	// Make sure the schema is a compatible with what this version of Visor requires
+	if err := db.VerifyCurrentSchema(ctx); err != nil {
+		closer()
+		db.Close(ctx)
+		return nil, nil, xerrors.Errorf("verify schema: %w", err)
 	}
 
 	return ctx, &RunContext{api, closer, db}, nil
@@ -155,7 +77,6 @@ func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error)
 func setupTracing(cctx *cli.Context) (func(), error) {
 	if !cctx.Bool("tracing") {
 		global.SetTracerProvider(trace.NoopTracerProvider())
-
 	}
 
 	jcfg, err := jaegerConfigFromCliContext(cctx)
