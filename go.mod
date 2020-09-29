@@ -3,6 +3,7 @@ module github.com/filecoin-project/sentinel-visor
 go 1.14
 
 require (
+	contrib.go.opencensus.io/exporter/prometheus v0.1.0
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/filecoin-project/go-address v0.0.3
@@ -22,10 +23,12 @@ require (
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/raulk/clock v1.1.0
+	github.com/prometheus/client_golang v1.6.0
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/whyrusleeping/cbor-gen v0.0.0-20200826160007-0b9f6c5fb163
+	go.opencensus.io v0.22.4
 	go.opentelemetry.io/otel v0.12.0
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.12.0
 	go.opentelemetry.io/otel/sdk v0.12.0
