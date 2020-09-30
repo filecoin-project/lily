@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"context"
 	"os"
 	"strconv"
 
@@ -8,12 +9,15 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/services/indexer"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/common"
@@ -24,6 +28,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/miner"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/power"
 	"github.com/filecoin-project/sentinel-visor/services/processor/tasks/reward"
+	"github.com/filecoin-project/sentinel-visor/tasks"
 )
 
 var log = logging.Logger("scheduler")
@@ -75,31 +80,7 @@ func init() {
 	}
 }
 
-const (
-	GenesisTaskName = "process_genesis"
-	GenesisPoolName = "genesis_tasks"
 
-	InitActorTaskName = "process_init_actor"
-	InitActorPoolName = "init_actor_tasks"
-
-	MinerTaskName = "process_miner"
-	MinerPoolName = "miner_actor_tasks"
-
-	MarketTaskName = "process_market"
-	MarketPoolName = "market_actor_tasks"
-
-	MessageTaskName = "process_message"
-	MessagePoolName = "message_tasks"
-
-	PowerTaskName = "process_power"
-	PowerPoolName = "power_actor_tasks"
-
-	RewardTaskName = "process_reward"
-	RewardPoolName = "reward_tasks"
-
-	CommonTaskName = "process_common"
-	CommonPoolName = "common_actor_tasks"
-)
 
 func NewScheduler(node lens.API, pubCh chan<- model.Persistable) *Scheduler {
 	// Make a redis pool
@@ -112,26 +93,26 @@ func NewScheduler(node lens.API, pubCh chan<- model.Persistable) *Scheduler {
 		},
 	}
 
-	genesisPool, genesisQueue := genesis.Setup(1, GenesisTaskName, GenesisPoolName, redisPool, node, pubCh)
-	minerPool, minerQueue := miner.Setup(64, MinerTaskName, MinerPoolName, redisPool, node, pubCh)
-	marketPool, marketQueue := market.Setup(64, MarketTaskName, MarketPoolName, redisPool, node, pubCh)
-	msgPool, msgQueue := message.Setup(64, MessageTaskName, MessagePoolName, redisPool, node, pubCh)
-	powerPool, powerQueue := power.Setup(64, PowerTaskName, PowerPoolName, redisPool, node, pubCh)
-	rwdPool, rwdQueue := reward.Setup(4, RewardTaskName, RewardPoolName, redisPool, node, pubCh)
-	comPool, comQueue := common.Setup(64, CommonTaskName, CommonPoolName, redisPool, node, pubCh)
-	initPool, initQueue := init_.Setup(64, InitActorTaskName, InitActorPoolName, redisPool, node, pubCh)
+	genesisPool, genesisQueue := genesis.Setup(1, tasks.GenesisTaskName, tasks.GenesisPoolName, redisPool, node, pubCh)
+	minerPool, minerQueue := miner.Setup(64, tasks.MinerTaskName, tasks.MinerPoolName, redisPool, node, pubCh)
+	marketPool, marketQueue := market.Setup(64, tasks.MarketTaskName, tasks.MarketPoolName, redisPool, node, pubCh)
+	msgPool, msgQueue := message.Setup(64, tasks.MessageTaskName, tasks.MessagePoolName, redisPool, node, pubCh)
+	powerPool, powerQueue := power.Setup(64, tasks.PowerTaskName, tasks.PowerPoolName, redisPool, node, pubCh)
+	rwdPool, rwdQueue := reward.Setup(4, tasks.RewardTaskName, tasks.RewardPoolName, redisPool, node, pubCh)
+	comPool, comQueue := common.Setup(64, tasks.CommonTaskName, tasks.CommonPoolName, redisPool, node, pubCh)
+	initPool, initQueue := init_.Setup(64, tasks.InitActorTaskName, tasks.InitActorPoolName, redisPool, node, pubCh)
 
 	pools := []*work.WorkerPool{genesisPool, minerPool, marketPool, powerPool, msgPool, rwdPool, comPool, initPool}
 
 	queues := map[string]*work.Enqueuer{
-		GenesisTaskName:   genesisQueue,
-		MinerTaskName:     minerQueue,
-		MarketTaskName:    marketQueue,
-		MessageTaskName:   msgQueue,
-		PowerTaskName:     powerQueue,
-		RewardTaskName:    rwdQueue,
-		CommonTaskName:    comQueue,
-		InitActorTaskName: initQueue,
+		tasks.GenesisTaskName:   genesisQueue,
+		tasks.MinerTaskName:     minerQueue,
+		tasks.MarketTaskName:    marketQueue,
+		tasks.MessageTaskName:   msgQueue,
+		tasks.PowerTaskName:     powerQueue,
+		tasks.RewardTaskName:    rwdQueue,
+		tasks.CommonTaskName:    comQueue,
+		tasks.InitActorTaskName: initQueue,
 	}
 
 	return &Scheduler{
@@ -205,6 +186,8 @@ func (s *Scheduler) Dispatch(tips indexer.ActorTips) error {
 }
 
 func (s *Scheduler) queueMinerTask(info indexer.ActorInfo) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, tasks.MinerPoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := info.TipSet.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)
@@ -213,7 +196,7 @@ func (s *Scheduler) queueMinerTask(info indexer.ActorInfo) (*work.Job, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("marshal parent tipset key: %w", err)
 	}
-	return s.queues[MinerTaskName].Enqueue(MinerTaskName, work.Q{
+	return s.queues[tasks.MinerTaskName].Enqueue(tasks.MinerTaskName, work.Q{
 		"ts":        string(tsB),
 		"pts":       string(ptsB),
 		"head":      info.Actor.Head.String(),
@@ -223,6 +206,8 @@ func (s *Scheduler) queueMinerTask(info indexer.ActorInfo) (*work.Job, error) {
 }
 
 func (s *Scheduler) queuePowerTask(info indexer.ActorInfo) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, tasks.PowerPoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := info.TipSet.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)
@@ -231,7 +216,7 @@ func (s *Scheduler) queuePowerTask(info indexer.ActorInfo) (*work.Job, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("marshal parent tipset key: %w", err)
 	}
-	return s.queues[PowerTaskName].Enqueue(PowerTaskName, work.Q{
+	return s.queues[tasks.PowerTaskName].Enqueue(tasks.PowerTaskName, work.Q{
 		"ts":        string(tsB),
 		"pts":       string(ptsB),
 		"head":      info.Actor.Head.String(),
@@ -242,6 +227,8 @@ func (s *Scheduler) queuePowerTask(info indexer.ActorInfo) (*work.Job, error) {
 }
 
 func (s *Scheduler) queueMarketTask(info indexer.ActorInfo) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, tasks.MarketPoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := info.TipSet.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)
@@ -250,7 +237,7 @@ func (s *Scheduler) queueMarketTask(info indexer.ActorInfo) (*work.Job, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("marshal parent tipset key: %w", err)
 	}
-	return s.queues[MarketTaskName].Enqueue(MarketTaskName, work.Q{
+	return s.queues[tasks.MarketTaskName].Enqueue(tasks.MarketTaskName, work.Q{
 		"ts":        string(tsB),
 		"pts":       string(ptsB),
 		"head":      info.Actor.Head.String(),
@@ -260,6 +247,8 @@ func (s *Scheduler) queueMarketTask(info indexer.ActorInfo) (*work.Job, error) {
 }
 
 func (s *Scheduler) queueInitTask(info indexer.ActorInfo) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, tasks.InitActorPoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := info.TipSet.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)
@@ -268,7 +257,7 @@ func (s *Scheduler) queueInitTask(info indexer.ActorInfo) (*work.Job, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("marshal parent tipset key: %w", err)
 	}
-	return s.queues[InitActorTaskName].Enqueue(InitActorTaskName, work.Q{
+	return s.queues[tasks.InitActorTaskName].Enqueue(tasks.InitActorTaskName, work.Q{
 		"ts":        string(tsB),
 		"pts":       string(ptsB),
 		"head":      info.Actor.Head.String(),
@@ -279,28 +268,34 @@ func (s *Scheduler) queueInitTask(info indexer.ActorInfo) (*work.Job, error) {
 }
 
 func (s *Scheduler) queueGenesisTask(genesisTs types.TipSetKey, genesisRoot cid.Cid) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, tasks.GenesisPoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := genesisTs.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)
 	}
-	return s.queues[GenesisTaskName].EnqueueUnique(GenesisTaskName, work.Q{
+	return s.queues[tasks.GenesisTaskName].EnqueueUnique(tasks.GenesisTaskName, work.Q{
 		"ts":        string(tsB),
 		"stateroot": genesisRoot.String(),
 	})
 }
 
 func (s *Scheduler) queueMessageTask(ts types.TipSetKey, st cid.Cid) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, tasks.MessagePoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := ts.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)
 	}
-	return s.queues[MessageTaskName].Enqueue(MessageTaskName, work.Q{
+	return s.queues[tasks.MessageTaskName].Enqueue(tasks.MessageTaskName, work.Q{
 		"ts":        string(tsB),
 		"stateroot": st.String(),
 	})
 }
 
 func (s *Scheduler) queueRewardTask(info indexer.ActorInfo) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, tasks.RewardPoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := info.TipSet.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)
@@ -310,7 +305,7 @@ func (s *Scheduler) queueRewardTask(info indexer.ActorInfo) (*work.Job, error) {
 		return nil, err
 	}
 
-	return s.queues[RewardTaskName].Enqueue(RewardTaskName, work.Q{
+	return s.queues[tasks.RewardTaskName].Enqueue(tasks.RewardTaskName, work.Q{
 		"ts":        string(tsB),
 		"pts":       string(ptsB),
 		"head":      info.Actor.Head.String(),
@@ -319,6 +314,8 @@ func (s *Scheduler) queueRewardTask(info indexer.ActorInfo) (*work.Job, error) {
 }
 
 func (s *Scheduler) queueCommonTask(info indexer.ActorInfo) (*work.Job, error) {
+	ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.TaskNS, tasks.CommonPoolName))
+	stats.Record(ctx, metrics.TaskQueueLen.M(1))
 	tsB, err := info.TipSet.MarshalJSON()
 	if err != nil {
 		return nil, xerrors.Errorf("marshal tipset key: %w", err)
@@ -328,7 +325,7 @@ func (s *Scheduler) queueCommonTask(info indexer.ActorInfo) (*work.Job, error) {
 		return nil, xerrors.Errorf("marshal parent tipset key: %w", err)
 	}
 
-	return s.queues[CommonTaskName].Enqueue(CommonTaskName, work.Q{
+	return s.queues[tasks.CommonTaskName].Enqueue(tasks.CommonTaskName, work.Q{
 		"ts":        string(tsB),
 		"pts":       string(ptsB),
 		"stateroot": info.ParentStateRoot.String(),
