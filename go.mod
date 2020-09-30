@@ -5,13 +5,13 @@ go 1.14
 require (
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
-	github.com/filecoin-project/go-address v0.0.3
+	github.com/filecoin-project/go-address v0.0.4
 	github.com/filecoin-project/go-amt-ipld/v2 v2.1.1-0.20200731171407-e559a0579161 // indirect
 	github.com/filecoin-project/go-bitfield v0.2.0
 	github.com/filecoin-project/go-jsonrpc v0.1.2-0.20200822201400-474f4fdccc52
-	github.com/filecoin-project/go-state-types v0.0.0-20200911004822-964d6c679cfc
-	github.com/filecoin-project/lotus v0.8.0
-	github.com/filecoin-project/specs-actors v0.9.11
+	github.com/filecoin-project/go-state-types v0.0.0-20200928172055-2df22083d8ab
+	github.com/filecoin-project/lotus v0.8.1-0.20200929062543-be9d23b32981
+	github.com/filecoin-project/specs-actors v0.9.12-0.20200928180918-488a087c5add
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.3.1
 	github.com/go-pg/pgext v0.1.4
