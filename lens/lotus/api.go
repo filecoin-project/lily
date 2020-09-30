@@ -7,6 +7,8 @@ import (
 
 	lru "github.com/hashicorp/golang-lru"
 	cid "github.com/ipfs/go-cid"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/go-address"
@@ -17,6 +19,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
 const (
@@ -101,8 +104,13 @@ func (aw *APIWrapper) Store() adt.Store {
 func (aw *APIWrapper) ChainGetBlock(ctx context.Context, msg cid.Cid) (*types.BlockHeader, error) {
 	ctx, span := global.Tracer("").Start(ctx, "Lotus.ChainGetBlock")
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.CacheType, "block"), tag.Upsert(metrics.CacheOp, "miss"))
+	defer func() {stats.Record(ctx, metrics.CacheOpCount.M(1))}()
+
 	v, hit := aw.blkCache.Get(msg)
 	if hit {
+		ctx, _ = tag.New(ctx, tag.Upsert(metrics.CacheOp, "hit"))
 		return v.(*types.BlockHeader), nil
 	}
 	blk, err := aw.FullNode.ChainGetBlock(ctx, msg)
@@ -140,8 +148,13 @@ func (aw *APIWrapper) ChainGetParentReceipts(ctx context.Context, bcid cid.Cid) 
 func (aw *APIWrapper) ChainGetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error) {
 	ctx, span := global.Tracer("").Start(ctx, "Lotus.ChainGetTipSet")
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.CacheType, "tipset"), tag.Upsert(metrics.CacheOp, "miss"))
+	defer func() {stats.Record(ctx, metrics.CacheOpCount.M(1))}()
+
 	v, hit := aw.tsCache.Get(tsk)
 	if hit {
+		ctx, _ = tag.New(ctx, tag.Upsert(metrics.CacheOp, "hit"))
 		return v.(*types.TipSet), nil
 	}
 	ts, err := aw.FullNode.ChainGetTipSet(ctx, tsk)
@@ -161,8 +174,13 @@ func (aw *APIWrapper) ChainNotify(ctx context.Context) (<-chan []*api.HeadChange
 func (aw *APIWrapper) ChainReadObj(ctx context.Context, obj cid.Cid) ([]byte, error) {
 	ctx, span := global.Tracer("").Start(ctx, "Lotus.ChainReadObj")
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.CacheType, "object"), tag.Upsert(metrics.CacheOp, "miss"))
+	defer func() {stats.Record(ctx, metrics.CacheOpCount.M(1))}()
+
 	v, hit := aw.objCache.Get(obj)
 	if hit {
+		ctx, _ = tag.New(ctx, tag.Upsert(metrics.CacheOp, "hit"))
 		return v.([]byte), nil
 	}
 	raw, err := aw.FullNode.ChainReadObj(ctx, obj)
