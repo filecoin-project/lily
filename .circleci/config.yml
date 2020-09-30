@@ -77,5 +77,6 @@ workflows:
               only:
                 - master
                 - main
+                - /^[a-z]*-master$/
             tags:
               only: /^v[0-9].*/
