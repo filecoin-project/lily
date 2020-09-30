@@ -15,12 +15,15 @@ var (
 	Error, _ = tag.NewKey("error")
 	TaskType, _ = tag.NewKey("task")
 	ConnState, _ = tag.NewKey("conn_state")
+	CacheType, _ = tag.NewKey("cache_type")
+	CacheOp, _   = tag.NewKey("cache_op")
 )
 
 var (
 	ProcessingDuration = stats.Float64("processing_duration_ms", "Time taken to process a single item", stats.UnitMilliseconds)
 	PersistDuration = stats.Float64("persist_duration_ms", "Duration of a models persist operation", stats.UnitMilliseconds)
-	DBConns = stats.Int64("db_conns", "Database connections held", stats.UnitDimensionless)
+	DBConns         = stats.Int64("db_conns", "Database connections held", stats.UnitDimensionless)
+	CacheOpCount    = stats.Int64("cache_op_count", "Cache operation count", stats.UnitDimensionless)
 )
 
 var (
@@ -30,14 +33,19 @@ var (
 		TagKeys: []tag.Key{TaskType},
 	}
 	PersistDurationView = &view.View{
-		Measure: PersistDuration,
+		Measure:     PersistDuration,
 		Aggregation: defaultMillisecondsDistribution,
 		TagKeys: []tag.Key{TaskType},
 	}
 	DBConnsView = &view.View{
-		Measure: DBConns,
+		Measure:     DBConns,
 		Aggregation: view.Count(),
-		TagKeys: []tag.Key{ConnState},
+		TagKeys:     []tag.Key{ConnState},
+	}
+	CacheOpCountView = &view.View{
+		Measure:     CacheOpCount,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{CacheType, CacheOp},
 	}
 )
 
@@ -45,6 +53,7 @@ var DefaultViews = append([]*view.View{
 	ProcessingDurationView,
 	PersistDurationView,
 	DBConnsView,
+	CacheOpCountView,
 })
 
 // SinceInMilliseconds returns the duration of time since the provide time as a float64.
