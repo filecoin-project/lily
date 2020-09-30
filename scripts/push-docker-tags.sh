@@ -54,15 +54,5 @@ pushTag () {
   fi
 }
 
-if [[ $GIT_TAG =~ ^v[0-9]+ ]]; then
-  pushTag "$GIT_TAG"
-  pushTag "latest"
-
-elif [[ $GIT_BRANCH =~ ^(master|main)$ ]]; then
-  pushTag "$GIT_BRANCH-${DATE_SHORT}-${GIT_SHA1_SHORT}"
-  pushTag "$GIT_BRANCH-latest"
-
-else
-  echo "Nothing to do for branch: $GIT_BRANCH, tag: $GIT_TAG"
-
-fi
+pushTag "$GIT_BRANCH-${DATE_SHORT}-${GIT_SHA1_SHORT}"
+pushTag "$GIT_BRANCH-latest"
