@@ -12,6 +12,8 @@ func init() {
 ALTER TABLE public.actors RENAME COLUMN stateroot TO state_root;
 ALTER TABLE public.actors ALTER nonce type bigint;
 
+ALTER TABLE public.actor_states ALTER COLUMN state SET DATA TYPE jsonb using state::JSONB;
+
 ALTER TABLE public.blocks RENAME TO block_headers;
 ALTER TABLE public.block_headers RENAME COLUMN forksig TO fork_signaling;
 ALTER TABLE public.block_headers RENAME COLUMN parentstateroot TO parent_state_root;
