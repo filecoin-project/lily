@@ -125,7 +125,7 @@ func TestLeaseStateChanges(t *testing.T) {
 	claimUntil := testutil.KnownTime.Add(time.Minute * 10)
 	d := &Database{DB: db}
 
-	claimed, err := d.LeaseStateChanges(ctx, claimUntil, batchSize, 500)
+	claimed, err := d.LeaseStateChanges(ctx, claimUntil, batchSize, 0, 500)
 	require.NoError(t, err)
 	require.Equal(t, batchSize, len(claimed), "number of claimed blocks")
 
@@ -309,7 +309,7 @@ func TestLeaseActors(t *testing.T) {
 	claimUntil := testutil.KnownTime.Add(time.Minute * 10)
 
 	d := &Database{DB: db}
-	claimed, err := d.LeaseActors(ctx, claimUntil, batchSize, 500, allowedCodes)
+	claimed, err := d.LeaseActors(ctx, claimUntil, batchSize, 0, 500, allowedCodes)
 	require.NoError(t, err)
 	require.Equal(t, batchSize, len(claimed), "number of claimed actors")
 
@@ -474,7 +474,7 @@ func TestLeaseBlockMessages(t *testing.T) {
 	claimUntil := testutil.KnownTime.Add(time.Minute * 10)
 	d := &Database{DB: db}
 
-	claimed, err := d.LeaseTipSetMessages(ctx, claimUntil, batchSize, 500)
+	claimed, err := d.LeaseTipSetMessages(ctx, claimUntil, batchSize, 0, 500)
 	require.NoError(t, err)
 	require.Equal(t, batchSize, len(claimed), "number of claimed message blocks")
 

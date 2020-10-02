@@ -320,7 +320,7 @@ func stripQuotes(s types.Safe) string {
 	return strings.Trim(string(s), `"`)
 }
 
-func (d *Database) LeaseStateChanges(ctx context.Context, claimUntil time.Time, batchSize int, maxHeight int64) (visor.ProcessingStateChangeList, error) {
+func (d *Database) LeaseStateChanges(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingStateChangeList, error) {
 	var blocks visor.ProcessingStateChangeList
 
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
@@ -333,7 +333,7 @@ WITH leased AS (
 	    FROM visor_processing_statechanges
 	    WHERE completed_at IS null AND
 	          (claimed_until IS null OR claimed_until < ?) AND
-	          height >= 0 AND height <= ?
+	          height >= ? AND height <= ?
 	    ORDER BY height DESC
 	    LIMIT ?
 	    FOR UPDATE SKIP LOCKED
@@ -342,7 +342,7 @@ WITH leased AS (
     RETURNING visor_processing_statechanges.tip_set, visor_processing_statechanges.height
 )
 SELECT tip_set,height FROM leased;
-    `, claimUntil, timeNow(), maxHeight, batchSize)
+    `, claimUntil, timeNow(), minHeight, maxHeight, batchSize)
 
 		if err != nil {
 			return err
@@ -375,8 +375,14 @@ func (d *Database) MarkStateChangeComplete(ctx context.Context, tsk string, heig
 	return nil
 }
 
-func (d *Database) LeaseActors(ctx context.Context, claimUntil time.Time, batchSize int, maxHeight int64, codes []string) (visor.ProcessingActorList, error) {
+// LeaseActors leases a set of actors to process. minHeight and maxHeight define an inclusive range of heights to process.
+func (d *Database) LeaseActors(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64, codes []string) (visor.ProcessingActorList, error) {
 	var actors visor.ProcessingActorList
+
+	// Ensure we never return genesis, which is handled separately
+	if minHeight < 1 {
+		minHeight = 1
+	}
 
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.QueryContext(ctx, &actors, `
@@ -388,7 +394,7 @@ WITH leased AS (
 	    FROM visor_processing_actors
 	    WHERE completed_at IS null AND
 	          (claimed_until IS null OR claimed_until < ?) AND
-	          height > 0 AND height <= ? AND
+	          height >= ? AND height <= ? AND
 	          code IN (?)
 	    ORDER BY height DESC
 	    LIMIT ?
@@ -397,7 +403,7 @@ WITH leased AS (
 	WHERE a.head = candidates.head AND a.code = candidates.code
     RETURNING a.head, a.code, a.nonce, a.balance, a.address, a.parent_state_root, a.tip_set, a.parent_tip_set)
 SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set from leased;
-    `, claimUntil, timeNow(), maxHeight, pg.In(codes), batchSize)
+    `, claimUntil, timeNow(), minHeight, maxHeight, pg.In(codes), batchSize)
 
 		if err != nil {
 			return err
@@ -430,7 +436,8 @@ func (d *Database) MarkActorComplete(ctx context.Context, head string, code stri
 	return nil
 }
 
-func (d *Database) LeaseTipSetMessages(ctx context.Context, claimUntil time.Time, batchSize int, maxHeight int64) (visor.ProcessingMessageList, error) {
+// LeaseActors leases a set of tipsets containing messages to process. minHeight and maxHeight define an inclusive range of heights to process.
+func (d *Database) LeaseTipSetMessages(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingMessageList, error) {
 	var messages visor.ProcessingMessageList
 
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
@@ -443,7 +450,7 @@ WITH leased AS (
 	    FROM visor_processing_messages
 	    WHERE completed_at IS null AND
 	          (claimed_until IS null OR claimed_until < ?) AND
-	          height > 0 AND height <= ?
+	          height >= minHeight AND height <= ?
 	    ORDER BY height DESC
 	    LIMIT ?
 	    FOR UPDATE SKIP LOCKED
@@ -452,7 +459,7 @@ WITH leased AS (
     RETURNING visor_processing_messages.tip_set, visor_processing_messages.height
 )
 SELECT tip_set,height FROM leased;
-    `, claimUntil, timeNow(), maxHeight, batchSize)
+    `, claimUntil, timeNow(), minHeight, maxHeight, batchSize)
 
 		if err != nil {
 			return err

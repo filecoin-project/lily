@@ -24,12 +24,13 @@ var log = logging.Logger("message")
 
 var timeNow = time.Now
 
-func NewMessageProcessor(d *storage.Database, node lens.API, leaseLength time.Duration, batchSize int, maxHeight int64) *MessageProcessor {
+func NewMessageProcessor(d *storage.Database, node lens.API, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64) *MessageProcessor {
 	return &MessageProcessor{
 		node:        node,
 		storage:     d,
 		leaseLength: leaseLength,
 		batchSize:   batchSize,
+		minHeight:   minHeight,
 		maxHeight:   maxHeight,
 	}
 }
@@ -41,6 +42,7 @@ type MessageProcessor struct {
 	storage     *storage.Database
 	leaseLength time.Duration // length of time to lease work for
 	batchSize   int           // number of tipsets to lease in a batch
+	minHeight   int64         // limit processing to tipsets equal to or above this height
 	maxHeight   int64         // limit processing to tipsets equal to or below this height
 }
 
@@ -60,7 +62,7 @@ func (p *MessageProcessor) processBatch(ctx context.Context) (bool, error) {
 	defer cancel()
 
 	// Lease some blocks to work on
-	batch, err := p.storage.LeaseTipSetMessages(ctx, claimUntil, p.batchSize, p.maxHeight)
+	batch, err := p.storage.LeaseTipSetMessages(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight)
 	if err != nil {
 		return true, err
 	}

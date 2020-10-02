@@ -67,12 +67,13 @@ func SupportedActorCodes() []cid.Cid {
 	return codes
 }
 
-func NewActorStateProcessor(d *storage.Database, node lens.API, leaseLength time.Duration, batchSize int, maxHeight int64, actorCodes []cid.Cid) (*ActorStateProcessor, error) {
+func NewActorStateProcessor(d *storage.Database, node lens.API, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64, actorCodes []cid.Cid) (*ActorStateProcessor, error) {
 	p := &ActorStateProcessor{
 		node:        node,
 		storage:     d,
 		leaseLength: leaseLength,
 		batchSize:   batchSize,
+		minHeight:   minHeight,
 		maxHeight:   maxHeight,
 		extractors:  map[cid.Cid]ActorStateExtractor{},
 	}
@@ -98,6 +99,7 @@ type ActorStateProcessor struct {
 	storage     *storage.Database
 	leaseLength time.Duration                   // length of time to lease work for
 	batchSize   int                             // number of blocks to lease in a batch
+	minHeight   int64                           // limit processing to tipsets equal to or above this height
 	maxHeight   int64                           // limit processing to tipsets equal to or below this height
 	actorCodes  []string                        // list of actor codes that will be requested
 	extractors  map[cid.Cid]ActorStateExtractor // list of extractors that will be used
@@ -119,7 +121,7 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context) (bool, error) {
 	ctx, cancel := context.WithDeadline(ctx, claimUntil)
 	defer cancel()
 
-	batch, err := p.storage.LeaseActors(ctx, claimUntil, p.batchSize, p.maxHeight, p.actorCodes)
+	batch, err := p.storage.LeaseActors(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
 	if err != nil {
 		return true, err
 	}

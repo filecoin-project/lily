@@ -20,12 +20,13 @@ import (
 
 const idleSleepInterval = 60 * time.Second // time to wait if the processor runs out of blocks to process
 
-func NewActorStateChangeProcessor(d *storage.Database, node lens.API, leaseLength time.Duration, batchSize int, maxHeight int64) *ActorStateChangeProcessor {
+func NewActorStateChangeProcessor(d *storage.Database, node lens.API, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64) *ActorStateChangeProcessor {
 	return &ActorStateChangeProcessor{
 		node:        node,
 		storage:     d,
 		leaseLength: leaseLength,
 		batchSize:   batchSize,
+		minHeight:   minHeight,
 		maxHeight:   maxHeight,
 	}
 }
@@ -37,6 +38,7 @@ type ActorStateChangeProcessor struct {
 	storage     *storage.Database
 	leaseLength time.Duration // length of time to lease work for
 	batchSize   int           // number of blocks to lease in a batch
+	minHeight   int64         // limit processing to tipsets equal to or above this height
 	maxHeight   int64         // limit processing to tipsets equal to or below this height
 }
 
@@ -56,7 +58,7 @@ func (p *ActorStateChangeProcessor) processBatch(ctx context.Context) (bool, err
 	defer cancel()
 
 	// Lease some tipsets to work on
-	batch, err := p.storage.LeaseStateChanges(ctx, claimUntil, p.batchSize, p.maxHeight)
+	batch, err := p.storage.LeaseStateChanges(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight)
 	if err != nil {
 		return true, err
 	}
