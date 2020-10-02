@@ -181,17 +181,31 @@ func TestMarkStateChangeComplete(t *testing.T) {
 		t.Fatalf("persisting indexed blocks: %v", err)
 	}
 
-	completedAt := testutil.KnownTime.Add(time.Minute * 1)
 	d := &Database{DB: db}
 
-	err = d.MarkStateChangeComplete(ctx, "cid1a,cid1b", 1, completedAt, "message")
-	require.NoError(t, err)
+	t.Run("with error message", func(t *testing.T) {
+		completedAt := testutil.KnownTime.Add(time.Minute * 1)
+		err = d.MarkStateChangeComplete(ctx, "cid1a,cid1b", 1, completedAt, "message")
+		require.NoError(t, err)
 
-	// Check the database contains the updated row
-	var count int
-	_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_statechanges WHERE completed_at=?`, completedAt)
-	require.NoError(t, err)
-	assert.Equal(t, 1, count)
+		// Check the database contains the updated row
+		var count int
+		_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_statechanges WHERE completed_at=?`, completedAt)
+		require.NoError(t, err)
+		assert.Equal(t, 1, count)
+	})
+
+	t.Run("without error message", func(t *testing.T) {
+		completedAt := testutil.KnownTime.Add(time.Minute * 2)
+		err = d.MarkStateChangeComplete(ctx, "cid1a,cid1b", 1, completedAt, "")
+		require.NoError(t, err)
+
+		// Check the database contains the updated row with a null errors_detected column
+		var count int
+		_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_statechanges WHERE completed_at=? AND errors_detected IS NULL`, completedAt)
+		require.NoError(t, err)
+		assert.Equal(t, 1, count)
+	})
 }
 
 // truncateVisorProcessingTables ensures the processing tables are empty
@@ -353,17 +367,31 @@ func TestMarkActorComplete(t *testing.T) {
 		t.Fatalf("persisting indexed actors: %v", err)
 	}
 
-	completedAt := testutil.KnownTime.Add(time.Minute * 1)
 	d := &Database{DB: db}
 
-	err = d.MarkActorComplete(ctx, "head1", "codeB", completedAt, "message")
-	require.NoError(t, err)
+	t.Run("with error message", func(t *testing.T) {
+		completedAt := testutil.KnownTime.Add(time.Minute * 1)
+		err = d.MarkActorComplete(ctx, "head1", "codeB", completedAt, "message")
+		require.NoError(t, err)
 
-	// Check the database contains the updated row
-	var count int
-	_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_actors WHERE completed_at=?`, completedAt)
-	require.NoError(t, err)
-	assert.Equal(t, 1, count)
+		// Check the database contains the updated row
+		var count int
+		_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_actors WHERE completed_at=?`, completedAt)
+		require.NoError(t, err)
+		assert.Equal(t, 1, count)
+	})
+
+	t.Run("without error message", func(t *testing.T) {
+		completedAt := testutil.KnownTime.Add(time.Minute * 2)
+		err = d.MarkActorComplete(ctx, "head1", "codeB", completedAt, "")
+		require.NoError(t, err)
+
+		// Check the database contains the updated row with a null errors_detected column
+		var count int
+		_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_actors WHERE completed_at=? AND errors_detected IS NULL`, completedAt)
+		require.NoError(t, err)
+		assert.Equal(t, 1, count)
+	})
 }
 
 func TestLeaseBlockMessages(t *testing.T) {
@@ -502,15 +530,30 @@ func TestMarkTipSetMessagesComplete(t *testing.T) {
 		t.Fatalf("persisting indexed message blocks: %v", err)
 	}
 
-	completedAt := testutil.KnownTime.Add(time.Minute * 1)
 	d := &Database{DB: db}
 
-	err = d.MarkTipSetMessagesComplete(ctx, "cid1", 1, completedAt, "message")
-	require.NoError(t, err)
+	t.Run("with error message", func(t *testing.T) {
+		completedAt := testutil.KnownTime.Add(time.Minute * 1)
+		err = d.MarkTipSetMessagesComplete(ctx, "cid1", 1, completedAt, "message")
+		require.NoError(t, err)
 
-	// Check the database contains the updated row
-	var count int
-	_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_messages WHERE completed_at=?`, completedAt)
-	require.NoError(t, err)
-	assert.Equal(t, 1, count)
+		// Check the database contains the updated row
+		var count int
+		_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_messages WHERE completed_at=?`, completedAt)
+		require.NoError(t, err)
+		assert.Equal(t, 1, count)
+	})
+
+	t.Run("without error message", func(t *testing.T) {
+		completedAt := testutil.KnownTime.Add(time.Minute * 2)
+		err = d.MarkTipSetMessagesComplete(ctx, "cid1", 1, completedAt, "")
+		require.NoError(t, err)
+
+		// Check the database contains the updated row with a null errors_detected column
+		var count int
+		_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_messages WHERE completed_at=? AND errors_detected IS NULL`, completedAt)
+		require.NoError(t, err)
+		assert.Equal(t, 1, count)
+	})
+
 }

@@ -362,7 +362,7 @@ func (d *Database) MarkStateChangeComplete(ctx context.Context, tsk string, heig
         completed_at = ?,
         errors_detected = ?
     WHERE tip_set = ? AND height = ?
-`, completedAt, errorsDetected, tsk, height)
+`, completedAt, useNullIfEmpty(errorsDetected), tsk, height)
 		if err != nil {
 			return err
 		}
@@ -417,7 +417,7 @@ func (d *Database) MarkActorComplete(ctx context.Context, head string, code stri
         completed_at = ?,
         errors_detected = ?
     WHERE head = ? AND code = ?
-`, completedAt, errorsDetected, head, code)
+`, completedAt, useNullIfEmpty(errorsDetected), head, code)
 		if err != nil {
 			return err
 		}
@@ -472,7 +472,7 @@ func (d *Database) MarkTipSetMessagesComplete(ctx context.Context, tipset string
         completed_at = ?,
         errors_detected = ?
     WHERE tip_set = ? AND height = ?
-`, completedAt, errorsDetected, tipset, height)
+`, completedAt, useNullIfEmpty(errorsDetected), tipset, height)
 		if err != nil {
 			return err
 		}
@@ -483,4 +483,12 @@ func (d *Database) MarkTipSetMessagesComplete(ctx context.Context, tipset string
 	}
 
 	return nil
+}
+
+func useNullIfEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+
+	return &s
 }

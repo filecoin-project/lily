@@ -86,7 +86,7 @@ var Run = &cli.Command{
 		// TODO: get these from CLI flags
 		defaultStateProcessors := 15
 
-		// By default we proces all supported actor types but we could limit here
+		// By default we process all supported actor types but we could limit here
 		defaultActorCodesToProcess := actorstate.SupportedActorCodes()
 		defaultActorCodesMaxHeight := int64(math.MaxInt64)
 

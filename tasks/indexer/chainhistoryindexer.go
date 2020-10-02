@@ -17,12 +17,9 @@ import (
 
 func NewChainHistoryIndexer(d *storage.Database, node lens.API) *ChainHistoryIndexer {
 	return &ChainHistoryIndexer{
-		node:    node,
-		storage: d,
-
-		// TODO base finality value on the spec: https://github.com/filecoin-project/specs-actors/pull/702
-		finality: 1400,
-
+		node:      node,
+		storage:   d,
+		finality:  900,
 		batchSize: 500,
 	}
 }
@@ -111,7 +108,7 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) er
 		if ts.Height() == 0 {
 			continue
 		}
-
+		// TODO: LOOK FOR websocket connection closed ERROR and retry after a delay
 		pts, err := c.node.ChainGetTipSet(ctx, ts.Parents())
 		if err != nil {
 			return xerrors.Errorf("get tipset: %w", err)
