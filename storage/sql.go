@@ -450,7 +450,7 @@ WITH leased AS (
 	    FROM visor_processing_messages
 	    WHERE completed_at IS null AND
 	          (claimed_until IS null OR claimed_until < ?) AND
-	          height >= minHeight AND height <= ?
+	          height >= ? AND height <= ?
 	    ORDER BY height DESC
 	    LIMIT ?
 	    FOR UPDATE SKIP LOCKED
