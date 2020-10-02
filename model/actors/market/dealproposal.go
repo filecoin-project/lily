@@ -2,7 +2,6 @@ package market
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
@@ -27,7 +26,7 @@ type MarketDealProposal struct {
 	StoragePricePerEpoch string `pg:",notnull"`
 	PieceCID             string `pg:",notnull"`
 
-	IsVerified bool
+	IsVerified bool `pg:",notnull"`
 	Label      string
 }
 
@@ -35,7 +34,7 @@ func (dp *MarketDealProposal) PersistWithTx(ctx context.Context, tx *pg.Tx) erro
 	if _, err := tx.ModelContext(ctx, dp).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return fmt.Errorf("persisting market deal proposal %v: %v", dp, err)
+		return err
 	}
 	return nil
 }
