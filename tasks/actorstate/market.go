@@ -17,15 +17,15 @@ import (
 
 // was services/processor/tasks/market/market.go
 
-// StorageMarketExtracter extracts market actor state
-type StorageMarketExtracter struct{}
+// StorageMarketExtractor extracts market actor state
+type StorageMarketExtractor struct{}
 
 func init() {
-	Register(builtin.StorageMarketActorCodeID, StorageMarketExtracter{})
+	Register(builtin.StorageMarketActorCodeID, StorageMarketExtractor{})
 }
 
-func (m StorageMarketExtracter) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
-	ctx, span := global.Tracer("").Start(ctx, "StorageMarketExtracter")
+func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
+	ctx, span := global.Tracer("").Start(ctx, "StorageMarketExtractor")
 	defer span.End()
 
 	proposals, err := m.marketDealProposalChanges(ctx, a, node)
@@ -44,7 +44,7 @@ func (m StorageMarketExtracter) Extract(ctx context.Context, a ActorInfo, node l
 	}, nil
 }
 
-func (m StorageMarketExtracter) marketDealStateChanges(ctx context.Context, a ActorInfo, node lens.API) (marketmodel.MarketDealStates, error) {
+func (m StorageMarketExtractor) marketDealStateChanges(ctx context.Context, a ActorInfo, node lens.API) (marketmodel.MarketDealStates, error) {
 	// TODO: pass in diff to avoid doing it twice
 	pred := state.NewStatePredicates(node)
 	stateDiff := pred.OnStorageMarketActorChanged(pred.OnDealStateChanged(pred.OnDealStateAmtChanged()))
@@ -86,7 +86,7 @@ func (m StorageMarketExtracter) marketDealStateChanges(ctx context.Context, a Ac
 	return out, nil
 }
 
-func (m StorageMarketExtracter) marketDealProposalChanges(ctx context.Context, a ActorInfo, node lens.API) (marketmodel.MarketDealProposals, error) {
+func (m StorageMarketExtractor) marketDealProposalChanges(ctx context.Context, a ActorInfo, node lens.API) (marketmodel.MarketDealProposals, error) {
 	// TODO: pass in diff to avoid doing it twice
 	pred := state.NewStatePredicates(node)
 	stateDiff := pred.OnStorageMarketActorChanged(pred.OnDealProposalChanged(pred.OnDealProposalAmtChanged()))

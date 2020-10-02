@@ -16,15 +16,15 @@ import (
 
 // was services/processor/tasks/power/power.go
 
-// StoragePowerExtracter extracts power actor state
-type StoragePowerExtracter struct{}
+// StoragePowerExtractor extracts power actor state
+type StoragePowerExtractor struct{}
 
 func init() {
-	Register(builtin.StoragePowerActorCodeID, StoragePowerExtracter{})
+	Register(builtin.StoragePowerActorCodeID, StoragePowerExtractor{})
 }
 
-func (StoragePowerExtracter) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
-	ctx, span := global.Tracer("").Start(ctx, "StoragePowerExtracter")
+func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
+	ctx, span := global.Tracer("").Start(ctx, "StoragePowerExtractor")
 	defer span.End()
 
 	powerActor, err := node.StateGetActor(ctx, builtin.StoragePowerActorAddr, a.TipSet)

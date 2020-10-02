@@ -15,15 +15,15 @@ import (
 
 // was services/processor/tasks/reward/reward.go
 
-// RewardExtracter extracts reward actor state
-type RewardExtracter struct{}
+// RewardExtractor extracts reward actor state
+type RewardExtractor struct{}
 
 func init() {
-	Register(builtin.RewardActorCodeID, RewardExtracter{})
+	Register(builtin.RewardActorCodeID, RewardExtractor{})
 }
 
-func (RewardExtracter) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
-	ctx, span := global.Tracer("").Start(ctx, "RewardExtracter")
+func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
+	ctx, span := global.Tracer("").Start(ctx, "RewardExtractor")
 	defer span.End()
 
 	rewardStateRaw, err := node.ChainReadObj(ctx, a.Actor.Head)

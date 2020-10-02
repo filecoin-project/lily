@@ -82,6 +82,8 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) er
 
 	toVisit.PushBack(head)
 
+	// TODO: revisit this loop which was designed to collect blocks but could now be a lot simpler since we are
+	// just walking the chain
 	for toVisit.Len() > 0 {
 		select {
 		case <-ctx.Done():
@@ -108,7 +110,7 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) er
 		if ts.Height() == 0 {
 			continue
 		}
-		// TODO: LOOK FOR websocket connection closed ERROR and retry after a delay
+		// TODO: Look for websocket connection closed error and retry after a delay to avoid hot loop
 		pts, err := c.node.ChainGetTipSet(ctx, ts.Parents())
 		if err != nil {
 			return xerrors.Errorf("get tipset: %w", err)

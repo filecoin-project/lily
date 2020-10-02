@@ -14,11 +14,11 @@ import (
 
 // was services/processor/tasks/common/actor.go
 
-// ActorExtracter extracts common actor state
-type ActorExtracter struct{}
+// ActorExtractor extracts common actor state
+type ActorExtractor struct{}
 
-func (ActorExtracter) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
-	ctx, span := global.Tracer("").Start(ctx, "ActorExtracter")
+func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
+	ctx, span := global.Tracer("").Start(ctx, "ActorExtractor")
 	defer span.End()
 
 	ast, err := node.StateReadState(ctx, a.Address, a.TipSet)

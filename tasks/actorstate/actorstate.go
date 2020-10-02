@@ -35,33 +35,33 @@ type ActorInfo struct {
 	ParentTipSet    types.TipSetKey
 }
 
-// An ActorStateExtracter extracts actor state into a persistable format
-type ActorStateExtracter interface {
+// An ActorStateExtractor extracts actor state into a persistable format
+type ActorStateExtractor interface {
 	Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error)
 }
 
-// All supported actor state extracters
+// All supported actor state extractors
 var (
-	extractersMu sync.Mutex
-	extracters   = map[cid.Cid]ActorStateExtracter{}
+	extractorsMu sync.Mutex
+	extractors   = map[cid.Cid]ActorStateExtractor{}
 )
 
-// Register adds an actor state extracter
-func Register(code cid.Cid, e ActorStateExtracter) {
-	extractersMu.Lock()
-	defer extractersMu.Unlock()
-	if _, ok := extracters[code]; ok {
-		log.Warningf("extracter overrides previously registered extracter for code %q", code.String())
+// Register adds an actor state extractor
+func Register(code cid.Cid, e ActorStateExtractor) {
+	extractorsMu.Lock()
+	defer extractorsMu.Unlock()
+	if _, ok := extractors[code]; ok {
+		log.Warningf("extractor overrides previously registered extractor for code %q", code.String())
 	}
-	extracters[code] = e
+	extractors[code] = e
 }
 
 func SupportedActorCodes() []cid.Cid {
-	extractersMu.Lock()
-	defer extractersMu.Unlock()
+	extractorsMu.Lock()
+	defer extractorsMu.Unlock()
 
 	var codes []cid.Cid
-	for code := range extracters {
+	for code := range extractors {
 		codes = append(codes, code)
 	}
 	return codes
@@ -74,18 +74,18 @@ func NewActorStateProcessor(d *storage.Database, node lens.API, leaseLength time
 		leaseLength: leaseLength,
 		batchSize:   batchSize,
 		maxHeight:   maxHeight,
-		extracters:  map[cid.Cid]ActorStateExtracter{},
+		extractors:  map[cid.Cid]ActorStateExtractor{},
 	}
 
-	extractersMu.Lock()
-	defer extractersMu.Unlock()
+	extractorsMu.Lock()
+	defer extractorsMu.Unlock()
 	for _, code := range actorCodes {
-		e, exists := extracters[code]
+		e, exists := extractors[code]
 		if !exists {
 			return nil, xerrors.Errorf("unsupport actor code: %s", code.String())
 		}
 		p.actorCodes = append(p.actorCodes, code.String())
-		p.extracters[code] = e
+		p.extractors[code] = e
 	}
 
 	return p, nil
@@ -100,7 +100,7 @@ type ActorStateProcessor struct {
 	batchSize   int                             // number of blocks to lease in a batch
 	maxHeight   int64                           // limit processing to tipsets equal to or below this height
 	actorCodes  []string                        // list of actor codes that will be requested
-	extracters  map[cid.Cid]ActorStateExtracter // list of extracters that will be used
+	extractors  map[cid.Cid]ActorStateExtractor // list of extractors that will be used
 }
 
 // Run starts processing batches of actors and blocks until the context is done or
@@ -169,7 +169,7 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, info ActorInfo) 
 	ctx, span := global.Tracer("").Start(ctx, "ActorStateProcessor.processActor")
 	defer span.End()
 
-	var ae ActorExtracter
+	var ae ActorExtractor
 
 	// Persist the raw state
 	data, err := ae.Extract(ctx, info, p.node)
@@ -181,13 +181,13 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, info ActorInfo) 
 		return xerrors.Errorf("persisting raw state: %w", err)
 	}
 
-	// Find a specific extracter for the actor type
-	extracter, exists := p.extracters[info.Actor.Code]
+	// Find a specific extractor for the actor type
+	extractor, exists := p.extractors[info.Actor.Code]
 	if !exists {
 		return xerrors.Errorf("no extractor defined for actor code %q", info.Actor.Code.String())
 	}
 
-	data, err = extracter.Extract(ctx, info, p.node)
+	data, err = extractor.Extract(ctx, info, p.node)
 	if err != nil {
 		return xerrors.Errorf("extract actor state: %w", err)
 	}

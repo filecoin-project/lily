@@ -16,15 +16,15 @@ import (
 
 // was services/processor/tasks/init/init_actor.go
 
-// InitExtracter extracts init actor state
-type InitExtracter struct{}
+// InitExtractor extracts init actor state
+type InitExtractor struct{}
 
 func init() {
-	Register(builtin.InitActorCodeID, InitExtracter{})
+	Register(builtin.InitActorCodeID, InitExtractor{})
 }
 
-func (InitExtracter) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
-	ctx, span := global.Tracer("").Start(ctx, "InitExtracter")
+func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
+	ctx, span := global.Tracer("").Start(ctx, "InitExtractor")
 	defer span.End()
 
 	pred := state.NewStatePredicates(node)

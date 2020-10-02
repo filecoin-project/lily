@@ -16,19 +16,19 @@ import (
 
 // was services/processor/tasks/miner/miner.go
 
-// StorageMinerExtracter extracts miner actor state
-type StorageMinerExtracter struct{}
+// StorageMinerExtractor extracts miner actor state
+type StorageMinerExtractor struct{}
 
 func init() {
-	Register(builtin.StorageMinerActorCodeID, StorageMinerExtracter{})
+	Register(builtin.StorageMinerActorCodeID, StorageMinerExtractor{})
 }
 
-func (m StorageMinerExtracter) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
+func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
 	// TODO:
 	// - all processing below can and probably should be done in parallel.
 	// - processing is incomplete, see below TODO about sector inspection.
 	// - need caching infront of the lotus api to avoid refetching power for same tipset.
-	ctx, span := global.Tracer("").Start(ctx, "StorageMinerExtracter")
+	ctx, span := global.Tracer("").Start(ctx, "StorageMinerExtractor")
 	defer span.End()
 
 	curActor, err := node.StateGetActor(ctx, a.Address, a.TipSet)
@@ -97,6 +97,6 @@ func (m StorageMinerExtracter) Extract(ctx context.Context, a ActorInfo, node le
 	}, nil
 }
 
-func (m StorageMinerExtracter) minerPartitionsDiff(ctx context.Context, prevState, curState miner.State) (map[uint64]*minermodel.PartitionStatus, error) {
+func (m StorageMinerExtractor) minerPartitionsDiff(ctx context.Context, prevState, curState miner.State) (map[uint64]*minermodel.PartitionStatus, error) {
 	return nil, nil
 }
