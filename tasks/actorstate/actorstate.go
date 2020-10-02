@@ -142,23 +142,25 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context) (bool, error) {
 		default:
 		}
 
+		errorLog := log.With("actor_head", actor.Head, "actor_code", actor.Code, "tipset", actor.TipSet)
+
 		info, err := NewActorInfo(actor)
 		if err != nil {
-			log.Errorw("unmarshal actor", "error", err.Error())
+			errorLog.Errorw("unmarshal actor", "error", err.Error())
 			if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, timeNow(), err.Error()); err != nil {
-				log.Errorw("failed to mark actor complete", "error", err.Error())
+				errorLog.Errorw("failed to mark actor complete", "error", err.Error())
 			}
 			continue
 		}
 
 		var errorsEncountered string
 		if err := p.processActor(ctx, info); err != nil {
-			log.Errorw("process actor", "error", err.Error())
+			errorLog.Errorw("process actor", "error", err.Error())
 			errorsEncountered = err.Error()
 		}
 
 		if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, timeNow(), errorsEncountered); err != nil {
-			log.Errorw("failed to mark actor complete", "error", err.Error())
+			errorLog.Errorw("failed to mark actor complete", "error", err.Error())
 		}
 	}
 
@@ -177,7 +179,6 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, info ActorInfo) 
 		return xerrors.Errorf("extract actor state: %w", err)
 	}
 	if err := data.Persist(ctx, p.storage.DB); err != nil {
-		// TODO handle this case with a retry
 		return xerrors.Errorf("persisting raw state: %w", err)
 	}
 

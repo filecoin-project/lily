@@ -79,16 +79,18 @@ func (p *ActorStateChangeProcessor) processBatch(ctx context.Context) (bool, err
 		default:
 		}
 
+		errorLog := log.With("height", item.Height, "tipset", item.TipSet)
+
 		if err := p.processItem(ctx, item); err != nil {
-			log.Errorw("failed to process tipset", "error", err.Error(), "height", item.Height)
+			errorLog.Errorw("failed to process tipset", "error", err.Error())
 			if err := p.storage.MarkStateChangeComplete(ctx, item.TipSet, item.Height, timeNow(), err.Error()); err != nil {
-				log.Errorw("failed to mark tipset complete", "error", err.Error(), "height", item.Height)
+				errorLog.Errorw("failed to mark tipset complete", "error", err.Error())
 			}
 			continue
 		}
 
 		if err := p.storage.MarkStateChangeComplete(ctx, item.TipSet, item.Height, timeNow(), ""); err != nil {
-			log.Errorw("failed to mark tipset complete", "error", err.Error(), "height", item.Height)
+			errorLog.Errorw("failed to mark tipset complete", "error", err.Error())
 		}
 
 	}
