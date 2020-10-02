@@ -104,7 +104,6 @@ func (p *GenesisProcessor) storageMinerState(ctx context.Context, gen *types.Tip
 	}
 
 	// miner raw and qual power
-	// TODO this needs caching so we don't re-fetch the power actors claim table for every tipset.
 	mpower, err := p.node.StateMinerPower(ctx, addr, gen.Key())
 	if err != nil {
 		return nil, err

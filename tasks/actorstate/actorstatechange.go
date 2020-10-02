@@ -172,7 +172,7 @@ func (p *ActorStateChangeProcessor) processTipSet(ctx context.Context, ts *types
 		_, err = p.node.StateGetActor(ctx, addr, pts.Parents())
 		if err != nil {
 			if strings.Contains(err.Error(), "actor not found") {
-				ll.Debugw("actor not found", "addr", str)
+				ll.Debugw("parent actor not found", "addr", str)
 				// TODO consider tracking deleted actors
 				continue
 			}

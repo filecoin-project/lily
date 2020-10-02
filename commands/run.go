@@ -40,6 +40,12 @@ var Run = &cli.Command{
 			Value:   true,
 			EnvVars: []string{"VISOR_INDEXHEAD"},
 		},
+		&cli.IntFlag{
+			Name:    "indexhead-confidence",
+			Usage:   "Sets the size of the cache used to hold tipsets for possible reversion before being committed to the database",
+			Value:   25,
+			EnvVars: []string{"VISOR_INDEXHEAD_CONFIDENCE"},
+		},
 		&cli.BoolFlag{
 			Name:    "indexhistory",
 			Value:   true,
@@ -161,7 +167,7 @@ var Run = &cli.Command{
 		if cctx.Bool("indexhead") {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                "ChainHeadIndexer",
-				Task:                indexer.NewChainHeadIndexer(rctx.db, rctx.api),
+				Task:                indexer.NewChainHeadIndexer(rctx.db, rctx.api, cctx.Int("indexhead-confidence")),
 				Locker:              NewGlobalSingleton(ChainHeadIndexerLockID, rctx.db), // only want one forward indexer anywhere to be running
 				RestartOnFailure:    true,
 				RestartOnCompletion: true, // we always want the indexer to be running

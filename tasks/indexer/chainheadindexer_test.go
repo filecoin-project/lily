@@ -73,7 +73,7 @@ func TestChainHeadIndexer(t *testing.T) {
 
 	d := &storage.Database{DB: db}
 	t.Logf("initializing indexer")
-	idx := NewChainHeadIndexer(d, node)
+	idx := NewChainHeadIndexer(d, node, 0)
 
 	newHeads, err := node.ChainNotify(ctx)
 	require.NoError(t, err, "chain notify")
