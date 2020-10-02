@@ -92,6 +92,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 			}
 
 			// Keep this task running forever
+			doneFirstRun := false
 			for {
 
 				// Is the context done?
@@ -101,25 +102,31 @@ func (s *Scheduler) Run(ctx context.Context) error {
 				default:
 				}
 
-				log.Infow("running task", "task", tc.Name)
+				if doneFirstRun {
+					log.Infow("restarting task", "task", tc.Name)
+				} else {
+					log.Infow("running task", "task", tc.Name)
+					doneFirstRun = true
+				}
+
 				err := tc.Task.Run(ctx)
 				if err != nil {
 					if errors.Is(err, context.Canceled) {
 						break
 					}
+					log.Errorw("task exited with failure", "task", tc.Name, "error", err.Error())
+
 					if !tc.RestartOnFailure {
 						// Exit the task
-						log.Errorw("task exited with failure, not restarting", "task", tc.Name, "error", err.Error())
 						break
 					}
-					log.Errorw("task exited with failure, restarting", "task", tc.Name, "error", err.Error())
 				} else {
+					log.Infow("task exited cleanly", "task", tc.Name)
+
 					if !tc.RestartOnCompletion {
 						// Exit the task
-						log.Infow("task exited cleanly, not restarting", "task", tc.Name)
 						break
 					}
-					log.Infow("task exited cleanly, restarting", "task", tc.Name)
 				}
 			}
 

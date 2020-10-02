@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -212,7 +214,11 @@ var Run = &cli.Command{
 		}
 
 		// Start the scheduler and wait for it to complete or to be cancelled.
-		return scheduler.Run(ctx)
+		err = scheduler.Run(ctx)
+		if !errors.Is(err, context.Canceled) {
+			return err
+		}
+		return nil
 	},
 }
 
