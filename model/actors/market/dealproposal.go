@@ -26,7 +26,7 @@ type MarketDealProposal struct {
 	StoragePricePerEpoch string `pg:",notnull"`
 	PieceCID             string `pg:",notnull"`
 
-	IsVerified bool `pg:",notnull"`
+	IsVerified bool `pg:",notnull,use_zero"`
 	Label      string
 }
 
