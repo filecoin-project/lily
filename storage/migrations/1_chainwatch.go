@@ -15,14 +15,6 @@ func init() {
 
 CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
 
-
---
--- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner:
---
-
-COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data';
-
-
 --
 -- Name: miner_sector_event_type; Type: TYPE; Schema: public; Owner: postgres
 --
