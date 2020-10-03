@@ -66,19 +66,19 @@ func (c *ChainHeadIndexer) index(ctx context.Context, headEvents []*lotus_api.He
 
 	data := NewUnindexedBlockData()
 
-	var height int64
 	for _, ch := range headEvents {
 		switch ch.Type {
 		case store.HCCurrent:
-			fallthrough
-		case store.HCApply:
-			log.Debugw("add tipset", "event", ch.Type, "height", ch.Val.Height(), "tipset", ch.Val.Key().String())
-			if int64(ch.Val.Height()) > height {
-				height = int64(ch.Val.Height())
+			log.Debugw("current tipset", "height", ch.Val.Height(), "tipset", ch.Val.Key().String())
+			err := c.cache.SetCurrent(ch.Val)
+			if err != nil {
+				log.Errorw("tipset cache set current", "error", err.Error())
 			}
+		case store.HCApply:
+			log.Debugw("add tipset", "height", ch.Val.Height(), "tipset", ch.Val.Key().String())
 			tail, err := c.cache.Add(ch.Val)
 			if err != nil {
-				log.Errorw("tipset cache", "error", err.Error())
+				log.Errorw("tipset cache add", "error", err.Error())
 			}
 
 			// Send the tipset that fell out of the confidence window to the database
@@ -87,17 +87,19 @@ func (c *ChainHeadIndexer) index(ctx context.Context, headEvents []*lotus_api.He
 			}
 
 		case store.HCRevert:
-			log.Debugw("revert tipset", "event", ch.Type, "height", ch.Val.Height(), "tipset", ch.Val.Key().String())
+			log.Debugw("revert tipset", "height", ch.Val.Height(), "tipset", ch.Val.Key().String())
 			err := c.cache.Revert(ch.Val)
 			if err != nil {
-				log.Errorw("tipset cache", "error", err.Error())
+				log.Errorw("tipset cache revert", "error", err.Error())
 			}
 		}
 	}
 
+	log.Debugw("tipset cache", "height", c.cache.Height(), "tail_height", c.cache.TailHeight(), "length", c.cache.Len())
+
 	if data.Size() > 0 {
 		// persist the blocks to storage
-		log.Debugw("persisting batch", "count", data.Size(), "current_height", height)
+		log.Debugw("persisting batch", "count", data.Size(), "height", data.Height())
 		if err := data.Persist(ctx, c.storage.DB); err != nil {
 			return xerrors.Errorf("persist: %w", err)
 		}

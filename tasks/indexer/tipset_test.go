@@ -297,6 +297,134 @@ func TestTipSetCacheRevertOutOfOrder(t *testing.T) {
 	require.Error(t, err, ErrRevertOutOfOrder)
 }
 
+func TestTipSetCacheSetCurrent(t *testing.T) {
+	t.Run("empty cache", func(t *testing.T) {
+		c := NewTipSetCache(3)
+
+		ts1 := mustMakeTs(nil, 1, dummyCid)
+		err := c.SetCurrent(ts1)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 1, c.Len())
+		head, err := c.Head()
+		require.NoError(t, err)
+		assert.Same(t, ts1, head)
+
+	})
+
+	t.Run("same height", func(t *testing.T) {
+		c := NewTipSetCache(3)
+
+		ts14 := mustMakeTs(nil, 14, dummyCid)
+		_, err := c.Add(ts14)
+		require.NoError(t, err)
+		assert.Equal(t, 1, c.Len())
+
+		ts14alt := mustMakeTs(nil, 14, dummyCid)
+		err = c.SetCurrent(ts14alt)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 1, c.Len())
+		head, err := c.Head()
+		require.NoError(t, err)
+		assert.Same(t, ts14alt, head)
+
+	})
+
+	t.Run("same tipset", func(t *testing.T) {
+		c := NewTipSetCache(3)
+
+		ts14 := mustMakeTs(nil, 14, dummyCid)
+		_, err := c.Add(ts14)
+		require.NoError(t, err)
+		assert.Equal(t, 1, c.Len())
+
+		err = c.SetCurrent(ts14)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, c.Len())
+
+		head, err := c.Head()
+		require.NoError(t, err)
+		assert.Same(t, ts14, head)
+
+	})
+
+	t.Run("higher height", func(t *testing.T) {
+		c := NewTipSetCache(3)
+
+		ts14 := mustMakeTs(nil, 14, dummyCid)
+		_, err := c.Add(ts14)
+		require.NoError(t, err)
+		assert.Equal(t, 1, c.Len())
+
+		ts16 := mustMakeTs(nil, 16, dummyCid)
+		err = c.SetCurrent(ts16)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, c.Len())
+
+		head, err := c.Head()
+		require.NoError(t, err)
+		assert.Same(t, ts16, head)
+	})
+
+	t.Run("lower height reverts earlier", func(t *testing.T) {
+		c := NewTipSetCache(3)
+
+		ts14 := mustMakeTs(nil, 14, dummyCid)
+		_, err := c.Add(ts14)
+		require.NoError(t, err)
+		assert.Equal(t, 1, c.Len())
+
+		ts15 := mustMakeTs(nil, 15, dummyCid)
+		_, err = c.Add(ts15)
+		require.NoError(t, err)
+		assert.Equal(t, 2, c.Len())
+
+		ts16 := mustMakeTs(nil, 16, dummyCid)
+		_, err = c.Add(ts16)
+		require.NoError(t, err)
+		assert.Equal(t, 3, c.Len())
+
+		ts15alt := mustMakeTs(nil, 15, dummyCid)
+		err = c.SetCurrent(ts15alt)
+		assert.NoError(t, err)
+		assert.Equal(t, 2, c.Len()) // ts16 has been reverted, ts16 replaced by ts16alt
+
+		head, err := c.Head()
+		require.NoError(t, err)
+		assert.Same(t, ts15alt, head)
+	})
+
+	t.Run("very low height reverts all", func(t *testing.T) {
+		c := NewTipSetCache(3)
+
+		ts14 := mustMakeTs(nil, 14, dummyCid)
+		_, err := c.Add(ts14)
+		require.NoError(t, err)
+		assert.Equal(t, 1, c.Len())
+
+		ts15 := mustMakeTs(nil, 15, dummyCid)
+		_, err = c.Add(ts15)
+		require.NoError(t, err)
+		assert.Equal(t, 2, c.Len())
+
+		ts16 := mustMakeTs(nil, 16, dummyCid)
+		_, err = c.Add(ts16)
+		require.NoError(t, err)
+		assert.Equal(t, 3, c.Len())
+
+		ts12 := mustMakeTs(nil, 12, dummyCid)
+		err = c.SetCurrent(ts12)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, c.Len())
+
+		head, err := c.Head()
+		require.NoError(t, err)
+		assert.Same(t, ts12, head)
+	})
+
+}
+
 func mustMakeTs(parents []cid.Cid, h abi.ChainEpoch, msgcid cid.Cid) *types.TipSet {
 	a, _ := address.NewFromString("t00")
 	b, _ := address.NewFromString("t02")

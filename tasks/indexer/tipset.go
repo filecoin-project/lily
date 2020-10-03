@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
 )
 
@@ -40,8 +41,7 @@ func (c *TipSetCache) Tail() (*types.TipSet, error) {
 	if c.len == 0 {
 		return nil, ErrCacheEmpty
 	}
-	idxTail := normalModulo(c.idxHead-c.len+1, len(c.buffer))
-	return c.buffer[idxTail], nil
+	return c.buffer[c.tailIndex()], nil
 }
 
 // Add adds a new tipset which becomes the new head of the cache. If the buffer is full, the tail
@@ -89,9 +89,46 @@ func (c *TipSetCache) Revert(ts *types.TipSet) error {
 	return nil
 }
 
+// SetCurrent replaces the current head
+func (c *TipSetCache) SetCurrent(ts *types.TipSet) error {
+	for c.len > 0 && c.buffer[c.idxHead].Height() > ts.Height() {
+		c.buffer[c.idxHead] = nil
+		c.idxHead = normalModulo(c.idxHead-1, len(c.buffer))
+		c.len--
+	}
+
+	if c.len == 0 {
+		_, err := c.Add(ts)
+		return err
+	}
+
+	c.buffer[c.idxHead] = ts
+	return nil
+}
+
 // Len returns the number of tipsets in the cache. This will never exceed the size of the cache.
 func (c *TipSetCache) Len() int {
 	return c.len
+}
+
+// Height returns the height of the current head or zero if the cache is empty.
+func (c *TipSetCache) Height() abi.ChainEpoch {
+	if c.len == 0 {
+		return 0
+	}
+	return c.buffer[c.idxHead].Height()
+}
+
+// TailHeight returns the height of the current tail or zero if the cache is empty.
+func (c *TipSetCache) TailHeight() abi.ChainEpoch {
+	if c.len == 0 {
+		return 0
+	}
+	return c.buffer[c.tailIndex()].Height()
+}
+
+func (c *TipSetCache) tailIndex() int {
+	return normalModulo(c.idxHead-c.len+1, len(c.buffer))
 }
 
 // Reset removes all tipsets from the cache

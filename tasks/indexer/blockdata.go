@@ -3,6 +3,7 @@ package indexer
 import (
 	"context"
 
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
@@ -20,8 +21,8 @@ func NewUnindexedBlockData() *UnindexedBlockData {
 }
 
 type UnindexedBlockData struct {
-	has map[types.TipSetKey]struct{}
-
+	has               map[types.TipSetKey]struct{}
+	height            abi.ChainEpoch
 	blks              blocks.BlockHeaders
 	parents           blocks.BlockParents
 	drandEntries      blocks.DrandEntries
@@ -32,6 +33,9 @@ type UnindexedBlockData struct {
 
 func (u *UnindexedBlockData) AddTipSet(ts *types.TipSet) {
 	u.MarkSeen(ts.Key())
+	if ts.Height() > u.height {
+		u.height = ts.Height()
+	}
 	u.pstateChanges = append(u.pstateChanges, visor.NewProcessingStateChange(ts))
 	u.pmessages = append(u.pmessages, visor.NewProcessingMessage(ts))
 	for _, header := range ts.Blocks() {
@@ -106,6 +110,10 @@ func (u *UnindexedBlockData) Persist(ctx context.Context, db *pg.DB) error {
 
 func (u *UnindexedBlockData) Size() int {
 	return len(u.pstateChanges)
+}
+
+func (u *UnindexedBlockData) Height() abi.ChainEpoch {
+	return u.height
 }
 
 func (u *UnindexedBlockData) Seen(tsk types.TipSetKey) bool {
