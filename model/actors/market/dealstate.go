@@ -2,7 +2,6 @@ package market
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
@@ -23,7 +22,7 @@ func (ds *MarketDealState) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	if _, err := tx.ModelContext(ctx, ds).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return fmt.Errorf("persisting marker deal state: %v", err)
+		return err
 	}
 	return nil
 }

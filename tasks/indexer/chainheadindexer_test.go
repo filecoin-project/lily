@@ -23,6 +23,7 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
+	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
@@ -48,12 +49,12 @@ func (nodeWrapper) Store() adt.Store {
 	panic("not supported")
 }
 
-func TestIndex(t *testing.T) {
+func TestChainHeadIndexer(t *testing.T) {
 	if testing.Short() || !testutil.DatabaseAvailable() {
 		t.Skip("short testing requested or VISOR_TEST_DB not set")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
@@ -61,7 +62,7 @@ func TestIndex(t *testing.T) {
 	defer cleanup()
 
 	t.Logf("truncating database tables")
-	err = truncateBlockTables(db)
+	err = truncateBlockTables(t, db)
 	require.NoError(t, err, "truncating tables")
 
 	t.Logf("preparing chain")
@@ -70,43 +71,30 @@ func TestIndex(t *testing.T) {
 
 	apitest.MineUntilBlock(ctx, t, nodes[0], sn[0], nil)
 
-	head, err := node.ChainHead(ctx)
-	require.NoError(t, err, "chain head")
-
-	t.Logf("collecting chain blocks")
-	bhs, err := collectBlockHeaders(node, head)
-	require.NoError(t, err, "collect chain blocks")
-
-	cids := bhs.Cids()
-	rounds := bhs.Rounds()
-
 	d := &storage.Database{DB: db}
 	t.Logf("initializing indexer")
-	idx := NewIndexer(d, node)
-	err = idx.InitHandler(ctx)
-	require.NoError(t, err, "init handler")
+	idx := NewChainHeadIndexer(d, node, 0)
 
 	newHeads, err := node.ChainNotify(ctx)
 	require.NoError(t, err, "chain notify")
 
 	t.Logf("indexing chain")
 	nh := <-newHeads
+
+	var bhs blockHeaderList
+	for _, head := range nh {
+		bhs = append(bhs, head.Val.Blocks()...)
+	}
+
+	cids := bhs.Cids()
+	rounds := bhs.Rounds()
+	chainHead, err := node.ChainHead(ctx)
+	require.NoError(t, err, "ChainHead")
+
+	tipSetKeys := []string{chainHead.Key().String()}
+
 	err = idx.index(ctx, nh)
 	require.NoError(t, err, "index")
-
-	t.Run("blocks_synced", func(t *testing.T) {
-		var count int
-		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM blocks_synced`)
-		require.NoError(t, err)
-		assert.Equal(t, len(cids), count)
-
-		var m *blocks.BlockSynced
-		for _, cid := range cids {
-			exists, err := db.Model(m).Where("cid = ?", cid).Exists()
-			require.NoError(t, err)
-			assert.True(t, exists, "cid: %s", cid)
-		}
-	})
 
 	t.Run("block_headers", func(t *testing.T) {
 		var count int
@@ -164,6 +152,34 @@ func TestIndex(t *testing.T) {
 		}
 	})
 
+	t.Run("visor_processing_statechanges", func(t *testing.T) {
+		var count int
+		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_statechanges`)
+		require.NoError(t, err)
+		assert.Equal(t, len(tipSetKeys), count)
+
+		var m *visor.ProcessingStateChange
+		for _, tsk := range tipSetKeys {
+			exists, err := db.Model(m).Where("tip_set = ?", tsk).Exists()
+			require.NoError(t, err)
+			assert.True(t, exists, "tsk: %s", tsk)
+		}
+	})
+
+	t.Run("visor_processing_messages", func(t *testing.T) {
+		var count int
+		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_messages`)
+		require.NoError(t, err)
+		assert.Equal(t, len(tipSetKeys), count)
+
+		var m *visor.ProcessingMessage
+		for _, tsk := range tipSetKeys {
+			exists, err := db.Model(m).Where("tip_set = ?", tsk).Exists()
+			require.NoError(t, err)
+			assert.True(t, exists, "tsk: %s", tsk)
+		}
+	})
+
 }
 
 type blockHeaderList []*types.BlockHeader
@@ -185,6 +201,21 @@ func (b blockHeaderList) Rounds() []uint64 {
 	}
 
 	return rounds
+}
+
+func collectTipSetKeys(n lens.API, ts *types.TipSet) ([]string, error) {
+	keys := []string{ts.Key().String()}
+
+	for ts.Height() > 0 {
+		parent, err := n.ChainGetTipSet(context.TODO(), ts.Parents())
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, parent.Key().String())
+		ts = parent
+	}
+
+	return keys, nil
 }
 
 // collectBlockHeaders walks the chain to collect blocks that should be indexed
@@ -212,26 +243,24 @@ func collectBlockHeaders(n lens.API, ts *types.TipSet) (blockHeaderList, error) 
 }
 
 // truncateBlockTables ensures the indexing tables are empty
-func truncateBlockTables(db *pg.DB) error {
-	if _, err := db.Exec(`TRUNCATE TABLE blocks_synced`); err != nil {
-		return err
-	}
+func truncateBlockTables(tb testing.TB, db *pg.DB) error {
+	_, err := db.Exec(`TRUNCATE TABLE block_headers`)
+	require.NoError(tb, err, "block_headers")
 
-	if _, err := db.Exec(`TRUNCATE TABLE block_headers`); err != nil {
-		return err
-	}
+	_, err = db.Exec(`TRUNCATE TABLE block_parents`)
+	require.NoError(tb, err, "block_parents")
 
-	if _, err := db.Exec(`TRUNCATE TABLE block_parents`); err != nil {
-		return err
-	}
+	_, err = db.Exec(`TRUNCATE TABLE drand_entries`)
+	require.NoError(tb, err, "drand_entries")
 
-	if _, err := db.Exec(`TRUNCATE TABLE drand_entries`); err != nil {
-		return err
-	}
+	_, err = db.Exec(`TRUNCATE TABLE drand_block_entries`)
+	require.NoError(tb, err, "drand_block_entries")
 
-	if _, err := db.Exec(`TRUNCATE TABLE drand_block_entries`); err != nil {
-		return err
-	}
+	_, err = db.Exec(`TRUNCATE TABLE visor_processing_statechanges`)
+	require.NoError(tb, err, "visor_processing_statechanges")
+
+	_, err = db.Exec(`TRUNCATE TABLE visor_processing_messages`)
+	require.NoError(tb, err, "visor_processing_messages")
 
 	return nil
 }

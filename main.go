@@ -94,6 +94,7 @@ func main() {
 			commands.Process,
 			commands.Index,
 			commands.Migrate,
+			commands.Run,
 		},
 	}
 

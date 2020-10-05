@@ -7,6 +7,7 @@ import (
 	processor2 "github.com/filecoin-project/sentinel-visor/services/processor"
 )
 
+// TODO: rework to use new scheduler with just actor state and message tasks
 var Process = &cli.Command{
 	Name:  "process",
 	Usage: "Process indexed blocks of the lotus blockchain",

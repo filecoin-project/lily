@@ -2,6 +2,7 @@ package market
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
@@ -17,10 +18,10 @@ func (mtr *MarketTaskResult) Persist(ctx context.Context, db *pg.DB) error {
 	defer span.End()
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		if err := mtr.Proposals.PersistWithTx(ctx, tx); err != nil {
-			return err
+			return fmt.Errorf("persisting market deal proposal: %w", err)
 		}
 		if err := mtr.States.PersistWithTx(ctx, tx); err != nil {
-			return err
+			return fmt.Errorf("persisting market deal state: %w", err)
 		}
 		return nil
 	})

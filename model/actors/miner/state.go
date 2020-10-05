@@ -9,13 +9,18 @@ import (
 )
 
 func NewMinerStateModel(res *MinerTaskResult) *MinerState {
-	return &MinerState{
+	ms := &MinerState{
 		MinerID:    res.Addr.String(),
 		OwnerID:    res.Info.Owner.String(),
 		WorkerID:   res.Info.Worker.String(),
-		PeerID:     res.Info.PeerId.String(),
 		SectorSize: res.Info.SectorSize.ShortString(),
 	}
+
+	if res.Info.PeerId != nil {
+		ms.PeerID = res.Info.PeerId.String()
+	}
+
+	return ms
 }
 
 type MinerState struct {
