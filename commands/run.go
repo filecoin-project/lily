@@ -53,6 +53,13 @@ var Run = &cli.Command{
 			EnvVars: []string{"VISOR_INDEXHISTORY"},
 		},
 
+		&cli.BoolFlag{
+			Name:    "remove-indexer-locks",
+			Value:   false,
+			Usage:   "Remove global locks around indexing tasks",
+			EnvVars: []string{"VISOR_REMOVE_INDEXER_LOCKS"},
+		},
+
 		&cli.DurationFlag{
 			Name:    "statechange-lease",
 			Aliases: []string{"scl"},
@@ -160,6 +167,17 @@ var Run = &cli.Command{
 				log.Errorw("close database", "error", err)
 			}
 		}()
+
+		if cctx.Bool("remove-indexer-locks") {
+			err := NewGlobalSingleton(ChainHeadIndexerLockID, rctx.db).Unlock(ctx)
+			if err != nil {
+				return xerrors.Errorf("removing head indexer lock: %w", err)
+			}
+			err = NewGlobalSingleton(ChainHistoryIndexerLockID, rctx.db).Unlock(ctx)
+			if err != nil {
+				return xerrors.Errorf("removing historical indexer lock: %w", err)
+			}
+		}
 
 		scheduler := schedule.NewScheduler()
 
