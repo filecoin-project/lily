@@ -131,7 +131,7 @@ func (c *ChainHistoryIndexer) mostRecentlySyncedBlockHeight(ctx context.Context)
 	ctx, span := global.Tracer("").Start(ctx, "ChainHistoryIndexer.mostRecentlySyncedBlockHeight")
 	defer span.End()
 
-	recent, err := c.storage.MostRecentSyncedBlock(ctx)
+	recent, err := c.storage.MostRecentAddedTipSet(ctx)
 	if err != nil {
 		if err == pg.ErrNoRows {
 			return 0, nil
