@@ -840,8 +840,6 @@ CREATE FUNCTION public.actor_tips(epoch bigint) RETURNS TABLE(id text, code text
 $_$;
 
 
-ALTER FUNCTION public.actor_tips(epoch bigint) OWNER TO postgres;
-
 
 --
 -- PostgreSQL database dump complete
