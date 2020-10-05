@@ -425,6 +425,39 @@ func TestTipSetCacheSetCurrent(t *testing.T) {
 
 }
 
+func TestTipSetCacheAddOnlyReturnsOldTailWhenFull(t *testing.T) {
+	c := NewTipSetCache(3)
+	ts14 := mustMakeTs(nil, 14, dummyCid)
+	oldTail, err := c.Add(ts14)
+	require.NoError(t, err)
+	assert.Nil(t, oldTail)
+
+	ts15 := mustMakeTs(nil, 15, dummyCid)
+	oldTail, err = c.Add(ts15)
+	require.NoError(t, err)
+	assert.Nil(t, oldTail)
+
+	ts15Revert := mustMakeTs(nil, 15, dummyCid)
+	err = c.Revert(ts15Revert)
+	require.NoError(t, err)
+
+	ts15New := mustMakeTs(nil, 15, dummyCid)
+	oldTail, err = c.Add(ts15New)
+	require.NoError(t, err)
+	assert.Nil(t, oldTail) // must be nil since cache is not full
+
+	ts16 := mustMakeTs(nil, 16, dummyCid)
+	oldTail, err = c.Add(ts16)
+	require.NoError(t, err)
+	assert.Nil(t, oldTail)
+
+	ts17 := mustMakeTs(nil, 17, dummyCid)
+	oldTail, err = c.Add(ts17)
+	require.NoError(t, err)
+	assert.Same(t, oldTail, ts14) // cache is now full so oldest is evicted
+
+}
+
 func mustMakeTs(parents []cid.Cid, h abi.ChainEpoch, msgcid cid.Cid) *types.TipSet {
 	a, _ := address.NewFromString("t00")
 	b, _ := address.NewFromString("t02")

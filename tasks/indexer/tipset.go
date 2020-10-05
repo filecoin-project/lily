@@ -68,7 +68,10 @@ func (c *TipSetCache) Add(ts *types.TipSet) (*types.TipSet, error) {
 	c.buffer[c.idxHead] = ts
 	if c.len < len(c.buffer) {
 		c.len++
+		return nil, nil
 	}
+
+	// Return old tipset that was displaced
 	return old, nil
 }
 
@@ -79,10 +82,11 @@ func (c *TipSetCache) Revert(ts *types.TipSet) error {
 	}
 
 	// Can only revert the most recent tipset
-	if c.buffer[c.idxHead] != ts {
+	if c.buffer[c.idxHead].Key() != ts.Key() {
 		return ErrRevertOutOfOrder
 	}
 
+	c.buffer[c.idxHead] = nil
 	c.idxHead = normalModulo(c.idxHead-1, len(c.buffer))
 	c.len--
 
