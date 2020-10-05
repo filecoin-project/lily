@@ -2,10 +2,10 @@
 
 # push-docker-tags.sh
 #
-# Run from ci to tag images based on the current branch or tag name. 
+# Run from ci to tag images based on the current branch or tag name.
 # Like dockerhub autobuild config, but somewhere we can version control it.
 #
-# The `docker-push` job in .circleci/config.yml runs this script to decide 
+# The `docker-push` job in .circleci/config.yml runs this script to decide
 # what tag, if any, to push to dockerhub.
 #
 # Usage:
@@ -14,7 +14,7 @@
 # Example:
 #   # dry run. pass a 5th arg to have it print what it would do rather than do it.
 #   ./push-docker-tags.sh myiamge testingsha master "" dryrun
-#    
+#
 #   # push tag for commit on the main branch
 #   ./push-docker-tags.sh myimage testingsha main
 #
@@ -42,7 +42,7 @@ DRY_RUN=${5:-false}
 DATE_SHORT=$(date -u +%F)
 
 pushTag () {
-  local IMAGE_TAG=$1
+  local IMAGE_TAG="${1/\//-}"
   if [ "$DRY_RUN" != false ]; then
     echo "DRY RUN!"
     echo docker tag "$IMAGE_NAME" "$IMAGE_NAME:$IMAGE_TAG"
