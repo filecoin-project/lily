@@ -1,11 +1,10 @@
 package actorstate
 
 import (
-	"bytes"
 	"context"
 
+	"github.com/filecoin-project/lotus/chain/actors/builtin/reward"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
-	"github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -26,26 +25,65 @@ func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) 
 	ctx, span := global.Tracer("").Start(ctx, "RewardExtractor")
 	defer span.End()
 
-	rewardStateRaw, err := node.ChainReadObj(ctx, a.Actor.Head)
+	rewardActor, err := node.StateGetActor(ctx, builtin.RewardActorAddr, a.TipSet)
 	if err != nil {
 		return nil, err
 	}
 
-	var rwdState reward.State
-	if err := rwdState.UnmarshalCBOR(bytes.NewReader(rewardStateRaw)); err != nil {
+	rstate, err := reward.Load(node.Store(), rewardActor)
+	if err != nil {
+		return nil, err
+	}
+
+	csbaseline, err := rstate.CumsumBaseline()
+	if err != nil {
+		return nil, err
+	}
+
+	csrealized, err := rstate.CumsumRealized()
+	if err != nil {
+		return nil, err
+	}
+	effectiveBaselinePower, err := rstate.EffectiveBaselinePower()
+	if err != nil {
+		return nil, err
+	}
+
+	thisBaslinePower, err := rstate.ThisEpochBaselinePower()
+	if err != nil {
+		return nil, err
+	}
+
+	thisRewardSmoothed, err := rstate.ThisEpochRewardSmoothed()
+	if err != nil {
+		return nil, err
+	}
+
+	totalMinedReward, err := rstate.TotalStoragePowerReward()
+	if err != nil {
+		return nil, err
+	}
+
+	thisReward, err := rstate.ThisEpochReward()
+	if err != nil {
+		return nil, err
+	}
+
+	networkTime, err := rstate.EffectiveNetworkTime()
+	if err != nil {
 		return nil, err
 	}
 
 	return &rewardmodel.ChainReward{
 		StateRoot:                         a.ParentStateRoot.String(),
-		CumSumBaseline:                    rwdState.CumsumBaseline.String(),
-		CumSumRealized:                    rwdState.CumsumRealized.String(),
-		EffectiveBaselinePower:            rwdState.EffectiveBaselinePower.String(),
-		NewBaselinePower:                  rwdState.ThisEpochBaselinePower.String(),
-		NewRewardSmoothedPositionEstimate: rwdState.ThisEpochRewardSmoothed.PositionEstimate.String(),
-		NewRewardSmoothedVelocityEstimate: rwdState.ThisEpochRewardSmoothed.VelocityEstimate.String(),
-		TotalMinedReward:                  rwdState.TotalMined.String(),
-		NewReward:                         rwdState.ThisEpochReward.String(),
-		EffectiveNetworkTime:              int64(rwdState.EffectiveNetworkTime),
+		CumSumBaseline:                    csbaseline.String(),
+		CumSumRealized:                    csrealized.String(),
+		EffectiveBaselinePower:            effectiveBaselinePower.String(),
+		NewBaselinePower:                  thisBaslinePower.String(),
+		NewRewardSmoothedPositionEstimate: thisRewardSmoothed.PositionEstimate.String(),
+		NewRewardSmoothedVelocityEstimate: thisRewardSmoothed.VelocityEstimate.String(),
+		TotalMinedReward:                  totalMinedReward.String(),
+		NewReward:                         thisReward.String(),
+		EffectiveNetworkTime:              int64(networkTime),
 	}, nil
 }
