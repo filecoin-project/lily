@@ -146,19 +146,6 @@ func (d *Database) Close(ctx context.Context) error {
 	return err
 }
 
-func (d *Database) UnprocessedIndexedBlocks(ctx context.Context, maxHeight, limit int) (blocks.BlocksSynced, error) {
-	var blkSynced blocks.BlocksSynced
-	if err := d.DB.ModelContext(ctx, &blkSynced).
-		Where("height <= ?", maxHeight).
-		Where("processed_at is null").
-		Order("height desc").
-		Limit(limit).
-		Select(); err != nil {
-		return nil, err
-	}
-	return blkSynced, nil
-}
-
 func (d *Database) UnprocessedIndexedTipSets(ctx context.Context, maxHeight, limit int) (visor.ProcessingStateChangeList, error) {
 	var blkSynced visor.ProcessingStateChangeList
 	if err := d.DB.ModelContext(ctx, &blkSynced).
@@ -166,17 +153,6 @@ func (d *Database) UnprocessedIndexedTipSets(ctx context.Context, maxHeight, lim
 		Where("claimed_until is null").
 		Order("height desc").
 		Limit(limit).
-		Select(); err != nil {
-		return nil, err
-	}
-	return blkSynced, nil
-}
-
-func (d *Database) MostRecentSyncedBlock(ctx context.Context) (*blocks.BlockSynced, error) {
-	var blkSynced *blocks.BlockSynced
-	if err := d.DB.ModelContext(ctx, blkSynced).
-		Order("height desc").
-		Limit(1).
 		Select(); err != nil {
 		return nil, err
 	}
@@ -192,54 +168,6 @@ func (d *Database) MostRecentAddedTipSet(ctx context.Context) (*visor.Processing
 		return nil, err
 	}
 	return blkSynced, nil
-}
-
-func (d *Database) CollectAndMarkBlocksAsProcessing(ctx context.Context, batch int) (blocks.BlocksSynced, error) {
-	var blks blocks.BlocksSynced
-	processedAt := timeNow()
-	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		if _, err := tx.QueryContext(ctx, &blks,
-			`with toProcess as (
-					select cid, height, rank() over (order by height) as rnk
-					from blocks_synced
-					where completed_at is null and
-					processed_at is null and
-					height > 0
-				)
-				select cid
-				from toProcess
-				where rnk <= ?
-				for update skip locked`, // ensure that only a single process can select and update blocks as processing.
-			batch,
-		); err != nil {
-			return err
-		}
-		for _, blk := range blks {
-			if _, err := tx.ModelContext(ctx, blk).Set("processed_at = ?", processedAt).
-				WherePK().
-				Update(); err != nil {
-				return xerrors.Errorf("marking block as processed: %w", err)
-			}
-		}
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-	return blks, nil
-}
-
-func (d *Database) MarkBlocksAsProcessed(ctx context.Context, blks visor.ProcessingStateChangeList) error {
-	return d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		completedAt := timeNow()
-		for _, blk := range blks {
-			if _, err := tx.ModelContext(ctx, &blk).Set("completed_at = ?", completedAt).
-				WherePK().
-				Update(); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
 }
 
 // VerifyCurrentSchema compares the schema present in the database with the models used by visor

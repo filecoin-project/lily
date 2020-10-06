@@ -2,13 +2,10 @@ package indexer
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
 )
-
-var _ = fmt.Printf
 
 var ErrCacheEmpty = errors.New("cache empty")
 var ErrAddOutOfOrder = errors.New("added tipset height lower than current head")
