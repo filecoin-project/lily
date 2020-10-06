@@ -2,7 +2,11 @@ package actorstate
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -119,6 +123,65 @@ type ActorStateProcessor struct {
 	actorCodes  []string                        // list of actor codes that will be requested
 	extractors  map[cid.Cid]ActorStateExtractor // list of extractors that will be used
 	clock       clock.Clock
+}
+
+func trackDuration(topic string, w io.Writer) func() {
+	t := time.Now()
+	return func() {
+		w.Write([]byte(fmt.Sprintf("** %s finished in %s\n", topic, time.Since(t))))
+	}
+}
+
+// Debug runs an individual actor and returns result
+func (p *ActorStateProcessor) Debug(ctx context.Context, head string, writer io.Writer) error {
+	defer trackDuration("debug total", writer)()
+	printActorDuration := trackDuration("get actor", writer)
+	actor, err := p.storage.GetActorByHead(ctx, head)
+	if err != nil {
+		return xerrors.Errorf("get actor by head: %w", err)
+	}
+	printActorDuration()
+
+	printNewActorDuration := trackDuration("new actor info", writer)
+	info, err := NewActorInfo(actor)
+	if err != nil {
+		return xerrors.Errorf("new actor info: %w", err)
+	}
+	printNewActorDuration()
+	defer trackDuration("debug actor", writer)()
+	if err := p.debugActor(ctx, info, writer); err != nil {
+		return xerrors.Errorf("debug actor: %w", err)
+	}
+	return nil
+}
+
+func (p *ActorStateProcessor) debugActor(ctx context.Context, info ActorInfo, writer io.Writer) error {
+	// extract actor state
+	extractor, exists := p.extractors[info.Actor.Code]
+	if !exists {
+		return xerrors.Errorf("no extractor defined for actor code %q", info.Actor.Code.String())
+	}
+
+	data, err := extractor.Extract(ctx, info, p.node)
+	if err != nil {
+		return xerrors.Errorf("extract actor state: %w", err)
+	}
+
+	dm, err := json.MarshalIndent(data, "    ", "  ")
+	if err != nil {
+		return xerrors.Errorf("marshaling actor state: %w", err)
+	}
+
+	var result strings.Builder
+	header := "** ActorProcessorResult:\n"
+	result.Grow(len(header) + len(dm))
+	if _, err := result.WriteString(header); err != nil {
+		return xerrors.Errorf("writing actor state: %w", err)
+	}
+	result.Write(dm)
+	fmt.Fprint(writer, result.String())
+
+	return nil
 }
 
 // Run starts processing batches of actors and blocks until the context is done or
