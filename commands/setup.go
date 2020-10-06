@@ -188,7 +188,8 @@ func (g *GlobalSingleton) Lock(ctx context.Context) error {
 func (g *GlobalSingleton) Unlock(ctx context.Context) error {
 	return g.LockID.UnlockExclusive(ctx, g.Storage.DB)
 }
-func setupMetrics() error {
+
+func setupMetrics(cctx *cli.Context) error {
 	// setup Prometheus
 	registry := prom.NewRegistry()
 	goCollector := prom.NewGoCollector()
@@ -224,7 +225,7 @@ func setupMetrics() error {
 		mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
 		mux.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
 		mux.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
-		if err := http.ListenAndServe(":9991", mux); err != nil {
+		if err := http.ListenAndServe(cctx.String("prometheus-port"), mux); err != nil {
 			log.Fatalf("Failed to run Prometheus /metrics endpoint: %v", err)
 		}
 	}()
