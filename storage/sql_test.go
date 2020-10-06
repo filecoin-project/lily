@@ -15,11 +15,6 @@ import (
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 
-func init() {
-	// Freeze time for tests
-	timeNow = testutil.KnownTimeNow
-}
-
 func TestSchemaIsCurrent(t *testing.T) {
 	if testing.Short() || !testutil.DatabaseAvailable() {
 		t.Skip("short testing requested or VISOR_TEST_DB not set")
@@ -123,7 +118,10 @@ func TestLeaseStateChanges(t *testing.T) {
 	const batchSize = 3
 
 	claimUntil := testutil.KnownTime.Add(time.Minute * 10)
-	d := &Database{DB: db}
+	d := &Database{
+		DB:    db,
+		Clock: testutil.NewMockClock(),
+	}
 
 	claimed, err := d.LeaseStateChanges(ctx, claimUntil, batchSize, 0, 500)
 	require.NoError(t, err)
@@ -181,7 +179,10 @@ func TestMarkStateChangeComplete(t *testing.T) {
 		t.Fatalf("persisting indexed blocks: %v", err)
 	}
 
-	d := &Database{DB: db}
+	d := &Database{
+		DB:    db,
+		Clock: testutil.NewMockClock(),
+	}
 
 	t.Run("with error message", func(t *testing.T) {
 		completedAt := testutil.KnownTime.Add(time.Minute * 1)
@@ -308,7 +309,10 @@ func TestLeaseActors(t *testing.T) {
 
 	claimUntil := testutil.KnownTime.Add(time.Minute * 10)
 
-	d := &Database{DB: db}
+	d := &Database{
+		DB:    db,
+		Clock: testutil.NewMockClock(),
+	}
 	claimed, err := d.LeaseActors(ctx, claimUntil, batchSize, 0, 500, allowedCodes)
 	require.NoError(t, err)
 	require.Equal(t, batchSize, len(claimed), "number of claimed actors")
@@ -367,7 +371,10 @@ func TestMarkActorComplete(t *testing.T) {
 		t.Fatalf("persisting indexed actors: %v", err)
 	}
 
-	d := &Database{DB: db}
+	d := &Database{
+		DB:    db,
+		Clock: testutil.NewMockClock(),
+	}
 
 	t.Run("with error message", func(t *testing.T) {
 		completedAt := testutil.KnownTime.Add(time.Minute * 1)
@@ -472,7 +479,10 @@ func TestLeaseBlockMessages(t *testing.T) {
 	const batchSize = 3
 
 	claimUntil := testutil.KnownTime.Add(time.Minute * 10)
-	d := &Database{DB: db}
+	d := &Database{
+		DB:    db,
+		Clock: testutil.NewMockClock(),
+	}
 
 	claimed, err := d.LeaseTipSetMessages(ctx, claimUntil, batchSize, 0, 500)
 	require.NoError(t, err)
@@ -530,7 +540,10 @@ func TestMarkTipSetMessagesComplete(t *testing.T) {
 		t.Fatalf("persisting indexed message blocks: %v", err)
 	}
 
-	d := &Database{DB: db}
+	d := &Database{
+		DB:    db,
+		Clock: testutil.NewMockClock(),
+	}
 
 	t.Run("with error message", func(t *testing.T) {
 		completedAt := testutil.KnownTime.Add(time.Minute * 1)

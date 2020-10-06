@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"github.com/raulk/clock"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
@@ -76,6 +77,7 @@ func NewActorStateProcessor(d *storage.Database, node lens.API, leaseLength time
 		minHeight:   minHeight,
 		maxHeight:   maxHeight,
 		extractors:  map[cid.Cid]ActorStateExtractor{},
+		clock:       clock.New(),
 	}
 
 	extractorsMu.Lock()
@@ -103,6 +105,7 @@ type ActorStateProcessor struct {
 	maxHeight   int64                           // limit processing to tipsets equal to or below this height
 	actorCodes  []string                        // list of actor codes that will be requested
 	extractors  map[cid.Cid]ActorStateExtractor // list of extractors that will be used
+	clock       clock.Clock
 }
 
 // Run starts processing batches of actors and blocks until the context is done or
@@ -117,7 +120,7 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context) (bool, error) {
 	defer span.End()
 
 	// Lease some blocks to work on
-	claimUntil := timeNow().Add(p.leaseLength)
+	claimUntil := p.clock.Now().Add(p.leaseLength)
 	ctx, cancel := context.WithDeadline(ctx, claimUntil)
 	defer cancel()
 
@@ -149,7 +152,7 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context) (bool, error) {
 		info, err := NewActorInfo(actor)
 		if err != nil {
 			errorLog.Errorw("unmarshal actor", "error", err.Error())
-			if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, timeNow(), err.Error()); err != nil {
+			if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, p.clock.Now(), err.Error()); err != nil {
 				errorLog.Errorw("failed to mark actor complete", "error", err.Error())
 			}
 			continue
@@ -161,7 +164,7 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context) (bool, error) {
 			errorsEncountered = err.Error()
 		}
 
-		if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, timeNow(), errorsEncountered); err != nil {
+		if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, p.clock.Now(), errorsEncountered); err != nil {
 			errorLog.Errorw("failed to mark actor complete", "error", err.Error())
 		}
 	}

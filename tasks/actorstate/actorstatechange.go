@@ -9,6 +9,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
+	"github.com/raulk/clock"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
@@ -28,6 +29,7 @@ func NewActorStateChangeProcessor(d *storage.Database, node lens.API, leaseLengt
 		batchSize:   batchSize,
 		minHeight:   minHeight,
 		maxHeight:   maxHeight,
+		clock:       clock.New(),
 	}
 }
 
@@ -40,6 +42,7 @@ type ActorStateChangeProcessor struct {
 	batchSize   int           // number of blocks to lease in a batch
 	minHeight   int64         // limit processing to tipsets equal to or above this height
 	maxHeight   int64         // limit processing to tipsets equal to or below this height
+	clock       clock.Clock
 }
 
 // Run starts processing batches of blocks and blocks until the context is done or
@@ -53,7 +56,7 @@ func (p *ActorStateChangeProcessor) processBatch(ctx context.Context) (bool, err
 	ctx, span := global.Tracer("").Start(ctx, "ActorStateChangeProcessor.processBatch")
 	defer span.End()
 
-	claimUntil := timeNow().Add(p.leaseLength)
+	claimUntil := p.clock.Now().Add(p.leaseLength)
 	ctx, cancel := context.WithDeadline(ctx, claimUntil)
 	defer cancel()
 
@@ -85,13 +88,13 @@ func (p *ActorStateChangeProcessor) processBatch(ctx context.Context) (bool, err
 
 		if err := p.processItem(ctx, item); err != nil {
 			errorLog.Errorw("failed to process tipset", "error", err.Error())
-			if err := p.storage.MarkStateChangeComplete(ctx, item.TipSet, item.Height, timeNow(), err.Error()); err != nil {
+			if err := p.storage.MarkStateChangeComplete(ctx, item.TipSet, item.Height, p.clock.Now(), err.Error()); err != nil {
 				errorLog.Errorw("failed to mark tipset complete", "error", err.Error())
 			}
 			continue
 		}
 
-		if err := p.storage.MarkStateChangeComplete(ctx, item.TipSet, item.Height, timeNow(), ""); err != nil {
+		if err := p.storage.MarkStateChangeComplete(ctx, item.TipSet, item.Height, p.clock.Now(), ""); err != nil {
 			errorLog.Errorw("failed to mark tipset complete", "error", err.Error())
 		}
 
@@ -189,7 +192,7 @@ func (p *ActorStateChangeProcessor) processTipSet(ctx context.Context, ts *types
 			ParentTipSet:    pts.Parents().String(),
 			ParentStateRoot: pts.ParentState().String(),
 			Height:          int64(ts.Height()),
-			AddedAt:         timeNow(),
+			AddedAt:         p.clock.Now(),
 		})
 	}
 

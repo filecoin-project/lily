@@ -23,6 +23,7 @@ require (
 	github.com/lib/pq v1.8.0
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/multiformats/go-multiaddr v0.3.1
+	github.com/raulk/clock v1.1.0
 	github.com/robfig/cron v1.2.0 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.6.1
