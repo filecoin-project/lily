@@ -23,7 +23,6 @@ func (a *ActorTaskResult) Persist(ctx context.Context, db *pg.DB) error {
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskNS, tasks.CommonPoolName))
-	stats.Record(ctx, metrics.TaskQueueLen.M(-1))
 
 	start := time.Now()
 	defer func() {

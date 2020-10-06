@@ -9,10 +9,13 @@ import (
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	messagemodel "github.com/filecoin-project/sentinel-visor/model/messages"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
@@ -87,6 +90,9 @@ func (p *MessageProcessor) processBatch(ctx context.Context) (bool, error) {
 		default:
 		}
 
+		ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "message"))
+		start := time.Now()
+
 		if err := p.processItem(ctx, item); err != nil {
 			log.Errorw("failed to process tipset", "error", err.Error(), "height", item.Height)
 			if err := p.storage.MarkTipSetMessagesComplete(ctx, item.TipSet, item.Height, p.clock.Now(), err.Error()); err != nil {
@@ -95,6 +101,7 @@ func (p *MessageProcessor) processBatch(ctx context.Context) (bool, error) {
 			continue
 		}
 
+		stats.Record(ctx, metrics.ProcessingDuration.M(metrics.SinceInMilliseconds(start)))
 		if err := p.storage.MarkTipSetMessagesComplete(ctx, item.TipSet, item.Height, p.clock.Now(), ""); err != nil {
 			log.Errorw("failed to mark tipset message complete", "error", err.Error(), "height", item.Height)
 		}

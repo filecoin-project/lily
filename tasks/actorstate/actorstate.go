@@ -12,10 +12,13 @@ import (
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
@@ -52,7 +55,7 @@ func Register(code cid.Cid, e ActorStateExtractor) {
 	extractorsMu.Lock()
 	defer extractorsMu.Unlock()
 	if _, ok := extractors[code]; ok {
-		log.Warningf("extractor overrides previously registered extractor for code %q", code.String())
+		log.Warnf("extractor overrides previously registered extractor for code %q", code.String())
 	}
 	extractors[code] = e
 }
@@ -158,12 +161,16 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context) (bool, error) {
 			continue
 		}
 
+		ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "actorstate"))
+		start := time.Now()
+
 		var errorsEncountered string
 		if err := p.processActor(ctx, info); err != nil {
 			errorLog.Errorw("process actor", "error", err.Error())
 			errorsEncountered = err.Error()
 		}
 
+		stats.Record(ctx, metrics.ProcessingDuration.M(metrics.SinceInMilliseconds(start)))
 		if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, p.clock.Now(), errorsEncountered); err != nil {
 			errorLog.Errorw("failed to mark actor complete", "error", err.Error())
 		}

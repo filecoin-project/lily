@@ -10,10 +10,13 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
 	"github.com/raulk/clock"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/wait"
@@ -86,6 +89,9 @@ func (p *ActorStateChangeProcessor) processBatch(ctx context.Context) (bool, err
 
 		errorLog := log.With("height", item.Height, "tipset", item.TipSet)
 
+		ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "statechange"))
+		start := time.Now()
+
 		if err := p.processItem(ctx, item); err != nil {
 			errorLog.Errorw("failed to process tipset", "error", err.Error())
 			if err := p.storage.MarkStateChangeComplete(ctx, item.TipSet, item.Height, p.clock.Now(), err.Error()); err != nil {
@@ -94,6 +100,7 @@ func (p *ActorStateChangeProcessor) processBatch(ctx context.Context) (bool, err
 			continue
 		}
 
+		stats.Record(ctx, metrics.ProcessingDuration.M(metrics.SinceInMilliseconds(start)))
 		if err := p.storage.MarkStateChangeComplete(ctx, item.TipSet, item.Height, p.clock.Now(), ""); err != nil {
 			errorLog.Errorw("failed to mark tipset complete", "error", err.Error())
 		}
