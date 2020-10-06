@@ -1,36 +1,5 @@
 version: '3.5'
 services:
-  redis:
-    container_name: redis
-    image: redis:6
-    ports:
-      - "6379:6379"
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
-    volumes:
-      - redis-data:/var/lib/redis
-
-  redis-commander:
-    container_name: redis-commander
-    image: rediscommander/redis-commander:latest
-    restart: always
-    environment:
-    - REDIS_HOSTS=local:redis:6379
-    ports:
-    - "8081:8081"
-    depends_on:
-      - redis
-
-  workerui:
-    restart: always
-    environment:
-      - REDIS_HOSTS=redis://redis:6379
-    build:
-        context: .
-        dockerfile: Dockerfile.worker
-    ports:
-      - "8181:8181"
-
   timescaledb:
     container_name: timescaledb
     image: timescale/timescaledb:latest-pg10
