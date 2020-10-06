@@ -74,6 +74,11 @@ func (c *ChainHeadIndexer) index(ctx context.Context, headEvents []*lotus_api.He
 			if err != nil {
 				log.Errorw("tipset cache set current", "error", err.Error())
 			}
+
+			// If we have a zero confidence window then we need to index every tipset we see
+			if c.confidence == 0 {
+				data.AddTipSet(ch.Val)
+			}
 		case store.HCApply:
 			log.Debugw("add tipset", "height", ch.Val.Height(), "tipset", ch.Val.Key().String())
 			tail, err := c.cache.Add(ch.Val)
