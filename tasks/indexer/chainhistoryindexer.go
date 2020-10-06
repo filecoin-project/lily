@@ -80,6 +80,7 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) er
 		return xerrors.Errorf("get chain head: %w", err)
 	}
 
+	log.Debugw("head", "height", head.Height())
 	toVisit.PushBack(head)
 
 	// TODO: revisit this loop which was designed to collect blocks but could now be a lot simpler since we are
@@ -92,6 +93,18 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) er
 		}
 
 		ts := toVisit.Remove(toVisit.Back()).(*types.TipSet)
+		if ts.Height() == 0 {
+			continue
+		}
+
+		// TODO: Look for websocket connection closed error and retry after a delay to avoid hot loop
+		pts, err := c.node.ChainGetTipSet(ctx, ts.Parents())
+		if err != nil {
+			return xerrors.Errorf("get tipset: %w", err)
+		}
+
+		toVisit.PushBack(pts)
+
 		if blockData.Seen(ts.Key()) {
 			continue
 		}
@@ -107,19 +120,9 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) er
 			blockData.Reset()
 		}
 
-		if ts.Height() == 0 {
-			continue
-		}
-		// TODO: Look for websocket connection closed error and retry after a delay to avoid hot loop
-		pts, err := c.node.ChainGetTipSet(ctx, ts.Parents())
-		if err != nil {
-			return xerrors.Errorf("get tipset: %w", err)
-		}
-
-		toVisit.PushBack(pts)
 	}
 
-	log.Debugw("persisting final batch", "count", blockData.Size(), "toVisit", toVisit.Len())
+	log.Debugw("persisting final batch", "count", blockData.Size(), "height", blockData.Height())
 	if err := blockData.Persist(ctx, c.storage.DB); err != nil {
 		return xerrors.Errorf("persist: %w", err)
 	}

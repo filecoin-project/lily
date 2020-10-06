@@ -103,7 +103,7 @@ func (p *ActorStateChangeProcessor) processBatch(ctx context.Context) (bool, err
 	return false, nil
 }
 
-func (p *ActorStateChangeProcessor) processItem(ctx context.Context, item *visor.ProcessingStateChange) error {
+func (p *ActorStateChangeProcessor) processItem(ctx context.Context, item *visor.ProcessingTipSet) error {
 	tsk, err := item.TipSetKey()
 	if err != nil {
 		return xerrors.Errorf("get tipsetkey: %w", err)

@@ -8,9 +8,11 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -122,4 +124,8 @@ func (aw *APIWrapper) StateReadState(ctx context.Context, actor address.Address,
 	ctx, span := global.Tracer("").Start(ctx, "Lotus.StateReadState")
 	defer span.End()
 	return aw.FullNode.StateReadState(ctx, actor, tsk)
+}
+
+func (aw *APIWrapper) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs {
+	return vm.ComputeGasOutputs(gasUsed, gasLimit, baseFee, feeCap, gasPremium)
 }

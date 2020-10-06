@@ -70,7 +70,7 @@ var Run = &cli.Command{
 		&cli.IntFlag{
 			Name:    "statechange-workers",
 			Aliases: []string{"scw"},
-			Value:   5,
+			Value:   15,
 			Usage:   "Number of actor state change processors to start",
 			EnvVars: []string{"VISOR_STATECHANGE_WORKERS"},
 		},
@@ -92,7 +92,7 @@ var Run = &cli.Command{
 		&cli.IntFlag{
 			Name:    "actorstate-workers",
 			Aliases: []string{"asw"},
-			Value:   5,
+			Value:   15,
 			Usage:   "Number of actor state processors to start",
 			EnvVars: []string{"VISOR_ACTORSTATE_WORKERS"},
 		},
@@ -126,9 +126,31 @@ var Run = &cli.Command{
 		&cli.IntFlag{
 			Name:    "message-workers",
 			Aliases: []string{"mw"},
-			Value:   5,
-			Usage:   "Number of message to start",
+			Value:   15,
+			Usage:   "Number of message processors to start",
 			EnvVars: []string{"VISOR_MESSAGE_WORKERS"},
+		},
+
+		&cli.DurationFlag{
+			Name:    "gasoutputs-lease",
+			Aliases: []string{"gol"},
+			Value:   time.Minute * 15,
+			Usage:   "Lease time for the gas outputs processor",
+			EnvVars: []string{"VISOR_GASOUTPUTS_LEASE"},
+		},
+		&cli.IntFlag{
+			Name:    "gasoutputs-batch",
+			Aliases: []string{"gob"},
+			Value:   500, // can be high because we don't hit the lotus api
+			Usage:   "Batch size for the gas outputs processor",
+			EnvVars: []string{"VISOR_GASOUTPUTS_BATCH"},
+		},
+		&cli.IntFlag{
+			Name:    "gasoutputs-workers",
+			Aliases: []string{"gow"},
+			Value:   15,
+			Usage:   "Number of gas outputs processors to start",
+			EnvVars: []string{"VISOR_GASOUTPUTS_WORKERS"},
 		},
 	},
 	Action: func(cctx *cli.Context) error {
@@ -181,7 +203,7 @@ var Run = &cli.Command{
 				Task:                indexer.NewChainHistoryIndexer(rctx.db, rctx.api),
 				Locker:              NewGlobalSingleton(ChainHistoryIndexerLockID, rctx.db), // only want one history indexer anywhere to be running
 				RestartOnFailure:    true,
-				RestartOnCompletion: false, // run once only
+				RestartOnCompletion: true,
 			})
 		}
 
@@ -214,6 +236,16 @@ var Run = &cli.Command{
 			scheduler.Add(schedule.TaskConfig{
 				Name:                fmt.Sprintf("MessageProcessor%03d", i),
 				Task:                message.NewMessageProcessor(rctx.db, rctx.api, cctx.Duration("message-lease"), cctx.Int("message-batch"), heightFrom, heightTo),
+				RestartOnFailure:    true,
+				RestartOnCompletion: true,
+			})
+		}
+
+		// Add several gas output tasks to read gas outputs from indexed messages
+		for i := 0; i < cctx.Int("gasoutputs-workers"); i++ {
+			scheduler.Add(schedule.TaskConfig{
+				Name:                fmt.Sprintf("GasOutputsProcessor%03d", i),
+				Task:                message.NewGasOutputsProcessor(rctx.db, rctx.api, cctx.Duration("gasoutputs-lease"), cctx.Int("gasoutputs-batch"), heightFrom, heightTo),
 				RestartOnFailure:    true,
 				RestartOnCompletion: true,
 			})

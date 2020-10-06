@@ -21,6 +21,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/actors/power"
 	"github.com/filecoin-project/sentinel-visor/model/actors/reward"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
+	"github.com/filecoin-project/sentinel-visor/model/derived"
 	"github.com/filecoin-project/sentinel-visor/model/messages"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 )
@@ -52,9 +53,11 @@ var models = []interface{}{
 
 	(*init_.IdAddress)(nil),
 
-	(*visor.ProcessingStateChange)(nil),
+	(*visor.ProcessingTipSet)(nil),
 	(*visor.ProcessingActor)(nil),
 	(*visor.ProcessingMessage)(nil),
+
+	(*derived.GasOutputs)(nil),
 }
 
 var log = logging.Logger("storage")
@@ -149,11 +152,11 @@ func (d *Database) Close(ctx context.Context) error {
 	return err
 }
 
-func (d *Database) UnprocessedIndexedTipSets(ctx context.Context, maxHeight, limit int) (visor.ProcessingStateChangeList, error) {
-	var blkSynced visor.ProcessingStateChangeList
+func (d *Database) UnprocessedIndexedTipSets(ctx context.Context, maxHeight, limit int) (visor.ProcessingTipSetList, error) {
+	var blkSynced visor.ProcessingTipSetList
 	if err := d.DB.ModelContext(ctx, &blkSynced).
 		Where("height <= ?", maxHeight).
-		Where("claimed_until is null").
+		Where("statechange_claimed_until is null").
 		Order("height desc").
 		Limit(limit).
 		Select(); err != nil {
@@ -162,8 +165,8 @@ func (d *Database) UnprocessedIndexedTipSets(ctx context.Context, maxHeight, lim
 	return blkSynced, nil
 }
 
-func (d *Database) MostRecentAddedTipSet(ctx context.Context) (*visor.ProcessingStateChange, error) {
-	blkSynced := &visor.ProcessingStateChange{}
+func (d *Database) MostRecentAddedTipSet(ctx context.Context) (*visor.ProcessingTipSet, error) {
+	blkSynced := &visor.ProcessingTipSet{}
 	if err := d.DB.ModelContext(ctx, blkSynced).
 		Order("height desc").
 		Limit(1).
@@ -251,26 +254,26 @@ func stripQuotes(s types.Safe) string {
 	return strings.Trim(string(s), `"`)
 }
 
-func (d *Database) LeaseStateChanges(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingStateChangeList, error) {
-	var blocks visor.ProcessingStateChangeList
+func (d *Database) LeaseStateChanges(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingTipSetList, error) {
+	var blocks visor.ProcessingTipSetList
 
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.QueryContext(ctx, &blocks, `
 WITH leased AS (
-    UPDATE visor_processing_statechanges
-    SET claimed_until = ?
+    UPDATE visor_processing_tipsets
+    SET statechange_claimed_until = ?
     FROM (
 	    SELECT *
-	    FROM visor_processing_statechanges
-	    WHERE completed_at IS null AND
-	          (claimed_until IS null OR claimed_until < ?) AND
+	    FROM visor_processing_tipsets
+	    WHERE statechange_completed_at IS null AND
+	          (statechange_claimed_until IS null OR statechange_claimed_until < ?) AND
 	          height >= ? AND height <= ?
 	    ORDER BY height DESC
 	    LIMIT ?
 	    FOR UPDATE SKIP LOCKED
 	) candidates
-	WHERE visor_processing_statechanges.tip_set = candidates.tip_set AND visor_processing_statechanges.height = candidates.height
-    RETURNING visor_processing_statechanges.tip_set, visor_processing_statechanges.height
+	WHERE visor_processing_tipsets.tip_set = candidates.tip_set AND visor_processing_tipsets.height = candidates.height
+    RETURNING visor_processing_tipsets.tip_set, visor_processing_tipsets.height
 )
 SELECT tip_set,height FROM leased;
     `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize)
@@ -288,10 +291,10 @@ SELECT tip_set,height FROM leased;
 func (d *Database) MarkStateChangeComplete(ctx context.Context, tsk string, height int64, completedAt time.Time, errorsDetected string) error {
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.ExecContext(ctx, `
-    UPDATE visor_processing_statechanges
-    SET claimed_until = null,
-        completed_at = ?,
-        errors_detected = ?
+    UPDATE visor_processing_tipsets
+    SET statechange_claimed_until = null,
+        statechange_completed_at = ?,
+        statechange_errors_detected = ?
     WHERE tip_set = ? AND height = ?
 `, completedAt, useNullIfEmpty(errorsDetected), tsk, height)
 		if err != nil {
@@ -367,27 +370,27 @@ func (d *Database) MarkActorComplete(ctx context.Context, head string, code stri
 	return nil
 }
 
-// LeaseActors leases a set of tipsets containing messages to process. minHeight and maxHeight define an inclusive range of heights to process.
-func (d *Database) LeaseTipSetMessages(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingMessageList, error) {
-	var messages visor.ProcessingMessageList
+// LeaseTipSetMessages leases a set of tipsets containing messages to process. minHeight and maxHeight define an inclusive range of heights to process.
+func (d *Database) LeaseTipSetMessages(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingTipSetList, error) {
+	var messages visor.ProcessingTipSetList
 
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.QueryContext(ctx, &messages, `
 WITH leased AS (
-    UPDATE visor_processing_messages
-    SET claimed_until = ?
+    UPDATE visor_processing_tipsets
+    SET message_claimed_until = ?
     FROM (
 	    SELECT *
-	    FROM visor_processing_messages
-	    WHERE completed_at IS null AND
-	          (claimed_until IS null OR claimed_until < ?) AND
+	    FROM visor_processing_tipsets
+	    WHERE message_completed_at IS null AND
+	          (message_claimed_until IS null OR message_claimed_until < ?) AND
 	          height >= ? AND height <= ?
 	    ORDER BY height DESC
 	    LIMIT ?
 	    FOR UPDATE SKIP LOCKED
 	) candidates
-	WHERE visor_processing_messages.tip_set = candidates.tip_set AND visor_processing_messages.height = candidates.height
-    RETURNING visor_processing_messages.tip_set, visor_processing_messages.height
+	WHERE visor_processing_tipsets.tip_set = candidates.tip_set AND visor_processing_tipsets.height = candidates.height
+    RETURNING visor_processing_tipsets.tip_set, visor_processing_tipsets.height
 )
 SELECT tip_set,height FROM leased;
     `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize)
@@ -405,10 +408,10 @@ SELECT tip_set,height FROM leased;
 func (d *Database) MarkTipSetMessagesComplete(ctx context.Context, tipset string, height int64, completedAt time.Time, errorsDetected string) error {
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.ExecContext(ctx, `
-    UPDATE visor_processing_messages
-    SET claimed_until = null,
-        completed_at = ?,
-        errors_detected = ?
+    UPDATE visor_processing_tipsets
+    SET message_claimed_until = null,
+        message_completed_at = ?,
+        message_errors_detected = ?
     WHERE tip_set = ? AND height = ?
 `, completedAt, useNullIfEmpty(errorsDetected), tipset, height)
 		if err != nil {
@@ -429,4 +432,65 @@ func useNullIfEmpty(s string) *string {
 	}
 
 	return &s
+}
+
+// LeaseGasOutputsMessages leases a set of messages that have receipts for gas output processing. minHeight and maxHeight define an inclusive range of heights to process.
+func (d *Database) LeaseGasOutputsMessages(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (derived.GasOutputsList, error) {
+	var list derived.GasOutputsList
+
+	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		_, err := tx.QueryContext(ctx, &list, `
+WITH leased AS (
+    UPDATE visor_processing_messages pm
+    SET gas_outputs_claimed_until = ?
+    FROM (
+		SELECT pm.cid, m.from, m.to, m.size_bytes, m.nonce, m.value,
+			   m.gas_fee_cap, m.gas_premium, m.gas_limit, m.method,
+			   r.state_root, r.exit_code,r.gas_used, bh.parent_base_fee
+		FROM visor_processing_messages pm
+		JOIN receipts r ON pm.cid = r.message
+		JOIN messages m ON pm.cid = m.cid
+		JOIN block_messages bm on pm.cid = bm.message
+		JOIN block_headers bh on bm.block = bh.cid
+		WHERE pm.gas_outputs_completed_at IS null AND
+		      (pm.gas_outputs_claimed_until IS null OR pm.gas_outputs_claimed_until < ?) AND
+		      pm.height >= ? AND pm.height <= ?
+		ORDER BY pm.height DESC
+		LIMIT ?
+	) candidates
+	WHERE pm.cid = candidates.cid
+    RETURNING pm.cid, candidates.*
+)
+SELECT * FROM leased;
+`, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize)
+
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+func (d *Database) MarkGasOutputsMessagesComplete(ctx context.Context, cid string, completedAt time.Time, errorsDetected string) error {
+	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		_, err := tx.ExecContext(ctx, `
+    UPDATE visor_processing_messages
+    SET gas_outputs_claimed_until = null,
+        gas_outputs_completed_at = ?,
+        gas_outputs_errors_detected = ?
+    WHERE cid = ?
+`, completedAt, useNullIfEmpty(errorsDetected), cid)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }

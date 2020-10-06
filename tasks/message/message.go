@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
@@ -71,10 +72,12 @@ func (p *MessageProcessor) processBatch(ctx context.Context) (bool, error) {
 	// If we have no tipsets to work on then wait before trying again
 	if len(batch) == 0 {
 		sleepInterval := wait.Jitter(idleSleepInterval, 2)
-		log.Infof("no tipsets to process, waiting for %s", sleepInterval)
+		log.Debugw("no tipsets to process, waiting for %s", sleepInterval)
 		time.Sleep(sleepInterval)
 		return false, nil
 	}
+
+	log.Debugw("leased batch of tipsets", "count", len(batch))
 
 	for _, item := range batch {
 		// Stop processing if we have somehow passed our own lease time
@@ -101,7 +104,7 @@ func (p *MessageProcessor) processBatch(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
-func (p *MessageProcessor) processItem(ctx context.Context, item *visor.ProcessingMessage) error {
+func (p *MessageProcessor) processItem(ctx context.Context, item *visor.ProcessingTipSet) error {
 	tsk, err := item.TipSetKey()
 	if err != nil {
 		return xerrors.Errorf("get tipsetkey: %w", err)
@@ -126,9 +129,7 @@ func (p *MessageProcessor) processTipSet(ctx context.Context, ts *types.TipSet) 
 
 	ll := log.With("height", int64(ts.Height()))
 
-	ll.Debugw("processing tipset")
-
-	msgs, blkMsgs, err := p.fetchMessages(ctx, ts)
+	msgs, blkMsgs, processingMsgs, err := p.fetchMessages(ctx, ts)
 	if err != nil {
 		return xerrors.Errorf("fetch messages: %w", err)
 	}
@@ -145,16 +146,26 @@ func (p *MessageProcessor) processTipSet(ctx context.Context, ts *types.TipSet) 
 	}
 
 	ll.Debugw("persisting tipset", "messages", len(msgs), "block_messages", len(blkMsgs), "receipts", len(rcts))
-	if err := result.Persist(ctx, p.storage.DB); err != nil {
+
+	if err := p.storage.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		if err := result.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+		if err := processingMsgs.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return xerrors.Errorf("persist: %w", err)
 	}
 
 	return nil
 }
 
-func (p *MessageProcessor) fetchMessages(ctx context.Context, ts *types.TipSet) (messagemodel.Messages, messagemodel.BlockMessages, error) {
+func (p *MessageProcessor) fetchMessages(ctx context.Context, ts *types.TipSet) (messagemodel.Messages, messagemodel.BlockMessages, visor.ProcessingMessageList, error) {
 	msgs := messagemodel.Messages{}
 	bmsgs := messagemodel.BlockMessages{}
+	pmsgs := visor.ProcessingMessageList{}
 	msgsSeen := map[cid.Cid]struct{}{}
 
 	// TODO consider performing this work in parallel.
@@ -162,13 +173,13 @@ func (p *MessageProcessor) fetchMessages(ctx context.Context, ts *types.TipSet) 
 		// Stop processing if we have somehow passed our own lease time
 		select {
 		case <-ctx.Done():
-			return nil, nil, ctx.Err()
+			return nil, nil, nil, ctx.Err()
 		default:
 		}
 
 		blkMsgs, err := p.node.ChainGetBlockMessages(ctx, blk)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 
 		vmm := make([]*types.Message, 0, len(blkMsgs.Cids))
@@ -191,6 +202,9 @@ func (p *MessageProcessor) fetchMessages(ctx context.Context, ts *types.TipSet) 
 				continue
 			}
 
+			// Record this message for processing by later stages
+			pmsgs = append(pmsgs, visor.NewProcessingMessage(message, int64(ts.Height())))
+
 			var msgSize int
 			if b, err := message.Serialize(); err == nil {
 				msgSize = len(b)
@@ -211,7 +225,7 @@ func (p *MessageProcessor) fetchMessages(ctx context.Context, ts *types.TipSet) 
 			msgsSeen[message.Cid()] = struct{}{}
 		}
 	}
-	return msgs, bmsgs, nil
+	return msgs, bmsgs, pmsgs, nil
 }
 
 func (p *MessageProcessor) fetchReceipts(ctx context.Context, ts *types.TipSet) (messagemodel.Receipts, error) {
