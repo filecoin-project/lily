@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-pg/pg/v10"
+	"github.com/ipfs/go-cid"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
@@ -18,7 +19,7 @@ type MinerSectorPost struct {
 	PostMessageID string
 }
 
-type MinerSectorPosts []MinerSectorPost
+type MinerSectorPosts []*MinerSectorPost
 
 func (msp *MinerSectorPost) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	if _, err := tx.ModelContext(ctx, msp).
@@ -29,9 +30,21 @@ func (msp *MinerSectorPost) PersistWithTx(ctx context.Context, tx *pg.Tx) error 
 	return nil
 }
 
-// TODO: what makes this.
-func NewMinerSectorPost() MinerSectorPosts {
-	out := make([]MinerSectorPost, 0)
+func NewMinerSectorPost(task *MinerTaskResult) MinerSectorPosts {
+	out := make([]*MinerSectorPost, len(task.Posts))
+	for s, c := range task.Posts {
+		mid := ""
+		if c != cid.Undef {
+			mid = c.String()
+		}
+		post := &MinerSectorPost{
+			MinerID:       task.Addr.String(),
+			SectorID:      s,
+			Epoch:         task.Height,
+			PostMessageID: mid,
+		}
+		out = append(out, post)
+	}
 
 	return out
 }
@@ -43,7 +56,7 @@ func (msps MinerSectorPosts) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (msps MinerSectorPosts) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerSectorPosts.PersistWithTx", trace.WithAttributes(label.Int("count", len(msis))))
+	ctx, span := global.Tracer("").Start(ctx, "MinerSectorPosts.PersistWithTx", trace.WithAttributes(label.Int("count", len(msps))))
 	defer span.End()
 	for _, msp := range msps {
 		if err := msp.PersistWithTx(ctx, tx); err != nil {
