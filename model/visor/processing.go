@@ -61,7 +61,7 @@ func (p *ProcessingTipSet) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	if _, err := tx.ModelContext(ctx, p).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return fmt.Errorf("persisting processing tipset: %w", err)
+		return fmt.Errorf("persisting processing tipset list: %w", err)
 	}
 	return nil
 }
@@ -75,10 +75,11 @@ type ProcessingTipSetList []*ProcessingTipSet
 func (pl ProcessingTipSetList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	ctx, span := global.Tracer("").Start(ctx, "ProcessingTipSetList.PersistWithTx", trace.WithAttributes(label.Int("count", len(pl))))
 	defer span.End()
-	for _, p := range pl {
-		if err := p.PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
+
+	if _, err := tx.ModelContext(ctx, &pl).
+		OnConflict("do nothing").
+		Insert(); err != nil {
+		return fmt.Errorf("persisting processing tipset: %w", err)
 	}
 	return nil
 }
@@ -152,10 +153,10 @@ type ProcessingActorList []*ProcessingActor
 func (pl ProcessingActorList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	ctx, span := global.Tracer("").Start(ctx, "ProcessingActorList.PersistWithTx", trace.WithAttributes(label.Int("count", len(pl))))
 	defer span.End()
-	for _, p := range pl {
-		if err := p.PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
+	if _, err := tx.ModelContext(ctx, &pl).
+		OnConflict("do nothing").
+		Insert(); err != nil {
+		return fmt.Errorf("persisting processing actor list: %w", err)
 	}
 	return nil
 }
@@ -191,7 +192,7 @@ func (p *ProcessingMessage) PersistWithTx(ctx context.Context, tx *pg.Tx) error 
 	if _, err := tx.ModelContext(ctx, p).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return fmt.Errorf("persisting processing actor: %w", err)
+		return fmt.Errorf("persisting processing message: %w", err)
 	}
 	return nil
 }
@@ -201,10 +202,10 @@ type ProcessingMessageList []*ProcessingMessage
 func (pl ProcessingMessageList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	ctx, span := global.Tracer("").Start(ctx, "ProcessingMessageList.PersistWithTx", trace.WithAttributes(label.Int("count", len(pl))))
 	defer span.End()
-	for _, p := range pl {
-		if err := p.PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
+	if _, err := tx.ModelContext(ctx, &pl).
+		OnConflict("do nothing").
+		Insert(); err != nil {
+		return fmt.Errorf("persisting processing message list: %w", err)
 	}
 	return nil
 }

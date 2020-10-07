@@ -43,10 +43,10 @@ func (rs Receipts) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
-	for _, r := range rs {
-		if err := r.PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
+	if _, err := tx.ModelContext(ctx, &rs).
+		OnConflict("do nothing").
+		Insert(); err != nil {
+		return fmt.Errorf("persisting receipts: %w", err)
 	}
 	return nil
 }

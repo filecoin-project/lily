@@ -49,10 +49,10 @@ func (ms Messages) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
-	for _, m := range ms {
-		if err := m.PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
+	if _, err := tx.ModelContext(ctx, &ms).
+		OnConflict("do nothing").
+		Insert(); err != nil {
+		return fmt.Errorf("persisting messages: %w", err)
 	}
 	return nil
 }
