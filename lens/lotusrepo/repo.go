@@ -10,6 +10,7 @@ import (
 
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/vm"
+	"github.com/filecoin-project/lotus/lib/cachebs"
 	"github.com/filecoin-project/lotus/node"
 	"github.com/filecoin-project/lotus/node/impl"
 	"github.com/filecoin-project/lotus/node/repo"
@@ -20,6 +21,7 @@ import (
 type RepoAPI struct {
 	api.FullNode
 	context.Context
+	cacheSize int
 }
 
 func (ra *RepoAPI) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs {
@@ -32,7 +34,8 @@ func (ra *RepoAPI) Store() adt.Store {
 		return nil
 	}
 	store := i.ChainAPI.Chain.Blockstore()
-	cs := cbor.NewCborStore(store)
+	cachedStore := cachebs.NewBufferedBstore(store, ra.cacheSize)
+	cs := cbor.NewCborStore(cachedStore)
 	adtStore := adt.WrapStore(ra.Context, cs)
 	return adtStore
 }
@@ -42,7 +45,7 @@ func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 
 	r, err := repo.NewFS(c.String("repo"))
 	if err != nil {
-		return c.Context, nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	options := []node.Option{
@@ -51,7 +54,7 @@ func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 	}
 	stop, err := node.New(c.Context, options...)
 	if err != nil {
-		return c.Context, nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	sf := func() {
@@ -59,5 +62,6 @@ func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 	}
 
 	rapi.Context = c.Context
+	rapi.cacheSize = c.Int("lens-cache-hint")
 	return c.Context, &rapi, sf, nil
 }

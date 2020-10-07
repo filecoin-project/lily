@@ -47,6 +47,11 @@ func main() {
 				EnvVars: []string{"LOTUS_DB_POOL_SIZE"},
 				Value:   75,
 			},
+			&cli.IntFlag{
+				Name:    "lens-cache-hint",
+				EnvVars: []string{"VISOR_LENS_CACHE_HINT"},
+				Value:   1024 * 1024,
+			},
 			&cli.StringFlag{
 				Name:    "log-level",
 				EnvVars: []string{"GOLOG_LOG_LEVEL"},
