@@ -13,10 +13,10 @@ import (
 
 type MinerSectorPost struct {
 	MinerID  string `pg:",pk,notnull"`
-	SectorID uint64 `pg:",pk,use_zero"`
+	SectorID uint64 `pg:",pk,notnull,use_zero"`
 	Epoch    int64  `pg:",pk,notnull"`
 
-	PostMessageID string
+	PostMessageCID string
 }
 
 type MinerSectorPosts []*MinerSectorPost
