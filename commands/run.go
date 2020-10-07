@@ -98,13 +98,13 @@ var Run = &cli.Command{
 		},
 		&cli.StringSliceFlag{
 			Name:        "actorstate-include",
-			Usage:       "List of actor codes that should be procesed by actor state processors",
+			Usage:       fmt.Sprintf("List of actor names that should be processed by actor state processors: %v", supportedActorArgs),
 			DefaultText: "all supported",
 			EnvVars:     []string{"VISOR_ACTORSTATE_INCLUDE"},
 		},
 		&cli.StringSliceFlag{
 			Name:        "actorstate-exclude",
-			Usage:       "List of actor codes that should be not be procesed by actor state processors",
+			Usage:       fmt.Sprintf("List of actor names that should be not be processed by actor state processors: %v", supportedActorArgs),
 			DefaultText: "none",
 			EnvVars:     []string{"VISOR_ACTORSTATE_EXCLUDE"},
 		},
@@ -293,16 +293,44 @@ func parseActorCodes(ss []string) ([]cid.Cid, error) {
 	return codes, nil
 }
 
+const (
+	AccountActor          = "account"
+	CronActor             = "cron"
+	InitActor             = "init"
+	StorageMarketActor    = "market"
+	StorageMinerActor     = "miner"
+	MultiSigActor         = "multisig"
+	PaymentChannelActor   = "payment"
+	StoragePowerActor     = "power"
+	VerifiedRegistryActor = "registry"
+	RewardActor           = "reward"
+	SystemActor           = "system"
+)
+
+var supportedActorArgs = []string{
+	AccountActor,
+	CronActor,
+	InitActor,
+	StorageMarketActor,
+	StorageMinerActor,
+	MultiSigActor,
+	PaymentChannelActor,
+	StoragePowerActor,
+	VerifiedRegistryActor,
+	RewardActor,
+	SystemActor,
+}
+
 var actorNamesToCodes = map[string]cid.Cid{
-	"fil/2/system":           builtin.SystemActorCodeID,
-	"fil/2/init":             builtin.InitActorCodeID,
-	"fil/2/cron":             builtin.CronActorCodeID,
-	"fil/2/storagepower":     builtin.StoragePowerActorCodeID,
-	"fil/2/storageminer":     builtin.StorageMinerActorCodeID,
-	"fil/2/storagemarket":    builtin.StorageMarketActorCodeID,
-	"fil/2/paymentchannel":   builtin.PaymentChannelActorCodeID,
-	"fil/2/reward":           builtin.RewardActorCodeID,
-	"fil/2/verifiedregistry": builtin.VerifiedRegistryActorCodeID,
-	"fil/2/account":          builtin.AccountActorCodeID,
-	"fil/2/multisig":         builtin.MultisigActorCodeID,
+	SystemActor:           builtin.SystemActorCodeID,
+	InitActor:             builtin.InitActorCodeID,
+	CronActor:             builtin.CronActorCodeID,
+	StoragePowerActor:     builtin.StoragePowerActorCodeID,
+	StorageMinerActor:     builtin.StorageMinerActorCodeID,
+	StorageMarketActor:    builtin.StorageMarketActorCodeID,
+	PaymentChannelActor:   builtin.PaymentChannelActorCodeID,
+	RewardActor:           builtin.RewardActorCodeID,
+	VerifiedRegistryActor: builtin.VerifiedRegistryActorCodeID,
+	AccountActor:          builtin.AccountActorCodeID,
+	MultiSigActor:         builtin.MultisigActorCodeID,
 }
