@@ -3,9 +3,10 @@ package lotus
 import (
 	"context"
 	"fmt"
-	"github.com/filecoin-project/sentinel-visor/lens"
 	"net/http"
 	"strings"
+
+	"github.com/filecoin-project/sentinel-visor/lens"
 
 	logging "github.com/ipfs/go-log/v2"
 	ma "github.com/multiformats/go-multiaddr"
@@ -21,9 +22,7 @@ import (
 
 var log = logging.Logger("visor/lens/lotus")
 
-type APICloser jsonrpc.ClientCloser
-
-func GetFullNodeAPI(cctx *cli.Context) (context.Context, lens.API, APICloser, error) {
+func GetFullNodeAPI(cctx *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 	var api lotus_api.FullNode
 	var closer jsonrpc.ClientCloser
 	var err error
@@ -60,7 +59,7 @@ func GetFullNodeAPI(cctx *cli.Context) (context.Context, lens.API, APICloser, er
 
 	lensAPI := NewAPIWrapper(api, cacheStore)
 
-	return ctx, lensAPI, APICloser(closer), nil
+	return ctx, lensAPI, lens.APICloser(closer), nil
 }
 
 func getFullNodeAPIUsingCredentials(ctx context.Context, listenAddr, token string) (lotus_api.FullNode, jsonrpc.ClientCloser, error) {

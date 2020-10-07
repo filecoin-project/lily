@@ -17,8 +17,8 @@ import (
 	"golang.org/x/xerrors"
 
 	lens "github.com/filecoin-project/sentinel-visor/lens"
-	lotuslens "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	vapi "github.com/filecoin-project/sentinel-visor/lens/lotus"
+	repoapi "github.com/filecoin-project/sentinel-visor/lens/lotusrepo"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
@@ -26,12 +26,21 @@ var log = logging.Logger("visor")
 
 type RunContext struct {
 	api    lens.API
-	closer lotuslens.APICloser
+	closer lens.APICloser
 	db     *storage.Database
 }
 
 func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error) {
-	ctx, api, closer, err := vapi.GetFullNodeAPI(cctx)
+	var ctx context.Context
+	var api lens.API
+	var closer lens.APICloser
+	var err error
+
+	if cctx.String("lens") == "lotus" {
+		ctx, api, closer, err = vapi.GetFullNodeAPI(cctx)
+	} else if cctx.String("lens") == "lotusrepo" {
+		ctx, api, closer, err = repoapi.GetAPI(cctx)
+	}
 	if err != nil {
 		return nil, nil, xerrors.Errorf("get node api: %w", err)
 	}

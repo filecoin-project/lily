@@ -23,6 +23,11 @@ func main() {
 		Version: version.String(),
 		Flags: []cli.Flag{
 			&cli.StringFlag{
+				Name:    "lens",
+				EnvVars: []string{"VISOR_LENS"},
+				Value:   "lotus",
+			},
+			&cli.StringFlag{
 				Name:    "repo",
 				EnvVars: []string{"LOTUS_PATH"},
 				Value:   "~/.lotus", // TODO: Consider XDG_DATA_HOME
