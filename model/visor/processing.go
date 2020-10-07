@@ -16,51 +16,64 @@ import (
 	"go.opentelemetry.io/otel/label"
 )
 
-func NewProcessingStateChange(ts *types.TipSet) *ProcessingStateChange {
-	return &ProcessingStateChange{
+func NewProcessingTipSet(ts *types.TipSet) *ProcessingTipSet {
+	return &ProcessingTipSet{
 		TipSet:  ts.Key().String(),
 		Height:  int64(ts.Height()),
 		AddedAt: time.Now(),
 	}
 }
 
-type ProcessingStateChange struct {
-	tableName struct{} `pg:"visor_processing_statechanges"`
+type ProcessingTipSet struct {
+	tableName struct{} `pg:"visor_processing_tipsets"`
 
 	TipSet string `pg:",pk,notnull"`
 
 	Height int64 `pg:",use_zero"`
 
-	// AddedAt is the time the block was discovered and written to the table
+	// AddedAt is the time the tipset was discovered and written to the table
 	AddedAt time.Time `pg:",notnull"`
 
-	// ClaimedUntil marks the block as claimed for processing until the set time
-	ClaimedUntil time.Time
+	// State change processing
 
-	// CompletedAt is the time the block was read from the chain and analysed for actor state changes
-	CompletedAt time.Time
+	// StatechangeClaimedUntil marks the tipset as claimed for actor state change processing until the set time
+	StatechangeClaimedUntil time.Time
 
-	// ErrorsDetected contains any error encountered when analysing the block for actor state changes
-	ErrorsDetected string
+	// StatechangeCompletedAt is the time the tipset was read from the chain and analysed for actor state changes
+	StatechangeCompletedAt time.Time
+
+	// StatechangeErrorsDetected contains any error encountered when analysing the tipset for actor state changes
+	StatechangeErrorsDetected string
+
+	// Message reading
+
+	// MessageClaimedUntil marks the tipset as claimed for message processing until the set time
+	MessageClaimedUntil time.Time
+
+	// MessageCompletedAt is the time the tipset was read from the chain and its messages read
+	MessageCompletedAt time.Time
+
+	// MessageErrorsDetected contains any error encountered when reading the tipset's messages
+	MessageErrorsDetected string
 }
 
-func (p *ProcessingStateChange) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+func (p *ProcessingTipSet) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	if _, err := tx.ModelContext(ctx, p).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return fmt.Errorf("persisting processing block: %w", err)
+		return fmt.Errorf("persisting processing tipset: %w", err)
 	}
 	return nil
 }
 
-func (p *ProcessingStateChange) TipSetKey() (types.TipSetKey, error) {
+func (p *ProcessingTipSet) TipSetKey() (types.TipSetKey, error) {
 	return TipSetKeyFromString(p.TipSet)
 }
 
-type ProcessingStateChangeList []*ProcessingStateChange
+type ProcessingTipSetList []*ProcessingTipSet
 
-func (pl ProcessingStateChangeList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "ProcessingBlockList.PersistWithTx", trace.WithAttributes(label.Int("count", len(pl))))
+func (pl ProcessingTipSetList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "ProcessingTipSetList.PersistWithTx", trace.WithAttributes(label.Int("count", len(pl))))
 	defer span.End()
 	for _, p := range pl {
 		if err := p.PersistWithTx(ctx, tx); err != nil {
@@ -68,6 +81,26 @@ func (pl ProcessingStateChangeList) PersistWithTx(ctx context.Context, tx *pg.Tx
 		}
 	}
 	return nil
+}
+
+func TipSetKeyFromString(s string) (types.TipSetKey, error) {
+	if len(s) < 2 {
+		return types.EmptyTSK, xerrors.Errorf("invalid tipset")
+	}
+
+	s = s[1 : len(s)-1]
+
+	cids := []cid.Cid{}
+	cidStrs := strings.Split(s, ",")
+	for _, cidStr := range cidStrs {
+		c, err := cid.Decode(cidStr)
+		if err != nil {
+			return types.EmptyTSK, xerrors.Errorf("invalid cid: %w", err)
+		}
+		cids = append(cids, c)
+	}
+
+	return types.NewTipSetKey(cids...), nil
 }
 
 type ProcessingActor struct {
@@ -127,10 +160,10 @@ func (pl ProcessingActorList) PersistWithTx(ctx context.Context, tx *pg.Tx) erro
 	return nil
 }
 
-func NewProcessingMessage(ts *types.TipSet) *ProcessingMessage {
+func NewProcessingMessage(m *types.Message, height int64) *ProcessingMessage {
 	return &ProcessingMessage{
-		TipSet:  ts.Key().String(),
-		Height:  int64(ts.Height()),
+		Cid:     m.Cid().String(),
+		Height:  height,
 		AddedAt: time.Now(),
 	}
 }
@@ -138,20 +171,20 @@ func NewProcessingMessage(ts *types.TipSet) *ProcessingMessage {
 type ProcessingMessage struct {
 	tableName struct{} `pg:"visor_processing_messages"`
 
-	TipSet string `pg:",pk,notnull"`
+	Cid    string `pg:",pk,notnull"`
 	Height int64  `pg:",use_zero"`
 
-	// AddedAt is the time the block was discovered and written to the table
+	// AddedAt is the time the message was discovered and written to the table
 	AddedAt time.Time `pg:",notnull"`
 
-	// ClaimedUntil marks the block as claimed for message processing until the set time
-	ClaimedUntil time.Time
+	// GasOutputsClaimedUntil marks the message as claimed for gas output processing until the set time
+	GasOutputsClaimedUntil time.Time
 
-	// CompletedAt is the time the block was read from the chain and its messages read
-	CompletedAt time.Time
+	// GasOutputsCompletedAt is the time when processing gas output completed
+	GasOutputsCompletedAt time.Time
 
-	// ErrorsDetected contains any error encountered when reading the block's messages
-	ErrorsDetected string
+	// GasOutputsErrorsDetected contains any error encountered when processing gas output
+	GasOutputsErrorsDetected string
 }
 
 func (p *ProcessingMessage) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
@@ -161,10 +194,6 @@ func (p *ProcessingMessage) PersistWithTx(ctx context.Context, tx *pg.Tx) error 
 		return fmt.Errorf("persisting processing actor: %w", err)
 	}
 	return nil
-}
-
-func (p *ProcessingMessage) TipSetKey() (types.TipSetKey, error) {
-	return TipSetKeyFromString(p.TipSet)
 }
 
 type ProcessingMessageList []*ProcessingMessage
@@ -178,24 +207,4 @@ func (pl ProcessingMessageList) PersistWithTx(ctx context.Context, tx *pg.Tx) er
 		}
 	}
 	return nil
-}
-
-func TipSetKeyFromString(s string) (types.TipSetKey, error) {
-	if len(s) < 2 {
-		return types.EmptyTSK, xerrors.Errorf("invalid tipset")
-	}
-
-	s = s[1 : len(s)-1]
-
-	cids := []cid.Cid{}
-	cidStrs := strings.Split(s, ",")
-	for _, cidStr := range cidStrs {
-		c, err := cid.Decode(cidStr)
-		if err != nil {
-			return types.EmptyTSK, xerrors.Errorf("invalid cid: %w", err)
-		}
-		cids = append(cids, c)
-	}
-
-	return types.NewTipSetKey(cids...), nil
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/sentinel-visor/lens/lotus"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
@@ -36,7 +37,9 @@ func TestChainHistoryIndexer(t *testing.T) {
 
 	t.Logf("preparing chain")
 	nodes, sn := nodetest.Builder(t, 1, apitest.OneMiner)
-	node := nodeWrapper{TestNode: nodes[0]}
+	cs, err := lotus.NewCacheCtxStore(ctx, nodes[0], 5)
+	require.NoError(t, err, "cache store")
+	node := lotus.NewAPIWrapper(nodes[0], cs)
 
 	apitest.MineUntilBlock(ctx, t, nodes[0], sn[0], nil)
 
@@ -117,27 +120,13 @@ func TestChainHistoryIndexer(t *testing.T) {
 		}
 	})
 
-	t.Run("visor_processing_statechanges", func(t *testing.T) {
+	t.Run("visor_processing_tipsets", func(t *testing.T) {
 		var count int
-		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_statechanges`)
+		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_tipsets`)
 		require.NoError(t, err)
 		assert.Equal(t, len(tipSetKeys), count)
 
-		var m *visor.ProcessingStateChange
-		for _, tsk := range tipSetKeys {
-			exists, err := db.Model(m).Where("tip_set = ?", tsk).Exists()
-			require.NoError(t, err)
-			assert.True(t, exists, "tsk: %s", tsk)
-		}
-	})
-
-	t.Run("visor_processing_messages", func(t *testing.T) {
-		var count int
-		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_messages`)
-		require.NoError(t, err)
-		assert.Equal(t, len(tipSetKeys), count)
-
-		var m *visor.ProcessingMessage
+		var m *visor.ProcessingTipSet
 		for _, tsk := range tipSetKeys {
 			exists, err := db.Model(m).Where("tip_set = ?", tsk).Exists()
 			require.NoError(t, err)

@@ -27,8 +27,7 @@ type UnindexedBlockData struct {
 	parents           blocks.BlockParents
 	drandEntries      blocks.DrandEntries
 	drandBlockEntries blocks.DrandBlockEntries
-	pstateChanges     visor.ProcessingStateChangeList
-	pmessages         visor.ProcessingMessageList
+	tipsets           visor.ProcessingTipSetList
 }
 
 func (u *UnindexedBlockData) AddTipSet(ts *types.TipSet) {
@@ -36,8 +35,7 @@ func (u *UnindexedBlockData) AddTipSet(ts *types.TipSet) {
 	if ts.Height() > u.height {
 		u.height = ts.Height()
 	}
-	u.pstateChanges = append(u.pstateChanges, visor.NewProcessingStateChange(ts))
-	u.pmessages = append(u.pmessages, visor.NewProcessingMessage(ts))
+	u.tipsets = append(u.tipsets, visor.NewProcessingTipSet(ts))
 	for _, header := range ts.Blocks() {
 		u.AddBlock(header)
 	}
@@ -86,15 +84,8 @@ func (u *UnindexedBlockData) Persist(ctx context.Context, db *pg.DB) error {
 		})
 
 		grp.Go(func() error {
-			if err := u.pstateChanges.PersistWithTx(ctx, tx); err != nil {
-				return xerrors.Errorf("persist processing state changes: %w", err)
-			}
-			return nil
-		})
-
-		grp.Go(func() error {
-			if err := u.pmessages.PersistWithTx(ctx, tx); err != nil {
-				return xerrors.Errorf("persist processing messages: %w", err)
+			if err := u.tipsets.PersistWithTx(ctx, tx); err != nil {
+				return xerrors.Errorf("persist processing tipsets: %w", err)
 			}
 			return nil
 		})
@@ -109,7 +100,7 @@ func (u *UnindexedBlockData) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (u *UnindexedBlockData) Size() int {
-	return len(u.pstateChanges)
+	return len(u.tipsets)
 }
 
 func (u *UnindexedBlockData) Height() abi.ChainEpoch {
@@ -131,6 +122,5 @@ func (u *UnindexedBlockData) Reset() {
 	u.parents = u.parents[:0]
 	u.drandEntries = u.drandEntries[:0]
 	u.drandBlockEntries = u.drandBlockEntries[:0]
-	u.pstateChanges = u.pstateChanges[:0]
-	u.pmessages = u.pmessages[:0]
+	u.tipsets = u.tipsets[:0]
 }
