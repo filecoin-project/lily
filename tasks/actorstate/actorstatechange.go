@@ -57,8 +57,6 @@ func (p *ActorStateChangeProcessor) processBatch(ctx context.Context) (bool, err
 	defer span.End()
 
 	claimUntil := p.clock.Now().Add(p.leaseLength)
-	ctx, cancel := context.WithDeadline(ctx, claimUntil)
-	defer cancel()
 
 	// Lease some tipsets to work on
 	batch, err := p.storage.LeaseStateChanges(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight)
@@ -75,6 +73,8 @@ func (p *ActorStateChangeProcessor) processBatch(ctx context.Context) (bool, err
 	}
 
 	log.Debugw("leased batch of tipsets", "count", len(batch))
+	ctx, cancel := context.WithDeadline(ctx, claimUntil)
+	defer cancel()
 
 	for _, item := range batch {
 		// Stop processing if we have somehow passed our own lease time
