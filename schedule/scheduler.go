@@ -29,11 +29,14 @@ type TaskConfig struct {
 	// Locker is an optional lock that must be taken before the task can execute.
 	Locker Locker
 
-	// RestartOnFailure controls whether the task should be restarted if it fails with an error.
+	// RestartOnFailure controls whether the task should be restarted if it stops with an error.
 	RestartOnFailure bool
 
-	// RestartOnCompletion controls whether the task should be restarted if it fails without an error.
+	// RestartOnCompletion controls whether the task should be restarted if it stops without an error.
 	RestartOnCompletion bool
+
+	// RestartDelay is the amount of time to wait before restarting a stopped task
+	RestartDelay time.Duration
 }
 
 // Locker represents a general lock that a task may need to take before operating.
@@ -103,7 +106,10 @@ func (s *Scheduler) Run(ctx context.Context) error {
 				}
 
 				if doneFirstRun {
-					log.Infow("restarting task", "task", tc.Name)
+					log.Infow("restarting task", "task", tc.Name, "delay", tc.RestartDelay)
+					if tc.RestartDelay > 0 {
+						time.Sleep(tc.RestartDelay)
+					}
 				} else {
 					log.Infow("running task", "task", tc.Name)
 					doneFirstRun = true
