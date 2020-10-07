@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"github.com/raulk/clock"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
@@ -22,8 +23,6 @@ const batchInterval = 100 * time.Millisecond // time to wait between batches
 
 var log = logging.Logger("message")
 
-var timeNow = time.Now
-
 func NewMessageProcessor(d *storage.Database, node lens.API, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64) *MessageProcessor {
 	return &MessageProcessor{
 		node:        node,
@@ -32,6 +31,7 @@ func NewMessageProcessor(d *storage.Database, node lens.API, leaseLength time.Du
 		batchSize:   batchSize,
 		minHeight:   minHeight,
 		maxHeight:   maxHeight,
+		clock:       clock.New(),
 	}
 }
 
@@ -44,6 +44,7 @@ type MessageProcessor struct {
 	batchSize   int           // number of tipsets to lease in a batch
 	minHeight   int64         // limit processing to tipsets equal to or above this height
 	maxHeight   int64         // limit processing to tipsets equal to or below this height
+	clock       clock.Clock
 }
 
 // Run starts processing batches of tipsets and blocks until the context is done or
@@ -57,7 +58,7 @@ func (p *MessageProcessor) processBatch(ctx context.Context) (bool, error) {
 	ctx, span := global.Tracer("").Start(ctx, "MessageProcessor.processBatch")
 	defer span.End()
 
-	claimUntil := timeNow().Add(p.leaseLength)
+	claimUntil := p.clock.Now().Add(p.leaseLength)
 	ctx, cancel := context.WithDeadline(ctx, claimUntil)
 	defer cancel()
 
@@ -85,13 +86,13 @@ func (p *MessageProcessor) processBatch(ctx context.Context) (bool, error) {
 
 		if err := p.processItem(ctx, item); err != nil {
 			log.Errorw("failed to process tipset", "error", err.Error(), "height", item.Height)
-			if err := p.storage.MarkTipSetMessagesComplete(ctx, item.TipSet, item.Height, timeNow(), err.Error()); err != nil {
+			if err := p.storage.MarkTipSetMessagesComplete(ctx, item.TipSet, item.Height, p.clock.Now(), err.Error()); err != nil {
 				log.Errorw("failed to mark tipset messages complete", "error", err.Error(), "height", item.Height)
 			}
 			continue
 		}
 
-		if err := p.storage.MarkTipSetMessagesComplete(ctx, item.TipSet, item.Height, timeNow(), ""); err != nil {
+		if err := p.storage.MarkTipSetMessagesComplete(ctx, item.TipSet, item.Height, p.clock.Now(), ""); err != nil {
 			log.Errorw("failed to mark tipset message complete", "error", err.Error(), "height", item.Height)
 		}
 

@@ -11,6 +11,7 @@ import (
 	"github.com/go-pg/pg/v10/types"
 	"github.com/go-pg/pgext"
 	logging "github.com/ipfs/go-log/v2"
+	"github.com/raulk/clock"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/model/actors/common"
@@ -23,8 +24,6 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/messages"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 )
-
-var timeNow = time.Now
 
 var models = []interface{}{
 	(*blocks.BlockHeader)(nil),
@@ -75,12 +74,16 @@ func NewDatabase(ctx context.Context, url string, poolSize int) (*Database, erro
 	}
 	opt.PoolSize = poolSize
 
-	return &Database{opt: opt}, nil
+	return &Database{
+		opt:   opt,
+		Clock: clock.New(),
+	}, nil
 }
 
 type Database struct {
-	DB  *pg.DB
-	opt *pg.Options
+	DB    *pg.DB
+	opt   *pg.Options
+	Clock clock.Clock
 }
 
 // Connect opens a connection to the database and checks that the schema is compatible the the version required
@@ -270,7 +273,7 @@ WITH leased AS (
     RETURNING visor_processing_statechanges.tip_set, visor_processing_statechanges.height
 )
 SELECT tip_set,height FROM leased;
-    `, claimUntil, timeNow(), minHeight, maxHeight, batchSize)
+    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize)
 
 		if err != nil {
 			return err
@@ -331,7 +334,7 @@ WITH leased AS (
 	WHERE a.head = candidates.head AND a.code = candidates.code
     RETURNING a.head, a.code, a.nonce, a.balance, a.address, a.parent_state_root, a.tip_set, a.parent_tip_set)
 SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set from leased;
-    `, claimUntil, timeNow(), minHeight, maxHeight, pg.In(codes), batchSize)
+    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, pg.In(codes), batchSize)
 
 		if err != nil {
 			return err
@@ -387,7 +390,7 @@ WITH leased AS (
     RETURNING visor_processing_messages.tip_set, visor_processing_messages.height
 )
 SELECT tip_set,height FROM leased;
-    `, claimUntil, timeNow(), minHeight, maxHeight, batchSize)
+    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize)
 
 		if err != nil {
 			return err
