@@ -60,8 +60,6 @@ func (p *MessageProcessor) processBatch(ctx context.Context) (bool, error) {
 	defer span.End()
 
 	claimUntil := p.clock.Now().Add(p.leaseLength)
-	ctx, cancel := context.WithDeadline(ctx, claimUntil)
-	defer cancel()
 
 	// Lease some blocks to work on
 	batch, err := p.storage.LeaseTipSetMessages(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight)
@@ -78,6 +76,8 @@ func (p *MessageProcessor) processBatch(ctx context.Context) (bool, error) {
 	}
 
 	log.Debugw("leased batch of tipsets", "count", len(batch))
+	ctx, cancel := context.WithDeadline(ctx, claimUntil)
+	defer cancel()
 
 	for _, item := range batch {
 		// Stop processing if we have somehow passed our own lease time

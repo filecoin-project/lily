@@ -121,8 +121,6 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context) (bool, error) {
 
 	// Lease some blocks to work on
 	claimUntil := p.clock.Now().Add(p.leaseLength)
-	ctx, cancel := context.WithDeadline(ctx, claimUntil)
-	defer cancel()
 
 	batch, err := p.storage.LeaseActors(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
 	if err != nil {
@@ -138,6 +136,8 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context) (bool, error) {
 	}
 
 	log.Debugw("leased batch of actors", "count", len(batch))
+	ctx, cancel := context.WithDeadline(ctx, claimUntil)
+	defer cancel()
 
 	for _, actor := range batch {
 		// Stop processing if we have somehow passed our own lease time
