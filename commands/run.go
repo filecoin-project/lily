@@ -193,6 +193,7 @@ var Run = &cli.Command{
 				Locker:              NewGlobalSingleton(ChainHeadIndexerLockID, rctx.db), // only want one forward indexer anywhere to be running
 				RestartOnFailure:    true,
 				RestartOnCompletion: true, // we always want the indexer to be running
+				RestartDelay:        time.Minute,
 			})
 		}
 
@@ -204,6 +205,7 @@ var Run = &cli.Command{
 				Locker:              NewGlobalSingleton(ChainHistoryIndexerLockID, rctx.db), // only want one history indexer anywhere to be running
 				RestartOnFailure:    true,
 				RestartOnCompletion: true,
+				RestartDelay:        time.Minute,
 			})
 		}
 
