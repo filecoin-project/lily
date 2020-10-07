@@ -2,17 +2,13 @@ package init
 
 import (
 	"context"
-	"time"
 
 	"github.com/go-pg/pg/v10"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/tasks"
 )
 
 type IdAddress struct {
@@ -44,13 +40,8 @@ func (ias IdAddressList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 }
 
 func (ias IdAddressList) Persist(ctx context.Context, db *pg.DB) error {
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskNS, tasks.InitActorPoolName))
-	stats.Record(ctx, metrics.TaskQueueLen.M(-1))
-
-	start := time.Now()
-	defer func() {
-		stats.Record(ctx, metrics.PersistDuration.M(metrics.SinceInMilliseconds(start)))
-	}()
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
 
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		return ias.PersistWithTx(ctx, tx)

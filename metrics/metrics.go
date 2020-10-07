@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"time"
 
 	"go.opencensus.io/stats"
@@ -12,24 +13,17 @@ var defaultMillisecondsDistribution = view.Distribution(0.01, 0.05, 0.1, 0.3, 0.
 
 var (
 	Error, _ = tag.NewKey("error")
-	TaskNS, _ = tag.NewKey("namespace") // deprecated
 	TaskType, _ = tag.NewKey("task")
 	ConnState, _ = tag.NewKey("conn_state")
 )
 
 var (
-	TaskQueueLen = stats.Int64("task_queue_len", "Length of a task queue", stats.UnitDimensionless)
-	ProcessingDuration = stats.Float64("processing_duration_ms", "Duration of task processing", stats.UnitMilliseconds)
+	ProcessingDuration = stats.Float64("processing_duration_ms", "Time taken to process a single item", stats.UnitMilliseconds)
 	PersistDuration = stats.Float64("persist_duration_ms", "Duration of a models persist operation", stats.UnitMilliseconds)
 	DBConns = stats.Int64("db_conns", "Database connections held", stats.UnitDimensionless)
 )
 
 var (
-	TaskQueueLenView = &view.View{
-		Measure: TaskQueueLen,
-		Aggregation: view.Count(),
-		TagKeys: []tag.Key{TaskNS},
-	}
 	ProcessingDurationView = &view.View{
 		Measure: ProcessingDuration,
 		Aggregation: defaultMillisecondsDistribution,
@@ -56,4 +50,13 @@ var DefaultViews = append([]*view.View{
 // SinceInMilliseconds returns the duration of time since the provide time as a float64.
 func SinceInMilliseconds(startTime time.Time) float64 {
 	return float64(time.Since(startTime).Nanoseconds()) / 1e6
+}
+
+// Timer is a function stopwatch, calling it starts the timer,
+// calling the returned function will record the duration.
+func Timer(ctx context.Context, m *stats.Float64Measure) func() {
+	start := time.Now()
+	return func() {
+		stats.Record(ctx, m.M(SinceInMilliseconds(start)))
+	}
 }

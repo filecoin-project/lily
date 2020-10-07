@@ -3,17 +3,14 @@ package messages
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/go-pg/pg/v10"
-	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/tasks"
 )
 
 type Receipt struct {
@@ -42,11 +39,9 @@ func (rs Receipts) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	ctx, span := global.Tracer("").Start(ctx, "Receipts.PersistWithTx", trace.WithAttributes(label.Int("count", len(rs))))
 	defer span.End()
 
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskNS, fmt.Sprintf("%s_%s", tasks.MessagePoolName, "receipts")))
-	start := time.Now()
-	defer func() {
-		stats.Record(ctx, metrics.PersistDuration.M(metrics.SinceInMilliseconds(start)))
-	}()
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "message/receipt"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
 
 	for _, r := range rs {
 		if err := r.PersistWithTx(ctx, tx); err != nil {

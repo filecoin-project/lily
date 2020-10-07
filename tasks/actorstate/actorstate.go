@@ -9,10 +9,10 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
-	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
@@ -161,16 +161,12 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context) (bool, error) {
 			continue
 		}
 
-		ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "actorstate"))
-		start := time.Now()
-
 		var errorsEncountered string
 		if err := p.processActor(ctx, info); err != nil {
 			errorLog.Errorw("process actor", "error", err.Error())
 			errorsEncountered = err.Error()
 		}
 
-		stats.Record(ctx, metrics.ProcessingDuration.M(metrics.SinceInMilliseconds(start)))
 		if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, p.clock.Now(), errorsEncountered); err != nil {
 			errorLog.Errorw("failed to mark actor complete", "error", err.Error())
 		}
@@ -184,6 +180,11 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, info ActorInfo) 
 	defer span.End()
 
 	var ae ActorExtractor
+
+	// the actor represents the "raw" actor data model that is persisted
+	// this gets overridden with the specific actor type once we know
+	// which it is.
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "actor"))
 
 	// Persist the raw state
 	data, err := ae.Extract(ctx, info, p.node)
@@ -199,6 +200,9 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, info ActorInfo) 
 	if !exists {
 		return xerrors.Errorf("no extractor defined for actor code %q", info.Actor.Code.String())
 	}
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, builtin.ActorNameByCode(info.Actor.Code)))
+	span.SetAttribute("actor", builtin.ActorNameByCode(info.Actor.Code))
 
 	data, err = extractor.Extract(ctx, info, p.node)
 	if err != nil {

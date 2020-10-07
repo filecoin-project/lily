@@ -2,15 +2,11 @@ package reward
 
 import (
 	"context"
-	"time"
 
 	"github.com/go-pg/pg/v10"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/tasks"
 )
 
 type ChainReward struct {
@@ -31,13 +27,8 @@ func (r *ChainReward) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	ctx, span := global.Tracer("").Start(ctx, "ChainReward.PersistWithTx")
 	defer span.End()
 
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskNS, tasks.RewardPoolName))
-	stats.Record(ctx, metrics.TaskQueueLen.M(-1))
-
-	start := time.Now()
-	defer func() {
-		stats.Record(ctx, metrics.PersistDuration.M(metrics.SinceInMilliseconds(start)))
-	}()
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
 
 	if _, err := tx.ModelContext(ctx, r).
 		OnConflict("do nothing").
