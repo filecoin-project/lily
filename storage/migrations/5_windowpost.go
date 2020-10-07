@@ -13,7 +13,7 @@ func init() {
 		"miner_id" text not null,
 		"sector_id" int not null,
 		"epoch" int not null,
-		"post_message_id" text not null,
+		"post_message_cid" text,
 		PRIMARY KEY ("miner_id", "sector_id", "epoch")
 	);
 `)
