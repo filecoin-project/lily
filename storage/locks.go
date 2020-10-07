@@ -2,10 +2,14 @@ package storage
 
 import (
 	"context"
+	"errors"
 
 	"github.com/go-pg/pg/v10"
 	"golang.org/x/xerrors"
 )
+
+var ErrLockNotAcquired = errors.New("lock not acquired")
+var ErrLockNotReleased = errors.New("lock not released")
 
 // An AdvisoryLock is a lock that is managed by Postgres but is only enforced by the application. Advisory
 // locks are automatically released at the end of a session. It is safe to hold both a shared and exclusive
@@ -20,7 +24,7 @@ func (l AdvisoryLock) LockExclusive(ctx context.Context, db *pg.DB) error {
 		return xerrors.Errorf("acquiring exclusive lock: %w", err)
 	}
 	if !acquired {
-		return xerrors.Errorf("failed to acquire exclusive lock")
+		return ErrLockNotAcquired
 	}
 	return nil
 }
@@ -33,7 +37,7 @@ func (l AdvisoryLock) UnlockExclusive(ctx context.Context, db *pg.DB) error {
 		return xerrors.Errorf("unlocking exclusive lock: %w", err)
 	}
 	if !released {
-		return xerrors.Errorf("exclusive lock not released (maybe it was not held)")
+		return ErrLockNotReleased
 	}
 	return nil
 }
@@ -46,7 +50,7 @@ func (l AdvisoryLock) LockShared(ctx context.Context, db *pg.DB) error {
 		return xerrors.Errorf("acquiring exclusive lock: %w", err)
 	}
 	if !acquired {
-		return xerrors.Errorf("failed to acquire exclusive lock")
+		return ErrLockNotAcquired
 	}
 	return nil
 }
@@ -59,7 +63,7 @@ func (l AdvisoryLock) UnlockShared(ctx context.Context, db *pg.DB) error {
 		return xerrors.Errorf("unlocking shared lock: %w", err)
 	}
 	if !released {
-		return xerrors.Errorf("shared lock not released (maybe it was not held)")
+		return ErrLockNotReleased
 	}
 	return nil
 }

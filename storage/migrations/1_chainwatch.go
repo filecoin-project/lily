@@ -15,14 +15,6 @@ func init() {
 
 CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
 
-
---
--- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner:
---
-
-COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data';
-
-
 --
 -- Name: miner_sector_event_type; Type: TYPE; Schema: public; Owner: postgres
 --
@@ -41,9 +33,6 @@ CREATE TYPE public.miner_sector_event_type AS ENUM (
 );
 
 
-ALTER TYPE public.miner_sector_event_type OWNER TO postgres;
-
-
 SET default_tablespace = '';
 
 --
@@ -56,8 +45,6 @@ CREATE TABLE public.actor_states (
     state json NOT NULL
 );
 
-
-ALTER TABLE public.actor_states OWNER TO postgres;
 
 --
 -- Name: actors; Type: TABLE; Schema: public; Owner: postgres
@@ -73,8 +60,6 @@ CREATE TABLE public.actors (
 );
 
 
-ALTER TABLE public.actors OWNER TO postgres;
-
 --
 -- Name: block_cids; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -83,8 +68,6 @@ CREATE TABLE public.block_cids (
     cid text NOT NULL
 );
 
-
-ALTER TABLE public.block_cids OWNER TO postgres;
 
 --
 -- Name: block_drand_entries; Type: TABLE; Schema: public; Owner: postgres
@@ -96,8 +79,6 @@ CREATE TABLE public.block_drand_entries (
 );
 
 
-ALTER TABLE public.block_drand_entries OWNER TO postgres;
-
 --
 -- Name: block_messages; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -108,8 +89,6 @@ CREATE TABLE public.block_messages (
 );
 
 
-ALTER TABLE public.block_messages OWNER TO postgres;
-
 --
 -- Name: block_parents; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -119,8 +98,6 @@ CREATE TABLE public.block_parents (
     parent text NOT NULL
 );
 
-
-ALTER TABLE public.block_parents OWNER TO postgres;
 
 --
 -- Name: blocks; Type: TABLE; Schema: public; Owner: postgres
@@ -141,8 +118,6 @@ CREATE TABLE public.blocks (
 );
 
 
-ALTER TABLE public.blocks OWNER TO postgres;
-
 --
 -- Name: blocks_synced; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -153,8 +128,6 @@ CREATE TABLE public.blocks_synced (
     processed_at integer
 );
 
-
-ALTER TABLE public.blocks_synced OWNER TO postgres;
 
 --
 -- Name: chain_economics; Type: TABLE; Schema: public; Owner: postgres
@@ -169,8 +142,6 @@ CREATE TABLE public.chain_economics (
     locked_fil text NOT NULL
 );
 
-
-ALTER TABLE public.chain_economics OWNER TO postgres;
 
 --
 -- Name: chain_power; Type: TABLE; Schema: public; Owner: postgres
@@ -193,8 +164,6 @@ CREATE TABLE public.chain_power (
 );
 
 
-ALTER TABLE public.chain_power OWNER TO postgres;
-
 --
 -- Name: chain_reward; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -213,8 +182,6 @@ CREATE TABLE public.chain_reward (
 );
 
 
-ALTER TABLE public.chain_reward OWNER TO postgres;
-
 --
 -- Name: drand_entries; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -225,8 +192,6 @@ CREATE TABLE public.drand_entries (
 );
 
 
-ALTER TABLE public.drand_entries OWNER TO postgres;
-
 --
 -- Name: id_address_map; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -236,8 +201,6 @@ CREATE TABLE public.id_address_map (
     address text NOT NULL
 );
 
-
-ALTER TABLE public.id_address_map OWNER TO postgres;
 
 --
 -- Name: market_deal_proposals; Type: TABLE; Schema: public; Owner: postgres
@@ -261,8 +224,6 @@ CREATE TABLE public.market_deal_proposals (
 );
 
 
-ALTER TABLE public.market_deal_proposals OWNER TO postgres;
-
 --
 -- Name: market_deal_states; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -275,8 +236,6 @@ CREATE TABLE public.market_deal_states (
     state_root text NOT NULL
 );
 
-
-ALTER TABLE public.market_deal_states OWNER TO postgres;
 
 --
 -- Name: messages; Type: TABLE; Schema: public; Owner: postgres
@@ -297,8 +256,6 @@ CREATE TABLE public.messages (
 );
 
 
-ALTER TABLE public.messages OWNER TO postgres;
-
 --
 -- Name: miner_info; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -312,8 +269,6 @@ CREATE TABLE public.miner_info (
 );
 
 
-ALTER TABLE public.miner_info OWNER TO postgres;
-
 --
 -- Name: miner_power; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -325,8 +280,6 @@ CREATE TABLE public.miner_power (
     quality_adjusted_power text NOT NULL
 );
 
-
-ALTER TABLE public.miner_power OWNER TO postgres;
 
 --
 -- Name: miner_sector_events; Type: TABLE; Schema: public; Owner: postgres
@@ -340,8 +293,6 @@ CREATE TABLE public.miner_sector_events (
 );
 
 
-ALTER TABLE public.miner_sector_events OWNER TO postgres;
-
 --
 -- Name: minerid_dealid_sectorid; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -353,8 +304,6 @@ CREATE TABLE public.minerid_dealid_sectorid (
 );
 
 
-ALTER TABLE public.minerid_dealid_sectorid OWNER TO postgres;
-
 --
 -- Name: mpool_messages; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -364,8 +313,6 @@ CREATE TABLE public.mpool_messages (
     add_ts integer NOT NULL
 );
 
-
-ALTER TABLE public.mpool_messages OWNER TO postgres;
 
 --
 -- Name: receipts; Type: TABLE; Schema: public; Owner: postgres
@@ -380,8 +327,6 @@ CREATE TABLE public.receipts (
     return bytea
 );
 
-
-ALTER TABLE public.receipts OWNER TO postgres;
 
 --
 -- Name: sector_info; Type: TABLE; Schema: public; Owner: postgres
@@ -401,8 +346,6 @@ CREATE TABLE public.sector_info (
     expected_storage_pledge text NOT NULL
 );
 
-
-ALTER TABLE public.sector_info OWNER TO postgres;
 
 --
 -- Name: sector_precommit_info; Type: TABLE; Schema: public; Owner: postgres
@@ -426,8 +369,6 @@ CREATE TABLE public.sector_precommit_info (
 );
 
 
-ALTER TABLE public.sector_precommit_info OWNER TO postgres;
-
 --
 -- Name: state_heights; Type: MATERIALIZED VIEW; Schema: public; Owner: postgres
 --
@@ -438,8 +379,6 @@ CREATE MATERIALIZED VIEW public.state_heights AS
    FROM public.blocks
   WITH NO DATA;
 
-
-ALTER TABLE public.state_heights OWNER TO postgres;
 
 --
 -- Name: top_miners_by_base_reward; Type: MATERIALIZED VIEW; Schema: public; Owner: postgres
@@ -461,8 +400,6 @@ CREATE MATERIALIZED VIEW public.top_miners_by_base_reward AS
   WITH NO DATA;
 
 
-ALTER TABLE public.top_miners_by_base_reward OWNER TO postgres;
-
 --
 -- Name: top_miners_by_base_reward_max_height; Type: MATERIALIZED VIEW; Schema: public; Owner: postgres
 --
@@ -478,8 +415,6 @@ CREATE MATERIALIZED VIEW public.top_miners_by_base_reward_max_height AS
  LIMIT 1
   WITH NO DATA;
 
-
-ALTER TABLE public.top_miners_by_base_reward_max_height OWNER TO postgres;
 
 --
 -- Name: block_cids block_cids_pk; Type: CONSTRAINT; Schema: public; Owner: postgres
@@ -904,8 +839,6 @@ CREATE FUNCTION public.actor_tips(epoch bigint) RETURNS TABLE(id text, code text
 		order by id, height desc;
 $_$;
 
-
-ALTER FUNCTION public.actor_tips(epoch bigint) OWNER TO postgres;
 
 
 --

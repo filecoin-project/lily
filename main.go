@@ -57,7 +57,7 @@ func main() {
 			&cli.BoolFlag{
 				Name:    "tracing",
 				EnvVars: []string{"VISOR_TRACING"},
-				Value:   true,
+				Value:   false,
 			},
 			&cli.StringFlag{
 				Name:    "jaeger-agent-host",
@@ -91,9 +91,8 @@ func main() {
 			},
 		},
 		Commands: []*cli.Command{
-			commands.Process,
-			commands.Index,
 			commands.Migrate,
+			commands.Run,
 		},
 	}
 
