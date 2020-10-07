@@ -93,17 +93,16 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) er
 		}
 
 		ts := toVisit.Remove(toVisit.Back()).(*types.TipSet)
-		if ts.Height() == 0 {
-			continue
-		}
 
-		// TODO: Look for websocket connection closed error and retry after a delay to avoid hot loop
-		pts, err := c.node.ChainGetTipSet(ctx, ts.Parents())
-		if err != nil {
-			return xerrors.Errorf("get tipset: %w", err)
-		}
+		if ts.Height() != 0 {
+			// TODO: Look for websocket connection closed error and retry after a delay to avoid hot loop
+			pts, err := c.node.ChainGetTipSet(ctx, ts.Parents())
+			if err != nil {
+				return xerrors.Errorf("get tipset: %w", err)
+			}
 
-		toVisit.PushBack(pts)
+			toVisit.PushBack(pts)
+		}
 
 		if blockData.Seen(ts.Key()) {
 			continue
