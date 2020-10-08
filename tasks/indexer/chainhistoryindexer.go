@@ -7,7 +7,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	pg "github.com/go-pg/pg/v10"
 	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
@@ -96,8 +95,7 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) er
 		}
 
 		ts := toVisit.Remove(toVisit.Back()).(*types.TipSet)
-		ctx, _ = tag.New(ctx, tag.Upsert(metrics.State, "to_sync"))
-		stats.Record(ctx, metrics.HistoricalIndexerHeight.M(int64(ts.Height())))
+		stats.Record(ctx, metrics.EpochsToSync.M(int64(ts.Height())))
 
 		if ts.Height() != 0 {
 			// TODO: Look for websocket connection closed error and retry after a delay to avoid hot loop
@@ -123,8 +121,7 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) er
 				return xerrors.Errorf("persist: %w", err)
 			}
 			blockData.Reset()
-			ctx, _ = tag.New(ctx, tag.Upsert(metrics.State, "synced"))
-			stats.Record(ctx, metrics.HistoricalIndexerHeight.M(int64(blockData.Height())))
+			stats.Record(ctx, metrics.HistoricalIndexerHeight.M(int64(blockData.Size())))
 		}
 
 	}

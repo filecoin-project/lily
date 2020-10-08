@@ -23,6 +23,7 @@ var (
 	PersistDuration = stats.Float64("persist_duration_ms", "Duration of a models persist operation", stats.UnitMilliseconds)
 	DBConns = stats.Int64("db_conns", "Database connections held", stats.UnitDimensionless)
 	HistoricalIndexerHeight = stats.Int64("historical_sync_height", "Sync height of the historical indexer", stats.UnitDimensionless)
+	EpochsToSync = stats.Int64("epochs_to_sync", "Epochs yet to sync", stats.UnitDimensionless)
 )
 
 var (
@@ -43,8 +44,11 @@ var (
 	}
 	HistoricalIndexerHeightView = &view.View{
 		Measure: HistoricalIndexerHeight,
+		Aggregation: view.Sum(),
+	}
+	EpochsToSyncView = &view.View{
+		Measure: EpochsToSync,
 		Aggregation: view.LastValue(),
-		TagKeys: []tag.Key{State},
 	}
 )
 
@@ -53,6 +57,7 @@ var DefaultViews = append([]*view.View{
 	PersistDurationView,
 	DBConnsView,
 	HistoricalIndexerHeightView,
+	EpochsToSyncView,
 })
 
 // SinceInMilliseconds returns the duration of time since the provide time as a float64.
