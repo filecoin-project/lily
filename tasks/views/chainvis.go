@@ -2,6 +2,7 @@ package views
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"golang.org/x/xerrors"
@@ -9,6 +10,13 @@ import (
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/wait"
 )
+
+var chainVisViews = []string{
+	"chain_visualizer_blocks_view",
+	"chain_visualizer_blocks_with_parents_view",
+	"chain_visualizer_chain_data_view",
+	"chain_visualizer_orphans_view",
+}
 
 func NewChainVisRefresher(d *storage.Database, refreshRate time.Duration) *ChainVisRefresher {
 	return &ChainVisRefresher{
@@ -33,21 +41,11 @@ func (r *ChainVisRefresher) Run(ctx context.Context) error {
 }
 
 func (r *ChainVisRefresher) refreshView(ctx context.Context) (bool, error) {
-	_, err := r.db.DB.ExecContext(ctx, "REFRESH MATERIALIZED VIEW chain_visualizer_blocks_view;")
-	if err != nil {
-		return true, xerrors.Errorf("refresh chain_visualizer_blocks_view: %w", err)
-	}
-	_, err = r.db.DB.ExecContext(ctx, "REFRESH MATERIALIZED VIEW chain_visualizer_blocks_with_parents_view;")
-	if err != nil {
-		return true, xerrors.Errorf("refresh chain_visualizer_blocks_with_parents_view: %w", err)
-	}
-	_, err = r.db.DB.ExecContext(ctx, "REFRESH MATERIALIZED VIEW chain_visualizer_orphans_view;")
-	if err != nil {
-		return true, xerrors.Errorf("refresh chain_visualizer_orphans_view: %w", err)
-	}
-	_, err = r.db.DB.ExecContext(ctx, "REFRESH MATERIALIZED VIEW chain_visualizer_chain_data_view;")
-	if err != nil {
-		return true, xerrors.Errorf("refresh chain_visualizer_chain_data_view: %w", err)
+	for _, v := range chainVisViews {
+		_, err := r.db.DB.ExecContext(ctx, fmt.Sprintf("REFRESH MATERIALIZED VIEW %s;", v))
+		if err != nil {
+			return true, xerrors.Errorf("refresh %s: %w", v, err)
+		}
 	}
 	return false, nil
 }
