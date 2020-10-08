@@ -13,7 +13,6 @@ import (
 	sabuiltin "github.com/filecoin-project/specs-actors/actors/builtin"
 	samarket "github.com/filecoin-project/specs-actors/actors/builtin/market"
 	tutils "github.com/filecoin-project/specs-actors/support/testing"
-	"github.com/kortschak/utter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -156,7 +155,6 @@ func TestMarketPredicates(t *testing.T) {
 	mtr, ok := res.(*marketmodel.MarketTaskResult)
 	require.True(t, ok)
 	require.NotNil(t, mtr)
-	utter.Dump(mtr)
 
 	t.Run("proposals", func(t *testing.T) {
 		require.Equal(t, 1, len(mtr.Proposals))

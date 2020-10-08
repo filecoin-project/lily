@@ -20,7 +20,6 @@ require (
 	github.com/ipfs/go-cid v0.0.7
 	github.com/ipfs/go-ipld-cbor v0.0.5-0.20200428170625-a0bd04d3cbdf
 	github.com/ipfs/go-log/v2 v2.1.2-0.20200626104915-0016c0b4b3e4
-	github.com/kortschak/utter v1.0.1
 	github.com/lib/pq v1.8.0
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/multiformats/go-multiaddr v0.3.1
