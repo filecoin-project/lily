@@ -120,8 +120,8 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) er
 			if err := blockData.Persist(ctx, c.storage.DB); err != nil {
 				return xerrors.Errorf("persist: %w", err)
 			}
-			blockData.Reset()
 			stats.Record(ctx, metrics.HistoricalIndexerHeight.M(int64(blockData.Size())))
+			blockData.Reset()
 		}
 
 	}
