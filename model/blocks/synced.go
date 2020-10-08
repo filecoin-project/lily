@@ -48,6 +48,9 @@ func (bss BlocksSynced) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (bss BlocksSynced) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(bss) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "BlocksSynced.PersistWithTx", trace.WithAttributes(label.Int("count", len(bss))))
 	defer span.End()
 	if _, err := tx.ModelContext(ctx, &bss).

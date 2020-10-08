@@ -42,6 +42,9 @@ func (m *Message) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 type Messages []*Message
 
 func (ms Messages) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(ms) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "Messages.PersistWithTx", trace.WithAttributes(label.Int("count", len(ms))))
 	defer span.End()
 

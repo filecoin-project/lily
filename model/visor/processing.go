@@ -73,6 +73,9 @@ func (p *ProcessingTipSet) TipSetKey() (types.TipSetKey, error) {
 type ProcessingTipSetList []*ProcessingTipSet
 
 func (pl ProcessingTipSetList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(pl) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "ProcessingTipSetList.PersistWithTx", trace.WithAttributes(label.Int("count", len(pl))))
 	defer span.End()
 
@@ -151,6 +154,9 @@ func (p *ProcessingActor) ParentTipSetKey() (types.TipSetKey, error) {
 type ProcessingActorList []*ProcessingActor
 
 func (pl ProcessingActorList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(pl) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "ProcessingActorList.PersistWithTx", trace.WithAttributes(label.Int("count", len(pl))))
 	defer span.End()
 	if _, err := tx.ModelContext(ctx, &pl).
@@ -200,6 +206,9 @@ func (p *ProcessingMessage) PersistWithTx(ctx context.Context, tx *pg.Tx) error 
 type ProcessingMessageList []*ProcessingMessage
 
 func (pl ProcessingMessageList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(pl) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "ProcessingMessageList.PersistWithTx", trace.WithAttributes(label.Int("count", len(pl))))
 	defer span.End()
 	if _, err := tx.ModelContext(ctx, &pl).

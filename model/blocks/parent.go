@@ -45,6 +45,9 @@ func (bps BlockParents) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (bps BlockParents) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(bps) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "BlockParents.PersistWithTx", trace.WithAttributes(label.Int("count", len(bps))))
 	defer span.End()
 	if _, err := tx.ModelContext(ctx, &bps).

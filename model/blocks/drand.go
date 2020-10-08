@@ -45,6 +45,9 @@ func (des DrandEntries) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (des DrandEntries) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(des) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "DrandEntries.PersistWithTx", trace.WithAttributes(label.Int("count", len(des))))
 	defer span.End()
 	if _, err := tx.ModelContext(ctx, &des).
@@ -89,6 +92,9 @@ func (dbes DrandBlockEntries) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (dbes DrandBlockEntries) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(dbes) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "DrandBlockEntries.PersistWithTx", trace.WithAttributes(label.Int("count", len(dbes))))
 	defer span.End()
 	if _, err := tx.ModelContext(ctx, &dbes).

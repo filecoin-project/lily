@@ -30,6 +30,9 @@ func (bm *BlockMessage) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 type BlockMessages []*BlockMessage
 
 func (bms BlockMessages) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(bms) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "BlockMessages.PersistWithTx", trace.WithAttributes(label.Int("count", len(bms))))
 	defer span.End()
 

@@ -61,6 +61,9 @@ func (bh BlockHeaders) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (bh BlockHeaders) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(bh) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "BlockHeaders.PersistWithTx", trace.WithAttributes(label.Int("count", len(bh))))
 	defer span.End()
 	if _, err := tx.ModelContext(ctx, &bh).

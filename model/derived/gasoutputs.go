@@ -53,6 +53,9 @@ func (l GasOutputsList) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (l GasOutputsList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(l) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "GasOutputsList.PersistWithTx", trace.WithAttributes(label.Int("count", len(l))))
 	defer span.End()
 	if _, err := tx.ModelContext(ctx, &l).

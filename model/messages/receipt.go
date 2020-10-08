@@ -36,6 +36,9 @@ func (r *Receipt) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 type Receipts []*Receipt
 
 func (rs Receipts) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(rs) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "Receipts.PersistWithTx", trace.WithAttributes(label.Int("count", len(rs))))
 	defer span.End()
 
