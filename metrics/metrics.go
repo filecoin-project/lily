@@ -43,7 +43,7 @@ var (
 	}
 	HistoricalIndexerHeightView = &view.View{
 		Measure: HistoricalIndexerHeight,
-		Aggregation: view.Count(),
+		Aggregation: view.LastValue(),
 		TagKeys: []tag.Key{State},
 	}
 )
