@@ -124,7 +124,7 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) er
 			}
 			blockData.Reset()
 			ctx, _ = tag.New(ctx, tag.Upsert(metrics.State, "synced"))
-			stats.Record(ctx, metrics.HistoricalIndexerHeight.M(int64(blockData.Size())))
+			stats.Record(ctx, metrics.HistoricalIndexerHeight.M(int64(blockData.Height())))
 		}
 
 	}
