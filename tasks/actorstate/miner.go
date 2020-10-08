@@ -10,6 +10,7 @@ import (
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
 	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
+	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/ipfs/go-cid"
 
@@ -130,8 +131,8 @@ func (m StorageMinerExtractor) minerPosts(ctx context.Context, actor *ActorInfo,
 		return nil, xerrors.Errorf("diffing miner posts: %v", err)
 	}
 
-	var partitions []miner.Partition
-	loadPartitions := func(state miner.State, epoch abi.ChainEpoch) ([]miner.Partition, error) {
+	var partitions map[uint64]miner.Partition
+	loadPartitions := func(state miner.State, epoch abi.ChainEpoch) (map[uint64]miner.Partition, error) {
 		info, err := state.DeadlineInfo(epoch)
 		if err != nil {
 			return nil, err
@@ -140,56 +141,70 @@ func (m StorageMinerExtractor) minerPosts(ctx context.Context, actor *ActorInfo,
 		if err != nil {
 			return nil, err
 		}
-		partitions := make([]miner.Partition, 0, 8)
+		pmap := make(map[uint64]miner.Partition)
 		if err := dline.ForEachPartition(func(idx uint64, p miner.Partition) error {
-			partitions[idx] = p
+			pmap[idx] = p
 			return nil
 		}); err != nil {
 			return nil, err
 		}
-		return partitions, nil
+		return pmap, nil
+	}
+
+	processPostMsg := func(msg *types.Message) error {
+		sectors := make([]uint64, 0)
+		rcpt, err := node.StateGetReceipt(ctx, msg.Cid(), actor.TipSet)
+		if err != nil {
+			return err
+		}
+		if rcpt.ExitCode.IsError() {
+			return nil
+		}
+		params := miner.SubmitWindowedPoStParams{}
+		if err := params.UnmarshalCBOR(bytes.NewBuffer(msg.Params)); err != nil {
+			return err
+		}
+
+		if partitions == nil {
+			partitions, err = loadPartitions(curState, epoch)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, p := range params.Partitions {
+			all, err := partitions[p.Index].AllSectors()
+			if err != nil {
+				return err
+			}
+			proven, err := bitfield.SubtractBitField(all, p.Skipped)
+			if err != nil {
+				return err
+			}
+
+			proven.ForEach(func(sector uint64) error {
+				sectors = append(sectors, sector)
+				return nil
+			})
+		}
+
+		for _, s := range sectors {
+			posts[s] = msg.Cid()
+		}
+		return nil
 	}
 
 	for _, msg := range msgs.BlsMessages {
 		if msg.To == actor.Address && msg.Method == 5 /* miner.SubmitWindowedPoSt */ {
-			sectors := make([]uint64, 0)
-			rcpt, err := node.StateGetReceipt(ctx, msg.Cid(), actor.TipSet)
-			if err != nil {
+			if err := processPostMsg(msg); err != nil {
 				return nil, err
 			}
-			if rcpt.ExitCode.IsError() {
-				continue
-			}
-			params := miner.SubmitWindowedPoStParams{}
-			if err := params.UnmarshalCBOR(bytes.NewBuffer(msg.Params)); err != nil {
+		}
+	}
+	for _, msg := range msgs.SecpkMessages {
+		if msg.Message.To == actor.Address && msg.Message.Method == 5 /* miner.SubmitWindowedPoSt */ {
+			if err := processPostMsg(&msg.Message); err != nil {
 				return nil, err
-			}
-
-			if partitions == nil {
-				partitions, err = loadPartitions(curState, epoch)
-				if err != nil {
-					return nil, err
-				}
-			}
-
-			for _, p := range params.Partitions {
-				all, err := partitions[p.Index].AllSectors()
-				if err != nil {
-					return nil, err
-				}
-				proven, err := bitfield.SubtractBitField(all, p.Skipped)
-				if err != nil {
-					return nil, err
-				}
-
-				proven.ForEach(func(sector uint64) error {
-					sectors = append(sectors, sector)
-					return nil
-				})
-			}
-
-			for _, s := range sectors {
-				posts[s] = msg.Cid()
 			}
 		}
 	}
