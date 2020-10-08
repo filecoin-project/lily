@@ -18,8 +18,8 @@ import (
 )
 
 func TestSchemaIsCurrent(t *testing.T) {
-	if testing.Short() || !testutil.DatabaseAvailable() {
-		t.Skip("short testing requested or VISOR_TEST_DB not set")
+	if testing.Short() {
+		t.Skip("short testing requested")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -43,8 +43,8 @@ func TestSchemaIsCurrent(t *testing.T) {
 }
 
 func TestLeaseStateChanges(t *testing.T) {
-	if testing.Short() || !testutil.DatabaseAvailable() {
-		t.Skip("short testing requested or VISOR_TEST_DB not set")
+	if testing.Short() {
+		t.Skip("short testing requested")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -142,8 +142,8 @@ func TestLeaseStateChanges(t *testing.T) {
 }
 
 func TestMarkStateChangeComplete(t *testing.T) {
-	if testing.Short() || !testutil.DatabaseAvailable() {
-		t.Skip("short testing requested or VISOR_TEST_DB not set")
+	if testing.Short() {
+		t.Skip("short testing requested")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -237,8 +237,8 @@ func truncateVisorProcessingTables(tb testing.TB, db *pg.DB) {
 }
 
 func TestLeaseActors(t *testing.T) {
-	if testing.Short() || !testutil.DatabaseAvailable() {
-		t.Skip("short testing requested or VISOR_TEST_DB not set")
+	if testing.Short() {
+		t.Skip("short testing requested")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -345,8 +345,8 @@ func TestLeaseActors(t *testing.T) {
 }
 
 func TestMarkActorComplete(t *testing.T) {
-	if testing.Short() || !testutil.DatabaseAvailable() {
-		t.Skip("short testing requested or VISOR_TEST_DB not set")
+	if testing.Short() {
+		t.Skip("short testing requested")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -416,8 +416,8 @@ func TestMarkActorComplete(t *testing.T) {
 }
 
 func TestLeaseBlockMessages(t *testing.T) {
-	if testing.Short() || !testutil.DatabaseAvailable() {
-		t.Skip("short testing requested or VISOR_TEST_DB not set")
+	if testing.Short() {
+		t.Skip("short testing requested")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -515,8 +515,8 @@ func TestLeaseBlockMessages(t *testing.T) {
 }
 
 func TestMarkTipSetMessagesComplete(t *testing.T) {
-	if testing.Short() || !testutil.DatabaseAvailable() {
-		t.Skip("short testing requested or VISOR_TEST_DB not set")
+	if testing.Short() {
+		t.Skip("short testing requested")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -582,12 +582,11 @@ func TestMarkTipSetMessagesComplete(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 1, count)
 	})
-
 }
 
 func TestLeaseGasOutputsMessages(t *testing.T) {
-	if testing.Short() || !testutil.DatabaseAvailable() {
-		t.Skip("short testing requested or VISOR_TEST_DB not set")
+	if testing.Short() {
+		t.Skip("short testing requested")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -785,8 +784,8 @@ func TestLeaseGasOutputsMessages(t *testing.T) {
 }
 
 func TestMarkGasOutputsMessagesComplete(t *testing.T) {
-	if testing.Short() || !testutil.DatabaseAvailable() {
-		t.Skip("short testing requested or VISOR_TEST_DB not set")
+	if testing.Short() {
+		t.Skip("short testing requested")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -852,5 +851,4 @@ func TestMarkGasOutputsMessagesComplete(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 1, count)
 	})
-
 }

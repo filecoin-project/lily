@@ -7,7 +7,6 @@ import (
 
 	apitest "github.com/filecoin-project/lotus/api/test"
 	nodetest "github.com/filecoin-project/lotus/node/test"
-	logging "github.com/ipfs/go-log/v2"
 
 	"github.com/go-pg/pg/v10"
 	"github.com/stretchr/testify/assert"
@@ -21,10 +20,8 @@ import (
 )
 
 func TestChainHistoryIndexer(t *testing.T) {
-	logging.SetLogLevel("*", "debug")
-
-	if testing.Short() || !testutil.DatabaseAvailable() {
-		t.Skip("short testing requested or VISOR_TEST_DB not set")
+	if testing.Short() {
+		t.Skip("short testing requested")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -136,5 +133,4 @@ func TestChainHistoryIndexer(t *testing.T) {
 			assert.True(t, exists, "tsk: %s", tsk)
 		}
 	})
-
 }
