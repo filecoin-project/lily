@@ -122,7 +122,6 @@ func TestGenesisProcessor(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotEqual(t, 0, count)
 	})
-
 }
 
 // truncateGenesisTables ensures the indexing tables are empty

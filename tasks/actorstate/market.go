@@ -10,7 +10,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/events/state"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	marketmodel "github.com/filecoin-project/sentinel-visor/model/actors/market"
@@ -25,7 +24,7 @@ func init() {
 	Register(builtin.StorageMarketActorCodeID, StorageMarketExtractor{})
 }
 
-func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
+func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "StorageMarketExtractor")
 	defer span.End()
 
@@ -48,7 +47,7 @@ func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node l
 	}, nil
 }
 
-func (m StorageMarketExtractor) marketDealStateChanges(ctx context.Context, a ActorInfo, node lens.API) (marketmodel.MarketDealStates, error) {
+func (m StorageMarketExtractor) marketDealStateChanges(ctx context.Context, a ActorInfo, node ActorStateAPI) (marketmodel.MarketDealStates, error) {
 	// TODO: pass in diff to avoid doing it twice
 	pred := state.NewStatePredicates(node)
 	stateDiff := pred.OnStorageMarketActorChanged(pred.OnDealStateChanged(pred.OnDealStateAmtChanged()))
@@ -90,7 +89,7 @@ func (m StorageMarketExtractor) marketDealStateChanges(ctx context.Context, a Ac
 	return out, nil
 }
 
-func (m StorageMarketExtractor) marketDealProposalChanges(ctx context.Context, a ActorInfo, node lens.API) (marketmodel.MarketDealProposals, error) {
+func (m StorageMarketExtractor) marketDealProposalChanges(ctx context.Context, a ActorInfo, node ActorStateAPI) (marketmodel.MarketDealProposals, error) {
 	// TODO: pass in diff to avoid doing it twice
 	pred := state.NewStatePredicates(node)
 	stateDiff := pred.OnStorageMarketActorChanged(pred.OnDealProposalChanged(pred.OnDealProposalAmtChanged()))

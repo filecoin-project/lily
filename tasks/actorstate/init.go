@@ -9,7 +9,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/events/state"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
@@ -24,7 +23,7 @@ func init() {
 	Register(builtin.InitActorCodeID, InitExtractor{})
 }
 
-func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
+func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "InitExtractor")
 	defer span.End()
 

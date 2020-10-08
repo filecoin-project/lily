@@ -9,7 +9,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/actors/builtin/power"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	powermodel "github.com/filecoin-project/sentinel-visor/model/actors/power"
@@ -24,7 +23,7 @@ func init() {
 	Register(builtin.StoragePowerActorCodeID, StoragePowerExtractor{})
 }
 
-func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
+func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "StoragePowerExtractor")
 	defer span.End()
 
