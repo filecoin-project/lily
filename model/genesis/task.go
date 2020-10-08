@@ -6,6 +6,7 @@ import (
 	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
 
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
@@ -20,6 +21,10 @@ type ProcessGenesisSingletonResult struct {
 func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, db *pg.DB) error {
 	ctx, span := global.Tracer("").Start(ctx, "ProcessGenesisSingletonResult.Persist")
 	defer span.End()
+
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		for _, res := range r.minerResults {
 			if err := res.StateModel.PersistWithTx(ctx, tx); err != nil {

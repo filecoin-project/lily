@@ -14,6 +14,7 @@ import (
 	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	minermodel "github.com/filecoin-project/sentinel-visor/model/actors/miner"
 )
@@ -34,6 +35,9 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node le
 	// - need caching infront of the lotus api to avoid refetching power for same tipset.
 	ctx, span := global.Tracer("").Start(ctx, "StorageMinerExtractor")
 	defer span.End()
+
+	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	defer stop()
 
 	curActor, err := node.StateGetActor(ctx, a.Address, a.TipSet)
 	if err != nil {

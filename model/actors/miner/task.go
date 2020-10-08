@@ -12,6 +12,8 @@ import (
 	"github.com/filecoin-project/lotus/api"
 	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
+
+	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
 type PartitionStatus struct {
@@ -43,6 +45,10 @@ type MinerTaskResult struct {
 func (mtr *MinerTaskResult) Persist(ctx context.Context, db *pg.DB) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerTaskResult.Persist")
 	defer span.End()
+
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		if err := NewMinerStateModel(mtr).PersistWithTx(ctx, tx); err != nil {
 			return err

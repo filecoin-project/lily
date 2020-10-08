@@ -89,6 +89,11 @@ func main() {
 				EnvVars: []string{"VISOR_ALLOW_SCHEMA_MIGRATION"},
 				Value:   false,
 			},
+			&cli.StringFlag{
+				Name:    "prometheus-port",
+				EnvVars: []string{"VISOR_PROMETHEUS_PORT"},
+				Value:   ":9991",
+			},
 		},
 		Commands: []*cli.Command{
 			commands.Migrate,

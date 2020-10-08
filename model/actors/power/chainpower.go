@@ -6,6 +6,8 @@ import (
 
 	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
+
+	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
 type ChainPower struct {
@@ -27,6 +29,9 @@ type ChainPower struct {
 }
 
 func (cp *ChainPower) Persist(ctx context.Context, db *pg.DB) error {
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		return cp.PersistWithTx(ctx, tx)
 	})

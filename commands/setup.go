@@ -4,12 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/pprof"
 	_ "net/http/pprof"
 	"strings"
+	"time"
 
+	prom "github.com/prometheus/client_golang/prometheus"
+	"contrib.go.opencensus.io/exporter/prometheus"
 	logging "github.com/ipfs/go-log/v2"
 	_ "github.com/lib/pq"
 	"github.com/urfave/cli/v2"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/zpages"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/exporters/trace/jaeger"
@@ -19,6 +26,7 @@ import (
 	lens "github.com/filecoin-project/sentinel-visor/lens"
 	lotuslens "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	vapi "github.com/filecoin-project/sentinel-visor/lens/lotus"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
@@ -179,4 +187,47 @@ func (g *GlobalSingleton) Lock(ctx context.Context) error {
 
 func (g *GlobalSingleton) Unlock(ctx context.Context) error {
 	return g.LockID.UnlockExclusive(ctx, g.Storage.DB)
+}
+
+func setupMetrics(cctx *cli.Context) error {
+	// setup Prometheus
+	registry := prom.NewRegistry()
+	goCollector := prom.NewGoCollector()
+	procCollector := prom.NewProcessCollector(prom.ProcessCollectorOpts{})
+	registry.MustRegister(goCollector, procCollector)
+	pe, err := prometheus.NewExporter(prometheus.Options{
+		Namespace: "visor",
+		Registry:  registry,
+	})
+	if err != nil {
+		return err
+	}
+
+	// register prometheus with opencensus
+	view.RegisterExporter(pe)
+	view.SetReportingPeriod(2 * time.Second)
+
+	// register the metrics views of interest
+	if err := view.Register(metrics.DefaultViews...); err != nil {
+		return err
+	}
+	go func() {
+		mux := http.NewServeMux()
+		zpages.Handle(mux, "/debug")
+		mux.Handle("/metrics", pe)
+		mux.HandleFunc("/debug/pprof/", pprof.Index)
+		mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+		mux.Handle("/debug/pprof/block", pprof.Handler("block"))
+		mux.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+		mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
+		mux.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
+		mux.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
+		if err := http.ListenAndServe(cctx.String("prometheus-port"), mux); err != nil {
+			log.Fatalf("Failed to run Prometheus /metrics endpoint: %v", err)
+		}
+	}()
+	return nil
 }
