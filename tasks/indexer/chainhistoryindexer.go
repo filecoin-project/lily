@@ -6,12 +6,15 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 	pg "github.com/go-pg/pg/v10"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
@@ -93,6 +96,8 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) er
 		}
 
 		ts := toVisit.Remove(toVisit.Back()).(*types.TipSet)
+		ctx, _ = tag.New(ctx, tag.Upsert(metrics.State, "to_sync"))
+		stats.Record(ctx, metrics.HistoricalIndexerHeight.M(int64(ts.Height())))
 
 		if ts.Height() != 0 {
 			// TODO: Look for websocket connection closed error and retry after a delay to avoid hot loop
@@ -113,10 +118,13 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) er
 		if blockData.Size() >= c.batchSize {
 			log.Debugw("persisting batch", "count", blockData.Size(), "queued", toVisit.Len(), "current_height", ts.Height())
 			// persist the batch of blocks to storage
+
 			if err := blockData.Persist(ctx, c.storage.DB); err != nil {
 				return xerrors.Errorf("persist: %w", err)
 			}
 			blockData.Reset()
+			ctx, _ = tag.New(ctx, tag.Upsert(metrics.State, "synced"))
+			stats.Record(ctx, metrics.HistoricalIndexerHeight.M(int64(blockData.Size())))
 		}
 
 	}

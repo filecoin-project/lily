@@ -15,12 +15,14 @@ var (
 	Error, _ = tag.NewKey("error")
 	TaskType, _ = tag.NewKey("task")
 	ConnState, _ = tag.NewKey("conn_state")
+	State, _ = tag.NewKey("state")
 )
 
 var (
 	ProcessingDuration = stats.Float64("processing_duration_ms", "Time taken to process a single item", stats.UnitMilliseconds)
 	PersistDuration = stats.Float64("persist_duration_ms", "Duration of a models persist operation", stats.UnitMilliseconds)
 	DBConns = stats.Int64("db_conns", "Database connections held", stats.UnitDimensionless)
+	HistoricalIndexerHeight = stats.Int64("historical_sync_height", "Sync height of the historical indexer", stats.UnitDimensionless)
 )
 
 var (
@@ -39,12 +41,18 @@ var (
 		Aggregation: view.Count(),
 		TagKeys: []tag.Key{ConnState},
 	}
+	HistoricalIndexerHeightView = &view.View{
+		Measure: HistoricalIndexerHeight,
+		Aggregation: view.Count(),
+		TagKeys: []tag.Key{State},
+	}
 )
 
 var DefaultViews = append([]*view.View{
 	ProcessingDurationView,
 	PersistDurationView,
 	DBConnsView,
+	HistoricalIndexerHeightView,
 })
 
 // SinceInMilliseconds returns the duration of time since the provide time as a float64.
