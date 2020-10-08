@@ -30,6 +30,9 @@ func (bm *BlockMessage) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 type BlockMessages []*BlockMessage
 
 func (bms BlockMessages) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(bms) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "BlockMessages.PersistWithTx", trace.WithAttributes(label.Int("count", len(bms))))
 	defer span.End()
 
@@ -37,10 +40,10 @@ func (bms BlockMessages) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
 
-	for _, bm := range bms {
-		if err := bm.PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
+	if _, err := tx.ModelContext(ctx, &bms).
+		OnConflict("do nothing").
+		Insert(); err != nil {
+		return fmt.Errorf("persisting block messages: %w", err)
 	}
 	return nil
 }
