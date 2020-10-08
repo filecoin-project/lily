@@ -42,8 +42,8 @@ func init() {
 }
 
 func TestChainHeadIndexer(t *testing.T) {
-	if testing.Short() || !testutil.DatabaseAvailable() {
-		t.Skip("short testing requested or VISOR_TEST_DB not set")
+	if testing.Short() {
+		t.Skip("short testing requested")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -159,7 +159,6 @@ func TestChainHeadIndexer(t *testing.T) {
 			assert.True(t, exists, "tsk: %s", tsk)
 		}
 	})
-
 }
 
 type blockHeaderList []*types.BlockHeader
