@@ -5,9 +5,12 @@ import (
 	"fmt"
 
 	"github.com/go-pg/pg/v10"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+
+	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
 type Message struct {
@@ -41,6 +44,11 @@ type Messages []*Message
 func (ms Messages) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	ctx, span := global.Tracer("").Start(ctx, "Messages.PersistWithTx", trace.WithAttributes(label.Int("count", len(ms))))
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "message/message"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	for _, m := range ms {
 		if err := m.PersistWithTx(ctx, tx); err != nil {
 			return err

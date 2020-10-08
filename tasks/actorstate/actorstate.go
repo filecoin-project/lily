@@ -9,13 +9,16 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
@@ -52,7 +55,7 @@ func Register(code cid.Cid, e ActorStateExtractor) {
 	extractorsMu.Lock()
 	defer extractorsMu.Unlock()
 	if _, ok := extractors[code]; ok {
-		log.Warningf("extractor overrides previously registered extractor for code %q", code.String())
+		log.Warnf("extractor overrides previously registered extractor for code %q", code.String())
 	}
 	extractors[code] = e
 }
@@ -178,6 +181,11 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, info ActorInfo) 
 
 	var ae ActorExtractor
 
+	// the actor represents the "raw" actor data model that is persisted
+	// this gets overridden with the specific actor type once we know
+	// which it is.
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "actor"))
+
 	// Persist the raw state
 	data, err := ae.Extract(ctx, info, p.node)
 	if err != nil {
@@ -192,6 +200,9 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, info ActorInfo) 
 	if !exists {
 		return xerrors.Errorf("no extractor defined for actor code %q", info.Actor.Code.String())
 	}
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, builtin.ActorNameByCode(info.Actor.Code)))
+	span.SetAttribute("actor", builtin.ActorNameByCode(info.Actor.Code))
 
 	data, err = extractor.Extract(ctx, info, p.node)
 	if err != nil {

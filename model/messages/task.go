@@ -5,6 +5,8 @@ import (
 
 	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
+
+	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
 type MessageTaskResult struct {
@@ -14,6 +16,12 @@ type MessageTaskResult struct {
 }
 
 func (mtr *MessageTaskResult) Persist(ctx context.Context, db *pg.DB) error {
+	ctx, span := global.Tracer("").Start(ctx, "MessageTaskResult.Persist")
+	defer span.End()
+
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		return mtr.PersistWithTx(ctx, tx)
 	})

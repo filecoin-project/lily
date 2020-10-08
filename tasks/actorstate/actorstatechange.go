@@ -10,10 +10,13 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
 	"github.com/raulk/clock"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/wait"
@@ -53,6 +56,7 @@ func (p *ActorStateChangeProcessor) Run(ctx context.Context) error {
 }
 
 func (p *ActorStateChangeProcessor) processBatch(ctx context.Context) (bool, error) {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "statechange"))
 	ctx, span := global.Tracer("").Start(ctx, "ActorStateChangeProcessor.processBatch")
 	defer span.End()
 
@@ -97,13 +101,19 @@ func (p *ActorStateChangeProcessor) processBatch(ctx context.Context) (bool, err
 		if err := p.storage.MarkStateChangeComplete(ctx, item.TipSet, item.Height, p.clock.Now(), ""); err != nil {
 			errorLog.Errorw("failed to mark tipset complete", "error", err.Error())
 		}
-
 	}
 
 	return false, nil
 }
 
 func (p *ActorStateChangeProcessor) processItem(ctx context.Context, item *visor.ProcessingTipSet) error {
+	ctx, span := global.Tracer("").Start(ctx, "ActorStateChangeProcessor.processItem")
+	defer span.End()
+	span.SetAttributes(label.Any("height", item.Height), label.Any("tipset", item.TipSet))
+
+	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	defer stop()
+
 	tsk, err := item.TipSetKey()
 	if err != nil {
 		return xerrors.Errorf("get tipsetkey: %w", err)

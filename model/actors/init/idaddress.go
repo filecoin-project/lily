@@ -7,6 +7,8 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+
+	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
 type IdAddress struct {
@@ -38,6 +40,9 @@ func (ias IdAddressList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 }
 
 func (ias IdAddressList) Persist(ctx context.Context, db *pg.DB) error {
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		return ias.PersistWithTx(ctx, tx)
 	})
