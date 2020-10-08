@@ -2,7 +2,6 @@ package blocks
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
@@ -49,12 +48,15 @@ func (bss BlocksSynced) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (bss BlocksSynced) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(bss) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "BlocksSynced.PersistWithTx", trace.WithAttributes(label.Int("count", len(bss))))
 	defer span.End()
-	for _, bs := range bss {
-		if err := bs.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("persist blocks synced: %v", err)
-		}
+	if _, err := tx.ModelContext(ctx, &bss).
+		OnConflict("do nothing").
+		Insert(); err != nil {
+		return xerrors.Errorf("persisting blocks synced: %w", err)
 	}
 	return nil
 }

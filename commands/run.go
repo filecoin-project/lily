@@ -166,6 +166,10 @@ var Run = &cli.Command{
 			return xerrors.Errorf("setup logging: %w", err)
 		}
 
+		if err := setupMetrics(cctx); err != nil {
+			return xerrors.Errorf("setup metrics: %w", err)
+		}
+
 		tcloser, err := setupTracing(cctx)
 		if err != nil {
 			return xerrors.Errorf("setup tracing: %w", err)

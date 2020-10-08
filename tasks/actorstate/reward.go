@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	rewardmodel "github.com/filecoin-project/sentinel-visor/model/actors/reward"
 )
@@ -24,6 +25,9 @@ func init() {
 func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "RewardExtractor")
 	defer span.End()
+
+	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	defer stop()
 
 	rewardActor, err := node.StateGetActor(ctx, builtin.RewardActorAddr, a.TipSet)
 	if err != nil {

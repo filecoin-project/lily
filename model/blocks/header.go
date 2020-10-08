@@ -2,7 +2,6 @@ package blocks
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
@@ -62,12 +61,15 @@ func (bh BlockHeaders) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (bh BlockHeaders) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(bh) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "BlockHeaders.PersistWithTx", trace.WithAttributes(label.Int("count", len(bh))))
 	defer span.End()
-	for _, h := range bh {
-		if err := h.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("persist headers: %v", err)
-		}
+	if _, err := tx.ModelContext(ctx, &bh).
+		OnConflict("do nothing").
+		Insert(); err != nil {
+		return xerrors.Errorf("persisting block headers: %w", err)
 	}
 	return nil
 }

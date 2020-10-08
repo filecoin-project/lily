@@ -53,12 +53,15 @@ func (l GasOutputsList) Persist(ctx context.Context, db *pg.DB) error {
 }
 
 func (l GasOutputsList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(l) == 0 {
+		return nil
+	}
 	ctx, span := global.Tracer("").Start(ctx, "GasOutputsList.PersistWithTx", trace.WithAttributes(label.Int("count", len(l))))
 	defer span.End()
-	for _, p := range l {
-		if err := p.PersistWithTx(ctx, tx); err != nil {
-			return nil
-		}
+	if _, err := tx.ModelContext(ctx, &l).
+		OnConflict("do nothing").
+		Insert(); err != nil {
+		return xerrors.Errorf("persisting derived gas outputs: %w", err)
 	}
 	return nil
 }

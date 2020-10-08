@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	marketmodel "github.com/filecoin-project/sentinel-visor/model/actors/market"
 )
@@ -27,6 +28,9 @@ func init() {
 func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "StorageMarketExtractor")
 	defer span.End()
+
+	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	defer stop()
 
 	proposals, err := m.marketDealProposalChanges(ctx, a, node)
 	if err != nil {
