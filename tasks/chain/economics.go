@@ -125,7 +125,7 @@ func (p *ChainEconomics) processItem(ctx context.Context, item *visor.Processing
 		return xerrors.Errorf("get tipset: %w", err)
 	}
 
-	supply, err := p.node.StateCirculatingSupply(ctx, tsk)
+	supply, err := p.node.StateVMCirculatingSupplyInternal(ctx, tsk)
 	if err != nil {
 		return err
 	}

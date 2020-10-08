@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/go-state-types/crypto"
 	"github.com/filecoin-project/lotus/api"
+	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
 	bstore "github.com/filecoin-project/lotus/lib/blockstore"
 	samarket "github.com/filecoin-project/specs-actors/actors/builtin/market"
@@ -127,6 +129,10 @@ func (m *MockAPI) StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.T
 }
 
 func (m *MockAPI) StateMinerPower(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.MinerPower, error) {
+	panic("not implemented yet")
+}
+
+func (m *MockAPI) StateMinerSectors(ctx context.Context, a address.Address, field *bitfield.BitField, key types.TipSetKey) ([]*miner.SectorOnChainInfo, error) {
 	panic("not implemented yet")
 }
 
