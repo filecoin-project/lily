@@ -11,8 +11,11 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-bitfield"
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
@@ -41,6 +44,7 @@ type ActorInfo struct {
 	Actor           types.Actor
 	Address         address.Address
 	ParentStateRoot cid.Cid
+	Epoch           abi.ChainEpoch
 	TipSet          types.TipSetKey
 	ParentTipSet    types.TipSetKey
 }
@@ -50,11 +54,12 @@ type ActorStateAPI interface {
 	ChainGetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error)
 	ChainGetBlockMessages(ctx context.Context, msg cid.Cid) (*api.BlockMessages, error)
 	StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error)
-	ChainHasObj(ctx context.Context, c cid.Cid) (bool, error)
+	ChainHasObj(ctx context.Context, obj cid.Cid) (bool, error)
 	ChainReadObj(ctx context.Context, obj cid.Cid) ([]byte, error)
-	StateGetActor(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*types.Actor, error)
+	StateGetActor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error)
 	StateMinerPower(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.MinerPower, error)
-	StateReadState(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*api.ActorState, error)
+	StateReadState(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.ActorState, error)
+	StateMinerSectors(ctx context.Context, addr address.Address, bf *bitfield.BitField, tsk types.TipSetKey) ([]*miner.SectorOnChainInfo, error)
 	Store() adt.Store
 }
 
@@ -341,6 +346,8 @@ func NewActorInfo(a *visor.ProcessingActor) (ActorInfo, error) {
 	if err != nil {
 		return ActorInfo{}, xerrors.Errorf("parse nonce: %w", err)
 	}
+
+	info.Epoch = abi.ChainEpoch(a.Height)
 
 	return info, nil
 }
