@@ -7,7 +7,6 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"go.opentelemetry.io/otel/api/global"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	commonmodel "github.com/filecoin-project/sentinel-visor/model/actors/common"
@@ -18,7 +17,7 @@ import (
 // ActorExtractor extracts common actor state
 type ActorExtractor struct{}
 
-func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
+func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "ActorExtractor")
 	defer span.End()
 

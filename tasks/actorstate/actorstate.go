@@ -8,8 +8,10 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/big"
+	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
+	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
@@ -27,8 +29,6 @@ import (
 
 var log = logging.Logger("actorstate")
 
-var timeNow = time.Now
-
 const batchInterval = 100 * time.Millisecond // time to wait between batches
 
 type ActorInfo struct {
@@ -39,9 +39,19 @@ type ActorInfo struct {
 	ParentTipSet    types.TipSetKey
 }
 
+// ActorStateAPI is the minimal subset of lens.API that is needed for actor state extraction
+type ActorStateAPI interface {
+	ChainHasObj(ctx context.Context, c cid.Cid) (bool, error)
+	ChainReadObj(ctx context.Context, obj cid.Cid) ([]byte, error)
+	StateGetActor(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*types.Actor, error)
+	StateMinerPower(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.MinerPower, error)
+	StateReadState(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*api.ActorState, error)
+	Store() adt.Store
+}
+
 // An ActorStateExtractor extracts actor state into a persistable format
 type ActorStateExtractor interface {
-	Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error)
+	Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error)
 }
 
 // All supported actor state extractors

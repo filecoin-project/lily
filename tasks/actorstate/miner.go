@@ -9,7 +9,6 @@ import (
 	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	minermodel "github.com/filecoin-project/sentinel-visor/model/actors/miner"
@@ -24,7 +23,7 @@ func init() {
 	Register(builtin.StorageMinerActorCodeID, StorageMinerExtractor{})
 }
 
-func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
+func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	// TODO:
 	// - all processing below can and probably should be done in parallel.
 	// - processing is incomplete, see below TODO about sector inspection.
