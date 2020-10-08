@@ -7,7 +7,6 @@ import (
 // Schema version 5 is the new scheduler schema
 
 func init() {
-
 	up := batch(`
 CREATE TABLE IF NOT EXISTS "visor_processing_statechanges" (
 	"tip_set" text NOT NULL,
