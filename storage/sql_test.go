@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-pg/migrations/v8"
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
 	"github.com/stretchr/testify/assert"
@@ -14,8 +15,18 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
 	"github.com/filecoin-project/sentinel-visor/model/messages"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
+	_ "github.com/filecoin-project/sentinel-visor/storage/migrations"
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
+
+func TestNoDuplicateSchemaMigrations(t *testing.T) {
+	versions := map[int64]bool{}
+	ms := migrations.DefaultCollection.Migrations()
+	for _, m := range ms {
+		require.False(t, versions[m.Version], "Duplication migration for schema version: %d", m.Version)
+		versions[m.Version] = true
+	}
+}
 
 func TestSchemaIsCurrent(t *testing.T) {
 	if testing.Short() || !testutil.DatabaseAvailable() {
@@ -582,7 +593,6 @@ func TestMarkTipSetMessagesComplete(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 1, count)
 	})
-
 }
 
 func TestLeaseGasOutputsMessages(t *testing.T) {
@@ -852,5 +862,4 @@ func TestMarkGasOutputsMessagesComplete(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 1, count)
 	})
-
 }
