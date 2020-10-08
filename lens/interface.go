@@ -12,3 +12,5 @@ type API interface {
 	api.FullNode
 	ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs
 }
+
+type APICloser func()

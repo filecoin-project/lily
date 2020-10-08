@@ -23,6 +23,11 @@ func main() {
 		Version: version.String(),
 		Flags: []cli.Flag{
 			&cli.StringFlag{
+				Name:    "lens",
+				EnvVars: []string{"VISOR_LENS"},
+				Value:   "lotus",
+			},
+			&cli.StringFlag{
 				Name:    "repo",
 				EnvVars: []string{"LOTUS_PATH"},
 				Value:   "~/.lotus", // TODO: Consider XDG_DATA_HOME
@@ -41,6 +46,11 @@ func main() {
 				Name:    "db-pool-size",
 				EnvVars: []string{"LOTUS_DB_POOL_SIZE"},
 				Value:   75,
+			},
+			&cli.IntFlag{
+				Name:    "lens-cache-hint",
+				EnvVars: []string{"VISOR_LENS_CACHE_HINT"},
+				Value:   1024 * 1024,
 			},
 			&cli.StringFlag{
 				Name:    "log-level",
