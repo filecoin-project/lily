@@ -11,7 +11,11 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	bstore "github.com/filecoin-project/lotus/lib/blockstore"
 	samarket "github.com/filecoin-project/specs-actors/actors/builtin/market"
+	sa0power "github.com/filecoin-project/specs-actors/actors/builtin/power"
+	sa0reward "github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	sa2power "github.com/filecoin-project/specs-actors/v2/actors/builtin/power"
+	sa2reward "github.com/filecoin-project/specs-actors/v2/actors/builtin/reward"
 	"github.com/ipfs/go-cid"
 	cbornode "github.com/ipfs/go-ipld-cbor"
 	"golang.org/x/xerrors"
@@ -234,4 +238,36 @@ func (m *MockAPI) createBalanceTable(balances map[address.Address]balance) ([2]c
 	}
 
 	return [2]cid.Cid{escrowRootCid, lockedRootCid}, nil
+}
+
+func (m *MockAPI) newEmptyPowerStateV0() (*sa0power.State, error) {
+	emptyClaimsMap, err := adt.MakeEmptyMap(m.store).Root()
+	if err != nil {
+		return nil, err
+	}
+	cronEventQueueMMap, err := adt.MakeEmptyMultimap(m.store).Root()
+	if err != nil {
+		return nil, err
+	}
+	return sa0power.ConstructState(emptyClaimsMap, cronEventQueueMMap), nil
+}
+
+func (m *MockAPI) newEmptyPowerStateV2() (*sa2power.State, error) {
+	emptyClaimsMap, err := adt.MakeEmptyMap(m.store).Root()
+	if err != nil {
+		return nil, err
+	}
+	cronEventQueueMMap, err := adt.MakeEmptyMultimap(m.store).Root()
+	if err != nil {
+		return nil, err
+	}
+	return sa2power.ConstructState(emptyClaimsMap, cronEventQueueMMap), nil
+}
+
+func (m *MockAPI) newEmptyRewardStateV0(currRealizedPower abi.StoragePower) (*sa0reward.State, error) {
+	return sa0reward.ConstructState(currRealizedPower), nil
+}
+
+func (m *MockAPI) newEmptyRewardStateV2(currRealizedPower abi.StoragePower) (*sa2reward.State, error) {
+	return sa2reward.ConstructState(currRealizedPower), nil
 }
