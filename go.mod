@@ -12,6 +12,7 @@ require (
 	github.com/filecoin-project/go-state-types v0.0.0-20200928172055-2df22083d8ab
 	github.com/filecoin-project/lotus v0.9.0
 	github.com/filecoin-project/specs-actors v0.9.12
+	github.com/filecoin-project/specs-actors/v2 v2.0.1
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.3.1
 	github.com/go-pg/pgext v0.1.4

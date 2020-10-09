@@ -8,7 +8,8 @@ import (
 
 	market "github.com/filecoin-project/lotus/chain/actors/builtin/market"
 	"github.com/filecoin-project/lotus/chain/events/state"
-	"github.com/filecoin-project/specs-actors/actors/builtin"
+	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
+	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -21,7 +22,8 @@ import (
 type StorageMarketExtractor struct{}
 
 func init() {
-	Register(builtin.StorageMarketActorCodeID, StorageMarketExtractor{})
+	Register(sa0builtin.StorageMarketActorCodeID, StorageMarketExtractor{})
+	Register(sa2builtin.StorageMarketActorCodeID, StorageMarketExtractor{})
 }
 
 func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
