@@ -10,6 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 )
@@ -51,6 +52,9 @@ func (u *UnindexedBlockData) AddBlock(bh *types.BlockHeader) {
 func (u *UnindexedBlockData) Persist(ctx context.Context, db *pg.DB) error {
 	ctx, span := global.Tracer("").Start(ctx, "Indexer.PersistBlockData")
 	defer span.End()
+
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
 
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		grp, ctx := errgroup.WithContext(ctx)
