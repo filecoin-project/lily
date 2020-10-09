@@ -24,8 +24,8 @@ require (
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/multiformats/go-multihash v0.0.14
-	github.com/raulk/clock v1.1.0
 	github.com/prometheus/client_golang v1.6.0
+	github.com/raulk/clock v1.1.0
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/urfave/cli/v2 v2.2.0
