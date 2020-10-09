@@ -7,10 +7,12 @@ import (
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/go-pg/pg/v10"
 	"github.com/raulk/clock"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model/derived"
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/wait"
@@ -47,6 +49,7 @@ func (p *GasOutputsProcessor) Run(ctx context.Context) error {
 }
 
 func (p *GasOutputsProcessor) processBatch(ctx context.Context) (bool, error) {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "gasoutputs"))
 	ctx, span := global.Tracer("").Start(ctx, "GasOutputsProcessor.processBatch")
 	defer span.End()
 
@@ -91,13 +94,15 @@ func (p *GasOutputsProcessor) processBatch(ctx context.Context) (bool, error) {
 		if err := p.storage.MarkGasOutputsMessagesComplete(ctx, item.Cid, p.clock.Now(), ""); err != nil {
 			errorLog.Errorw("failed to mark message complete", "error", err.Error())
 		}
-
 	}
 
 	return false, nil
 }
 
 func (p *GasOutputsProcessor) processItem(ctx context.Context, item *derived.GasOutputs) error {
+	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	defer stop()
+
 	baseFee, err := big.FromString(item.ParentBaseFee)
 	if err != nil {
 		return xerrors.Errorf("parse fee cap: %w", err)

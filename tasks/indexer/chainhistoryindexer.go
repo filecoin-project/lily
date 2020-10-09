@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	pg "github.com/go-pg/pg/v10"
 	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
@@ -52,6 +53,8 @@ func (c *ChainHistoryIndexer) Run(ctx context.Context) error {
 func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) error {
 	ctx, span := global.Tracer("").Start(ctx, "ChainHistoryIndexer.WalkChain", trace.WithAttributes(label.Int64("height", maxHeight)))
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "indexhistoryblock"))
 
 	// get at most finality tipsets not exceeding maxHeight. These are blocks we have in the database but have not processed.
 	// Now we are going to walk down the chain from `head` until we have visited all blocks not in the database.
