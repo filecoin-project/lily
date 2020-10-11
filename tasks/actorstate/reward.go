@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"github.com/filecoin-project/lotus/chain/actors/builtin/reward"
-	"github.com/filecoin-project/specs-actors/actors/builtin"
+	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
+	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
@@ -18,7 +19,8 @@ import (
 type RewardExtractor struct{}
 
 func init() {
-	Register(builtin.RewardActorCodeID, RewardExtractor{})
+	Register(sa0builtin.RewardActorCodeID, RewardExtractor{})
+	Register(sa2builtin.RewardActorCodeID, RewardExtractor{})
 }
 
 func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
@@ -28,7 +30,7 @@ func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node ActorState
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
 
-	rewardActor, err := node.StateGetActor(ctx, builtin.RewardActorAddr, a.TipSet)
+	rewardActor, err := node.StateGetActor(ctx, reward.Address, a.TipSet)
 	if err != nil {
 		return nil, err
 	}
