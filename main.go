@@ -108,6 +108,7 @@ func main() {
 		Commands: []*cli.Command{
 			commands.Migrate,
 			commands.Run,
+			commands.Debug,
 		},
 	}
 
