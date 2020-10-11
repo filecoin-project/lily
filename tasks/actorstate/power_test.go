@@ -27,16 +27,16 @@ func TestPowerExtractV0(t *testing.T) {
 	require.NoError(t, err)
 
 	state.TotalRawBytePower = abi.NewStoragePower(1000)
-	state.TotalBytesCommitted = abi.NewStoragePower(0)
-	state.TotalQualityAdjPower = abi.NewStoragePower(0)
-	state.TotalQABytesCommitted = abi.NewStoragePower(0)
-	state.TotalPledgeCollateral = abi.NewTokenAmount(0)
-	state.ThisEpochRawBytePower = abi.NewStoragePower(0)
-	state.ThisEpochQualityAdjPower = abi.NewStoragePower(0)
-	state.ThisEpochPledgeCollateral = abi.NewTokenAmount(0)
+	state.TotalBytesCommitted = abi.NewStoragePower(2000)
+	state.TotalQualityAdjPower = abi.NewStoragePower(3000)
+	state.TotalQABytesCommitted = abi.NewStoragePower(4000)
+	state.TotalPledgeCollateral = abi.NewTokenAmount(5000)
+	state.ThisEpochRawBytePower = abi.NewStoragePower(6000)
+	state.ThisEpochQualityAdjPower = abi.NewStoragePower(7000)
+	state.ThisEpochPledgeCollateral = abi.NewTokenAmount(8000)
 	state.ThisEpochQAPowerSmoothed = sa0smoothing.NewEstimate(big.NewInt(800_000_000_000), big.NewInt(6_000_000_000))
-	state.MinerCount = 0
-	state.MinerAboveMinPowerCount = 0
+	state.MinerCount = 10
+	state.MinerAboveMinPowerCount = 20
 
 	stateCid, err := mapi.Store().Put(ctx, state)
 	require.NoError(t, err)
