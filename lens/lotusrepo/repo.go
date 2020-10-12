@@ -14,6 +14,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/lotus/extern/sector-storage/ffiwrapper"
@@ -156,7 +157,11 @@ func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 		return nil, nil, nil, err
 	}
 
+	sm := stmgr.NewStateManager(cs)
+
 	rapi.FullNodeAPI.ChainAPI.Chain = cs
+	rapi.FullNodeAPI.StateAPI.Chain = cs
+	rapi.FullNodeAPI.StateAPI.StateManager = sm
 
 	sf := func() {
 		lr.Close()
