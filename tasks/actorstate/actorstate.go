@@ -13,6 +13,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/lotus/api"
+	builtin2 "github.com/filecoin-project/lotus/chain/actors/builtin"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
@@ -274,7 +275,7 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, info ActorInfo) 
 		return xerrors.Errorf("no extractor defined for actor code %q", info.Actor.Code.String())
 	}
 
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, builtin.ActorNameByCode(info.Actor.Code)))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, builtin2.ActorNameByCode(info.Actor.Code)))
 	span.SetAttribute("actor", builtin.ActorNameByCode(info.Actor.Code))
 
 	data, err = extractor.Extract(ctx, info, p.node)

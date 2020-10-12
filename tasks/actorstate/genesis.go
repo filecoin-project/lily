@@ -10,10 +10,12 @@ import (
 	"github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	marketmodel "github.com/filecoin-project/sentinel-visor/model/actors/market"
 	minermodel "github.com/filecoin-project/sentinel-visor/model/actors/miner"
@@ -35,6 +37,7 @@ type GenesisProcessor struct {
 }
 
 func (p *GenesisProcessor) ProcessGenesis(ctx context.Context, gen *types.TipSet) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "genesis"))
 	ctx, span := global.Tracer("").Start(ctx, "GenesisProcessor.ProcessGenesis")
 	defer span.End()
 
