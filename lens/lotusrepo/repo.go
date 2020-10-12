@@ -119,6 +119,10 @@ func (ra *RepoAPI) ClientRetrieveTryRestartInsufficientFunds(ctx context.Context
 func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 	rapi := RepoAPI{}
 
+	if _, _, err := ulimit.ManageFdLimit(); err != nil {
+		return nil, nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
+	}
+
 	r, err := repo.NewFS(c.String("repo"))
 	if err != nil {
 		return nil, nil, nil, err
@@ -145,10 +149,6 @@ func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 	mds, err := lr.Datastore("/metadata")
 	if err != nil {
 		return nil, nil, nil, err
-	}
-
-	if _, _, err := ulimit.ManageFdLimit(); err != nil {
-		return nil, nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
 	}
 
 	cs := store.NewChainStore(blockstore.NewBlockstore(ds), mds, vm.Syscalls(&fakeVerifier{}))
