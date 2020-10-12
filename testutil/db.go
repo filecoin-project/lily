@@ -28,7 +28,7 @@ func Database() string {
 // WaitForExclusiveDatabase waits for exclusive access to the test database until the context is done or the
 // exclusive access is granted. It returns a cleanup function that should be called to close the database connection.
 func WaitForExclusiveDatabase(ctx context.Context, tb testing.TB) (*pg.DB, func() error, error) {
-	require.NotEmpty(tb, testDatabase, "set VISOR_TEST_DB")
+	require.NotEmpty(tb, testDatabase, "No test database available: VISOR_TEST_DB not set")
 
 	opt, err := pg.ParseURL(testDatabase)
 	require.NoError(tb, err)
@@ -50,8 +50,10 @@ func WaitForExclusiveDatabase(ctx context.Context, tb testing.TB) (*pg.DB, func(
 	return db, cleanup, nil
 }
 
-const testDatabaseLockID = 88899888
-const testDatabaseLockCheckInterval = 2 * time.Millisecond
+const (
+	testDatabaseLockID            = 88899888
+	testDatabaseLockCheckInterval = 2 * time.Millisecond
+)
 
 // WaitForExclusiveDatabaseLock waits for a an exclusive lock on the test database until the context is done or the
 // exclusive access is granted. It returns a cleanup function that should be called to release the exclusive lock. In any

@@ -22,8 +22,10 @@ import (
 	"github.com/filecoin-project/sentinel-visor/wait"
 )
 
-const idleSleepInterval = 60 * time.Second   // time to wait if the processor runs out of blocks to process
-const batchInterval = 100 * time.Millisecond // time to wait between batches
+const (
+	idleSleepInterval = 60 * time.Second       // time to wait if the processor runs out of blocks to process
+	batchInterval     = 100 * time.Millisecond // time to wait between batches
+)
 
 var log = logging.Logger("message")
 
@@ -74,7 +76,7 @@ func (p *MessageProcessor) processBatch(ctx context.Context) (bool, error) {
 	// If we have no tipsets to work on then wait before trying again
 	if len(batch) == 0 {
 		sleepInterval := wait.Jitter(idleSleepInterval, 2)
-		log.Debugw("no tipsets to process, waiting for %s", sleepInterval)
+		log.Debugf("no tipsets to process, waiting for %s", sleepInterval)
 		time.Sleep(sleepInterval)
 		return false, nil
 	}

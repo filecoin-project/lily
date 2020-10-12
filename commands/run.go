@@ -16,6 +16,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 	"github.com/filecoin-project/sentinel-visor/tasks/indexer"
 	"github.com/filecoin-project/sentinel-visor/tasks/message"
+	"github.com/filecoin-project/sentinel-visor/tasks/views"
 )
 
 var Run = &cli.Command{
@@ -152,6 +153,14 @@ var Run = &cli.Command{
 			Usage:   "Number of gas outputs processors to start",
 			EnvVars: []string{"VISOR_GASOUTPUTS_WORKERS"},
 		},
+
+		&cli.DurationFlag{
+			Name:    "chainvis-refresh-rate",
+			Aliases: []string{"crr"},
+			Value:   0,
+			Usage:   "Refresh frequency for chain visualization views (0 = disables refresh)",
+			EnvVars: []string{"VISOR_CHAINVIS_REFRESH"},
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		// Validate flags
@@ -256,6 +265,16 @@ var Run = &cli.Command{
 				RestartOnCompletion: true,
 			})
 		}
+
+		// Include optional refresher for Chain Visualization views
+		// Zero duration will cause ChainVisRefresher to exit and should not restart
+		scheduler.Add(schedule.TaskConfig{
+			Name:                "ChainVisRefresher",
+			Locker:              NewGlobalSingleton(ChainVisRefresherLockID, rctx.db), // only need one chain vis refresher anywhere
+			Task:                views.NewChainVisRefresher(rctx.db, cctx.Duration("chainvis-refresh-rate")),
+			RestartOnFailure:    true,
+			RestartOnCompletion: false,
+		})
 
 		// Start the scheduler and wait for it to complete or to be cancelled.
 		err = scheduler.Run(ctx)
