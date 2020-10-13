@@ -25,7 +25,7 @@ const (
 	batchInterval     = 100 * time.Millisecond // time to wait between batches
 )
 
-var log = logging.Logger("message")
+var log = logging.Logger("chain")
 
 func NewChainEconomicsProcessor(d *storage.Database, node lens.API, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64) *ChainEconomics {
 	return &ChainEconomics{
