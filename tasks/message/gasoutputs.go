@@ -116,7 +116,11 @@ func (p *GasOutputsProcessor) processItem(ctx context.Context, item *derived.Gas
 		return xerrors.Errorf("parse gas premium: %w", err)
 	}
 
+	// this is here because the lotus.vm package doesn't take a context for this api call.
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.API, "ComputeGasOutputs"))
+	cgoStop := metrics.Timer(ctx, metrics.LensRequestDuration)
 	outputs := p.node.ComputeGasOutputs(item.GasUsed, item.GasLimit, baseFee, feeCap, gasPremium)
+	cgoStop()
 
 	item.BaseFeeBurn = outputs.BaseFeeBurn.String()
 	item.OverEstimationBurn = outputs.OverEstimationBurn.String()
