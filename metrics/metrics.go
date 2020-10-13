@@ -16,6 +16,7 @@ var (
 	TaskType, _ = tag.NewKey("task")
 	ConnState, _ = tag.NewKey("conn_state")
 	State, _ = tag.NewKey("state")
+	API, _ = tag.NewKey("api")
 )
 
 var (
@@ -24,6 +25,7 @@ var (
 	DBConns = stats.Int64("db_conns", "Database connections held", stats.UnitDimensionless)
 	HistoricalIndexerHeight = stats.Int64("historical_sync_height", "Sync height of the historical indexer", stats.UnitDimensionless)
 	EpochsToSync = stats.Int64("epochs_to_sync", "Epochs yet to sync", stats.UnitDimensionless)
+	LensRequestDuration = stats.Float64("lens_request_duration_ms", "Duration of lotus api requets", stats.UnitMilliseconds)
 )
 
 var (
@@ -50,6 +52,11 @@ var (
 		Measure: EpochsToSync,
 		Aggregation: view.LastValue(),
 	}
+	LensRequestDurationView = &view.View{
+		Measure: LensRequestDuration,
+		Aggregation: defaultMillisecondsDistribution,
+		TagKeys: []tag.Key{API},
+	}
 )
 
 var DefaultViews = append([]*view.View{
@@ -58,6 +65,7 @@ var DefaultViews = append([]*view.View{
 	DBConnsView,
 	HistoricalIndexerHeightView,
 	EpochsToSyncView,
+	LensRequestDurationView,
 })
 
 // SinceInMilliseconds returns the duration of time since the provide time as a float64.
