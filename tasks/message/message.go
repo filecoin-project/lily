@@ -9,6 +9,7 @@ import (
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
+	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/label"
@@ -114,6 +115,7 @@ func (p *MessageProcessor) processItem(ctx context.Context, item *visor.Processi
 	defer span.End()
 	span.SetAttributes(label.Any("height", item.Height), label.Any("tipset", item.TipSet))
 
+	stats.Record(ctx, metrics.TipsetHeight.M(item.Height))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
 
