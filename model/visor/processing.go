@@ -55,6 +55,17 @@ type ProcessingTipSet struct {
 
 	// MessageErrorsDetected contains any error encountered when reading the tipset's messages
 	MessageErrorsDetected string
+
+	// Chain economics processing
+
+	// EconomicsClaimedUntil marks the tipset as claimed for chain economics processing until the set time
+	EconomicsClaimedUntil time.Time
+
+	// EconomicsCompletedAt is the time the tipset was read from the chain and its chain economics read
+	EconomicsCompletedAt time.Time
+
+	// EconomicsErrorsDetected contains any error encountered when reading the tipset's chain economics
+	EconomicsErrorsDetected string
 }
 
 func (p *ProcessingTipSet) PersistWithTx(ctx context.Context, tx *pg.Tx) error {

@@ -14,6 +14,7 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/schedule"
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
+	"github.com/filecoin-project/sentinel-visor/tasks/chain"
 	"github.com/filecoin-project/sentinel-visor/tasks/indexer"
 	"github.com/filecoin-project/sentinel-visor/tasks/message"
 	"github.com/filecoin-project/sentinel-visor/tasks/views"
@@ -161,6 +162,28 @@ var Run = &cli.Command{
 			Usage:   "Refresh frequency for chain visualization views (0 = disables refresh)",
 			EnvVars: []string{"VISOR_CHAINVIS_REFRESH"},
 		},
+
+		&cli.IntFlag{
+			Name:    "chaineconomics-workers",
+			Aliases: []string{"cew"},
+			Value:   5,
+			Usage:   "Number of chain economics processors to start",
+			EnvVars: []string{"VISOR_CHAINECONOMICS_WORKERS"},
+		},
+		&cli.IntFlag{
+			Name:    "chaineconomics-batch",
+			Aliases: []string{"ceb"},
+			Value:   50, // chain economics processing is quite fast
+			Usage:   "Batch size for the chain economics processor",
+			EnvVars: []string{"VISOR_CHAINECONOMICS_BATCH"},
+		},
+		&cli.DurationFlag{
+			Name:    "chaineconomics-lease",
+			Aliases: []string{"cel"},
+			Value:   time.Minute * 15,
+			Usage:   "Lease time for the chain economics processor",
+			EnvVars: []string{"VISOR_CHAINECONOMICS_LEASE"},
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		// Validate flags
@@ -261,6 +284,16 @@ var Run = &cli.Command{
 			scheduler.Add(schedule.TaskConfig{
 				Name:                fmt.Sprintf("GasOutputsProcessor%03d", i),
 				Task:                message.NewGasOutputsProcessor(rctx.db, rctx.api, cctx.Duration("gasoutputs-lease"), cctx.Int("gasoutputs-batch"), heightFrom, heightTo),
+				RestartOnFailure:    true,
+				RestartOnCompletion: true,
+			})
+		}
+
+		// Add several chain economics tasks to read gas outputs from indexed messages
+		for i := 0; i < cctx.Int("chaineconomics-workers"); i++ {
+			scheduler.Add(schedule.TaskConfig{
+				Name:                fmt.Sprintf("ChainEconomicsProcessor%03d", i),
+				Task:                chain.NewChainEconomicsProcessor(rctx.db, rctx.api, cctx.Duration("chaineconomics-lease"), cctx.Int("chaineconomics-batch"), heightFrom, heightTo),
 				RestartOnFailure:    true,
 				RestartOnCompletion: true,
 			})
