@@ -58,6 +58,8 @@ var models = []interface{}{
 	(*visor.ProcessingActor)(nil),
 	(*visor.ProcessingMessage)(nil),
 
+	(*visor.ProcessingStat)(nil),
+
 	(*derived.GasOutputs)(nil),
 	(*chain.ChainEconomics)(nil),
 }
