@@ -23,6 +23,11 @@ var Run = &cli.Command{
 	Name:  "run",
 	Usage: "Index and process blocks from the filecoin blockchain",
 	Flags: []cli.Flag{
+		&cli.BoolFlag{
+			Name:    "no-default-tasks",
+			Usage:   "When set this flag sets the default number of each task to zero. Tasks will not start unless their relevant CLI flag has been set explicitly.",
+			EnvVars: []string{"NO_DEFAULT_TASKS"},
+		},
 		&cli.Int64Flag{
 			Name:    "from",
 			Usage:   "Limit actor and message processing to tipsets at or above `HEIGHT`",
@@ -199,7 +204,7 @@ var Run = &cli.Command{
 		scheduler := schedule.NewScheduler()
 
 		// Add one indexing task to follow the chain head
-		if cctx.Bool("indexhead") {
+		if boolFlag(cctx, "indexhead") {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                "ChainHeadIndexer",
 				Task:                indexer.NewChainHeadIndexer(rctx.db, rctx.api, cctx.Int("indexhead-confidence")),
@@ -211,7 +216,7 @@ var Run = &cli.Command{
 		}
 
 		// Add one indexing task to walk the chain history
-		if cctx.Bool("indexhistory") {
+		if boolFlag(cctx, "indexhistory") {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                "ChainHistoryIndexer",
 				Task:                indexer.NewChainHistoryIndexer(rctx.db, rctx.api),
@@ -223,7 +228,7 @@ var Run = &cli.Command{
 		}
 
 		// Add several state change tasks to read which actors changed state in each indexed tipset
-		for i := 0; i < cctx.Int("statechange-workers"); i++ {
+		for i := 0; i < intFlag(cctx, "statechange-workers"); i++ {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                fmt.Sprintf("ActorStateChangeProcessor%03d", i),
 				Task:                actorstate.NewActorStateChangeProcessor(rctx.db, rctx.api, cctx.Duration("statechange-lease"), cctx.Int("statechange-batch"), heightFrom, heightTo),
@@ -233,7 +238,7 @@ var Run = &cli.Command{
 		}
 
 		// Add several state tasks to read actor state from each indexed block
-		for i := 0; i < cctx.Int("actorstate-workers"); i++ {
+		for i := 0; i < intFlag(cctx, "actorstate-workers"); i++ {
 			p, err := actorstate.NewActorStateProcessor(rctx.db, rctx.api, cctx.Duration("actorstate-lease"), cctx.Int("actorstate-batch"), heightFrom, heightTo, actorCodes)
 			if err != nil {
 				return err
@@ -247,7 +252,7 @@ var Run = &cli.Command{
 		}
 
 		// Add several message tasks to read messages from indexed tipsets
-		for i := 0; i < cctx.Int("message-workers"); i++ {
+		for i := 0; i < intFlag(cctx, "message-workers"); i++ {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                fmt.Sprintf("MessageProcessor%03d", i),
 				Task:                message.NewMessageProcessor(rctx.db, rctx.api, cctx.Duration("message-lease"), cctx.Int("message-batch"), heightFrom, heightTo),
@@ -257,7 +262,7 @@ var Run = &cli.Command{
 		}
 
 		// Add several gas output tasks to read gas outputs from indexed messages
-		for i := 0; i < cctx.Int("gasoutputs-workers"); i++ {
+		for i := 0; i < intFlag(cctx, "gasoutputs-workers"); i++ {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                fmt.Sprintf("GasOutputsProcessor%03d", i),
 				Task:                message.NewGasOutputsProcessor(rctx.db, rctx.api, cctx.Duration("gasoutputs-lease"), cctx.Int("gasoutputs-batch"), heightFrom, heightTo),
@@ -362,4 +367,24 @@ var actorNamesToCodes = map[string]cid.Cid{
 	"fil/2/verifiedregistry": builtin.VerifiedRegistryActorCodeID,
 	"fil/2/account":          builtin.AccountActorCodeID,
 	"fil/2/multisig":         builtin.MultisigActorCodeID,
+}
+
+// boolFlag always returns the value of a boolean flag if set. If not set
+// then the default value will be returned unless the --no-default-tasks is
+// specified. In that case false is returned.
+func boolFlag(cctx *cli.Context, flagname string) bool {
+	if cctx.Bool("no-default-tasks") && !cctx.IsSet(flagname) {
+		return false
+	}
+	return cctx.Bool(flagname)
+}
+
+// intFlag always returns the value of an int flag if set. If not set
+// then the default value will be returned unless the --no-default-tasks is
+// specified. In that case 0 is returned.
+func intFlag(cctx *cli.Context, flagname string) int {
+	if cctx.Bool("no-default-tasks") && !cctx.IsSet(flagname) {
+		return 0
+	}
+	return cctx.Int(flagname)
 }
