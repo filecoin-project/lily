@@ -41,57 +41,25 @@ func getSchemaVersions(ctx context.Context, db *pg.DB) (int, int, error) {
 		return 0, 0, xerrors.Errorf("unable to determine schema version: %w", err)
 	}
 
-	// Current desired schema version is based on the highest migration version
-	var desiredVersion int64
+	latestVersion := getLatestSchemaVersion()
+	return int(dbVersion), latestVersion, nil
+}
+
+// Latest schema version is based on the highest migration version
+func getLatestSchemaVersion() int {
+	var latestVersion int64
 	ms := migrations.DefaultCollection.Migrations()
 	for _, m := range ms {
-		if m.Version > desiredVersion {
-			desiredVersion = m.Version
+		if m.Version > latestVersion {
+			latestVersion = m.Version
 		}
 	}
-
-	return int(dbVersion), int(desiredVersion), nil
+	return int(latestVersion)
 }
 
 // MigrateSchema migrates the database schema to the latest version based on the list of migrations available
 func (d *Database) MigrateSchema(ctx context.Context) error {
-	db, err := connect(ctx, d.opt)
-	if err != nil {
-		return xerrors.Errorf("connect: %w", err)
-	}
-	defer db.Close()
-
-	dbVersion, latestVersion, err := getSchemaVersions(ctx, db)
-	if err != nil {
-		return xerrors.Errorf("get schema versions: %w", err)
-	}
-	log.Infof("current database schema is version %d", dbVersion)
-
-	if dbVersion == latestVersion {
-		log.Info("current database schema is at latest version, no migration needed")
-		return nil
-	}
-
-	// Acquire an exclusive lock on the schema so we know no other instances are running
-	if err := SchemaLock.LockExclusive(ctx, db); err != nil {
-		return xerrors.Errorf("acquiring schema lock: %w", err)
-	}
-
-	// Remember to release the lock
-	defer func() {
-		err := SchemaLock.UnlockExclusive(ctx, db)
-		if err != nil {
-			log.Errorf("failed to release exclusive lock: %v", err)
-		}
-	}()
-
-	log.Infof("running schema migration from version %d to version %d", dbVersion, latestVersion)
-	_, newDBVersion, err := migrations.Run(db, "up")
-	if err != nil {
-		return xerrors.Errorf("run migration: %w", err)
-	}
-	log.Infof("current database schema is now version %d", newDBVersion)
-	return nil
+	return d.MigrateSchemaTo(ctx, getLatestSchemaVersion())
 }
 
 // MigrateSchema migrates the database schema to a specific version. Note that downgrading a schema to an earlier
@@ -115,6 +83,10 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target int) error {
 
 	if dbVersion == target {
 		return xerrors.Errorf("database schema is already at version %d", dbVersion)
+	}
+
+	if err := checkMigrationSequence(ctx, dbVersion, target); err != nil {
+		return xerrors.Errorf("check migration sequence: %w", err)
 	}
 
 	// Acquire an exclusive lock on the schema so we know no other instances are running
@@ -151,6 +123,29 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target int) error {
 		return xerrors.Errorf("run migration: %w", err)
 	}
 	log.Infof("current database schema is now version %d", newDBVersion)
+
+	return nil
+}
+
+func checkMigrationSequence(ctx context.Context, from, to int) error {
+	versions := map[int64]bool{}
+	ms := migrations.DefaultCollection.Migrations()
+	for _, m := range ms {
+		if versions[m.Version] {
+			return xerrors.Errorf("duplication migration for schema version %d", m.Version)
+		}
+		versions[m.Version] = true
+	}
+
+	if from > to {
+		to, from = from, to
+	}
+
+	for i := from; i <= to; i++ {
+		if !versions[int64(i)] {
+			return xerrors.Errorf("missing migration for schema version %d", i)
+		}
+	}
 
 	return nil
 }

@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-pg/migrations/v8"
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
 	"github.com/stretchr/testify/assert"
@@ -19,13 +18,10 @@ import (
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 
-func TestNoDuplicateSchemaMigrations(t *testing.T) {
-	versions := map[int64]bool{}
-	ms := migrations.DefaultCollection.Migrations()
-	for _, m := range ms {
-		require.False(t, versions[m.Version], "Duplication migration for schema version: %d", m.Version)
-		versions[m.Version] = true
-	}
+func TestConsistentSchemaMigrationSequence(t *testing.T) {
+	latestVersion := getLatestSchemaVersion()
+	err := checkMigrationSequence(context.Background(), 1, latestVersion)
+	require.NoError(t, err)
 }
 
 func TestSchemaIsCurrent(t *testing.T) {
