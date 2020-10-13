@@ -55,7 +55,7 @@ var (
 	LensRequestDurationView = &view.View{
 		Measure: LensRequestDuration,
 		Aggregation: defaultMillisecondsDistribution,
-		TagKeys: []tag.Key{API},
+		TagKeys: []tag.Key{TaskType, API},
 	}
 )
 
