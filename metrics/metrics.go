@@ -26,6 +26,7 @@ var (
 	HistoricalIndexerHeight = stats.Int64("historical_sync_height", "Sync height of the historical indexer", stats.UnitDimensionless)
 	EpochsToSync = stats.Int64("epochs_to_sync", "Epochs yet to sync", stats.UnitDimensionless)
 	LensRequestDuration = stats.Float64("lens_request_duration_ms", "Duration of lotus api requets", stats.UnitMilliseconds)
+	TipsetHeight = stats.Int64("tipset_height", "The height of the tipset being processed", stats.UnitDimensionless)
 )
 
 var (
@@ -57,6 +58,11 @@ var (
 		Aggregation: defaultMillisecondsDistribution,
 		TagKeys: []tag.Key{TaskType, API},
 	}
+	TipsetHeightView = &view.View{
+		Measure: TipsetHeight,
+		Aggregation: view.LastValue(),
+		TagKeys: []tag.Key{TaskType},
+	}
 )
 
 var DefaultViews = append([]*view.View{
@@ -66,6 +72,7 @@ var DefaultViews = append([]*view.View{
 	HistoricalIndexerHeightView,
 	EpochsToSyncView,
 	LensRequestDurationView,
+	TipsetHeightView,
 })
 
 // SinceInMilliseconds returns the duration of time since the provide time as a float64.
