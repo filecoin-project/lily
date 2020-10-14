@@ -6,21 +6,24 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 	pg "github.com/go-pg/pg/v10"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
-func NewChainHistoryIndexer(d *storage.Database, node lens.API) *ChainHistoryIndexer {
+func NewChainHistoryIndexer(d *storage.Database, node lens.API, batchSize int) *ChainHistoryIndexer {
 	return &ChainHistoryIndexer{
 		node:      node,
 		storage:   d,
 		finality:  900,
-		batchSize: 500,
+		batchSize: batchSize,
 	}
 }
 
@@ -50,6 +53,8 @@ func (c *ChainHistoryIndexer) Run(ctx context.Context) error {
 func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) error {
 	ctx, span := global.Tracer("").Start(ctx, "ChainHistoryIndexer.WalkChain", trace.WithAttributes(label.Int64("height", maxHeight)))
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "indexhistoryblock"))
 
 	// get at most finality tipsets not exceeding maxHeight. These are blocks we have in the database but have not processed.
 	// Now we are going to walk down the chain from `head` until we have visited all blocks not in the database.
@@ -93,6 +98,7 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) er
 		}
 
 		ts := toVisit.Remove(toVisit.Back()).(*types.TipSet)
+		stats.Record(ctx, metrics.EpochsToSync.M(int64(ts.Height())))
 
 		if ts.Height() != 0 {
 			// TODO: Look for websocket connection closed error and retry after a delay to avoid hot loop
@@ -113,9 +119,11 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, maxHeight int64) er
 		if blockData.Size() >= c.batchSize {
 			log.Debugw("persisting batch", "count", blockData.Size(), "queued", toVisit.Len(), "current_height", ts.Height())
 			// persist the batch of blocks to storage
+
 			if err := blockData.Persist(ctx, c.storage.DB); err != nil {
 				return xerrors.Errorf("persist: %w", err)
 			}
+			stats.Record(ctx, metrics.HistoricalIndexerHeight.M(int64(blockData.Size())))
 			blockData.Reset()
 		}
 

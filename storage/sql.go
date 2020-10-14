@@ -21,9 +21,11 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/actors/power"
 	"github.com/filecoin-project/sentinel-visor/model/actors/reward"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
+	"github.com/filecoin-project/sentinel-visor/model/chain"
 	"github.com/filecoin-project/sentinel-visor/model/derived"
 	"github.com/filecoin-project/sentinel-visor/model/messages"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
+	"github.com/filecoin-project/sentinel-visor/version"
 )
 
 var models = []interface{}{
@@ -46,6 +48,7 @@ var models = []interface{}{
 	(*messages.Message)(nil),
 	(*messages.BlockMessage)(nil),
 	(*messages.Receipt)(nil),
+	(*messages.MessageGasEconomy)(nil),
 
 	(*power.ChainPower)(nil),
 	(*reward.ChainReward)(nil),
@@ -58,7 +61,10 @@ var models = []interface{}{
 	(*visor.ProcessingActor)(nil),
 	(*visor.ProcessingMessage)(nil),
 
+	(*visor.ProcessingStat)(nil),
+
 	(*derived.GasOutputs)(nil),
+	(*chain.ChainEconomics)(nil),
 }
 
 var log = logging.Logger("storage")
@@ -68,8 +74,10 @@ var (
 	SchemaLock AdvisoryLock = 1
 )
 
-var ErrSchemaTooOld = errors.New("database schema is too old and requires migration")
-var ErrSchemaTooNew = errors.New("database schema is too new for this version of visor")
+var (
+	ErrSchemaTooOld = errors.New("database schema is too old and requires migration")
+	ErrSchemaTooNew = errors.New("database schema is too new for this version of visor")
+)
 
 func NewDatabase(ctx context.Context, url string, poolSize int) (*Database, error) {
 	opt, err := pg.ParseURL(url)
@@ -77,6 +85,7 @@ func NewDatabase(ctx context.Context, url string, poolSize int) (*Database, erro
 		return nil, xerrors.Errorf("parse database URL: %w", err)
 	}
 	opt.PoolSize = poolSize
+	opt.ApplicationName = "visor-" + version.String()
 
 	return &Database{
 		opt:   opt,
@@ -120,7 +129,6 @@ func (d *Database) Connect(ctx context.Context) error {
 		d.DB = db
 		return nil
 	}
-
 }
 
 func connect(ctx context.Context, opt *pg.Options) (*pg.DB, error) {
@@ -278,7 +286,6 @@ WITH leased AS (
 )
 SELECT tip_set,height FROM leased;
     `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize)
-
 		if err != nil {
 			return err
 		}
@@ -359,7 +366,6 @@ WITH leased AS (
     RETURNING a.head, a.code, a.nonce, a.balance, a.address, a.parent_state_root, a.tip_set, a.parent_tip_set)
 SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set from leased;
     `, claimUntil, d.Clock.Now(), minHeight, maxHeight, pg.In(codes), batchSize)
-
 		if err != nil {
 			return err
 		}
@@ -415,7 +421,6 @@ WITH leased AS (
 )
 SELECT tip_set,height FROM leased;
     `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize)
-
 		if err != nil {
 			return err
 		}
@@ -484,7 +489,6 @@ WITH leased AS (
 )
 SELECT * FROM leased;
 `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize)
-
 		if err != nil {
 			return err
 		}
@@ -504,6 +508,62 @@ func (d *Database) MarkGasOutputsMessagesComplete(ctx context.Context, cid strin
         gas_outputs_errors_detected = ?
     WHERE cid = ?
 `, completedAt, useNullIfEmpty(errorsDetected), cid)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// LeaseTipSetEconomics leases a set of tipsets containing chain economics to process. minHeight and maxHeight define an inclusive range of heights to process.
+// TODO: refactor all the tipset leasing methods into a more general function
+func (d *Database) LeaseTipSetEconomics(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingTipSetList, error) {
+	var tipsets visor.ProcessingTipSetList
+
+	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		_, err := tx.QueryContext(ctx, &tipsets, `
+WITH leased AS (
+    UPDATE visor_processing_tipsets
+    SET economics_claimed_until = ?
+    FROM (
+	    SELECT *
+	    FROM visor_processing_tipsets
+	    WHERE economics_completed_at IS null AND
+	          (economics_claimed_until IS null OR economics_claimed_until < ?) AND
+	          height >= ? AND height <= ?
+	    ORDER BY height DESC
+	    LIMIT ?
+	    FOR UPDATE SKIP LOCKED
+	) candidates
+	WHERE visor_processing_tipsets.tip_set = candidates.tip_set AND visor_processing_tipsets.height = candidates.height
+    RETURNING visor_processing_tipsets.tip_set, visor_processing_tipsets.height
+)
+SELECT tip_set,height FROM leased;
+    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize)
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return tipsets, nil
+}
+
+func (d *Database) MarkTipSetEconomicsComplete(ctx context.Context, tipset string, height int64, completedAt time.Time, errorsDetected string) error {
+	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		_, err := tx.ExecContext(ctx, `
+    UPDATE visor_processing_tipsets
+    SET economics_claimed_until = null,
+        economics_completed_at = ?,
+        economics_errors_detected = ?
+    WHERE tip_set = ? AND height = ?
+`, completedAt, useNullIfEmpty(errorsDetected), tipset, height)
 		if err != nil {
 			return err
 		}

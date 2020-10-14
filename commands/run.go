@@ -8,14 +8,17 @@ import (
 	"time"
 
 	"github.com/filecoin-project/specs-actors/actors/builtin"
+	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	"github.com/ipfs/go-cid"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/schedule"
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
+	"github.com/filecoin-project/sentinel-visor/tasks/chain"
 	"github.com/filecoin-project/sentinel-visor/tasks/indexer"
 	"github.com/filecoin-project/sentinel-visor/tasks/message"
+	"github.com/filecoin-project/sentinel-visor/tasks/stats"
 	"github.com/filecoin-project/sentinel-visor/tasks/views"
 )
 
@@ -52,6 +55,13 @@ var Run = &cli.Command{
 			Value:   true,
 			Usage:   "Start indexing tipsets by walking the chain history",
 			EnvVars: []string{"VISOR_INDEXHISTORY"},
+		},
+		&cli.IntFlag{
+			Name:    "indexhistory-batch",
+			Aliases: []string{"ihb"},
+			Value:   25,
+			Usage:   "Batch size for the chain history indexer",
+			EnvVars: []string{"VISOR_INDEXHISTORY_BATCH"},
 		},
 
 		&cli.DurationFlag{
@@ -161,6 +171,36 @@ var Run = &cli.Command{
 			Usage:   "Refresh frequency for chain visualization views (0 = disables refresh)",
 			EnvVars: []string{"VISOR_CHAINVIS_REFRESH"},
 		},
+
+		&cli.DurationFlag{
+			Name:    "processingstats-refresh-rate",
+			Aliases: []string{"psr"},
+			Value:   0,
+			Usage:   "Refresh frequency for processing stats (0 = disables refresh)",
+			EnvVars: []string{"VISOR_PROCESSINGSTATS_REFRESH"},
+		},
+
+		&cli.IntFlag{
+			Name:    "chaineconomics-workers",
+			Aliases: []string{"cew"},
+			Value:   5,
+			Usage:   "Number of chain economics processors to start",
+			EnvVars: []string{"VISOR_CHAINECONOMICS_WORKERS"},
+		},
+		&cli.IntFlag{
+			Name:    "chaineconomics-batch",
+			Aliases: []string{"ceb"},
+			Value:   50, // chain economics processing is quite fast
+			Usage:   "Batch size for the chain economics processor",
+			EnvVars: []string{"VISOR_CHAINECONOMICS_BATCH"},
+		},
+		&cli.DurationFlag{
+			Name:    "chaineconomics-lease",
+			Aliases: []string{"cel"},
+			Value:   time.Minute * 15,
+			Usage:   "Lease time for the chain economics processor",
+			EnvVars: []string{"VISOR_CHAINECONOMICS_LEASE"},
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		// Validate flags
@@ -214,7 +254,7 @@ var Run = &cli.Command{
 		if cctx.Bool("indexhistory") {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                "ChainHistoryIndexer",
-				Task:                indexer.NewChainHistoryIndexer(rctx.db, rctx.api),
+				Task:                indexer.NewChainHistoryIndexer(rctx.db, rctx.api, cctx.Int("indexhistory-batch")),
 				Locker:              NewGlobalSingleton(ChainHistoryIndexerLockID, rctx.db), // only want one history indexer anywhere to be running
 				RestartOnFailure:    true,
 				RestartOnCompletion: true,
@@ -266,6 +306,16 @@ var Run = &cli.Command{
 			})
 		}
 
+		// Add several chain economics tasks to read gas outputs from indexed messages
+		for i := 0; i < cctx.Int("chaineconomics-workers"); i++ {
+			scheduler.Add(schedule.TaskConfig{
+				Name:                fmt.Sprintf("ChainEconomicsProcessor%03d", i),
+				Task:                chain.NewChainEconomicsProcessor(rctx.db, rctx.api, cctx.Duration("chaineconomics-lease"), cctx.Int("chaineconomics-batch"), heightFrom, heightTo),
+				RestartOnFailure:    true,
+				RestartOnCompletion: true,
+			})
+		}
+
 		// Include optional refresher for Chain Visualization views
 		// Zero duration will cause ChainVisRefresher to exit and should not restart
 		scheduler.Add(schedule.TaskConfig{
@@ -275,6 +325,17 @@ var Run = &cli.Command{
 			RestartOnFailure:    true,
 			RestartOnCompletion: false,
 		})
+
+		// Include optional refresher for processing stats
+		if cctx.Duration("processingstats-refresh-rate") != 0 {
+			scheduler.Add(schedule.TaskConfig{
+				Name:                "ProcessingStatsRefresher",
+				Locker:              NewGlobalSingleton(ProcessingStatsRefresherLockID, rctx.db),
+				Task:                stats.NewProcessingStatsRefresher(rctx.db, cctx.Duration("processingstats-refresh-rate")),
+				RestartOnFailure:    true,
+				RestartOnCompletion: true,
+			})
+		}
 
 		// Start the scheduler and wait for it to complete or to be cancelled.
 		err = scheduler.Run(ctx)
@@ -351,15 +412,26 @@ func parseActorCodes(ss []string) ([]cid.Cid, error) {
 }
 
 var actorNamesToCodes = map[string]cid.Cid{
-	"fil/2/system":           builtin.SystemActorCodeID,
-	"fil/2/init":             builtin.InitActorCodeID,
-	"fil/2/cron":             builtin.CronActorCodeID,
-	"fil/2/storagepower":     builtin.StoragePowerActorCodeID,
-	"fil/2/storageminer":     builtin.StorageMinerActorCodeID,
-	"fil/2/storagemarket":    builtin.StorageMarketActorCodeID,
-	"fil/2/paymentchannel":   builtin.PaymentChannelActorCodeID,
-	"fil/2/reward":           builtin.RewardActorCodeID,
-	"fil/2/verifiedregistry": builtin.VerifiedRegistryActorCodeID,
-	"fil/2/account":          builtin.AccountActorCodeID,
-	"fil/2/multisig":         builtin.MultisigActorCodeID,
+	"fil/1/system":           builtin.SystemActorCodeID,
+	"fil/1/init":             builtin.InitActorCodeID,
+	"fil/1/cron":             builtin.CronActorCodeID,
+	"fil/1/storagepower":     builtin.StoragePowerActorCodeID,
+	"fil/1/storageminer":     builtin.StorageMinerActorCodeID,
+	"fil/1/storagemarket":    builtin.StorageMarketActorCodeID,
+	"fil/1/paymentchannel":   builtin.PaymentChannelActorCodeID,
+	"fil/1/reward":           builtin.RewardActorCodeID,
+	"fil/1/verifiedregistry": builtin.VerifiedRegistryActorCodeID,
+	"fil/1/account":          builtin.AccountActorCodeID,
+	"fil/1/multisig":         builtin.MultisigActorCodeID,
+	"fil/2/system":           builtin2.SystemActorCodeID,
+	"fil/2/init":             builtin2.InitActorCodeID,
+	"fil/2/cron":             builtin2.CronActorCodeID,
+	"fil/2/storagepower":     builtin2.StoragePowerActorCodeID,
+	"fil/2/storageminer":     builtin2.StorageMinerActorCodeID,
+	"fil/2/storagemarket":    builtin2.StorageMarketActorCodeID,
+	"fil/2/paymentchannel":   builtin2.PaymentChannelActorCodeID,
+	"fil/2/reward":           builtin2.RewardActorCodeID,
+	"fil/2/verifiedregistry": builtin2.VerifiedRegistryActorCodeID,
+	"fil/2/account":          builtin2.AccountActorCodeID,
+	"fil/2/multisig":         builtin2.MultisigActorCodeID,
 }
