@@ -2,8 +2,13 @@ package message
 
 import (
 	"context"
+	"math"
+	"math/big"
 	"time"
 
+	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/build"
+	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
@@ -140,7 +145,7 @@ func (p *MessageProcessor) processTipSet(ctx context.Context, ts *types.TipSet) 
 
 	ll := log.With("height", int64(ts.Height()))
 
-	msgs, blkMsgs, processingMsgs, err := p.fetchMessages(ctx, ts)
+	blkMsgs, err := p.fetchMessages(ctx, ts)
 	if err != nil {
 		return xerrors.Errorf("fetch messages: %w", err)
 	}
@@ -150,10 +155,16 @@ func (p *MessageProcessor) processTipSet(ctx context.Context, ts *types.TipSet) 
 		return xerrors.Errorf("fetch receipts: %w", err)
 	}
 
+	msgs, bmsgs, processingMsgs, econ, err := p.extractMessageModels(ctx, ts, blkMsgs)
+	if err != nil {
+		return xerrors.Errorf("extract message models: %w", err)
+	}
+
 	result := &messagemodel.MessageTaskResult{
-		Messages:      msgs,
-		BlockMessages: blkMsgs,
-		Receipts:      rcts,
+		Messages:          msgs,
+		BlockMessages:     bmsgs,
+		Receipts:          rcts,
+		MessageGasEconomy: econ,
 	}
 
 	ll.Debugw("persisting tipset", "messages", len(msgs), "block_messages", len(blkMsgs), "receipts", len(rcts))
@@ -173,54 +184,75 @@ func (p *MessageProcessor) processTipSet(ctx context.Context, ts *types.TipSet) 
 	return nil
 }
 
-func (p *MessageProcessor) fetchMessages(ctx context.Context, ts *types.TipSet) (messagemodel.Messages, messagemodel.BlockMessages, visor.ProcessingMessageList, error) {
-	msgs := messagemodel.Messages{}
-	bmsgs := messagemodel.BlockMessages{}
-	pmsgs := visor.ProcessingMessageList{}
-	msgsSeen := map[cid.Cid]struct{}{}
-
-	// TODO consider performing this work in parallel.
+func (p *MessageProcessor) fetchMessages(ctx context.Context, ts *types.TipSet) (map[cid.Cid]*api.BlockMessages, error) {
+	out := make(map[cid.Cid]*api.BlockMessages)
 	for _, blk := range ts.Cids() {
 		// Stop processing if we have somehow passed our own lease time
 		select {
 		case <-ctx.Done():
-			return nil, nil, nil, ctx.Err()
+			return nil, ctx.Err()
+		default:
+		}
+		blkMsgs, err := p.node.ChainGetBlockMessages(ctx, blk)
+		if err != nil {
+			return nil, err
+		}
+		out[blk] = blkMsgs
+	}
+	return out, nil
+}
+
+func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.TipSet, blkMsgs map[cid.Cid]*api.BlockMessages) (messagemodel.Messages, messagemodel.BlockMessages, visor.ProcessingMessageList, *messagemodel.MessageGasEconomy, error) {
+	msgModels := messagemodel.Messages{}
+	bmsgModels := messagemodel.BlockMessages{}
+	pmsgModels := visor.ProcessingMessageList{}
+
+	msgsSeen := map[cid.Cid]struct{}{}
+	totalGasLimit := int64(0)
+	totalUniqGasLimit := int64(0)
+
+	for blk, msgs := range blkMsgs {
+		// Stop processing if we have somehow passed our own lease time
+		select {
+		case <-ctx.Done():
+			return nil, nil, nil, nil, ctx.Err()
 		default:
 		}
 
-		blkMsgs, err := p.node.ChainGetBlockMessages(ctx, blk)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-
-		vmm := make([]*types.Message, 0, len(blkMsgs.Cids))
-		for _, m := range blkMsgs.BlsMessages {
+		// extract all messages, vmm will include duplicate messages.
+		vmm := make([]*types.Message, 0, len(msgs.Cids))
+		for _, m := range msgs.BlsMessages {
 			vmm = append(vmm, m)
 		}
-
-		for _, m := range blkMsgs.SecpkMessages {
+		for _, m := range msgs.SecpkMessages {
 			vmm = append(vmm, &m.Message)
 		}
 
 		for _, message := range vmm {
-			bmsgs = append(bmsgs, &messagemodel.BlockMessage{
+			// record which blocks had which messages
+			bmsgModels = append(bmsgModels, &messagemodel.BlockMessage{
 				Block:   blk.String(),
 				Message: message.Cid().String(),
 			})
 
-			// so we don't create duplicate message models.
+			totalUniqGasLimit += message.GasLimit
 			if _, seen := msgsSeen[message.Cid()]; seen {
 				continue
 			}
+			totalGasLimit += message.GasLimit
 
-			// Record this message for processing by later stages
-			pmsgs = append(pmsgs, visor.NewProcessingMessage(message, int64(ts.Height())))
+			// record this message for processing by later stages
+			pmsgModels = append(pmsgModels, visor.NewProcessingMessage(message, int64(ts.Height())))
 
 			var msgSize int
 			if b, err := message.Serialize(); err == nil {
 				msgSize = len(b)
+			} else {
+				return nil, nil, nil, nil, err
 			}
-			msgs = append(msgs, &messagemodel.Message{
+
+			// record all unique messages
+			msgModels = append(msgModels, &messagemodel.Message{
 				Cid:        message.Cid().String(),
 				From:       message.From.String(),
 				To:         message.To.String(),
@@ -233,10 +265,32 @@ func (p *MessageProcessor) fetchMessages(ctx context.Context, ts *types.TipSet) 
 				Method:     uint64(message.Method),
 				Params:     message.Params,
 			})
+
 			msgsSeen[message.Cid()] = struct{}{}
 		}
+
 	}
-	return msgs, bmsgs, pmsgs, nil
+	newBaseFee := store.ComputeNextBaseFee(ts.Blocks()[0].ParentBaseFee, totalUniqGasLimit, len(ts.Blocks()), ts.Height())
+	baseFeeRat := new(big.Rat).SetFrac(newBaseFee.Int, new(big.Int).SetUint64(build.FilecoinPrecision))
+	baseFee, _ := baseFeeRat.Float64()
+
+	baseFeeChange := new(big.Rat).SetFrac(newBaseFee.Int, ts.Blocks()[0].ParentBaseFee.Int)
+	baseFeeChangeF, _ := baseFeeChange.Float64()
+
+	return msgModels,
+		bmsgModels,
+		pmsgModels,
+		&messagemodel.MessageGasEconomy{
+			StateRoot:           ts.ParentState().String(),
+			GasLimitTotal:       totalGasLimit,
+			GasLimitUniqueTotal: totalUniqGasLimit,
+			BaseFee:             baseFee,
+			BaseFeeChangeLog:    math.Log(baseFeeChangeF) / math.Log(1.125),
+			GasFillRatio:        float64(totalGasLimit) / float64(len(ts.Blocks())*build.BlockGasTarget),
+			GasCapacityRatio:    float64(totalUniqGasLimit) / float64(len(ts.Blocks())*build.BlockGasTarget),
+			GasWasteRatio:       float64(totalGasLimit-totalUniqGasLimit) / float64(len(ts.Blocks())*build.BlockGasTarget),
+		},
+		nil
 }
 
 func (p *MessageProcessor) fetchReceipts(ctx context.Context, ts *types.TipSet) (messagemodel.Receipts, error) {
