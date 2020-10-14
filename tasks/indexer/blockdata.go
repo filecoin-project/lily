@@ -7,9 +7,9 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
-	"golang.org/x/sync/errgroup"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 )
@@ -52,49 +52,29 @@ func (u *UnindexedBlockData) Persist(ctx context.Context, db *pg.DB) error {
 	ctx, span := global.Tracer("").Start(ctx, "Indexer.PersistBlockData")
 	defer span.End()
 
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		grp, ctx := errgroup.WithContext(ctx)
-
-		grp.Go(func() error {
-			if err := u.blks.PersistWithTx(ctx, tx); err != nil {
-				return xerrors.Errorf("persist block headers: %w", err)
-			}
-			return nil
-		})
-
-		grp.Go(func() error {
-			if err := u.parents.PersistWithTx(ctx, tx); err != nil {
-				return xerrors.Errorf("persist block parents: %w", err)
-			}
-			return nil
-		})
-
-		grp.Go(func() error {
-			if err := u.drandEntries.PersistWithTx(ctx, tx); err != nil {
-				return xerrors.Errorf("persist drand entries: %w", err)
-			}
-			return nil
-		})
-
-		grp.Go(func() error {
-			if err := u.drandBlockEntries.PersistWithTx(ctx, tx); err != nil {
-				return xerrors.Errorf("persist drand block entries: %w", err)
-			}
-			return nil
-		})
-
-		grp.Go(func() error {
-			if err := u.tipsets.PersistWithTx(ctx, tx); err != nil {
-				return xerrors.Errorf("persist processing tipsets: %w", err)
-			}
-			return nil
-		})
-
-		if err := grp.Wait(); err != nil {
-			log.Warnf("rolling back unindexed block data", "error", err)
-			return err
+		if err := u.blks.PersistWithTx(ctx, tx); err != nil {
+			return xerrors.Errorf("persist block headers: %w", err)
 		}
 
+		if err := u.parents.PersistWithTx(ctx, tx); err != nil {
+			return xerrors.Errorf("persist block parents: %w", err)
+		}
+
+		if err := u.drandEntries.PersistWithTx(ctx, tx); err != nil {
+			return xerrors.Errorf("persist drand entries: %w", err)
+		}
+
+		if err := u.drandBlockEntries.PersistWithTx(ctx, tx); err != nil {
+			return xerrors.Errorf("persist drand block entries: %w", err)
+		}
+
+		if err := u.tipsets.PersistWithTx(ctx, tx); err != nil {
+			return xerrors.Errorf("persist processing tipsets: %w", err)
+		}
 		return nil
 	})
 }

@@ -28,6 +28,7 @@ type MinerTaskResult struct {
 	Ts        types.TipSetKey
 	Pts       types.TipSetKey
 	StateRoot cid.Cid
+	Height    int64
 
 	Addr  address.Address
 	Actor *types.Actor
@@ -38,6 +39,7 @@ type MinerTaskResult struct {
 	PreCommitChanges *miner.PreCommitChanges
 	SectorChanges    *miner.SectorChanges
 	PartitionDiff    map[uint64]*PartitionStatus
+	Posts            map[uint64]cid.Cid
 }
 
 func (mtr *MinerTaskResult) Persist(ctx context.Context, db *pg.DB) error {

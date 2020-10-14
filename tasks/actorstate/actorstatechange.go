@@ -10,6 +10,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
 	"github.com/raulk/clock"
+	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/label"
@@ -111,6 +112,7 @@ func (p *ActorStateChangeProcessor) processItem(ctx context.Context, item *visor
 	defer span.End()
 	span.SetAttributes(label.Any("height", item.Height), label.Any("tipset", item.TipSet))
 
+	stats.Record(ctx, metrics.TipsetHeight.M(item.Height))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
 

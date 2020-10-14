@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
@@ -33,13 +32,13 @@ func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateA
 	if err != nil {
 		return nil, err
 	}
-	log.Debugw("read full actor state", "addr", a.Address.String(), "size", len(state), "code", builtin.ActorNameByCode(a.Actor.Code))
+	log.Debugw("read full actor state", "addr", a.Address.String(), "size", len(state), "code", ActorNameByCode(a.Actor.Code))
 
 	return &commonmodel.ActorTaskResult{
 		Actor: &commonmodel.Actor{
 			ID:        a.Address.String(),
 			StateRoot: a.ParentStateRoot.String(),
-			Code:      builtin.ActorNameByCode(a.Actor.Code),
+			Code:      ActorNameByCode(a.Actor.Code),
 			Head:      a.Actor.Head.String(),
 			Balance:   a.Actor.Balance.String(),
 			Nonce:     a.Actor.Nonce,
