@@ -11,7 +11,7 @@ func init() {
 	up := batch(`
 	CREATE TABLE IF NOT EXISTS "miner_sector_posts" (
 		"miner_id" text not null,
-		"sector_id" bigserial not null,
+		"sector_id" bigint not null,
 		"epoch" bigint not null,
 		"post_message_cid" text,
 		PRIMARY KEY ("miner_id", "sector_id", "epoch")
