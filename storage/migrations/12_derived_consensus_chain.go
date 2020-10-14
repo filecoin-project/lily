@@ -4,12 +4,12 @@ import (
 	"github.com/go-pg/migrations/v8"
 )
 
-// Schema version 8 adds a heaviest chain view
+// Schema version 8 adds view over derived_conensus_chain_view
 
 func init() {
 	up := batch(`
-CREATE MATERIALIZED VIEW IF NOT EXISTS heaviest_chain_view AS
-WITH RECURSIVE heaviest_chain AS (
+CREATE MATERIALIZED VIEW IF NOT EXISTS derived_conensus_chain_view AS
+WITH RECURSIVE consensus_chain AS (
 	SELECT
 		b.cid,
 		b.height,
@@ -29,13 +29,13 @@ WITH RECURSIVE heaviest_chain AS (
 		p.win_count
 	FROM block_headers p
 	INNER JOIN block_parents pb ON p.cid = pb.parent
-	INNER JOIN heaviest_chain c ON c.cid = pb.block
-) select * from heaviest_chain
+	INNER JOIN consensus_chain c ON c.cid = pb.block
+) select * from consensus_chain
 WITH NO DATA;
 `)
 
 	down := batch(`
-DROP MATERIALIZED VIEW IF EXISTS heaviest_chain_view;
+DROP MATERIALIZED VIEW IF EXISTS derived_conensus_chain_view;
 	`)
 
 	migrations.MustRegisterTx(up, down)
