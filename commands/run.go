@@ -59,7 +59,7 @@ var Run = &cli.Command{
 			Aliases: []string{"ihb"},
 			Value:   25,
 			Usage:   "Batch size for the chain history indexer",
-			EnvVars: []string{"VISOR_indexhistory_BATCH"},
+			EnvVars: []string{"VISOR_INDEXHISTORY_BATCH"},
 		},
 
 		&cli.DurationFlag{
