@@ -15,12 +15,12 @@ import (
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
-func NewChainHistoryIndexer(d *storage.Database, node lens.API) *ChainHistoryIndexer {
+func NewChainHistoryIndexer(d *storage.Database, node lens.API, batchSize int) *ChainHistoryIndexer {
 	return &ChainHistoryIndexer{
 		node:      node,
 		storage:   d,
 		finality:  900,
-		batchSize: 500,
+		batchSize: batchSize,
 	}
 }
 
