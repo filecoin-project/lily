@@ -55,6 +55,13 @@ var Run = &cli.Command{
 			Usage:   "Start indexing tipsets by walking the chain history",
 			EnvVars: []string{"VISOR_INDEXHISTORY"},
 		},
+		&cli.IntFlag{
+			Name:    "indexhistory-batch",
+			Aliases: []string{"ihb"},
+			Value:   25,
+			Usage:   "Batch size for the chain history indexer",
+			EnvVars: []string{"VISOR_INDEXHISTORY_BATCH"},
+		},
 
 		&cli.DurationFlag{
 			Name:    "statechange-lease",
@@ -246,7 +253,7 @@ var Run = &cli.Command{
 		if cctx.Bool("indexhistory") {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                "ChainHistoryIndexer",
-				Task:                indexer.NewChainHistoryIndexer(rctx.db, rctx.api),
+				Task:                indexer.NewChainHistoryIndexer(rctx.db, rctx.api, cctx.Int("indexhistory-batch")),
 				Locker:              NewGlobalSingleton(ChainHistoryIndexerLockID, rctx.db), // only want one history indexer anywhere to be running
 				RestartOnFailure:    true,
 				RestartOnCompletion: true,
