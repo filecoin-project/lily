@@ -25,6 +25,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/derived"
 	"github.com/filecoin-project/sentinel-visor/model/messages"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
+	"github.com/filecoin-project/sentinel-visor/version"
 )
 
 var models = []interface{}{
@@ -80,6 +81,7 @@ func NewDatabase(ctx context.Context, url string, poolSize int) (*Database, erro
 		return nil, xerrors.Errorf("parse database URL: %w", err)
 	}
 	opt.PoolSize = poolSize
+	opt.ApplicationName = "visor-" + version.String()
 
 	return &Database{
 		opt:   opt,
