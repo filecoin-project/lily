@@ -75,6 +75,24 @@ func (m *MockAPI) ChainReadObj(ctx context.Context, c cid.Cid) ([]byte, error) {
 	return blk.RawData(), nil
 }
 
+func (m *MockAPI) ChainGetBlockMessages(ctx context.Context, msg cid.Cid) (*api.BlockMessages, error) {
+	return &api.BlockMessages{
+		BlsMessages:   []*types.Message{},
+		SecpkMessages: []*types.SignedMessage{},
+		Cids:          []cid.Cid{},
+	}, nil
+}
+
+func (m *MockAPI) ChainGetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error) {
+	blks := make([]*types.BlockHeader, len(tsk.Cids()))
+	for i, cid := range tsk.Cids() {
+		if err := m.store.Get(ctx, cid, blks[i]); err != nil {
+			return nil, err
+		}
+	}
+	return types.NewTipSet(blks)
+}
+
 func (m *MockAPI) StateReadState(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*api.ActorState, error) {
 	act, err := m.StateGetActor(ctx, actor, tsk)
 	if err != nil {
@@ -102,6 +120,10 @@ func (m *MockAPI) StateGetActor(ctx context.Context, actor address.Address, tsk 
 		return nil, xerrors.Errorf("actor not found addr:%s tsk=%s", actor, tsk)
 	}
 	return act, nil
+}
+
+func (m *MockAPI) StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error) {
+	panic("not implemented")
 }
 
 func (m *MockAPI) StateMinerPower(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.MinerPower, error) {

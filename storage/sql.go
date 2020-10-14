@@ -39,6 +39,7 @@ var models = []interface{}{
 	(*miner.MinerState)(nil),
 	(*miner.MinerDealSector)(nil),
 	(*miner.MinerSectorInfo)(nil),
+	(*miner.MinerSectorPost)(nil),
 	(*miner.MinerPreCommitInfo)(nil),
 
 	(*market.MarketDealProposal)(nil),

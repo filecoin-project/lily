@@ -74,6 +74,12 @@ func (aw *APIWrapper) ChainGetParentMessages(ctx context.Context, bcid cid.Cid) 
 	return aw.FullNode.ChainGetParentMessages(ctx, bcid)
 }
 
+func (aw *APIWrapper) StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error) {
+	ctx, span := global.Tracer("").Start(ctx, "Lotus.StateGetReceipt")
+	defer span.End()
+	return aw.FullNode.StateGetReceipt(ctx, bcid, tsk)
+}
+
 func (aw *APIWrapper) ChainGetParentReceipts(ctx context.Context, bcid cid.Cid) ([]*types.MessageReceipt, error) {
 	ctx, span := global.Tracer("").Start(ctx, "Lotus.ChainGetParentReceipts")
 	defer span.End()
