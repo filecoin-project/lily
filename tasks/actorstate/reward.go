@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/filecoin-project/lotus/chain/actors/builtin/reward"
-	"github.com/filecoin-project/specs-actors/actors/builtin"
+	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
+	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	"go.opentelemetry.io/otel/api/global"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	rewardmodel "github.com/filecoin-project/sentinel-visor/model/actors/reward"
@@ -19,17 +19,18 @@ import (
 type RewardExtractor struct{}
 
 func init() {
-	Register(builtin.RewardActorCodeID, RewardExtractor{})
+	Register(sa0builtin.RewardActorCodeID, RewardExtractor{})
+	Register(sa2builtin.RewardActorCodeID, RewardExtractor{})
 }
 
-func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
+func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "RewardExtractor")
 	defer span.End()
 
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
 
-	rewardActor, err := node.StateGetActor(ctx, builtin.RewardActorAddr, a.TipSet)
+	rewardActor, err := node.StateGetActor(ctx, reward.Address, a.TipSet)
 	if err != nil {
 		return nil, err
 	}

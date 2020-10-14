@@ -310,6 +310,26 @@ func (d *Database) MarkStateChangeComplete(ctx context.Context, tsk string, heig
 	return nil
 }
 
+// GetActorByHead returns an actor without a lease by its CID
+func (d *Database) GetActorByHead(ctx context.Context, head string) (*visor.ProcessingActor, error) {
+	if len(head) == 0 {
+		return nil, xerrors.Errorf("lookup actor head was empty")
+	}
+
+	d.DB.AddQueryHook(pgext.DebugHook{
+		Verbose: true, // Print all queries.
+	})
+
+	a := new(visor.ProcessingActor)
+	if err := d.DB.ModelContext(ctx, a).
+		Where("head = ?", head).
+		Limit(1).
+		Select(); err != nil {
+		return nil, err
+	}
+	return a, nil
+}
+
 // LeaseActors leases a set of actors to process. minHeight and maxHeight define an inclusive range of heights to process.
 func (d *Database) LeaseActors(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64, codes []string) (visor.ProcessingActorList, error) {
 	var actors visor.ProcessingActorList

@@ -7,9 +7,9 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lotus/chain/events/state"
-	"github.com/filecoin-project/specs-actors/actors/builtin"
+	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
+	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
@@ -21,10 +21,11 @@ import (
 type InitExtractor struct{}
 
 func init() {
-	Register(builtin.InitActorCodeID, InitExtractor{})
+	Register(sa0builtin.InitActorCodeID, InitExtractor{})
+	Register(sa2builtin.InitActorCodeID, InitExtractor{})
 }
 
-func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node lens.API) (model.Persistable, error) {
+func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "InitExtractor")
 	defer span.End()
 

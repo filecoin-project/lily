@@ -39,8 +39,8 @@ func init() {
 }
 
 func TestGenesisProcessor(t *testing.T) {
-	if testing.Short() || !testutil.DatabaseAvailable() {
-		t.Skip("short testing requested or VISOR_TEST_DB not set")
+	if testing.Short() {
+		t.Skip("short testing requested")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -122,7 +122,6 @@ func TestGenesisProcessor(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotEqual(t, 0, count)
 	})
-
 }
 
 // truncateGenesisTables ensures the indexing tables are empty
