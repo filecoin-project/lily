@@ -5,7 +5,7 @@ import (
 )
 
 func init() {
-	up := batch(``)
-	down := batch(``)
+	up := batch(`SELECT 1;`)
+	down := batch(`SELECT 1;`)
 	migrations.MustRegisterTx(up, down)
 }

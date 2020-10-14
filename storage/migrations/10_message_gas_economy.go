@@ -6,7 +6,7 @@ import (
 
 func init() {
 	up := batch(`
-CREATE TABLE public.message_gas_economy (
+CREATE TABLE IF NOT EXISTS public.message_gas_economy (
 	"state_root" text NOT NULL,
 	"gas_limit_total" double precision NOT NULL,
 	"gas_limit_unique_total "double precision NULL,

@@ -47,6 +47,7 @@ var models = []interface{}{
 	(*messages.Message)(nil),
 	(*messages.BlockMessage)(nil),
 	(*messages.Receipt)(nil),
+	(*messages.MessageGasEconomy)(nil),
 
 	(*power.ChainPower)(nil),
 	(*reward.ChainReward)(nil),
