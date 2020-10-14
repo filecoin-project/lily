@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/filecoin-project/specs-actors/actors/builtin"
+	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	"github.com/ipfs/go-cid"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
@@ -351,15 +352,26 @@ func parseActorCodes(ss []string) ([]cid.Cid, error) {
 }
 
 var actorNamesToCodes = map[string]cid.Cid{
-	"fil/2/system":           builtin.SystemActorCodeID,
-	"fil/2/init":             builtin.InitActorCodeID,
-	"fil/2/cron":             builtin.CronActorCodeID,
-	"fil/2/storagepower":     builtin.StoragePowerActorCodeID,
-	"fil/2/storageminer":     builtin.StorageMinerActorCodeID,
-	"fil/2/storagemarket":    builtin.StorageMarketActorCodeID,
-	"fil/2/paymentchannel":   builtin.PaymentChannelActorCodeID,
-	"fil/2/reward":           builtin.RewardActorCodeID,
-	"fil/2/verifiedregistry": builtin.VerifiedRegistryActorCodeID,
-	"fil/2/account":          builtin.AccountActorCodeID,
-	"fil/2/multisig":         builtin.MultisigActorCodeID,
+	"fil/1/system":           builtin.SystemActorCodeID,
+	"fil/1/init":             builtin.InitActorCodeID,
+	"fil/1/cron":             builtin.CronActorCodeID,
+	"fil/1/storagepower":     builtin.StoragePowerActorCodeID,
+	"fil/1/storageminer":     builtin.StorageMinerActorCodeID,
+	"fil/1/storagemarket":    builtin.StorageMarketActorCodeID,
+	"fil/1/paymentchannel":   builtin.PaymentChannelActorCodeID,
+	"fil/1/reward":           builtin.RewardActorCodeID,
+	"fil/1/verifiedregistry": builtin.VerifiedRegistryActorCodeID,
+	"fil/1/account":          builtin.AccountActorCodeID,
+	"fil/1/multisig":         builtin.MultisigActorCodeID,
+	"fil/2/system":           builtin2.SystemActorCodeID,
+	"fil/2/init":             builtin2.InitActorCodeID,
+	"fil/2/cron":             builtin2.CronActorCodeID,
+	"fil/2/storagepower":     builtin2.StoragePowerActorCodeID,
+	"fil/2/storageminer":     builtin2.StorageMinerActorCodeID,
+	"fil/2/storagemarket":    builtin2.StorageMarketActorCodeID,
+	"fil/2/paymentchannel":   builtin2.PaymentChannelActorCodeID,
+	"fil/2/reward":           builtin2.RewardActorCodeID,
+	"fil/2/verifiedregistry": builtin2.VerifiedRegistryActorCodeID,
+	"fil/2/account":          builtin2.AccountActorCodeID,
+	"fil/2/multisig":         builtin2.MultisigActorCodeID,
 }
