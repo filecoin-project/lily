@@ -173,9 +173,10 @@ func setupLogging(cctx *cli.Context) error {
 }
 
 const (
-	ChainHeadIndexerLockID    = 98981111
-	ChainHistoryIndexerLockID = 98981112
-	ChainVisRefresherLockID   = 98981113
+	ChainHeadIndexerLockID         = 98981111
+	ChainHistoryIndexerLockID      = 98981112
+	ChainVisRefresherLockID        = 98981113
+	ProcessingStatsRefresherLockID = 98981114
 )
 
 func NewGlobalSingleton(id int64, d *storage.Database) *GlobalSingleton {

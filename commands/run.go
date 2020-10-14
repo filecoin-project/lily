@@ -17,6 +17,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/tasks/chain"
 	"github.com/filecoin-project/sentinel-visor/tasks/indexer"
 	"github.com/filecoin-project/sentinel-visor/tasks/message"
+	"github.com/filecoin-project/sentinel-visor/tasks/stats"
 	"github.com/filecoin-project/sentinel-visor/tasks/views"
 )
 
@@ -161,6 +162,14 @@ var Run = &cli.Command{
 			Value:   0,
 			Usage:   "Refresh frequency for chain visualization views (0 = disables refresh)",
 			EnvVars: []string{"VISOR_CHAINVIS_REFRESH"},
+		},
+
+		&cli.DurationFlag{
+			Name:    "processingstats-refresh-rate",
+			Aliases: []string{"psr"},
+			Value:   0,
+			Usage:   "Refresh frequency for processing stats (0 = disables refresh)",
+			EnvVars: []string{"VISOR_PROCESSINGSTATS_REFRESH"},
 		},
 
 		&cli.IntFlag{
@@ -308,6 +317,17 @@ var Run = &cli.Command{
 			RestartOnFailure:    true,
 			RestartOnCompletion: false,
 		})
+
+		// Include optional refresher for processing stats
+		if cctx.Duration("processingstats-refresh-rate") != 0 {
+			scheduler.Add(schedule.TaskConfig{
+				Name:                "ProcessingStatsRefresher",
+				Locker:              NewGlobalSingleton(ProcessingStatsRefresherLockID, rctx.db),
+				Task:                stats.NewProcessingStatsRefresher(rctx.db, cctx.Duration("processingstats-refresh-rate")),
+				RestartOnFailure:    true,
+				RestartOnCompletion: true,
+			})
+		}
 
 		// Start the scheduler and wait for it to complete or to be cancelled.
 		err = scheduler.Run(ctx)
