@@ -24,7 +24,7 @@ CREATE INDEX IF NOT EXISTS "visor_processing_messages_gas_outputs_idx" ON public
 CREATE INDEX IF NOT EXISTS "visor_processing_messages_height_idx"      ON public.visor_processing_messages USING BTREE (height DESC);
 
 CREATE INDEX IF NOT EXISTS "visor_processing_actors_completed_idx" ON public.visor_processing_actors USING BTREE (completed_at, claimed_until);
-CREATE INDEX IF NOT EXISTS "visor_processing_actors_code_idx"      ON public.visor_processing_actors USING BTREE (code);
+CREATE INDEX IF NOT EXISTS "visor_processing_actors_code_idx"      ON public.visor_processing_actors USING HASH (code);
 CREATE INDEX IF NOT EXISTS "visor_processing_actors_height_idx"    ON public.visor_processing_actors USING BTREE (height DESC);
 `)
 
