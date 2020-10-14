@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/lens/lotus"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
@@ -58,7 +59,7 @@ func TestChainHistoryIndexer(t *testing.T) {
 
 	d := &storage.Database{DB: db}
 	t.Logf("initializing indexer")
-	idx := NewChainHistoryIndexer(d, node)
+	idx := NewChainHistoryIndexer(d, lens.API(node), 1)
 
 	t.Logf("indexing chain")
 	err = idx.WalkChain(ctx, int64(head.Height()))
