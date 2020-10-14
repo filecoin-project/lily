@@ -18,7 +18,7 @@ WITH RECURSIVE consensus_chain AS (
 		b.parent_state_root,
 		b.win_count
 	FROM block_headers b
-	WHERE b.parent_state_root = (select parent_state_root from block_headers order by height desc, parent_weight desc limit 1)
+	WHERE b.parent_state_root = (SELECT parent_state_root FROM block_headers ORDER BY height desc, parent_weight DESC LIMIT 1)
 	UNION
 	SELECT
 		p.cid,
@@ -30,7 +30,7 @@ WITH RECURSIVE consensus_chain AS (
 	FROM block_headers p
 	INNER JOIN block_parents pb ON p.cid = pb.parent
 	INNER JOIN consensus_chain c ON c.cid = pb.block
-) select * from consensus_chain
+) SELECT * FROM consensus_chain
 WITH NO DATA;
 `)
 
