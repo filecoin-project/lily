@@ -16,6 +16,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
@@ -187,6 +188,7 @@ func (p *ActorStateProcessor) debugActor(ctx context.Context, info ActorInfo, wr
 // Run starts processing batches of actors and blocks until the context is done or
 // an error occurs.
 func (p *ActorStateProcessor) Run(ctx context.Context) error {
+
 	// Loop until context is done or processing encounters a fatal error
 	return wait.RepeatUntil(ctx, batchInterval, p.processBatch)
 }
@@ -274,8 +276,8 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, info ActorInfo) 
 		return xerrors.Errorf("no extractor defined for actor code %q", info.Actor.Code.String())
 	}
 
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, builtin.ActorNameByCode(info.Actor.Code)))
-	span.SetAttribute("actor", builtin.ActorNameByCode(info.Actor.Code))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, ActorNameByCode(info.Actor.Code)))
+	span.SetAttribute("actor", ActorNameByCode(info.Actor.Code))
 
 	data, err = extractor.Extract(ctx, info, p.node)
 	if err != nil {
@@ -336,4 +338,13 @@ func NewActorInfo(a *visor.ProcessingActor) (ActorInfo, error) {
 	}
 
 	return info, nil
+}
+
+// ActorNameByCode returns the name of the actor code. Agnostic to the
+// version of specs-actors.
+func ActorNameByCode(code cid.Cid) string {
+	if name := builtin.ActorNameByCode(code); name != "<unknown>" {
+		return name
+	}
+	return builtin2.ActorNameByCode(code)
 }
