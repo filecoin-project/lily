@@ -363,8 +363,8 @@ WITH leased AS (
 	    FOR UPDATE SKIP LOCKED
 	) candidates
 	WHERE a.head = candidates.head AND a.code = candidates.code
-    RETURNING a.head, a.code, a.nonce, a.balance, a.address, a.parent_state_root, a.tip_set, a.parent_tip_set)
-SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set from leased;
+    RETURNING a.head, a.code, a.nonce, a.balance, a.address, a.parent_state_root, a.tip_set, a.parent_tip_set, a.height)
+SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set, height from leased;
     `, claimUntil, d.Clock.Now(), minHeight, maxHeight, pg.In(codes), batchSize)
 		if err != nil {
 			return err
