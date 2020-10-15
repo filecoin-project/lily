@@ -20,6 +20,16 @@ var Migrate = &cli.Command{
 			Value: false,
 			Usage: "Migrate the schema to the latest version.",
 		},
+		&cli.BoolFlag{
+			Name:  "deferred",
+			Value: false,
+			Usage: "Run deferred migrations.",
+		},
+		&cli.IntFlag{
+			Name:  "deferred-to",
+			Usage: "Run deferred migrations to `VERSION`.",
+			Value: 0,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		if err := setupLogging(cctx); err != nil {
@@ -34,11 +44,21 @@ var Migrate = &cli.Command{
 		}
 
 		if cctx.IsSet("to") {
-			return db.MigrateSchemaTo(ctx, cctx.Int("to"))
-		}
-
-		if cctx.Bool("latest") {
-			return db.MigrateSchema(ctx)
+			if err := db.MigrateSchemaTo(ctx, cctx.Int("to")); err != nil {
+				return xerrors.Errorf("migrate schema to: %w", err)
+			}
+		} else if cctx.Bool("latest") {
+			if err := db.MigrateSchema(ctx); err != nil {
+				return xerrors.Errorf("migrate schema: %w", err)
+			}
+		} else if cctx.Bool("deferred") {
+			if err := db.RunDeferredMigrations(ctx); err != nil {
+				return xerrors.Errorf("run deferred migrations: %w", err)
+			}
+		} else if cctx.IsSet("deferred-to") {
+			if err := db.RunDeferredMigrationsTo(ctx, cctx.Int("deferred-to")); err != nil {
+				return xerrors.Errorf("run deferred migrations: %w", err)
+			}
 		}
 
 		dbVersion, latestVersion, err := db.GetSchemaVersions(ctx)
@@ -47,6 +67,18 @@ var Migrate = &cli.Command{
 		}
 
 		log.Infof("current database schema is version %d, latest is %d", dbVersion, latestVersion)
+
+		dbDeferredVersion, deferredLatestVersion, err := db.GetDeferredSchemaVersions(ctx, dbVersion)
+		if err != nil {
+			return xerrors.Errorf("get deferred migrations versions: %w", err)
+		}
+
+		if dbDeferredVersion == deferredLatestVersion {
+			log.Infof("deferred migrations for version %d have been applied, no further deferred migrations needed", dbDeferredVersion)
+		} else {
+			log.Warnf("deferred migrations for version %d have been applied, there are unapplied migrations for version %d", dbDeferredVersion, deferredLatestVersion)
+			log.Infof("use `visor migrate --deferred` to run deferred migrations")
+		}
 
 		if err := db.VerifyCurrentSchema(ctx); err != nil {
 			return xerrors.Errorf("verify schema: %w", err)
