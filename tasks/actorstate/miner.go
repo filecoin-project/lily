@@ -150,6 +150,7 @@ func (m StorageMinerExtractor) computeSectorEvents(ctx context.Context, node Act
 				event = minermodel.SectorExpired
 			}
 			out = append(out, &minermodel.MinerSectorEvent{
+				Height:    int64(a.Epoch),
 				MinerID:   a.Address.String(),
 				StateRoot: a.ParentStateRoot.String(),
 				SectorID:  u,
@@ -163,6 +164,7 @@ func (m StorageMinerExtractor) computeSectorEvents(ctx context.Context, node Act
 		// track recovering sectors
 		if err := ps.Recovering.ForEach(func(u uint64) error {
 			out = append(out, &minermodel.MinerSectorEvent{
+				Height:    int64(a.Epoch),
 				MinerID:   a.Address.String(),
 				StateRoot: a.ParentStateRoot.String(),
 				SectorID:  u,
@@ -176,6 +178,7 @@ func (m StorageMinerExtractor) computeSectorEvents(ctx context.Context, node Act
 		// track faulted sectors
 		if err := ps.Faulted.ForEach(func(u uint64) error {
 			out = append(out, &minermodel.MinerSectorEvent{
+				Height:    int64(a.Epoch),
 				MinerID:   a.Address.String(),
 				StateRoot: a.ParentStateRoot.String(),
 				SectorID:  u,
@@ -189,6 +192,7 @@ func (m StorageMinerExtractor) computeSectorEvents(ctx context.Context, node Act
 		// track recovered sectors
 		if err := ps.Recovered.ForEach(func(u uint64) error {
 			out = append(out, &minermodel.MinerSectorEvent{
+				Height:    int64(a.Epoch),
 				MinerID:   a.Address.String(),
 				StateRoot: a.ParentStateRoot.String(),
 				SectorID:  u,
@@ -209,6 +213,7 @@ func (m StorageMinerExtractor) computeSectorEvents(ctx context.Context, node Act
 				event = minermodel.CommitCapacityAdded
 			}
 			out = append(out, &minermodel.MinerSectorEvent{
+				Height:    int64(a.Epoch),
 				MinerID:   a.Address.String(),
 				StateRoot: a.ParentStateRoot.String(),
 				SectorID:  uint64(add.SectorNumber),
@@ -220,6 +225,7 @@ func (m StorageMinerExtractor) computeSectorEvents(ctx context.Context, node Act
 		// track sector extensions
 		for _, mod := range sc.Extended {
 			out = append(out, &minermodel.MinerSectorEvent{
+				Height:    int64(a.Epoch),
 				MinerID:   a.Address.String(),
 				StateRoot: a.ParentStateRoot.String(),
 				SectorID:  uint64(mod.To.SectorNumber),
@@ -234,6 +240,7 @@ func (m StorageMinerExtractor) computeSectorEvents(ctx context.Context, node Act
 		// track precommit addition
 		for _, add := range pc.Added {
 			out = append(out, &minermodel.MinerSectorEvent{
+				Height:    int64(a.Epoch),
 				MinerID:   a.Address.String(),
 				StateRoot: a.ParentStateRoot.String(),
 				SectorID:  uint64(add.Info.SectorNumber),

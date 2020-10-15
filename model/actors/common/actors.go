@@ -8,6 +8,7 @@ import (
 )
 
 type Actor struct {
+	Height    int64  `pg:",pk,notnull,use_zero"`
 	ID        string `pg:",pk,notnull"`
 	StateRoot string `pg:",pk,notnull"`
 	Code      string `pg:",notnull"`
@@ -28,9 +29,10 @@ func (a *Actor) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 }
 
 type ActorState struct {
-	Head  string `pg:",pk,notnull"`
-	Code  string `pg:",pk,notnull"`
-	State string `pg:",type:jsonb,notnull"`
+	Height int64  `pg:",pk,notnull,use_zero"`
+	Head   string `pg:",pk,notnull"`
+	Code   string `pg:",pk,notnull"`
+	State  string `pg:",type:jsonb,notnull"`
 }
 
 func (s *ActorState) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
@@ -42,5 +44,4 @@ func (s *ActorState) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 		return err
 	}
 	return nil
-
 }

@@ -238,6 +238,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 		for _, message := range vmm {
 			// record which blocks had which messages
 			result.BlockMessages = append(result.BlockMessages, &messagemodel.BlockMessage{
+				Height:  int64(ts.Height()),
 				Block:   blk.String(),
 				Message: message.Cid().String(),
 			})
@@ -260,6 +261,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 
 			// record all unique messages
 			msg := &messagemodel.Message{
+				Height:     int64(ts.Height()),
 				Cid:        message.Cid().String(),
 				From:       message.From.String(),
 				To:         message.To.String(),
@@ -307,6 +309,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 	baseFeeChangeF, _ := baseFeeChange.Float64()
 
 	result.MessageGasEconomy = &messagemodel.MessageGasEconomy{
+		Height:              int64(ts.Height()),
 		StateRoot:           ts.ParentState().String(),
 		GasLimitTotal:       totalGasLimit,
 		GasLimitUniqueTotal: totalUniqGasLimit,
@@ -389,6 +392,7 @@ func (p *MessageProcessor) fetchReceipts(ctx context.Context, ts *types.TipSet) 
 
 		for i, r := range recs {
 			out = append(out, &messagemodel.Receipt{
+				Height:    int64(ts.Height()),
 				Message:   msgs[i].Cid.String(),
 				StateRoot: ts.ParentState().String(),
 				Idx:       i,

@@ -485,10 +485,10 @@ WITH leased AS (
 			   m.gas_fee_cap, m.gas_premium, m.gas_limit, m.method,
 			   r.state_root, r.exit_code,r.gas_used, bh.parent_base_fee
 		FROM visor_processing_messages pm
-		JOIN receipts r ON pm.cid = r.message
-		JOIN messages m ON pm.cid = m.cid
-		JOIN block_messages bm on pm.cid = bm.message
-		JOIN block_headers bh on bm.block = bh.cid
+		JOIN receipts r ON pm.cid = r.message -- don't join receipts on height since it's the height of the receipt
+		JOIN messages m ON pm.cid = m.cid AND pm.height = m.height
+		JOIN block_messages bm on pm.cid = bm.message AND pm.height = bm.height
+		JOIN block_headers bh on bm.block = bh.cid AND bm.height = bh.height
 		WHERE pm.gas_outputs_completed_at IS null AND
 		      (pm.gas_outputs_claimed_until IS null OR pm.gas_outputs_claimed_until < ?) AND
 		      pm.height >= ? AND pm.height <= ?

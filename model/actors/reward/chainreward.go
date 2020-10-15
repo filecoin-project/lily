@@ -10,6 +10,7 @@ import (
 )
 
 type ChainReward struct {
+	Height                            int64  `pg:",pk,notnull,use_zero"`
 	StateRoot                         string `pg:",pk,notnull"`
 	CumSumBaseline                    string `pg:",notnull"`
 	CumSumRealized                    string `pg:",notnull"`
