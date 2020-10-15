@@ -4,11 +4,14 @@ import (
 	"github.com/go-pg/migrations/v8"
 )
 
-// Schema version 8 adds view over derived_conensus_chain_view
+// Schema version 8 adds view over derived_consensus_chain_view
 
 func init() {
 	up := batch(`
-CREATE MATERIALIZED VIEW IF NOT EXISTS derived_conensus_chain_view AS
+-- drop old mis-named view if it exists
+DROP MATERIALIZED VIEW IF EXISTS derived_conensus_chain_view;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS derived_consensus_chain_view AS
 WITH RECURSIVE consensus_chain AS (
 	SELECT
 		b.cid,
@@ -35,7 +38,7 @@ WITH NO DATA;
 `)
 
 	down := batch(`
-DROP MATERIALIZED VIEW IF EXISTS derived_conensus_chain_view;
+DROP MATERIALIZED VIEW IF EXISTS derived_consensus_chain_view;
 	`)
 
 	migrations.MustRegisterTx(up, down)
