@@ -158,7 +158,7 @@ func (m StorageMinerExtractor) minerPosts(ctx context.Context, actor *ActorInfo,
 		if err != nil {
 			return err
 		}
-		if rcpt.ExitCode.IsError() {
+		if rcpt == nil || rcpt.ExitCode.IsError() {
 			return nil
 		}
 		params := miner.SubmitWindowedPoStParams{}
