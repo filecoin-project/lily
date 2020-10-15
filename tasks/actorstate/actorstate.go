@@ -20,6 +20,7 @@ import (
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
+	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
@@ -197,6 +198,11 @@ func (p *ActorStateProcessor) Run(ctx context.Context) error {
 }
 
 func (p *ActorStateProcessor) processBatch(ctx context.Context) (bool, error) {
+	// the actor represents the "raw" actor data model that is persisted
+	// this gets overridden with the specific actor type once we know
+	// which it is.
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "actor"))
+
 	ctx, span := global.Tracer("").Start(ctx, "ActorStateProcessor.processBatch")
 	defer span.End()
 
@@ -220,6 +226,7 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context) (bool, error) {
 	ctx, cancel := context.WithDeadline(ctx, claimUntil)
 	defer cancel()
 
+	stats.Record(ctx, metrics.TipsetHeight.M(batch[0].Height))
 	for _, actor := range batch {
 		// Stop processing if we have somehow passed our own lease time
 		select {
@@ -258,11 +265,6 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, info ActorInfo) 
 	defer span.End()
 
 	var ae ActorExtractor
-
-	// the actor represents the "raw" actor data model that is persisted
-	// this gets overridden with the specific actor type once we know
-	// which it is.
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "actor"))
 
 	// Persist the raw state
 	data, err := ae.Extract(ctx, info, p.node)
