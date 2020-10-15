@@ -16,7 +16,7 @@ var chainVisViews = []string{
 	"chain_visualizer_blocks_with_parents_view",
 	"chain_visualizer_chain_data_view",
 	"chain_visualizer_orphans_view",
-	"heaviest_chain_view",
+	"derived_consensus_chain_view",
 }
 
 func NewChainVisRefresher(d *storage.Database, refreshRate time.Duration) *ChainVisRefresher {
