@@ -41,7 +41,7 @@ var Run = &cli.Command{
 		&cli.BoolFlag{
 			Name:    "indexhead",
 			Usage:   "Start indexing tipsets by following the chain head",
-			Value:   true,
+			Value:   false,
 			EnvVars: []string{"VISOR_INDEXHEAD"},
 		},
 		&cli.IntFlag{
@@ -52,7 +52,7 @@ var Run = &cli.Command{
 		},
 		&cli.BoolFlag{
 			Name:    "indexhistory",
-			Value:   true,
+			Value:   false,
 			Usage:   "Start indexing tipsets by walking the chain history",
 			EnvVars: []string{"VISOR_INDEXHISTORY"},
 		},
@@ -81,7 +81,7 @@ var Run = &cli.Command{
 		&cli.IntFlag{
 			Name:    "statechange-workers",
 			Aliases: []string{"scw"},
-			Value:   15,
+			Value:   0,
 			Usage:   "Number of actor state change processors to start",
 			EnvVars: []string{"VISOR_STATECHANGE_WORKERS"},
 		},
@@ -103,7 +103,7 @@ var Run = &cli.Command{
 		&cli.IntFlag{
 			Name:    "actorstate-workers",
 			Aliases: []string{"asw"},
-			Value:   15,
+			Value:   0,
 			Usage:   "Number of actor state processors to start",
 			EnvVars: []string{"VISOR_ACTORSTATE_WORKERS"},
 		},
@@ -137,7 +137,7 @@ var Run = &cli.Command{
 		&cli.IntFlag{
 			Name:    "message-workers",
 			Aliases: []string{"mw"},
-			Value:   15,
+			Value:   0,
 			Usage:   "Number of message processors to start",
 			EnvVars: []string{"VISOR_MESSAGE_WORKERS"},
 		},
@@ -159,7 +159,7 @@ var Run = &cli.Command{
 		&cli.IntFlag{
 			Name:    "gasoutputs-workers",
 			Aliases: []string{"gow"},
-			Value:   15,
+			Value:   0,
 			Usage:   "Number of gas outputs processors to start",
 			EnvVars: []string{"VISOR_GASOUTPUTS_WORKERS"},
 		},
@@ -183,7 +183,7 @@ var Run = &cli.Command{
 		&cli.IntFlag{
 			Name:    "chaineconomics-workers",
 			Aliases: []string{"cew"},
-			Value:   5,
+			Value:   0,
 			Usage:   "Number of chain economics processors to start",
 			EnvVars: []string{"VISOR_CHAINECONOMICS_WORKERS"},
 		},
@@ -318,14 +318,15 @@ var Run = &cli.Command{
 
 		// Include optional refresher for Chain Visualization views
 		// Zero duration will cause ChainVisRefresher to exit and should not restart
-		scheduler.Add(schedule.TaskConfig{
-			Name:                "ChainVisRefresher",
-			Locker:              NewGlobalSingleton(ChainVisRefresherLockID, rctx.db), // only need one chain vis refresher anywhere
-			Task:                views.NewChainVisRefresher(rctx.db, cctx.Duration("chainvis-refresh-rate")),
-			RestartOnFailure:    true,
-			RestartOnCompletion: false,
-		})
-
+		if cctx.Duration("chainvis-refresh-rate") != 0 {
+			scheduler.Add(schedule.TaskConfig{
+				Name:                "ChainVisRefresher",
+				Locker:              NewGlobalSingleton(ChainVisRefresherLockID, rctx.db), // only need one chain vis refresher anywhere
+				Task:                views.NewChainVisRefresher(rctx.db, cctx.Duration("chainvis-refresh-rate")),
+				RestartOnFailure:    true,
+				RestartOnCompletion: false,
+			})
+		}
 		// Include optional refresher for processing stats
 		if cctx.Duration("processingstats-refresh-rate") != 0 {
 			scheduler.Add(schedule.TaskConfig{

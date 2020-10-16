@@ -6,6 +6,7 @@ import (
 	"time"
 
 	logging "github.com/ipfs/go-log/v2"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/wait"
@@ -62,6 +63,9 @@ func (s *Scheduler) Add(tc TaskConfig) error {
 // Run starts running the scheduler and blocks until the context is done or
 // all tasks have run to completion.
 func (s *Scheduler) Run(ctx context.Context) error {
+	if len(s.tasks) == 0 {
+		return xerrors.Errorf("no tasks to run")
+	}
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -135,7 +139,6 @@ func (s *Scheduler) Run(ctx context.Context) error {
 					}
 				}
 			}
-
 		}(tc)
 
 		select {
@@ -161,5 +164,4 @@ func (s *Scheduler) Run(ctx context.Context) error {
 			}
 		}
 	}
-
 }
