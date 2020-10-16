@@ -16,6 +16,7 @@ require (
 	github.com/filecoin-project/lotus v0.9.0
 	github.com/filecoin-project/specs-actors v0.9.12
 	github.com/filecoin-project/specs-actors/v2 v2.0.1
+	github.com/filecoin-project/statediff v0.0.6
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.3.1
 	github.com/go-pg/pgext v0.1.4

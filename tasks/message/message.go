@@ -1,11 +1,13 @@
 package message
 
 import (
+	"bytes"
 	"context"
 	"math"
 	"math/big"
 	"time"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/store"
@@ -26,6 +28,8 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/wait"
+	"github.com/filecoin-project/statediff"
+	"github.com/filecoin-project/statediff/codec/fcjson"
 )
 
 const (
@@ -157,19 +161,13 @@ func (p *MessageProcessor) processTipSet(ctx context.Context, ts *types.TipSet) 
 		return xerrors.Errorf("fetch receipts: %w", err)
 	}
 
-	msgs, bmsgs, processingMsgs, econ, err := p.extractMessageModels(ctx, ts, blkMsgs)
+	result, processingMsgs, err := p.extractMessageModels(ctx, ts, blkMsgs)
 	if err != nil {
 		return xerrors.Errorf("extract message models: %w", err)
 	}
+	result.Receipts = rcts
 
-	result := &messagemodel.MessageTaskResult{
-		Messages:          msgs,
-		BlockMessages:     bmsgs,
-		Receipts:          rcts,
-		MessageGasEconomy: econ,
-	}
-
-	ll.Debugw("persisting tipset", "messages", len(msgs), "block_messages", len(blkMsgs), "receipts", len(rcts))
+	ll.Debugw("persisting tipset", "messages", len(result.Messages), "block_messages", len(result.BlockMessages), "receipts", len(rcts))
 
 	if err := p.storage.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		if err := result.PersistWithTx(ctx, tx); err != nil {
@@ -204,9 +202,13 @@ func (p *MessageProcessor) fetchMessages(ctx context.Context, ts *types.TipSet) 
 	return out, nil
 }
 
-func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.TipSet, blkMsgs map[cid.Cid]*api.BlockMessages) (messagemodel.Messages, messagemodel.BlockMessages, visor.ProcessingMessageList, *messagemodel.MessageGasEconomy, error) {
-	msgModels := messagemodel.Messages{}
-	bmsgModels := messagemodel.BlockMessages{}
+func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.TipSet, blkMsgs map[cid.Cid]*api.BlockMessages) (*messagemodel.MessageTaskResult, visor.ProcessingMessageList, error) {
+	result := &messagemodel.MessageTaskResult{
+		Messages:       messagemodel.Messages{},
+		BlockMessages:  messagemodel.BlockMessages{},
+		ParsedMessages: messagemodel.ParsedMessages{},
+	}
+
 	pmsgModels := visor.ProcessingMessageList{}
 
 	msgsSeen := map[cid.Cid]struct{}{}
@@ -217,7 +219,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 		// Stop processing if we have somehow passed our own lease time
 		select {
 		case <-ctx.Done():
-			return nil, nil, nil, nil, ctx.Err()
+			return nil, nil, ctx.Err()
 		default:
 		}
 
@@ -232,7 +234,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 
 		for _, message := range vmm {
 			// record which blocks had which messages
-			bmsgModels = append(bmsgModels, &messagemodel.BlockMessage{
+			result.BlockMessages = append(result.BlockMessages, &messagemodel.BlockMessage{
 				Block:   blk.String(),
 				Message: message.Cid().String(),
 			})
@@ -250,11 +252,11 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 			if b, err := message.Serialize(); err == nil {
 				msgSize = len(b)
 			} else {
-				return nil, nil, nil, nil, err
+				return nil, nil, err
 			}
 
 			// record all unique messages
-			msgModels = append(msgModels, &messagemodel.Message{
+			msg := &messagemodel.Message{
 				Cid:        message.Cid().String(),
 				From:       message.From.String(),
 				To:         message.To.String(),
@@ -266,7 +268,20 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 				Nonce:      message.Nonce,
 				Method:     uint64(message.Method),
 				Params:     message.Params,
-			})
+			}
+			result.Messages = append(result.Messages, msg)
+
+			dstAddr, err := address.NewFromString(msg.To)
+			if err != nil {
+				return nil, nil, err
+			}
+			dstActor, err := p.node.StateGetActor(ctx, dstAddr, ts.Key())
+
+			if pm, err := parseMsg(msg, dstActor.Code.String()); err == nil {
+				result.ParsedMessages = append(result.ParsedMessages, pm)
+			} else {
+				return nil, nil, err
+			}
 
 			msgsSeen[message.Cid()] = struct{}{}
 		}
@@ -279,20 +294,48 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 	baseFeeChange := new(big.Rat).SetFrac(newBaseFee.Int, ts.Blocks()[0].ParentBaseFee.Int)
 	baseFeeChangeF, _ := baseFeeChange.Float64()
 
-	return msgModels,
-		bmsgModels,
-		pmsgModels,
-		&messagemodel.MessageGasEconomy{
-			StateRoot:           ts.ParentState().String(),
-			GasLimitTotal:       totalGasLimit,
-			GasLimitUniqueTotal: totalUniqGasLimit,
-			BaseFee:             baseFee,
-			BaseFeeChangeLog:    math.Log(baseFeeChangeF) / math.Log(1.125),
-			GasFillRatio:        float64(totalGasLimit) / float64(len(ts.Blocks())*build.BlockGasTarget),
-			GasCapacityRatio:    float64(totalUniqGasLimit) / float64(len(ts.Blocks())*build.BlockGasTarget),
-			GasWasteRatio:       float64(totalGasLimit-totalUniqGasLimit) / float64(len(ts.Blocks())*build.BlockGasTarget),
-		},
-		nil
+	result.MessageGasEconomy = &messagemodel.MessageGasEconomy{
+		StateRoot:           ts.ParentState().String(),
+		GasLimitTotal:       totalGasLimit,
+		GasLimitUniqueTotal: totalUniqGasLimit,
+		BaseFee:             baseFee,
+		BaseFeeChangeLog:    math.Log(baseFeeChangeF) / math.Log(1.125),
+		GasFillRatio:        float64(totalGasLimit) / float64(len(ts.Blocks())*build.BlockGasTarget),
+		GasCapacityRatio:    float64(totalUniqGasLimit) / float64(len(ts.Blocks())*build.BlockGasTarget),
+		GasWasteRatio:       float64(totalGasLimit-totalUniqGasLimit) / float64(len(ts.Blocks())*build.BlockGasTarget),
+	}
+	return result, pmsgModels, nil
+}
+
+func parseMsg(m *messagemodel.Message, destCode string) (*messagemodel.ParsedMessage, error) {
+	pm := &messagemodel.ParsedMessage{
+		Cid:   m.Cid,
+		From:  m.From,
+		To:    m.To,
+		Value: m.Value,
+	}
+
+	actor, ok := statediff.LotusActorCodes[destCode]
+	if !ok {
+		actor = statediff.LotusTypeUnknown
+	}
+	params, name, err := statediff.ParseParams(m.Params, int(m.Method), actor)
+	if err != nil && actor != statediff.LotusTypeUnknown {
+		// fall back to generic cbor->json conversion.
+		actor = statediff.LotusTypeUnknown
+		params, name, err = statediff.ParseParams(m.Params, int(m.Method), actor)
+	}
+	if err != nil {
+		return nil, err
+	}
+	pm.Method = name
+	buf := bytes.NewBuffer(nil)
+	if err := fcjson.Encoder(params, buf); err != nil {
+		return nil, err
+	}
+	pm.Params = string(buf.Bytes())
+
+	return pm, nil
 }
 
 func (p *MessageProcessor) fetchReceipts(ctx context.Context, ts *types.TipSet) (messagemodel.Receipts, error) {

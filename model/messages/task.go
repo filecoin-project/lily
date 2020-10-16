@@ -11,6 +11,7 @@ import (
 
 type MessageTaskResult struct {
 	Messages          Messages
+	ParsedMessages    ParsedMessages
 	BlockMessages     BlockMessages
 	Receipts          Receipts
 	MessageGasEconomy *MessageGasEconomy
@@ -43,6 +44,9 @@ func (mtr *MessageTaskResult) PersistWithTx(ctx context.Context, tx *pg.Tx) erro
 		return err
 	}
 	if err := mtr.MessageGasEconomy.PersistWithTx(ctx, tx); err != nil {
+		return err
+	}
+	if err := mtr.ParsedMessages.PersistWithTx(ctx, tx); err != nil {
 		return err
 	}
 
