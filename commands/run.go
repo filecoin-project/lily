@@ -20,6 +20,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/tasks/message"
 	"github.com/filecoin-project/sentinel-visor/tasks/stats"
 	"github.com/filecoin-project/sentinel-visor/tasks/views"
+	"github.com/filecoin-project/sentinel-visor/version"
 )
 
 var Run = &cli.Command{
@@ -214,6 +215,8 @@ var Run = &cli.Command{
 		if err := setupLogging(cctx); err != nil {
 			return xerrors.Errorf("setup logging: %w", err)
 		}
+
+		log.Infof("Visor version:%s", version.String())
 
 		if err := setupMetrics(cctx); err != nil {
 			return xerrors.Errorf("setup metrics: %w", err)
