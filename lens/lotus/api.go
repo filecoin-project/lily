@@ -183,9 +183,8 @@ func (aw *APIWrapper) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap
 	return vm.ComputeGasOutputs(gasUsed, gasLimit, baseFee, feeCap, gasPremium)
 }
 
-// TODO: Rename to StateVMCirculatingSupplyInternal following Lotus release containing commit 83624a8858d1983a28e0cd523c5ec353a5bbdaee
-func (aw *APIWrapper) StateCirculatingSupply(ctx context.Context, tsk types.TipSetKey) (api.CirculatingSupply, error) {
+func (aw *APIWrapper) StateVMCirculatingSupplyInternal(ctx context.Context, tsk types.TipSetKey) (api.CirculatingSupply, error) {
 	ctx, span := global.Tracer("").Start(ctx, "Lotus.StateCirculatingSupply")
 	defer span.End()
-	return aw.FullNode.StateCirculatingSupply(ctx, tsk)
+	return aw.FullNode.StateVMCirculatingSupplyInternal(ctx, tsk)
 }

@@ -53,7 +53,7 @@ deps: $(BUILD_DEPS)
 
 # test starts dependencies and runs all tests
 .PHONY: test
-test: dockerup testfull dockerdown
+test: testfull
 
 .PHONY: dockerup
 dockerup:
@@ -66,7 +66,9 @@ dockerdown:
 # testfull runs all tests
 .PHONY: testfull
 testfull:
-	TZ= PGSSLMODE=disable go test ./... -v
+	docker-compose up -d
+	TZ= PGSSLMODE=disable go test ./... -v || echo ""
+	docker-compose down
 
 # testshort runs tests that don't require external dependencies such as postgres or redis
 .PHONY: testshort

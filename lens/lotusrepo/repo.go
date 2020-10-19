@@ -9,6 +9,7 @@ import (
 	"github.com/filecoin-project/go-fil-markets/storagemarket"
 	"github.com/filecoin-project/go-multistore"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lotus/journal"
 	"github.com/filecoin-project/sentinel-visor/lens"
 	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/urfave/cli/v2"
@@ -152,7 +153,7 @@ func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 		return nil, nil, nil, err
 	}
 
-	cs := store.NewChainStore(blockstore.NewBlockstore(ds), mds, vm.Syscalls(&fakeVerifier{}))
+	cs := store.NewChainStore(blockstore.NewBlockstore(ds), mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
 	if err := cs.Load(); err != nil {
 		return nil, nil, nil, err
 	}

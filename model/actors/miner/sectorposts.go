@@ -40,7 +40,7 @@ func NewMinerSectorPost(task *MinerTaskResult) MinerSectorPosts {
 		post := &MinerSectorPost{
 			MinerID:        task.Addr.String(),
 			SectorID:       s,
-			Epoch:          task.Height,
+			Epoch:          int64(task.Height),
 			PostMessageCID: mid,
 		}
 		out = append(out, post)

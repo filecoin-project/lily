@@ -58,7 +58,7 @@ func TestChainHeadIndexer(t *testing.T) {
 	require.NoError(t, err, "truncating tables")
 
 	t.Logf("preparing chain")
-	nodes, sn := nodetest.Builder(t, 1, apitest.OneMiner)
+	nodes, sn := nodetest.Builder(t, apitest.DefaultFullOpts(1), apitest.OneMiner)
 	cs, err := lotus.NewCacheCtxStore(ctx, nodes[0], 5)
 	require.NoError(t, err, "cache store")
 	node := lotus.NewAPIWrapper(nodes[0], cs)

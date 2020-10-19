@@ -41,6 +41,7 @@ var models = []interface{}{
 	(*miner.MinerSectorInfo)(nil),
 	(*miner.MinerSectorPost)(nil),
 	(*miner.MinerPreCommitInfo)(nil),
+	(*miner.MinerSectorEvent)(nil),
 
 	(*market.MarketDealProposal)(nil),
 	(*market.MarketDealState)(nil),
@@ -226,7 +227,7 @@ func verifyModel(ctx context.Context, db *pg.DB, m *orm.Table) error {
 	tableName := stripQuotes(m.SQLNameForSelects)
 
 	var exists bool
-	_, err := db.QueryOne(pg.Scan(&exists), `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name=?)`, tableName)
+	_, err := db.QueryOneContext(ctx, pg.Scan(&exists), `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name=?)`, tableName)
 	if err != nil {
 		return xerrors.Errorf("querying table: %v", err)
 	}
@@ -242,6 +243,15 @@ func verifyModel(ctx context.Context, db *pg.DB, m *orm.Table) error {
 				return xerrors.Errorf("required column %s.%s not found", tableName, fld.SQLName)
 			}
 			return xerrors.Errorf("querying field: %v %T", err, err)
+		}
+		if datatype == "USER-DEFINED" {
+			_, err := db.QueryOne(pg.Scan(&datatype), `SELECT udt_name FROM information_schema.columns WHERE table_schema='public' AND table_name=? AND column_name=?`, tableName, fld.SQLName)
+			if err != nil {
+				if errors.Is(err, pg.ErrNoRows) {
+					return xerrors.Errorf("required column %s.%s not found", tableName, fld.SQLName)
+				}
+				return xerrors.Errorf("querying field: %v %T", err, err)
+			}
 		}
 
 		// Some common aliases
