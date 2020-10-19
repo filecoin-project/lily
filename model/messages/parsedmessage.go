@@ -16,6 +16,7 @@ import (
 type ParsedMessage struct {
 	Cid string `pg:",pk,notnull"`
 
+	Height int64  `pg:",notnull"`
 	From   string `pg:",notnull"`
 	To     string `pg:",notnull"`
 	Value  string `pg:",notnull"`
