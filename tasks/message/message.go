@@ -204,9 +204,10 @@ func (p *MessageProcessor) fetchMessages(ctx context.Context, ts *types.TipSet) 
 
 func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.TipSet, blkMsgs map[cid.Cid]*api.BlockMessages) (*messagemodel.MessageTaskResult, visor.ProcessingMessageList, error) {
 	result := &messagemodel.MessageTaskResult{
-		Messages:       messagemodel.Messages{},
-		BlockMessages:  messagemodel.BlockMessages{},
-		ParsedMessages: messagemodel.ParsedMessages{},
+		Messages:          messagemodel.Messages{},
+		BlockMessages:     messagemodel.BlockMessages{},
+		ParsedMessages:    messagemodel.ParsedMessages{},
+		MessageGasEconomy: nil,
 	}
 
 	pmsgModels := visor.ProcessingMessageList{}
@@ -333,7 +334,7 @@ func parseMsg(m *messagemodel.Message, destCode string) (*messagemodel.ParsedMes
 	if err := fcjson.Encoder(params, buf); err != nil {
 		return nil, err
 	}
-	pm.Params = string(buf.Bytes())
+	pm.Params = buf.Bytes()
 
 	return pm, nil
 }

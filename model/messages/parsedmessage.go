@@ -21,7 +21,7 @@ type ParsedMessage struct {
 	Value  string `pg:",notnull"`
 	Method string `pg:",notnull"`
 
-	Params string `pg:""`
+	Params []byte `pg:",type:jsonb,notnull"`
 }
 
 func (bm *ParsedMessage) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
