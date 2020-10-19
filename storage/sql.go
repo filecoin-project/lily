@@ -50,6 +50,7 @@ var models = []interface{}{
 	(*messages.BlockMessage)(nil),
 	(*messages.Receipt)(nil),
 	(*messages.MessageGasEconomy)(nil),
+	(*messages.ParsedMessage)(nil),
 
 	(*power.ChainPower)(nil),
 	(*reward.ChainReward)(nil),
