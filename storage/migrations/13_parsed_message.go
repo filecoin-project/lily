@@ -8,6 +8,7 @@ func init() {
 	up := batch(`
 CREATE TABLE IF NOT EXISTS "message_parsed" (
 	"cid" text NOT NULL,
+	"height" bigint NOT NULL,
 	"from" text NOT NULL,
     "to" text NOT NULL,
 	"value" text NOT NULL,

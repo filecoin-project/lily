@@ -278,7 +278,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 			}
 			dstActor, err := p.node.StateGetActor(ctx, dstAddr, ts.Key())
 
-			if pm, err := parseMsg(msg, dstActor.Code.String()); err == nil {
+			if pm, err := parseMsg(msg, ts, dstActor.Code.String()); err == nil {
 				result.ParsedMessages = append(result.ParsedMessages, pm)
 			} else {
 				return nil, nil, err
@@ -308,12 +308,13 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 	return result, pmsgModels, nil
 }
 
-func parseMsg(m *messagemodel.Message, destCode string) (*messagemodel.ParsedMessage, error) {
+func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*messagemodel.ParsedMessage, error) {
 	pm := &messagemodel.ParsedMessage{
-		Cid:   m.Cid,
-		From:  m.From,
-		To:    m.To,
-		Value: m.Value,
+		Cid:    m.Cid,
+		Height: int64(ts.Height()),
+		From:   m.From,
+		To:     m.To,
+		Value:  m.Value,
 	}
 
 	actor, ok := statediff.LotusActorCodes[destCode]
