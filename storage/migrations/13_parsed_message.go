@@ -16,9 +16,9 @@ CREATE TABLE IF NOT EXISTS "message_parsed" (
 	"params" jsonb,
 	PRIMARY KEY ("cid")
 );
-CREATE INDEX IF NOT EXISTS "message_parsed_method_idx" ON public.message_parsed USING HASH (method);
-CREATE INDEX IF NOT EXISTS "message_parsed_from_idx" ON public.message_parsed USING HASH (from);
-CREATE INDEX IF NOT EXISTS "message_parsed_to_idx" ON public.message_parsed USING HASH (to);
+CREATE INDEX IF NOT EXISTS "message_parsed_method_idx" ON public.message_parsed USING HASH ("method");
+CREATE INDEX IF NOT EXISTS "message_parsed_from_idx" ON public.message_parsed USING HASH ("from");
+CREATE INDEX IF NOT EXISTS "message_parsed_to_idx" ON public.message_parsed USING HASH ("to");
 `)
 	down := batch(`
 DROP TABLE IF EXISTS public.message_parsed;
