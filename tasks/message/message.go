@@ -3,6 +3,7 @@ package message
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"math"
 	"math/big"
 	"time"
@@ -10,11 +11,13 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/build"
+	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"github.com/ipld/go-ipld-prime"
 	"github.com/raulk/clock"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -276,7 +279,13 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 			if err != nil {
 				return nil, nil, err
 			}
-			dstActor, err := p.node.StateGetActor(ctx, dstAddr, ts.Key())
+
+			st, err := state.LoadStateTree(p.node.Store(), ts.ParentState())
+			if err != nil {
+				return nil, nil, err
+			}
+
+			dstActor, err := st.GetActor(dstAddr)
 
 			if pm, err := parseMsg(msg, ts, dstActor.Code.String()); err == nil {
 				result.ParsedMessages = append(result.ParsedMessages, pm)
@@ -321,7 +330,17 @@ func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*mess
 	if !ok {
 		actor = statediff.LotusTypeUnknown
 	}
-	params, name, err := statediff.ParseParams(m.Params, int(m.Method), actor)
+	var params ipld.Node
+	var name string
+	var err error
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("%v", r)
+			}
+		}()
+		params, name, err = statediff.ParseParams(m.Params, int(m.Method), actor)
+	}()
 	if err != nil && actor != statediff.LotusTypeUnknown {
 		// fall back to generic cbor->json conversion.
 		actor = statediff.LotusTypeUnknown
@@ -331,11 +350,13 @@ func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*mess
 		return nil, err
 	}
 	pm.Method = name
-	buf := bytes.NewBuffer(nil)
-	if err := fcjson.Encoder(params, buf); err != nil {
-		return nil, err
+	if params != nil {
+		buf := bytes.NewBuffer(nil)
+		if err := fcjson.Encoder(params, buf); err != nil {
+			return nil, err
+		}
+		pm.Params = string(buf.Bytes())
 	}
-	pm.Params = buf.Bytes()
 
 	return pm, nil
 }
