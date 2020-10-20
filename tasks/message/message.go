@@ -285,6 +285,9 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 			}
 
 			dstActor, err := st.GetActor(dstAddr)
+			if err != nil {
+				return nil, nil, err
+			}
 
 			if pm, err := parseMsg(msg, ts, dstActor.Code.String()); err == nil {
 				result.ParsedMessages = append(result.ParsedMessages, pm)
