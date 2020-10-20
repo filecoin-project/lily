@@ -335,6 +335,10 @@ func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*mess
 	var params ipld.Node
 	var name string
 	var err error
+
+	// TODO: the following closure is in place to handle the potential for panic
+	// in ipld-prime. Can be removed once fixed upstream.
+	// tracking issue: https://github.com/ipld/go-ipld-prime/issues/97
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
