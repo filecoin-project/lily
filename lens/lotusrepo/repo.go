@@ -23,6 +23,7 @@ import (
 	"github.com/filecoin-project/lotus/lib/ulimit"
 	marketevents "github.com/filecoin-project/lotus/markets/loggers"
 	"github.com/filecoin-project/lotus/node/impl"
+	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/lotus/node/repo"
 	"github.com/filecoin-project/specs-actors/actors/runtime/proof"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
@@ -161,8 +162,10 @@ func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 	sm := stmgr.NewStateManager(cs)
 
 	rapi.FullNodeAPI.ChainAPI.Chain = cs
+	rapi.FullNodeAPI.ChainAPI.ChainModuleAPI = &full.ChainModule{Chain: cs}
 	rapi.FullNodeAPI.StateAPI.Chain = cs
 	rapi.FullNodeAPI.StateAPI.StateManager = sm
+	rapi.FullNodeAPI.StateAPI.StateModuleAPI = &full.StateModule{Chain: cs, StateManager: sm}
 
 	sf := func() {
 		lr.Close()
