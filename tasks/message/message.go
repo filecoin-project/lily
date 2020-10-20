@@ -3,7 +3,6 @@ package message
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"math"
 	"math/big"
 	"time"
@@ -333,10 +332,10 @@ func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*mess
 	var params ipld.Node
 	var name string
 	var err error
-	go func() {
+	func() {
 		defer func() {
 			if r := recover(); r != nil {
-				err = fmt.Errorf("%v", r)
+				err = xerrors.Errorf("%v", r)
 			}
 		}()
 		params, name, err = statediff.ParseParams(m.Params, int(m.Method), actor)
