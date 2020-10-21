@@ -17,8 +17,11 @@ type ProcessingStat struct {
 	// RecordedAt is the time the measurement was recorded in the database
 	RecordedAt time.Time `pg:",pk,notnull"`
 
-	// Measure is the name of the measurement, e.g. `messages_completed_count`
+	// Measure is the name of the measurement, e.g. `completed_count`
 	Measure string `pg:",pk,notnull"`
+
+	// Tag is the subtype of the measurement, e.g. `tipsets_messages`
+	Tag string `pg:",pk,notnull"`
 
 	// Value is the value of the measurement
 	Value int64 `pg:",use_zero,notnull"`
