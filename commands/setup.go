@@ -26,6 +26,7 @@ import (
 	lens "github.com/filecoin-project/sentinel-visor/lens"
 	vapi "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	repoapi "github.com/filecoin-project/sentinel-visor/lens/lotusrepo"
+	sqlapi "github.com/filecoin-project/sentinel-visor/lens/sqlrepo"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
@@ -48,6 +49,8 @@ func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error)
 		ctx, api, closer, err = vapi.GetFullNodeAPI(cctx)
 	} else if cctx.String("lens") == "lotusrepo" {
 		ctx, api, closer, err = repoapi.GetAPI(cctx)
+	} else if cctx.String("lens") == "sql" {
+		ctx, api, closer, err = sqlapi.GetAPI(cctx)
 	}
 	if err != nil {
 		return nil, nil, xerrors.Errorf("get node api: %w", err)

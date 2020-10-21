@@ -12,6 +12,7 @@ require (
 	github.com/filecoin-project/go-multistore v0.0.3
 	github.com/filecoin-project/go-state-types v0.0.0-20201003010437-c33112184a2b
 	github.com/filecoin-project/lotus v0.10.2-0.20201014221402-6de82364e98c
+	github.com/filecoin-project/sector-storage v0.0.0-20200810171746-eac70842d8e0
 	github.com/filecoin-project/specs-actors v0.9.12
 	github.com/filecoin-project/specs-actors/v2 v2.1.0
 	github.com/filecoin-project/statediff v0.0.6
@@ -19,14 +20,17 @@ require (
 	github.com/go-pg/pg/v10 v10.3.1
 	github.com/go-pg/pgext v0.1.4
 	github.com/hashicorp/golang-lru v0.5.4
+	github.com/ipfs/go-block-format v0.0.2
 	github.com/ipfs/go-cid v0.0.7
 	github.com/ipfs/go-ipfs-blockstore v1.0.1
 	github.com/ipfs/go-ipld-cbor v0.0.5-0.20200428170625-a0bd04d3cbdf
 	github.com/ipfs/go-log/v2 v2.1.2-0.20200626104915-0016c0b4b3e4
 	github.com/ipld/go-ipld-prime v0.5.1-0.20200910124733-350032422383
+	github.com/jackc/pgx/v4 v4.9.0
 	github.com/lib/pq v1.8.0
 	github.com/libp2p/go-libp2p-peer v0.2.0
 	github.com/multiformats/go-multiaddr v0.3.1
+	github.com/multiformats/go-multibase v0.0.3
 	github.com/multiformats/go-multihash v0.0.14
 	github.com/prometheus/client_golang v1.6.0
 	github.com/raulk/clock v1.1.0
