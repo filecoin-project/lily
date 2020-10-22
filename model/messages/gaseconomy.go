@@ -9,6 +9,7 @@ import (
 
 type MessageGasEconomy struct {
 	tableName struct{} `pg:"message_gas_economy"`
+	Height    int64    `pg:",pk,notnull,use_zero"`
 	StateRoot string   `pg:",pk,notnull"`
 
 	BaseFee          float64 `pg:",use_zero"`

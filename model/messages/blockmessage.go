@@ -14,6 +14,7 @@ import (
 )
 
 type BlockMessage struct {
+	Height  int64  `pg:",pk,notnull,use_zero"`
 	Block   string `pg:",pk,notnull"`
 	Message string `pg:",pk,notnull"`
 }

@@ -10,6 +10,7 @@ import (
 
 func NewMinerPowerModel(res *MinerTaskResult) *MinerPower {
 	return &MinerPower{
+		Height:               int64(res.Height),
 		MinerID:              res.Addr.String(),
 		StateRoot:            res.StateRoot.String(),
 		RawBytePower:         res.Power.MinerPower.RawBytePower.String(),
@@ -18,6 +19,7 @@ func NewMinerPowerModel(res *MinerTaskResult) *MinerPower {
 }
 
 type MinerPower struct {
+	Height               int64  `pg:",pk,notnull,use_zero"`
 	MinerID              string `pg:",pk,notnull"`
 	StateRoot            string `pg:",pk,notnull"`
 	RawBytePower         string `pg:",notnull"`

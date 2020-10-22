@@ -520,8 +520,9 @@ func TestLeaseGasOutputsMessages(t *testing.T) {
 		},
 	}
 
-	dummyMessage := func(cid string) *messages.Message {
+	dummyMessage := func(height int64, cid string) *messages.Message {
 		return &messages.Message{
+			Height:     height,
 			Cid:        cid,
 			From:       "from",
 			To:         "to",
@@ -532,34 +533,37 @@ func TestLeaseGasOutputsMessages(t *testing.T) {
 	}
 
 	msgs := messages.Messages{
-		dummyMessage("cid0"),
-		dummyMessage("cid1"),
-		dummyMessage("cid2"),
-		dummyMessage("cid3"),
-		dummyMessage("cid4"),
-		dummyMessage("cid5"),
-		dummyMessage("cid6"),
+		dummyMessage(0, "cid0"),
+		dummyMessage(1, "cid1"),
+		dummyMessage(2, "cid2"),
+		dummyMessage(3, "cid3"),
+		dummyMessage(4, "cid4"),
+		dummyMessage(5, "cid5"),
+		dummyMessage(6, "cid6"),
 	}
 
-	dummyReceipt := func(cid string) *messages.Receipt {
+	dummyReceipt := func(height int64, cid string) *messages.Receipt {
 		return &messages.Receipt{
+			Height:    height,
 			Message:   cid,
 			StateRoot: "stateroot",
 		}
 	}
 
 	receipts := messages.Receipts{
-		dummyReceipt("cid0"),
-		dummyReceipt("cid1"),
-		dummyReceipt("cid2"),
+		// Receipt height is later than the messages
+		dummyReceipt(7, "cid0"),
+		dummyReceipt(7, "cid1"),
+		dummyReceipt(7, "cid2"),
 		// no receipt for cid3
-		dummyReceipt("cid4"),
-		dummyReceipt("cid5"),
-		dummyReceipt("cid6"),
+		dummyReceipt(7, "cid4"),
+		dummyReceipt(7, "cid5"),
+		dummyReceipt(7, "cid6"),
 	}
 
-	dummyBlockHeader := func(cid string) *blocks.BlockHeader {
+	dummyBlockHeader := func(height int64, cid string) *blocks.BlockHeader {
 		return &blocks.BlockHeader{
+			Height:          height,
 			Cid:             cid,
 			Miner:           "miner",
 			ParentWeight:    "parentweight",
@@ -570,37 +574,49 @@ func TestLeaseGasOutputsMessages(t *testing.T) {
 	}
 
 	blockHeaders := blocks.BlockHeaders{
-		dummyBlockHeader("blocka"),
-		dummyBlockHeader("blockb"),
+		dummyBlockHeader(0, "blocka"),
+		dummyBlockHeader(1, "blockb"),
+		dummyBlockHeader(2, "blockc"),
+		dummyBlockHeader(3, "blockd"),
+		dummyBlockHeader(4, "blocke"),
+		dummyBlockHeader(5, "blockf"),
+		dummyBlockHeader(6, "blockg"),
 	}
 
 	blockMessages := messages.BlockMessages{
 		{
+			Height:  0,
 			Block:   "blocka",
 			Message: "cid0",
 		},
 		{
-			Block:   "blocka",
+			Height:  1,
+			Block:   "blockb",
 			Message: "cid1",
 		},
 		{
-			Block:   "blocka",
+			Height:  2,
+			Block:   "blockc",
 			Message: "cid2",
 		},
 		{
-			Block:   "blockb",
+			Height:  3,
+			Block:   "blockd",
 			Message: "cid3",
 		},
 		{
-			Block:   "blockb",
+			Height:  4,
+			Block:   "blocke",
 			Message: "cid4",
 		},
 		{
-			Block:   "blockb",
+			Height:  5,
+			Block:   "blockf",
 			Message: "cid5",
 		},
 		{
-			Block:   "blockb",
+			Height:  6,
+			Block:   "blockg",
 			Message: "cid6",
 		},
 	}

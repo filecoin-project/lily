@@ -12,13 +12,13 @@ import (
 )
 
 type BlockHeader struct {
+	Height          int64  `pg:",pk,use_zero,notnull"`
 	Cid             string `pg:",pk,notnull"`
 	Miner           string `pg:",notnull"`
 	ParentWeight    string `pg:",notnull"`
 	ParentBaseFee   string `pg:",notnull"`
 	ParentStateRoot string `pg:",notnull"`
 
-	Height        int64  `pg:",use_zero"`
 	WinCount      int64  `pg:",use_zero"`
 	Timestamp     uint64 `pg:",use_zero"`
 	ForkSignaling uint64 `pg:",use_zero"`
