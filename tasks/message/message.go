@@ -82,7 +82,7 @@ func (p *MessageProcessor) processBatch(ctx context.Context) (bool, error) {
 	// Lease some blocks to work on
 	batch, err := p.storage.LeaseTipSetMessages(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight)
 	if err != nil {
-		return true, err
+		return true, xerrors.Errorf("lease tipset messages: %w", err)
 	}
 
 	// If we have no tipsets to work on then wait before trying again
@@ -192,12 +192,12 @@ func (p *MessageProcessor) fetchMessages(ctx context.Context, ts *types.TipSet) 
 		// Stop processing if we have somehow passed our own lease time
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, xerrors.Errorf("context done: %w", ctx.Err())
 		default:
 		}
 		blkMsgs, err := p.node.ChainGetBlockMessages(ctx, blk)
 		if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("get block messages: %w", err)
 		}
 		out[blk] = blkMsgs
 	}
@@ -222,7 +222,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 		// Stop processing if we have somehow passed our own lease time
 		select {
 		case <-ctx.Done():
-			return nil, nil, ctx.Err()
+			return nil, nil, xerrors.Errorf("context done: %w", ctx.Err())
 		default:
 		}
 
@@ -256,7 +256,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 			if b, err := message.Serialize(); err == nil {
 				msgSize = len(b)
 			} else {
-				return nil, nil, err
+				return nil, nil, xerrors.Errorf("serialize message: %w", err)
 			}
 
 			// record all unique messages
@@ -278,23 +278,23 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 
 			dstAddr, err := address.NewFromString(msg.To)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, xerrors.Errorf("parse to address: %w", err)
 			}
 
 			st, err := state.LoadStateTree(p.node.Store(), ts.ParentState())
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, xerrors.Errorf("load state tree: %w", err)
 			}
 
 			dstActor, err := st.GetActor(dstAddr)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, xerrors.Errorf("get actor: %w", err)
 			}
 
 			if pm, err := parseMsg(msg, ts, dstActor.Code.String()); err == nil {
 				result.ParsedMessages = append(result.ParsedMessages, pm)
 			} else {
-				return nil, nil, err
+				return nil, nil, xerrors.Errorf("parse message: %w", err)
 			}
 
 			msgsSeen[message.Cid()] = struct{}{}
@@ -345,7 +345,7 @@ func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*mess
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
-				err = xerrors.Errorf("%v", r)
+				err = xerrors.Errorf("recovered panic: %v", r)
 			}
 		}()
 		params, name, err = statediff.ParseParams(m.Params, int(m.Method), actor)
@@ -356,13 +356,13 @@ func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*mess
 		params, name, err = statediff.ParseParams(m.Params, int(m.Method), actor)
 	}
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("parse params: %w", err)
 	}
 	pm.Method = name
 	if params != nil {
 		buf := bytes.NewBuffer(nil)
 		if err := fcjson.Encoder(params, buf); err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("json encode: %w", err)
 		}
 		pm.Params = string(buf.Bytes())
 	}
@@ -377,17 +377,17 @@ func (p *MessageProcessor) fetchReceipts(ctx context.Context, ts *types.TipSet) 
 		// Stop processing if we have somehow passed our own lease time
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, xerrors.Errorf("context done: %w", ctx.Err())
 		default:
 		}
 
 		recs, err := p.node.ChainGetParentReceipts(ctx, blk)
 		if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("get parent receipts: %w", err)
 		}
 		msgs, err := p.node.ChainGetParentMessages(ctx, blk)
 		if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("get parent messages: %w", err)
 		}
 
 		for i, r := range recs {
