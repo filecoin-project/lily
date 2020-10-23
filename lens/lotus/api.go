@@ -14,6 +14,7 @@ import (
 	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
+	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -21,8 +22,11 @@ import (
 )
 
 func NewAPIWrapper(node api.FullNode, store adt.Store) *APIWrapper {
+	var out api.FullNode
+	metrics.Proxy(node, &out)
+
 	return &APIWrapper{
-		FullNode: node,
+		FullNode: out,
 		store:    store,
 	}
 }
@@ -131,7 +135,15 @@ func (aw *APIWrapper) StateGetActor(ctx context.Context, actor address.Address, 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.API, "StateGetActor"))
 	stop := metrics.Timer(ctx, metrics.LensRequestDuration)
 	defer stop()
-	return aw.FullNode.StateGetActor(ctx, actor, tsk)
+	ts, err := aw.ChainGetTipSet(ctx, tsk)
+	if err != nil {
+		return nil, err
+	}
+	st, err := state.LoadStateTree(aw.Store(), ts.ParentState())
+	if err != nil {
+		return nil, err
+	}
+	return st.GetActor(actor)
 }
 
 func (aw *APIWrapper) StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error) {

@@ -16,6 +16,7 @@ import (
 	prom "github.com/prometheus/client_golang/prometheus"
 	"github.com/urfave/cli/v2"
 	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 	"go.opencensus.io/zpages"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
@@ -45,8 +46,10 @@ func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error)
 	var err error
 
 	if cctx.String("lens") == "lotus" {
+		cctx.Context, _ = tag.New(ctx, tag.Upsert(metrics.Lens, "lotus"))
 		ctx, api, closer, err = vapi.GetFullNodeAPI(cctx)
 	} else if cctx.String("lens") == "lotusrepo" {
+		cctx.Context, _ = tag.New(ctx, tag.Upsert(metrics.Lens, "lotusrepo"))
 		ctx, api, closer, err = repoapi.GetAPI(cctx)
 	}
 	if err != nil {

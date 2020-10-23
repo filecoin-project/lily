@@ -17,6 +17,7 @@ var (
 	ConnState, _ = tag.NewKey("conn_state")
 	State, _ = tag.NewKey("state")
 	API, _ = tag.NewKey("api")
+	Lens, _ = tag.NewKey("lens")
 )
 
 var (
@@ -56,7 +57,7 @@ var (
 	LensRequestDurationView = &view.View{
 		Measure: LensRequestDuration,
 		Aggregation: defaultMillisecondsDistribution,
-		TagKeys: []tag.Key{TaskType, API},
+		TagKeys: []tag.Key{TaskType, API, Lens},
 	}
 	TipsetHeightView = &view.View{
 		Measure: TipsetHeight,

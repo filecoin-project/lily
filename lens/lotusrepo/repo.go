@@ -11,6 +11,8 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/journal"
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
+
 	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/urfave/cli/v2"
 
@@ -120,6 +122,7 @@ func (ra *RepoAPI) ClientRetrieveTryRestartInsufficientFunds(ctx context.Context
 }
 
 func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
+
 	rapi := RepoAPI{}
 
 	if _, _, err := ulimit.ManageFdLimit(); err != nil {
@@ -173,7 +176,10 @@ func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 
 	rapi.Context = c.Context
 	rapi.cacheSize = c.Int("lens-cache-hint")
-	return c.Context, &rapi, sf, nil
+
+	var out *RepoAPI
+	metrics.Proxy(rapi, &out)
+	return c.Context, out, sf, nil
 }
 
 // From https://github.com/ribasushi/ltsh/blob/5b0211033020570217b0ae37b50ee304566ac218/cmd/lotus-shed/deallifecycles.go#L41-L171
