@@ -24,6 +24,7 @@ import (
 	"golang.org/x/xerrors"
 
 	lens "github.com/filecoin-project/sentinel-visor/lens"
+	carapi "github.com/filecoin-project/sentinel-visor/lens/carrepo"
 	vapi "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	repoapi "github.com/filecoin-project/sentinel-visor/lens/lotusrepo"
 	"github.com/filecoin-project/sentinel-visor/metrics"
@@ -48,6 +49,8 @@ func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error)
 		ctx, api, closer, err = vapi.GetFullNodeAPI(cctx)
 	} else if cctx.String("lens") == "lotusrepo" {
 		ctx, api, closer, err = repoapi.GetAPI(cctx)
+	} else if cctx.String("lens") == "carrepo" {
+		ctx, api, closer, err = carapi.GetAPI(cctx)
 	}
 	if err != nil {
 		return nil, nil, xerrors.Errorf("get node api: %w", err)
