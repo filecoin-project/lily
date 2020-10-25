@@ -132,20 +132,9 @@ func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 		return nil, nil, nil, err
 	}
 
-	r, err := repo.NewFS(c.String("/tmp"))
-	if err != nil {
-		return nil, nil, nil, err
-	}
+	r := repo.NewMemory(nil)
 
-	exists, err := r.Exists()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	if exists {
-		return nil, nil, nil, fmt.Errorf("tmp metadata repo does exist already")
-	}
-
-	lr, err := r.LockRO(repo.FullNode)
+	lr, err := r.Lock(repo.FullNode)
 	if err != nil {
 		return nil, nil, nil, err
 	}
