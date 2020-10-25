@@ -12,9 +12,9 @@ import (
 )
 
 type MinerSectorPost struct {
+	Height   int64  `pg:",pk,notnull,use_zero"`
 	MinerID  string `pg:",pk,notnull"`
 	SectorID uint64 `pg:",pk,notnull,use_zero"`
-	Epoch    int64  `pg:",pk,notnull"`
 
 	PostMessageCID string
 }
@@ -38,9 +38,9 @@ func NewMinerSectorPost(task *MinerTaskResult) MinerSectorPosts {
 			mid = c.String()
 		}
 		post := &MinerSectorPost{
+			Height:         int64(task.Height),
 			MinerID:        task.Addr.String(),
 			SectorID:       s,
-			Epoch:          int64(task.Height),
 			PostMessageCID: mid,
 		}
 		out = append(out, post)

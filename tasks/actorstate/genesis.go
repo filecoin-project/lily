@@ -120,6 +120,7 @@ func (p *GenesisProcessor) storageMinerState(ctx context.Context, gen *types.Tip
 	}
 
 	powerModel := &minermodel.MinerPower{
+		Height:               int64(gen.Height()),
 		MinerID:              addr.String(),
 		StateRoot:            gen.ParentState().String(),
 		RawBytePower:         mpower.MinerPower.RawBytePower.String(),
@@ -127,6 +128,7 @@ func (p *GenesisProcessor) storageMinerState(ctx context.Context, gen *types.Tip
 	}
 
 	stateModel := &minermodel.MinerState{
+		Height:     int64(gen.Height()),
 		MinerID:    addr.String(),
 		OwnerID:    minfo.Owner.String(),
 		WorkerID:   minfo.Worker.String(),
@@ -138,6 +140,7 @@ func (p *GenesisProcessor) storageMinerState(ctx context.Context, gen *types.Tip
 	dealsModel := minermodel.MinerDealSectors{}
 	for idx, sector := range msectors {
 		sectorsModel[idx] = &minermodel.MinerSectorInfo{
+			Height:                int64(gen.Height()),
 			MinerID:               addr.String(),
 			SectorID:              uint64(sector.SectorNumber),
 			StateRoot:             gen.ParentState().String(),
@@ -152,6 +155,7 @@ func (p *GenesisProcessor) storageMinerState(ctx context.Context, gen *types.Tip
 		}
 		for _, dealID := range sector.DealIDs {
 			dealsModel = append(dealsModel, &minermodel.MinerDealSector{
+				Height:   int64(gen.Height()),
 				MinerID:  addr.String(),
 				SectorID: uint64(sector.SectorNumber),
 				DealID:   uint64(dealID),
@@ -201,6 +205,7 @@ func (p *GenesisProcessor) storageMarketState(ctx context.Context, gen *types.Ti
 			return nil, err
 		}
 		states[idx] = &marketmodel.MarketDealState{
+			Height:           int64(gen.Height()),
 			DealID:           dealID,
 			SectorStartEpoch: int64(deal.State.SectorStartEpoch),
 			LastUpdateEpoch:  int64(deal.State.LastUpdatedEpoch),
@@ -208,6 +213,7 @@ func (p *GenesisProcessor) storageMarketState(ctx context.Context, gen *types.Ti
 			StateRoot:        gen.ParentState().String(),
 		}
 		proposals[idx] = &marketmodel.MarketDealProposal{
+			Height:               int64(gen.Height()),
 			DealID:               dealID,
 			StateRoot:            gen.ParentState().String(),
 			PaddedPieceSize:      uint64(deal.Proposal.PieceSize),

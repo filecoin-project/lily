@@ -11,6 +11,7 @@ import (
 )
 
 type MinerPreCommitInfo struct {
+	Height    int64  `pg:",pk,notnull,use_zero"`
 	MinerID   string `pg:",pk,notnull"`
 	SectorID  uint64 `pg:",pk,use_zero"`
 	StateRoot string `pg:",pk,notnull"`
@@ -43,6 +44,7 @@ func NewMinerPreCommitInfos(res *MinerTaskResult) MinerPreCommitInfos {
 	out := make(MinerPreCommitInfos, len(res.PreCommitChanges.Added))
 	for i, added := range res.PreCommitChanges.Added {
 		pc := &MinerPreCommitInfo{
+			Height:    int64(res.Height),
 			MinerID:   res.Addr.String(),
 			SectorID:  uint64(added.Info.SectorNumber),
 			StateRoot: res.StateRoot.String(),

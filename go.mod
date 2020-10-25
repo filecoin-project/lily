@@ -7,15 +7,14 @@ require (
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/filecoin-project/go-address v0.0.4
 	github.com/filecoin-project/go-bitfield v0.2.1
-	github.com/filecoin-project/go-fil-markets v0.9.1
+	github.com/filecoin-project/go-fil-markets v1.0.0
 	github.com/filecoin-project/go-jsonrpc v0.1.2-0.20201008195726-68c6a2704e49
 	github.com/filecoin-project/go-multistore v0.0.3
-	github.com/filecoin-project/go-state-types v0.0.0-20201003010437-c33112184a2b
-	github.com/filecoin-project/lotus v0.10.2-0.20201014221402-6de82364e98c
-	github.com/filecoin-project/sector-storage v0.0.0-20200810171746-eac70842d8e0
+	github.com/filecoin-project/go-state-types v0.0.0-20201013222834-41ea465f274f
+	github.com/filecoin-project/lotus v1.1.0
 	github.com/filecoin-project/specs-actors v0.9.12
-	github.com/filecoin-project/specs-actors/v2 v2.1.0
-	github.com/filecoin-project/statediff v0.0.6
+	github.com/filecoin-project/specs-actors/v2 v2.2.0
+	github.com/filecoin-project/statediff v0.0.7
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.3.1
 	github.com/go-pg/pgext v0.1.4
@@ -25,6 +24,7 @@ require (
 	github.com/ipfs/go-ipfs-blockstore v1.0.1
 	github.com/ipfs/go-ipld-cbor v0.0.5-0.20200428170625-a0bd04d3cbdf
 	github.com/ipfs/go-log/v2 v2.1.2-0.20200626104915-0016c0b4b3e4
+	github.com/ipld/go-car v0.1.1-0.20201015032735-ff6ccdc46acc // indirect
 	github.com/ipld/go-ipld-prime v0.5.1-0.20200910124733-350032422383
 	github.com/jackc/pgx/v4 v4.9.0
 	github.com/lib/pq v1.8.0
@@ -37,11 +37,11 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/whyrusleeping/cbor-gen v0.0.0-20200826160007-0b9f6c5fb163
+	github.com/willscott/carbs v0.0.1
 	go.opencensus.io v0.22.4
 	go.opentelemetry.io/otel v0.12.0
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.12.0
 	go.opentelemetry.io/otel/sdk v0.12.0
-	golang.org/x/exp v0.0.0-20200924195034-c827fd4f18b9 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 )
 

@@ -36,6 +36,7 @@ func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateA
 
 	return &commonmodel.ActorTaskResult{
 		Actor: &commonmodel.Actor{
+			Height:    int64(a.Epoch),
 			ID:        a.Address.String(),
 			StateRoot: a.ParentStateRoot.String(),
 			Code:      ActorNameByCode(a.Actor.Code),
@@ -44,9 +45,10 @@ func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateA
 			Nonce:     a.Actor.Nonce,
 		},
 		State: &commonmodel.ActorState{
-			Head:  a.Actor.Head.String(),
-			Code:  a.Actor.Code.String(),
-			State: string(state),
+			Height: int64(a.Epoch),
+			Head:   a.Actor.Head.String(),
+			Code:   a.Actor.Code.String(),
+			State:  string(state),
 		},
 	}, nil
 }

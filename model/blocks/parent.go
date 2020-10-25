@@ -12,6 +12,7 @@ import (
 )
 
 type BlockParent struct {
+	Height int64  `pg:",pk,notnull,use_zero"`
 	Block  string `pg:",pk,notnull"`
 	Parent string `pg:",notnull"`
 }
@@ -31,6 +32,7 @@ func NewBlockParents(header *types.BlockHeader) BlockParents {
 	var out BlockParents
 	for _, p := range header.Parents {
 		out = append(out, &BlockParent{
+			Height: int64(header.Height),
 			Block:  header.Cid().String(),
 			Parent: p.String(),
 		})

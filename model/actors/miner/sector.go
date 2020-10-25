@@ -11,6 +11,7 @@ import (
 )
 
 type MinerSectorInfo struct {
+	Height    int64  `pg:",pk,notnull,use_zero"`
 	MinerID   string `pg:",pk,notnull"`
 	SectorID  uint64 `pg:",pk,use_zero"`
 	StateRoot string `pg:",pk,notnull"`
@@ -41,6 +42,7 @@ func NewMinerSectorInfos(res *MinerTaskResult) MinerSectorInfos {
 	out := make(MinerSectorInfos, len(res.SectorChanges.Added))
 	for i, added := range res.SectorChanges.Added {
 		si := &MinerSectorInfo{
+			Height:                int64(res.Height),
 			MinerID:               res.Addr.String(),
 			SectorID:              uint64(added.SectorNumber),
 			StateRoot:             res.StateRoot.String(),

@@ -1,4 +1,4 @@
-package sqlrepo
+package carrepo
 
 import (
 	"context"
@@ -9,38 +9,41 @@ import (
 	"github.com/filecoin-project/go-fil-markets/storagemarket"
 	"github.com/filecoin-project/go-multistore"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lotus/journal"
+	"github.com/filecoin-project/sentinel-visor/lens"
+	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/urfave/cli/v2"
+
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
+	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/lotus/extern/sector-storage/ffiwrapper"
-	"github.com/filecoin-project/lotus/journal"
 	"github.com/filecoin-project/lotus/lib/cachebs"
 	"github.com/filecoin-project/lotus/lib/ulimit"
 	marketevents "github.com/filecoin-project/lotus/markets/loggers"
 	"github.com/filecoin-project/lotus/node/impl"
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/lotus/node/repo"
-	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/specs-actors/actors/runtime/proof"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
-	peer "github.com/libp2p/go-libp2p-peer"
-	"github.com/urfave/cli/v2"
+	"github.com/willscott/carbs"
 )
 
-type SQLAPI struct {
+type CarAPI struct {
 	impl.FullNodeAPI
 	context.Context
 	cacheSize int
 }
 
-func (ra *SQLAPI) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs {
+func (ra *CarAPI) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs {
 	return vm.ComputeGasOutputs(gasUsed, gasLimit, baseFee, feeCap, gasPremium)
 }
 
-func (ra *SQLAPI) Store() adt.Store {
+func (ra *CarAPI) Store() adt.Store {
 	bs := ra.FullNodeAPI.ChainAPI.Chain.Blockstore()
 	cachedStore := cachebs.NewBufferedBstore(bs, ra.cacheSize)
 	cs := cbor.NewCborStore(cachedStore)
@@ -48,92 +51,101 @@ func (ra *SQLAPI) Store() adt.Store {
 	return adtStore
 }
 
-func (ra *SQLAPI) ClientStartDeal(ctx context.Context, params *api.StartDealParams) (*cid.Cid, error) {
+func (ra *CarAPI) ClientStartDeal(ctx context.Context, params *api.StartDealParams) (*cid.Cid, error) {
 	return nil, fmt.Errorf("unsupported")
 }
 
-func (ra *SQLAPI) ClientListDeals(ctx context.Context) ([]api.DealInfo, error) {
+func (ra *CarAPI) ClientListDeals(ctx context.Context) ([]api.DealInfo, error) {
 	return nil, fmt.Errorf("unsupported")
 }
 
-func (ra *SQLAPI) ClientGetDealInfo(ctx context.Context, d cid.Cid) (*api.DealInfo, error) {
+func (ra *CarAPI) ClientGetDealInfo(ctx context.Context, d cid.Cid) (*api.DealInfo, error) {
 	return nil, fmt.Errorf("unsupported")
 }
 
-func (ra *SQLAPI) ClientGetDealUpdates(ctx context.Context) (<-chan api.DealInfo, error) {
+func (ra *CarAPI) ClientGetDealUpdates(ctx context.Context) (<-chan api.DealInfo, error) {
 	return nil, fmt.Errorf("unsupported")
 }
 
-func (ra *SQLAPI) ClientHasLocal(ctx context.Context, root cid.Cid) (bool, error) {
+func (ra *CarAPI) ClientHasLocal(ctx context.Context, root cid.Cid) (bool, error) {
 	return false, fmt.Errorf("unsupported")
 }
 
-func (ra *SQLAPI) ClientFindData(ctx context.Context, root cid.Cid, piece *cid.Cid) ([]api.QueryOffer, error) {
+func (ra *CarAPI) ClientFindData(ctx context.Context, root cid.Cid, piece *cid.Cid) ([]api.QueryOffer, error) {
 	return nil, fmt.Errorf("unsupported")
 }
 
-func (ra *SQLAPI) ClientMinerQueryOffer(ctx context.Context, miner address.Address, root cid.Cid, piece *cid.Cid) (api.QueryOffer, error) {
+func (ra *CarAPI) ClientMinerQueryOffer(ctx context.Context, miner address.Address, root cid.Cid, piece *cid.Cid) (api.QueryOffer, error) {
 	return api.QueryOffer{}, fmt.Errorf("unsupported")
 }
 
-func (ra *SQLAPI) ClientImport(ctx context.Context, ref api.FileRef) (*api.ImportRes, error) {
+func (ra *CarAPI) ClientImport(ctx context.Context, ref api.FileRef) (*api.ImportRes, error) {
 	return nil, fmt.Errorf("unsupported")
 }
 
-func (ra *SQLAPI) ClientRemoveImport(ctx context.Context, importID multistore.StoreID) error {
+func (ra *CarAPI) ClientRemoveImport(ctx context.Context, importID multistore.StoreID) error {
 	return fmt.Errorf("unsupported")
 }
-func (ra *SQLAPI) ClientImportLocal(ctx context.Context, f io.Reader) (cid.Cid, error) {
+func (ra *CarAPI) ClientImportLocal(ctx context.Context, f io.Reader) (cid.Cid, error) {
 	return cid.Undef, fmt.Errorf("unsupported")
 }
-func (ra *SQLAPI) ClientListImports(ctx context.Context) ([]api.Import, error) {
+func (ra *CarAPI) ClientListImports(ctx context.Context) ([]api.Import, error) {
 	return nil, fmt.Errorf("unsupported")
 }
-func (ra *SQLAPI) ClientRetrieve(ctx context.Context, order api.RetrievalOrder, ref *api.FileRef) error {
+func (ra *CarAPI) ClientRetrieve(ctx context.Context, order api.RetrievalOrder, ref *api.FileRef) error {
 	return fmt.Errorf("unsupported")
 }
-func (ra *SQLAPI) ClientRetrieveWithEvents(ctx context.Context, order api.RetrievalOrder, ref *api.FileRef) (<-chan marketevents.RetrievalEvent, error) {
+func (ra *CarAPI) ClientRetrieveWithEvents(ctx context.Context, order api.RetrievalOrder, ref *api.FileRef) (<-chan marketevents.RetrievalEvent, error) {
 	return nil, fmt.Errorf("unsupported")
 }
-func (ra *SQLAPI) ClientQueryAsk(ctx context.Context, p peer.ID, miner address.Address) (*storagemarket.StorageAsk, error) {
+func (ra *CarAPI) ClientQueryAsk(ctx context.Context, p peer.ID, miner address.Address) (*storagemarket.StorageAsk, error) {
 	return nil, fmt.Errorf("unsupported")
 }
-func (ra *SQLAPI) ClientCalcCommP(ctx context.Context, inpath string) (*api.CommPRet, error) {
+func (ra *CarAPI) ClientCalcCommP(ctx context.Context, inpath string) (*api.CommPRet, error) {
 	return nil, fmt.Errorf("unsupported")
 }
-func (ra *SQLAPI) ClientDealSize(ctx context.Context, root cid.Cid) (api.DataSize, error) {
+func (ra *CarAPI) ClientDealSize(ctx context.Context, root cid.Cid) (api.DataSize, error) {
 	return api.DataSize{}, fmt.Errorf("unsupported")
 }
-func (ra *SQLAPI) ClientGenCar(ctx context.Context, ref api.FileRef, outputPath string) error {
+func (ra *CarAPI) ClientGenCar(ctx context.Context, ref api.FileRef, outputPath string) error {
 	return fmt.Errorf("unsupported")
 }
-func (ra *SQLAPI) ClientListDataTransfers(ctx context.Context) ([]api.DataTransferChannel, error) {
+func (ra *CarAPI) ClientListDataTransfers(ctx context.Context) ([]api.DataTransferChannel, error) {
 	return nil, fmt.Errorf("unsupported")
 }
-func (ra *SQLAPI) ClientDataTransferUpdates(ctx context.Context) (<-chan api.DataTransferChannel, error) {
+func (ra *CarAPI) ClientDataTransferUpdates(ctx context.Context) (<-chan api.DataTransferChannel, error) {
 	return nil, fmt.Errorf("unsupported")
 }
-func (ra *SQLAPI) ClientRetrieveTryRestartInsufficientFunds(ctx context.Context, paymentChannel address.Address) error {
+func (ra *CarAPI) ClientRetrieveTryRestartInsufficientFunds(ctx context.Context, paymentChannel address.Address) error {
 	return fmt.Errorf("unsupported")
 }
-
-const safetyLookBack = 5
 
 func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
-	rapi := SQLAPI{}
+	rapi := CarAPI{}
 
 	if _, _, err := ulimit.ManageFdLimit(); err != nil {
 		return nil, nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
 	}
 
-	bs, err := NewBlockStore(c.String("repo"))
+	db, err := carbs.Load(c.String("repo"), false)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	r := repo.NewMemory(nil)
+	r, err := repo.NewFS(c.String("/tmp"))
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
-	lr, err := r.Lock(repo.FullNode)
+	exists, err := r.Exists()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if exists {
+		return nil, nil, nil, fmt.Errorf("tmp metadata repo does exist already")
+	}
+
+	lr, err := r.LockRO(repo.FullNode)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -143,14 +155,14 @@ func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 		return nil, nil, nil, err
 	}
 
-	cs := store.NewChainStore(bs, mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
+	cs := store.NewChainStore(db, mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
 
-	headKey, err := bs.(*SqlBlockstore).getMasterTsKey(c.Context, safetyLookBack)
+	headKey, err := db.Roots()
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	headTs, err := cs.LoadTipSet(*headKey)
+	headTs, err := cs.LoadTipSet(types.NewTipSetKey(headKey...))
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to load our own chainhead: %w", err)
 	}

@@ -11,6 +11,7 @@ import (
 )
 
 type ChainPower struct {
+	Height    int64  `pg:",pk,notnull,use_zero"`
 	StateRoot string `pg:",pk"`
 
 	TotalRawBytesPower string `pg:",notnull"`

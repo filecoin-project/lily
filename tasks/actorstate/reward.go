@@ -80,6 +80,7 @@ func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node ActorState
 	}
 
 	return &rewardmodel.ChainReward{
+		Height:                            int64(a.Epoch),
 		StateRoot:                         a.ParentStateRoot.String(),
 		CumSumBaseline:                    csbaseline.String(),
 		CumSumRealized:                    csrealized.String(),
