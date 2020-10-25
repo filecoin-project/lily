@@ -34,7 +34,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/whyrusleeping/cbor-gen v0.0.0-20200826160007-0b9f6c5fb163
-	github.com/willscott/carbs v0.0.1
+	github.com/willscott/carbs v0.0.3
 	go.opencensus.io v0.22.4
 	go.opentelemetry.io/otel v0.12.0
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.12.0
