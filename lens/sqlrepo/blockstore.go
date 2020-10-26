@@ -76,6 +76,8 @@ func keyFromCid(c cid.Cid) (k string) {
 }
 
 func (sbs *SqlBlockstore) Has(c cid.Cid) (has bool, err error) {
+	// an odd construction. but select exists(select <constant> where <cond>) can stop after 1 row
+	// rather than scanning to calculate an aggregate like `count(*)` or `max` might.
 	err = sbs.db.QueryRow(
 		context.Background(),
 		"SELECT EXISTS( SELECT 42 FROM blocks WHERE multiHash = $1 )",
