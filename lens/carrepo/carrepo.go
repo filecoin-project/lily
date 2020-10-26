@@ -131,6 +131,7 @@ func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	cacheDB := NewCachingStore(db)
 
 	r := repo.NewMemory(nil)
 
@@ -144,7 +145,7 @@ func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 		return nil, nil, nil, err
 	}
 
-	cs := store.NewChainStore(db, mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
+	cs := store.NewChainStore(cacheDB, mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
 
 	headKey, err := db.Roots()
 	if err != nil {
