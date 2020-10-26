@@ -154,7 +154,9 @@ ALTER TABLE public.block_headers RENAME TO blocks;
 ALTER TABLE public.blocks RENAME COLUMN fork_signaling TO forksig;
 ALTER TABLE public.blocks RENAME COLUMN parent_state_root TO parentstateroot;
 ALTER TABLE public.blocks RENAME COLUMN parent_weight TO parentweight;
-ALTER TABLE public.blocks ALTER COLUMN parentweight TYPE integer USING (parentweight::integer);
+
+-- This was applied in forward migration, but cannot be reversed. Ignoring
+-- ALTER TABLE public.blocks ALTER COLUMN parentweight TYPE integer USING (parentweight::integer);
 
 ALTER TABLE public.blocks_synced DROP COLUMN height;
 ALTER TABLE public.blocks_synced DROP COLUMN completed_at;
