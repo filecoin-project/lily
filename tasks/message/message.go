@@ -41,28 +41,30 @@ const (
 
 var log = logging.Logger("message")
 
-func NewMessageProcessor(d *storage.Database, node lens.API, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64) *MessageProcessor {
+func NewMessageProcessor(d *storage.Database, node lens.API, leaseLength time.Duration, batchSize int, parseMessages bool, minHeight, maxHeight int64) *MessageProcessor {
 	return &MessageProcessor{
-		node:        node,
-		storage:     d,
-		leaseLength: leaseLength,
-		batchSize:   batchSize,
-		minHeight:   minHeight,
-		maxHeight:   maxHeight,
-		clock:       clock.New(),
+		node:          node,
+		storage:       d,
+		leaseLength:   leaseLength,
+		batchSize:     batchSize,
+		parseMessages: parseMessages,
+		minHeight:     minHeight,
+		maxHeight:     maxHeight,
+		clock:         clock.New(),
 	}
 }
 
 // MessageProcessor is a task that processes blocks to detect messages and persists
 // their details to the database.
 type MessageProcessor struct {
-	node        lens.API
-	storage     *storage.Database
-	leaseLength time.Duration // length of time to lease work for
-	batchSize   int           // number of tipsets to lease in a batch
-	minHeight   int64         // limit processing to tipsets equal to or above this height
-	maxHeight   int64         // limit processing to tipsets equal to or below this height
-	clock       clock.Clock
+	node          lens.API
+	storage       *storage.Database
+	leaseLength   time.Duration // length of time to lease work for
+	batchSize     int           // number of tipsets to lease in a batch
+	parseMessages bool          // if derived parsed messages should be calculated
+	minHeight     int64         // limit processing to tipsets equal to or above this height
+	maxHeight     int64         // limit processing to tipsets equal to or below this height
+	clock         clock.Clock
 }
 
 // Run starts processing batches of tipsets and blocks until the context is done or
@@ -276,25 +278,27 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 			}
 			result.Messages = append(result.Messages, msg)
 
-			dstAddr, err := address.NewFromString(msg.To)
-			if err != nil {
-				return nil, nil, xerrors.Errorf("parse to address: %w", err)
-			}
+			if p.parseMessages {
+				dstAddr, err := address.NewFromString(msg.To)
+				if err != nil {
+					return nil, nil, xerrors.Errorf("parse to address: %w", err)
+				}
 
-			st, err := state.LoadStateTree(p.node.Store(), ts.ParentState())
-			if err != nil {
-				return nil, nil, xerrors.Errorf("load state tree: %w", err)
-			}
+				st, err := state.LoadStateTree(p.node.Store(), ts.ParentState())
+				if err != nil {
+					return nil, nil, xerrors.Errorf("load state tree: %w", err)
+				}
 
-			dstActor, err := st.GetActor(dstAddr)
-			if err != nil {
-				return nil, nil, xerrors.Errorf("get actor: %w", err)
-			}
+				dstActor, err := st.GetActor(dstAddr)
+				if err != nil {
+					return nil, nil, xerrors.Errorf("get actor: %w", err)
+				}
 
-			if pm, err := parseMsg(msg, ts, dstActor.Code.String()); err == nil {
-				result.ParsedMessages = append(result.ParsedMessages, pm)
-			} else {
-				return nil, nil, xerrors.Errorf("parse message: %w", err)
+				if pm, err := parseMsg(msg, ts, dstActor.Code.String()); err == nil {
+					result.ParsedMessages = append(result.ParsedMessages, pm)
+				} else {
+					return nil, nil, xerrors.Errorf("parse message: %w", err)
+				}
 			}
 
 			msgsSeen[message.Cid()] = struct{}{}

@@ -142,6 +142,13 @@ var Run = &cli.Command{
 			Usage:   "Number of message processors to start",
 			EnvVars: []string{"VISOR_MESSAGE_WORKERS"},
 		},
+		&cli.BoolFlag{
+			Name:    "derive-parsed-messages",
+			Aliases: []string{"dpm"},
+			Value:   false,
+			Usage:   "Fill the parsed messages table when processing messages",
+			EnvVars: []string{"VISOR_MESSAGE_PARSED"},
+		},
 
 		&cli.DurationFlag{
 			Name:    "gasoutputs-lease",
@@ -293,7 +300,7 @@ var Run = &cli.Command{
 		for i := 0; i < cctx.Int("message-workers"); i++ {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                fmt.Sprintf("MessageProcessor%03d", i),
-				Task:                message.NewMessageProcessor(rctx.db, rctx.api, cctx.Duration("message-lease"), cctx.Int("message-batch"), heightFrom, heightTo),
+				Task:                message.NewMessageProcessor(rctx.db, rctx.api, cctx.Duration("message-lease"), cctx.Int("message-batch"), cctx.Bool("derive-parsed-messages"), heightFrom, heightTo),
 				RestartOnFailure:    true,
 				RestartOnCompletion: true,
 			})
