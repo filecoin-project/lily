@@ -131,21 +131,11 @@ func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	cacheDB := NewCachingStore(db)
 
-	r, err := repo.NewFS(c.String("/tmp"))
-	if err != nil {
-		return nil, nil, nil, err
-	}
+	r := repo.NewMemory(nil)
 
-	exists, err := r.Exists()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	if exists {
-		return nil, nil, nil, fmt.Errorf("tmp metadata repo does exist already")
-	}
-
-	lr, err := r.LockRO(repo.FullNode)
+	lr, err := r.Lock(repo.FullNode)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -155,7 +145,7 @@ func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 		return nil, nil, nil, err
 	}
 
-	cs := store.NewChainStore(db, mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
+	cs := store.NewChainStore(cacheDB, mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
 
 	headKey, err := db.Roots()
 	if err != nil {
