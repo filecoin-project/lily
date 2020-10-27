@@ -33,94 +33,12 @@ import (
 	"github.com/willscott/carbs"
 )
 
-type CarAPI struct {
-	impl.FullNodeAPI
-	context.Context
-	cacheSize int
+type APIOpener struct {
+	// shared instance of the repo since the opener holds an exclusive lock on it
+	rapi *CarAPI
 }
 
-func (ra *CarAPI) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs {
-	return vm.ComputeGasOutputs(gasUsed, gasLimit, baseFee, feeCap, gasPremium)
-}
-
-func (ra *CarAPI) Store() adt.Store {
-	bs := ra.FullNodeAPI.ChainAPI.Chain.Blockstore()
-	cachedStore := cachebs.NewBufferedBstore(bs, ra.cacheSize)
-	cs := cbor.NewCborStore(cachedStore)
-	adtStore := adt.WrapStore(ra.Context, cs)
-	return adtStore
-}
-
-func (ra *CarAPI) ClientStartDeal(ctx context.Context, params *api.StartDealParams) (*cid.Cid, error) {
-	return nil, fmt.Errorf("unsupported")
-}
-
-func (ra *CarAPI) ClientListDeals(ctx context.Context) ([]api.DealInfo, error) {
-	return nil, fmt.Errorf("unsupported")
-}
-
-func (ra *CarAPI) ClientGetDealInfo(ctx context.Context, d cid.Cid) (*api.DealInfo, error) {
-	return nil, fmt.Errorf("unsupported")
-}
-
-func (ra *CarAPI) ClientGetDealUpdates(ctx context.Context) (<-chan api.DealInfo, error) {
-	return nil, fmt.Errorf("unsupported")
-}
-
-func (ra *CarAPI) ClientHasLocal(ctx context.Context, root cid.Cid) (bool, error) {
-	return false, fmt.Errorf("unsupported")
-}
-
-func (ra *CarAPI) ClientFindData(ctx context.Context, root cid.Cid, piece *cid.Cid) ([]api.QueryOffer, error) {
-	return nil, fmt.Errorf("unsupported")
-}
-
-func (ra *CarAPI) ClientMinerQueryOffer(ctx context.Context, miner address.Address, root cid.Cid, piece *cid.Cid) (api.QueryOffer, error) {
-	return api.QueryOffer{}, fmt.Errorf("unsupported")
-}
-
-func (ra *CarAPI) ClientImport(ctx context.Context, ref api.FileRef) (*api.ImportRes, error) {
-	return nil, fmt.Errorf("unsupported")
-}
-
-func (ra *CarAPI) ClientRemoveImport(ctx context.Context, importID multistore.StoreID) error {
-	return fmt.Errorf("unsupported")
-}
-func (ra *CarAPI) ClientImportLocal(ctx context.Context, f io.Reader) (cid.Cid, error) {
-	return cid.Undef, fmt.Errorf("unsupported")
-}
-func (ra *CarAPI) ClientListImports(ctx context.Context) ([]api.Import, error) {
-	return nil, fmt.Errorf("unsupported")
-}
-func (ra *CarAPI) ClientRetrieve(ctx context.Context, order api.RetrievalOrder, ref *api.FileRef) error {
-	return fmt.Errorf("unsupported")
-}
-func (ra *CarAPI) ClientRetrieveWithEvents(ctx context.Context, order api.RetrievalOrder, ref *api.FileRef) (<-chan marketevents.RetrievalEvent, error) {
-	return nil, fmt.Errorf("unsupported")
-}
-func (ra *CarAPI) ClientQueryAsk(ctx context.Context, p peer.ID, miner address.Address) (*storagemarket.StorageAsk, error) {
-	return nil, fmt.Errorf("unsupported")
-}
-func (ra *CarAPI) ClientCalcCommP(ctx context.Context, inpath string) (*api.CommPRet, error) {
-	return nil, fmt.Errorf("unsupported")
-}
-func (ra *CarAPI) ClientDealSize(ctx context.Context, root cid.Cid) (api.DataSize, error) {
-	return api.DataSize{}, fmt.Errorf("unsupported")
-}
-func (ra *CarAPI) ClientGenCar(ctx context.Context, ref api.FileRef, outputPath string) error {
-	return fmt.Errorf("unsupported")
-}
-func (ra *CarAPI) ClientListDataTransfers(ctx context.Context) ([]api.DataTransferChannel, error) {
-	return nil, fmt.Errorf("unsupported")
-}
-func (ra *CarAPI) ClientDataTransferUpdates(ctx context.Context) (<-chan api.DataTransferChannel, error) {
-	return nil, fmt.Errorf("unsupported")
-}
-func (ra *CarAPI) ClientRetrieveTryRestartInsufficientFunds(ctx context.Context, paymentChannel address.Address) error {
-	return fmt.Errorf("unsupported")
-}
-
-func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
+func NewAPIOpener(c *cli.Context) (context.Context, *APIOpener, lens.APICloser, error) {
 	rapi := CarAPI{}
 
 	if _, _, err := ulimit.ManageFdLimit(); err != nil {
@@ -174,7 +92,109 @@ func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
 
 	rapi.Context = c.Context
 	rapi.cacheSize = c.Int("lens-cache-hint")
-	return c.Context, &rapi, sf, nil
+	return c.Context, &APIOpener{&rapi}, sf, nil
+}
+
+func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) {
+	return o.rapi, lens.APICloser(func() {}), nil
+}
+
+type CarAPI struct {
+	impl.FullNodeAPI
+	context.Context
+	cacheSize int
+}
+
+func (ra *CarAPI) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs {
+	return vm.ComputeGasOutputs(gasUsed, gasLimit, baseFee, feeCap, gasPremium)
+}
+
+func (ra *CarAPI) Store() adt.Store {
+	bs := ra.FullNodeAPI.ChainAPI.Chain.Blockstore()
+	cachedStore := cachebs.NewBufferedBstore(bs, ra.cacheSize)
+	cs := cbor.NewCborStore(cachedStore)
+	adtStore := adt.WrapStore(ra.Context, cs)
+	return adtStore
+}
+
+func (ra *CarAPI) ClientStartDeal(ctx context.Context, params *api.StartDealParams) (*cid.Cid, error) {
+	return nil, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientListDeals(ctx context.Context) ([]api.DealInfo, error) {
+	return nil, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientGetDealInfo(ctx context.Context, d cid.Cid) (*api.DealInfo, error) {
+	return nil, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientGetDealUpdates(ctx context.Context) (<-chan api.DealInfo, error) {
+	return nil, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientHasLocal(ctx context.Context, root cid.Cid) (bool, error) {
+	return false, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientFindData(ctx context.Context, root cid.Cid, piece *cid.Cid) ([]api.QueryOffer, error) {
+	return nil, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientMinerQueryOffer(ctx context.Context, miner address.Address, root cid.Cid, piece *cid.Cid) (api.QueryOffer, error) {
+	return api.QueryOffer{}, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientImport(ctx context.Context, ref api.FileRef) (*api.ImportRes, error) {
+	return nil, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientRemoveImport(ctx context.Context, importID multistore.StoreID) error {
+	return fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientImportLocal(ctx context.Context, f io.Reader) (cid.Cid, error) {
+	return cid.Undef, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientListImports(ctx context.Context) ([]api.Import, error) {
+	return nil, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientRetrieve(ctx context.Context, order api.RetrievalOrder, ref *api.FileRef) error {
+	return fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientRetrieveWithEvents(ctx context.Context, order api.RetrievalOrder, ref *api.FileRef) (<-chan marketevents.RetrievalEvent, error) {
+	return nil, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientQueryAsk(ctx context.Context, p peer.ID, miner address.Address) (*storagemarket.StorageAsk, error) {
+	return nil, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientCalcCommP(ctx context.Context, inpath string) (*api.CommPRet, error) {
+	return nil, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientDealSize(ctx context.Context, root cid.Cid) (api.DataSize, error) {
+	return api.DataSize{}, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientGenCar(ctx context.Context, ref api.FileRef, outputPath string) error {
+	return fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientListDataTransfers(ctx context.Context) ([]api.DataTransferChannel, error) {
+	return nil, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientDataTransferUpdates(ctx context.Context) (<-chan api.DataTransferChannel, error) {
+	return nil, fmt.Errorf("unsupported")
+}
+
+func (ra *CarAPI) ClientRetrieveTryRestartInsufficientFunds(ctx context.Context, paymentChannel address.Address) error {
+	return fmt.Errorf("unsupported")
 }
 
 // From https://github.com/ribasushi/ltsh/blob/5b0211033020570217b0ae37b50ee304566ac218/cmd/lotus-shed/deallifecycles.go#L41-L171

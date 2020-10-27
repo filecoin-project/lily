@@ -21,7 +21,7 @@ func DatabaseAvailable() bool {
 }
 
 // Database returns the connection string for connecting to the test database
-func Database() string {
+func DatabaseOptions() string {
 	return testDatabase
 }
 

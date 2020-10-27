@@ -18,9 +18,9 @@ import (
 	"github.com/filecoin-project/sentinel-visor/wait"
 )
 
-func NewGasOutputsProcessor(d *storage.Database, node lens.API, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64) *GasOutputsProcessor {
+func NewGasOutputsProcessor(d *storage.Database, opener lens.APIOpener, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64) *GasOutputsProcessor {
 	return &GasOutputsProcessor{
-		node:        node,
+		opener:      opener,
 		storage:     d,
 		leaseLength: leaseLength,
 		batchSize:   batchSize,
@@ -32,7 +32,7 @@ func NewGasOutputsProcessor(d *storage.Database, node lens.API, leaseLength time
 
 // GasOutputsProcessor is a task that processes messages with receipts to determine gas outputs.
 type GasOutputsProcessor struct {
-	node        lens.API
+	opener      lens.APIOpener
 	storage     *storage.Database
 	leaseLength time.Duration // length of time to lease work for
 	batchSize   int           // number of messages to lease in a batch
@@ -44,11 +44,19 @@ type GasOutputsProcessor struct {
 // Run starts processing batches of messages until the context is done or
 // an error occurs.
 func (p *GasOutputsProcessor) Run(ctx context.Context) error {
+	node, closer, err := p.opener.Open(ctx)
+	if err != nil {
+		return xerrors.Errorf("open lens: %w", err)
+	}
+	defer closer()
+
 	// Loop until context is done or processing encounters a fatal error
-	return wait.RepeatUntil(ctx, batchInterval, p.processBatch)
+	return wait.RepeatUntil(ctx, batchInterval, func(ctx context.Context) (bool, error) {
+		return p.processBatch(ctx, node)
+	})
 }
 
-func (p *GasOutputsProcessor) processBatch(ctx context.Context) (bool, error) {
+func (p *GasOutputsProcessor) processBatch(ctx context.Context, node lens.API) (bool, error) {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "gasoutputs"))
 	ctx, span := global.Tracer("").Start(ctx, "GasOutputsProcessor.processBatch")
 	defer span.End()
@@ -58,7 +66,7 @@ func (p *GasOutputsProcessor) processBatch(ctx context.Context) (bool, error) {
 	// Lease some messages with receipts to work on
 	batch, err := p.storage.LeaseGasOutputsMessages(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight)
 	if err != nil {
-		return true, err
+		return false, err
 	}
 
 	// If we have no messages to work on then wait before trying again
@@ -83,12 +91,13 @@ func (p *GasOutputsProcessor) processBatch(ctx context.Context) (bool, error) {
 
 		errorLog := log.With("cid", item.Cid)
 
-		if err := p.processItem(ctx, item); err != nil {
+		if err := p.processItem(ctx, node, item); err != nil {
+			// Any errors are likely to be problems using the lens, mark this tipset as failed and exit this batch
 			errorLog.Errorw("failed to process message", "error", err.Error())
 			if err := p.storage.MarkGasOutputsMessagesComplete(ctx, item.Cid, p.clock.Now(), err.Error()); err != nil {
 				errorLog.Errorw("failed to mark message complete", "error", err.Error())
 			}
-			continue
+			return false, xerrors.Errorf("process item: %w", err)
 		}
 
 		if err := p.storage.MarkGasOutputsMessagesComplete(ctx, item.Cid, p.clock.Now(), ""); err != nil {
@@ -99,7 +108,7 @@ func (p *GasOutputsProcessor) processBatch(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
-func (p *GasOutputsProcessor) processItem(ctx context.Context, item *derived.GasOutputs) error {
+func (p *GasOutputsProcessor) processItem(ctx context.Context, node lens.API, item *derived.GasOutputs) error {
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
 
@@ -119,7 +128,7 @@ func (p *GasOutputsProcessor) processItem(ctx context.Context, item *derived.Gas
 	// this is here because the lotus.vm package doesn't take a context for this api call.
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.API, "ComputeGasOutputs"))
 	cgoStop := metrics.Timer(ctx, metrics.LensRequestDuration)
-	outputs := p.node.ComputeGasOutputs(item.GasUsed, item.GasLimit, baseFee, feeCap, gasPremium)
+	outputs := node.ComputeGasOutputs(item.GasUsed, item.GasLimit, baseFee, feeCap, gasPremium)
 	cgoStop()
 
 	item.BaseFeeBurn = outputs.BaseFeeBurn.String()

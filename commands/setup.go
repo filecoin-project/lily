@@ -35,25 +35,25 @@ import (
 var log = logging.Logger("visor")
 
 type RunContext struct {
-	api    lens.API
+	opener lens.APIOpener
 	closer lens.APICloser
 	db     *storage.Database
 }
 
 func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error) {
 	var ctx context.Context
-	var api lens.API
-	var closer lens.APICloser
+	var opener lens.APIOpener // the api opener that is used by tasks
+	var closer lens.APICloser // a closer that cleans up the opener when exiting the application
 	var err error
 
 	if cctx.String("lens") == "lotus" {
-		ctx, api, closer, err = vapi.GetFullNodeAPI(cctx)
+		ctx, opener, closer, err = vapi.NewAPIOpener(cctx, 10_000)
 	} else if cctx.String("lens") == "lotusrepo" {
-		ctx, api, closer, err = repoapi.GetAPI(cctx)
-	} else if cctx.String("lens") == "sql" {
-		ctx, api, closer, err = sqlapi.GetAPI(cctx)
+		ctx, opener, closer, err = repoapi.NewAPIOpener(cctx)
 	} else if cctx.String("lens") == "carrepo" {
-		ctx, api, closer, err = carapi.GetAPI(cctx)
+		ctx, opener, closer, err = carapi.NewAPIOpener(cctx)
+	} else if cctx.String("lens") == "sql" {
+		ctx, opener, closer, err = sqlapi.NewAPIOpener(cctx)
 	}
 	if err != nil {
 		return nil, nil, xerrors.Errorf("get node api: %w", err)
@@ -94,7 +94,11 @@ func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error)
 		return nil, nil, xerrors.Errorf("verify schema: %w", err)
 	}
 
-	return ctx, &RunContext{api, closer, db}, nil
+	return ctx, &RunContext{
+		opener: opener,
+		closer: closer,
+		db:     db,
+	}, nil
 }
 
 func setupTracing(cctx *cli.Context) (func(), error) {

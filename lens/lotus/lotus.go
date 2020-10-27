@@ -6,60 +6,74 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-
+	"github.com/filecoin-project/go-jsonrpc"
+	lotus_api "github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/api/client"
+	lcli "github.com/filecoin-project/lotus/cli"
+	lru "github.com/hashicorp/golang-lru"
 	logging "github.com/ipfs/go-log/v2"
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr/net"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/go-jsonrpc"
-	lotus_api "github.com/filecoin-project/lotus/api"
-	"github.com/filecoin-project/lotus/api/client"
-	lcli "github.com/filecoin-project/lotus/cli"
+	"github.com/filecoin-project/sentinel-visor/lens"
 )
 
 var log = logging.Logger("visor/lens/lotus")
 
-func GetFullNodeAPI(cctx *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
+type APIOpener struct {
+	// TODO: replace dependency on cli.Context with tokenMaddr and repo path
+	cctx  *cli.Context
+	cache *lru.ARCCache // cache shared across all instances of the api
+}
+
+func NewAPIOpener(cctx *cli.Context, cacheSize int) (context.Context, *APIOpener, lens.APICloser, error) {
+	ctx := lcli.ReqContext(cctx)
+
+	ac, err := lru.NewARC(cacheSize)
+	if err != nil {
+		return ctx, nil, nil, xerrors.Errorf("new arc cache: %w", err)
+	}
+
+	o := &APIOpener{
+		cctx:  cctx,
+		cache: ac,
+	}
+
+	return ctx, o, lens.APICloser(func() {}), nil
+}
+
+func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) {
 	var api lotus_api.FullNode
 	var closer jsonrpc.ClientCloser
 	var err error
 
-	if tokenMaddr := cctx.String("api"); tokenMaddr != "" {
+	if tokenMaddr := o.cctx.String("api"); tokenMaddr != "" {
 		toks := strings.Split(tokenMaddr, ":")
 		if len(toks) != 2 {
-			return nil, nil, nil, fmt.Errorf("invalid api tokens, expected <token>:<maddr>, got: %s", tokenMaddr)
+			return nil, nil, fmt.Errorf("invalid api tokens, expected <token>:<maddr>, got: %s", tokenMaddr)
 		}
 
-		api, closer, err = getFullNodeAPIUsingCredentials(cctx.Context, toks[1], toks[0])
+		api, closer, err = getFullNodeAPIUsingCredentials(ctx, toks[1], toks[0])
 		if err != nil {
-			return nil, nil, nil, xerrors.Errorf("get full node api with credentials: %w", err)
+			return nil, nil, xerrors.Errorf("get full node api with credentials: %w", err)
 		}
 	} else {
-		api, closer, err = lcli.GetFullNodeAPI(cctx)
+		api, closer, err = lcli.GetFullNodeAPI(o.cctx)
 		if err != nil {
-			return nil, nil, nil, xerrors.Errorf("get full node api: %w", err)
+			return nil, nil, xerrors.Errorf("get full node api: %w", err)
 		}
 	}
 
-	ctx := lcli.ReqContext(cctx)
-
-	v, err := api.Version(ctx)
+	cacheStore, err := NewCacheCtxStore(ctx, api, o.cache)
 	if err != nil {
-		return nil, nil, nil, xerrors.Errorf("api version: %w", err)
-	}
-	log.Infof("Lotus API version: %s", v.Version)
-
-	cacheStore, err := NewCacheCtxStore(ctx, api, 10_000)
-	if err != nil {
-		return nil, nil, nil, xerrors.Errorf("new cache store: %w", err)
+		return nil, nil, xerrors.Errorf("new cache store: %w", err)
 	}
 
 	lensAPI := NewAPIWrapper(api, cacheStore)
 
-	return ctx, lensAPI, lens.APICloser(closer), nil
+	return lensAPI, lens.APICloser(closer), nil
 }
 
 func getFullNodeAPIUsingCredentials(ctx context.Context, listenAddr, token string) (lotus_api.FullNode, jsonrpc.ClientCloser, error) {
@@ -79,6 +93,7 @@ func getFullNodeAPIUsingCredentials(ctx context.Context, listenAddr, token strin
 func apiURI(addr string) string {
 	return "ws://" + addr + "/rpc/v0"
 }
+
 func apiHeaders(token string) http.Header {
 	headers := http.Header{}
 	headers.Add("Authorization", "Bearer "+token)

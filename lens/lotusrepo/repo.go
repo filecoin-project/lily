@@ -32,6 +32,72 @@ import (
 	cbor "github.com/ipfs/go-ipld-cbor"
 )
 
+type APIOpener struct {
+	// shared instance of the repo since the opener holds an exclusive lock on it
+	rapi *RepoAPI
+}
+
+func NewAPIOpener(c *cli.Context) (context.Context, *APIOpener, lens.APICloser, error) {
+	rapi := RepoAPI{}
+
+	if _, _, err := ulimit.ManageFdLimit(); err != nil {
+		return c.Context, nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
+	}
+
+	r, err := repo.NewFS(c.String("repo"))
+	if err != nil {
+		return c.Context, nil, nil, err
+	}
+
+	exists, err := r.Exists()
+	if err != nil {
+		return c.Context, nil, nil, err
+	}
+	if !exists {
+		return c.Context, nil, nil, fmt.Errorf("lotus repo doesn't exist")
+	}
+
+	lr, err := r.Lock(repo.FullNode)
+	if err != nil {
+		return c.Context, nil, nil, err
+	}
+
+	ds, err := lr.Datastore("/chain")
+	if err != nil {
+		return c.Context, nil, nil, err
+	}
+
+	mds, err := lr.Datastore("/metadata")
+	if err != nil {
+		return c.Context, nil, nil, err
+	}
+
+	cs := store.NewChainStore(blockstore.NewBlockstore(ds), mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
+	if err := cs.Load(); err != nil {
+		return c.Context, nil, nil, err
+	}
+
+	sm := stmgr.NewStateManager(cs)
+
+	rapi.FullNodeAPI.ChainAPI.Chain = cs
+	rapi.FullNodeAPI.ChainAPI.ChainModuleAPI = &full.ChainModule{Chain: cs}
+	rapi.FullNodeAPI.StateAPI.Chain = cs
+	rapi.FullNodeAPI.StateAPI.StateManager = sm
+	rapi.FullNodeAPI.StateAPI.StateModuleAPI = &full.StateModule{Chain: cs, StateManager: sm}
+
+	sf := func() {
+		lr.Close()
+	}
+
+	rapi.Context = c.Context
+	rapi.cacheSize = c.Int("lens-cache-hint")
+	return c.Context, &APIOpener{rapi: &rapi}, sf, nil
+}
+
+func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) {
+	return o.rapi, lens.APICloser(func() {}), nil
+}
+
 type RepoAPI struct {
 	impl.FullNodeAPI
 	context.Context
@@ -85,95 +151,49 @@ func (ra *RepoAPI) ClientImport(ctx context.Context, ref api.FileRef) (*api.Impo
 func (ra *RepoAPI) ClientRemoveImport(ctx context.Context, importID multistore.StoreID) error {
 	return fmt.Errorf("unsupported")
 }
+
 func (ra *RepoAPI) ClientImportLocal(ctx context.Context, f io.Reader) (cid.Cid, error) {
 	return cid.Undef, fmt.Errorf("unsupported")
 }
+
 func (ra *RepoAPI) ClientListImports(ctx context.Context) ([]api.Import, error) {
 	return nil, fmt.Errorf("unsupported")
 }
+
 func (ra *RepoAPI) ClientRetrieve(ctx context.Context, order api.RetrievalOrder, ref *api.FileRef) error {
 	return fmt.Errorf("unsupported")
 }
+
 func (ra *RepoAPI) ClientRetrieveWithEvents(ctx context.Context, order api.RetrievalOrder, ref *api.FileRef) (<-chan marketevents.RetrievalEvent, error) {
 	return nil, fmt.Errorf("unsupported")
 }
+
 func (ra *RepoAPI) ClientQueryAsk(ctx context.Context, p peer.ID, miner address.Address) (*storagemarket.StorageAsk, error) {
 	return nil, fmt.Errorf("unsupported")
 }
+
 func (ra *RepoAPI) ClientCalcCommP(ctx context.Context, inpath string) (*api.CommPRet, error) {
 	return nil, fmt.Errorf("unsupported")
 }
+
 func (ra *RepoAPI) ClientDealSize(ctx context.Context, root cid.Cid) (api.DataSize, error) {
 	return api.DataSize{}, fmt.Errorf("unsupported")
 }
+
 func (ra *RepoAPI) ClientGenCar(ctx context.Context, ref api.FileRef, outputPath string) error {
 	return fmt.Errorf("unsupported")
 }
+
 func (ra *RepoAPI) ClientListDataTransfers(ctx context.Context) ([]api.DataTransferChannel, error) {
 	return nil, fmt.Errorf("unsupported")
 }
+
 func (ra *RepoAPI) ClientDataTransferUpdates(ctx context.Context) (<-chan api.DataTransferChannel, error) {
 	return nil, fmt.Errorf("unsupported")
 }
+
 func (ra *RepoAPI) ClientRetrieveTryRestartInsufficientFunds(ctx context.Context, paymentChannel address.Address) error {
 	return fmt.Errorf("unsupported")
-}
-
-func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
-	rapi := RepoAPI{}
-
-	if _, _, err := ulimit.ManageFdLimit(); err != nil {
-		return nil, nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
-	}
-
-	r, err := repo.NewFS(c.String("repo"))
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	exists, err := r.Exists()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	if !exists {
-		return nil, nil, nil, fmt.Errorf("lotus repo doesn't exist")
-	}
-
-	lr, err := r.Lock(repo.FullNode)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	ds, err := lr.Datastore("/chain")
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	mds, err := lr.Datastore("/metadata")
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	cs := store.NewChainStore(blockstore.NewBlockstore(ds), mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
-	if err := cs.Load(); err != nil {
-		return nil, nil, nil, err
-	}
-
-	sm := stmgr.NewStateManager(cs)
-
-	rapi.FullNodeAPI.ChainAPI.Chain = cs
-	rapi.FullNodeAPI.ChainAPI.ChainModuleAPI = &full.ChainModule{Chain: cs}
-	rapi.FullNodeAPI.StateAPI.Chain = cs
-	rapi.FullNodeAPI.StateAPI.StateManager = sm
-	rapi.FullNodeAPI.StateAPI.StateModuleAPI = &full.StateModule{Chain: cs, StateManager: sm}
-
-	sf := func() {
-		lr.Close()
-	}
-
-	rapi.Context = c.Context
-	rapi.cacheSize = c.Int("lens-cache-hint")
-	return c.Context, &rapi, sf, nil
 }
 
 // From https://github.com/ribasushi/ltsh/blob/5b0211033020570217b0ae37b50ee304566ac218/cmd/lotus-shed/deallifecycles.go#L41-L171
