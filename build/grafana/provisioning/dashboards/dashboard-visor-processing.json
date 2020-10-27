@@ -15,11 +15,11 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 449,
+  "id": 2,
   "links": [],
   "panels": [
     {
-      "datasource": "Sentinel Historical Analysis Staging (TimescaleCloud)",
+      "datasource": "PostgreSQL",
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -72,10 +72,9 @@
           ],
           "fields": "",
           "values": false
-        },
-        "textMode": "auto"
+        }
       },
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.0.3",
       "targets": [
         {
           "format": "time_series",
@@ -117,7 +116,7 @@
       "type": "stat"
     },
     {
-      "datasource": "Sentinel Historical Analysis Staging (TimescaleCloud)",
+      "datasource": "PostgreSQL",
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -170,10 +169,9 @@
           ],
           "fields": "",
           "values": false
-        },
-        "textMode": "auto"
+        }
       },
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.0.3",
       "targets": [
         {
           "format": "time_series",
@@ -215,7 +213,7 @@
       "type": "stat"
     },
     {
-      "datasource": "Sentinel Historical Analysis Staging (TimescaleCloud)",
+      "datasource": "PostgreSQL",
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -268,10 +266,9 @@
           ],
           "fields": "",
           "values": false
-        },
-        "textMode": "auto"
+        }
       },
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.0.3",
       "targets": [
         {
           "format": "time_series",
@@ -313,7 +310,7 @@
       "type": "stat"
     },
     {
-      "datasource": "Sentinel Historical Analysis Staging (TimescaleCloud)",
+      "datasource": "PostgreSQL",
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -366,10 +363,9 @@
           ],
           "fields": "",
           "values": false
-        },
-        "textMode": "auto"
+        }
       },
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.0.3",
       "targets": [
         {
           "format": "time_series",
@@ -415,7 +411,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Sentinel Historical Analysis Staging (TimescaleCloud)",
+      "datasource": "PostgreSQL",
       "description": "The number of tipset state changes left to process",
       "fieldConfig": {
         "defaults": {
@@ -460,7 +456,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "alertThreshold": true
+        "dataLinks": []
       },
       "percentage": false,
       "pluginVersion": "7.2.1",
@@ -561,7 +557,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Sentinel Historical Analysis Staging (TimescaleCloud)",
+      "datasource": "PostgreSQL",
       "description": "The number of tipset messages left to process",
       "fieldConfig": {
         "defaults": {
@@ -605,7 +601,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "alertThreshold": true
+        "dataLinks": []
       },
       "percentage": false,
       "pluginVersion": "7.2.1",
@@ -697,7 +693,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Sentinel Historical Analysis Staging (TimescaleCloud)",
+      "datasource": "PostgreSQL",
       "description": "The number of tipset economics left to process",
       "fieldConfig": {
         "defaults": {
@@ -741,7 +737,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "alertThreshold": true
+        "dataLinks": []
       },
       "percentage": false,
       "pluginVersion": "7.2.1",
@@ -833,7 +829,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Sentinel Historical Analysis Staging (TimescaleCloud)",
+      "datasource": "PostgreSQL",
       "description": "The number of message gas outputs left to process",
       "fieldConfig": {
         "defaults": {
@@ -877,7 +873,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
-        "alertThreshold": true
+        "dataLinks": []
       },
       "percentage": false,
       "pluginVersion": "7.2.1",
@@ -990,7 +986,7 @@
     ]
   },
   "timezone": "",
-  "title": "Sentinel Analysis Processing (Staging)",
+  "title": "Sentinel Analysis Processing",
   "uid": "sentinel_analysis_processing_v1",
   "version": 2
 }
