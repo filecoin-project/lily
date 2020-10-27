@@ -3,6 +3,7 @@ package message
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"math"
 	"math/big"
 	"time"
@@ -389,6 +390,9 @@ func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*mess
 	}
 	if err != nil {
 		return nil, xerrors.Errorf("parse params: %w", err)
+	}
+	if name == "Unknown" {
+		name = fmt.Sprintf("%s.%d", actor, m.Method)
 	}
 	pm.Method = name
 	if params != nil {
