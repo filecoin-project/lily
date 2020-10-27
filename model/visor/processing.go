@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+
+	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
 func NewProcessingTipSet(ts *types.TipSet) *ProcessingTipSet {
@@ -170,6 +172,10 @@ func (pl ProcessingActorList) PersistWithTx(ctx context.Context, tx *pg.Tx) erro
 	}
 	ctx, span := global.Tracer("").Start(ctx, "ProcessingActorList.PersistWithTx", trace.WithAttributes(label.Int("count", len(pl))))
 	defer span.End()
+
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	if _, err := tx.ModelContext(ctx, &pl).
 		OnConflict("do nothing").
 		Insert(); err != nil {
