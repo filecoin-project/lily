@@ -46,12 +46,19 @@ type Locker interface {
 	Unlock(context.Context) error
 }
 
-func NewScheduler() *Scheduler {
-	return &Scheduler{}
+func NewScheduler(taskDelay time.Duration) *Scheduler {
+	// Enforce a minimum delay
+	if taskDelay == 0 {
+		taskDelay = 100 * time.Millisecond
+	}
+	return &Scheduler{
+		taskDelay: taskDelay,
+	}
 }
 
 type Scheduler struct {
-	tasks []TaskConfig
+	tasks     []TaskConfig
+	taskDelay time.Duration
 }
 
 // Add add a task config to the scheduler. This must not be called after Run.
@@ -147,7 +154,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		default:
 		}
 		// A little jitter between tasks to reduce thundering herd effects on api
-		wait.SleepWithJitter(500*time.Millisecond, 2)
+		wait.SleepWithJitter(s.taskDelay, 2)
 	}
 
 	// Wait until the context is done or all tasks have been completed
