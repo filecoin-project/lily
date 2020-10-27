@@ -278,6 +278,8 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 			}
 			result.Messages = append(result.Messages, msg)
 
+			msgsSeen[message.Cid()] = struct{}{}
+
 			if p.parseMessages {
 				dstAddr, err := address.NewFromString(msg.To)
 				if err != nil {
@@ -286,10 +288,18 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 
 				child, err := p.node.ChainGetTipSetByHeight(ctx, ts.Height()+1, types.NewTipSetKey())
 				if err != nil {
-					return nil, nil, xerrors.Errorf("Failed to load child tipset: %w", err)
+					// If we aren't finalized, we fail for now, because a child tipset may occur
+					if head, err := p.node.ChainGetTipSet(ctx, types.NewTipSetKey()); err == nil && head.Height()-ts.Height() < 900 {
+						log.Warn("Failing derivation for messate that does not yet have children, but might get them later")
+						return nil, nil, xerrors.Errorf("Failed to load child tipset: %w", err)
+					}
+					log.Info("Skipping derivation of message parameters for message with no children blocks after derivation.")
+					continue
 				}
 				if !cidsEqual(child.Parents().Cids(), ts.Cids()) {
-					return nil, nil, xerrors.Errorf("child tipset not built on current tipset %v vs %v", child.Parents(), ts.Cids())
+					// if we aren't on the main chain, we don't have an easy way to get child blocks, so skip parsing these messages for now.
+					log.Info("Skipping derivation of message parameters for message not on canonical chain")
+					continue
 				}
 
 				st, err := state.LoadStateTree(p.node.Store(), child.ParentState())
@@ -308,8 +318,6 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 					return nil, nil, xerrors.Errorf("parse message: %w", err)
 				}
 			}
-
-			msgsSeen[message.Cid()] = struct{}{}
 		}
 
 	}
