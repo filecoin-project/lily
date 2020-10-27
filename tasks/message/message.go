@@ -284,7 +284,15 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 					return nil, nil, xerrors.Errorf("parse to address: %w", err)
 				}
 
-				st, err := state.LoadStateTree(p.node.Store(), ts.ParentState())
+				child, err := p.node.ChainGetTipSetByHeight(ctx, ts.Height()+1, types.NewTipSetKey())
+				if err != nil {
+					return nil, nil, xerrors.Errorf("Failed to load child tipset: %w", err)
+				}
+				if !cidsEqual(child.Parents().Cids(), ts.Cids()) {
+					return nil, nil, xerrors.Errorf("child tipset not built on current tipset %v vs %v", child.Parents(), ts.Cids())
+				}
+
+				st, err := state.LoadStateTree(p.node.Store(), child.ParentState())
 				if err != nil {
 					return nil, nil, xerrors.Errorf("load state tree: %w", err)
 				}
@@ -324,6 +332,18 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 		GasWasteRatio:       float64(totalGasLimit-totalUniqGasLimit) / float64(len(ts.Blocks())*build.BlockGasTarget),
 	}
 	return result, pmsgModels, nil
+}
+
+func cidsEqual(c1, c2 []cid.Cid) bool {
+	if len(c1) != len(c2) {
+		return false
+	}
+	for i, c := range c1 {
+		if !c2[i].Equals(c) {
+			return false
+		}
+	}
+	return true
 }
 
 func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*messagemodel.ParsedMessage, error) {
