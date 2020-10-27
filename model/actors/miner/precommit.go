@@ -40,49 +40,24 @@ func (mpi *MinerPreCommitInfo) PersistWithTx(ctx context.Context, tx *pg.Tx) err
 	return nil
 }
 
-func NewMinerPreCommitInfos(res *MinerTaskResult) MinerPreCommitInfos {
-	out := make(MinerPreCommitInfos, len(res.PreCommitChanges.Added))
-	for i, added := range res.PreCommitChanges.Added {
-		pc := &MinerPreCommitInfo{
-			Height:    int64(res.Height),
-			MinerID:   res.Addr.String(),
-			SectorID:  uint64(added.Info.SectorNumber),
-			StateRoot: res.StateRoot.String(),
+type MinerPreCommitInfoList []*MinerPreCommitInfo
 
-			SealedCID:       added.Info.SealedCID.String(),
-			SealRandEpoch:   int64(added.Info.SealRandEpoch),
-			ExpirationEpoch: int64(added.Info.Expiration),
-
-			PreCommitDeposit:   added.PreCommitDeposit.String(),
-			PreCommitEpoch:     int64(added.PreCommitEpoch),
-			DealWeight:         added.DealWeight.String(),
-			VerifiedDealWeight: added.VerifiedDealWeight.String(),
-
-			IsReplaceCapacity:      added.Info.ReplaceCapacity,
-			ReplaceSectorDeadline:  added.Info.ReplaceSectorDeadline,
-			ReplaceSectorPartition: added.Info.ReplaceSectorPartition,
-			ReplaceSectorNumber:    uint64(added.Info.ReplaceSectorNumber),
-		}
-		out[i] = pc
-	}
-	return out
-}
-
-type MinerPreCommitInfos []*MinerPreCommitInfo
-
-func (mpis MinerPreCommitInfos) Persist(ctx context.Context, db *pg.DB) error {
+func (ml MinerPreCommitInfoList) Persist(ctx context.Context, db *pg.DB) error {
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return mpis.PersistWithTx(ctx, tx)
+		return ml.PersistWithTx(ctx, tx)
 	})
 }
 
-func (mpis MinerPreCommitInfos) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerPreCommitInfos.PersistWithTx", trace.WithAttributes(label.Int("count", len(mpis))))
+func (ml MinerPreCommitInfoList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerPreCommitInfoList.PersistWithTx", trace.WithAttributes(label.Int("count", len(ml))))
 	defer span.End()
-	for _, mpi := range mpis {
-		if err := mpi.PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
+	if len(ml) == 0 {
+		return nil
+	}
+	if _, err := tx.ModelContext(ctx, &ml).
+		OnConflict("do nothing").
+		Insert(); err != nil {
+		return xerrors.Errorf("persisting miner pre commit info list: %w")
 	}
 	return nil
 }

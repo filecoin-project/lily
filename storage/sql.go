@@ -35,13 +35,15 @@ var models = []interface{}{
 	(*blocks.DrandEntrie)(nil),
 	(*blocks.DrandBlockEntrie)(nil),
 
-	(*miner.MinerPower)(nil),
-	(*miner.MinerState)(nil),
-	(*miner.MinerDealSector)(nil),
+	(*miner.MinerSectorDeal)(nil),
 	(*miner.MinerSectorInfo)(nil),
 	(*miner.MinerSectorPost)(nil),
 	(*miner.MinerPreCommitInfo)(nil),
 	(*miner.MinerSectorEvent)(nil),
+	(*miner.MinerCurrentDeadlineInfo)(nil),
+	(*miner.MinerFeeDebt)(nil),
+	(*miner.MinerLockedFund)(nil),
+	(*miner.MinerInfo)(nil),
 
 	(*market.MarketDealProposal)(nil),
 	(*market.MarketDealState)(nil),

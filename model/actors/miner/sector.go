@@ -38,43 +38,24 @@ func (msi *MinerSectorInfo) PersistWithTx(ctx context.Context, tx *pg.Tx) error 
 	return nil
 }
 
-func NewMinerSectorInfos(res *MinerTaskResult) MinerSectorInfos {
-	out := make(MinerSectorInfos, len(res.SectorChanges.Added))
-	for i, added := range res.SectorChanges.Added {
-		si := &MinerSectorInfo{
-			Height:                int64(res.Height),
-			MinerID:               res.Addr.String(),
-			SectorID:              uint64(added.SectorNumber),
-			StateRoot:             res.StateRoot.String(),
-			SealedCID:             added.SealedCID.String(),
-			ActivationEpoch:       int64(added.Activation),
-			ExpirationEpoch:       int64(added.Expiration),
-			DealWeight:            added.DealWeight.String(),
-			VerifiedDealWeight:    added.VerifiedDealWeight.String(),
-			InitialPledge:         added.InitialPledge.String(),
-			ExpectedDayReward:     added.ExpectedDayReward.String(),
-			ExpectedStoragePledge: added.ExpectedStoragePledge.String(),
-		}
-		out[i] = si
-	}
-	return out
-}
+type MinerSectorInfoList []*MinerSectorInfo
 
-type MinerSectorInfos []*MinerSectorInfo
-
-func (msis MinerSectorInfos) Persist(ctx context.Context, db *pg.DB) error {
+func (ml MinerSectorInfoList) Persist(ctx context.Context, db *pg.DB) error {
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return msis.PersistWithTx(ctx, tx)
+		return ml.PersistWithTx(ctx, tx)
 	})
 }
 
-func (msis MinerSectorInfos) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerSectorInfos.PersistWithTx", trace.WithAttributes(label.Int("count", len(msis))))
+func (ml MinerSectorInfoList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerSectorInfoList.PersistWithTx", trace.WithAttributes(label.Int("count", len(ml))))
 	defer span.End()
-	for _, msi := range msis {
-		if err := msi.PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
+	if len(ml) == 0 {
+		return nil
+	}
+	if _, err := tx.ModelContext(ctx, &ml).
+		OnConflict("do nothing").
+		Insert(); err != nil {
+		return xerrors.Errorf("persisting miner sector info list: %w")
 	}
 	return nil
 }

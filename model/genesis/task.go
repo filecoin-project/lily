@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init"
@@ -13,7 +14,7 @@ import (
 )
 
 type ProcessGenesisSingletonResult struct {
-	minerResults    []*GenesisMinerTaskResult
+	minerResults    miner.MinerTaskResultList
 	marketResult    *GenesisMarketTaskResult
 	initActorResult *GenesisInitActorTaskResult
 }
@@ -26,20 +27,11 @@ func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, db *pg.DB) 
 	defer stop()
 
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		for _, res := range r.minerResults {
-			if err := res.StateModel.PersistWithTx(ctx, tx); err != nil {
-				return err
-			}
-			if err := res.PowerModel.PersistWithTx(ctx, tx); err != nil {
-				return err
-			}
-			if err := res.SectorModels.PersistWithTx(ctx, tx); err != nil {
-				return err
-			}
-			if err := res.DealModels.PersistWithTx(ctx, tx); err != nil {
-				return err
-			}
+		// persist miner actors
+		if err := r.minerResults.PersistWithTx(ctx, tx); err != nil {
+			return xerrors.Errorf("persisting miner task result list: %w", err)
 		}
+		// persist market actor
 		if r.marketResult != nil {
 			if err := r.marketResult.DealModels.PersistWithTx(ctx, tx); err != nil {
 				return err
@@ -48,6 +40,7 @@ func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, db *pg.DB) 
 				return err
 			}
 		}
+		// persist init actor
 		if r.initActorResult != nil {
 			if err := r.initActorResult.AddressMap.PersistWithTx(ctx, tx); err != nil {
 				return err
@@ -57,7 +50,7 @@ func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, db *pg.DB) 
 	})
 }
 
-func (r *ProcessGenesisSingletonResult) AddMiner(m *GenesisMinerTaskResult) {
+func (r *ProcessGenesisSingletonResult) AddMiner(m *miner.MinerTaskResult) {
 	r.minerResults = append(r.minerResults, m)
 }
 
@@ -76,10 +69,12 @@ func (r *ProcessGenesisSingletonResult) SetInitActor(m *GenesisInitActorTaskResu
 }
 
 type GenesisMinerTaskResult struct {
-	StateModel   *miner.MinerState
-	PowerModel   *miner.MinerPower
-	SectorModels miner.MinerSectorInfos
-	DealModels   miner.MinerDealSectors
+	CurrDeadlineModels miner.MinerCurrentDeadlineInfoList
+	FeeDebtModels      miner.MinerFeeDebtList
+	LockedFundsModel   miner.MinerLockedFundsList
+	InfoModels         miner.MinerInfoList
+	SectorModels       miner.MinerSectorInfoList
+	DealModels         miner.MinerSectorDealList
 }
 
 type GenesisMarketTaskResult struct {
