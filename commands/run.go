@@ -209,6 +209,14 @@ var Run = &cli.Command{
 			Usage:   "Lease time for the chain economics processor",
 			EnvVars: []string{"VISOR_CHAINECONOMICS_LEASE"},
 		},
+
+		&cli.DurationFlag{
+			Name:    "task-delay",
+			Aliases: []string{"td"},
+			Value:   500 * time.Millisecond,
+			Usage:   "Base time to wait between starting tasks (jitter is added)",
+			EnvVars: []string{"VISOR_TASK_DELAY"},
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		// Validate flags
@@ -246,7 +254,7 @@ var Run = &cli.Command{
 			}
 		}()
 
-		scheduler := schedule.NewScheduler()
+		scheduler := schedule.NewScheduler(cctx.Duration("task-delay"))
 
 		// Add one indexing task to follow the chain head
 		if cctx.Bool("indexhead") {
