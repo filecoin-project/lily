@@ -81,7 +81,7 @@
           "group": [],
           "metricColumn": "measure",
           "rawQuery": true,
-          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where measure = 'tipsets_statechange_count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where measure = 'tipsets_statechange_completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       complete::decimal/todo as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
+          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where tag = 'tipsets_statechange' and measure = 'count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where tag = 'tipsets_statechange' and measure = 'completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       complete::decimal/todo as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
           "refId": "A",
           "select": [
             [
@@ -178,7 +178,7 @@
           "group": [],
           "metricColumn": "measure",
           "rawQuery": true,
-          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where measure = 'tipsets_message_count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where measure = 'tipsets_message_completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       complete::decimal/todo as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
+          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where tag = 'tipsets_message' and measure = 'count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where tag = 'tipsets_message' and measure = 'completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       complete::decimal/todo as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
           "refId": "A",
           "select": [
             [
@@ -275,7 +275,7 @@
           "group": [],
           "metricColumn": "measure",
           "rawQuery": true,
-          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where measure = 'tipsets_economics_count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where measure = 'tipsets_economics_completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       complete::decimal/todo as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
+          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where tag = 'tipsets_economics' and measure = 'count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where tag = 'tipsets_economics' and measure = 'completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       complete::decimal/todo as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
           "refId": "A",
           "select": [
             [
@@ -372,7 +372,7 @@
           "group": [],
           "metricColumn": "measure",
           "rawQuery": true,
-          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where measure = 'messages_gas_outputs_count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where measure = 'messages_gas_outputs_completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       complete::decimal/todo as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
+          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where tag = 'messages_gas_outputs' and measure = 'count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where tag = 'messages_gas_outputs' and measure = 'completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       complete::decimal/todo as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
           "refId": "A",
           "select": [
             [
@@ -472,7 +472,7 @@
           "group": [],
           "metricColumn": "measure",
           "rawQuery": true,
-          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where measure = 'tipsets_statechange_count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where measure = 'tipsets_statechange_completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       todo-complete as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
+          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where tag = 'tipsets_statechange' and measure = 'count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where tag = 'tipsets_statechange' and measure = 'completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       todo-complete as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
           "refId": "A",
           "select": [
             [
@@ -563,6 +563,7 @@
           "custom": {
             "align": null
           },
+          "links": [],
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -616,7 +617,7 @@
           "group": [],
           "metricColumn": "measure",
           "rawQuery": true,
-          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where measure = 'tipsets_message_count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where measure = 'tipsets_message_completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       todo-complete as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
+          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where tag = 'tipsets_message' and measure = 'count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where tag = 'tipsets_message' and measure = 'completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       todo-complete as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
           "refId": "A",
           "select": [
             [
@@ -698,6 +699,7 @@
           "custom": {
             "align": null
           },
+          "links": [],
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -751,7 +753,7 @@
           "group": [],
           "metricColumn": "measure",
           "rawQuery": true,
-          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where measure = 'tipsets_economics_count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where measure = 'tipsets_economics_completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       todo-complete as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
+          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where tag = 'tipsets_economics' and measure = 'count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where tag = 'tipsets_economics' and measure = 'completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       todo-complete as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
           "refId": "A",
           "select": [
             [
@@ -833,6 +835,7 @@
           "custom": {
             "align": null
           },
+          "links": [],
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -886,7 +889,7 @@
           "group": [],
           "metricColumn": "measure",
           "rawQuery": true,
-          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where measure = 'messages_gas_outputs_count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where measure = 'messages_gas_outputs_completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       todo-complete as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
+          "rawSql": "with tipset_total as (select\n                                  value as todo,\n                               recorded_at,\n                                  measure\n                    from visor_processing_stats\n                    where tag = 'messages_gas_outputs' and measure = 'count'\n                    order by recorded_at desc\n),\ntipset_complete as (\n    select\n           value as complete,\n        recorded_at,\n           measure\n    from visor_processing_stats\n    where tag = 'messages_gas_outputs' and measure = 'completed_count'\n    order by recorded_at desc\n)\nselect\n       distinct on (tipset_complete.recorded_at)\n       tipset_complete.recorded_at as \"time\",\n       todo-complete as value\nfrom tipset_complete, tipset_total\nWHERE $__timeFilter(tipset_complete.recorded_at)\norder by tipset_complete.recorded_at",
           "refId": "A",
           "select": [
             [
@@ -982,7 +985,7 @@
     ]
   },
   "timezone": "",
-  "title": "Process Completion",
-  "uid": "Yjj06w5Mk",
-  "version": 6
+  "title": "Sentinel Analysis Processing",
+  "uid": "sentinel_analysis_processing_v1",
+  "version": 2
 }
