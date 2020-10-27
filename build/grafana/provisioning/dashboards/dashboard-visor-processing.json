@@ -418,7 +418,6 @@
           "custom": {
             "align": null
           },
-          "links": [],
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -459,7 +458,7 @@
         "dataLinks": []
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.0.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -604,7 +603,7 @@
         "dataLinks": []
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.0.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -740,7 +739,7 @@
         "dataLinks": []
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.0.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -876,7 +875,7 @@
         "dataLinks": []
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.0.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -962,14 +961,14 @@
     }
   ],
   "refresh": "1m",
-  "schemaVersion": 26,
+  "schemaVersion": 25,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {
