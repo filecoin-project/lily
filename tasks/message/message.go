@@ -319,6 +319,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 					return nil, nil, xerrors.Errorf("load state tree when considering message %s: %w", message.Cid().String(), err)
 				}
 
+				dstActorCode := accountActorCodeID
 				dstActor, err := st.GetActor(dstAddr)
 				dstActorCode := accountActorCodeID
 				if err != nil {
