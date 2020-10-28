@@ -25,22 +25,6 @@ all: build
 .PHONY: build
 build: deps visor
 
-## FFI
-
-FFI_PATH:=extern/filecoin-ffi/
-FFI_DEPS:=.install-filcrypto
-FFI_DEPS:=$(addprefix $(FFI_PATH),$(FFI_DEPS))
-
-$(FFI_DEPS): build/.filecoin-install ;
-
-build/.filecoin-install: $(FFI_PATH)
-	$(MAKE) -C $(FFI_PATH) $(FFI_DEPS:$(FFI_PATH)%=%)
-	@touch $@
-
-MODULES+=$(FFI_PATH)
-BUILD_DEPS+=build/.filecoin-install
-CLEAN+=build/.filecoin-install
-
 $(MODULES): build/.update-modules ;
 
 # dummy file that marks the last time modules were updated
