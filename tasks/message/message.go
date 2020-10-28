@@ -3,6 +3,7 @@ package message
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"math/big"
@@ -40,7 +41,17 @@ const (
 	batchInterval     = 100 * time.Millisecond // time to wait between batches
 )
 
+var accountActorCodeID string
 var log = logging.Logger("message")
+
+func init() {
+	for code, actor := range statediff.LotusActorCodes {
+		if actor == statediff.AccountActorState {
+			accountActorCodeID = code
+			break
+		}
+	}
+}
 
 func NewMessageProcessor(d *storage.Database, node lens.API, leaseLength time.Duration, batchSize int, parseMessages bool, minHeight, maxHeight int64) *MessageProcessor {
 	return &MessageProcessor{
@@ -284,39 +295,45 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 			if p.parseMessages {
 				dstAddr, err := address.NewFromString(msg.To)
 				if err != nil {
-					return nil, nil, xerrors.Errorf("parse to address: %w", err)
+					return nil, nil, xerrors.Errorf("parse to address failed for %s: %w", message.Cid().String(), err)
 				}
 
 				child, err := p.node.ChainGetTipSetByHeight(ctx, ts.Height()+1, types.NewTipSetKey())
 				if err != nil {
 					// If we aren't finalized, we fail for now, because a child tipset may occur
 					if head, headErr := p.node.ChainHead(ctx); headErr == nil && head.Height()-ts.Height() < build.Finality {
-						log.Warn("Delaying derivation for message which is not yet finalized")
+						log.Warnf("Delaying derivation for message %s which is not yet finalized", message.Cid().String())
 						return nil, nil, xerrors.Errorf("Failed to load child tipset: %w", err)
 					}
-					log.Info("Skipping derivation of message parameters for message with no children blocks after derivation.")
+					log.Infof("Skipping derivation of message parameters for message %s with no children blocks after derivation.", message.Cid().String())
 					continue
 				}
 				if !cidsEqual(child.Parents().Cids(), ts.Cids()) {
 					// if we aren't on the main chain, we don't have an easy way to get child blocks, so skip parsing these messages for now.
-					log.Info("Skipping derivation of message parameters for message not on canonical chain")
+					log.Infof("Skipping derivation of message parameters for message %s not on canonical chain", message.Cid().String())
 					continue
 				}
 
 				st, err := state.LoadStateTree(p.node.Store(), child.ParentState())
 				if err != nil {
-					return nil, nil, xerrors.Errorf("load state tree: %w", err)
+					return nil, nil, xerrors.Errorf("load state tree when considering message %s: %w", message.Cid().String(), err)
 				}
 
 				dstActor, err := st.GetActor(dstAddr)
+				dstActorCode := accountActorCodeID
 				if err != nil {
-					return nil, nil, xerrors.Errorf("get actor: %w", err)
+					// implicitly if actor does not exist,
+					if !errors.Is(err, types.ErrActorNotFound) {
+						return nil, nil, xerrors.Errorf("get destination actor for message %s failed: %w", message.Cid().String(), err)
+					}
+				} else {
+					dstActorCode = dstActor.Code.String()
 				}
 
-				if pm, err := parseMsg(msg, ts, dstActor.Code.String()); err == nil {
+				if pm, err := parseMsg(msg, ts, dstActorCode); err == nil {
 					result.ParsedMessages = append(result.ParsedMessages, pm)
 				} else {
-					return nil, nil, xerrors.Errorf("parse message: %w", err)
+					return nil, nil, xerrors.Errorf("parse message %s failed: %w", message.Cid().String(), err)
 				}
 			}
 		}
