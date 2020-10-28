@@ -321,7 +321,6 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 
 				dstActorCode := accountActorCodeID
 				dstActor, err := st.GetActor(dstAddr)
-				dstActorCode := accountActorCodeID
 				if err != nil {
 					// implicitly if actor does not exist,
 					if !errors.Is(err, types.ErrActorNotFound) {
