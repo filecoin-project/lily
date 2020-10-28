@@ -37,44 +37,44 @@ type APIOpener struct {
 	rapi *RepoAPI
 }
 
-func NewAPIOpener(c *cli.Context) (context.Context, *APIOpener, lens.APICloser, error) {
+func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 	rapi := RepoAPI{}
 
 	if _, _, err := ulimit.ManageFdLimit(); err != nil {
-		return c.Context, nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
+		return nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
 	}
 
 	r, err := repo.NewFS(c.String("repo"))
 	if err != nil {
-		return c.Context, nil, nil, err
+		return nil, nil, err
 	}
 
 	exists, err := r.Exists()
 	if err != nil {
-		return c.Context, nil, nil, err
+		return nil, nil, err
 	}
 	if !exists {
-		return c.Context, nil, nil, fmt.Errorf("lotus repo doesn't exist")
+		return nil, nil, fmt.Errorf("lotus repo doesn't exist")
 	}
 
 	lr, err := r.Lock(repo.FullNode)
 	if err != nil {
-		return c.Context, nil, nil, err
+		return nil, nil, err
 	}
 
 	ds, err := lr.Datastore("/chain")
 	if err != nil {
-		return c.Context, nil, nil, err
+		return nil, nil, err
 	}
 
 	mds, err := lr.Datastore("/metadata")
 	if err != nil {
-		return c.Context, nil, nil, err
+		return nil, nil, err
 	}
 
 	cs := store.NewChainStore(blockstore.NewBlockstore(ds), mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
 	if err := cs.Load(); err != nil {
-		return c.Context, nil, nil, err
+		return nil, nil, err
 	}
 
 	sm := stmgr.NewStateManager(cs)
@@ -91,7 +91,7 @@ func NewAPIOpener(c *cli.Context) (context.Context, *APIOpener, lens.APICloser, 
 
 	rapi.Context = c.Context
 	rapi.cacheSize = c.Int("lens-cache-hint")
-	return c.Context, &APIOpener{rapi: &rapi}, sf, nil
+	return &APIOpener{rapi: &rapi}, sf, nil
 }
 
 func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) {

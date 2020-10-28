@@ -41,19 +41,20 @@ type RunContext struct {
 }
 
 func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error) {
-	var ctx context.Context
 	var opener lens.APIOpener // the api opener that is used by tasks
 	var closer lens.APICloser // a closer that cleans up the opener when exiting the application
 	var err error
 
+	ctx := cctx.Context
+
 	if cctx.String("lens") == "lotus" {
-		ctx, opener, closer, err = vapi.NewAPIOpener(cctx, 10_000)
+		opener, closer, err = vapi.NewAPIOpener(cctx, 10_000)
 	} else if cctx.String("lens") == "lotusrepo" {
-		ctx, opener, closer, err = repoapi.NewAPIOpener(cctx)
+		opener, closer, err = repoapi.NewAPIOpener(cctx)
 	} else if cctx.String("lens") == "carrepo" {
-		ctx, opener, closer, err = carapi.NewAPIOpener(cctx)
+		opener, closer, err = carapi.NewAPIOpener(cctx)
 	} else if cctx.String("lens") == "sql" {
-		ctx, opener, closer, err = sqlapi.NewAPIOpener(cctx)
+		opener, closer, err = sqlapi.NewAPIOpener(cctx)
 	}
 	if err != nil {
 		return nil, nil, xerrors.Errorf("get node api: %w", err)

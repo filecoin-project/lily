@@ -28,12 +28,10 @@ type APIOpener struct {
 	cache *lru.ARCCache // cache shared across all instances of the api
 }
 
-func NewAPIOpener(cctx *cli.Context, cacheSize int) (context.Context, *APIOpener, lens.APICloser, error) {
-	ctx := lcli.ReqContext(cctx)
-
+func NewAPIOpener(cctx *cli.Context, cacheSize int) (*APIOpener, lens.APICloser, error) {
 	ac, err := lru.NewARC(cacheSize)
 	if err != nil {
-		return ctx, nil, nil, xerrors.Errorf("new arc cache: %w", err)
+		return nil, nil, xerrors.Errorf("new arc cache: %w", err)
 	}
 
 	o := &APIOpener{
@@ -41,7 +39,7 @@ func NewAPIOpener(cctx *cli.Context, cacheSize int) (context.Context, *APIOpener
 		cache: ac,
 	}
 
-	return ctx, o, lens.APICloser(func() {}), nil
+	return o, lens.APICloser(func() {}), nil
 }
 
 func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) {

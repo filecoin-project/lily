@@ -38,16 +38,16 @@ type APIOpener struct {
 	rapi *CarAPI
 }
 
-func NewAPIOpener(c *cli.Context) (context.Context, *APIOpener, lens.APICloser, error) {
+func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 	rapi := CarAPI{}
 
 	if _, _, err := ulimit.ManageFdLimit(); err != nil {
-		return nil, nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
+		return nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
 	}
 
 	db, err := carbs.Load(c.String("repo"), false)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 	cacheDB := NewCachingStore(db)
 
@@ -55,27 +55,27 @@ func NewAPIOpener(c *cli.Context) (context.Context, *APIOpener, lens.APICloser, 
 
 	lr, err := r.Lock(repo.FullNode)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	mds, err := lr.Datastore("/metadata")
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	cs := store.NewChainStore(cacheDB, mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
 
 	headKey, err := db.Roots()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	headTs, err := cs.LoadTipSet(types.NewTipSetKey(headKey...))
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to load our own chainhead: %w", err)
+		return nil, nil, fmt.Errorf("failed to load our own chainhead: %w", err)
 	}
 	if err := cs.SetHead(headTs); err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to set our own chainhead: %w", err)
+		return nil, nil, fmt.Errorf("failed to set our own chainhead: %w", err)
 	}
 
 	sm := stmgr.NewStateManager(cs)
@@ -92,7 +92,7 @@ func NewAPIOpener(c *cli.Context) (context.Context, *APIOpener, lens.APICloser, 
 
 	rapi.Context = c.Context
 	rapi.cacheSize = c.Int("lens-cache-hint")
-	return c.Context, &APIOpener{&rapi}, sf, nil
+	return &APIOpener{&rapi}, sf, nil
 }
 
 func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) {

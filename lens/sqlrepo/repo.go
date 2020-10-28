@@ -35,43 +35,43 @@ type APIOpener struct {
 	rapi *SQLAPI
 }
 
-func NewAPIOpener(c *cli.Context) (context.Context, *APIOpener, lens.APICloser, error) {
+func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 	rapi := SQLAPI{}
 
 	if _, _, err := ulimit.ManageFdLimit(); err != nil {
-		return c.Context, nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
+		return nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
 	}
 
 	bs, err := NewBlockStore(c.String("repo"))
 	if err != nil {
-		return c.Context, nil, nil, err
+		return nil, nil, err
 	}
 
 	r := repo.NewMemory(nil)
 
 	lr, err := r.Lock(repo.FullNode)
 	if err != nil {
-		return c.Context, nil, nil, err
+		return nil, nil, err
 	}
 
 	mds, err := lr.Datastore("/metadata")
 	if err != nil {
-		return c.Context, nil, nil, err
+		return nil, nil, err
 	}
 
 	cs := store.NewChainStore(bs, mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
 
 	headKey, err := bs.(*SqlBlockstore).getMasterTsKey(c.Context, safetyLookBack)
 	if err != nil {
-		return c.Context, nil, nil, err
+		return nil, nil, err
 	}
 
 	headTs, err := cs.LoadTipSet(*headKey)
 	if err != nil {
-		return c.Context, nil, nil, fmt.Errorf("failed to load our own chainhead: %w", err)
+		return nil, nil, fmt.Errorf("failed to load our own chainhead: %w", err)
 	}
 	if err := cs.SetHead(headTs); err != nil {
-		return c.Context, nil, nil, fmt.Errorf("failed to set our own chainhead: %w", err)
+		return nil, nil, fmt.Errorf("failed to set our own chainhead: %w", err)
 	}
 
 	sm := stmgr.NewStateManager(cs)
@@ -88,7 +88,7 @@ func NewAPIOpener(c *cli.Context) (context.Context, *APIOpener, lens.APICloser, 
 
 	rapi.Context = c.Context
 	rapi.cacheSize = c.Int("lens-cache-hint")
-	return c.Context, &APIOpener{rapi: &rapi}, sf, nil
+	return &APIOpener{rapi: &rapi}, sf, nil
 }
 
 func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) {
