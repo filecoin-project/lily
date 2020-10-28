@@ -3,6 +3,7 @@ package message
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"math"
 	"math/big"
 	"time"
@@ -278,13 +279,31 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 			}
 			result.Messages = append(result.Messages, msg)
 
+			msgsSeen[message.Cid()] = struct{}{}
+
 			if p.parseMessages {
 				dstAddr, err := address.NewFromString(msg.To)
 				if err != nil {
 					return nil, nil, xerrors.Errorf("parse to address: %w", err)
 				}
 
-				st, err := state.LoadStateTree(p.node.Store(), ts.ParentState())
+				child, err := p.node.ChainGetTipSetByHeight(ctx, ts.Height()+1, types.NewTipSetKey())
+				if err != nil {
+					// If we aren't finalized, we fail for now, because a child tipset may occur
+					if head, headErr := p.node.ChainHead(ctx); headErr == nil && head.Height()-ts.Height() < build.Finality {
+						log.Warn("Delaying derivation for message which is not yet finalized")
+						return nil, nil, xerrors.Errorf("Failed to load child tipset: %w", err)
+					}
+					log.Info("Skipping derivation of message parameters for message with no children blocks after derivation.")
+					continue
+				}
+				if !cidsEqual(child.Parents().Cids(), ts.Cids()) {
+					// if we aren't on the main chain, we don't have an easy way to get child blocks, so skip parsing these messages for now.
+					log.Info("Skipping derivation of message parameters for message not on canonical chain")
+					continue
+				}
+
+				st, err := state.LoadStateTree(p.node.Store(), child.ParentState())
 				if err != nil {
 					return nil, nil, xerrors.Errorf("load state tree: %w", err)
 				}
@@ -300,8 +319,6 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 					return nil, nil, xerrors.Errorf("parse message: %w", err)
 				}
 			}
-
-			msgsSeen[message.Cid()] = struct{}{}
 		}
 
 	}
@@ -324,6 +341,18 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 		GasWasteRatio:       float64(totalGasLimit-totalUniqGasLimit) / float64(len(ts.Blocks())*build.BlockGasTarget),
 	}
 	return result, pmsgModels, nil
+}
+
+func cidsEqual(c1, c2 []cid.Cid) bool {
+	if len(c1) != len(c2) {
+		return false
+	}
+	for i, c := range c1 {
+		if !c2[i].Equals(c) {
+			return false
+		}
+	}
+	return true
 }
 
 func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*messagemodel.ParsedMessage, error) {
@@ -361,6 +390,9 @@ func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*mess
 	}
 	if err != nil {
 		return nil, xerrors.Errorf("parse params: %w", err)
+	}
+	if name == "Unknown" {
+		name = fmt.Sprintf("%s.%d", actor, m.Method)
 	}
 	pm.Method = name
 	if params != nil {
