@@ -291,7 +291,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 				if err != nil {
 					// If we aren't finalized, we fail for now, because a child tipset may occur
 					if head, err := p.node.ChainGetTipSet(ctx, types.NewTipSetKey()); err == nil && head.Height()-ts.Height() < 900 {
-						log.Warn("Failing derivation for messate that does not yet have children, but might get them later")
+						log.Warn("Delaying derivation for message which is not yet finalized")
 						return nil, nil, xerrors.Errorf("Failed to load child tipset: %w", err)
 					}
 					log.Info("Skipping derivation of message parameters for message with no children blocks after derivation.")
