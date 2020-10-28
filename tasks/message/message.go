@@ -290,7 +290,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 				child, err := p.node.ChainGetTipSetByHeight(ctx, ts.Height()+1, types.NewTipSetKey())
 				if err != nil {
 					// If we aren't finalized, we fail for now, because a child tipset may occur
-					if head, err := p.node.ChainGetTipSet(ctx, types.NewTipSetKey()); err == nil && head.Height()-ts.Height() < 900 {
+					if head, err := p.node.ChainGetTipSet(ctx, types.NewTipSetKey()); err == nil && head.Height()-ts.Height() < build.Finality {
 						log.Warn("Delaying derivation for message which is not yet finalized")
 						return nil, nil, xerrors.Errorf("Failed to load child tipset: %w", err)
 					}
