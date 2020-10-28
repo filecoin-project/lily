@@ -7,7 +7,6 @@ GITVERSION=$(shell git describe --always --tag --dirty)
 
 unexport GOFLAGS
 
-MODULES:=
 CLEAN:=
 BINS:=
 
@@ -25,15 +24,13 @@ all: build
 .PHONY: build
 build: deps visor
 
-$(MODULES): build/.update-modules ;
-
 # dummy file that marks the last time modules were updated
 build/.update-modules:
 	git submodule update --init --recursive
 	touch $@
 
 .PHONY: deps
-deps: $(BUILD_DEPS)
+deps: build/.update-modules
 
 # test starts dependencies and runs all tests
 .PHONY: test
@@ -73,7 +70,6 @@ docker-image:
 
 clean:
 	rm -rf $(CLEAN) $(BINS)
-	-$(MAKE) -C $(FFI_PATH) clean
 .PHONY: clean
 
 dist-clean:
