@@ -319,8 +319,8 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, ts *types.T
 					return nil, nil, xerrors.Errorf("load state tree when considering message %s: %w", message.Cid().String(), err)
 				}
 
-				dstActor, err := st.GetActor(dstAddr)
 				dstActorCode := accountActorCodeID
+				dstActor, err := st.GetActor(dstAddr)
 				if err != nil {
 					// implicitly if actor does not exist,
 					if !errors.Is(err, types.ErrActorNotFound) {
