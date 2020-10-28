@@ -7,7 +7,6 @@ GITVERSION=$(shell git describe --always --tag --dirty)
 
 unexport GOFLAGS
 
-MODULES:=
 CLEAN:=
 BINS:=
 
@@ -25,31 +24,13 @@ all: build
 .PHONY: build
 build: deps visor
 
-## FFI
-
-FFI_PATH:=extern/filecoin-ffi/
-FFI_DEPS:=.install-filcrypto
-FFI_DEPS:=$(addprefix $(FFI_PATH),$(FFI_DEPS))
-
-$(FFI_DEPS): build/.filecoin-install ;
-
-build/.filecoin-install: $(FFI_PATH)
-	$(MAKE) -C $(FFI_PATH) $(FFI_DEPS:$(FFI_PATH)%=%)
-	@touch $@
-
-MODULES+=$(FFI_PATH)
-BUILD_DEPS+=build/.filecoin-install
-CLEAN+=build/.filecoin-install
-
-$(MODULES): build/.update-modules ;
-
 # dummy file that marks the last time modules were updated
 build/.update-modules:
 	git submodule update --init --recursive
 	touch $@
 
 .PHONY: deps
-deps: $(BUILD_DEPS)
+deps: build/.update-modules
 
 # test starts dependencies and runs all tests
 .PHONY: test
@@ -89,7 +70,6 @@ docker-image:
 
 clean:
 	rm -rf $(CLEAN) $(BINS)
-	-$(MAKE) -C $(FFI_PATH) clean
 .PHONY: clean
 
 dist-clean:
