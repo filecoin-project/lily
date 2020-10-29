@@ -6,12 +6,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/filecoin-project/go-jsonrpc"
-	lotus_api "github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/api/client"
-	lcli "github.com/filecoin-project/lotus/cli"
+	"github.com/filecoin-project/lotus/node/repo"
 	lru "github.com/hashicorp/golang-lru"
 	logging "github.com/ipfs/go-log/v2"
+	"github.com/mitchellh/go-homedir"
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr/net"
 	"github.com/urfave/cli/v2"
@@ -23,9 +22,9 @@ import (
 var log = logging.Logger("visor/lens/lotus")
 
 type APIOpener struct {
-	// TODO: replace dependency on cli.Context with tokenMaddr and repo path
-	cctx  *cli.Context
-	cache *lru.ARCCache // cache shared across all instances of the api
+	cache   *lru.ARCCache // cache shared across all instances of the api
+	addr    string
+	headers http.Header
 }
 
 func NewAPIOpener(cctx *cli.Context, cacheSize int) (*APIOpener, lens.APICloser, error) {
@@ -34,34 +33,68 @@ func NewAPIOpener(cctx *cli.Context, cacheSize int) (*APIOpener, lens.APICloser,
 		return nil, nil, xerrors.Errorf("new arc cache: %w", err)
 	}
 
+	var rawaddr, rawtoken string
+
+	if cctx.IsSet("api") {
+		tokenMaddr := cctx.String("api")
+		toks := strings.Split(tokenMaddr, ":")
+		if len(toks) != 2 {
+			return nil, nil, fmt.Errorf("invalid api tokens, expected <token>:<maddr>, got: %s", tokenMaddr)
+		}
+
+		rawtoken = toks[0]
+		rawaddr = toks[1]
+	} else if cctx.IsSet("repo") {
+		repoPath := cctx.String("repo")
+		p, err := homedir.Expand(repoPath)
+		if err != nil {
+			return nil, nil, xerrors.Errorf("expand home dir (%s): %w", repoPath, err)
+		}
+
+		r, err := repo.NewFS(p)
+		if err != nil {
+			return nil, nil, xerrors.Errorf("open repo at path: %s; %w", p, err)
+		}
+
+		ma, err := r.APIEndpoint()
+		if err != nil {
+			return nil, nil, xerrors.Errorf("api endpoint: %w", err)
+		}
+
+		token, err := r.APIToken()
+		if err != nil {
+			return nil, nil, xerrors.Errorf("api token: %w", err)
+		}
+
+		rawaddr = ma.String()
+		rawtoken = string(token)
+	} else {
+		return nil, nil, xerrors.Errorf("cannot connect to lotus api: missing --api or --repo flags")
+	}
+
+	parsedAddr, err := ma.NewMultiaddr(rawaddr)
+	if err != nil {
+		return nil, nil, xerrors.Errorf("parse listen address: %w", err)
+	}
+
+	_, addr, err := manet.DialArgs(parsedAddr)
+	if err != nil {
+		return nil, nil, xerrors.Errorf("dial multiaddress: %w", err)
+	}
+
 	o := &APIOpener{
-		cctx:  cctx,
-		cache: ac,
+		cache:   ac,
+		addr:    apiURI(addr),
+		headers: apiHeaders(rawtoken),
 	}
 
 	return o, lens.APICloser(func() {}), nil
 }
 
 func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) {
-	var api lotus_api.FullNode
-	var closer jsonrpc.ClientCloser
-	var err error
-
-	if tokenMaddr := o.cctx.String("api"); tokenMaddr != "" {
-		toks := strings.Split(tokenMaddr, ":")
-		if len(toks) != 2 {
-			return nil, nil, fmt.Errorf("invalid api tokens, expected <token>:<maddr>, got: %s", tokenMaddr)
-		}
-
-		api, closer, err = getFullNodeAPIUsingCredentials(ctx, toks[1], toks[0])
-		if err != nil {
-			return nil, nil, xerrors.Errorf("get full node api with credentials: %w", err)
-		}
-	} else {
-		api, closer, err = lcli.GetFullNodeAPI(o.cctx)
-		if err != nil {
-			return nil, nil, xerrors.Errorf("get full node api: %w", err)
-		}
+	api, closer, err := client.NewFullNodeRPC(ctx, o.addr, o.headers)
+	if err != nil {
+		return nil, nil, xerrors.Errorf("new full node rpc: %w", err)
 	}
 
 	cacheStore, err := NewCacheCtxStore(ctx, api, o.cache)
@@ -72,20 +105,6 @@ func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) 
 	lensAPI := NewAPIWrapper(api, cacheStore)
 
 	return lensAPI, lens.APICloser(closer), nil
-}
-
-func getFullNodeAPIUsingCredentials(ctx context.Context, listenAddr, token string) (lotus_api.FullNode, jsonrpc.ClientCloser, error) {
-	parsedAddr, err := ma.NewMultiaddr(listenAddr)
-	if err != nil {
-		return nil, nil, xerrors.Errorf("parse listen address: %w", err)
-	}
-
-	_, addr, err := manet.DialArgs(parsedAddr)
-	if err != nil {
-		return nil, nil, xerrors.Errorf("dial multiaddress: %w", err)
-	}
-
-	return client.NewFullNodeRPC(ctx, apiURI(addr), apiHeaders(token))
 }
 
 func apiURI(addr string) string {
