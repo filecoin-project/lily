@@ -16,6 +16,7 @@ import (
 	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	marketmodel "github.com/filecoin-project/sentinel-visor/model/actors/market"
 	minermodel "github.com/filecoin-project/sentinel-visor/model/actors/miner"
+	powermodel "github.com/filecoin-project/sentinel-visor/model/actors/power"
 	genesismodel "github.com/filecoin-project/sentinel-visor/model/genesis"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
@@ -43,12 +44,15 @@ func (p *GenesisProcessor) ProcessGenesis(ctx context.Context, gen *types.TipSet
 	}
 
 	minerExtractor := StorageMinerExtractor{}
+	powerExtractor := StoragePowerExtractor{}
+
 	result := &genesismodel.ProcessGenesisSingletonResult{}
 	for _, addr := range genesisAddrs {
 		genesisAct, err := p.node.StateGetActor(ctx, addr, gen.Key())
 		if err != nil {
 			return xerrors.Errorf("get actor: %w", err)
 		}
+
 		switch genesisAct.Code {
 		case builtin.SystemActorCodeID:
 			// TODO
@@ -63,13 +67,27 @@ func (p *GenesisProcessor) ProcessGenesis(ctx context.Context, gen *types.TipSet
 		case builtin.AccountActorCodeID:
 			// TODO
 		case builtin.StoragePowerActorCodeID:
-			// TODO
+			res, err := powerExtractor.Extract(ctx, ActorInfo{
+				Actor:           *genesisAct,
+				Address:         addr,
+				ParentStateRoot: gen.ParentState(),
+				Epoch:           gen.Height(),
+				TipSet:          gen.Key(),
+				ParentTipSet:    gen.Parents(),
+			}, p.node)
+			if err != nil {
+				return xerrors.Errorf("power actor state: %w", err)
+			}
+			// TODO simplify the result to a slice of persistables in follow on.
+			result.SetPower(res.(*powermodel.PowerTaskResult))
+
 		case builtin.StorageMarketActorCodeID:
 			res, err := p.storageMarketState(ctx, gen)
 			if err != nil {
 				return xerrors.Errorf("storage market actor state: %w", err)
 			}
 			result.SetMarket(res)
+
 		case builtin.StorageMinerActorCodeID:
 			res, err := minerExtractor.Extract(ctx, ActorInfo{
 				Actor:           *genesisAct,
@@ -84,6 +102,7 @@ func (p *GenesisProcessor) ProcessGenesis(ctx context.Context, gen *types.TipSet
 			}
 			// TODO simplify the result to a slice of persistables in follow on.
 			result.AddMiner(res.(*minermodel.MinerTaskResult))
+
 		case builtin.PaymentChannelActorCodeID:
 			// TODO
 		case builtin.MultisigActorCodeID:

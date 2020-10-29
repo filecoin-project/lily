@@ -11,12 +11,14 @@ import (
 	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
+	"github.com/filecoin-project/sentinel-visor/model/actors/power"
 )
 
 type ProcessGenesisSingletonResult struct {
 	minerResults    miner.MinerTaskResultList
 	marketResult    *GenesisMarketTaskResult
 	initActorResult *GenesisInitActorTaskResult
+	powerResult     *power.PowerTaskResult
 }
 
 func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, db *pg.DB) error {
@@ -46,12 +48,25 @@ func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, db *pg.DB) 
 				return err
 			}
 		}
+		// persist power actor
+		if r.powerResult != nil {
+			if err := r.powerResult.PersistWithTx(ctx, tx); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 }
 
 func (r *ProcessGenesisSingletonResult) AddMiner(m *miner.MinerTaskResult) {
 	r.minerResults = append(r.minerResults, m)
+}
+
+func (r *ProcessGenesisSingletonResult) SetPower(p *power.PowerTaskResult) {
+	if r.powerResult != nil {
+		panic("Genesis Power State already set, developer error!!!")
+	}
+	r.powerResult = p
 }
 
 func (r *ProcessGenesisSingletonResult) SetMarket(m *GenesisMarketTaskResult) {
