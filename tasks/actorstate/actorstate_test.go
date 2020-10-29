@@ -41,17 +41,19 @@ func mockTipset(minerAddr address.Address, timestamp uint64) (*types.TipSet, err
 var _ ActorStateAPI = (*MockAPI)(nil)
 
 type MockAPI struct {
-	actors map[actorKey]*types.Actor
-	bs     bstore.Blockstore
-	store  adt.Store
+	actors  map[actorKey]*types.Actor
+	tipsets map[types.TipSetKey]*types.TipSet
+	bs      bstore.Blockstore
+	store   adt.Store
 }
 
 func NewMockAPI() *MockAPI {
 	bs := bstore.NewTemporarySync()
 	return &MockAPI{
-		bs:     bs,
-		actors: make(map[actorKey]*types.Actor),
-		store:  adt.WrapStore(context.Background(), cbornode.NewCborStore(bs)),
+		bs:      bs,
+		tipsets: make(map[types.TipSetKey]*types.TipSet),
+		actors:  make(map[actorKey]*types.Actor),
+		store:   adt.WrapStore(context.Background(), cbornode.NewCborStore(bs)),
 	}
 }
 
@@ -86,6 +88,7 @@ func (m *MockAPI) ChainGetBlockMessages(ctx context.Context, msg cid.Cid) (*api.
 }
 
 func (m *MockAPI) ChainGetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error) {
+	return m.tipsets[tsk], nil
 	blks := make([]*types.BlockHeader, len(tsk.Cids()))
 	for i, cid := range tsk.Cids() {
 		if err := m.store.Get(ctx, cid, blks[i]); err != nil {
@@ -144,6 +147,10 @@ func (m *MockAPI) setActor(tsk types.TipSetKey, addr address.Address, actor *typ
 		addr: addr,
 	}
 	m.actors[key] = actor
+}
+
+func (m *MockAPI) putTipSet(ts *types.TipSet) {
+	m.tipsets[ts.Key()] = ts
 }
 
 func (m *MockAPI) createMarketState(ctx context.Context, deals map[abi.DealID]*samarket.DealState, props map[abi.DealID]*samarket.DealProposal, balances map[address.Address]balance) (cid.Cid, error) {
