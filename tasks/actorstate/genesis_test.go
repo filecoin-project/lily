@@ -7,10 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-pg/pg/v10"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 	apitest "github.com/filecoin-project/lotus/api/test"
@@ -19,8 +15,10 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	"github.com/filecoin-project/specs-actors/actors/builtin/power"
 	"github.com/filecoin-project/specs-actors/actors/builtin/verifreg"
+	"github.com/go-pg/pg/v10"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/sentinel-visor/lens/lotus"
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
@@ -56,18 +54,18 @@ func TestGenesisProcessor(t *testing.T) {
 
 	t.Logf("preparing chain")
 	nodes, sn := nodetest.Builder(t, apitest.DefaultFullOpts(1), apitest.OneMiner)
-	cs, err := lotus.NewCacheCtxStore(ctx, nodes[0], 5)
-	require.NoError(t, err, "cache store")
-	node := lotus.NewAPIWrapper(nodes[0], cs)
+	node := nodes[0]
+	opener := testutil.NewAPIOpener(node)
+	openedAPI, _, _ := opener.Open(ctx)
 
 	apitest.MineUntilBlock(ctx, t, nodes[0], sn[0], nil)
 
 	t.Logf("initializing genesis processor")
 	d := &storage.Database{DB: db}
-	p := NewGenesisProcessor(d, node)
+	p := NewGenesisProcessor(d, openedAPI)
 
 	t.Logf("processing")
-	gen, err := node.ChainGetGenesis(ctx)
+	gen, err := openedAPI.ChainGetGenesis(ctx)
 	require.NoError(t, err, "chain genesis")
 	err = p.ProcessGenesis(ctx, gen)
 	require.NoError(t, err, "Run")

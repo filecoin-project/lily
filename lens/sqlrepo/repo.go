@@ -30,6 +30,71 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+type APIOpener struct {
+	// shared instance of the repo since the opener holds an exclusive lock on it
+	rapi *SQLAPI
+}
+
+func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
+	rapi := SQLAPI{}
+
+	if _, _, err := ulimit.ManageFdLimit(); err != nil {
+		return nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
+	}
+
+	bs, err := NewBlockStore(c.String("repo"))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	r := repo.NewMemory(nil)
+
+	lr, err := r.Lock(repo.FullNode)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	mds, err := lr.Datastore("/metadata")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cs := store.NewChainStore(bs, mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
+
+	headKey, err := bs.(*SqlBlockstore).getMasterTsKey(c.Context, safetyLookBack)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	headTs, err := cs.LoadTipSet(*headKey)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to load our own chainhead: %w", err)
+	}
+	if err := cs.SetHead(headTs); err != nil {
+		return nil, nil, fmt.Errorf("failed to set our own chainhead: %w", err)
+	}
+
+	sm := stmgr.NewStateManager(cs)
+
+	rapi.FullNodeAPI.ChainAPI.Chain = cs
+	rapi.FullNodeAPI.ChainAPI.ChainModuleAPI = &full.ChainModule{Chain: cs}
+	rapi.FullNodeAPI.StateAPI.Chain = cs
+	rapi.FullNodeAPI.StateAPI.StateManager = sm
+	rapi.FullNodeAPI.StateAPI.StateModuleAPI = &full.StateModule{Chain: cs, StateManager: sm}
+
+	sf := func() {
+		lr.Close()
+	}
+
+	rapi.Context = c.Context
+	rapi.cacheSize = c.Int("lens-cache-hint")
+	return &APIOpener{rapi: &rapi}, sf, nil
+}
+
+func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) {
+	return o.rapi, lens.APICloser(func() {}), nil
+}
+
 type SQLAPI struct {
 	impl.FullNodeAPI
 	context.Context
@@ -83,97 +148,52 @@ func (ra *SQLAPI) ClientImport(ctx context.Context, ref api.FileRef) (*api.Impor
 func (ra *SQLAPI) ClientRemoveImport(ctx context.Context, importID multistore.StoreID) error {
 	return fmt.Errorf("unsupported")
 }
+
 func (ra *SQLAPI) ClientImportLocal(ctx context.Context, f io.Reader) (cid.Cid, error) {
 	return cid.Undef, fmt.Errorf("unsupported")
 }
+
 func (ra *SQLAPI) ClientListImports(ctx context.Context) ([]api.Import, error) {
 	return nil, fmt.Errorf("unsupported")
 }
+
 func (ra *SQLAPI) ClientRetrieve(ctx context.Context, order api.RetrievalOrder, ref *api.FileRef) error {
 	return fmt.Errorf("unsupported")
 }
+
 func (ra *SQLAPI) ClientRetrieveWithEvents(ctx context.Context, order api.RetrievalOrder, ref *api.FileRef) (<-chan marketevents.RetrievalEvent, error) {
 	return nil, fmt.Errorf("unsupported")
 }
+
 func (ra *SQLAPI) ClientQueryAsk(ctx context.Context, p peer.ID, miner address.Address) (*storagemarket.StorageAsk, error) {
 	return nil, fmt.Errorf("unsupported")
 }
+
 func (ra *SQLAPI) ClientCalcCommP(ctx context.Context, inpath string) (*api.CommPRet, error) {
 	return nil, fmt.Errorf("unsupported")
 }
+
 func (ra *SQLAPI) ClientDealSize(ctx context.Context, root cid.Cid) (api.DataSize, error) {
 	return api.DataSize{}, fmt.Errorf("unsupported")
 }
+
 func (ra *SQLAPI) ClientGenCar(ctx context.Context, ref api.FileRef, outputPath string) error {
 	return fmt.Errorf("unsupported")
 }
+
 func (ra *SQLAPI) ClientListDataTransfers(ctx context.Context) ([]api.DataTransferChannel, error) {
 	return nil, fmt.Errorf("unsupported")
 }
+
 func (ra *SQLAPI) ClientDataTransferUpdates(ctx context.Context) (<-chan api.DataTransferChannel, error) {
 	return nil, fmt.Errorf("unsupported")
 }
+
 func (ra *SQLAPI) ClientRetrieveTryRestartInsufficientFunds(ctx context.Context, paymentChannel address.Address) error {
 	return fmt.Errorf("unsupported")
 }
 
 const safetyLookBack = 5
-
-func GetAPI(c *cli.Context) (context.Context, lens.API, lens.APICloser, error) {
-	rapi := SQLAPI{}
-
-	if _, _, err := ulimit.ManageFdLimit(); err != nil {
-		return nil, nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
-	}
-
-	bs, err := NewBlockStore(c.String("repo"))
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	r := repo.NewMemory(nil)
-
-	lr, err := r.Lock(repo.FullNode)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	mds, err := lr.Datastore("/metadata")
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	cs := store.NewChainStore(bs, mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
-
-	headKey, err := bs.(*SqlBlockstore).getMasterTsKey(c.Context, safetyLookBack)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	headTs, err := cs.LoadTipSet(*headKey)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to load our own chainhead: %w", err)
-	}
-	if err := cs.SetHead(headTs); err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to set our own chainhead: %w", err)
-	}
-
-	sm := stmgr.NewStateManager(cs)
-
-	rapi.FullNodeAPI.ChainAPI.Chain = cs
-	rapi.FullNodeAPI.ChainAPI.ChainModuleAPI = &full.ChainModule{Chain: cs}
-	rapi.FullNodeAPI.StateAPI.Chain = cs
-	rapi.FullNodeAPI.StateAPI.StateManager = sm
-	rapi.FullNodeAPI.StateAPI.StateModuleAPI = &full.StateModule{Chain: cs, StateManager: sm}
-
-	sf := func() {
-		lr.Close()
-	}
-
-	rapi.Context = c.Context
-	rapi.cacheSize = c.Int("lens-cache-hint")
-	return c.Context, &rapi, sf, nil
-}
 
 // From https://github.com/ribasushi/ltsh/blob/5b0211033020570217b0ae37b50ee304566ac218/cmd/lotus-shed/deallifecycles.go#L41-L171
 type fakeVerifier struct{}

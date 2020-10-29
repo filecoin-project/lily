@@ -15,13 +15,11 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	"github.com/filecoin-project/specs-actors/actors/builtin/power"
 	"github.com/filecoin-project/specs-actors/actors/builtin/verifreg"
-
 	"github.com/go-pg/pg/v10"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/lens/lotus"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
@@ -59,15 +57,15 @@ func TestChainHeadIndexer(t *testing.T) {
 
 	t.Logf("preparing chain")
 	nodes, sn := nodetest.Builder(t, apitest.DefaultFullOpts(1), apitest.OneMiner)
-	cs, err := lotus.NewCacheCtxStore(ctx, nodes[0], 5)
-	require.NoError(t, err, "cache store")
-	node := lotus.NewAPIWrapper(nodes[0], cs)
 
-	apitest.MineUntilBlock(ctx, t, nodes[0], sn[0], nil)
+	node := nodes[0]
+	opener := testutil.NewAPIOpener(node)
+
+	apitest.MineUntilBlock(ctx, t, node, sn[0], nil)
 
 	d := &storage.Database{DB: db}
 	t.Logf("initializing indexer")
-	idx := NewChainHeadIndexer(d, node, 0)
+	idx := NewChainHeadIndexer(d, opener, 0)
 
 	newHeads, err := node.ChainNotify(ctx)
 	require.NoError(t, err, "chain notify")

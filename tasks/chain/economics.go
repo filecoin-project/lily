@@ -27,9 +27,9 @@ const (
 
 var log = logging.Logger("chain")
 
-func NewChainEconomicsProcessor(d *storage.Database, node lens.API, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64) *ChainEconomics {
+func NewChainEconomicsProcessor(d *storage.Database, opener lens.APIOpener, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64) *ChainEconomics {
 	return &ChainEconomics{
-		node:        node,
+		opener:      opener,
 		storage:     d,
 		leaseLength: leaseLength,
 		batchSize:   batchSize,
@@ -42,7 +42,7 @@ func NewChainEconomicsProcessor(d *storage.Database, node lens.API, leaseLength 
 // ChainEconomics is a task that processes tipsets to calculate the circulating supply of Filecoin
 // persists the results to the database.
 type ChainEconomics struct {
-	node        lens.API
+	opener      lens.APIOpener
 	storage     *storage.Database
 	leaseLength time.Duration // length of time to lease work for
 	batchSize   int           // number of tipsets to lease in a batch
@@ -54,11 +54,19 @@ type ChainEconomics struct {
 // Run starts processing batches of tipsets until the context is done or
 // an error occurs.
 func (p *ChainEconomics) Run(ctx context.Context) error {
+	node, closer, err := p.opener.Open(ctx)
+	if err != nil {
+		return xerrors.Errorf("open lens: %w", err)
+	}
+	defer closer()
+
 	// Loop until context is done or processing encounters a fatal error
-	return wait.RepeatUntil(ctx, batchInterval, p.processBatch)
+	return wait.RepeatUntil(ctx, batchInterval, func(ctx context.Context) (bool, error) {
+		return p.processBatch(ctx, node)
+	})
 }
 
-func (p *ChainEconomics) processBatch(ctx context.Context) (bool, error) {
+func (p *ChainEconomics) processBatch(ctx context.Context, node lens.API) (bool, error) {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "chain/economics"))
 	ctx, span := global.Tracer("").Start(ctx, "ChainEconomics.processBatch")
 	defer span.End()
@@ -91,12 +99,13 @@ func (p *ChainEconomics) processBatch(ctx context.Context) (bool, error) {
 		default:
 		}
 
-		if err := p.processItem(ctx, item); err != nil {
+		if err := p.processItem(ctx, node, item); err != nil {
+			// Any errors are likely to be problems using the lens, mark this tipset as failed and exit this batch
 			log.Errorw("failed to process tipset", "error", err.Error(), "height", item.Height)
 			if err := p.storage.MarkTipSetEconomicsComplete(ctx, item.TipSet, item.Height, p.clock.Now(), err.Error()); err != nil {
 				log.Errorw("failed to mark tipset economics complete", "error", err.Error(), "height", item.Height)
 			}
-			continue
+			return false, xerrors.Errorf("process item: %w", err)
 		}
 
 		if err := p.storage.MarkTipSetEconomicsComplete(ctx, item.TipSet, item.Height, p.clock.Now(), ""); err != nil {
@@ -107,7 +116,7 @@ func (p *ChainEconomics) processBatch(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
-func (p *ChainEconomics) processItem(ctx context.Context, item *visor.ProcessingTipSet) error {
+func (p *ChainEconomics) processItem(ctx context.Context, node lens.API, item *visor.ProcessingTipSet) error {
 	ctx, span := global.Tracer("").Start(ctx, "ChainEconomics.processItem")
 	defer span.End()
 	span.SetAttributes(label.Any("height", item.Height), label.Any("tipset", item.TipSet))
@@ -120,12 +129,12 @@ func (p *ChainEconomics) processItem(ctx context.Context, item *visor.Processing
 		return xerrors.Errorf("get tipsetkey: %w", err)
 	}
 
-	ts, err := p.node.ChainGetTipSet(ctx, tsk)
+	ts, err := node.ChainGetTipSet(ctx, tsk)
 	if err != nil {
 		return xerrors.Errorf("get tipset: %w", err)
 	}
 
-	supply, err := p.node.StateVMCirculatingSupplyInternal(ctx, tsk)
+	supply, err := node.StateVMCirculatingSupplyInternal(ctx, tsk)
 	if err != nil {
 		return err
 	}
