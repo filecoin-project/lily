@@ -40,7 +40,7 @@ var Debug = &cli.Command{
 			}
 		}()
 
-		p, err := actorstate.NewActorStateProcessor(rctx.db, rctx.opener, 0, 0, 0, 0, actorstate.SupportedActorCodes())
+		p, err := actorstate.NewActorStateProcessor(rctx.db, rctx.opener, 0, 0, 0, 0, actorstate.SupportedActorCodes(), false)
 		if err != nil {
 			return err
 		}

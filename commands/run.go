@@ -91,7 +91,7 @@ var Run = &cli.Command{
 			Name:    "actorstate-lease",
 			Aliases: []string{"asl"},
 			Value:   time.Minute * 15,
-			Usage:   "Lease time for the actor state processor",
+			Usage:   "Lease time for the actor state processor. Set to zero to avoid using leases.",
 			EnvVars: []string{"VISOR_ACTORSTATE_LEASE"},
 		},
 		&cli.IntFlag{
@@ -120,7 +120,6 @@ var Run = &cli.Command{
 			DefaultText: "none",
 			EnvVars:     []string{"VISOR_ACTORSTATE_EXCLUDE"},
 		},
-
 		&cli.DurationFlag{
 			Name:    "message-lease",
 			Aliases: []string{"ml"},
@@ -222,6 +221,11 @@ var Run = &cli.Command{
 		// Validate flags
 		heightFrom := cctx.Int64("from")
 		heightTo := cctx.Int64("to")
+
+		if heightFrom > heightTo {
+			return xerrors.Errorf("--from must not be greater than --to")
+		}
+
 		actorCodes, err := getActorCodes(cctx)
 		if err != nil {
 			return err
@@ -292,20 +296,51 @@ var Run = &cli.Command{
 		}
 
 		// Add several state tasks to read actor state from each indexed block
-		for i := 0; i < cctx.Int("actorstate-workers"); i++ {
-			p, err := actorstate.NewActorStateProcessor(rctx.db, rctx.opener, cctx.Duration("actorstate-lease"), cctx.Int("actorstate-batch"), heightFrom, heightTo, actorCodes)
-			if err != nil {
-				return err
-			}
-			scheduler.Add(schedule.TaskConfig{
-				Name:                fmt.Sprintf("ActorStateProcessor%03d", i),
-				Task:                p,
-				RestartOnFailure:    true,
-				RestartOnCompletion: true,
-				RestartDelay:        time.Minute,
-			})
+
+		// actor state processing cannot include genesis
+		actorStateHeightFrom := heightFrom
+		if actorStateHeightFrom == 0 {
+			actorStateHeightFrom = 1
 		}
 
+		// If we are not using leases then further subdivide work by height to avoid workers processing the same actor states
+		if cctx.Duration("actorstate-lease") == 0 {
+			if cctx.Int("actorstate-workers") > 1 && heightTo > estimateCurrentEpoch()*2 {
+				log.Warnf("--to is set to an unexpectedly high epoch which will likely result in some workers not being assigned a useful height range")
+			}
+
+			hr := heightRange{min: actorStateHeightFrom, max: heightTo}
+			srs := hr.divide(cctx.Int("actorstate-workers"))
+			for i, sr := range srs {
+				p, err := actorstate.NewActorStateProcessor(rctx.db, rctx.opener, 0, cctx.Int("actorstate-batch"), sr.min, sr.max, actorCodes, false)
+				if err != nil {
+					return err
+				}
+				log.Debugf("scheduling actor state processor with height range %d to %d", sr.min, sr.max)
+				scheduler.Add(schedule.TaskConfig{
+					Name:                fmt.Sprintf("ActorStateProcessor%03d", i),
+					Task:                p,
+					RestartOnFailure:    true,
+					RestartOnCompletion: true,
+					RestartDelay:        time.Minute,
+				})
+			}
+		} else {
+			// Use workers with leasing
+			for i := 0; i < cctx.Int("actorstate-workers"); i++ {
+				p, err := actorstate.NewActorStateProcessor(rctx.db, rctx.opener, cctx.Duration("actorstate-lease"), cctx.Int("actorstate-batch"), actorStateHeightFrom, heightTo, actorCodes, true)
+				if err != nil {
+					return err
+				}
+				scheduler.Add(schedule.TaskConfig{
+					Name:                fmt.Sprintf("ActorStateProcessor%03d", i),
+					Task:                p,
+					RestartOnFailure:    true,
+					RestartOnCompletion: true,
+					RestartDelay:        time.Minute,
+				})
+			}
+		}
 		// Add several message tasks to read messages from indexed tipsets
 		for i := 0; i < cctx.Int("message-workers"); i++ {
 			scheduler.Add(schedule.TaskConfig{
@@ -460,4 +495,34 @@ var actorNamesToCodes = map[string]cid.Cid{
 	"fil/2/verifiedregistry": builtin2.VerifiedRegistryActorCodeID,
 	"fil/2/account":          builtin2.AccountActorCodeID,
 	"fil/2/multisig":         builtin2.MultisigActorCodeID,
+}
+
+type heightRange struct {
+	min, max int64
+}
+
+// divide divides a range into n equal subranges. The last range may be undersized.
+func (h heightRange) divide(n int) []heightRange {
+	size := h.max - h.min + 1 // +1 since the range is inclusive
+	if int64(n) > size {
+		panic(fmt.Sprintf("can't subdivide a range of %d into %d pieces", size, n))
+	}
+	step := size / int64(n)
+
+	subs := make([]heightRange, n)
+	subs[0].min = h.min
+	subs[0].max = h.min + step - 1
+
+	for i := 1; i < n; i++ {
+		subs[i].min = subs[i-1].max + 1
+		subs[i].max = subs[i].min + step
+	}
+
+	subs[n-1].max = h.max
+	return subs
+}
+
+var mainnetGenesis = time.Date(2020, 8, 24, 22, 0, 0, 0, time.UTC)
+func estimateCurrentEpoch() int64 {
+	return int64(time.Since(mainnetGenesis) / (builtin.EpochDurationSeconds))
 }

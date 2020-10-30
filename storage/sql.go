@@ -389,6 +389,50 @@ SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_t
 	return actors, nil
 }
 
+// FindActors finds a set of actors to process but does not take a lease out. minHeight and maxHeight define an inclusive range of heights to process.
+func (d *Database) FindActors(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64, codes []string) (visor.ProcessingActorList, error) {
+	var actors visor.ProcessingActorList
+
+	// Ensure we never return genesis, which is handled separately
+	if minHeight < 1 {
+		minHeight = 1
+	}
+
+	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		var err error
+		switch len(codes) {
+		case 0:
+			_, err = tx.QueryContext(ctx, &actors, `
+				    SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set, height
+				    FROM visor_processing_actors
+				    WHERE completed_at IS null AND height >= ? AND height <= ?
+				    ORDER BY height DESC
+				    LIMIT ?`, minHeight, maxHeight, batchSize)
+		case 1:
+			_, err = tx.QueryContext(ctx, &actors, `
+				    SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set, height
+				    FROM visor_processing_actors
+				    WHERE completed_at IS null AND height >= ? AND height <= ? AND code = ?
+				    ORDER BY height DESC
+				    LIMIT ?`, minHeight, maxHeight, codes[0], batchSize)
+		default:
+			_, err = tx.QueryContext(ctx, &actors, `
+				    SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set, height
+				    FROM visor_processing_actors
+				    WHERE completed_at IS null AND height >= ? AND height <= ? AND code IN (?)
+				    ORDER BY height DESC
+				    LIMIT ?`, minHeight, maxHeight, pg.In(codes), batchSize)
+		}
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return actors, nil
+}
+
 func (d *Database) MarkActorComplete(ctx context.Context, head string, code string, completedAt time.Time, errorsDetected string) error {
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.ExecContext(ctx, `
