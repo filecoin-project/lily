@@ -95,7 +95,7 @@ func SupportedActorCodes() []cid.Cid {
 	return codes
 }
 
-func NewActorStateProcessor(d *storage.Database, opener lens.APIOpener, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64, actorCodes []cid.Cid) (*ActorStateProcessor, error) {
+func NewActorStateProcessor(d *storage.Database, opener lens.APIOpener, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64, actorCodes []cid.Cid, useLeases bool) (*ActorStateProcessor, error) {
 	p := &ActorStateProcessor{
 		opener:      opener,
 		storage:     d,
@@ -105,6 +105,7 @@ func NewActorStateProcessor(d *storage.Database, opener lens.APIOpener, leaseLen
 		maxHeight:   maxHeight,
 		extractors:  map[cid.Cid]ActorStateExtractor{},
 		clock:       clock.New(),
+		useLeases:   useLeases,
 	}
 
 	extractorsMu.Lock()
@@ -133,6 +134,7 @@ type ActorStateProcessor struct {
 	actorCodes  []string                        // list of actor codes that will be requested
 	extractors  map[cid.Cid]ActorStateExtractor // list of extractors that will be used
 	clock       clock.Clock
+	useLeases   bool // when true this task will update the claimed_until column in the processing table (which can cause contention)
 }
 
 func trackDuration(topic string, w io.Writer) func() {
@@ -227,7 +229,14 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (
 	// Lease some blocks to work on
 	claimUntil := p.clock.Now().Add(p.leaseLength)
 
-	batch, err := p.storage.LeaseActors(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
+	var batch visor.ProcessingActorList
+	var err error
+
+	if p.useLeases {
+		batch, err = p.storage.LeaseActors(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
+	} else {
+		batch, err = p.storage.FindActors(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
+	}
 	if err != nil {
 		return true, err
 	}
