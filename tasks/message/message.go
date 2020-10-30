@@ -433,7 +433,7 @@ func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*mess
 		if err := fcjson.Encoder(params, buf); err != nil {
 			return nil, xerrors.Errorf("json encode: %w", err)
 		}
-		pm.Params = string(buf.Bytes())
+		pm.Params = string(bytes.ToValidUTF8(buf.Bytes(), []byte{}))
 	}
 
 	return pm, nil
