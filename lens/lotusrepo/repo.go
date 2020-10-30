@@ -57,7 +57,7 @@ func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 		return nil, nil, fmt.Errorf("lotus repo doesn't exist")
 	}
 
-	lr, err := r.Lock(repo.FullNode)
+	lr, err := r.LockRO(repo.FullNode)
 	if err != nil {
 		return nil, nil, err
 	}
