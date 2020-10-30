@@ -419,13 +419,15 @@ func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*mess
 		actor = statediff.LotusTypeUnknown
 		params, name, err = statediff.ParseParams(m.Params, int(m.Method), actor)
 	}
-	if err != nil {
-		return nil, xerrors.Errorf("parse params: %w", err)
-	}
 	if name == "Unknown" {
 		name = fmt.Sprintf("%s.%d", actor, m.Method)
 	}
 	pm.Method = name
+	if err != nil {
+		// this can occur when the message is not valid cbor
+		pm.Params = ""
+		return pm, nil
+	}
 	if params != nil {
 		buf := bytes.NewBuffer(nil)
 		if err := fcjson.Encoder(params, buf); err != nil {
