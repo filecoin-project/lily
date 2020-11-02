@@ -329,7 +329,7 @@ func TestMarkActorComplete(t *testing.T) {
 
 	t.Run("with error message", func(t *testing.T) {
 		completedAt := testutil.KnownTime.Add(time.Minute * 1)
-		err = d.MarkActorComplete(ctx, "head1", "codeB", completedAt, "message")
+		err = d.MarkActorComplete(ctx, 1, "head1", "codeB", completedAt, "message")
 		require.NoError(t, err)
 
 		// Check the database contains the updated row
@@ -341,7 +341,7 @@ func TestMarkActorComplete(t *testing.T) {
 
 	t.Run("without error message", func(t *testing.T) {
 		completedAt := testutil.KnownTime.Add(time.Minute * 2)
-		err = d.MarkActorComplete(ctx, "head1", "codeB", completedAt, "")
+		err = d.MarkActorComplete(ctx, 1, "head1", "codeB", completedAt, "")
 		require.NoError(t, err)
 
 		// Check the database contains the updated row with a null errors_detected column
@@ -713,7 +713,7 @@ func TestMarkGasOutputsMessagesComplete(t *testing.T) {
 
 	t.Run("with error message", func(t *testing.T) {
 		completedAt := testutil.KnownTime.Add(time.Minute * 1)
-		err = d.MarkGasOutputsMessagesComplete(ctx, "cid1", completedAt, "message")
+		err = d.MarkGasOutputsMessagesComplete(ctx, 1, "cid1", completedAt, "message")
 		require.NoError(t, err)
 
 		// Check the database contains the updated row
@@ -725,7 +725,7 @@ func TestMarkGasOutputsMessagesComplete(t *testing.T) {
 
 	t.Run("without error message", func(t *testing.T) {
 		completedAt := testutil.KnownTime.Add(time.Minute * 2)
-		err = d.MarkGasOutputsMessagesComplete(ctx, "cid1", completedAt, "")
+		err = d.MarkGasOutputsMessagesComplete(ctx, 1, "cid1", completedAt, "")
 		require.NoError(t, err)
 
 		// Check the database contains the updated row with a null errors_detected column
