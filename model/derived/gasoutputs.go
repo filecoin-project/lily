@@ -65,3 +65,8 @@ func (l GasOutputsList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	}
 	return nil
 }
+
+type ProcessingGasOutputs struct {
+	Height int64
+	GasOutputs
+}

@@ -435,14 +435,14 @@ func (d *Database) FindActors(ctx context.Context, claimUntil time.Time, batchSi
 	return actors, nil
 }
 
-func (d *Database) MarkActorComplete(ctx context.Context, head string, code string, completedAt time.Time, errorsDetected string) error {
+func (d *Database) MarkActorComplete(ctx context.Context, height int64, head string, code string, completedAt time.Time, errorsDetected string) error {
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.ExecContext(ctx, `
     UPDATE visor_processing_actors
     SET claimed_until = null,
         completed_at = ?,
         errors_detected = ?
-    WHERE head = ? AND code = ?
+    WHERE height = ? AND head = ? AND code = ?
 `, completedAt, useNullIfEmpty(errorsDetected), head, code)
 		if err != nil {
 			return err
@@ -521,8 +521,8 @@ func useNullIfEmpty(s string) *string {
 }
 
 // LeaseGasOutputsMessages leases a set of messages that have receipts for gas output processing. minHeight and maxHeight define an inclusive range of heights to process.
-func (d *Database) LeaseGasOutputsMessages(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (derived.GasOutputsList, error) {
-	var list derived.GasOutputsList
+func (d *Database) LeaseGasOutputsMessages(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) ([]*derived.ProcessingGasOutputs, error) {
+	var list []*derived.ProcessingGasOutputs
 
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.QueryContext(ctx, &list, `
@@ -561,15 +561,15 @@ SELECT * FROM leased;
 	return list, nil
 }
 
-func (d *Database) MarkGasOutputsMessagesComplete(ctx context.Context, cid string, completedAt time.Time, errorsDetected string) error {
+func (d *Database) MarkGasOutputsMessagesComplete(ctx context.Context, height int64, cid string, completedAt time.Time, errorsDetected string) error {
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.ExecContext(ctx, `
     UPDATE visor_processing_messages
     SET gas_outputs_claimed_until = null,
         gas_outputs_completed_at = ?,
         gas_outputs_errors_detected = ?
-    WHERE cid = ?
-`, completedAt, useNullIfEmpty(errorsDetected), cid)
+    WHERE height = ? AND cid = ?
+`, completedAt, useNullIfEmpty(errorsDetected), height, cid)
 		if err != nil {
 			return err
 		}

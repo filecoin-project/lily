@@ -91,16 +91,16 @@ func (p *GasOutputsProcessor) processBatch(ctx context.Context, node lens.API) (
 
 		errorLog := log.With("cid", item.Cid)
 
-		if err := p.processItem(ctx, node, item); err != nil {
+		if err := p.processItem(ctx, node, &item.GasOutputs); err != nil {
 			// Any errors are likely to be problems using the lens, mark this tipset as failed and exit this batch
 			errorLog.Errorw("failed to process message", "error", err.Error())
-			if err := p.storage.MarkGasOutputsMessagesComplete(ctx, item.Cid, p.clock.Now(), err.Error()); err != nil {
+			if err := p.storage.MarkGasOutputsMessagesComplete(ctx, item.Height, item.Cid, p.clock.Now(), err.Error()); err != nil {
 				errorLog.Errorw("failed to mark message complete", "error", err.Error())
 			}
 			return false, xerrors.Errorf("process item: %w", err)
 		}
 
-		if err := p.storage.MarkGasOutputsMessagesComplete(ctx, item.Cid, p.clock.Now(), ""); err != nil {
+		if err := p.storage.MarkGasOutputsMessagesComplete(ctx, item.Height, item.Cid, p.clock.Now(), ""); err != nil {
 			errorLog.Errorw("failed to mark message complete", "error", err.Error())
 		}
 	}

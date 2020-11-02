@@ -267,7 +267,7 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (
 		info, err := NewActorInfo(actor)
 		if err != nil {
 			errorLog.Errorw("unmarshal actor", "error", err.Error())
-			if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, p.clock.Now(), err.Error()); err != nil {
+			if err := p.storage.MarkActorComplete(ctx, actor.Height, actor.Head, actor.Code, p.clock.Now(), err.Error()); err != nil {
 				errorLog.Errorw("failed to mark actor complete", "error", err.Error())
 			}
 			continue
@@ -275,14 +275,14 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (
 
 		if err := p.processActor(ctx, node, info); err != nil {
 			errorLog.Errorw("process actor", "error", err.Error())
-			if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, p.clock.Now(), err.Error()); err != nil {
+			if err := p.storage.MarkActorComplete(ctx, actor.Height, actor.Head, actor.Code, p.clock.Now(), err.Error()); err != nil {
 				errorLog.Errorw("failed to mark actor complete", "error", err.Error())
 			}
 
 			return false, xerrors.Errorf("process actor: %w", err)
 		}
 
-		if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, p.clock.Now(), ""); err != nil {
+		if err := p.storage.MarkActorComplete(ctx, actor.Height, actor.Head, actor.Code, p.clock.Now(), ""); err != nil {
 			errorLog.Errorw("failed to mark actor complete", "error", err.Error())
 		}
 	}
