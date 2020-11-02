@@ -250,8 +250,11 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (
 	}
 
 	log.Debugw("leased batch of actors", "count", len(batch))
-	ctx, cancel := context.WithDeadline(ctx, claimUntil)
-	defer cancel()
+	if p.leaseLength > 0 {
+		var cancel func()
+		ctx, cancel = context.WithDeadline(ctx, claimUntil)
+		defer cancel()
+	}
 
 	stats.Record(ctx, metrics.TipsetHeight.M(batch[0].Height))
 	for _, actor := range batch {
