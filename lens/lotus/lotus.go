@@ -108,7 +108,7 @@ func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) 
 }
 
 func apiURI(addr string) string {
-	return "ws://" + addr + "/rpc/v0"
+	return "http://" + addr + "/rpc/v0"
 }
 
 func apiHeaders(token string) http.Header {
