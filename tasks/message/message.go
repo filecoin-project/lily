@@ -424,6 +424,7 @@ func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*mess
 	}
 	pm.Method = name
 	if err != nil {
+		log.Warnf("failed to parse parameters of message %s: %v", m.Cid, err)
 		// this can occur when the message is not valid cbor
 		pm.Params = ""
 		return pm, nil
