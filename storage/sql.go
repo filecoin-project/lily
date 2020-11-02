@@ -295,10 +295,11 @@ WITH leased AS (
 	    FOR UPDATE SKIP LOCKED
 	) candidates
 	WHERE visor_processing_tipsets.tip_set = candidates.tip_set AND visor_processing_tipsets.height = candidates.height
+	AND visor_processing_tipsets.height >= ? AND visor_processing_tipsets.height <= ?
     RETURNING visor_processing_tipsets.tip_set, visor_processing_tipsets.height
 )
 SELECT tip_set,height FROM leased;
-    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize)
+    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize, minHeight, maxHeight)
 		if err != nil {
 			return err
 		}
@@ -376,9 +377,10 @@ WITH leased AS (
 	    FOR UPDATE SKIP LOCKED
 	) candidates
 	WHERE a.head = candidates.head AND a.code = candidates.code
-    RETURNING a.head, a.code, a.nonce, a.balance, a.address, a.parent_state_root, a.tip_set, a.parent_tip_set, a.height)
+ 	AND a.height >= ? AND a.height <= ?
+   RETURNING a.head, a.code, a.nonce, a.balance, a.address, a.parent_state_root, a.tip_set, a.parent_tip_set, a.height)
 SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set, height from leased;
-    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, pg.In(codes), batchSize)
+    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, pg.In(codes), batchSize, minHeight, maxHeight)
 		if err != nil {
 			return err
 		}
@@ -474,10 +476,11 @@ WITH leased AS (
 	    FOR UPDATE SKIP LOCKED
 	) candidates
 	WHERE visor_processing_tipsets.tip_set = candidates.tip_set AND visor_processing_tipsets.height = candidates.height
+	AND visor_processing_tipsets.height >= ? AND visor_processing_tipsets.height <= ?
     RETURNING visor_processing_tipsets.tip_set, visor_processing_tipsets.height
 )
 SELECT tip_set,height FROM leased;
-    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize)
+    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize, minHeight, maxHeight)
 		if err != nil {
 			return err
 		}
@@ -540,12 +543,14 @@ WITH leased AS (
 		      pm.height >= ? AND pm.height <= ?
 		ORDER BY pm.height DESC
 		LIMIT ?
+		FOR UPDATE SKIP LOCKED
 	) candidates
 	WHERE pm.cid = candidates.cid
+	AND pm.height >= ? AND pm.height <= ?
     RETURNING pm.cid, candidates.*
 )
 SELECT * FROM leased;
-`, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize)
+`, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize, minHeight, maxHeight)
 		if err != nil {
 			return err
 		}
@@ -598,10 +603,11 @@ WITH leased AS (
 	    FOR UPDATE SKIP LOCKED
 	) candidates
 	WHERE visor_processing_tipsets.tip_set = candidates.tip_set AND visor_processing_tipsets.height = candidates.height
+	AND visor_processing_tipsets.height >= ? AND visor_processing_tipsets.height <= ?
     RETURNING visor_processing_tipsets.tip_set, visor_processing_tipsets.height
 )
 SELECT tip_set,height FROM leased;
-    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize)
+    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize, minHeight, maxHeight)
 		if err != nil {
 			return err
 		}
