@@ -14,6 +14,7 @@ import (
 	"github.com/raulk/clock"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model/actors/common"
 	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
@@ -277,6 +278,9 @@ func stripQuotes(s types.Safe) string {
 }
 
 func (d *Database) LeaseStateChanges(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingTipSetList, error) {
+	stop := metrics.Timer(ctx, metrics.BatchSelectionDuration)
+	defer stop()
+
 	var blocks visor.ProcessingTipSetList
 
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
@@ -311,6 +315,8 @@ SELECT tip_set,height FROM leased;
 }
 
 func (d *Database) MarkStateChangeComplete(ctx context.Context, tsk string, height int64, completedAt time.Time, errorsDetected string) error {
+	stop := metrics.Timer(ctx, metrics.CompletionDuration)
+	defer stop()
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.ExecContext(ctx, `
     UPDATE visor_processing_tipsets
@@ -353,6 +359,8 @@ func (d *Database) GetActorByHead(ctx context.Context, head string) (*visor.Proc
 
 // LeaseActors leases a set of actors to process. minHeight and maxHeight define an inclusive range of heights to process.
 func (d *Database) LeaseActors(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64, codes []string) (visor.ProcessingActorList, error) {
+	stop := metrics.Timer(ctx, metrics.BatchSelectionDuration)
+	defer stop()
 	var actors visor.ProcessingActorList
 
 	// Ensure we never return genesis, which is handled separately
@@ -393,6 +401,8 @@ SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_t
 
 // FindActors finds a set of actors to process but does not take a lease out. minHeight and maxHeight define an inclusive range of heights to process.
 func (d *Database) FindActors(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64, codes []string) (visor.ProcessingActorList, error) {
+	stop := metrics.Timer(ctx, metrics.BatchSelectionDuration)
+	defer stop()
 	var actors visor.ProcessingActorList
 
 	// Ensure we never return genesis, which is handled separately
@@ -436,6 +446,8 @@ func (d *Database) FindActors(ctx context.Context, claimUntil time.Time, batchSi
 }
 
 func (d *Database) MarkActorComplete(ctx context.Context, height int64, head string, code string, completedAt time.Time, errorsDetected string) error {
+	stop := metrics.Timer(ctx, metrics.CompletionDuration)
+	defer stop()
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.ExecContext(ctx, `
     UPDATE visor_processing_actors
@@ -458,6 +470,8 @@ func (d *Database) MarkActorComplete(ctx context.Context, height int64, head str
 
 // LeaseTipSetMessages leases a set of tipsets containing messages to process. minHeight and maxHeight define an inclusive range of heights to process.
 func (d *Database) LeaseTipSetMessages(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingTipSetList, error) {
+	stop := metrics.Timer(ctx, metrics.BatchSelectionDuration)
+	defer stop()
 	var messages visor.ProcessingTipSetList
 
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
@@ -492,6 +506,8 @@ SELECT tip_set,height FROM leased;
 }
 
 func (d *Database) MarkTipSetMessagesComplete(ctx context.Context, tipset string, height int64, completedAt time.Time, errorsDetected string) error {
+	stop := metrics.Timer(ctx, metrics.CompletionDuration)
+	defer stop()
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.ExecContext(ctx, `
     UPDATE visor_processing_tipsets
@@ -522,6 +538,8 @@ func useNullIfEmpty(s string) *string {
 
 // LeaseGasOutputsMessages leases a set of messages that have receipts for gas output processing. minHeight and maxHeight define an inclusive range of heights to process.
 func (d *Database) LeaseGasOutputsMessages(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) ([]*derived.ProcessingGasOutputs, error) {
+	stop := metrics.Timer(ctx, metrics.BatchSelectionDuration)
+	defer stop()
 	var list []*derived.ProcessingGasOutputs
 
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
@@ -562,6 +580,8 @@ SELECT * FROM leased;
 }
 
 func (d *Database) MarkGasOutputsMessagesComplete(ctx context.Context, height int64, cid string, completedAt time.Time, errorsDetected string) error {
+	stop := metrics.Timer(ctx, metrics.CompletionDuration)
+	defer stop()
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.ExecContext(ctx, `
     UPDATE visor_processing_messages
@@ -585,6 +605,8 @@ func (d *Database) MarkGasOutputsMessagesComplete(ctx context.Context, height in
 // LeaseTipSetEconomics leases a set of tipsets containing chain economics to process. minHeight and maxHeight define an inclusive range of heights to process.
 // TODO: refactor all the tipset leasing methods into a more general function
 func (d *Database) LeaseTipSetEconomics(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingTipSetList, error) {
+	stop := metrics.Timer(ctx, metrics.BatchSelectionDuration)
+	defer stop()
 	var tipsets visor.ProcessingTipSetList
 
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
@@ -619,6 +641,9 @@ SELECT tip_set,height FROM leased;
 }
 
 func (d *Database) MarkTipSetEconomicsComplete(ctx context.Context, tipset string, height int64, completedAt time.Time, errorsDetected string) error {
+	stop := metrics.Timer(ctx, metrics.CompletionDuration)
+	defer stop()
+
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.ExecContext(ctx, `
     UPDATE visor_processing_tipsets
