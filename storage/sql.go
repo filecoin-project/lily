@@ -455,7 +455,7 @@ func (d *Database) MarkActorComplete(ctx context.Context, height int64, head str
         completed_at = ?,
         errors_detected = ?
     WHERE height = ? AND head = ? AND code = ?
-`, completedAt, useNullIfEmpty(errorsDetected), head, code)
+`, completedAt, useNullIfEmpty(errorsDetected), height, head, code)
 		if err != nil {
 			return err
 		}
