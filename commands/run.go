@@ -352,15 +352,35 @@ var Run = &cli.Command{
 			})
 		}
 
-		// Add several gas output tasks to read gas outputs from indexed messages
-		for i := 0; i < cctx.Int("gasoutputs-workers"); i++ {
-			scheduler.Add(schedule.TaskConfig{
-				Name:                fmt.Sprintf("GasOutputsProcessor%03d", i),
-				Task:                message.NewGasOutputsProcessor(rctx.db, rctx.opener, cctx.Duration("gasoutputs-lease"), cctx.Int("gasoutputs-batch"), heightFrom, heightTo),
-				RestartOnFailure:    true,
-				RestartOnCompletion: true,
-				RestartDelay:        time.Minute,
-			})
+		// If we are not using leases then further subdivide work by height to avoid workers processing the same actor states
+		if cctx.Duration("gasoutputs-lease") == 0 {
+			if cctx.Int("gasoutputs-workers") > 1 && heightTo > estimateCurrentEpoch()*2 {
+				log.Warnf("--to is set to an unexpectedly high epoch which will likely result in some workers not being assigned a useful height range")
+			}
+
+			hr := heightRange{min: heightFrom, max: heightTo}
+			srs := hr.divide(cctx.Int("gasoutputs-workers"))
+			for i, sr := range srs {
+				log.Debugf("scheduling gas outputs state processor with height range %d to %d", sr.min, sr.max)
+				scheduler.Add(schedule.TaskConfig{
+					Name:                fmt.Sprintf("GasOutputsProcessor%03d", i),
+					Task:                message.NewGasOutputsProcessor(rctx.db, rctx.opener, cctx.Duration("gasoutputs-lease"), cctx.Int("gasoutputs-batch"), sr.min, sr.max, false),
+					RestartOnFailure:    true,
+					RestartOnCompletion: true,
+					RestartDelay:        time.Minute,
+				})
+			}
+		} else {
+			// Add several gas output tasks to read gas outputs from indexed messages
+			for i := 0; i < cctx.Int("gasoutputs-workers"); i++ {
+				scheduler.Add(schedule.TaskConfig{
+					Name:                fmt.Sprintf("GasOutputsProcessor%03d", i),
+					Task:                message.NewGasOutputsProcessor(rctx.db, rctx.opener, cctx.Duration("gasoutputs-lease"), cctx.Int("gasoutputs-batch"), heightFrom, heightTo, true),
+					RestartOnFailure:    true,
+					RestartOnCompletion: true,
+					RestartDelay:        time.Minute,
+				})
+			}
 		}
 
 		// Add several chain economics tasks to read gas outputs from indexed messages
@@ -523,6 +543,7 @@ func (h heightRange) divide(n int) []heightRange {
 }
 
 var mainnetGenesis = time.Date(2020, 8, 24, 22, 0, 0, 0, time.UTC)
+
 func estimateCurrentEpoch() int64 {
 	return int64(time.Since(mainnetGenesis) / (builtin.EpochDurationSeconds))
 }
