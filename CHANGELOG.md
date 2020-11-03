@@ -1,70 +1,154 @@
-# Changelog
-All notable changes to this project will be documented in this file.
-
-The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) combined
-with categories from [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
-
-This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes 
-should trigger an increment to the major version. Features increment the minor version and fixes or
-other changes increment the patch number.
-
-
+<a name="unreleased"></a>
 ## [Unreleased]
 
-These are changes that will probably be included in the next release.
+### Build
+- add prometheus, grafana and dashboard images
 
-### Breaking changes
+### Chore
+- Include RC releases in push docker images ([#195](https://github.com/filecoin-project/sentinel-visor/issues/195))
+- add metrics to leasing and work completion queries
+- add changelog ([#150](https://github.com/filecoin-project/sentinel-visor/issues/150))
+- update go.mod after recent merge ([#155](https://github.com/filecoin-project/sentinel-visor/issues/155))
+- add issue templates
+- add more error context reporting in messages task ([#133](https://github.com/filecoin-project/sentinel-visor/issues/133))
 
-### Features
- - add sql lens (#132) (2020-10-26)
- - make parseMsg task opt-in (#143) (2020-10-26)
- - add 30s bucket to metrics distribution as that is our block time (#115) (2020-10-26)
- - add car repo lens (#138) (2020-10-23)
- - bump statediff to v0.0.7 (#136) (2020-10-22)
- - feat: convert processing, block and message tables to hypertables (#111) (2020-10-22)
- - feat: set default numbers of workers to zero in run subcommand (#116) (2020-10-22)
- - feat: add dashboard for process completion (2020-10-16) 
- - include height with parsed messages (#121) (2020-10-19)
- - include schema with messages parsed in json field (#119) (2020-10-19)
- - test: ensure docker-compose down runs on test fail (2020-10-15) 
- - feat(miner): compute miner sector events (2020-10-08) 
- - feat: log visor version on startup (#117) (2020-10-16)
- - feat: Add heaviest chain materialized view (#97) (2020-10-14)
- - feat: Add miner_sector_posts tracking of window posts (#74) (2020-10-14)
- - feat: Add historical indexer metrics (#92) (2020-10-15)
- - Move migration to schema version 10 (2020-10-14) 
- - feat: add message gas economy processing (2020-10-13) 
- - feat: set application name in postgres connection (#104) (2020-10-14)
- - feat: add visor processing stats table (#96) (2020-10-14)
- - feat(task): add chain economics processing (#94) (2020-10-14)
- - get actor name for both versions of specs-actors (#101) (2020-10-14)
+### Deps
+- remove unused docker file for redis
 
-### Fixes
- - fix(schema): remove blocking processing indexes and improve processing stats table (#130) (2020-10-22)
- - Fix issues in repo lens and message parsing (#125) (2020-10-20)
- - fix: migration table name (2020-10-19) 
- - fix index creation syntax (#122) (2020-10-19)
- - fix(migration): message gas economy uses bigint (2020-10-14) 
- - fix: correct typo in derived_consensus_chain_view name and add to view refresh (#112) (2020-10-15)
- - fix: avoid panic when miner extractor does not find receipt (#110) (2020-10-15)
- - fix(lens): Include dependencies needed for Repo Lens (#90) (2020-10-14)
- - fix(migrations): migrations require version 0 (2020-10-13) 
- - fix: use hash index type for visor_processing_actors_code_idx (#106) (2020-10-14)
- - fix: remove errgrp from UnindexedBlockData persist (2020-10-13) 
- - fix: verify there are no missing migrations before migrating (#89) (2020-10-13)
+### Feat
+- add visor processing stats table ([#96](https://github.com/filecoin-project/sentinel-visor/issues/96))
+- rpc reconnection on failure ([#149](https://github.com/filecoin-project/sentinel-visor/issues/149))
+- add dynamic panel creation based on tags ([#159](https://github.com/filecoin-project/sentinel-visor/issues/159))
+- add dynamic panel creation based on tags
+- make delay between tasks configurable ([#151](https://github.com/filecoin-project/sentinel-visor/issues/151))
+- convert processing, block and message tables to hypertables ([#111](https://github.com/filecoin-project/sentinel-visor/issues/111))
+- set default numbers of workers to zero in run subcommand ([#116](https://github.com/filecoin-project/sentinel-visor/issues/116))
+- add dashboard for process completion
+- allow actor state processor to run without leasing ([#178](https://github.com/filecoin-project/sentinel-visor/issues/178))
+- log visor version on startup ([#117](https://github.com/filecoin-project/sentinel-visor/issues/117))
+- Add heaviest chain materialized view ([#97](https://github.com/filecoin-project/sentinel-visor/issues/97))
+- Add miner_sector_posts tracking of window posts ([#74](https://github.com/filecoin-project/sentinel-visor/issues/74))
+- Add historical indexer metrics ([#92](https://github.com/filecoin-project/sentinel-visor/issues/92))
+- add message gas economy processing
+- set application name in postgres connection ([#104](https://github.com/filecoin-project/sentinel-visor/issues/104))
+- **miner:** compute miner sector events
+- **task:** add chain economics processing ([#94](https://github.com/filecoin-project/sentinel-visor/issues/94))
 
-### Other changes
- - chore: add more error context reporting in messages task (#133) (2020-10-22)
- - perf(db): reduce batch size for chain history indexer (#105) (2020-10-14)
- - deps: remove unused docker file for redis (2020-10-15) 
- - build: add prometheus, grafana and dashboard images (2020-10-15) 
+### Fix
+- use hash index type for visor_processing_actors_code_idx ([#106](https://github.com/filecoin-project/sentinel-visor/issues/106))
+- fix actor completion query
+- visor_processing_stats queries for Visor processing dash ([#156](https://github.com/filecoin-project/sentinel-visor/issues/156))
+- remove errgrp from UnindexedBlockData persist
+- migration table name
+- correct typo in derived_consensus_chain_view name and add to view refresh ([#112](https://github.com/filecoin-project/sentinel-visor/issues/112))
+- avoid panic when miner extractor does not find receipt ([#110](https://github.com/filecoin-project/sentinel-visor/issues/110))
+- verify there are no missing migrations before migrating ([#89](https://github.com/filecoin-project/sentinel-visor/issues/89))
+- **lens:** Include dependencies needed for Repo Lens ([#90](https://github.com/filecoin-project/sentinel-visor/issues/90))
+- **metrics:** export the completion and batch selection views ([#197](https://github.com/filecoin-project/sentinel-visor/issues/197))
+- **migration:** message gas economy uses bigint
+- **migrations:** migrations require version 0
+- **schema:** remove blocking processing indexes and improve processing stats table ([#130](https://github.com/filecoin-project/sentinel-visor/issues/130))
 
+### Perf
+- ensure processing updates always include height in criteria ([#192](https://github.com/filecoin-project/sentinel-visor/issues/192))
+- include height restrictions in update clauses of leasing queries ([#189](https://github.com/filecoin-project/sentinel-visor/issues/189))
+- **db:** reduce batch size for chain history indexer ([#105](https://github.com/filecoin-project/sentinel-visor/issues/105))
 
-## [v0.2.0] - 2020-10-11
+### Polish
+- update miner processing logic
 
-First tagged release
-
+### Test
+- ensure docker-compose down runs on test fail
 
 
+<a name="v0.2.0"></a>
+## v0.2.0 - 2020-10-11
+### Chore
+- add tests for reward and power actor state extracters ([#83](https://github.com/filecoin-project/sentinel-visor/issues/83))
+- fail database tests if VISOR_TEST_DB not set ([#79](https://github.com/filecoin-project/sentinel-visor/issues/79))
+- use clock package for time mocking ([#65](https://github.com/filecoin-project/sentinel-visor/issues/65))
+- remove unused redis-based scheduler code ([#64](https://github.com/filecoin-project/sentinel-visor/issues/64))
+- Push docker images on [a-z]*-master branch updates ([#49](https://github.com/filecoin-project/sentinel-visor/issues/49))
+- Remove sentinel prefix for local dev use ([#36](https://github.com/filecoin-project/sentinel-visor/issues/36))
+- push docker tags from ci ([#26](https://github.com/filecoin-project/sentinel-visor/issues/26))
+- tighten up error propagation ([#23](https://github.com/filecoin-project/sentinel-visor/issues/23))
+- fix docker hub submodule error ([#22](https://github.com/filecoin-project/sentinel-visor/issues/22))
+- add circle ci ([#20](https://github.com/filecoin-project/sentinel-visor/issues/20))
+- add docker build and make targets ([#19](https://github.com/filecoin-project/sentinel-visor/issues/19))
+
+### Dep
+- add fil-blst submodule
+
+### Feat
+- add standard build targets ([#18](https://github.com/filecoin-project/sentinel-visor/issues/18))
+- add licenses and skeleton readme ([#5](https://github.com/filecoin-project/sentinel-visor/issues/5))
+- instrument with tracing ([#15](https://github.com/filecoin-project/sentinel-visor/issues/15))
+- add a configurable delay between task restarts ([#71](https://github.com/filecoin-project/sentinel-visor/issues/71))
+- compute gas outputs ([#67](https://github.com/filecoin-project/sentinel-visor/issues/67))
+- add tests for indexer ([#12](https://github.com/filecoin-project/sentinel-visor/issues/12))
+- add schema migration capability ([#40](https://github.com/filecoin-project/sentinel-visor/issues/40))
+- add VISOR_TEST_DB environment variable to specify test database ([#35](https://github.com/filecoin-project/sentinel-visor/issues/35))
+- respect log level flag and allow per logger levels ([#34](https://github.com/filecoin-project/sentinel-visor/issues/34))
+- remove run subcommand and make index and process top level
+- embed version number from build
+- support v2 actor codes ([#84](https://github.com/filecoin-project/sentinel-visor/issues/84))
+- add test for create schema ([#3](https://github.com/filecoin-project/sentinel-visor/issues/3))
+- **api:** wrap lotus api and store with wrapper
+- **debug:** Process actor by head without persistance ([#86](https://github.com/filecoin-project/sentinel-visor/issues/86))
+- **genesis:** add task for processing genesis state
+- **scheduler:** Refactor task scheduler impl ([#41](https://github.com/filecoin-project/sentinel-visor/issues/41))
+- **task:** add actor, actor-state, and init actor processing ([#14](https://github.com/filecoin-project/sentinel-visor/issues/14))
+- **task:** implement message processing task
+- **task:** add market actor task
+- **task:** add reward actor processing ([#16](https://github.com/filecoin-project/sentinel-visor/issues/16))
+- **task:** add power actor processing task ([#11](https://github.com/filecoin-project/sentinel-visor/issues/11))
+- **task:** Create chainvis views and refresher ([#77](https://github.com/filecoin-project/sentinel-visor/issues/77))
+
+### Fix
+- use debugf logging method in message processor ([#82](https://github.com/filecoin-project/sentinel-visor/issues/82))
+- chain history indexer includes genesis ([#72](https://github.com/filecoin-project/sentinel-visor/issues/72))
+- use context deadlines only if task has been assigned work ([#70](https://github.com/filecoin-project/sentinel-visor/issues/70))
+- fix failing chain head indexer tests ([#66](https://github.com/filecoin-project/sentinel-visor/issues/66))
+- add migration to remove old chainwatch schema constraints ([#48](https://github.com/filecoin-project/sentinel-visor/issues/48))
+- use noop tracer when tracing disabled ([#39](https://github.com/filecoin-project/sentinel-visor/issues/39))
+- ensure processor stops scheduler when exiting ([#24](https://github.com/filecoin-project/sentinel-visor/issues/24))
+- **build:** ensure deps are built befor visor
+- **indexer:** don't error on empty blocks_synced table
+- **model:** replace BeginContext with RunInTransaction ([#7](https://github.com/filecoin-project/sentinel-visor/issues/7))
+- **task:** correct index when computing deal state
+
+### Perf
+- minor optimization of market actor diffing ([#78](https://github.com/filecoin-project/sentinel-visor/issues/78))
+- use batched inserts for models ([#73](https://github.com/filecoin-project/sentinel-visor/issues/73))
+
+### Pg
+- configurable pool size
+
+### Polish
+- **processor:** parallelize actor change collection
+- **publisher:** receive publish operations on channel
+- **redis:** configure redis with env vars ([#21](https://github.com/filecoin-project/sentinel-visor/issues/21))
+
+### Refactor
+- prepare for specs-actors upgrade
+- replace panic with error return in indexer.Start ([#4](https://github.com/filecoin-project/sentinel-visor/issues/4))
+
+### Test
+- **storage:** add test to check for duplicate schema migrations ([#80](https://github.com/filecoin-project/sentinel-visor/issues/80))
+
+### BREAKING CHANGE
+
+this changes the cli interface to remove the run subcommand.
+
+Previously the indexer and procerror would be started via:
+
+  sentinel-visor run indexer
+  sentinel-visor run processor
+
+After this change:
+
+  sentinel-visor index
+  sentinel-visor process
 
 
+[Unreleased]: https://github.com/filecoin-project/sentinel-visor/compare/v0.2.0...HEAD

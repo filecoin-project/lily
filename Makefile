@@ -76,3 +76,7 @@ dist-clean:
 	git clean -xdff
 	git submodule deinit --all -f
 .PHONY: dist-clean
+
+.PHONY: changelog
+changelog:
+	git-chglog -o CHANGELOG.md
