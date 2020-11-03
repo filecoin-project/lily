@@ -235,7 +235,7 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (
 	if p.useLeases {
 		batch, err = p.storage.LeaseActors(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
 	} else {
-		batch, err = p.storage.FindActors(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
+		batch, err = p.storage.FindActors(ctx, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
 	}
 	if err != nil {
 		return true, err
@@ -249,8 +249,8 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (
 		return false, nil
 	}
 
-	log.Debugw("leased batch of actors", "count", len(batch))
-	if p.leaseLength > 0 {
+	log.Debugw("processing batch of actors", "count", len(batch))
+	if p.useLeases {
 		var cancel func()
 		ctx, cancel = context.WithDeadline(ctx, claimUntil)
 		defer cancel()

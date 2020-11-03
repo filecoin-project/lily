@@ -666,6 +666,215 @@ func TestLeaseGasOutputsMessages(t *testing.T) {
 	assert.Equal(t, batchSize, count)
 }
 
+func TestFindGasOutputsMessages(t *testing.T) {
+	if testing.Short() {
+		t.Skip("short testing requested")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
+	require.NoError(t, err)
+	defer cleanup()
+
+	truncateVisorProcessingTables(t, db)
+
+	indexedMessages := visor.ProcessingMessageList{
+		// Unclaimed, unprocessed message
+		{
+			Cid:     "cid0",
+			Height:  0,
+			AddedAt: testutil.KnownTime,
+		},
+
+		// Unclaimed, unprocessed message,
+		{
+			Cid:     "cid1",
+			Height:  1,
+			AddedAt: testutil.KnownTime,
+		},
+
+		// Unclaimed, unprocessed message
+		{
+			Cid:     "cid2",
+			Height:  2,
+			AddedAt: testutil.KnownTime,
+		},
+
+		// Unclaimed, unprocessed message, no receipt
+		{
+			Cid:     "cid3",
+			Height:  3,
+			AddedAt: testutil.KnownTime,
+		},
+
+		// Message completed with stale claim
+		{
+			Cid:                    "cid4",
+			Height:                 4,
+			AddedAt:                testutil.KnownTime,
+			GasOutputsClaimedUntil: testutil.KnownTime.Add(-time.Minute * 15),
+			GasOutputsCompletedAt:  testutil.KnownTime.Add(-time.Minute * 5),
+		},
+
+		// Message claimed by another process that has expired
+		{
+			Cid:                    "cid5",
+			Height:                 5,
+			AddedAt:                testutil.KnownTime,
+			GasOutputsClaimedUntil: testutil.KnownTime.Add(-time.Minute * 5),
+		},
+
+		// Message claimed by another process
+		{
+			Cid:                    "cid6",
+			Height:                 6,
+			AddedAt:                testutil.KnownTime,
+			GasOutputsClaimedUntil: testutil.KnownTime.Add(time.Minute * 15),
+		},
+	}
+
+	dummyMessage := func(height int64, cid string) *messages.Message {
+		return &messages.Message{
+			Height:     height,
+			Cid:        cid,
+			From:       "from",
+			To:         "to",
+			Value:      "val",
+			GasFeeCap:  "gasfeecap",
+			GasPremium: "gaspremium",
+		}
+	}
+
+	msgs := messages.Messages{
+		dummyMessage(0, "cid0"),
+		dummyMessage(1, "cid1"),
+		dummyMessage(2, "cid2"),
+		dummyMessage(3, "cid3"),
+		dummyMessage(4, "cid4"),
+		dummyMessage(5, "cid5"),
+		dummyMessage(6, "cid6"),
+	}
+
+	dummyReceipt := func(height int64, cid string) *messages.Receipt {
+		return &messages.Receipt{
+			Height:    height,
+			Message:   cid,
+			StateRoot: "stateroot",
+		}
+	}
+
+	receipts := messages.Receipts{
+		// Receipt height is later than the messages
+		dummyReceipt(7, "cid0"),
+		dummyReceipt(7, "cid1"),
+		dummyReceipt(7, "cid2"),
+		// no receipt for cid3
+		dummyReceipt(7, "cid4"),
+		dummyReceipt(7, "cid5"),
+		dummyReceipt(7, "cid6"),
+	}
+
+	dummyBlockHeader := func(height int64, cid string) *blocks.BlockHeader {
+		return &blocks.BlockHeader{
+			Height:          height,
+			Cid:             cid,
+			Miner:           "miner",
+			ParentWeight:    "parentweight",
+			ParentBaseFee:   "parentbasefee",
+			ParentStateRoot: "parentstateroot",
+			Ticket:          []byte("ticket"),
+		}
+	}
+
+	blockHeaders := blocks.BlockHeaders{
+		dummyBlockHeader(0, "blocka"),
+		dummyBlockHeader(1, "blockb"),
+		dummyBlockHeader(2, "blockc"),
+		dummyBlockHeader(3, "blockd"),
+		dummyBlockHeader(4, "blocke"),
+		dummyBlockHeader(5, "blockf"),
+		dummyBlockHeader(6, "blockg"),
+	}
+
+	blockMessages := messages.BlockMessages{
+		{
+			Height:  0,
+			Block:   "blocka",
+			Message: "cid0",
+		},
+		{
+			Height:  1,
+			Block:   "blockb",
+			Message: "cid1",
+		},
+		{
+			Height:  2,
+			Block:   "blockc",
+			Message: "cid2",
+		},
+		{
+			Height:  3,
+			Block:   "blockd",
+			Message: "cid3",
+		},
+		{
+			Height:  4,
+			Block:   "blocke",
+			Message: "cid4",
+		},
+		{
+			Height:  5,
+			Block:   "blockf",
+			Message: "cid5",
+		},
+		{
+			Height:  6,
+			Block:   "blockg",
+			Message: "cid6",
+		},
+	}
+
+	if err := db.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		if err := indexedMessages.PersistWithTx(ctx, tx); err != nil {
+			return fmt.Errorf("indexedMessages: %w", err)
+		}
+		if err := receipts.PersistWithTx(ctx, tx); err != nil {
+			return fmt.Errorf("receipts: %w", err)
+		}
+		if err := msgs.PersistWithTx(ctx, tx); err != nil {
+			return fmt.Errorf("msgs: %w", err)
+		}
+		if err := blockHeaders.PersistWithTx(ctx, tx); err != nil {
+			return fmt.Errorf("blockHeaders: %w", err)
+		}
+		if err := blockMessages.PersistWithTx(ctx, tx); err != nil {
+			return fmt.Errorf("blockMessages: %w", err)
+		}
+		return nil
+	}); err != nil {
+		t.Fatalf("persisting indexed messages: %v", err)
+	}
+
+	const batchSize = 3
+
+	d := &Database{
+		DB:    db,
+		Clock: testutil.NewMockClock(),
+	}
+
+	found, err := d.FindGasOutputsMessages(ctx, batchSize, 0, 500)
+	require.NoError(t, err)
+	require.Equal(t, batchSize, len(found), "number of found message blocks")
+
+	// Messages are selected in descending height order, only if they have a receipt and a block header, ignoring completed messages.
+	// The claimed column is ignored.
+	assert.Equal(t, "cid6", found[0].Cid, "first found message")
+	assert.Equal(t, "cid5", found[1].Cid, "second found message")
+	assert.Equal(t, "cid2", found[2].Cid, "third found message")
+}
+
 func TestMarkGasOutputsMessagesComplete(t *testing.T) {
 	if testing.Short() {
 		t.Skip("short testing requested")

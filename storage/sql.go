@@ -400,7 +400,7 @@ SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_t
 }
 
 // FindActors finds a set of actors to process but does not take a lease out. minHeight and maxHeight define an inclusive range of heights to process.
-func (d *Database) FindActors(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64, codes []string) (visor.ProcessingActorList, error) {
+func (d *Database) FindActors(ctx context.Context, batchSize int, minHeight, maxHeight int64, codes []string) (visor.ProcessingActorList, error) {
 	stop := metrics.Timer(ctx, metrics.BatchSelectionDuration)
 	defer stop()
 	var actors visor.ProcessingActorList
@@ -565,10 +565,42 @@ WITH leased AS (
 	) candidates
 	WHERE pm.cid = candidates.cid
 	AND pm.height >= ? AND pm.height <= ?
-    RETURNING pm.cid, candidates.*
+    RETURNING pm.height, candidates.*
 )
 SELECT * FROM leased;
 `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize, minHeight, maxHeight)
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// FindGasOutputsMessages finds a set of messages that have receipts for gas output processing but does not take a lease out. minHeight and maxHeight define an inclusive range of heights to process.
+func (d *Database) FindGasOutputsMessages(ctx context.Context, batchSize int, minHeight, maxHeight int64) ([]*derived.ProcessingGasOutputs, error) {
+	stop := metrics.Timer(ctx, metrics.BatchSelectionDuration)
+	defer stop()
+
+	var list []*derived.ProcessingGasOutputs
+
+	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		_, err := tx.QueryContext(ctx, &list, `
+		SELECT pm.height, pm.cid, m.from, m.to, m.size_bytes, m.nonce, m.value,
+			   m.gas_fee_cap, m.gas_premium, m.gas_limit, m.method,
+			   r.state_root, r.exit_code,r.gas_used, bh.parent_base_fee
+		FROM visor_processing_messages pm
+		JOIN receipts r ON pm.cid = r.message -- don't join receipts on height since it's the height of the receipt
+		JOIN messages m ON pm.cid = m.cid AND pm.height = m.height
+		JOIN block_messages bm on pm.cid = bm.message AND pm.height = bm.height
+		JOIN block_headers bh on bm.block = bh.cid AND bm.height = bh.height
+		WHERE pm.gas_outputs_completed_at IS null AND
+		      pm.height >= ? AND pm.height <= ?
+		ORDER BY pm.height DESC
+		LIMIT ?
+`, minHeight, maxHeight, batchSize)
 		if err != nil {
 			return err
 		}
