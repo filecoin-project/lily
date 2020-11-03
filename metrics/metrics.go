@@ -80,6 +80,8 @@ var (
 var DefaultViews = append([]*view.View{
 	ProcessingDurationView,
 	PersistDurationView,
+	BatchSelectionDurationView,
+	CompletionDurationView,
 	DBConnsView,
 	HistoricalIndexerHeightView,
 	EpochsToSyncView,
