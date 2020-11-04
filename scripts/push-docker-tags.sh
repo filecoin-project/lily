@@ -59,5 +59,3 @@ if [ -z "$GIT_TAG" ]; then
 else
 	pushTag "$GIT_TAG"
 fi
-
-pushTag "$GIT_BRANCH-latest"
