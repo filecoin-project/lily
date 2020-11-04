@@ -8,3 +8,7 @@ import (
 type Persistable interface {
 	Persist(ctx context.Context, db *pg.DB) error
 }
+
+type Updateable interface {
+	Update(ctx context.Context, db *pg.DB) error
+}

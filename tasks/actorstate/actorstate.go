@@ -255,8 +255,15 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (
 		ctx, cancel = context.WithDeadline(ctx, claimUntil)
 		defer cancel()
 	}
-
 	stats.Record(ctx, metrics.TipsetHeight.M(batch[0].Height))
+
+	var doneBatch visor.ProcessingActorList
+	defer func() {
+		if err := p.storage.UpdateModel(ctx, doneBatch); err != nil {
+			log.Errorf("updating actor state process model: %w", err)
+		}
+	}()
+
 	for _, actor := range batch {
 		// Stop processing if we have somehow passed our own lease time
 		select {
@@ -268,25 +275,20 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (
 		errorLog := log.With("actor_head", actor.Head, "actor_code", actor.Code, "tipset", actor.TipSet)
 
 		info, err := NewActorInfo(actor)
+		actor.MarkComplete(p.clock.Now(), err)
+		doneBatch = append(doneBatch, actor)
 		if err != nil {
 			errorLog.Errorw("unmarshal actor", "error", err.Error())
-			if err := p.storage.MarkActorComplete(ctx, actor.Height, actor.Head, actor.Code, p.clock.Now(), err.Error()); err != nil {
-				errorLog.Errorw("failed to mark actor complete", "error", err.Error())
-			}
 			continue
 		}
 
-		if err := p.processActor(ctx, node, info); err != nil {
+		// process the actor and mark it done, regardless of errors value
+		err = p.processActor(ctx, node, info)
+		actor.MarkComplete(p.clock.Now(), err)
+		doneBatch = append(doneBatch, actor)
+		if err != nil {
 			errorLog.Errorw("process actor", "error", err.Error())
-			if err := p.storage.MarkActorComplete(ctx, actor.Height, actor.Head, actor.Code, p.clock.Now(), err.Error()); err != nil {
-				errorLog.Errorw("failed to mark actor complete", "error", err.Error())
-			}
-
 			return false, xerrors.Errorf("process actor: %w", err)
-		}
-
-		if err := p.storage.MarkActorComplete(ctx, actor.Height, actor.Head, actor.Code, p.clock.Now(), ""); err != nil {
-			errorLog.Errorw("failed to mark actor complete", "error", err.Error())
 		}
 	}
 

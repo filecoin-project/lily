@@ -164,6 +164,13 @@ func (p *ProcessingActor) ParentTipSetKey() (types.TipSetKey, error) {
 	return TipSetKeyFromString(p.ParentTipSet)
 }
 
+func (p *ProcessingActor) MarkComplete(completedAt time.Time, errorDetected error) {
+	if errorDetected != nil {
+		p.ErrorsDetected = errorDetected.Error()
+	}
+	p.CompletedAt = completedAt
+}
+
 type ProcessingActorList []*ProcessingActor
 
 func (pl ProcessingActorList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
@@ -182,6 +189,30 @@ func (pl ProcessingActorList) PersistWithTx(ctx context.Context, tx *pg.Tx) erro
 		return fmt.Errorf("persisting processing actor list: %w", err)
 	}
 	return nil
+}
+
+func (pl ProcessingActorList) UpdateWithTx(ctx context.Context, tx *pg.Tx) error {
+	if len(pl) == 0 {
+		return nil
+	}
+	ctx, span := global.Tracer("").Start(ctx, "ProcessingActorList.UpdateWithTx", trace.WithAttributes(label.Int("count", len(pl))))
+	defer span.End()
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
+	if _, err := tx.ModelContext(ctx, &pl).Update(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (pl ProcessingActorList) Update(ctx context.Context, db *pg.DB) error {
+	if len(pl) == 0 {
+		return nil
+	}
+	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		return pl.UpdateWithTx(ctx, tx)
+	})
 }
 
 func NewProcessingMessage(m *types.Message, height int64) *ProcessingMessage {

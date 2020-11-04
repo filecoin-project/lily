@@ -15,6 +15,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/model/actors/common"
 	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
@@ -386,8 +387,8 @@ WITH leased AS (
 	) candidates
 	WHERE a.head = candidates.head AND a.code = candidates.code
  	AND a.height >= ? AND a.height <= ?
-   RETURNING a.head, a.code, a.nonce, a.balance, a.address, a.parent_state_root, a.tip_set, a.parent_tip_set, a.height)
-SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set, height from leased;
+   RETURNING a.head, a.code, a.nonce, a.balance, a.address, a.parent_state_root, a.tip_set, a.parent_tip_set, a.height, a.added_at)
+SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set, height, added_at from leased;
     `, claimUntil, d.Clock.Now(), minHeight, maxHeight, pg.In(codes), batchSize, minHeight, maxHeight)
 		if err != nil {
 			return err
@@ -466,6 +467,10 @@ func (d *Database) MarkActorComplete(ctx context.Context, height int64, head str
 	}
 
 	return nil
+}
+
+func (d *Database) UpdateModel(ctx context.Context, model model.Updateable) error {
+	return model.Update(ctx, d.DB)
 }
 
 // LeaseTipSetMessages leases a set of tipsets containing messages to process. minHeight and maxHeight define an inclusive range of heights to process.
