@@ -7,7 +7,6 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	init_ "github.com/filecoin-project/lotus/chain/actors/builtin/init"
-	"github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"go.opentelemetry.io/otel/api/global"
@@ -17,6 +16,7 @@ import (
 	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	marketmodel "github.com/filecoin-project/sentinel-visor/model/actors/market"
 	minermodel "github.com/filecoin-project/sentinel-visor/model/actors/miner"
+	powermodel "github.com/filecoin-project/sentinel-visor/model/actors/power"
 	genesismodel "github.com/filecoin-project/sentinel-visor/model/genesis"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
@@ -43,12 +43,16 @@ func (p *GenesisProcessor) ProcessGenesis(ctx context.Context, gen *types.TipSet
 		return xerrors.Errorf("list actors: %w", err)
 	}
 
+	minerExtractor := StorageMinerExtractor{}
+	powerExtractor := StoragePowerExtractor{}
+
 	result := &genesismodel.ProcessGenesisSingletonResult{}
 	for _, addr := range genesisAddrs {
 		genesisAct, err := p.node.StateGetActor(ctx, addr, gen.Key())
 		if err != nil {
 			return xerrors.Errorf("get actor: %w", err)
 		}
+
 		switch genesisAct.Code {
 		case builtin.SystemActorCodeID:
 			// TODO
@@ -63,19 +67,42 @@ func (p *GenesisProcessor) ProcessGenesis(ctx context.Context, gen *types.TipSet
 		case builtin.AccountActorCodeID:
 			// TODO
 		case builtin.StoragePowerActorCodeID:
-			// TODO
+			res, err := powerExtractor.Extract(ctx, ActorInfo{
+				Actor:           *genesisAct,
+				Address:         addr,
+				ParentStateRoot: gen.ParentState(),
+				Epoch:           gen.Height(),
+				TipSet:          gen.Key(),
+				ParentTipSet:    gen.Parents(),
+			}, p.node)
+			if err != nil {
+				return xerrors.Errorf("power actor state: %w", err)
+			}
+			// TODO simplify the result to a slice of persistables in follow on.
+			result.SetPower(res.(*powermodel.PowerTaskResult))
+
 		case builtin.StorageMarketActorCodeID:
 			res, err := p.storageMarketState(ctx, gen)
 			if err != nil {
 				return xerrors.Errorf("storage market actor state: %w", err)
 			}
 			result.SetMarket(res)
+
 		case builtin.StorageMinerActorCodeID:
-			res, err := p.storageMinerState(ctx, gen, addr, genesisAct)
+			res, err := minerExtractor.Extract(ctx, ActorInfo{
+				Actor:           *genesisAct,
+				Address:         addr,
+				ParentStateRoot: gen.ParentState(),
+				Epoch:           gen.Height(),
+				TipSet:          gen.Key(),
+				ParentTipSet:    gen.Parents(),
+			}, p.node)
 			if err != nil {
 				return xerrors.Errorf("storage miner actor state: %w", err)
 			}
-			result.AddMiner(res)
+			// TODO simplify the result to a slice of persistables in follow on.
+			result.AddMiner(res.(*minermodel.MinerTaskResult))
+
 		case builtin.PaymentChannelActorCodeID:
 			// TODO
 		case builtin.MultisigActorCodeID:
@@ -94,76 +121,6 @@ func (p *GenesisProcessor) ProcessGenesis(ctx context.Context, gen *types.TipSet
 	}
 
 	return nil
-}
-
-func (p *GenesisProcessor) storageMinerState(ctx context.Context, gen *types.TipSet, addr address.Address, act *types.Actor) (*genesismodel.GenesisMinerTaskResult, error) {
-	// actual miner actor state and miner info
-	mstate, err := miner.Load(p.node.Store(), act)
-	if err != nil {
-		return nil, err
-	}
-
-	// miner raw and qual power
-	mpower, err := p.node.StateMinerPower(ctx, addr, gen.Key())
-	if err != nil {
-		return nil, err
-	}
-
-	msectors, err := mstate.LoadSectors(nil)
-	if err != nil {
-		return nil, err
-	}
-
-	minfo, err := mstate.Info()
-	if err != nil {
-		return nil, err
-	}
-
-	powerModel := &minermodel.MinerPower{
-		MinerID:              addr.String(),
-		StateRoot:            gen.ParentState().String(),
-		RawBytePower:         mpower.MinerPower.RawBytePower.String(),
-		QualityAdjustedPower: mpower.MinerPower.QualityAdjPower.String(),
-	}
-
-	stateModel := &minermodel.MinerState{
-		MinerID:    addr.String(),
-		OwnerID:    minfo.Owner.String(),
-		WorkerID:   minfo.Worker.String(),
-		PeerID:     minfo.PeerId.String(),
-		SectorSize: minfo.SectorSize.ShortString(),
-	}
-
-	sectorsModel := make(minermodel.MinerSectorInfos, len(msectors))
-	dealsModel := minermodel.MinerDealSectors{}
-	for idx, sector := range msectors {
-		sectorsModel[idx] = &minermodel.MinerSectorInfo{
-			MinerID:               addr.String(),
-			SectorID:              uint64(sector.SectorNumber),
-			StateRoot:             gen.ParentState().String(),
-			SealedCID:             sector.SealedCID.String(),
-			ActivationEpoch:       int64(sector.Activation),
-			ExpirationEpoch:       int64(sector.Expiration),
-			DealWeight:            sector.DealWeight.String(),
-			VerifiedDealWeight:    sector.VerifiedDealWeight.String(),
-			InitialPledge:         sector.InitialPledge.String(),
-			ExpectedDayReward:     sector.ExpectedDayReward.String(),
-			ExpectedStoragePledge: sector.ExpectedStoragePledge.String(),
-		}
-		for _, dealID := range sector.DealIDs {
-			dealsModel = append(dealsModel, &minermodel.MinerDealSector{
-				MinerID:  addr.String(),
-				SectorID: uint64(sector.SectorNumber),
-				DealID:   uint64(dealID),
-			})
-		}
-	}
-	return &genesismodel.GenesisMinerTaskResult{
-		StateModel:   stateModel,
-		PowerModel:   powerModel,
-		SectorModels: sectorsModel,
-		DealModels:   dealsModel,
-	}, nil
 }
 
 func (p *GenesisProcessor) initActorState(ctx context.Context, gen *types.TipSet, act *types.Actor) (*genesismodel.GenesisInitActorTaskResult, error) {
@@ -201,6 +158,7 @@ func (p *GenesisProcessor) storageMarketState(ctx context.Context, gen *types.Ti
 			return nil, err
 		}
 		states[idx] = &marketmodel.MarketDealState{
+			Height:           int64(gen.Height()),
 			DealID:           dealID,
 			SectorStartEpoch: int64(deal.State.SectorStartEpoch),
 			LastUpdateEpoch:  int64(deal.State.LastUpdatedEpoch),
@@ -208,6 +166,7 @@ func (p *GenesisProcessor) storageMarketState(ctx context.Context, gen *types.Ti
 			StateRoot:        gen.ParentState().String(),
 		}
 		proposals[idx] = &marketmodel.MarketDealProposal{
+			Height:               int64(gen.Height()),
 			DealID:               dealID,
 			StateRoot:            gen.ParentState().String(),
 			PaddedPieceSize:      uint64(deal.Proposal.PieceSize),

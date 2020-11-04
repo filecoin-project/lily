@@ -14,6 +14,7 @@ import (
 )
 
 type BlockMessage struct {
+	Height  int64  `pg:",pk,notnull,use_zero"`
 	Block   string `pg:",pk,notnull"`
 	Message string `pg:",pk,notnull"`
 }
@@ -37,7 +38,7 @@ func (bms BlockMessages) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "message/blockmessage"))
-	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
 	if _, err := tx.ModelContext(ctx, &bms).

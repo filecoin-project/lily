@@ -16,7 +16,7 @@ jobs:
     steps:
       - checkout
       - run: sudo apt-get update
-      - run: sudo apt-get install -y pkg-config jq mesa-opencl-icd ocl-icd-opencl-dev
+      - run: sudo apt-get install -y pkg-config jq
       - run: make deps
       - run: make build
       - run: make testshort
@@ -67,11 +67,15 @@ workflows:
       - test
       - docker-build:
           filters:
+            branches:
+              ignore: /.*/
             tags:
-              only: /^v[0-9].*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)*/  # incl v0.0.0 or v0.0.0-rc0
       - docker-push:
           requires:
             - docker-build
           filters:
+            branches:
+              ignore: /.*/
             tags:
-              only: /^v[0-9].*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)*/  # incl v0.0.0 or v0.0.0-rc0

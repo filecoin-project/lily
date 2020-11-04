@@ -7,12 +7,10 @@ import (
 
 	apitest "github.com/filecoin-project/lotus/api/test"
 	nodetest "github.com/filecoin-project/lotus/node/test"
-
 	"github.com/go-pg/pg/v10"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/sentinel-visor/lens/lotus"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
@@ -36,10 +34,12 @@ func TestChainHistoryIndexer(t *testing.T) {
 	require.NoError(t, err, "truncating tables")
 
 	t.Logf("preparing chain")
-	nodes, sn := nodetest.Builder(t, 1, apitest.OneMiner)
-	cs, err := lotus.NewCacheCtxStore(ctx, nodes[0], 5)
-	require.NoError(t, err, "cache store")
-	node := lotus.NewAPIWrapper(nodes[0], cs)
+	nodes, sn := nodetest.Builder(t, apitest.DefaultFullOpts(1), apitest.OneMiner)
+
+	node := nodes[0]
+	opener := testutil.NewAPIOpener(node)
+
+	openedAPI, _, _ := opener.Open(ctx)
 
 	apitest.MineUntilBlock(ctx, t, nodes[0], sn[0], nil)
 
@@ -47,10 +47,10 @@ func TestChainHistoryIndexer(t *testing.T) {
 	require.NoError(t, err, "chain head")
 
 	t.Logf("collecting chain blocks")
-	bhs, err := collectBlockHeaders(node, head)
+	bhs, err := collectBlockHeaders(openedAPI, head)
 	require.NoError(t, err, "collect chain blocks")
 
-	tipSetKeys, err := collectTipSetKeys(node, head)
+	tipSetKeys, err := collectTipSetKeys(openedAPI, head)
 	require.NoError(t, err, "collect chain blocks")
 
 	cids := bhs.Cids()
@@ -58,10 +58,10 @@ func TestChainHistoryIndexer(t *testing.T) {
 
 	d := &storage.Database{DB: db}
 	t.Logf("initializing indexer")
-	idx := NewChainHistoryIndexer(d, node)
+	idx := NewChainHistoryIndexer(d, opener, 1)
 
 	t.Logf("indexing chain")
-	err = idx.WalkChain(ctx, int64(head.Height()))
+	err = idx.WalkChain(ctx, openedAPI, int64(head.Height()))
 	require.NoError(t, err, "WalkChain")
 
 	t.Run("block_headers", func(t *testing.T) {

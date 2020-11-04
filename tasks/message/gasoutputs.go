@@ -7,55 +7,76 @@ import (
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/go-pg/pg/v10"
 	"github.com/raulk/clock"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model/derived"
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/wait"
 )
 
-func NewGasOutputsProcessor(d *storage.Database, node lens.API, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64) *GasOutputsProcessor {
+func NewGasOutputsProcessor(d *storage.Database, opener lens.APIOpener, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64, useLeases bool) *GasOutputsProcessor {
 	return &GasOutputsProcessor{
-		node:        node,
+		opener:      opener,
 		storage:     d,
 		leaseLength: leaseLength,
 		batchSize:   batchSize,
 		minHeight:   minHeight,
 		maxHeight:   maxHeight,
 		clock:       clock.New(),
+		useLeases:   useLeases,
 	}
 }
 
 // GasOutputsProcessor is a task that processes messages with receipts to determine gas outputs.
 type GasOutputsProcessor struct {
-	node        lens.API
+	opener      lens.APIOpener
 	storage     *storage.Database
 	leaseLength time.Duration // length of time to lease work for
 	batchSize   int           // number of messages to lease in a batch
 	minHeight   int64         // limit processing to messages from tipsets equal to or above this height
 	maxHeight   int64         // limit processing to messages from tipsets equal to or below this height
 	clock       clock.Clock
+	useLeases   bool // when true this task will update the claimed_until column in the processing table (which can cause contention)
 }
 
 // Run starts processing batches of messages until the context is done or
 // an error occurs.
 func (p *GasOutputsProcessor) Run(ctx context.Context) error {
+	node, closer, err := p.opener.Open(ctx)
+	if err != nil {
+		return xerrors.Errorf("open lens: %w", err)
+	}
+	defer closer()
+
 	// Loop until context is done or processing encounters a fatal error
-	return wait.RepeatUntil(ctx, batchInterval, p.processBatch)
+	return wait.RepeatUntil(ctx, batchInterval, func(ctx context.Context) (bool, error) {
+		return p.processBatch(ctx, node)
+	})
 }
 
-func (p *GasOutputsProcessor) processBatch(ctx context.Context) (bool, error) {
+func (p *GasOutputsProcessor) processBatch(ctx context.Context, node lens.API) (bool, error) {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "gasoutputs"))
 	ctx, span := global.Tracer("").Start(ctx, "GasOutputsProcessor.processBatch")
 	defer span.End()
 
 	claimUntil := p.clock.Now().Add(p.leaseLength)
 
-	// Lease some messages with receipts to work on
-	batch, err := p.storage.LeaseGasOutputsMessages(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight)
+	var batch []*derived.ProcessingGasOutputs
+	var err error
+
+	if p.useLeases {
+		// Lease some messages with receipts to work on
+		batch, err = p.storage.LeaseGasOutputsMessages(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight)
+	} else {
+		batch, err = p.storage.FindGasOutputsMessages(ctx, p.batchSize, p.minHeight, p.maxHeight)
+	}
+
 	if err != nil {
-		return true, err
+		return false, err
 	}
 
 	// If we have no messages to work on then wait before trying again
@@ -66,9 +87,12 @@ func (p *GasOutputsProcessor) processBatch(ctx context.Context) (bool, error) {
 		return false, nil
 	}
 
-	log.Debugw("leased batch of messages", "count", len(batch))
-	ctx, cancel := context.WithDeadline(ctx, claimUntil)
-	defer cancel()
+	log.Debugw("processing batch of messages", "count", len(batch))
+	if p.useLeases {
+		var cancel func()
+		ctx, cancel = context.WithDeadline(ctx, claimUntil)
+		defer cancel()
+	}
 
 	for _, item := range batch {
 		// Stop processing if we have somehow passed our own lease time
@@ -80,24 +104,27 @@ func (p *GasOutputsProcessor) processBatch(ctx context.Context) (bool, error) {
 
 		errorLog := log.With("cid", item.Cid)
 
-		if err := p.processItem(ctx, item); err != nil {
+		if err := p.processItem(ctx, node, &item.GasOutputs); err != nil {
+			// Any errors are likely to be problems using the lens, mark this tipset as failed and exit this batch
 			errorLog.Errorw("failed to process message", "error", err.Error())
-			if err := p.storage.MarkGasOutputsMessagesComplete(ctx, item.Cid, p.clock.Now(), err.Error()); err != nil {
+			if err := p.storage.MarkGasOutputsMessagesComplete(ctx, item.Height, item.Cid, p.clock.Now(), err.Error()); err != nil {
 				errorLog.Errorw("failed to mark message complete", "error", err.Error())
 			}
-			continue
+			return false, xerrors.Errorf("process item: %w", err)
 		}
 
-		if err := p.storage.MarkGasOutputsMessagesComplete(ctx, item.Cid, p.clock.Now(), ""); err != nil {
+		if err := p.storage.MarkGasOutputsMessagesComplete(ctx, item.Height, item.Cid, p.clock.Now(), ""); err != nil {
 			errorLog.Errorw("failed to mark message complete", "error", err.Error())
 		}
-
 	}
 
 	return false, nil
 }
 
-func (p *GasOutputsProcessor) processItem(ctx context.Context, item *derived.GasOutputs) error {
+func (p *GasOutputsProcessor) processItem(ctx context.Context, node lens.API, item *derived.GasOutputs) error {
+	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	defer stop()
+
 	baseFee, err := big.FromString(item.ParentBaseFee)
 	if err != nil {
 		return xerrors.Errorf("parse fee cap: %w", err)
@@ -111,7 +138,11 @@ func (p *GasOutputsProcessor) processItem(ctx context.Context, item *derived.Gas
 		return xerrors.Errorf("parse gas premium: %w", err)
 	}
 
-	outputs := p.node.ComputeGasOutputs(item.GasUsed, item.GasLimit, baseFee, feeCap, gasPremium)
+	// this is here because the lotus.vm package doesn't take a context for this api call.
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.API, "ComputeGasOutputs"))
+	cgoStop := metrics.Timer(ctx, metrics.LensRequestDuration)
+	outputs := node.ComputeGasOutputs(item.GasUsed, item.GasLimit, baseFee, feeCap, gasPremium)
+	cgoStop()
 
 	item.BaseFeeBurn = outputs.BaseFeeBurn.String()
 	item.OverEstimationBurn = outputs.OverEstimationBurn.String()

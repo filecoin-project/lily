@@ -93,6 +93,31 @@ To revert to an earlier version, run:
 
 **WARNING: reverting a migration is very likely to lose data in tables and columns that are not present in the earlier version**
 
+
+## Versioning and Releases
+
+Feature branches and master are designated as **unstable** which are internal-only development builds. 
+
+Periodically a build will be designated as **stable** and will be assigned a version number by tagging the repository
+using Semantic Versioning in the following format: `vMajor.Minor.Patch`.
+ 
+### Release Process
+
+Between releases we keep track of notable changes in CHANGELOG.md.
+
+When we want to make a release we should update CHANGELOG.md to contain the release notes for the planned release in a section for
+the proposed release number. This update is the commit that will be tagged with as the actual release which ensures that each release
+contains a copy of it's own release notes. 
+
+We should also copy the release notes to the Github releases page, but CHANGELOG.md is the primary place to keep the release notes. 
+
+The release commit should be tagged with a signed tag:
+
+    git tag -s vx.x.x
+    git push --tags
+
+
+
 ## Code of Conduct
 
 Sentinel Visor follows the [Filecoin Project Code of Conduct](https://github.com/filecoin-project/community/blob/master/CODE_OF_CONDUCT.md). Before contributing, please acquaint yourself with our social courtesies and expectations.

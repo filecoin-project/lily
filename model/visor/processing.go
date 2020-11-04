@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+
+	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
 func NewProcessingTipSet(ts *types.TipSet) *ProcessingTipSet {
@@ -55,6 +57,17 @@ type ProcessingTipSet struct {
 
 	// MessageErrorsDetected contains any error encountered when reading the tipset's messages
 	MessageErrorsDetected string
+
+	// Chain economics processing
+
+	// EconomicsClaimedUntil marks the tipset as claimed for chain economics processing until the set time
+	EconomicsClaimedUntil time.Time
+
+	// EconomicsCompletedAt is the time the tipset was read from the chain and its chain economics read
+	EconomicsCompletedAt time.Time
+
+	// EconomicsErrorsDetected contains any error encountered when reading the tipset's chain economics
+	EconomicsErrorsDetected string
 }
 
 func (p *ProcessingTipSet) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
@@ -159,6 +172,10 @@ func (pl ProcessingActorList) PersistWithTx(ctx context.Context, tx *pg.Tx) erro
 	}
 	ctx, span := global.Tracer("").Start(ctx, "ProcessingActorList.PersistWithTx", trace.WithAttributes(label.Int("count", len(pl))))
 	defer span.End()
+
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	if _, err := tx.ModelContext(ctx, &pl).
 		OnConflict("do nothing").
 		Insert(); err != nil {

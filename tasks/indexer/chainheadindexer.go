@@ -4,6 +4,7 @@ import (
 	"context"
 
 	logging "github.com/ipfs/go-log/v2"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
@@ -11,6 +12,7 @@ import (
 	store "github.com/filecoin-project/lotus/chain/store"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
@@ -19,9 +21,9 @@ var log = logging.Logger("indexer")
 // NewChainHeadIndexer creates a new ChainHeadIndexer. confidence sets the number of tipsets that will be held
 // in a cache awaiting possible reversion. Tipsets will be written to the database when they are evicted from
 // the cache due to incoming later tipsets.
-func NewChainHeadIndexer(d *storage.Database, node lens.API, confidence int) *ChainHeadIndexer {
+func NewChainHeadIndexer(d *storage.Database, opener lens.APIOpener, confidence int) *ChainHeadIndexer {
 	return &ChainHeadIndexer{
-		node:       node,
+		opener:     opener,
 		storage:    d,
 		confidence: confidence,
 		cache:      NewTipSetCache(confidence),
@@ -30,7 +32,7 @@ func NewChainHeadIndexer(d *storage.Database, node lens.API, confidence int) *Ch
 
 // ChainHeadIndexer is a task that indexes blocks by following the chain head.
 type ChainHeadIndexer struct {
-	node       lens.API
+	opener     lens.APIOpener
 	storage    *storage.Database
 	confidence int          // size of tipset cache
 	cache      *TipSetCache // caches tipsets for possible reversion
@@ -39,7 +41,13 @@ type ChainHeadIndexer struct {
 // Run starts following the chain head and blocks until the context is done or
 // an error occurs.
 func (c *ChainHeadIndexer) Run(ctx context.Context) error {
-	hc, err := c.node.ChainNotify(ctx)
+	node, closer, err := c.opener.Open(ctx)
+	if err != nil {
+		return xerrors.Errorf("open lens: %w", err)
+	}
+	defer closer()
+
+	hc, err := node.ChainNotify(ctx)
 	if err != nil {
 		return xerrors.Errorf("chain notify: %w", err)
 	}
@@ -63,6 +71,8 @@ func (c *ChainHeadIndexer) Run(ctx context.Context) error {
 func (c *ChainHeadIndexer) index(ctx context.Context, headEvents []*lotus_api.HeadChange) error {
 	ctx, span := global.Tracer("").Start(ctx, "ChainHeadIndexer.index")
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "indexheadblock"))
 
 	data := NewUnindexedBlockData()
 
@@ -110,5 +120,4 @@ func (c *ChainHeadIndexer) index(ctx context.Context, headEvents []*lotus_api.He
 		}
 	}
 	return nil
-
 }

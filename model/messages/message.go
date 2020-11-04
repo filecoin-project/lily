@@ -14,7 +14,8 @@ import (
 )
 
 type Message struct {
-	Cid string `pg:",pk,notnull"`
+	Height int64  `pg:",pk,notnull,use_zero"`
+	Cid    string `pg:",pk,notnull"`
 
 	From       string `pg:",notnull"`
 	To         string `pg:",notnull"`

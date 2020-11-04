@@ -11,14 +11,19 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-bitfield"
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
+	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
@@ -39,17 +44,22 @@ type ActorInfo struct {
 	Actor           types.Actor
 	Address         address.Address
 	ParentStateRoot cid.Cid
+	Epoch           abi.ChainEpoch
 	TipSet          types.TipSetKey
 	ParentTipSet    types.TipSetKey
 }
 
 // ActorStateAPI is the minimal subset of lens.API that is needed for actor state extraction
 type ActorStateAPI interface {
-	ChainHasObj(ctx context.Context, c cid.Cid) (bool, error)
+	ChainGetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error)
+	ChainGetBlockMessages(ctx context.Context, msg cid.Cid) (*api.BlockMessages, error)
+	StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error)
+	ChainHasObj(ctx context.Context, obj cid.Cid) (bool, error)
 	ChainReadObj(ctx context.Context, obj cid.Cid) ([]byte, error)
-	StateGetActor(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*types.Actor, error)
+	StateGetActor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error)
 	StateMinerPower(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.MinerPower, error)
-	StateReadState(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*api.ActorState, error)
+	StateReadState(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.ActorState, error)
+	StateMinerSectors(ctx context.Context, addr address.Address, bf *bitfield.BitField, tsk types.TipSetKey) ([]*miner.SectorOnChainInfo, error)
 	Store() adt.Store
 }
 
@@ -85,9 +95,9 @@ func SupportedActorCodes() []cid.Cid {
 	return codes
 }
 
-func NewActorStateProcessor(d *storage.Database, node lens.API, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64, actorCodes []cid.Cid) (*ActorStateProcessor, error) {
+func NewActorStateProcessor(d *storage.Database, opener lens.APIOpener, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64, actorCodes []cid.Cid, useLeases bool) (*ActorStateProcessor, error) {
 	p := &ActorStateProcessor{
-		node:        node,
+		opener:      opener,
 		storage:     d,
 		leaseLength: leaseLength,
 		batchSize:   batchSize,
@@ -95,6 +105,7 @@ func NewActorStateProcessor(d *storage.Database, node lens.API, leaseLength time
 		maxHeight:   maxHeight,
 		extractors:  map[cid.Cid]ActorStateExtractor{},
 		clock:       clock.New(),
+		useLeases:   useLeases,
 	}
 
 	extractorsMu.Lock()
@@ -114,7 +125,7 @@ func NewActorStateProcessor(d *storage.Database, node lens.API, leaseLength time
 // ActorStateProcessor is a task that processes actor state changes and persists them to the database.
 // There will be multiple concurrent ActorStateProcessor instances.
 type ActorStateProcessor struct {
-	node        lens.API
+	opener      lens.APIOpener
 	storage     *storage.Database
 	leaseLength time.Duration                   // length of time to lease work for
 	batchSize   int                             // number of blocks to lease in a batch
@@ -123,6 +134,7 @@ type ActorStateProcessor struct {
 	actorCodes  []string                        // list of actor codes that will be requested
 	extractors  map[cid.Cid]ActorStateExtractor // list of extractors that will be used
 	clock       clock.Clock
+	useLeases   bool // when true this task will update the claimed_until column in the processing table (which can cause contention)
 }
 
 func trackDuration(topic string, w io.Writer) func() {
@@ -156,13 +168,19 @@ func (p *ActorStateProcessor) Debug(ctx context.Context, head string, writer io.
 }
 
 func (p *ActorStateProcessor) debugActor(ctx context.Context, info ActorInfo, writer io.Writer) error {
+	node, closer, err := p.opener.Open(ctx)
+	if err != nil {
+		return xerrors.Errorf("open lens: %w", err)
+	}
+	defer closer()
+
 	// extract actor state
 	extractor, exists := p.extractors[info.Actor.Code]
 	if !exists {
 		return xerrors.Errorf("no extractor defined for actor code %q", info.Actor.Code.String())
 	}
 
-	data, err := extractor.Extract(ctx, info, p.node)
+	data, err := extractor.Extract(ctx, info, node)
 	if err != nil {
 		return xerrors.Errorf("extract actor state: %w", err)
 	}
@@ -187,18 +205,38 @@ func (p *ActorStateProcessor) debugActor(ctx context.Context, info ActorInfo, wr
 // Run starts processing batches of actors and blocks until the context is done or
 // an error occurs.
 func (p *ActorStateProcessor) Run(ctx context.Context) error {
+	node, closer, err := p.opener.Open(ctx)
+	if err != nil {
+		return xerrors.Errorf("open lens: %w", err)
+	}
+	defer closer()
+
 	// Loop until context is done or processing encounters a fatal error
-	return wait.RepeatUntil(ctx, batchInterval, p.processBatch)
+	return wait.RepeatUntil(ctx, batchInterval, func(ctx context.Context) (bool, error) {
+		return p.processBatch(ctx, node)
+	})
 }
 
-func (p *ActorStateProcessor) processBatch(ctx context.Context) (bool, error) {
+func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (bool, error) {
+	// the actor represents the "raw" actor data model that is persisted
+	// this gets overridden with the specific actor type once we know
+	// which it is.
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "actor"))
+
 	ctx, span := global.Tracer("").Start(ctx, "ActorStateProcessor.processBatch")
 	defer span.End()
 
 	// Lease some blocks to work on
 	claimUntil := p.clock.Now().Add(p.leaseLength)
 
-	batch, err := p.storage.LeaseActors(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
+	var batch visor.ProcessingActorList
+	var err error
+
+	if p.useLeases {
+		batch, err = p.storage.LeaseActors(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
+	} else {
+		batch, err = p.storage.FindActors(ctx, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
+	}
 	if err != nil {
 		return true, err
 	}
@@ -211,10 +249,14 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context) (bool, error) {
 		return false, nil
 	}
 
-	log.Debugw("leased batch of actors", "count", len(batch))
-	ctx, cancel := context.WithDeadline(ctx, claimUntil)
-	defer cancel()
+	log.Debugw("processing batch of actors", "count", len(batch))
+	if p.useLeases {
+		var cancel func()
+		ctx, cancel = context.WithDeadline(ctx, claimUntil)
+		defer cancel()
+	}
 
+	stats.Record(ctx, metrics.TipsetHeight.M(batch[0].Height))
 	for _, actor := range batch {
 		// Stop processing if we have somehow passed our own lease time
 		select {
@@ -228,19 +270,22 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context) (bool, error) {
 		info, err := NewActorInfo(actor)
 		if err != nil {
 			errorLog.Errorw("unmarshal actor", "error", err.Error())
-			if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, p.clock.Now(), err.Error()); err != nil {
+			if err := p.storage.MarkActorComplete(ctx, actor.Height, actor.Head, actor.Code, p.clock.Now(), err.Error()); err != nil {
 				errorLog.Errorw("failed to mark actor complete", "error", err.Error())
 			}
 			continue
 		}
 
-		var errorsEncountered string
-		if err := p.processActor(ctx, info); err != nil {
+		if err := p.processActor(ctx, node, info); err != nil {
 			errorLog.Errorw("process actor", "error", err.Error())
-			errorsEncountered = err.Error()
+			if err := p.storage.MarkActorComplete(ctx, actor.Height, actor.Head, actor.Code, p.clock.Now(), err.Error()); err != nil {
+				errorLog.Errorw("failed to mark actor complete", "error", err.Error())
+			}
+
+			return false, xerrors.Errorf("process actor: %w", err)
 		}
 
-		if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, p.clock.Now(), errorsEncountered); err != nil {
+		if err := p.storage.MarkActorComplete(ctx, actor.Height, actor.Head, actor.Code, p.clock.Now(), ""); err != nil {
 			errorLog.Errorw("failed to mark actor complete", "error", err.Error())
 		}
 	}
@@ -248,19 +293,14 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
-func (p *ActorStateProcessor) processActor(ctx context.Context, info ActorInfo) error {
+func (p *ActorStateProcessor) processActor(ctx context.Context, node lens.API, info ActorInfo) error {
 	ctx, span := global.Tracer("").Start(ctx, "ActorStateProcessor.processActor")
 	defer span.End()
 
 	var ae ActorExtractor
 
-	// the actor represents the "raw" actor data model that is persisted
-	// this gets overridden with the specific actor type once we know
-	// which it is.
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "actor"))
-
 	// Persist the raw state
-	data, err := ae.Extract(ctx, info, p.node)
+	data, err := ae.Extract(ctx, info, node)
 	if err != nil {
 		return xerrors.Errorf("extract actor state: %w", err)
 	}
@@ -274,10 +314,10 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, info ActorInfo) 
 		return xerrors.Errorf("no extractor defined for actor code %q", info.Actor.Code.String())
 	}
 
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, builtin.ActorNameByCode(info.Actor.Code)))
-	span.SetAttribute("actor", builtin.ActorNameByCode(info.Actor.Code))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, ActorNameByCode(info.Actor.Code)))
+	span.SetAttribute("actor", ActorNameByCode(info.Actor.Code))
 
-	data, err = extractor.Extract(ctx, info, p.node)
+	data, err = extractor.Extract(ctx, info, node)
 	if err != nil {
 		return xerrors.Errorf("extract actor state: %w", err)
 	}
@@ -335,5 +375,16 @@ func NewActorInfo(a *visor.ProcessingActor) (ActorInfo, error) {
 		return ActorInfo{}, xerrors.Errorf("parse nonce: %w", err)
 	}
 
+	info.Epoch = abi.ChainEpoch(a.Height)
+
 	return info, nil
+}
+
+// ActorNameByCode returns the name of the actor code. Agnostic to the
+// version of specs-actors.
+func ActorNameByCode(code cid.Cid) string {
+	if name := builtin.ActorNameByCode(code); name != "<unknown>" {
+		return name
+	}
+	return builtin2.ActorNameByCode(code)
 }

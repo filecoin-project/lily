@@ -7,7 +7,6 @@ GITVERSION=$(shell git describe --always --tag --dirty)
 
 unexport GOFLAGS
 
-MODULES:=
 CLEAN:=
 BINS:=
 
@@ -25,35 +24,18 @@ all: build
 .PHONY: build
 build: deps visor
 
-## FFI
-
-FFI_PATH:=extern/filecoin-ffi/
-FFI_DEPS:=.install-filcrypto
-FFI_DEPS:=$(addprefix $(FFI_PATH),$(FFI_DEPS))
-
-$(FFI_DEPS): build/.filecoin-install ;
-
-build/.filecoin-install: $(FFI_PATH)
-	$(MAKE) -C $(FFI_PATH) $(FFI_DEPS:$(FFI_PATH)%=%)
-	@touch $@
-
-MODULES+=$(FFI_PATH)
-BUILD_DEPS+=build/.filecoin-install
-CLEAN+=build/.filecoin-install
-
-$(MODULES): build/.update-modules ;
-
 # dummy file that marks the last time modules were updated
 build/.update-modules:
 	git submodule update --init --recursive
 	touch $@
 
 .PHONY: deps
-deps: $(BUILD_DEPS)
+deps: build/.update-modules
+	go get -u github.com/git-chglog/git-chglog/cmd/git-chglog
 
 # test starts dependencies and runs all tests
 .PHONY: test
-test: dockerup testfull dockerdown
+test: testfull
 
 .PHONY: dockerup
 dockerup:
@@ -66,7 +48,9 @@ dockerdown:
 # testfull runs all tests
 .PHONY: testfull
 testfull:
-	TZ= PGSSLMODE=disable go test ./... -v
+	docker-compose up -d
+	TZ= PGSSLMODE=disable go test ./... -v || echo ""
+	docker-compose down
 
 # testshort runs tests that don't require external dependencies such as postgres or redis
 .PHONY: testshort
@@ -87,10 +71,13 @@ docker-image:
 
 clean:
 	rm -rf $(CLEAN) $(BINS)
-	-$(MAKE) -C $(FFI_PATH) clean
 .PHONY: clean
 
 dist-clean:
 	git clean -xdff
 	git submodule deinit --all -f
 .PHONY: dist-clean
+
+.PHONY: changelog
+changelog:
+	git-chglog -o CHANGELOG.md

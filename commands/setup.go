@@ -24,8 +24,10 @@ import (
 	"golang.org/x/xerrors"
 
 	lens "github.com/filecoin-project/sentinel-visor/lens"
+	carapi "github.com/filecoin-project/sentinel-visor/lens/carrepo"
 	vapi "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	repoapi "github.com/filecoin-project/sentinel-visor/lens/lotusrepo"
+	sqlapi "github.com/filecoin-project/sentinel-visor/lens/sqlrepo"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
@@ -33,21 +35,26 @@ import (
 var log = logging.Logger("visor")
 
 type RunContext struct {
-	api    lens.API
+	opener lens.APIOpener
 	closer lens.APICloser
 	db     *storage.Database
 }
 
 func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error) {
-	var ctx context.Context
-	var api lens.API
-	var closer lens.APICloser
+	var opener lens.APIOpener // the api opener that is used by tasks
+	var closer lens.APICloser // a closer that cleans up the opener when exiting the application
 	var err error
 
+	ctx := cctx.Context
+
 	if cctx.String("lens") == "lotus" {
-		ctx, api, closer, err = vapi.GetFullNodeAPI(cctx)
+		opener, closer, err = vapi.NewAPIOpener(cctx, 10_000)
 	} else if cctx.String("lens") == "lotusrepo" {
-		ctx, api, closer, err = repoapi.GetAPI(cctx)
+		opener, closer, err = repoapi.NewAPIOpener(cctx)
+	} else if cctx.String("lens") == "carrepo" {
+		opener, closer, err = carapi.NewAPIOpener(cctx)
+	} else if cctx.String("lens") == "sql" {
+		opener, closer, err = sqlapi.NewAPIOpener(cctx)
 	}
 	if err != nil {
 		return nil, nil, xerrors.Errorf("get node api: %w", err)
@@ -88,7 +95,11 @@ func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error)
 		return nil, nil, xerrors.Errorf("verify schema: %w", err)
 	}
 
-	return ctx, &RunContext{api, closer, db}, nil
+	return ctx, &RunContext{
+		opener: opener,
+		closer: closer,
+		db:     db,
+	}, nil
 }
 
 func setupTracing(cctx *cli.Context) (func(), error) {
@@ -173,9 +184,10 @@ func setupLogging(cctx *cli.Context) error {
 }
 
 const (
-	ChainHeadIndexerLockID    = 98981111
-	ChainHistoryIndexerLockID = 98981112
-	ChainVisRefresherLockID   = 98981113
+	ChainHeadIndexerLockID         = 98981111
+	ChainHistoryIndexerLockID      = 98981112
+	ChainVisRefresherLockID        = 98981113
+	ProcessingStatsRefresherLockID = 98981114
 )
 
 func NewGlobalSingleton(id int64, d *storage.Database) *GlobalSingleton {

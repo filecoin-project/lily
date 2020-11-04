@@ -7,40 +7,67 @@ import (
 	"github.com/ipfs/go-cid"
 	"go.opentelemetry.io/otel/api/global"
 
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-bitfield"
-	"github.com/filecoin-project/lotus/api"
-	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
-	"github.com/filecoin-project/lotus/chain/types"
-
 	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
-type PartitionStatus struct {
-	Terminated bitfield.BitField
-	Expired    bitfield.BitField
-	Faulted    bitfield.BitField
-	InRecovery bitfield.BitField
-	Recovered  bitfield.BitField
-}
-
 type MinerTaskResult struct {
-	Ts        types.TipSetKey
-	Pts       types.TipSetKey
-	StateRoot cid.Cid
+	Posts map[uint64]cid.Cid
 
-	Addr  address.Address
-	Actor *types.Actor
-
-	State            miner.State
-	Info             miner.MinerInfo
-	Power            *api.MinerPower
-	PreCommitChanges *miner.PreCommitChanges
-	SectorChanges    *miner.SectorChanges
-	PartitionDiff    map[uint64]*PartitionStatus
+	MinerInfoModel           *MinerInfo
+	FeeDebtModel             *MinerFeeDebt
+	LockedFundsModel         *MinerLockedFund
+	CurrentDeadlineInfoModel *MinerCurrentDeadlineInfo
+	PreCommitsModel          MinerPreCommitInfoList
+	SectorsModel             MinerSectorInfoList
+	SectorEventsModel        MinerSectorEventList
+	SectorDealsModel         MinerSectorDealList
 }
 
-func (mtr *MinerTaskResult) Persist(ctx context.Context, db *pg.DB) error {
+func (res *MinerTaskResult) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if res.PreCommitsModel != nil {
+		if err := res.PreCommitsModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if res.SectorsModel != nil {
+		if err := res.SectorsModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if len(res.SectorEventsModel) > 0 {
+		if err := res.SectorEventsModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if res.MinerInfoModel != nil {
+		if err := res.MinerInfoModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if res.LockedFundsModel != nil {
+		if err := res.LockedFundsModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if res.FeeDebtModel != nil {
+		if err := res.FeeDebtModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if res.CurrentDeadlineInfoModel != nil {
+		if err := res.CurrentDeadlineInfoModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if res.SectorDealsModel != nil {
+		if err := res.SectorDealsModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (res *MinerTaskResult) Persist(ctx context.Context, db *pg.DB) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerTaskResult.Persist")
 	defer span.End()
 
@@ -48,22 +75,17 @@ func (mtr *MinerTaskResult) Persist(ctx context.Context, db *pg.DB) error {
 	defer stop()
 
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		if err := NewMinerStateModel(mtr).PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
-		if err := NewMinerPowerModel(mtr).PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
-		if mtr.PreCommitChanges != nil {
-			if err := NewMinerPreCommitInfos(mtr).PersistWithTx(ctx, tx); err != nil {
-				return err
-			}
-		}
-		if mtr.SectorChanges != nil {
-			if err := NewMinerSectorInfos(mtr).PersistWithTx(ctx, tx); err != nil {
-				return err
-			}
-		}
-		return nil
+		return res.PersistWithTx(ctx, tx)
 	})
+}
+
+type MinerTaskResultList []*MinerTaskResult
+
+func (ml MinerTaskResultList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	for _, res := range ml {
+		if err := res.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	return nil
 }

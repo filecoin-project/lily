@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/go-state-types/crypto"
 	"github.com/filecoin-project/lotus/api"
+	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
 	bstore "github.com/filecoin-project/lotus/lib/blockstore"
 	samarket "github.com/filecoin-project/specs-actors/actors/builtin/market"
@@ -39,17 +41,19 @@ func mockTipset(minerAddr address.Address, timestamp uint64) (*types.TipSet, err
 var _ ActorStateAPI = (*MockAPI)(nil)
 
 type MockAPI struct {
-	actors map[actorKey]*types.Actor
-	bs     bstore.Blockstore
-	store  adt.Store
+	actors  map[actorKey]*types.Actor
+	tipsets map[types.TipSetKey]*types.TipSet
+	bs      bstore.Blockstore
+	store   adt.Store
 }
 
 func NewMockAPI() *MockAPI {
 	bs := bstore.NewTemporarySync()
 	return &MockAPI{
-		bs:     bs,
-		actors: make(map[actorKey]*types.Actor),
-		store:  adt.WrapStore(context.Background(), cbornode.NewCborStore(bs)),
+		bs:      bs,
+		tipsets: make(map[types.TipSetKey]*types.TipSet),
+		actors:  make(map[actorKey]*types.Actor),
+		store:   adt.WrapStore(context.Background(), cbornode.NewCborStore(bs)),
 	}
 }
 
@@ -73,6 +77,25 @@ func (m *MockAPI) ChainReadObj(ctx context.Context, c cid.Cid) ([]byte, error) {
 	}
 
 	return blk.RawData(), nil
+}
+
+func (m *MockAPI) ChainGetBlockMessages(ctx context.Context, msg cid.Cid) (*api.BlockMessages, error) {
+	return &api.BlockMessages{
+		BlsMessages:   []*types.Message{},
+		SecpkMessages: []*types.SignedMessage{},
+		Cids:          []cid.Cid{},
+	}, nil
+}
+
+func (m *MockAPI) ChainGetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error) {
+	return m.tipsets[tsk], nil
+	blks := make([]*types.BlockHeader, len(tsk.Cids()))
+	for i, cid := range tsk.Cids() {
+		if err := m.store.Get(ctx, cid, blks[i]); err != nil {
+			return nil, err
+		}
+	}
+	return types.NewTipSet(blks)
 }
 
 func (m *MockAPI) StateReadState(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*api.ActorState, error) {
@@ -104,7 +127,15 @@ func (m *MockAPI) StateGetActor(ctx context.Context, actor address.Address, tsk 
 	return act, nil
 }
 
+func (m *MockAPI) StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error) {
+	panic("not implemented")
+}
+
 func (m *MockAPI) StateMinerPower(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.MinerPower, error) {
+	panic("not implemented yet")
+}
+
+func (m *MockAPI) StateMinerSectors(ctx context.Context, a address.Address, field *bitfield.BitField, key types.TipSetKey) ([]*miner.SectorOnChainInfo, error) {
 	panic("not implemented yet")
 }
 
@@ -116,6 +147,10 @@ func (m *MockAPI) setActor(tsk types.TipSetKey, addr address.Address, actor *typ
 		addr: addr,
 	}
 	m.actors[key] = actor
+}
+
+func (m *MockAPI) putTipSet(ts *types.TipSet) {
+	m.tipsets[ts.Key()] = ts
 }
 
 func (m *MockAPI) createMarketState(ctx context.Context, deals map[abi.DealID]*samarket.DealState, props map[abi.DealID]*samarket.DealProposal, balances map[address.Address]balance) (cid.Cid, error) {

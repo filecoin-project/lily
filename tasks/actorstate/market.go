@@ -74,6 +74,7 @@ func (m StorageMarketExtractor) marketDealStateChanges(ctx context.Context, a Ac
 	idx := 0
 	for _, add := range changes.Added {
 		out[idx] = &marketmodel.MarketDealState{
+			Height:           int64(a.Epoch),
 			DealID:           uint64(add.ID),
 			StateRoot:        a.ParentStateRoot.String(),
 			SectorStartEpoch: int64(add.Deal.SectorStartEpoch),
@@ -84,6 +85,7 @@ func (m StorageMarketExtractor) marketDealStateChanges(ctx context.Context, a Ac
 	}
 	for _, mod := range changes.Modified {
 		out[idx] = &marketmodel.MarketDealState{
+			Height:           int64(a.Epoch),
 			DealID:           uint64(mod.ID),
 			SectorStartEpoch: int64(mod.To.SectorStartEpoch),
 			LastUpdateEpoch:  int64(mod.To.LastUpdatedEpoch),
@@ -100,6 +102,7 @@ func (m StorageMarketExtractor) marketDealProposalChanges(ctx context.Context, a
 
 	for idx, add := range changes.Added {
 		out[idx] = &marketmodel.MarketDealProposal{
+			Height:               int64(a.Epoch),
 			DealID:               uint64(add.ID),
 			StateRoot:            a.ParentStateRoot.String(),
 			PaddedPieceSize:      uint64(add.Proposal.PieceSize),
