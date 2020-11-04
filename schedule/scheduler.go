@@ -29,6 +29,9 @@ type TaskConfig struct {
 	// Locker is an optional lock that must be taken before the task can execute.
 	Locker Locker
 
+	// ExitOnFailure will will cause cause a fatal failure when a task stops with an error.
+	ExitOnFailure bool
+
 	// RestartOnFailure controls whether the task should be restarted if it stops with an error.
 	RestartOnFailure bool
 
@@ -122,6 +125,9 @@ func (s *Scheduler) Run(ctx context.Context) error {
 					}
 					log.Errorw("task exited with failure", "task", tc.Name, "error", err.Error())
 
+					if tc.ExitOnFailure {
+						log.Fatal("Exiting due to previous error. ExitOnFailure")
+					}
 					if !tc.RestartOnFailure {
 						// Exit the task
 						break
