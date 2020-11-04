@@ -1,22 +1,15 @@
-<a name="unreleased"></a>
-## [Unreleased]
+# Changelog
+All notable changes to this project will be documented in this file.
 
-### Build
-- add prometheus, grafana and dashboard images
+The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) combined with categories from [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
 
-### Chore
-- Include RC releases in push docker images ([#195](https://github.com/filecoin-project/sentinel-visor/issues/195))
-- add metrics to leasing and work completion queries
-- add changelog ([#150](https://github.com/filecoin-project/sentinel-visor/issues/150))
-- update go.mod after recent merge ([#155](https://github.com/filecoin-project/sentinel-visor/issues/155))
-- add issue templates
-- add more error context reporting in messages task ([#133](https://github.com/filecoin-project/sentinel-visor/issues/133))
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
-### Deps
-- remove unused docker file for redis
-
+<a name="v0.3.0"></a>
+## [v0.3.0] - 2020-11-03
 ### Feat
 - add visor processing stats table ([#96](https://github.com/filecoin-project/sentinel-visor/issues/96))
+- allow actor state processor to run without leasing ([#178](https://github.com/filecoin-project/sentinel-visor/issues/178))
 - rpc reconnection on failure ([#149](https://github.com/filecoin-project/sentinel-visor/issues/149))
 - add dynamic panel creation based on tags ([#159](https://github.com/filecoin-project/sentinel-visor/issues/159))
 - add dynamic panel creation based on tags
@@ -24,7 +17,7 @@
 - convert processing, block and message tables to hypertables ([#111](https://github.com/filecoin-project/sentinel-visor/issues/111))
 - set default numbers of workers to zero in run subcommand ([#116](https://github.com/filecoin-project/sentinel-visor/issues/116))
 - add dashboard for process completion
-- allow actor state processor to run without leasing ([#178](https://github.com/filecoin-project/sentinel-visor/issues/178))
+- add changelog generator
 - log visor version on startup ([#117](https://github.com/filecoin-project/sentinel-visor/issues/117))
 - Add heaviest chain materialized view ([#97](https://github.com/filecoin-project/sentinel-visor/issues/97))
 - Add miner_sector_posts tracking of window posts ([#74](https://github.com/filecoin-project/sentinel-visor/issues/74))
@@ -48,6 +41,19 @@
 - **migration:** message gas economy uses bigint
 - **migrations:** migrations require version 0
 - **schema:** remove blocking processing indexes and improve processing stats table ([#130](https://github.com/filecoin-project/sentinel-visor/issues/130))
+### Build
+- add prometheus, grafana and dashboard images
+
+### Chore
+- Include RC releases in push docker images ([#195](https://github.com/filecoin-project/sentinel-visor/issues/195))
+- add metrics to leasing and work completion queries
+- add changelog ([#150](https://github.com/filecoin-project/sentinel-visor/issues/150))
+- update go.mod after recent merge ([#155](https://github.com/filecoin-project/sentinel-visor/issues/155))
+- add issue templates
+- add more error context reporting in messages task ([#133](https://github.com/filecoin-project/sentinel-visor/issues/133))
+
+### Deps
+- remove unused docker file for redis
 
 ### Perf
 - ensure processing updates always include height in criteria ([#192](https://github.com/filecoin-project/sentinel-visor/issues/192))
@@ -62,23 +68,20 @@
 
 
 <a name="v0.2.0"></a>
-## v0.2.0 - 2020-10-11
-### Chore
-- add tests for reward and power actor state extracters ([#83](https://github.com/filecoin-project/sentinel-visor/issues/83))
-- fail database tests if VISOR_TEST_DB not set ([#79](https://github.com/filecoin-project/sentinel-visor/issues/79))
-- use clock package for time mocking ([#65](https://github.com/filecoin-project/sentinel-visor/issues/65))
-- remove unused redis-based scheduler code ([#64](https://github.com/filecoin-project/sentinel-visor/issues/64))
-- Push docker images on [a-z]*-master branch updates ([#49](https://github.com/filecoin-project/sentinel-visor/issues/49))
-- Remove sentinel prefix for local dev use ([#36](https://github.com/filecoin-project/sentinel-visor/issues/36))
-- push docker tags from ci ([#26](https://github.com/filecoin-project/sentinel-visor/issues/26))
-- tighten up error propagation ([#23](https://github.com/filecoin-project/sentinel-visor/issues/23))
-- fix docker hub submodule error ([#22](https://github.com/filecoin-project/sentinel-visor/issues/22))
-- add circle ci ([#20](https://github.com/filecoin-project/sentinel-visor/issues/20))
-- add docker build and make targets ([#19](https://github.com/filecoin-project/sentinel-visor/issues/19))
+## [v0.2.0] - 2020-10-11
+### BREAKING CHANGE
 
-### Dep
-- add fil-blst submodule
+this changes the cli interface to remove the run subcommand.
 
+Previously the indexer and procerror would be started via:
+
+  sentinel-visor run indexer
+  sentinel-visor run processor
+
+After this change:
+
+  sentinel-visor index
+  sentinel-visor process
 ### Feat
 - add standard build targets ([#18](https://github.com/filecoin-project/sentinel-visor/issues/18))
 - add licenses and skeleton readme ([#5](https://github.com/filecoin-project/sentinel-visor/issues/5))
@@ -116,6 +119,21 @@
 - **indexer:** don't error on empty blocks_synced table
 - **model:** replace BeginContext with RunInTransaction ([#7](https://github.com/filecoin-project/sentinel-visor/issues/7))
 - **task:** correct index when computing deal state
+### Chore
+- add tests for reward and power actor state extracters ([#83](https://github.com/filecoin-project/sentinel-visor/issues/83))
+- fail database tests if VISOR_TEST_DB not set ([#79](https://github.com/filecoin-project/sentinel-visor/issues/79))
+- use clock package for time mocking ([#65](https://github.com/filecoin-project/sentinel-visor/issues/65))
+- remove unused redis-based scheduler code ([#64](https://github.com/filecoin-project/sentinel-visor/issues/64))
+- Push docker images on [a-z]*-master branch updates ([#49](https://github.com/filecoin-project/sentinel-visor/issues/49))
+- Remove sentinel prefix for local dev use ([#36](https://github.com/filecoin-project/sentinel-visor/issues/36))
+- push docker tags from ci ([#26](https://github.com/filecoin-project/sentinel-visor/issues/26))
+- tighten up error propagation ([#23](https://github.com/filecoin-project/sentinel-visor/issues/23))
+- fix docker hub submodule error ([#22](https://github.com/filecoin-project/sentinel-visor/issues/22))
+- add circle ci ([#20](https://github.com/filecoin-project/sentinel-visor/issues/20))
+- add docker build and make targets ([#19](https://github.com/filecoin-project/sentinel-visor/issues/19))
+
+### Dep
+- add fil-blst submodule
 
 ### Perf
 - minor optimization of market actor diffing ([#78](https://github.com/filecoin-project/sentinel-visor/issues/78))
@@ -136,19 +154,5 @@
 ### Test
 - **storage:** add test to check for duplicate schema migrations ([#80](https://github.com/filecoin-project/sentinel-visor/issues/80))
 
-### BREAKING CHANGE
-
-this changes the cli interface to remove the run subcommand.
-
-Previously the indexer and procerror would be started via:
-
-  sentinel-visor run indexer
-  sentinel-visor run processor
-
-After this change:
-
-  sentinel-visor index
-  sentinel-visor process
-
-
-[Unreleased]: https://github.com/filecoin-project/sentinel-visor/compare/v0.2.0...HEAD
+[v0.3.0]: https://github.com/filecoin-project/sentinel-visor/compare/v0.2.0...v0.3.0
+[v0.2.0]: https://github.com/filecoin-project/sentinel-visor/compare/b7044af...v0.2.0
