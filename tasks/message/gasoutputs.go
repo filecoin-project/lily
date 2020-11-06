@@ -18,7 +18,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/wait"
 )
 
-func NewGasOutputsProcessor(d *storage.Database, opener lens.APIOpener, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64) *GasOutputsProcessor {
+func NewGasOutputsProcessor(d *storage.Database, opener lens.APIOpener, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64, useLeases bool) *GasOutputsProcessor {
 	return &GasOutputsProcessor{
 		opener:      opener,
 		storage:     d,
@@ -27,6 +27,7 @@ func NewGasOutputsProcessor(d *storage.Database, opener lens.APIOpener, leaseLen
 		minHeight:   minHeight,
 		maxHeight:   maxHeight,
 		clock:       clock.New(),
+		useLeases:   useLeases,
 	}
 }
 
@@ -39,6 +40,7 @@ type GasOutputsProcessor struct {
 	minHeight   int64         // limit processing to messages from tipsets equal to or above this height
 	maxHeight   int64         // limit processing to messages from tipsets equal to or below this height
 	clock       clock.Clock
+	useLeases   bool // when true this task will update the claimed_until column in the processing table (which can cause contention)
 }
 
 // Run starts processing batches of messages until the context is done or
@@ -63,8 +65,16 @@ func (p *GasOutputsProcessor) processBatch(ctx context.Context, node lens.API) (
 
 	claimUntil := p.clock.Now().Add(p.leaseLength)
 
-	// Lease some messages with receipts to work on
-	batch, err := p.storage.LeaseGasOutputsMessages(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight)
+	var batch []*derived.ProcessingGasOutputs
+	var err error
+
+	if p.useLeases {
+		// Lease some messages with receipts to work on
+		batch, err = p.storage.LeaseGasOutputsMessages(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight)
+	} else {
+		batch, err = p.storage.FindGasOutputsMessages(ctx, p.batchSize, p.minHeight, p.maxHeight)
+	}
+
 	if err != nil {
 		return false, err
 	}
@@ -77,9 +87,12 @@ func (p *GasOutputsProcessor) processBatch(ctx context.Context, node lens.API) (
 		return false, nil
 	}
 
-	log.Debugw("leased batch of messages", "count", len(batch))
-	ctx, cancel := context.WithDeadline(ctx, claimUntil)
-	defer cancel()
+	log.Debugw("processing batch of messages", "count", len(batch))
+	if p.useLeases {
+		var cancel func()
+		ctx, cancel = context.WithDeadline(ctx, claimUntil)
+		defer cancel()
+	}
 
 	for _, item := range batch {
 		// Stop processing if we have somehow passed our own lease time
@@ -91,16 +104,16 @@ func (p *GasOutputsProcessor) processBatch(ctx context.Context, node lens.API) (
 
 		errorLog := log.With("cid", item.Cid)
 
-		if err := p.processItem(ctx, node, item); err != nil {
+		if err := p.processItem(ctx, node, &item.GasOutputs); err != nil {
 			// Any errors are likely to be problems using the lens, mark this tipset as failed and exit this batch
 			errorLog.Errorw("failed to process message", "error", err.Error())
-			if err := p.storage.MarkGasOutputsMessagesComplete(ctx, item.Cid, p.clock.Now(), err.Error()); err != nil {
+			if err := p.storage.MarkGasOutputsMessagesComplete(ctx, item.Height, item.Cid, p.clock.Now(), err.Error()); err != nil {
 				errorLog.Errorw("failed to mark message complete", "error", err.Error())
 			}
 			return false, xerrors.Errorf("process item: %w", err)
 		}
 
-		if err := p.storage.MarkGasOutputsMessagesComplete(ctx, item.Cid, p.clock.Now(), ""); err != nil {
+		if err := p.storage.MarkGasOutputsMessagesComplete(ctx, item.Height, item.Cid, p.clock.Now(), ""); err != nil {
 			errorLog.Errorw("failed to mark message complete", "error", err.Error())
 		}
 	}

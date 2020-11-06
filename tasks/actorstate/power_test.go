@@ -47,31 +47,33 @@ func TestPowerExtractV0(t *testing.T) {
 	require.NoError(t, err)
 
 	info := ActorInfo{
-		Actor:   types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: stateCid},
-		Address: power.Address,
-		TipSet:  stateTs.Key(),
+		Actor:           types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: stateCid},
+		Address:         power.Address,
+		TipSet:          stateTs.Key(),
+		ParentStateRoot: stateTs.ParentState(),
 	}
 
 	mapi.setActor(stateTs.Key(), power.Address, &types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: stateCid})
+	mapi.putTipSet(stateTs)
 
 	ex := StoragePowerExtractor{}
 	res, err := ex.Extract(ctx, info, mapi)
 	require.NoError(t, err)
 
-	cp, ok := res.(*powermodel.ChainPower)
+	cp, ok := res.(*powermodel.PowerTaskResult)
 	require.True(t, ok)
 	require.NotNil(t, cp)
 
-	assert.EqualValues(t, info.ParentStateRoot.String(), cp.StateRoot, "StateRoot")
-	assert.EqualValues(t, state.TotalRawBytePower.String(), cp.TotalRawBytesPower, "TotalRawBytesPower")
-	assert.EqualValues(t, state.TotalQualityAdjPower.String(), cp.TotalQABytesPower, "TotalQABytesPower")
-	assert.EqualValues(t, state.TotalBytesCommitted.String(), cp.TotalRawBytesCommitted, "TotalRawBytesCommitted")
-	assert.EqualValues(t, state.TotalQABytesCommitted.String(), cp.TotalQABytesCommitted, "TotalQABytesCommitted")
-	assert.EqualValues(t, state.TotalPledgeCollateral.String(), cp.TotalPledgeCollateral, "TotalPledgeCollateral")
-	assert.EqualValues(t, state.ThisEpochQAPowerSmoothed.PositionEstimate.String(), cp.QASmoothedPositionEstimate, "QASmoothedPositionEstimate")
-	assert.EqualValues(t, state.ThisEpochQAPowerSmoothed.VelocityEstimate.String(), cp.QASmoothedVelocityEstimate, "QASmoothedVelocityEstimate")
-	assert.EqualValues(t, state.MinerCount, cp.MinerCount, "MinerCount")
-	assert.EqualValues(t, state.MinerAboveMinPowerCount, cp.ParticipatingMinerCount, "ParticipatingMinerCount")
+	assert.EqualValues(t, info.ParentStateRoot.String(), cp.ChainPowerModel.StateRoot, "StateRoot")
+	assert.EqualValues(t, state.TotalRawBytePower.String(), cp.ChainPowerModel.TotalRawBytesPower, "TotalRawBytesPower")
+	assert.EqualValues(t, state.TotalQualityAdjPower.String(), cp.ChainPowerModel.TotalQABytesPower, "TotalQABytesPower")
+	assert.EqualValues(t, state.TotalBytesCommitted.String(), cp.ChainPowerModel.TotalRawBytesCommitted, "TotalRawBytesCommitted")
+	assert.EqualValues(t, state.TotalQABytesCommitted.String(), cp.ChainPowerModel.TotalQABytesCommitted, "TotalQABytesCommitted")
+	assert.EqualValues(t, state.TotalPledgeCollateral.String(), cp.ChainPowerModel.TotalPledgeCollateral, "TotalPledgeCollateral")
+	assert.EqualValues(t, state.ThisEpochQAPowerSmoothed.PositionEstimate.String(), cp.ChainPowerModel.QASmoothedPositionEstimate, "QASmoothedPositionEstimate")
+	assert.EqualValues(t, state.ThisEpochQAPowerSmoothed.VelocityEstimate.String(), cp.ChainPowerModel.QASmoothedVelocityEstimate, "QASmoothedVelocityEstimate")
+	assert.EqualValues(t, state.MinerCount, cp.ChainPowerModel.MinerCount, "MinerCount")
+	assert.EqualValues(t, state.MinerAboveMinPowerCount, cp.ChainPowerModel.ParticipatingMinerCount, "ParticipatingMinerCount")
 }
 
 func TestPowerExtractV2(t *testing.T) {
@@ -103,29 +105,31 @@ func TestPowerExtractV2(t *testing.T) {
 	require.NoError(t, err)
 
 	info := ActorInfo{
-		Actor:   types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: stateCid},
-		Address: power.Address,
-		TipSet:  stateTs.Key(),
+		Actor:           types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: stateCid},
+		Address:         power.Address,
+		TipSet:          stateTs.Key(),
+		ParentStateRoot: stateTs.ParentState(),
 	}
 
 	mapi.setActor(stateTs.Key(), power.Address, &types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: stateCid})
+	mapi.putTipSet(stateTs)
 
 	ex := StoragePowerExtractor{}
 	res, err := ex.Extract(ctx, info, mapi)
 	require.NoError(t, err)
 
-	cp, ok := res.(*powermodel.ChainPower)
+	cp, ok := res.(*powermodel.PowerTaskResult)
 	require.True(t, ok)
 	require.NotNil(t, cp)
 
-	assert.EqualValues(t, info.ParentStateRoot.String(), cp.StateRoot, "StateRoot")
-	assert.EqualValues(t, state.TotalRawBytePower.String(), cp.TotalRawBytesPower, "TotalRawBytesPower")
-	assert.EqualValues(t, state.TotalQualityAdjPower.String(), cp.TotalQABytesPower, "TotalQABytesPower")
-	assert.EqualValues(t, state.TotalBytesCommitted.String(), cp.TotalRawBytesCommitted, "TotalRawBytesCommitted")
-	assert.EqualValues(t, state.TotalQABytesCommitted.String(), cp.TotalQABytesCommitted, "TotalQABytesCommitted")
-	assert.EqualValues(t, state.TotalPledgeCollateral.String(), cp.TotalPledgeCollateral, "TotalPledgeCollateral")
-	assert.EqualValues(t, state.ThisEpochQAPowerSmoothed.PositionEstimate.String(), cp.QASmoothedPositionEstimate, "QASmoothedPositionEstimate")
-	assert.EqualValues(t, state.ThisEpochQAPowerSmoothed.VelocityEstimate.String(), cp.QASmoothedVelocityEstimate, "QASmoothedVelocityEstimate")
-	assert.EqualValues(t, state.MinerCount, cp.MinerCount, "MinerCount")
-	assert.EqualValues(t, state.MinerAboveMinPowerCount, cp.ParticipatingMinerCount, "ParticipatingMinerCount")
+	assert.EqualValues(t, info.ParentStateRoot.String(), cp.ChainPowerModel.StateRoot, "StateRoot")
+	assert.EqualValues(t, state.TotalRawBytePower.String(), cp.ChainPowerModel.TotalRawBytesPower, "TotalRawBytesPower")
+	assert.EqualValues(t, state.TotalQualityAdjPower.String(), cp.ChainPowerModel.TotalQABytesPower, "TotalQABytesPower")
+	assert.EqualValues(t, state.TotalBytesCommitted.String(), cp.ChainPowerModel.TotalRawBytesCommitted, "TotalRawBytesCommitted")
+	assert.EqualValues(t, state.TotalQABytesCommitted.String(), cp.ChainPowerModel.TotalQABytesCommitted, "TotalQABytesCommitted")
+	assert.EqualValues(t, state.TotalPledgeCollateral.String(), cp.ChainPowerModel.TotalPledgeCollateral, "TotalPledgeCollateral")
+	assert.EqualValues(t, state.ThisEpochQAPowerSmoothed.PositionEstimate.String(), cp.ChainPowerModel.QASmoothedPositionEstimate, "QASmoothedPositionEstimate")
+	assert.EqualValues(t, state.ThisEpochQAPowerSmoothed.VelocityEstimate.String(), cp.ChainPowerModel.QASmoothedVelocityEstimate, "QASmoothedVelocityEstimate")
+	assert.EqualValues(t, state.MinerCount, cp.ChainPowerModel.MinerCount, "MinerCount")
+	assert.EqualValues(t, state.MinerAboveMinPowerCount, cp.ChainPowerModel.ParticipatingMinerCount, "ParticipatingMinerCount")
 }

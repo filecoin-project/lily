@@ -45,15 +45,6 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node Ac
 		return nil, err
 	}
 
-	// TODO add this to the power actor processing.
-	// remove when #171 closes.
-	/*
-		minerPower, err := node.StateMinerPower(ctx, a.Address, a.TipSet)
-		if err != nil {
-			return nil, xerrors.Errorf("loading miner power: %w", err)
-		}
-	*/
-
 	minerInfoModel, err := ExtractMinerInfo(a, ec)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner info: %w", err)
@@ -289,13 +280,7 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 
 	sectorDealsModel := minermodel.MinerSectorDealList{}
 	if ec.IsGenesis() {
-		// load genesis miners sectors
-		mstate, err := miner.Load(node.Store(), ec.CurrActor)
-		if err != nil {
-			return nil, nil, nil, nil, err
-		}
-
-		msectors, err := mstate.LoadSectors(nil)
+		msectors, err := ec.CurrState.LoadSectors(nil)
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}

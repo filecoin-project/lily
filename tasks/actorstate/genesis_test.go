@@ -74,7 +74,7 @@ func TestGenesisProcessor(t *testing.T) {
 
 	t.Run("miner_deal_sectors", func(t *testing.T) {
 		var count int
-		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM miner_deal_sectors`)
+		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM miner_sector_deals`)
 		require.NoError(t, err)
 		assert.NotEqual(t, 0, count)
 	})
@@ -128,7 +128,7 @@ func truncateGenesisTables(tb testing.TB, db *pg.DB) error {
 		"miner_states",
 		"miner_powers",
 		"miner_sector_infos",
-		"miner_deal_sectors",
+		"miner_sector_deals",
 		"market_deal_states",
 		"market_deal_proposals",
 		"id_addresses",

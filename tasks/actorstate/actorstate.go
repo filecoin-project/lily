@@ -235,7 +235,7 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (
 	if p.useLeases {
 		batch, err = p.storage.LeaseActors(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
 	} else {
-		batch, err = p.storage.FindActors(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
+		batch, err = p.storage.FindActors(ctx, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
 	}
 	if err != nil {
 		return true, err
@@ -249,9 +249,12 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (
 		return false, nil
 	}
 
-	log.Debugw("leased batch of actors", "count", len(batch))
-	ctx, cancel := context.WithDeadline(ctx, claimUntil)
-	defer cancel()
+	log.Debugw("processing batch of actors", "count", len(batch))
+	if p.useLeases {
+		var cancel func()
+		ctx, cancel = context.WithDeadline(ctx, claimUntil)
+		defer cancel()
+	}
 
 	stats.Record(ctx, metrics.TipsetHeight.M(batch[0].Height))
 	for _, actor := range batch {
@@ -267,7 +270,7 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (
 		info, err := NewActorInfo(actor)
 		if err != nil {
 			errorLog.Errorw("unmarshal actor", "error", err.Error())
-			if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, p.clock.Now(), err.Error()); err != nil {
+			if err := p.storage.MarkActorComplete(ctx, actor.Height, actor.Head, actor.Code, p.clock.Now(), err.Error()); err != nil {
 				errorLog.Errorw("failed to mark actor complete", "error", err.Error())
 			}
 			continue
@@ -275,14 +278,14 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (
 
 		if err := p.processActor(ctx, node, info); err != nil {
 			errorLog.Errorw("process actor", "error", err.Error())
-			if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, p.clock.Now(), err.Error()); err != nil {
+			if err := p.storage.MarkActorComplete(ctx, actor.Height, actor.Head, actor.Code, p.clock.Now(), err.Error()); err != nil {
 				errorLog.Errorw("failed to mark actor complete", "error", err.Error())
 			}
 
 			return false, xerrors.Errorf("process actor: %w", err)
 		}
 
-		if err := p.storage.MarkActorComplete(ctx, actor.Head, actor.Code, p.clock.Now(), ""); err != nil {
+		if err := p.storage.MarkActorComplete(ctx, actor.Height, actor.Head, actor.Code, p.clock.Now(), ""); err != nil {
 			errorLog.Errorw("failed to mark actor complete", "error", err.Error())
 		}
 	}
