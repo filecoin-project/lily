@@ -94,9 +94,15 @@ func (s *Scheduler) Run(ctx context.Context) error {
 				if err := tc.Locker.Lock(ctx); err != nil {
 					if errors.Is(err, storage.ErrLockNotAcquired) {
 						log.Infow("task not started: lock not acquired", "task", tc.Name)
+						if tc.ExitOnFailure {
+							log.Fatal("Exiting due to previous error. ExitOnFailure")
+						}
 						return
 					}
 					log.Errorw("task not started: lock not acquired", "task", tc.Name, "error", err.Error())
+					if tc.ExitOnFailure {
+						log.Fatal("Exiting due to previous error. ExitOnFailure")
+					}
 					return
 				}
 				defer func() {
