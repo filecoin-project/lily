@@ -32,7 +32,6 @@ func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateA
 	if err != nil {
 		return nil, err
 	}
-	log.Debugw("read full actor state", "addr", a.Address.String(), "size", len(state), "code", ActorNameByCode(a.Actor.Code))
 
 	return &commonmodel.ActorTaskResult{
 		Actor: &commonmodel.Actor{

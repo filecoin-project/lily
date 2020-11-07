@@ -244,7 +244,7 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (
 	// If we have no tipsets to work on then wait before trying again
 	if len(batch) == 0 {
 		sleepInterval := wait.Jitter(idleSleepInterval, 2)
-		log.Debugf("no actors to process, waiting for %s", sleepInterval)
+		log.Debugw(fmt.Sprintf("no actors to process, waiting for %s", sleepInterval), "min_height", p.minHeight, "max_height", p.maxHeight)
 		time.Sleep(sleepInterval)
 		return false, nil
 	}
@@ -322,11 +322,11 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, node lens.API, i
 		return xerrors.Errorf("extract actor state: %w", err)
 	}
 
-	log.Debugw("persisting extracted state", "addr", info.Address.String())
-
 	if err := data.Persist(ctx, p.storage.DB); err != nil {
 		return xerrors.Errorf("persisting extracted state: %w", err)
 	}
+
+	log.Debugw("processed actor", "height", int64(info.Epoch), "addr", info.Address.String(), "code", ActorNameByCode(info.Actor.Code))
 
 	return nil
 }
