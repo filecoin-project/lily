@@ -36,7 +36,7 @@ type ChainHistoryIndexer struct {
 	finality  int   // epochs after which chain state is considered final
 	batchSize int   // number of blocks to persist in a batch
 	minHeight int64 // limit persisting to tipsets equal to or above this height
-	maxHeight int64 // limit persisting to tipsets equal to or below this height}
+	maxHeight int64 // limit persisting to tipsets equal to or below this height
 }
 
 // Run starts walking the chain history and continues until the context is done or
