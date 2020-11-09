@@ -94,6 +94,12 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target int) error {
 		return xerrors.Errorf("acquiring schema lock: %w", err)
 	}
 
+	// CREATE EXTENSION cannot run inside a transaction (as part of
+	// migration), so we run it explicitally here. (#179).
+	if _, err := d.DB.Exec(`CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public`); err != nil {
+		return xerrors.Errorf("creating timescaledb extension: %w", err)
+	}
+
 	// Remember to release the lock
 	defer func() {
 		err := SchemaLock.UnlockExclusive(ctx, db)
