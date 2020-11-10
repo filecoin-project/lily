@@ -529,15 +529,21 @@ type heightRange struct {
 
 // divide divides a range into n equal subranges. The last range may be undersized.
 func (h heightRange) divide(n int) []heightRange {
-	size := h.max - h.min + 1 // +1 since the range is inclusive
+	if n <= 1 {
+		return []heightRange{h}
+	}
+	size := h.max - h.min
+	if size != math.MaxInt64 {
+		size++ // +1 since the range is inclusive
+	}
 	if int64(n) > size {
 		panic(fmt.Sprintf("can't subdivide a range of %d into %d pieces", size, n))
 	}
-	step := size / int64(n)
+	step := size/int64(n) - 1
 
 	subs := make([]heightRange, n)
 	subs[0].min = h.min
-	subs[0].max = h.min + step - 1
+	subs[0].max = h.min + step
 
 	for i := 1; i < n; i++ {
 		subs[i].min = subs[i-1].max + 1
