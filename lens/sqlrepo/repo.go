@@ -104,7 +104,7 @@ type SQLAPI struct {
 
 // TODO: Remove. See https://github.com/filecoin-project/sentinel-visor/issues/196
 func (ra *SQLAPI) StateGetActor(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
-	return lens.OptimizedStateGetActorWithFallback(ctx, ra, ra.FullNodeAPI, actor, tsk)
+	return lens.OptimizedStateGetActorWithFallback(ctx, ra.ChainAPI.Chain, ra.FullNodeAPI, actor, tsk)
 }
 
 func (ra *SQLAPI) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs {

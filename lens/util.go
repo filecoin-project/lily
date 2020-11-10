@@ -6,6 +6,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/state"
+	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/ipfs/go-cid"
@@ -21,8 +22,8 @@ var logger = logging.Logger("visor/lens/lotus")
 // pre-computed ParentState().
 //
 // TODO: Remove. See:  https://github.com/filecoin-project/sentinel-visor/issues/196
-func OptimizedStateGetActorWithFallback(ctx context.Context, api API, fallback full.StateModuleAPI, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
-	act, err := efficientStateGetActor(ctx, api, actor, tsk)
+func OptimizedStateGetActorWithFallback(ctx context.Context, store *store.ChainStore, fallback full.StateModuleAPI, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
+	act, err := efficientStateGetActorFromChainStore(ctx, store, actor, tsk)
 	if err != nil {
 		logger.Warnf("Optimized StateGetActorError: %s. Falling back to default StateGetActor().")
 		return fallback.StateGetActor(ctx, actor, tsk)
@@ -30,13 +31,14 @@ func OptimizedStateGetActorWithFallback(ctx context.Context, api API, fallback f
 	return act, nil
 }
 
-func efficientStateGetActor(ctx context.Context, api API, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
-	ts, err := api.ChainGetTipSet(ctx, tsk)
+func efficientStateGetActorFromChainStore(ctx context.Context, store *store.ChainStore, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
+	ts, err := store.GetTipSetFromKey(tsk)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to load tipset: %w", err)
 	}
 
-	child, err := api.ChainGetTipSetByHeight(ctx, ts.Height()+1, types.NewTipSetKey())
+	// heaviest tipset means look on the main chain and false means return tipset following null round.
+	child, err := store.GetTipsetByHeight(ctx, ts.Height()+1, store.GetHeaviestTipSet(), false)
 	if err != nil {
 		return nil, xerrors.Errorf("load child tipset: %w", err)
 	}
@@ -45,7 +47,7 @@ func efficientStateGetActor(ctx context.Context, api API, actor address.Address,
 		return nil, errors.New("child is not on the same chain")
 	}
 
-	st, err := state.LoadStateTree(api.Store(), child.ParentState())
+	st, err := state.LoadStateTree(store.Store(ctx), child.ParentState())
 	if err != nil {
 		return nil, xerrors.Errorf("load state tree: %w", err)
 	}
