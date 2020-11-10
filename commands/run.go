@@ -263,12 +263,13 @@ var Run = &cli.Command{
 		// Add one indexing task to follow the chain head
 		if cctx.Bool("indexhead") {
 			scheduler.Add(schedule.TaskConfig{
-				Name:                "ChainHeadIndexer",
-				Task:                indexer.NewChainHeadIndexer(rctx.db, rctx.opener, cctx.Int("indexhead-confidence")),
-				Locker:              NewGlobalSingleton(ChainHeadIndexerLockID, rctx.db), // only want one forward indexer anywhere to be running
-				RestartOnFailure:    true,
-				RestartOnCompletion: true, // we always want the indexer to be running
-				RestartDelay:        time.Minute,
+				Name:                        "ChainHeadIndexer",
+				Task:                        indexer.NewChainHeadIndexer(rctx.db, rctx.opener, cctx.Int("indexhead-confidence")),
+				Locker:                      NewGlobalSingleton(ChainHeadIndexerLockID, rctx.db), // only want one forward indexer anywhere to be running
+				LockerFailureSchedulerAbort: true,
+				RestartOnFailure:            true,
+				RestartOnCompletion:         true, // we always want the indexer to be running
+				RestartDelay:                time.Minute,
 			})
 		}
 

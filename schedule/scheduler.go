@@ -30,6 +30,10 @@ type TaskConfig struct {
 	// Locker is an optional lock that must be taken before the task can execute.
 	Locker Locker
 
+	// LockerFailureSchedulerAbort controls whether the scheduler is
+	// halted when this task fails to take its lock.
+	LockerFailureSchedulerAbort bool
+
 	// RestartOnFailure controls whether the task should be restarted if it stops with an error.
 	RestartOnFailure bool
 
@@ -91,9 +95,13 @@ func (s *Scheduler) Run(ctx context.Context) error {
 				if err := tc.Locker.Lock(ctx); err != nil {
 					if errors.Is(err, storage.ErrLockNotAcquired) {
 						log.Infow("task not started: lock not acquired", "task", tc.Name)
-						return
+					} else {
+						log.Errorw("task not started: lock not acquired", "task", tc.Name, "error", err.Error())
 					}
-					log.Errorw("task not started: lock not acquired", "task", tc.Name, "error", err.Error())
+					if tc.LockerFailureSchedulerAbort {
+						// Cancel the scheduler context. Stops visor.
+						cancel()
+					}
 					return
 				}
 				defer func() {
