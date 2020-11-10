@@ -12,6 +12,7 @@ import (
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
+	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/lotus/extern/sector-storage/ffiwrapper"
 	"github.com/filecoin-project/lotus/journal"
@@ -99,6 +100,11 @@ type SQLAPI struct {
 	impl.FullNodeAPI
 	context.Context
 	cacheSize int
+}
+
+// TODO: Remove. See https://github.com/filecoin-project/sentinel-visor/issues/196
+func (ra *SQLAPI) StateGetActor(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
+	return lens.OptimizedStateGetActorWithFallback(ctx, ra, ra.FullNodeAPI, actor, tsk)
 }
 
 func (ra *SQLAPI) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs {

@@ -131,7 +131,8 @@ func (aw *APIWrapper) StateGetActor(ctx context.Context, actor address.Address, 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.API, "StateGetActor"))
 	stop := metrics.Timer(ctx, metrics.LensRequestDuration)
 	defer stop()
-	return aw.FullNode.StateGetActor(ctx, actor, tsk)
+
+	return lens.OptimizedStateGetActorWithFallback(ctx, aw, aw.FullNode, actor, tsk)
 }
 
 func (aw *APIWrapper) StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error) {

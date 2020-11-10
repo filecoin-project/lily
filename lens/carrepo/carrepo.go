@@ -117,6 +117,11 @@ func (ra *CarAPI) Store() adt.Store {
 	return adtStore
 }
 
+// TODO: Remove. See https://github.com/filecoin-project/sentinel-visor/issues/196
+func (ra *CarAPI) StateGetActor(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
+	return lens.OptimizedStateGetActorWithFallback(ctx, ra, ra.FullNodeAPI, actor, tsk)
+}
+
 func (ra *CarAPI) ClientStartDeal(ctx context.Context, params *api.StartDealParams) (*cid.Cid, error) {
 	return nil, fmt.Errorf("unsupported")
 }

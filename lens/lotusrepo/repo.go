@@ -17,6 +17,7 @@ import (
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
+	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/lotus/extern/sector-storage/ffiwrapper"
 	"github.com/filecoin-project/lotus/lib/cachebs"
@@ -114,6 +115,11 @@ func (ra *RepoAPI) Store() adt.Store {
 	cs := cbor.NewCborStore(cachedStore)
 	adtStore := adt.WrapStore(ra.Context, cs)
 	return adtStore
+}
+
+// TODO: Remove. See https://github.com/filecoin-project/sentinel-visor/issues/196
+func (ra *RepoAPI) StateGetActor(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
+	return lens.OptimizedStateGetActorWithFallback(ctx, ra, ra.FullNodeAPI, actor, tsk)
 }
 
 func (ra *RepoAPI) ClientStartDeal(ctx context.Context, params *api.StartDealParams) (*cid.Cid, error) {
