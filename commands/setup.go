@@ -27,6 +27,7 @@ import (
 	carapi "github.com/filecoin-project/sentinel-visor/lens/carrepo"
 	vapi "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	repoapi "github.com/filecoin-project/sentinel-visor/lens/lotusrepo"
+	s3api "github.com/filecoin-project/sentinel-visor/lens/s3repo"
 	sqlapi "github.com/filecoin-project/sentinel-visor/lens/sqlrepo"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/storage"
@@ -55,6 +56,8 @@ func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error)
 		opener, closer, err = carapi.NewAPIOpener(cctx)
 	} else if cctx.String("lens") == "sql" {
 		opener, closer, err = sqlapi.NewAPIOpener(cctx)
+	} else if cctx.String("lens") == "s3" {
+		opener, closer, err = s3api.NewAPIOpener(cctx)
 	}
 	if err != nil {
 		return nil, nil, xerrors.Errorf("get node api: %w", err)
