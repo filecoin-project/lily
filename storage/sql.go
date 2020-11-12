@@ -591,8 +591,7 @@ func (d *Database) FindGasOutputsMessages(ctx context.Context, batchSize int, mi
 
 	var list []*derived.ProcessingGasOutputs
 
-	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		_, err := tx.QueryContext(ctx, &list, `
+	if _, err := d.DB.QueryContext(ctx, &list, `
 		SELECT pm.height, pm.cid, m.from, m.to, m.size_bytes, m.nonce, m.value,
 			   m.gas_fee_cap, m.gas_premium, m.gas_limit, m.method,
 			   r.state_root, r.exit_code,r.gas_used, bh.parent_base_fee
@@ -603,14 +602,11 @@ func (d *Database) FindGasOutputsMessages(ctx context.Context, batchSize int, mi
 		JOIN block_headers bh on bm.block = bh.cid AND bm.height = bh.height
 		WHERE pm.gas_outputs_completed_at IS null AND
 		      pm.height >= ? AND pm.height <= ?
+		      AND r.height >= ? AND r.height <= ?
+		      AND r.height > m.height + 10
 		ORDER BY pm.height DESC
 		LIMIT ?
-`, minHeight, maxHeight, batchSize)
-		if err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
+`, minHeight, maxHeight, minHeight+10, maxHeight+10, batchSize); err != nil {
 		return nil, err
 	}
 	return list, nil
