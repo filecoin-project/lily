@@ -31,6 +31,7 @@ build/.update-modules:
 
 .PHONY: deps
 deps: build/.update-modules
+	go get -u github.com/git-chglog/git-chglog/cmd/git-chglog
 
 # test starts dependencies and runs all tests
 .PHONY: test
@@ -81,3 +82,7 @@ dist-clean:
 	git clean -xdff
 	git submodule deinit --all -f
 .PHONY: dist-clean
+
+.PHONY: changelog
+changelog:
+	git-chglog -o CHANGELOG.md

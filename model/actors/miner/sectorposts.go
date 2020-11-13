@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/go-pg/pg/v10"
-	"github.com/ipfs/go-cid"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
@@ -19,7 +18,7 @@ type MinerSectorPost struct {
 	PostMessageCID string
 }
 
-type MinerSectorPosts []*MinerSectorPost
+type MinerSectorPostList []*MinerSectorPost
 
 func (msp *MinerSectorPost) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	if _, err := tx.ModelContext(ctx, msp).
@@ -30,38 +29,22 @@ func (msp *MinerSectorPost) PersistWithTx(ctx context.Context, tx *pg.Tx) error 
 	return nil
 }
 
-func NewMinerSectorPost(task *MinerTaskResult) MinerSectorPosts {
-	out := make([]*MinerSectorPost, len(task.Posts))
-	for s, c := range task.Posts {
-		mid := ""
-		if c != cid.Undef {
-			mid = c.String()
-		}
-		post := &MinerSectorPost{
-			Height:         int64(task.Height),
-			MinerID:        task.Addr.String(),
-			SectorID:       s,
-			PostMessageCID: mid,
-		}
-		out = append(out, post)
-	}
-
-	return out
-}
-
-func (msps MinerSectorPosts) Persist(ctx context.Context, db *pg.DB) error {
+func (ml MinerSectorPostList) Persist(ctx context.Context, db *pg.DB) error {
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return msps.PersistWithTx(ctx, tx)
+		return ml.PersistWithTx(ctx, tx)
 	})
 }
 
-func (msps MinerSectorPosts) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerSectorPosts.PersistWithTx", trace.WithAttributes(label.Int("count", len(msps))))
+func (ml MinerSectorPostList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerSectorPostList.PersistWithTx", trace.WithAttributes(label.Int("count", len(ml))))
 	defer span.End()
-	for _, msp := range msps {
-		if err := msp.PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
+	if len(ml) == 0 {
+		return nil
+	}
+	if _, err := tx.ModelContext(ctx, &ml).
+		OnConflict("do nothing").
+		Insert(); err != nil {
+		return xerrors.Errorf("persisting miner sector post list: %w")
 	}
 	return nil
 }

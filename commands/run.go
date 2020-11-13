@@ -91,7 +91,7 @@ var Run = &cli.Command{
 			Name:    "actorstate-lease",
 			Aliases: []string{"asl"},
 			Value:   time.Minute * 15,
-			Usage:   "Lease time for the actor state processor",
+			Usage:   "Lease time for the actor state processor. Set to zero to avoid using leases.",
 			EnvVars: []string{"VISOR_ACTORSTATE_LEASE"},
 		},
 		&cli.IntFlag{
@@ -120,7 +120,6 @@ var Run = &cli.Command{
 			DefaultText: "none",
 			EnvVars:     []string{"VISOR_ACTORSTATE_EXCLUDE"},
 		},
-
 		&cli.DurationFlag{
 			Name:    "message-lease",
 			Aliases: []string{"ml"},
@@ -222,6 +221,11 @@ var Run = &cli.Command{
 		// Validate flags
 		heightFrom := cctx.Int64("from")
 		heightTo := cctx.Int64("to")
+
+		if heightFrom > heightTo {
+			return xerrors.Errorf("--from must not be greater than --to")
+		}
+
 		actorCodes, err := getActorCodes(cctx)
 		if err != nil {
 			return err
@@ -260,7 +264,7 @@ var Run = &cli.Command{
 		if cctx.Bool("indexhead") {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                "ChainHeadIndexer",
-				Task:                indexer.NewChainHeadIndexer(rctx.db, rctx.api, cctx.Int("indexhead-confidence")),
+				Task:                indexer.NewChainHeadIndexer(rctx.db, rctx.opener, cctx.Int("indexhead-confidence")),
 				Locker:              NewGlobalSingleton(ChainHeadIndexerLockID, rctx.db), // only want one forward indexer anywhere to be running
 				RestartOnFailure:    true,
 				RestartOnCompletion: true, // we always want the indexer to be running
@@ -272,7 +276,7 @@ var Run = &cli.Command{
 		if cctx.Bool("indexhistory") {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                "ChainHistoryIndexer",
-				Task:                indexer.NewChainHistoryIndexer(rctx.db, rctx.api, cctx.Int("indexhistory-batch")),
+				Task:                indexer.NewChainHistoryIndexer(rctx.db, rctx.opener, cctx.Int("indexhistory-batch")),
 				Locker:              NewGlobalSingleton(ChainHistoryIndexerLockID, rctx.db), // only want one history indexer anywhere to be running
 				RestartOnFailure:    true,
 				RestartOnCompletion: true,
@@ -284,53 +288,109 @@ var Run = &cli.Command{
 		for i := 0; i < cctx.Int("statechange-workers"); i++ {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                fmt.Sprintf("ActorStateChangeProcessor%03d", i),
-				Task:                actorstate.NewActorStateChangeProcessor(rctx.db, rctx.api, cctx.Duration("statechange-lease"), cctx.Int("statechange-batch"), heightFrom, heightTo),
+				Task:                actorstate.NewActorStateChangeProcessor(rctx.db, rctx.opener, cctx.Duration("statechange-lease"), cctx.Int("statechange-batch"), heightFrom, heightTo),
 				RestartOnFailure:    true,
 				RestartOnCompletion: true,
+				RestartDelay:        time.Minute,
 			})
 		}
 
 		// Add several state tasks to read actor state from each indexed block
-		for i := 0; i < cctx.Int("actorstate-workers"); i++ {
-			p, err := actorstate.NewActorStateProcessor(rctx.db, rctx.api, cctx.Duration("actorstate-lease"), cctx.Int("actorstate-batch"), heightFrom, heightTo, actorCodes)
-			if err != nil {
-				return err
-			}
-			scheduler.Add(schedule.TaskConfig{
-				Name:                fmt.Sprintf("ActorStateProcessor%03d", i),
-				Task:                p,
-				RestartOnFailure:    true,
-				RestartOnCompletion: true,
-			})
+
+		// actor state processing cannot include genesis
+		actorStateHeightFrom := heightFrom
+		if actorStateHeightFrom == 0 {
+			actorStateHeightFrom = 1
 		}
 
+		// If we are not using leases then further subdivide work by height to avoid workers processing the same actor states
+		if cctx.Duration("actorstate-lease") == 0 {
+			if cctx.Int("actorstate-workers") > 1 && heightTo > estimateCurrentEpoch()*2 {
+				log.Warnf("--to is set to an unexpectedly high epoch which will likely result in some workers not being assigned a useful height range")
+			}
+
+			hr := heightRange{min: actorStateHeightFrom, max: heightTo}
+			srs := hr.divide(cctx.Int("actorstate-workers"))
+			for i, sr := range srs {
+				p, err := actorstate.NewActorStateProcessor(rctx.db, rctx.opener, 0, cctx.Int("actorstate-batch"), sr.min, sr.max, actorCodes, false)
+				if err != nil {
+					return err
+				}
+				log.Debugf("scheduling actor state processor with height range %d to %d", sr.min, sr.max)
+				scheduler.Add(schedule.TaskConfig{
+					Name:                fmt.Sprintf("ActorStateProcessor%03d", i),
+					Task:                p,
+					RestartOnFailure:    true,
+					RestartOnCompletion: true,
+					RestartDelay:        time.Minute,
+				})
+			}
+		} else {
+			// Use workers with leasing
+			for i := 0; i < cctx.Int("actorstate-workers"); i++ {
+				p, err := actorstate.NewActorStateProcessor(rctx.db, rctx.opener, cctx.Duration("actorstate-lease"), cctx.Int("actorstate-batch"), actorStateHeightFrom, heightTo, actorCodes, true)
+				if err != nil {
+					return err
+				}
+				scheduler.Add(schedule.TaskConfig{
+					Name:                fmt.Sprintf("ActorStateProcessor%03d", i),
+					Task:                p,
+					RestartOnFailure:    true,
+					RestartOnCompletion: true,
+					RestartDelay:        time.Minute,
+				})
+			}
+		}
 		// Add several message tasks to read messages from indexed tipsets
 		for i := 0; i < cctx.Int("message-workers"); i++ {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                fmt.Sprintf("MessageProcessor%03d", i),
-				Task:                message.NewMessageProcessor(rctx.db, rctx.api, cctx.Duration("message-lease"), cctx.Int("message-batch"), cctx.Bool("derive-parsed-messages"), heightFrom, heightTo),
+				Task:                message.NewMessageProcessor(rctx.db, rctx.opener, cctx.Duration("message-lease"), cctx.Int("message-batch"), cctx.Bool("derive-parsed-messages"), heightFrom, heightTo),
 				RestartOnFailure:    true,
 				RestartOnCompletion: true,
+				RestartDelay:        time.Minute,
 			})
 		}
 
-		// Add several gas output tasks to read gas outputs from indexed messages
-		for i := 0; i < cctx.Int("gasoutputs-workers"); i++ {
-			scheduler.Add(schedule.TaskConfig{
-				Name:                fmt.Sprintf("GasOutputsProcessor%03d", i),
-				Task:                message.NewGasOutputsProcessor(rctx.db, rctx.api, cctx.Duration("gasoutputs-lease"), cctx.Int("gasoutputs-batch"), heightFrom, heightTo),
-				RestartOnFailure:    true,
-				RestartOnCompletion: true,
-			})
+		// If we are not using leases then further subdivide work by height to avoid workers processing the same actor states
+		if cctx.Duration("gasoutputs-lease") == 0 {
+			if cctx.Int("gasoutputs-workers") > 1 && heightTo > estimateCurrentEpoch()*2 {
+				log.Warnf("--to is set to an unexpectedly high epoch which will likely result in some workers not being assigned a useful height range")
+			}
+
+			hr := heightRange{min: heightFrom, max: heightTo}
+			srs := hr.divide(cctx.Int("gasoutputs-workers"))
+			for i, sr := range srs {
+				log.Debugf("scheduling gas outputs state processor with height range %d to %d", sr.min, sr.max)
+				scheduler.Add(schedule.TaskConfig{
+					Name:                fmt.Sprintf("GasOutputsProcessor%03d", i),
+					Task:                message.NewGasOutputsProcessor(rctx.db, rctx.opener, cctx.Duration("gasoutputs-lease"), cctx.Int("gasoutputs-batch"), sr.min, sr.max, false),
+					RestartOnFailure:    true,
+					RestartOnCompletion: true,
+					RestartDelay:        time.Minute,
+				})
+			}
+		} else {
+			// Add several gas output tasks to read gas outputs from indexed messages
+			for i := 0; i < cctx.Int("gasoutputs-workers"); i++ {
+				scheduler.Add(schedule.TaskConfig{
+					Name:                fmt.Sprintf("GasOutputsProcessor%03d", i),
+					Task:                message.NewGasOutputsProcessor(rctx.db, rctx.opener, cctx.Duration("gasoutputs-lease"), cctx.Int("gasoutputs-batch"), heightFrom, heightTo, true),
+					RestartOnFailure:    true,
+					RestartOnCompletion: true,
+					RestartDelay:        time.Minute,
+				})
+			}
 		}
 
 		// Add several chain economics tasks to read gas outputs from indexed messages
 		for i := 0; i < cctx.Int("chaineconomics-workers"); i++ {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                fmt.Sprintf("ChainEconomicsProcessor%03d", i),
-				Task:                chain.NewChainEconomicsProcessor(rctx.db, rctx.api, cctx.Duration("chaineconomics-lease"), cctx.Int("chaineconomics-batch"), heightFrom, heightTo),
+				Task:                chain.NewChainEconomicsProcessor(rctx.db, rctx.opener, cctx.Duration("chaineconomics-lease"), cctx.Int("chaineconomics-batch"), heightFrom, heightTo),
 				RestartOnFailure:    true,
 				RestartOnCompletion: true,
+				RestartDelay:        time.Minute,
 			})
 		}
 
@@ -343,6 +403,7 @@ var Run = &cli.Command{
 				Task:                views.NewChainVisRefresher(rctx.db, cctx.Duration("chainvis-refresh-rate")),
 				RestartOnFailure:    true,
 				RestartOnCompletion: false,
+				RestartDelay:        time.Minute,
 			})
 		}
 		// Include optional refresher for processing stats
@@ -353,6 +414,7 @@ var Run = &cli.Command{
 				Task:                stats.NewProcessingStatsRefresher(rctx.db, cctx.Duration("processingstats-refresh-rate")),
 				RestartOnFailure:    true,
 				RestartOnCompletion: true,
+				RestartDelay:        time.Minute,
 			})
 		}
 
@@ -453,4 +515,35 @@ var actorNamesToCodes = map[string]cid.Cid{
 	"fil/2/verifiedregistry": builtin2.VerifiedRegistryActorCodeID,
 	"fil/2/account":          builtin2.AccountActorCodeID,
 	"fil/2/multisig":         builtin2.MultisigActorCodeID,
+}
+
+type heightRange struct {
+	min, max int64
+}
+
+// divide divides a range into n equal subranges. The last range may be undersized.
+func (h heightRange) divide(n int) []heightRange {
+	size := h.max - h.min + 1 // +1 since the range is inclusive
+	if int64(n) > size {
+		panic(fmt.Sprintf("can't subdivide a range of %d into %d pieces", size, n))
+	}
+	step := size / int64(n)
+
+	subs := make([]heightRange, n)
+	subs[0].min = h.min
+	subs[0].max = h.min + step - 1
+
+	for i := 1; i < n; i++ {
+		subs[i].min = subs[i-1].max + 1
+		subs[i].max = subs[i].min + step
+	}
+
+	subs[n-1].max = h.max
+	return subs
+}
+
+var mainnetGenesis = time.Date(2020, 8, 24, 22, 0, 0, 0, time.UTC)
+
+func estimateCurrentEpoch() int64 {
+	return int64(time.Since(mainnetGenesis) / (builtin.EpochDurationSeconds))
 }

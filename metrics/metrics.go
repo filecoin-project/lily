@@ -22,6 +22,8 @@ var (
 var (
 	ProcessingDuration      = stats.Float64("processing_duration_ms", "Time taken to process a single item", stats.UnitMilliseconds)
 	PersistDuration         = stats.Float64("persist_duration_ms", "Duration of a models persist operation", stats.UnitMilliseconds)
+	BatchSelectionDuration  = stats.Float64("batch_selection_duration_ms", "Time taken to select a batch of work", stats.UnitMilliseconds)
+	CompletionDuration      = stats.Float64("completion_duration_ms", "Time taken to mark an item as completed", stats.UnitMilliseconds)
 	DBConns                 = stats.Int64("db_conns", "Database connections held", stats.UnitDimensionless)
 	HistoricalIndexerHeight = stats.Int64("historical_sync_height", "Sync height of the historical indexer", stats.UnitDimensionless)
 	EpochsToSync            = stats.Int64("epochs_to_sync", "Epochs yet to sync", stats.UnitDimensionless)
@@ -37,6 +39,16 @@ var (
 	}
 	PersistDurationView = &view.View{
 		Measure:     PersistDuration,
+		Aggregation: defaultMillisecondsDistribution,
+		TagKeys:     []tag.Key{TaskType},
+	}
+	BatchSelectionDurationView = &view.View{
+		Measure:     BatchSelectionDuration,
+		Aggregation: defaultMillisecondsDistribution,
+		TagKeys:     []tag.Key{TaskType},
+	}
+	CompletionDurationView = &view.View{
+		Measure:     CompletionDuration,
 		Aggregation: defaultMillisecondsDistribution,
 		TagKeys:     []tag.Key{TaskType},
 	}
@@ -68,6 +80,8 @@ var (
 var DefaultViews = []*view.View{
 	ProcessingDurationView,
 	PersistDurationView,
+	BatchSelectionDurationView,
+	CompletionDurationView,
 	DBConnsView,
 	HistoricalIndexerHeightView,
 	EpochsToSyncView,

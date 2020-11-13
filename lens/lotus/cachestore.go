@@ -19,14 +19,9 @@ type CacheCtxStore struct {
 	api   api.FullNode
 }
 
-func NewCacheCtxStore(ctx context.Context, api api.FullNode, size int) (*CacheCtxStore, error) {
-	ac, err := lru.NewARC(size)
-	if err != nil {
-		return nil, xerrors.Errorf("new arc cache: %w", err)
-	}
-
+func NewCacheCtxStore(ctx context.Context, api api.FullNode, cache *lru.ARCCache) (*CacheCtxStore, error) {
 	return &CacheCtxStore{
-		cache: ac,
+		cache: cache,
 		ctx:   ctx,
 		api:   api,
 	}, nil

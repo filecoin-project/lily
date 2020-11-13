@@ -8,10 +8,9 @@ require (
 	github.com/filecoin-project/go-address v0.0.4
 	github.com/filecoin-project/go-bitfield v0.2.1
 	github.com/filecoin-project/go-fil-markets v1.0.0
-	github.com/filecoin-project/go-jsonrpc v0.1.2-0.20201008195726-68c6a2704e49
 	github.com/filecoin-project/go-multistore v0.0.3
 	github.com/filecoin-project/go-state-types v0.0.0-20201013222834-41ea465f274f
-	github.com/filecoin-project/lotus v1.1.0
+	github.com/filecoin-project/lotus v1.1.3-0.20201031000550-a5c05f87f15f
 	github.com/filecoin-project/specs-actors v0.9.12
 	github.com/filecoin-project/specs-actors/v2 v2.2.0
 	github.com/filecoin-project/statediff v0.0.8-0.20201027195725-7eaa5391a639
@@ -29,6 +28,7 @@ require (
 	github.com/jackc/pgx/v4 v4.9.0
 	github.com/lib/pq v1.8.0
 	github.com/libp2p/go-libp2p-peer v0.2.0
+	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/multiformats/go-multibase v0.0.3
 	github.com/multiformats/go-multihash v0.0.14
