@@ -57,6 +57,11 @@ testfull:
 testshort:
 	go test -short ./... -v
 
+# lint runs linting against code base
+.PHONY: lint
+lint:
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint run
+
 .PHONY: visor
 visor:
 	rm -f visor
