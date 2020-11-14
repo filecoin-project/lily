@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -111,15 +112,15 @@ var Run = &cli.Command{
 			Usage:   "Number of actor state processors to start",
 			EnvVars: []string{"VISOR_ACTORSTATE_WORKERS"},
 		},
-		&cli.StringSliceFlag{
+		&cli.StringFlag{
 			Name:        "actorstate-include",
-			Usage:       "List of actor codes that should be procesed by actor state processors",
+			Usage:       "Comma separated list of actor codes that should have their state extracted by actor state processors. Use 'all' to include all supported.",
 			DefaultText: "all supported",
 			EnvVars:     []string{"VISOR_ACTORSTATE_INCLUDE"},
 		},
-		&cli.StringSliceFlag{
+		&cli.StringFlag{
 			Name:        "actorstate-exclude",
-			Usage:       "List of actor codes that should be not be procesed by actor state processors",
+			Usage:       "Comma separated list of actor codes that should not have their state extracted by actor state processors. Use 'all' to exclude all actors.",
 			DefaultText: "none",
 			EnvVars:     []string{"VISOR_ACTORSTATE_EXCLUDE"},
 		},
@@ -280,9 +281,11 @@ var Run = &cli.Command{
 
 		// Add one indexing task to follow the chain head
 		if cctx.Bool("indexhead") {
+			blockIndexer := indexer.NewTipSetBlockIndexer(rctx.DB)
+
 			scheduler.Add(schedule.TaskConfig{
 				Name:                "ChainHeadIndexer",
-				Task:                indexer.NewChainHeadIndexer(rctx.DB, rctx.Opener, cctx.Int("indexhead-confidence")),
+				Task:                indexer.NewChainHeadIndexer(blockIndexer, rctx.Opener, cctx.Int("indexhead-confidence")),
 				Locker:              NewGlobalSingleton(ChainHeadIndexerLockID, rctx.DB), // only want one forward indexer anywhere to be running
 				RestartOnFailure:    false,
 				RestartOnCompletion: false,
@@ -292,9 +295,10 @@ var Run = &cli.Command{
 
 		// Add one indexing task to walk the chain history
 		if cctx.Bool("indexhistory") {
+			blockIndexer := indexer.NewTipSetBlockIndexer(rctx.DB)
 			scheduler.Add(schedule.TaskConfig{
 				Name:                "ChainHistoryIndexer",
-				Task:                indexer.NewChainHistoryIndexer(rctx.DB, rctx.Opener, cctx.Int("indexhistory-batch"), heightFrom, heightTo),
+				Task:                indexer.NewChainHistoryIndexer(blockIndexer, rctx.Opener, heightFrom, heightTo),
 				Locker:              NewGlobalSingleton(ChainHistoryIndexerLockID, rctx.DB), // only want one history indexer anywhere to be running
 				RestartOnFailure:    false,
 				RestartOnCompletion: false,
@@ -446,12 +450,20 @@ var Run = &cli.Command{
 // getActorCodes parses the cli flags to obtain a list of actor codes for the actor state processor. We support some
 // common short names for actors or the cid of the actor code.
 func getActorCodes(cctx *cli.Context) ([]cid.Cid, error) {
-	include := cctx.StringSlice("actorstate-include")
-	exclude := cctx.StringSlice("actorstate-exclude")
-	if len(include) == 0 && len(exclude) == 0 {
+	includeStr := cctx.String("actorstate-include")
+	excludeStr := cctx.String("actorstate-exclude")
+	if (includeStr == "" || includeStr == "all") && excludeStr == "" {
 		// By default we process all supported actor types
 		return actorstate.SupportedActorCodes(), nil
 	}
+
+	if includeStr == "" && excludeStr == "all" {
+		// Excluding all actors
+		return []cid.Cid{}, nil
+	}
+
+	include := strings.Split(includeStr, ",")
+	exclude := strings.Split(excludeStr, ",")
 
 	if len(include) != 0 && len(exclude) != 0 {
 		return nil, fmt.Errorf("cannot specify both actorstate-include and actorstate-exclude")

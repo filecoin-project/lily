@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/urfave/cli/v2"
-
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/lib/ulimit"
 	"github.com/filecoin-project/sentinel-visor/lens/util"
+	"github.com/urfave/cli/v2"
 	"github.com/willscott/carbs"
+
+	"github.com/filecoin-project/sentinel-visor/lens"
 )
 
 func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {

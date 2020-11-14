@@ -10,6 +10,7 @@ import (
 	"github.com/filecoin-project/go-multistore"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -30,6 +31,7 @@ import (
 	cbor "github.com/ipfs/go-ipld-cbor"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/xerrors"
 )
 
 type APIOpener struct {
@@ -45,7 +47,6 @@ func NewAPIOpener(c *cli.Context, bs blockstore.Blockstore, head HeadMthd) (*API
 	if _, _, err := ulimit.ManageFdLimit(); err != nil {
 		return nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
 	}
-
 	r := repo.NewMemory(nil)
 
 	lr, err := r.Lock(repo.FullNode)
@@ -100,10 +101,15 @@ type LensAPI struct {
 	impl.FullNodeAPI
 	context.Context
 	cacheSize int
+	cs        *store.ChainStore
 }
 
 func (ra *LensAPI) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs {
 	return vm.ComputeGasOutputs(gasUsed, gasLimit, baseFee, feeCap, gasPremium)
+}
+
+func (ra *LensAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
+	return GetExecutedMessagesForTipset(ctx, ra.cs, ts, pts)
 }
 
 func (ra *LensAPI) Store() adt.Store {
@@ -213,4 +219,131 @@ func (m fakeVerifier) VerifyWindowPoSt(ctx context.Context, info proof.WindowPoS
 
 func (m fakeVerifier) GenerateWinningPoStSectorChallenge(ctx context.Context, proof abi.RegisteredPoStProof, id abi.ActorID, randomness abi.PoStRandomness, u uint64) ([]uint64, error) {
 	panic("GenerateWinningPoStSectorChallenge not supported")
+}
+
+// GetMessagesForTipset returns a list of messages sent as part of pts (parent) with receipts found in ts (child).
+// No attempt at deduplication of messages is made.
+func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
+	if !types.CidArrsEqual(ts.Parents().Cids(), pts.Cids()) {
+		return nil, xerrors.Errorf("child is not on the same chain")
+	}
+
+	stateTree, err := state.LoadStateTree(cs.Store(ctx), ts.ParentState())
+	if err != nil {
+		return nil, xerrors.Errorf("load state tree: %w", err)
+	}
+
+	// Build a lookup of actor codes
+	actorCodes := map[address.Address]cid.Cid{}
+	if err := stateTree.ForEach(func(a address.Address, act *types.Actor) error {
+		actorCodes[a] = act.Code
+		return nil
+	}); err != nil {
+		return nil, xerrors.Errorf("iterate actors: %w", err)
+	}
+
+	getActorCode := func(a address.Address) cid.Cid {
+		c, ok := actorCodes[a]
+		if ok {
+			return c
+		}
+
+		return cid.Undef
+	}
+
+	// Build a lookup of which blocks each message appears in
+	messageBlocks := map[cid.Cid][]cid.Cid{}
+	for blockIdx, bh := range pts.Blocks() {
+		blscids, secpkcids, err := cs.ReadMsgMetaCids(bh.Messages)
+		if err != nil {
+			return nil, xerrors.Errorf("read messages for block: %w", err)
+		}
+
+		for _, c := range blscids {
+			messageBlocks[c] = append(messageBlocks[c], pts.Cids()[blockIdx])
+		}
+
+		for _, c := range secpkcids {
+			messageBlocks[c] = append(messageBlocks[c], pts.Cids()[blockIdx])
+		}
+
+	}
+
+	bmsgs, err := cs.BlockMsgsForTipset(pts)
+	if err != nil {
+		return nil, xerrors.Errorf("block messages for tipset: %w", err)
+	}
+
+	pblocks := pts.Blocks()
+	if len(bmsgs) != len(pblocks) {
+		// logic error somewhere
+		return nil, xerrors.Errorf("mismatching number of blocks returned from block messages, got %d wanted %d", len(bmsgs), len(pblocks))
+	}
+
+	count := 0
+	for _, bm := range bmsgs {
+		count += len(bm.BlsMessages) + len(bm.SecpkMessages)
+	}
+
+	// Start building a list of completed message with receipt
+	emsgs := make([]*lens.ExecutedMessage, 0, count)
+
+	// bmsgs is ordered by block
+	var index uint64
+	for blockIdx, bm := range bmsgs {
+		for _, blsm := range bm.BlsMessages {
+			msg := blsm.VMMessage()
+			emsgs = append(emsgs, &lens.ExecutedMessage{
+				Cid:           blsm.Cid(),
+				Height:        pts.Height(),
+				Message:       msg,
+				BlockHeader:   pblocks[blockIdx],
+				Blocks:        messageBlocks[blsm.Cid()],
+				Index:         index,
+				FromActorCode: getActorCode(msg.From),
+				ToActorCode:   getActorCode(msg.To),
+			})
+			index++
+		}
+
+		for _, secm := range bm.SecpkMessages {
+			msg := secm.VMMessage()
+			emsgs = append(emsgs, &lens.ExecutedMessage{
+				Cid:           secm.Cid(),
+				Height:        pts.Height(),
+				Message:       secm.VMMessage(),
+				BlockHeader:   pblocks[blockIdx],
+				Blocks:        messageBlocks[secm.Cid()],
+				Index:         index,
+				FromActorCode: getActorCode(msg.From),
+				ToActorCode:   getActorCode(msg.To),
+			})
+			index++
+		}
+
+	}
+
+	// Retrieve receipts using a block from the child tipset
+	rs, err := adt.AsArray(cs.Store(ctx), ts.Blocks()[0].ParentMessageReceipts)
+	if err != nil {
+		return nil, xerrors.Errorf("amt load: %w", err)
+	}
+
+	if rs.Length() != uint64(len(emsgs)) {
+		// logic error somewhere
+		return nil, xerrors.Errorf("mismatching number of receipts: got %d wanted %d", rs.Length(), len(emsgs))
+	}
+
+	// Receipts are in same order as BlockMsgsForTipset
+	for _, em := range emsgs {
+		var r types.MessageReceipt
+		if found, err := rs.Get(em.Index, &r); err != nil {
+			return nil, err
+		} else if !found {
+			return nil, xerrors.Errorf("failed to find receipt %d", em.Index)
+		}
+		em.Receipt = &r
+	}
+
+	return emsgs, nil
 }

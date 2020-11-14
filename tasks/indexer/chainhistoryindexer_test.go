@@ -56,12 +56,12 @@ func TestChainHistoryIndexer(t *testing.T) {
 	cids := bhs.Cids()
 	rounds := bhs.Rounds()
 
-	d := &storage.Database{DB: db}
+	blockIndexer := NewTipSetBlockIndexer(&storage.Database{DB: db})
 	t.Logf("initializing indexer")
-	idx := NewChainHistoryIndexer(d, opener, 1, 0, 1000)
+	idx := NewChainHistoryIndexer(blockIndexer, opener, 0, int64(head.Height()))
 
 	t.Logf("indexing chain")
-	err = idx.WalkChain(ctx, openedAPI, int64(head.Height()))
+	err = idx.WalkChain(ctx, openedAPI, head)
 	require.NoError(t, err, "WalkChain")
 
 	t.Run("block_headers", func(t *testing.T) {

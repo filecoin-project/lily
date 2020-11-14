@@ -22,7 +22,7 @@ func init() {
 
 type MultiSigActorExtractor struct{}
 
-func (m MultiSigActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
+func (m MultiSigActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.PersistableWithTx, error) {
 	ctx, span := global.Tracer("").Start(ctx, "MultiSigActor")
 	defer span.End()
 
