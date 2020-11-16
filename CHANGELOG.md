@@ -28,6 +28,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **task:** add chain economics processing ([#94](https://github.com/filecoin-project/sentinel-visor/issues/94))
 
 ### Fix
+- Make ChainVis into basic views
+- failure to get lock when ExitOnFailure is true now exits
 - use hash index type for visor_processing_actors_code_idx ([#106](https://github.com/filecoin-project/sentinel-visor/issues/106))
 - fix actor completion query
 - visor_processing_stats queries for Visor processing dash ([#156](https://github.com/filecoin-project/sentinel-visor/issues/156))
@@ -41,10 +43,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **migration:** message gas economy uses bigint
 - **migrations:** migrations require version 0
 - **schema:** remove blocking processing indexes and improve processing stats table ([#130](https://github.com/filecoin-project/sentinel-visor/issues/130))
+
 ### Build
 - add prometheus, grafana and dashboard images
 
 ### Chore
+- Incl migration in CI test
 - Include RC releases in push docker images ([#195](https://github.com/filecoin-project/sentinel-visor/issues/195))
 - add metrics to leasing and work completion queries
 - add changelog ([#150](https://github.com/filecoin-project/sentinel-visor/issues/150))
