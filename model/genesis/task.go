@@ -17,7 +17,7 @@ import (
 
 type ProcessGenesisSingletonResult struct {
 	minerResults    miner.MinerTaskResultList
-	msigResults     multisig.MultisigTransactionList
+	msigResults     multisig.MultisigTaskResultList
 	marketResult    *GenesisMarketTaskResult
 	initActorResult *GenesisInitActorTaskResult
 	powerResult     *power.PowerTaskResult
@@ -66,8 +66,8 @@ func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, db *pg.DB) 
 	})
 }
 
-func (r *ProcessGenesisSingletonResult) AddMsig(m multisig.MultisigTransactionList) {
-	r.msigResults = append(r.msigResults, m...)
+func (r *ProcessGenesisSingletonResult) AddMsig(m *multisig.MultisigTaskResult) {
+	r.msigResults = append(r.msigResults, m)
 }
 
 func (r *ProcessGenesisSingletonResult) AddMiner(m *miner.MinerTaskResult) {

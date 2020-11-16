@@ -119,7 +119,7 @@ func (p *GenesisProcessor) ProcessGenesis(ctx context.Context, gen *types.TipSet
 			if err != nil {
 				return xerrors.Errorf("multisig actor state: %w", err)
 			}
-			result.AddMsig(res.(multisigmodel.MultisigTransactionList))
+			result.AddMsig(res.(*multisigmodel.MultisigTaskResult))
 		case builtin.RewardActorCodeID:
 			// TODO
 		case builtin.VerifiedRegistryActorCodeID:
