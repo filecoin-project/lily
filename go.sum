@@ -310,6 +310,8 @@ github.com/filecoin-project/lotus v1.1.2/go.mod h1:jSlQv+/+WGox3TdEzBEfmXzvbot4O
 github.com/filecoin-project/lotus v1.1.3-0.20201031000550-a5c05f87f15f/go.mod h1:41z5qos7adeegSp1SjylE85hu7Zey1h0SV0vpMPv2G0=
 github.com/filecoin-project/lotus v1.1.3-rc1 h1:tyrHHqn3gZckRVgZB867XHdXNOGLSKJ97DmXm7YAGnI=
 github.com/filecoin-project/lotus v1.1.3-rc1/go.mod h1:cyY86E8Z30ka3OtlwUoRAFMBjejNHhZqudX6DfZ0ABg=
+github.com/filecoin-project/lotus v1.1.4-0.20201116232018-a152d98af82b h1:6jGRCILkL+LhoZtOd4Szch/9U53ejDKN9wIifyGGe9Y=
+github.com/filecoin-project/lotus v1.1.4-0.20201116232018-a152d98af82b/go.mod h1:8WI3Q1BgJ9nW4uuS5uc75NVHCNiqCuytzlQGZYVTCUk=
 github.com/filecoin-project/specs-actors v0.9.4/go.mod h1:BStZQzx5x7TmCkLv0Bpa07U6cPKol6fd3w9KjMPZ6Z4=
 github.com/filecoin-project/specs-actors v0.9.7/go.mod h1:wM2z+kwqYgXn5Z7scV1YHLyd1Q1cy0R8HfTIWQ0BFGU=
 github.com/filecoin-project/specs-actors v0.9.12 h1:iIvk58tuMtmloFNHhAOQHG+4Gci6Lui0n7DYQGi3cJk=
@@ -549,6 +551,7 @@ github.com/ipfs/go-bitswap v0.1.8/go.mod h1:TOWoxllhccevbWFUR2N7B1MTSVVge1s6XSMi
 github.com/ipfs/go-bitswap v0.2.20 h1:Zfi5jDUoqxDThORUznqdeL77DdGniAzlccNJ4vr+Itc=
 github.com/ipfs/go-bitswap v0.2.20/go.mod h1:C7TwBgHnu89Q8sHsTJP7IhUqF9XYLe71P4tT5adgmYo=
 github.com/ipfs/go-bitswap v0.3.1/go.mod h1:AyWWfN3moBzQX0banEtfKOfbXb3ZeoOeXnZGNPV9S6w=
+github.com/ipfs/go-bitswap v0.3.2/go.mod h1:AyWWfN3moBzQX0banEtfKOfbXb3ZeoOeXnZGNPV9S6w=
 github.com/ipfs/go-block-format v0.0.1/go.mod h1:DK/YYcsSUIVAFNwo/KZCdIIbpN0ROH/baNLgayt4pFc=
 github.com/ipfs/go-block-format v0.0.2 h1:qPDvcP19izTjU8rgo6p7gTXZlkMkF5bz5G3fqIsSCPE=
 github.com/ipfs/go-block-format v0.0.2/go.mod h1:AWR46JfpcObNfg3ok2JHDUfdiHRgWhJgCQF+KIgOPJY=

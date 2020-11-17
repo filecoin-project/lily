@@ -13,7 +13,7 @@ require (
 	github.com/filecoin-project/go-fil-markets v1.0.4
 	github.com/filecoin-project/go-multistore v0.0.3
 	github.com/filecoin-project/go-state-types v0.0.0-20201013222834-41ea465f274f
-	github.com/filecoin-project/lotus v1.1.3-rc1
+	github.com/filecoin-project/lotus v1.1.4-0.20201116232018-a152d98af82b
 	github.com/filecoin-project/specs-actors v0.9.12
 	github.com/filecoin-project/specs-actors/v2 v2.2.0
 	github.com/filecoin-project/statediff v0.0.8-0.20201027195725-7eaa5391a639
@@ -23,7 +23,6 @@ require (
 	github.com/go-pg/pgext v0.1.4
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/imdario/mergo v0.3.11 // indirect
-	github.com/ipfs/go-bitswap v0.3.1 // indirect
 	github.com/ipfs/go-block-format v0.0.2
 	github.com/ipfs/go-blockservice v0.1.4 // indirect
 	github.com/ipfs/go-cid v0.0.7
