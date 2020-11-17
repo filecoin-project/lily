@@ -603,7 +603,7 @@ func (d *Database) FindGasOutputsMessages(ctx context.Context, batchSize int, mi
 		WHERE pm.gas_outputs_completed_at IS null AND
 		      pm.height >= ? AND pm.height <= ?
 		      AND r.height >= ? AND r.height <= ?
-		      AND r.height > m.height AND r.height <= m.height + 20
+		      AND r.height = m.height + 1
 		ORDER BY pm.height DESC
 		LIMIT ?
 `, minHeight, maxHeight, minHeight+1, maxHeight+1, batchSize); err != nil {
