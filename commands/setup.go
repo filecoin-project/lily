@@ -164,6 +164,14 @@ func setupLogging(cctx *cli.Context) error {
 		return xerrors.Errorf("set rpc log level: %w", err)
 	}
 
+	if err := logging.SetLogLevel("bufbs", "error"); err != nil {
+		return xerrors.Errorf("set bufbs log level: %w", err)
+	}
+
+	if err := logging.SetLogLevel("vm", "error"); err != nil {
+		return xerrors.Errorf("set vm log level: %w", err)
+	}
+
 	llnamed := cctx.String("log-level-named")
 	if llnamed == "" {
 		return nil
