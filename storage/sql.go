@@ -596,7 +596,7 @@ func (d *Database) FindGasOutputsMessages(ctx context.Context, batchSize int, mi
 			   m.gas_fee_cap, m.gas_premium, m.gas_limit, m.method,
 			   r.state_root, r.exit_code,r.gas_used, bh.parent_base_fee
 		FROM visor_processing_messages pm
-		JOIN receipts r ON pm.cid = r.message -- don't join receipts on height since it's the height of the receipt
+		JOIN receipts r ON pm.cid = r.message AND r.height = pm.height + 1
 		JOIN messages m ON pm.cid = m.cid AND pm.height = m.height
 		JOIN block_messages bm on pm.cid = bm.message AND pm.height = bm.height
 		JOIN block_headers bh on bm.block = bh.cid AND bm.height = bh.height
@@ -604,7 +604,6 @@ func (d *Database) FindGasOutputsMessages(ctx context.Context, batchSize int, mi
 		      pm.height >= ? AND pm.height <= ?
 		      AND r.height >= ? AND r.height <= ?
 		      AND r.height = m.height + 1
-		ORDER BY pm.height DESC
 		LIMIT ?
 `, minHeight, maxHeight, minHeight+1, maxHeight+1, batchSize); err != nil {
 		return nil, err
