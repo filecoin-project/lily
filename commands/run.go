@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/filecoin-project/specs-actors/actors/builtin"
@@ -255,6 +258,21 @@ var Run = &cli.Command{
 			rctx.closer()
 			if err := rctx.db.Close(ctx); err != nil {
 				log.Errorw("close database", "error", err)
+			}
+		}()
+
+		// Set up a context that is canceled when the command is interrupted
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		// Set up a signal handler to cancel the context
+		go func() {
+			interrupt := make(chan os.Signal, 1)
+			signal.Notify(interrupt, syscall.SIGTERM, syscall.SIGINT)
+			select {
+			case <-interrupt:
+				cancel()
+			case <-ctx.Done():
 			}
 		}()
 
