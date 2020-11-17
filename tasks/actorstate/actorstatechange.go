@@ -3,7 +3,6 @@ package actorstate
 import (
 	"context"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/filecoin-project/go-address"
@@ -182,35 +181,15 @@ func (p *ActorStateChangeProcessor) processTipSet(ctx context.Context, node lens
 			return xerrors.Errorf("parse address: %w", err)
 		}
 
-		_, err = node.StateGetActor(ctx, addr, pts.Key())
-		if err != nil {
-			if strings.Contains(err.Error(), "actor not found") {
-				ll.Debugw("actor not found", "addr", str)
-				// TODO consider tracking deleted actors
-				continue
-			}
-			return xerrors.Errorf("get actor: %w", err)
-		}
-
-		_, err = node.StateGetActor(ctx, addr, pts.Parents())
-		if err != nil {
-			if strings.Contains(err.Error(), "actor not found") {
-				ll.Debugw("parent actor not found", "addr", str)
-				// TODO consider tracking deleted actors
-				continue
-			}
-			return xerrors.Errorf("get actor parent: %w", err)
-		}
-
 		palist = append(palist, &visor.ProcessingActor{
 			Head:            act.Head.String(),
 			Code:            act.Code.String(),
 			Nonce:           strconv.FormatUint(act.Nonce, 10),
 			Balance:         act.Balance.String(),
 			Address:         addr.String(),
-			TipSet:          pts.Key().String(),
-			ParentTipSet:    pts.Parents().String(),
-			ParentStateRoot: pts.ParentState().String(),
+			TipSet:          ts.Key().String(),
+			ParentTipSet:    pts.Key().String(),
+			ParentStateRoot: ts.ParentState().String(),
 			Height:          int64(ts.Height()),
 			AddedAt:         p.clock.Now(),
 		})
