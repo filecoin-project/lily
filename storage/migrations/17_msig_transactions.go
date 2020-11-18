@@ -12,13 +12,13 @@ func init() {
 		"height" bigint not null,
 		"multisig_id" text not null,
 		"state_root" text not null,
-		"transaction_id" text not null,
+		"transaction_id" bigint not null,
 
 		"to" text not null,
 		"value" text not null,
 		"method" bigint not null,
 		"params" bytea not null,
-		"approved" json not null,
+		"approved" jsonb not null,
 		PRIMARY KEY ("height", "state_root", "multisig_id", "transaction_id")
 	);
 `)
