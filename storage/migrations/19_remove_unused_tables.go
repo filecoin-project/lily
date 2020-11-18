@@ -4,7 +4,7 @@ import (
 	"github.com/go-pg/migrations/v8"
 )
 
-// Schema version 18 drops unused tables.
+// Schema version 19 drops unused tables.
 
 func init() {
 	up := batch(`
