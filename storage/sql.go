@@ -19,6 +19,7 @@ import (
 	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
+	"github.com/filecoin-project/sentinel-visor/model/actors/multisig"
 	"github.com/filecoin-project/sentinel-visor/model/actors/power"
 	"github.com/filecoin-project/sentinel-visor/model/actors/reward"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
@@ -54,6 +55,8 @@ var models = []interface{}{
 	(*messages.Receipt)(nil),
 	(*messages.MessageGasEconomy)(nil),
 	(*messages.ParsedMessage)(nil),
+
+	(*multisig.MultisigTransaction)(nil),
 
 	(*power.ChainPower)(nil),
 	(*reward.ChainReward)(nil),
