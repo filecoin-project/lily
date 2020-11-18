@@ -9,7 +9,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/node/impl/full"
-	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/xerrors"
 )
@@ -25,7 +24,7 @@ var logger = logging.Logger("visor/lens/lotus")
 func OptimizedStateGetActorWithFallback(ctx context.Context, store *store.ChainStore, fallback full.StateModuleAPI, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
 	act, err := efficientStateGetActorFromChainStore(ctx, store, actor, tsk)
 	if err != nil {
-		logger.Warnf("Optimized StateGetActorError: %s. Falling back to default StateGetActor().")
+		logger.Warnf("Optimized StateGetActorError: %s. Falling back to default StateGetActor().", err)
 		return fallback.StateGetActor(ctx, actor, tsk)
 	}
 	return act, nil
@@ -43,7 +42,7 @@ func efficientStateGetActorFromChainStore(ctx context.Context, store *store.Chai
 		return nil, xerrors.Errorf("load child tipset: %w", err)
 	}
 
-	if !cidsEqual(child.Parents().Cids(), ts.Cids()) {
+	if !types.CidArrsEqual(child.Parents().Cids(), ts.Cids()) {
 		return nil, errors.New("child is not on the same chain")
 	}
 
@@ -52,16 +51,4 @@ func efficientStateGetActorFromChainStore(ctx context.Context, store *store.Chai
 		return nil, xerrors.Errorf("load state tree: %w", err)
 	}
 	return st.GetActor(actor)
-}
-
-func cidsEqual(c1, c2 []cid.Cid) bool {
-	if len(c1) != len(c2) {
-		return false
-	}
-	for i, c := range c1 {
-		if !c2[i].Equals(c) {
-			return false
-		}
-	}
-	return true
 }
