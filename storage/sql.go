@@ -19,6 +19,7 @@ import (
 	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
+	"github.com/filecoin-project/sentinel-visor/model/actors/multisig"
 	"github.com/filecoin-project/sentinel-visor/model/actors/power"
 	"github.com/filecoin-project/sentinel-visor/model/actors/reward"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
@@ -55,6 +56,8 @@ var models = []interface{}{
 	(*messages.MessageGasEconomy)(nil),
 	(*messages.ParsedMessage)(nil),
 
+	(*multisig.MultisigTransaction)(nil),
+
 	(*power.ChainPower)(nil),
 	(*reward.ChainReward)(nil),
 	(*common.Actor)(nil),
@@ -90,7 +93,9 @@ func NewDatabase(ctx context.Context, url string, poolSize int) (*Database, erro
 		return nil, xerrors.Errorf("parse database URL: %w", err)
 	}
 	opt.PoolSize = poolSize
-	opt.ApplicationName = "visor-" + version.String()
+	if opt.ApplicationName == "" {
+		opt.ApplicationName = "visor-" + version.String()
+	}
 
 	return &Database{
 		opt:   opt,

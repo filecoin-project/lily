@@ -31,7 +31,6 @@ build/.update-modules:
 
 .PHONY: deps
 deps: build/.update-modules
-	go get -u github.com/git-chglog/git-chglog/cmd/git-chglog
 
 # test starts dependencies and runs all tests
 .PHONY: test
@@ -57,6 +56,11 @@ testfull:
 testshort:
 	go test -short ./... -v
 
+# lint runs linting against code base
+.PHONY: lint
+lint:
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint run
+
 .PHONY: visor
 visor:
 	rm -f visor
@@ -80,4 +84,4 @@ dist-clean:
 
 .PHONY: changelog
 changelog:
-	git-chglog -o CHANGELOG.md
+	go run github.com/git-chglog/git-chglog/cmd/git-chglog -o CHANGELOG.md

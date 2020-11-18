@@ -43,7 +43,7 @@ func WaitForExclusiveDatabase(ctx context.Context, tb testing.TB) (*pg.DB, func(
 	}
 
 	cleanup := func() error {
-		release()
+		_ = release()
 		return db.Close()
 	}
 

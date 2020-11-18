@@ -20,7 +20,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/lotus/extern/sector-storage/ffiwrapper"
-	"github.com/filecoin-project/lotus/lib/cachebs"
+	"github.com/filecoin-project/lotus/lib/bufbstore"
 	"github.com/filecoin-project/lotus/lib/ulimit"
 	marketevents "github.com/filecoin-project/lotus/markets/loggers"
 	"github.com/filecoin-project/lotus/node/impl"
@@ -63,7 +63,7 @@ func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 		return nil, nil, err
 	}
 
-	cs := store.NewChainStore(cacheDB, mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
+	cs := store.NewChainStore(cacheDB, cacheDB, mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
 
 	headKey, err := db.Roots()
 	if err != nil {
@@ -111,8 +111,8 @@ func (ra *CarAPI) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, ga
 
 func (ra *CarAPI) Store() adt.Store {
 	bs := ra.FullNodeAPI.ChainAPI.Chain.Blockstore()
-	cachedStore := cachebs.NewBufferedBstore(bs, ra.cacheSize)
-	cs := cbor.NewCborStore(cachedStore)
+	bufferedStore := bufbstore.NewBufferedBstore(bs)
+	cs := cbor.NewCborStore(bufferedStore)
 	adtStore := adt.WrapStore(ra.Context, cs)
 	return adtStore
 }
