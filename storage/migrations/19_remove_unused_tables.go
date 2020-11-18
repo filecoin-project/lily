@@ -8,7 +8,6 @@ import (
 
 func init() {
 	up := batch(`
-	DROP MATERIALIZED VIEW IF EXISTS public.chain_visualizer_chain_data_view; 		-- artifact from chainwatch
 	DROP MATERIALIZED VIEW IF EXISTS public.top_miners_by_base_reward; 				-- artifact from chainwatch
 	DROP MATERIALIZED VIEW IF EXISTS public.top_miners_by_base_reward_max_height;	-- artifact from chainwatch
 
