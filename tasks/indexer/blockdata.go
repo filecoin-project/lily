@@ -25,7 +25,6 @@ type UnindexedBlockData struct {
 	height            abi.ChainEpoch
 	blks              blocks.BlockHeaders
 	parents           blocks.BlockParents
-	drandEntries      blocks.DrandEntries
 	drandBlockEntries blocks.DrandBlockEntries
 	tipsets           visor.ProcessingTipSetList
 }
@@ -44,7 +43,6 @@ func (u *UnindexedBlockData) AddTipSet(ts *types.TipSet) {
 func (u *UnindexedBlockData) AddBlock(bh *types.BlockHeader) {
 	u.blks = append(u.blks, blocks.NewBlockHeader(bh))
 	u.parents = append(u.parents, blocks.NewBlockParents(bh)...)
-	u.drandEntries = append(u.drandEntries, blocks.NewDrandEnties(bh)...)
 	u.drandBlockEntries = append(u.drandBlockEntries, blocks.NewDrandBlockEntries(bh)...)
 }
 
@@ -62,10 +60,6 @@ func (u *UnindexedBlockData) Persist(ctx context.Context, db *pg.DB) error {
 
 		if err := u.parents.PersistWithTx(ctx, tx); err != nil {
 			return xerrors.Errorf("persist block parents: %w", err)
-		}
-
-		if err := u.drandEntries.PersistWithTx(ctx, tx); err != nil {
-			return xerrors.Errorf("persist drand entries: %w", err)
 		}
 
 		if err := u.drandBlockEntries.PersistWithTx(ctx, tx); err != nil {
@@ -100,7 +94,6 @@ func (u *UnindexedBlockData) MarkSeen(tsk types.TipSetKey) {
 func (u *UnindexedBlockData) Reset() {
 	u.blks = u.blks[:0]
 	u.parents = u.parents[:0]
-	u.drandEntries = u.drandEntries[:0]
 	u.drandBlockEntries = u.drandBlockEntries[:0]
 	u.tipsets = u.tipsets[:0]
 }

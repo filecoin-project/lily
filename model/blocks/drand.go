@@ -11,53 +11,6 @@ import (
 	"golang.org/x/xerrors"
 )
 
-type DrandEntrie struct {
-	Round uint64 `pg:",pk,use_zero"`
-	Data  []byte `pg:",notnull"`
-}
-
-func (de *DrandEntrie) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx, de).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting drand entries: %w", err)
-	}
-	return nil
-}
-
-func NewDrandEnties(header *types.BlockHeader) DrandEntries {
-	var out DrandEntries
-	for _, ent := range header.BeaconEntries {
-		out = append(out, &DrandEntrie{
-			Round: ent.Round,
-			Data:  ent.Data,
-		})
-	}
-	return out
-}
-
-type DrandEntries []*DrandEntrie
-
-func (des DrandEntries) Persist(ctx context.Context, db *pg.DB) error {
-	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return des.PersistWithTx(ctx, tx)
-	})
-}
-
-func (des DrandEntries) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if len(des) == 0 {
-		return nil
-	}
-	ctx, span := global.Tracer("").Start(ctx, "DrandEntries.PersistWithTx", trace.WithAttributes(label.Int("count", len(des))))
-	defer span.End()
-	if _, err := tx.ModelContext(ctx, &des).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting drand entries: %w", err)
-	}
-	return nil
-}
-
 func NewDrandBlockEntries(header *types.BlockHeader) DrandBlockEntries {
 	var out DrandBlockEntries
 	for _, ent := range header.BeaconEntries {

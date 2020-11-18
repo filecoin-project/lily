@@ -569,7 +569,6 @@ func TestLeaseGasOutputsMessages(t *testing.T) {
 			ParentWeight:    "parentweight",
 			ParentBaseFee:   "parentbasefee",
 			ParentStateRoot: "parentstateroot",
-			Ticket:          []byte("ticket"),
 		}
 	}
 
@@ -784,7 +783,6 @@ func TestFindGasOutputsMessages(t *testing.T) {
 			ParentWeight:    "parentweight",
 			ParentBaseFee:   "parentbasefee",
 			ParentStateRoot: "parentstateroot",
-			Ticket:          []byte("ticket"),
 		}
 	}
 

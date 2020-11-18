@@ -115,21 +115,6 @@ func TestChainHeadIndexer(t *testing.T) {
 			assert.True(t, exists, "block: %s", cid)
 		}
 	})
-
-	t.Run("drand_entries", func(t *testing.T) {
-		var count int
-		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM drand_entries`)
-		require.NoError(t, err)
-		assert.Equal(t, len(rounds), count)
-
-		var m *blocks.DrandEntrie
-		for _, round := range rounds {
-			exists, err := db.Model(m).Where("round = ?", round).Exists()
-			require.NoError(t, err)
-			assert.True(t, exists, "round: %d", round)
-		}
-	})
-
 	t.Run("drand_block_entries", func(t *testing.T) {
 		var count int
 		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM drand_block_entries`)

@@ -27,8 +27,6 @@ type Message struct {
 	SizeBytes int    `pg:",use_zero"`
 	Nonce     uint64 `pg:",use_zero"`
 	Method    uint64 `pg:",use_zero"`
-
-	Params []byte
 }
 
 func (m *Message) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
