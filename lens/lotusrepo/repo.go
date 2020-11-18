@@ -28,7 +28,6 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/runtime/proof"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
-	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	cbor "github.com/ipfs/go-ipld-cbor"
 )
 
@@ -62,7 +61,7 @@ func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 		return nil, nil, err
 	}
 
-	ds, err := lr.Datastore("/chain")
+	bs, err := lr.Blockstore(repo.BlockstoreChain)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -72,7 +71,6 @@ func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 		return nil, nil, err
 	}
 
-	bs := blockstore.NewBlockstore(ds)
 	cs := store.NewChainStore(bs, bs, mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
 	if err := cs.Load(); err != nil {
 		return nil, nil, err
