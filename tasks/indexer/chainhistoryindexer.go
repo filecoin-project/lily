@@ -18,12 +18,14 @@ import (
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
-func NewChainHistoryIndexer(d *storage.Database, opener lens.APIOpener, batchSize int) *ChainHistoryIndexer {
+func NewChainHistoryIndexer(d *storage.Database, opener lens.APIOpener, batchSize int, minHeight, maxHeight int64) *ChainHistoryIndexer {
 	return &ChainHistoryIndexer{
 		opener:    opener,
 		storage:   d,
 		finality:  900,
 		batchSize: batchSize,
+		minHeight: minHeight,
+		maxHeight: maxHeight,
 	}
 }
 
@@ -31,8 +33,10 @@ func NewChainHistoryIndexer(d *storage.Database, opener lens.APIOpener, batchSiz
 type ChainHistoryIndexer struct {
 	opener    lens.APIOpener
 	storage   *storage.Database
-	finality  int // epochs after which chain state is considered final
-	batchSize int // number of blocks to persist in a batch
+	finality  int   // epochs after which chain state is considered final
+	batchSize int   // number of blocks to persist in a batch
+	minHeight int64 // limit persisting to tipsets equal to or above this height
+	maxHeight int64 // limit persisting to tipsets equal to or below this height}
 }
 
 // Run starts walking the chain history and continues until the context is done or
@@ -120,10 +124,20 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, node lens.API, maxH
 			continue
 		}
 
+		if int64(ts.Height()) > c.maxHeight {
+			log.Debugw("skipping tipset, height above configured maximum", "current_height", ts.Height())
+			continue
+		}
+
+		if int64(ts.Height()) < c.minHeight {
+			log.Debugw("finishing walk, height below configured minimumm", "current_height", ts.Height())
+			break
+		}
+
 		blockData.AddTipSet(ts)
 
 		if blockData.Size() >= c.batchSize {
-			log.Debugw("persisting batch", "count", blockData.Size(), "queued", toVisit.Len(), "current_height", ts.Height())
+			log.Debugw("persisting batch", "count", blockData.Size(), "current_height", ts.Height())
 			// persist the batch of blocks to storage
 
 			if err := blockData.Persist(ctx, c.storage.DB); err != nil {

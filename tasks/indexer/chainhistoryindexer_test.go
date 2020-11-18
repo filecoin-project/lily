@@ -58,7 +58,7 @@ func TestChainHistoryIndexer(t *testing.T) {
 
 	d := &storage.Database{DB: db}
 	t.Logf("initializing indexer")
-	idx := NewChainHistoryIndexer(d, opener, 1)
+	idx := NewChainHistoryIndexer(d, opener, 1, 0, 1000)
 
 	t.Logf("indexing chain")
 	err = idx.WalkChain(ctx, openedAPI, int64(head.Height()))

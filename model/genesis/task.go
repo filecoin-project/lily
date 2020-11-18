@@ -11,11 +11,13 @@ import (
 	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
+	"github.com/filecoin-project/sentinel-visor/model/actors/multisig"
 	"github.com/filecoin-project/sentinel-visor/model/actors/power"
 )
 
 type ProcessGenesisSingletonResult struct {
 	minerResults    miner.MinerTaskResultList
+	msigResults     multisig.MultisigTaskResultList
 	marketResult    *GenesisMarketTaskResult
 	initActorResult *GenesisInitActorTaskResult
 	powerResult     *power.PowerTaskResult
@@ -54,8 +56,18 @@ func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, db *pg.DB) 
 				return err
 			}
 		}
+		// persist multisig actor
+		if r.msigResults != nil {
+			if err := r.msigResults.PersistWithTx(ctx, tx); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
+}
+
+func (r *ProcessGenesisSingletonResult) AddMsig(m *multisig.MultisigTaskResult) {
+	r.msigResults = append(r.msigResults, m)
 }
 
 func (r *ProcessGenesisSingletonResult) AddMiner(m *miner.MinerTaskResult) {

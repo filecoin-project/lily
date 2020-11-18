@@ -443,21 +443,22 @@ func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*mess
 func (p *MessageProcessor) fetchReceipts(ctx context.Context, node lens.API, ts *types.TipSet) (messagemodel.Receipts, error) {
 	out := messagemodel.Receipts{}
 
-	for _, blk := range ts.Cids() {
+	// receipts and messages for a parent state are consistent for blocks in the same tipset.
+	recs, err := node.ChainGetParentReceipts(ctx, ts.Blocks()[0].Cid())
+	if err != nil {
+		return nil, xerrors.Errorf("get parent receipts: %w", err)
+	}
+	msgs, err := node.ChainGetParentMessages(ctx, ts.Blocks()[0].Cid())
+	if err != nil {
+		return nil, xerrors.Errorf("get parent messages: %w", err)
+	}
+
+	for range ts.Cids() {
 		// Stop processing if we have somehow passed our own lease time
 		select {
 		case <-ctx.Done():
 			return nil, xerrors.Errorf("context done: %w", ctx.Err())
 		default:
-		}
-
-		recs, err := node.ChainGetParentReceipts(ctx, blk)
-		if err != nil {
-			return nil, xerrors.Errorf("get parent receipts: %w", err)
-		}
-		msgs, err := node.ChainGetParentMessages(ctx, blk)
-		if err != nil {
-			return nil, xerrors.Errorf("get parent messages: %w", err)
 		}
 
 		for i, r := range recs {
