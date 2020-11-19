@@ -284,7 +284,6 @@ var Run = &cli.Command{
 				Name:                "ChainHeadIndexer",
 				Task:                indexer.NewChainHeadIndexer(rctx.db, rctx.opener, cctx.Int("indexhead-confidence")),
 				Locker:              NewGlobalSingleton(ChainHeadIndexerLockID, rctx.db), // only want one forward indexer anywhere to be running
-				ExitOnFailure:       true,
 				RestartOnFailure:    false,
 				RestartOnCompletion: false,
 				RestartDelay:        time.Minute,
@@ -297,7 +296,6 @@ var Run = &cli.Command{
 				Name:                "ChainHistoryIndexer",
 				Task:                indexer.NewChainHistoryIndexer(rctx.db, rctx.opener, cctx.Int("indexhistory-batch"), heightFrom, heightTo),
 				Locker:              NewGlobalSingleton(ChainHistoryIndexerLockID, rctx.db), // only want one history indexer anywhere to be running
-				ExitOnFailure:       true,
 				RestartOnFailure:    false,
 				RestartOnCompletion: false,
 				RestartDelay:        time.Minute,
@@ -309,7 +307,6 @@ var Run = &cli.Command{
 			scheduler.Add(schedule.TaskConfig{
 				Name:                fmt.Sprintf("ActorStateChangeProcessor%03d", i),
 				Task:                actorstate.NewActorStateChangeProcessor(rctx.db, rctx.opener, cctx.Duration("statechange-lease"), cctx.Int("statechange-batch"), heightFrom, heightTo),
-				ExitOnFailure:       true,
 				RestartOnFailure:    false,
 				RestartOnCompletion: false,
 			})
@@ -339,7 +336,6 @@ var Run = &cli.Command{
 				scheduler.Add(schedule.TaskConfig{
 					Name:                fmt.Sprintf("ActorStateProcessor%03d", i),
 					Task:                p,
-					ExitOnFailure:       true,
 					RestartOnFailure:    false,
 					RestartOnCompletion: false,
 					RestartDelay:        time.Minute,
@@ -355,7 +351,6 @@ var Run = &cli.Command{
 				scheduler.Add(schedule.TaskConfig{
 					Name:                fmt.Sprintf("ActorStateProcessor%03d", i),
 					Task:                p,
-					ExitOnFailure:       true,
 					RestartOnFailure:    false,
 					RestartOnCompletion: false,
 					RestartDelay:        time.Minute,
@@ -367,7 +362,6 @@ var Run = &cli.Command{
 			scheduler.Add(schedule.TaskConfig{
 				Name:                fmt.Sprintf("MessageProcessor%03d", i),
 				Task:                message.NewMessageProcessor(rctx.db, rctx.opener, cctx.Duration("message-lease"), cctx.Int("message-batch"), cctx.Bool("derive-parsed-messages"), heightFrom, heightTo),
-				ExitOnFailure:       true,
 				RestartOnFailure:    false,
 				RestartOnCompletion: false,
 				RestartDelay:        time.Minute,
@@ -410,7 +404,6 @@ var Run = &cli.Command{
 			scheduler.Add(schedule.TaskConfig{
 				Name:                fmt.Sprintf("ChainEconomicsProcessor%03d", i),
 				Task:                chain.NewChainEconomicsProcessor(rctx.db, rctx.opener, cctx.Duration("chaineconomics-lease"), cctx.Int("chaineconomics-batch"), heightFrom, heightTo),
-				ExitOnFailure:       true,
 				RestartOnFailure:    false,
 				RestartOnCompletion: false,
 				RestartDelay:        time.Minute,
@@ -424,7 +417,6 @@ var Run = &cli.Command{
 				Name:                "ChainVisRefresher",
 				Locker:              NewGlobalSingleton(ChainVisRefresherLockID, rctx.db), // only need one chain vis refresher anywhere
 				Task:                views.NewChainVisRefresher(rctx.db, cctx.Duration("chainvis-refresh-rate")),
-				ExitOnFailure:       true,
 				RestartOnFailure:    false,
 				RestartOnCompletion: false,
 				RestartDelay:        time.Minute,
