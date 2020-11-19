@@ -33,8 +33,6 @@ import (
 var models = []interface{}{
 	(*blocks.BlockHeader)(nil),
 	(*blocks.BlockParent)(nil),
-
-	(*blocks.DrandEntrie)(nil),
 	(*blocks.DrandBlockEntrie)(nil),
 
 	(*miner.MinerSectorDeal)(nil),
