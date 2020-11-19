@@ -18,7 +18,8 @@ $$ LANGUAGE SQL;
 `)
 
 	down := batch(`
-	DROP FUNCTION IF EXISTS public.actor_tips;
+	DROP FUNCTION IF EXISTS public.unix_to_height;
+	DROP FUNCTION IF EXISTS public.height_to_unix;
 `)
 
 	migrations.MustRegisterTx(up, down)
