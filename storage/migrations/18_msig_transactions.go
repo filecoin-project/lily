@@ -4,7 +4,7 @@ import (
 	"github.com/go-pg/migrations/v8"
 )
 
-// Schema version 17 adds multisig transactions
+// Schema version 18 adds multisig transactions
 
 func init() {
 	up := batch(`
