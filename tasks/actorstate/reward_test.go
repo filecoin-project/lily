@@ -1,4 +1,4 @@
-package actorstate
+package actorstate_test
 
 import (
 	"context"
@@ -11,6 +11,8 @@ import (
 	"github.com/filecoin-project/lotus/chain/actors/builtin/reward"
 	"github.com/filecoin-project/lotus/chain/types"
 	rewardmodel "github.com/filecoin-project/sentinel-visor/model/actors/reward"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
+
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa0smoothing "github.com/filecoin-project/specs-actors/actors/util/smoothing"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
@@ -44,7 +46,7 @@ func TestRewardExtractV0(t *testing.T) {
 	stateTs, err := mockTipset(minerAddr, 1)
 	require.NoError(t, err)
 
-	info := ActorInfo{
+	info := actorstate.ActorInfo{
 		Actor:   types.Actor{Code: sa0builtin.RewardActorCodeID, Head: stateCid},
 		Address: power.Address,
 		TipSet:  stateTs.Key(),
@@ -52,7 +54,7 @@ func TestRewardExtractV0(t *testing.T) {
 
 	mapi.setActor(stateTs.Key(), reward.Address, &types.Actor{Code: sa0builtin.RewardActorCodeID, Head: stateCid})
 
-	ex := RewardExtractor{}
+	ex := actorstate.RewardExtractor{}
 	res, err := ex.Extract(ctx, info, mapi)
 	require.NoError(t, err)
 
@@ -98,7 +100,7 @@ func TestRewardExtractV2(t *testing.T) {
 	stateTs, err := mockTipset(minerAddr, 1)
 	require.NoError(t, err)
 
-	info := ActorInfo{
+	info := actorstate.ActorInfo{
 		Actor:   types.Actor{Code: sa2builtin.RewardActorCodeID, Head: stateCid},
 		Address: power.Address,
 		TipSet:  stateTs.Key(),
@@ -106,7 +108,7 @@ func TestRewardExtractV2(t *testing.T) {
 
 	mapi.setActor(stateTs.Key(), reward.Address, &types.Actor{Code: sa2builtin.RewardActorCodeID, Head: stateCid})
 
-	ex := RewardExtractor{}
+	ex := actorstate.RewardExtractor{}
 	res, err := ex.Extract(ctx, info, mapi)
 	require.NoError(t, err)
 

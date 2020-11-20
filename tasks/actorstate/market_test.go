@@ -1,4 +1,4 @@
-package actorstate
+package actorstate_test
 
 import (
 	"context"
@@ -10,6 +10,8 @@ import (
 	"github.com/filecoin-project/lotus/chain/actors/builtin/market"
 	"github.com/filecoin-project/lotus/chain/types"
 	marketmodel "github.com/filecoin-project/sentinel-visor/model/actors/market"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
+
 	sabuiltin "github.com/filecoin-project/specs-actors/actors/builtin"
 	samarket "github.com/filecoin-project/specs-actors/actors/builtin/market"
 	tutils "github.com/filecoin-project/specs-actors/support/testing"
@@ -141,14 +143,14 @@ func TestMarketPredicates(t *testing.T) {
 	mapi.setActor(oldStateTs.Key(), market.Address, &types.Actor{Code: sabuiltin.StorageMarketActorCodeID, Head: oldStateCid})
 	mapi.setActor(newStateTs.Key(), market.Address, &types.Actor{Code: sabuiltin.StorageMarketActorCodeID, Head: newStateCid})
 
-	info := ActorInfo{
+	info := actorstate.ActorInfo{
 		Actor:        types.Actor{Code: sabuiltin.StorageMarketActorCodeID, Head: newStateCid},
 		Address:      market.Address,
 		TipSet:       newStateTs.Key(),
 		ParentTipSet: oldStateTs.Key(),
 	}
 
-	ex := StorageMarketExtractor{}
+	ex := actorstate.StorageMarketExtractor{}
 	res, err := ex.Extract(ctx, info, mapi)
 	require.NoError(t, err)
 
