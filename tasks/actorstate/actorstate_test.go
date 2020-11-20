@@ -1,4 +1,4 @@
-package actorstate
+package actorstate_test
 
 import (
 	"context"
@@ -22,6 +22,7 @@ import (
 	cbornode "github.com/ipfs/go-ipld-cbor"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 
@@ -38,7 +39,7 @@ func mockTipset(minerAddr address.Address, timestamp uint64) (*types.TipSet, err
 	}})
 }
 
-var _ ActorStateAPI = (*MockAPI)(nil)
+var _ actorstate.ActorStateAPI = (*MockAPI)(nil)
 
 type MockAPI struct {
 	actors  map[actorKey]*types.Actor
