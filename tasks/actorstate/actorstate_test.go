@@ -26,8 +26,16 @@ import (
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 
-func mockTipset(minerAddr address.Address, timestamp uint64) (*types.TipSet, error) {
-	return types.NewTipSet([]*types.BlockHeader{{
+type MockTsOpts func(bh *types.BlockHeader)
+
+func WithHeight(h int64) MockTsOpts {
+	return func(bh *types.BlockHeader) {
+		bh.Height = abi.ChainEpoch(h)
+	}
+}
+
+func mockTipset(minerAddr address.Address, timestamp uint64, opts ...MockTsOpts) (*types.TipSet, error) {
+	bh := &types.BlockHeader{
 		Miner:                 minerAddr,
 		Height:                5,
 		ParentStateRoot:       testutil.RandomCid(),
@@ -36,7 +44,11 @@ func mockTipset(minerAddr address.Address, timestamp uint64) (*types.TipSet, err
 		BlockSig:              &crypto.Signature{Type: crypto.SigTypeBLS},
 		BLSAggregate:          &crypto.Signature{Type: crypto.SigTypeBLS},
 		Timestamp:             timestamp,
-	}})
+	}
+	for _, opt := range opts {
+		opt(bh)
+	}
+	return types.NewTipSet([]*types.BlockHeader{bh})
 }
 
 var _ actorstate.ActorStateAPI = (*MockAPI)(nil)
