@@ -35,8 +35,12 @@ func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAP
 
 		out := initmodel.IdAddressList{}
 		if err := initActorState.ForEachActor(func(id abi.ActorID, addr address.Address) error {
+			idAddr, err := address.NewIDAddress(uint64(id))
+			if err != nil {
+				return err
+			}
 			out = append(out, &initmodel.IdAddress{
-				ID:        id.String(),
+				ID:        idAddr.String(),
 				Address:   addr.String(),
 				StateRoot: a.ParentStateRoot.String(),
 			})
