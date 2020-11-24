@@ -22,10 +22,9 @@ import (
 func TestInitExtractorV0(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := NewMockAPI()
+	mapi := NewMockAPI(t)
 
-	state, err := mapi.newEmptyInitStateV0()
-	require.NoError(t, err)
+	state := mapi.newEmptyInitStateV0()
 	minerAddr := tutils.NewIDAddr(t, 1234)
 
 	t.Run("genesis init state extraction", func(t *testing.T) {
@@ -135,10 +134,9 @@ func TestInitExtractorV0(t *testing.T) {
 func TestInitExtractorV2(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := NewMockAPI()
+	mapi := NewMockAPI(t)
 
-	state, err := mapi.newEmptyInitStateV2()
-	require.NoError(t, err)
+	state := mapi.newEmptyInitStateV2()
 	minerAddr := tutils.NewIDAddr(t, 1234)
 
 	t.Run("genesis init state extraction", func(t *testing.T) {

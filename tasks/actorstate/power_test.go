@@ -29,10 +29,9 @@ import (
 func TestPowerExtractV0(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := NewMockAPI()
+	mapi := NewMockAPI(t)
 
-	state, err := mapi.newEmptyPowerStateV0()
-	require.NoError(t, err)
+	state := mapi.newEmptyPowerStateV0()
 	minerAddr := tutils.NewIDAddr(t, 1234)
 
 	t.Run("power state model", func(t *testing.T) {
@@ -142,10 +141,9 @@ func TestPowerExtractV0(t *testing.T) {
 func TestPowerExtractV2(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := NewMockAPI()
+	mapi := NewMockAPI(t)
 
-	state, err := mapi.newEmptyPowerStateV2()
-	require.NoError(t, err)
+	state := mapi.newEmptyPowerStateV2()
 	minerAddr := tutils.NewIDAddr(t, 1234)
 
 	t.Run("power state model", func(t *testing.T) {
