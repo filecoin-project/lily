@@ -24,10 +24,9 @@ import (
 func TestRewardExtractV0(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := NewMockAPI()
+	mapi := NewMockAPI(t)
 
-	state, err := mapi.newEmptyRewardStateV0(abi.NewStoragePower(500))
-	require.NoError(t, err)
+	state := mapi.newEmptyRewardStateV0(abi.NewStoragePower(500))
 
 	state.CumsumBaseline = big.NewInt(1000)
 	state.CumsumRealized = big.NewInt(2000)
@@ -64,8 +63,7 @@ func TestRewardExtractV0(t *testing.T) {
 
 	assert.EqualValues(t, info.ParentStateRoot.String(), cr.StateRoot, "StateRoot")
 	assert.EqualValues(t, state.CumsumBaseline.String(), cr.CumSumBaseline, "CumSumBaseline")
-	// TODO: assertion fails due to bug in lotus see https://github.com/filecoin-project/lotus/pull/4268
-	// assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
+	assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
 	assert.EqualValues(t, state.EffectiveBaselinePower.String(), cr.EffectiveBaselinePower, "EffectiveBaselinePower")
 	assert.EqualValues(t, state.ThisEpochBaselinePower.String(), cr.NewBaselinePower, "NewBaselinePower")
 	assert.EqualValues(t, state.ThisEpochRewardSmoothed.PositionEstimate.String(), cr.NewRewardSmoothedPositionEstimate, "NewRewardSmoothedPositionEstimate")
@@ -78,10 +76,9 @@ func TestRewardExtractV0(t *testing.T) {
 func TestRewardExtractV2(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := NewMockAPI()
+	mapi := NewMockAPI(t)
 
-	state, err := mapi.newEmptyRewardStateV2(abi.NewStoragePower(500))
-	require.NoError(t, err)
+	state := mapi.newEmptyRewardStateV2(abi.NewStoragePower(500))
 
 	state.CumsumBaseline = big.NewInt(1000)
 	state.CumsumRealized = big.NewInt(2000)
@@ -118,8 +115,7 @@ func TestRewardExtractV2(t *testing.T) {
 
 	assert.EqualValues(t, info.ParentStateRoot.String(), cr.StateRoot, "StateRoot")
 	assert.EqualValues(t, state.CumsumBaseline.String(), cr.CumSumBaseline, "CumSumBaseline")
-	// TODO: assertion fails due to bug in lotus see https://github.com/filecoin-project/lotus/pull/4268
-	// assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
+	assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
 	assert.EqualValues(t, state.EffectiveBaselinePower.String(), cr.EffectiveBaselinePower, "EffectiveBaselinePower")
 	assert.EqualValues(t, state.ThisEpochBaselinePower.String(), cr.NewBaselinePower, "NewBaselinePower")
 	assert.EqualValues(t, state.ThisEpochRewardSmoothed.PositionEstimate.String(), cr.NewRewardSmoothedPositionEstimate, "NewRewardSmoothedPositionEstimate")

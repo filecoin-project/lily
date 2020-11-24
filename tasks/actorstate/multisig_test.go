@@ -27,7 +27,7 @@ import (
 func TestMultisigExtractorV0(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := NewMockAPI()
+	mapi := NewMockAPI(t)
 	minerAddr := tutils.NewIDAddr(t, 1234)
 
 	emptyPending, err := adt0.MakeEmptyMap(mapi.store).Root()
@@ -266,7 +266,7 @@ func TestMultisigExtractorV0(t *testing.T) {
 func TestMultisigExtractorV2(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := NewMockAPI()
+	mapi := NewMockAPI(t)
 	minerAddr := tutils.NewIDAddr(t, 1234)
 
 	emptyPending, err := adt2.MakeEmptyMap(mapi.store).Root()

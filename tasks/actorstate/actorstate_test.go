@@ -2,6 +2,7 @@ package actorstate_test
 
 import (
 	"context"
+	"testing"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
@@ -23,6 +24,7 @@ import (
 	adt2 "github.com/filecoin-project/specs-actors/v2/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	cbornode "github.com/ipfs/go-ipld-cbor"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
@@ -57,15 +59,17 @@ func mockTipset(minerAddr address.Address, timestamp uint64, opts ...MockTsOpts)
 var _ actorstate.ActorStateAPI = (*MockAPI)(nil)
 
 type MockAPI struct {
+	t       testing.TB
 	actors  map[actorKey]*types.Actor
 	tipsets map[types.TipSetKey]*types.TipSet
 	bs      bstore.Blockstore
 	store   adt.Store
 }
 
-func NewMockAPI() *MockAPI {
+func NewMockAPI(test testing.TB) *MockAPI {
 	bs := bstore.NewTemporarySync()
 	return &MockAPI{
+		t:       test,
 		bs:      bs,
 		tipsets: make(map[types.TipSetKey]*types.TipSet),
 		actors:  make(map[actorKey]*types.Actor),
@@ -169,25 +173,14 @@ func (m *MockAPI) putTipSet(ts *types.TipSet) {
 	m.tipsets[ts.Key()] = ts
 }
 
-func (m *MockAPI) createMarketState(ctx context.Context, deals map[abi.DealID]*samarket.DealState, props map[abi.DealID]*samarket.DealProposal, balances map[address.Address]balance) (cid.Cid, error) {
-	dealRootCid, err := m.createDealAMT(deals)
-	if err != nil {
-		return cid.Undef, err
-	}
+func (m *MockAPI) createMarketState(ctx context.Context, deals map[abi.DealID]*samarket.DealState, props map[abi.DealID]*samarket.DealProposal, balances map[address.Address]balance) cid.Cid {
+	dealRootCid := m.createDealAMT(deals)
 
-	propRootCid, err := m.createProposalAMT(props)
-	if err != nil {
-		return cid.Undef, err
-	}
+	propRootCid := m.createProposalAMT(props)
 
-	balancesCids, err := m.createBalanceTable(balances)
-	if err != nil {
-		return cid.Undef, err
-	}
-	state, err := m.newEmptyMarketState()
-	if err != nil {
-		return cid.Undef, err
-	}
+	balancesCids := m.createBalanceTable(balances)
+
+	state := m.newEmptyMarketState()
 
 	state.States = dealRootCid
 	state.Proposals = propRootCid
@@ -195,146 +188,115 @@ func (m *MockAPI) createMarketState(ctx context.Context, deals map[abi.DealID]*s
 	state.LockedTable = balancesCids[1]
 
 	stateCid, err := m.store.Put(ctx, state)
-	if err != nil {
-		return cid.Undef, err
-	}
+	require.NoError(m.t, err)
 
-	return stateCid, nil
+	return stateCid
 }
 
-func (m *MockAPI) newEmptyMarketState() (*samarket.State, error) {
+func (m *MockAPI) newEmptyMarketState() *samarket.State {
 	emptyArrayCid, err := adt.MakeEmptyArray(m.store).Root()
-	if err != nil {
-		return nil, err
-	}
+	require.NoError(m.t, err)
+
 	emptyMap, err := adt.MakeEmptyMap(m.store).Root()
-	if err != nil {
-		return nil, err
-	}
-	return samarket.ConstructState(emptyArrayCid, emptyMap, emptyMap), nil
+	require.NoError(m.t, err)
+
+	return samarket.ConstructState(emptyArrayCid, emptyMap, emptyMap)
 }
 
-func (m *MockAPI) createDealAMT(deals map[abi.DealID]*samarket.DealState) (cid.Cid, error) {
+func (m *MockAPI) createDealAMT(deals map[abi.DealID]*samarket.DealState) cid.Cid {
 	root := adt.MakeEmptyArray(m.store)
 	for dealID, dealState := range deals {
 		err := root.Set(uint64(dealID), dealState)
-		if err != nil {
-			return cid.Undef, err
-		}
+		require.NoError(m.t, err)
 	}
 	rootCid, err := root.Root()
-	if err != nil {
-		return cid.Undef, err
-	}
-	return rootCid, nil
+	require.NoError(m.t, err)
+
+	return rootCid
 }
 
-func (m *MockAPI) createProposalAMT(props map[abi.DealID]*samarket.DealProposal) (cid.Cid, error) {
+func (m *MockAPI) createProposalAMT(props map[abi.DealID]*samarket.DealProposal) cid.Cid {
 	root := adt.MakeEmptyArray(m.store)
 	for dealID, prop := range props {
 		err := root.Set(uint64(dealID), prop)
-		if err != nil {
-			return cid.Undef, err
-		}
+		require.NoError(m.t, err)
 	}
 	rootCid, err := root.Root()
-	if err != nil {
-		return cid.Undef, err
-	}
-	return rootCid, nil
+	require.NoError(m.t, err)
+
+	return rootCid
 }
 
-func (m *MockAPI) createBalanceTable(balances map[address.Address]balance) ([2]cid.Cid, error) {
+func (m *MockAPI) createBalanceTable(balances map[address.Address]balance) [2]cid.Cid {
 	escrowMapRoot := adt.MakeEmptyMap(m.store)
 	escrowMapRootCid, err := escrowMapRoot.Root()
-	if err != nil {
-		return [2]cid.Cid{}, err
-	}
+	require.NoError(m.t, err)
+
 	escrowRoot, err := adt.AsBalanceTable(m.store, escrowMapRootCid)
-	if err != nil {
-		return [2]cid.Cid{}, err
-	}
+	require.NoError(m.t, err)
 
 	lockedMapRoot := adt.MakeEmptyMap(m.store)
 	lockedMapRootCid, err := lockedMapRoot.Root()
-	if err != nil {
-		return [2]cid.Cid{}, err
-	}
+	require.NoError(m.t, err)
 
 	lockedRoot, err := adt.AsBalanceTable(m.store, lockedMapRootCid)
-	if err != nil {
-		return [2]cid.Cid{}, err
-	}
+	require.NoError(m.t, err)
 
 	for addr, balance := range balances {
 		err := escrowRoot.Add(addr, big.Add(balance.available, balance.locked))
-		if err != nil {
-			return [2]cid.Cid{}, err
-		}
+		require.NoError(m.t, err)
 
 		err = lockedRoot.Add(addr, balance.locked)
-		if err != nil {
-			return [2]cid.Cid{}, err
-		}
+		require.NoError(m.t, err)
 
 	}
 	escrowRootCid, err := escrowRoot.Root()
-	if err != nil {
-		return [2]cid.Cid{}, err
-	}
+	require.NoError(m.t, err)
 
 	lockedRootCid, err := lockedRoot.Root()
-	if err != nil {
-		return [2]cid.Cid{}, err
-	}
+	require.NoError(m.t, err)
 
-	return [2]cid.Cid{escrowRootCid, lockedRootCid}, nil
+	return [2]cid.Cid{escrowRootCid, lockedRootCid}
 }
 
-func (m *MockAPI) newEmptyPowerStateV0() (*sa0power.State, error) {
+func (m *MockAPI) newEmptyPowerStateV0() *sa0power.State {
 	emptyClaimsMap, err := adt.MakeEmptyMap(m.store).Root()
-	if err != nil {
-		return nil, err
-	}
+	require.NoError(m.t, err)
+
 	cronEventQueueMMap, err := adt.MakeEmptyMultimap(m.store).Root()
-	if err != nil {
-		return nil, err
-	}
-	return sa0power.ConstructState(emptyClaimsMap, cronEventQueueMMap), nil
+	require.NoError(m.t, err)
+
+	return sa0power.ConstructState(emptyClaimsMap, cronEventQueueMMap)
 }
 
-func (m *MockAPI) newEmptyPowerStateV2() (*sa2power.State, error) {
+func (m *MockAPI) newEmptyPowerStateV2() *sa2power.State {
 	emptyClaimsMap, err := adt.MakeEmptyMap(m.store).Root()
-	if err != nil {
-		return nil, err
-	}
+	require.NoError(m.t, err)
+
 	cronEventQueueMMap, err := adt.MakeEmptyMultimap(m.store).Root()
-	if err != nil {
-		return nil, err
-	}
-	return sa2power.ConstructState(emptyClaimsMap, cronEventQueueMMap), nil
+	require.NoError(m.t, err)
+
+	return sa2power.ConstructState(emptyClaimsMap, cronEventQueueMMap)
 }
 
-func (m *MockAPI) newEmptyRewardStateV0(currRealizedPower abi.StoragePower) (*sa0reward.State, error) {
-	return sa0reward.ConstructState(currRealizedPower), nil
+func (m *MockAPI) newEmptyRewardStateV0(currRealizedPower abi.StoragePower) *sa0reward.State {
+	return sa0reward.ConstructState(currRealizedPower)
 }
 
-func (m *MockAPI) newEmptyRewardStateV2(currRealizedPower abi.StoragePower) (*sa2reward.State, error) {
-	return sa2reward.ConstructState(currRealizedPower), nil
+func (m *MockAPI) newEmptyRewardStateV2(currRealizedPower abi.StoragePower) *sa2reward.State {
+	return sa2reward.ConstructState(currRealizedPower)
 }
 
-func (m *MockAPI) newEmptyInitStateV0() (*sa0init.State, error) {
+func (m *MockAPI) newEmptyInitStateV0() *sa0init.State {
 	emptyMap, err := adt.MakeEmptyMap(m.store).Root()
-	if err != nil {
-		return nil, err
-	}
-	return sa0init.ConstructState(emptyMap, "visor-testing"), nil
+	require.NoError(m.t, err)
+
+	return sa0init.ConstructState(emptyMap, "visor-testing")
 }
 
-func (m *MockAPI) newEmptyInitStateV2() (*sa2init.State, error) {
+func (m *MockAPI) newEmptyInitStateV2() *sa2init.State {
 	emptyMap, err := adt2.MakeEmptyMap(m.store).Root()
-	if err != nil {
-		return nil, err
-	}
-	return sa2init.ConstructState(emptyMap, "visor-testing"), nil
+	require.NoError(m.t, err)
+
+	return sa2init.ConstructState(emptyMap, "visor-testing")
 }

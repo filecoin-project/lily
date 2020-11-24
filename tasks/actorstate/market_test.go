@@ -29,7 +29,7 @@ type balance struct {
 func TestMarketPredicates(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := NewMockAPI()
+	mapi := NewMockAPI(t)
 
 	oldDeal1 := &samarket.DealState{
 		SectorStartEpoch: 1,
@@ -82,8 +82,7 @@ func TestMarketPredicates(t *testing.T) {
 		tutils.NewIDAddr(t, 5): {abi.NewTokenAmount(3000), abi.NewTokenAmount(1000)},
 	}
 
-	oldStateCid, err := mapi.createMarketState(ctx, oldDeals, oldProps, oldBalances)
-	require.NoError(t, err)
+	oldStateCid := mapi.createMarketState(ctx, oldDeals, oldProps, oldBalances)
 
 	newDeal1 := &samarket.DealState{
 		SectorStartEpoch: 1,
@@ -130,8 +129,7 @@ func TestMarketPredicates(t *testing.T) {
 		tutils.NewIDAddr(t, 5): {abi.NewTokenAmount(1000), abi.NewTokenAmount(3000)},
 	}
 
-	newStateCid, err := mapi.createMarketState(ctx, newDeals, newProps, newBalances)
-	require.NoError(t, err)
+	newStateCid := mapi.createMarketState(ctx, newDeals, newProps, newBalances)
 
 	minerAddr, err := address.NewFromString("t00")
 	require.NoError(t, err)
