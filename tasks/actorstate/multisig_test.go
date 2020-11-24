@@ -49,11 +49,8 @@ func TestMultisigExtractorV0(t *testing.T) {
 		emptyTxStateCid, err := mapi.Store().Put(ctx, emptyTxState)
 		require.NoError(t, err)
 
-		emptyTxStateTs, err := mockTipset(minerAddr, 1)
-		require.NoError(t, err)
-
+		emptyTxStateTs := mapi.mockTipset(minerAddr, 1)
 		mapi.setActor(emptyTxStateTs.Key(), multiSigAddress, &types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: emptyTxStateCid})
-		mapi.putTipSet(emptyTxStateTs)
 
 		//
 		// add a transaction in subsequent state.
@@ -78,11 +75,8 @@ func TestMultisigExtractorV0(t *testing.T) {
 		txStateCid, err := mapi.Store().Put(ctx, &newTxState)
 		require.NoError(t, err)
 
-		txStateTs, err := mockTipset(minerAddr, 2)
-		require.NoError(t, err)
-
+		txStateTs := mapi.mockTipset(minerAddr, 2)
 		mapi.setActor(txStateTs.Key(), multiSigAddress, &types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: txStateCid})
-		mapi.putTipSet(txStateTs)
 
 		//
 		// create actor info, previous state has no transaction, current state has a single transaction
@@ -134,10 +128,9 @@ func TestMultisigExtractorV0(t *testing.T) {
 		// update global state
 		singleTxStateCid, err := mapi.Store().Put(ctx, &singleTxState)
 		require.NoError(t, err)
-		singleTxStateTs, err := mockTipset(minerAddr, 1)
-		require.NoError(t, err)
+
+		singleTxStateTs := mapi.mockTipset(minerAddr, 1)
 		mapi.setActor(singleTxStateTs.Key(), multiSigAddress, &types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: singleTxStateCid})
-		mapi.putTipSet(singleTxStateTs)
 
 		// create second tx
 		txMap, err = adt0.AsMap(mapi.store, singleTxState.PendingTxns)
@@ -168,10 +161,8 @@ func TestMultisigExtractorV0(t *testing.T) {
 		// update global state
 		secondTxStateCid, err := mapi.Store().Put(ctx, &secondTxState)
 		require.NoError(t, err)
-		secondTxStateTs, err := mockTipset(minerAddr, 2)
-		require.NoError(t, err)
+		secondTxStateTs := mapi.mockTipset(minerAddr, 2)
 		mapi.setActor(secondTxStateTs.Key(), multiSigAddress, &types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: secondTxStateCid})
-		mapi.putTipSet(secondTxStateTs)
 
 		//
 		// create actor info, previous state has single tx, current state has a new tx and modified tx.
@@ -232,10 +223,8 @@ func TestMultisigExtractorV0(t *testing.T) {
 		// update global state
 		singleTxStateCid, err := mapi.Store().Put(ctx, &singleTxState)
 		require.NoError(t, err)
-		genesisTs, err := mockTipset(minerAddr, 1, WithHeight(0))
-		require.NoError(t, err)
+		genesisTs := mapi.mockTipset(minerAddr, 1, WithHeight(0))
 		mapi.setActor(genesisTs.Key(), multiSigAddress, &types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: singleTxStateCid})
-		mapi.putTipSet(genesisTs)
 
 		info := actorstate.ActorInfo{
 			Actor:   types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: singleTxStateCid},
@@ -288,11 +277,8 @@ func TestMultisigExtractorV2(t *testing.T) {
 		emptyTxStateCid, err := mapi.Store().Put(ctx, emptyTxState)
 		require.NoError(t, err)
 
-		emptyTxStateTs, err := mockTipset(minerAddr, 1)
-		require.NoError(t, err)
-
+		emptyTxStateTs := mapi.mockTipset(minerAddr, 1)
 		mapi.setActor(emptyTxStateTs.Key(), multiSigAddress, &types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: emptyTxStateCid})
-		mapi.putTipSet(emptyTxStateTs)
 
 		//
 		// add a transaction in subsequent state.
@@ -317,11 +303,8 @@ func TestMultisigExtractorV2(t *testing.T) {
 		txStateCid, err := mapi.Store().Put(ctx, &newTxState)
 		require.NoError(t, err)
 
-		txStateTs, err := mockTipset(minerAddr, 2)
-		require.NoError(t, err)
-
+		txStateTs := mapi.mockTipset(minerAddr, 2)
 		mapi.setActor(txStateTs.Key(), multiSigAddress, &types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: txStateCid})
-		mapi.putTipSet(txStateTs)
 
 		//
 		// create actor info, previous state has no transaction, current state has a single transaction
@@ -373,10 +356,8 @@ func TestMultisigExtractorV2(t *testing.T) {
 		// update global state
 		singleTxStateCid, err := mapi.Store().Put(ctx, &singleTxState)
 		require.NoError(t, err)
-		singleTxStateTs, err := mockTipset(minerAddr, 1)
-		require.NoError(t, err)
+		singleTxStateTs := mapi.mockTipset(minerAddr, 1)
 		mapi.setActor(singleTxStateTs.Key(), multiSigAddress, &types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: singleTxStateCid})
-		mapi.putTipSet(singleTxStateTs)
 
 		// create second tx
 		txMap, err = adt2.AsMap(mapi.store, singleTxState.PendingTxns)
@@ -407,10 +388,9 @@ func TestMultisigExtractorV2(t *testing.T) {
 		// update global state
 		secondTxStateCid, err := mapi.Store().Put(ctx, &secondTxState)
 		require.NoError(t, err)
-		secondTxStateTs, err := mockTipset(minerAddr, 2)
-		require.NoError(t, err)
+
+		secondTxStateTs := mapi.mockTipset(minerAddr, 2)
 		mapi.setActor(secondTxStateTs.Key(), multiSigAddress, &types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: secondTxStateCid})
-		mapi.putTipSet(secondTxStateTs)
 
 		//
 		// create actor info, previous state has single tx, current state has a new tx and modified tx.
@@ -471,10 +451,8 @@ func TestMultisigExtractorV2(t *testing.T) {
 		// update global state
 		singleTxStateCid, err := mapi.Store().Put(ctx, &singleTxState)
 		require.NoError(t, err)
-		genesisTs, err := mockTipset(minerAddr, 1, WithHeight(0))
-		require.NoError(t, err)
+		genesisTs := mapi.mockTipset(minerAddr, 1, WithHeight(0))
 		mapi.setActor(genesisTs.Key(), multiSigAddress, &types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: singleTxStateCid})
-		mapi.putTipSet(genesisTs)
 
 		info := actorstate.ActorInfo{
 			Actor:   types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: singleTxStateCid},

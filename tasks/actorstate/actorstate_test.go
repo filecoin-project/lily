@@ -31,31 +31,6 @@ import (
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 
-type MockTsOpts func(bh *types.BlockHeader)
-
-func WithHeight(h int64) MockTsOpts {
-	return func(bh *types.BlockHeader) {
-		bh.Height = abi.ChainEpoch(h)
-	}
-}
-
-func mockTipset(minerAddr address.Address, timestamp uint64, opts ...MockTsOpts) (*types.TipSet, error) {
-	bh := &types.BlockHeader{
-		Miner:                 minerAddr,
-		Height:                5,
-		ParentStateRoot:       testutil.RandomCid(),
-		Messages:              testutil.RandomCid(),
-		ParentMessageReceipts: testutil.RandomCid(),
-		BlockSig:              &crypto.Signature{Type: crypto.SigTypeBLS},
-		BLSAggregate:          &crypto.Signature{Type: crypto.SigTypeBLS},
-		Timestamp:             timestamp,
-	}
-	for _, opt := range opts {
-		opt(bh)
-	}
-	return types.NewTipSet([]*types.BlockHeader{bh})
-}
-
 var _ actorstate.ActorStateAPI = (*MockAPI)(nil)
 
 type MockAPI struct {
@@ -161,16 +136,41 @@ func (m *MockAPI) StateMinerSectors(ctx context.Context, a address.Address, fiel
 
 // ----------------- MockAPI Helpers ----------------------------
 
+type MockTsOpts func(bh *types.BlockHeader)
+
+func WithHeight(h int64) MockTsOpts {
+	return func(bh *types.BlockHeader) {
+		bh.Height = abi.ChainEpoch(h)
+	}
+}
+
+func (m *MockAPI) mockTipset(minerAddr address.Address, timestamp uint64, opts ...MockTsOpts) *types.TipSet {
+	bh := &types.BlockHeader{
+		Miner:                 minerAddr,
+		Height:                5,
+		ParentStateRoot:       testutil.RandomCid(),
+		Messages:              testutil.RandomCid(),
+		ParentMessageReceipts: testutil.RandomCid(),
+		BlockSig:              &crypto.Signature{Type: crypto.SigTypeBLS},
+		BLSAggregate:          &crypto.Signature{Type: crypto.SigTypeBLS},
+		Timestamp:             timestamp,
+	}
+	for _, opt := range opts {
+		opt(bh)
+	}
+	ts, err := types.NewTipSet([]*types.BlockHeader{bh})
+	require.NoError(m.t, err)
+
+	m.tipsets[ts.Key()] = ts
+	return ts
+}
+
 func (m *MockAPI) setActor(tsk types.TipSetKey, addr address.Address, actor *types.Actor) {
 	key := actorKey{
 		tsk:  tsk,
 		addr: addr,
 	}
 	m.actors[key] = actor
-}
-
-func (m *MockAPI) putTipSet(ts *types.TipSet) {
-	m.tipsets[ts.Key()] = ts
 }
 
 func (m *MockAPI) createMarketState(ctx context.Context, deals map[abi.DealID]*samarket.DealState, props map[abi.DealID]*samarket.DealProposal, balances map[address.Address]balance) cid.Cid {

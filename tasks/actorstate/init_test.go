@@ -45,10 +45,8 @@ func TestInitExtractorV0(t *testing.T) {
 		// persist state
 		stateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
-		stateTs, err := mockTipset(minerAddr, 1, WithHeight(0)) // genesis
-		require.NoError(t, err)
+		stateTs := mapi.mockTipset(minerAddr, 1, WithHeight(0)) // genesis
 		mapi.setActor(stateTs.Key(), init_.Address, &types.Actor{Code: sa0builtin.InitActorCodeID, Head: stateCid})
-		mapi.putTipSet(stateTs)
 
 		info := actorstate.ActorInfo{
 			Epoch:           0, // genesis
@@ -81,10 +79,8 @@ func TestInitExtractorV0(t *testing.T) {
 		// persist base state.
 		baseStateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
-		baseTs, err := mockTipset(minerAddr, 1)
-		require.NoError(t, err)
+		baseTs := mapi.mockTipset(minerAddr, 1)
 		mapi.setActor(baseTs.Key(), init_.Address, &types.Actor{Code: sa0builtin.InitActorCodeID, Head: baseStateCid})
-		mapi.putTipSet(baseTs)
 
 		// setup following state.
 		// add a new address.
@@ -101,10 +97,8 @@ func TestInitExtractorV0(t *testing.T) {
 		// persist new state.
 		stateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
-		stateTs, err := mockTipset(minerAddr, 1)
-		require.NoError(t, err)
+		stateTs := mapi.mockTipset(minerAddr, 1)
 		mapi.setActor(stateTs.Key(), init_.Address, &types.Actor{Code: sa0builtin.InitActorCodeID, Head: stateCid})
-		mapi.putTipSet(stateTs)
 
 		info := actorstate.ActorInfo{
 			Epoch:           1,
@@ -157,10 +151,8 @@ func TestInitExtractorV2(t *testing.T) {
 		// persist state
 		stateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
-		stateTs, err := mockTipset(minerAddr, 1, WithHeight(0)) // genesis
-		require.NoError(t, err)
+		stateTs := mapi.mockTipset(minerAddr, 1, WithHeight(0)) // genesis
 		mapi.setActor(stateTs.Key(), init_.Address, &types.Actor{Code: sa2builtin.InitActorCodeID, Head: stateCid})
-		mapi.putTipSet(stateTs)
 
 		info := actorstate.ActorInfo{
 			Epoch:           0, // genesis
@@ -193,10 +185,8 @@ func TestInitExtractorV2(t *testing.T) {
 		// persist base state.
 		baseStateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
-		baseTs, err := mockTipset(minerAddr, 1)
-		require.NoError(t, err)
+		baseTs := mapi.mockTipset(minerAddr, 1)
 		mapi.setActor(baseTs.Key(), init_.Address, &types.Actor{Code: sa2builtin.InitActorCodeID, Head: baseStateCid})
-		mapi.putTipSet(baseTs)
 
 		// setup following state.
 		// add a new address.
@@ -213,10 +203,8 @@ func TestInitExtractorV2(t *testing.T) {
 		// persist new state.
 		stateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
-		stateTs, err := mockTipset(minerAddr, 1)
-		require.NoError(t, err)
+		stateTs := mapi.mockTipset(minerAddr, 1)
 		mapi.setActor(stateTs.Key(), init_.Address, &types.Actor{Code: sa2builtin.InitActorCodeID, Head: stateCid})
-		mapi.putTipSet(stateTs)
 
 		info := actorstate.ActorInfo{
 			Epoch:           1,

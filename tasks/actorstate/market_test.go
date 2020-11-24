@@ -131,14 +131,11 @@ func TestMarketPredicates(t *testing.T) {
 
 	newStateCid := mapi.createMarketState(ctx, newDeals, newProps, newBalances)
 
-	minerAddr, err := address.NewFromString("t00")
-	require.NoError(t, err)
-	oldStateTs, err := mockTipset(minerAddr, 1)
-	require.NoError(t, err)
-	newStateTs, err := mockTipset(minerAddr, 2)
-	require.NoError(t, err)
+	minerAddr := tutils.NewIDAddr(t, 00)
 
+	oldStateTs := mapi.mockTipset(minerAddr, 1)
 	mapi.setActor(oldStateTs.Key(), market.Address, &types.Actor{Code: sabuiltin.StorageMarketActorCodeID, Head: oldStateCid})
+	newStateTs := mapi.mockTipset(minerAddr, 2)
 	mapi.setActor(newStateTs.Key(), market.Address, &types.Actor{Code: sabuiltin.StorageMarketActorCodeID, Head: newStateCid})
 
 	info := actorstate.ActorInfo{

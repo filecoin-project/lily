@@ -4,12 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/lotus/chain/actors/builtin/power"
 	"github.com/filecoin-project/lotus/chain/actors/builtin/reward"
 	"github.com/filecoin-project/lotus/chain/types"
+	tutils "github.com/filecoin-project/specs-actors/support/testing"
+
 	rewardmodel "github.com/filecoin-project/sentinel-visor/model/actors/reward"
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 
@@ -40,18 +41,15 @@ func TestRewardExtractV0(t *testing.T) {
 	stateCid, err := mapi.Store().Put(ctx, state)
 	require.NoError(t, err)
 
-	minerAddr, err := address.NewFromString("t00")
-	require.NoError(t, err)
-	stateTs, err := mockTipset(minerAddr, 1)
-	require.NoError(t, err)
+	minerAddr := tutils.NewIDAddr(t, 00)
+	stateTs := mapi.mockTipset(minerAddr, 1)
+	mapi.setActor(stateTs.Key(), reward.Address, &types.Actor{Code: sa0builtin.RewardActorCodeID, Head: stateCid})
 
 	info := actorstate.ActorInfo{
 		Actor:   types.Actor{Code: sa0builtin.RewardActorCodeID, Head: stateCid},
 		Address: power.Address,
 		TipSet:  stateTs.Key(),
 	}
-
-	mapi.setActor(stateTs.Key(), reward.Address, &types.Actor{Code: sa0builtin.RewardActorCodeID, Head: stateCid})
 
 	ex := actorstate.RewardExtractor{}
 	res, err := ex.Extract(ctx, info, mapi)
@@ -92,18 +90,15 @@ func TestRewardExtractV2(t *testing.T) {
 	stateCid, err := mapi.Store().Put(ctx, state)
 	require.NoError(t, err)
 
-	minerAddr, err := address.NewFromString("t00")
-	require.NoError(t, err)
-	stateTs, err := mockTipset(minerAddr, 1)
-	require.NoError(t, err)
+	minerAddr := tutils.NewIDAddr(t, 123)
+	stateTs := mapi.mockTipset(minerAddr, 1)
+	mapi.setActor(stateTs.Key(), reward.Address, &types.Actor{Code: sa2builtin.RewardActorCodeID, Head: stateCid})
 
 	info := actorstate.ActorInfo{
 		Actor:   types.Actor{Code: sa2builtin.RewardActorCodeID, Head: stateCid},
 		Address: power.Address,
 		TipSet:  stateTs.Key(),
 	}
-
-	mapi.setActor(stateTs.Key(), reward.Address, &types.Actor{Code: sa2builtin.RewardActorCodeID, Head: stateCid})
 
 	ex := actorstate.RewardExtractor{}
 	res, err := ex.Extract(ctx, info, mapi)
