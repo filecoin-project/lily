@@ -50,6 +50,9 @@ func (sbs *S3Blockstore) Get(c cid.Cid) (blocks.Block, error) {
 	if err != nil {
 		return nil, err
 	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Failed to fetch: %v", resp.StatusCode)
+	}
 	defer resp.Body.Close()
 	buf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
