@@ -122,6 +122,7 @@ func ExtractChainPower(ec *PowerStateExtractionContext) (*powermodel.ChainPower,
 	}
 
 	return &powermodel.ChainPower{
+		Height:                     int64(ec.CurrTs.Height()),
 		StateRoot:                  ec.CurrTs.ParentState().String(),
 		TotalRawBytesPower:         pow.RawBytePower.String(),
 		TotalQABytesPower:          pow.QualityAdjPower.String(),

@@ -1,9 +1,6 @@
 version: 2.1
 
 executors:
-  golang:
-    docker:
-      - image: cimg/go:1.15.2
   dockerizer:
     docker:
       - image: cimg/go:1.15.2
@@ -12,14 +9,27 @@ executors:
 
 jobs:
   test:
-    executor: golang
+    docker:
+      - image: cimg/go:1.15.2
+      - image: timescale/timescaledb:latest-pg12
+        environment:
+          POSTGRES_PASSWORD: password
     steps:
       - checkout
+      - run:
+          name: install dockerize
+          command: wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && sudo tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
+          environment:
+            DOCKERIZE_VERSION: v0.3.0
       - run: sudo apt-get update
       - run: sudo apt-get install -y pkg-config jq
       - run: make deps
       - run: make build
       - run: make testshort
+      - run:
+          name: waiting for db
+          command: dockerize -wait tcp://localhost:5432 -timeout 1m
+      - run: ./visor migrate --latest
 
   docker-build:
     executor: dockerizer

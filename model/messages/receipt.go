@@ -21,8 +21,6 @@ type Receipt struct {
 	Idx      int   `pg:",use_zero"`
 	ExitCode int64 `pg:",use_zero"`
 	GasUsed  int64 `pg:",use_zero"`
-
-	Return []byte
 }
 
 func (r *Receipt) PersistWithTx(ctx context.Context, tx *pg.Tx) error {

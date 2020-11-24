@@ -300,7 +300,6 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, node lens.A
 				SizeBytes:  msgSize,
 				Nonce:      message.Nonce,
 				Method:     uint64(message.Method),
-				Params:     message.Params,
 			}
 			result.Messages = append(result.Messages, msg)
 
@@ -344,7 +343,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, node lens.A
 					dstActorCode = dstActor.Code.String()
 				}
 
-				if pm, err := parseMsg(msg, ts, dstActorCode); err == nil {
+				if pm, err := parseMsg(message, ts, dstActorCode); err == nil {
 					result.ParsedMessages = append(result.ParsedMessages, pm)
 				} else {
 					return nil, nil, xerrors.Errorf("parse message %s failed: %w", message.Cid().String(), err)
@@ -386,13 +385,13 @@ func cidsEqual(c1, c2 []cid.Cid) bool {
 	return true
 }
 
-func parseMsg(m *messagemodel.Message, ts *types.TipSet, destCode string) (*messagemodel.ParsedMessage, error) {
+func parseMsg(m *types.Message, ts *types.TipSet, destCode string) (*messagemodel.ParsedMessage, error) {
 	pm := &messagemodel.ParsedMessage{
-		Cid:    m.Cid,
+		Cid:    m.Cid().String(),
 		Height: int64(ts.Height()),
-		From:   m.From,
-		To:     m.To,
-		Value:  m.Value,
+		From:   m.From.String(),
+		To:     m.To.String(),
+		Value:  m.Value.String(),
 	}
 
 	actor, ok := statediff.LotusActorCodes[destCode]
@@ -469,7 +468,6 @@ func (p *MessageProcessor) fetchReceipts(ctx context.Context, node lens.API, ts 
 				Idx:       i,
 				ExitCode:  int64(r.ExitCode),
 				GasUsed:   r.GasUsed,
-				Return:    r.Return,
 			})
 		}
 	}
