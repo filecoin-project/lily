@@ -82,7 +82,7 @@ func TestMarketPredicates(t *testing.T) {
 		tutils.NewIDAddr(t, 5): {abi.NewTokenAmount(3000), abi.NewTokenAmount(1000)},
 	}
 
-	oldStateCid := mapi.createMarketState(ctx, oldDeals, oldProps, oldBalances)
+	oldStateCid := mapi.mustCreateMarketState(ctx, oldDeals, oldProps, oldBalances)
 
 	newDeal1 := &samarket.DealState{
 		SectorStartEpoch: 1,
@@ -129,13 +129,13 @@ func TestMarketPredicates(t *testing.T) {
 		tutils.NewIDAddr(t, 5): {abi.NewTokenAmount(1000), abi.NewTokenAmount(3000)},
 	}
 
-	newStateCid := mapi.createMarketState(ctx, newDeals, newProps, newBalances)
+	newStateCid := mapi.mustCreateMarketState(ctx, newDeals, newProps, newBalances)
 
 	minerAddr := tutils.NewIDAddr(t, 00)
 
-	oldStateTs := mapi.mockTipset(minerAddr, 1)
+	oldStateTs := mapi.fakeTipset(minerAddr, 1)
 	mapi.setActor(oldStateTs.Key(), market.Address, &types.Actor{Code: sabuiltin.StorageMarketActorCodeID, Head: oldStateCid})
-	newStateTs := mapi.mockTipset(minerAddr, 2)
+	newStateTs := mapi.fakeTipset(minerAddr, 2)
 	mapi.setActor(newStateTs.Key(), market.Address, &types.Actor{Code: sabuiltin.StorageMarketActorCodeID, Head: newStateCid})
 
 	info := actorstate.ActorInfo{

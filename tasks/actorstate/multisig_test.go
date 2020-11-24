@@ -49,7 +49,7 @@ func TestMultisigExtractorV0(t *testing.T) {
 		emptyTxStateCid, err := mapi.Store().Put(ctx, emptyTxState)
 		require.NoError(t, err)
 
-		emptyTxStateTs := mapi.mockTipset(minerAddr, 1)
+		emptyTxStateTs := mapi.fakeTipset(minerAddr, 1)
 		mapi.setActor(emptyTxStateTs.Key(), multiSigAddress, &types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: emptyTxStateCid})
 
 		//
@@ -75,7 +75,7 @@ func TestMultisigExtractorV0(t *testing.T) {
 		txStateCid, err := mapi.Store().Put(ctx, &newTxState)
 		require.NoError(t, err)
 
-		txStateTs := mapi.mockTipset(minerAddr, 2)
+		txStateTs := mapi.fakeTipset(minerAddr, 2)
 		mapi.setActor(txStateTs.Key(), multiSigAddress, &types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: txStateCid})
 
 		//
@@ -129,7 +129,7 @@ func TestMultisigExtractorV0(t *testing.T) {
 		singleTxStateCid, err := mapi.Store().Put(ctx, &singleTxState)
 		require.NoError(t, err)
 
-		singleTxStateTs := mapi.mockTipset(minerAddr, 1)
+		singleTxStateTs := mapi.fakeTipset(minerAddr, 1)
 		mapi.setActor(singleTxStateTs.Key(), multiSigAddress, &types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: singleTxStateCid})
 
 		// create second tx
@@ -161,7 +161,7 @@ func TestMultisigExtractorV0(t *testing.T) {
 		// update global state
 		secondTxStateCid, err := mapi.Store().Put(ctx, &secondTxState)
 		require.NoError(t, err)
-		secondTxStateTs := mapi.mockTipset(minerAddr, 2)
+		secondTxStateTs := mapi.fakeTipset(minerAddr, 2)
 		mapi.setActor(secondTxStateTs.Key(), multiSigAddress, &types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: secondTxStateCid})
 
 		//
@@ -223,7 +223,7 @@ func TestMultisigExtractorV0(t *testing.T) {
 		// update global state
 		singleTxStateCid, err := mapi.Store().Put(ctx, &singleTxState)
 		require.NoError(t, err)
-		genesisTs := mapi.mockTipset(minerAddr, 1, WithHeight(0))
+		genesisTs := mapi.fakeTipset(minerAddr, 1, WithHeight(0))
 		mapi.setActor(genesisTs.Key(), multiSigAddress, &types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: singleTxStateCid})
 
 		info := actorstate.ActorInfo{
@@ -277,7 +277,7 @@ func TestMultisigExtractorV2(t *testing.T) {
 		emptyTxStateCid, err := mapi.Store().Put(ctx, emptyTxState)
 		require.NoError(t, err)
 
-		emptyTxStateTs := mapi.mockTipset(minerAddr, 1)
+		emptyTxStateTs := mapi.fakeTipset(minerAddr, 1)
 		mapi.setActor(emptyTxStateTs.Key(), multiSigAddress, &types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: emptyTxStateCid})
 
 		//
@@ -303,7 +303,7 @@ func TestMultisigExtractorV2(t *testing.T) {
 		txStateCid, err := mapi.Store().Put(ctx, &newTxState)
 		require.NoError(t, err)
 
-		txStateTs := mapi.mockTipset(minerAddr, 2)
+		txStateTs := mapi.fakeTipset(minerAddr, 2)
 		mapi.setActor(txStateTs.Key(), multiSigAddress, &types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: txStateCid})
 
 		//
@@ -356,7 +356,7 @@ func TestMultisigExtractorV2(t *testing.T) {
 		// update global state
 		singleTxStateCid, err := mapi.Store().Put(ctx, &singleTxState)
 		require.NoError(t, err)
-		singleTxStateTs := mapi.mockTipset(minerAddr, 1)
+		singleTxStateTs := mapi.fakeTipset(minerAddr, 1)
 		mapi.setActor(singleTxStateTs.Key(), multiSigAddress, &types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: singleTxStateCid})
 
 		// create second tx
@@ -389,7 +389,7 @@ func TestMultisigExtractorV2(t *testing.T) {
 		secondTxStateCid, err := mapi.Store().Put(ctx, &secondTxState)
 		require.NoError(t, err)
 
-		secondTxStateTs := mapi.mockTipset(minerAddr, 2)
+		secondTxStateTs := mapi.fakeTipset(minerAddr, 2)
 		mapi.setActor(secondTxStateTs.Key(), multiSigAddress, &types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: secondTxStateCid})
 
 		//
@@ -451,7 +451,7 @@ func TestMultisigExtractorV2(t *testing.T) {
 		// update global state
 		singleTxStateCid, err := mapi.Store().Put(ctx, &singleTxState)
 		require.NoError(t, err)
-		genesisTs := mapi.mockTipset(minerAddr, 1, WithHeight(0))
+		genesisTs := mapi.fakeTipset(minerAddr, 1, WithHeight(0))
 		mapi.setActor(genesisTs.Key(), multiSigAddress, &types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: singleTxStateCid})
 
 		info := actorstate.ActorInfo{

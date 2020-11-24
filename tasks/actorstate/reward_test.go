@@ -27,7 +27,7 @@ func TestRewardExtractV0(t *testing.T) {
 
 	mapi := NewMockAPI(t)
 
-	state := mapi.newEmptyRewardStateV0(abi.NewStoragePower(500))
+	state := mapi.mustCreateEmptyRewardStateV0(abi.NewStoragePower(500))
 
 	state.CumsumBaseline = big.NewInt(1000)
 	state.CumsumRealized = big.NewInt(2000)
@@ -42,7 +42,7 @@ func TestRewardExtractV0(t *testing.T) {
 	require.NoError(t, err)
 
 	minerAddr := tutils.NewIDAddr(t, 00)
-	stateTs := mapi.mockTipset(minerAddr, 1)
+	stateTs := mapi.fakeTipset(minerAddr, 1)
 	mapi.setActor(stateTs.Key(), reward.Address, &types.Actor{Code: sa0builtin.RewardActorCodeID, Head: stateCid})
 
 	info := actorstate.ActorInfo{
@@ -76,7 +76,7 @@ func TestRewardExtractV2(t *testing.T) {
 
 	mapi := NewMockAPI(t)
 
-	state := mapi.newEmptyRewardStateV2(abi.NewStoragePower(500))
+	state := mapi.mustCreateEmptyRewardStateV2(abi.NewStoragePower(500))
 
 	state.CumsumBaseline = big.NewInt(1000)
 	state.CumsumRealized = big.NewInt(2000)
@@ -91,7 +91,7 @@ func TestRewardExtractV2(t *testing.T) {
 	require.NoError(t, err)
 
 	minerAddr := tutils.NewIDAddr(t, 123)
-	stateTs := mapi.mockTipset(minerAddr, 1)
+	stateTs := mapi.fakeTipset(minerAddr, 1)
 	mapi.setActor(stateTs.Key(), reward.Address, &types.Actor{Code: sa2builtin.RewardActorCodeID, Head: stateCid})
 
 	info := actorstate.ActorInfo{
