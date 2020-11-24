@@ -173,7 +173,7 @@ func ExtractMinerInfo(a ActorInfo, ec *MinerStateExtractionContext) (*minermodel
 			log.Debugw("failed to decode miner multiaddr", "miner", a.Address, "multiaddress", addr, "error", err)
 		}
 	}
-	return &minermodel.MinerInfo{
+	mi := &minermodel.MinerInfo{
 		Height:                  int64(ec.CurrTs.Height()),
 		MinerID:                 a.Address.String(),
 		StateRoot:               a.ParentStateRoot.String(),
@@ -182,10 +182,15 @@ func ExtractMinerInfo(a ActorInfo, ec *MinerStateExtractionContext) (*minermodel
 		NewWorker:               newWorker,
 		WorkerChangeEpoch:       int64(newInfo.WorkerChangeEpoch),
 		ConsensusFaultedElapsed: int64(newInfo.ConsensusFaultElapsed),
-		PeerID:                  newInfo.PeerId.String(),
 		ControlAddresses:        newCtrlAddresses,
 		MultiAddresses:          newMultiAddrs,
-	}, nil
+	}
+
+	if newInfo.PeerId != nil {
+		mi.PeerID = newInfo.PeerId.String()
+	}
+
+	return mi, nil
 }
 
 func ExtractMinerLockedFunds(a ActorInfo, ec *MinerStateExtractionContext) (*minermodel.MinerLockedFund, error) {
@@ -318,7 +323,6 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 					DealID:   uint64(dealID),
 				})
 			}
-
 		}
 	}
 	sectorEventModel, err := extractMinerSectorEvents(ctx, node, a, ec, sectorChanges, preCommitChanges)

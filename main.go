@@ -32,6 +32,12 @@ func main() {
 				EnvVars: []string{"LOTUS_PATH"},
 				Value:   "~/.lotus", // TODO: Consider XDG_DATA_HOME
 			},
+			&cli.BoolFlag{
+				Name:    "repo-read-only",
+				EnvVars: []string{"VISOR_REPO_READ_ONLY"},
+				Value:   true,
+				Usage:   "Open the repo in read only mode",
+			},
 			&cli.StringFlag{
 				Name:    "api",
 				EnvVars: []string{"FULLNODE_API_INFO"},

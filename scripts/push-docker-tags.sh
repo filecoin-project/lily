@@ -54,5 +54,8 @@ pushTag () {
   fi
 }
 
-pushTag "$GIT_BRANCH-${DATE_SHORT}-${GIT_SHA1_SHORT}"
-pushTag "$GIT_BRANCH-latest"
+if [ -z "$GIT_TAG" ]; then
+	pushTag "$GIT_BRANCH-${DATE_SHORT}-${GIT_SHA1_SHORT}"
+else
+	pushTag "$GIT_TAG"
+fi

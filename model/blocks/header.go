@@ -22,9 +22,6 @@ type BlockHeader struct {
 	WinCount      int64  `pg:",use_zero"`
 	Timestamp     uint64 `pg:",use_zero"`
 	ForkSignaling uint64 `pg:",use_zero"`
-
-	Ticket        []byte
-	ElectionProof []byte
 }
 
 func NewBlockHeader(bh *types.BlockHeader) *BlockHeader {
@@ -38,8 +35,6 @@ func NewBlockHeader(bh *types.BlockHeader) *BlockHeader {
 		WinCount:        bh.ElectionProof.WinCount,
 		Timestamp:       bh.Timestamp,
 		ForkSignaling:   bh.ForkSignaling,
-		Ticket:          bh.Ticket.VRFProof,
-		ElectionProof:   bh.ElectionProof.VRFProof,
 	}
 }
 

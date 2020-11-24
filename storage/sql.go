@@ -33,8 +33,6 @@ import (
 var models = []interface{}{
 	(*blocks.BlockHeader)(nil),
 	(*blocks.BlockParent)(nil),
-
-	(*blocks.DrandEntrie)(nil),
 	(*blocks.DrandBlockEntrie)(nil),
 
 	(*miner.MinerSectorDeal)(nil),
@@ -93,7 +91,9 @@ func NewDatabase(ctx context.Context, url string, poolSize int) (*Database, erro
 		return nil, xerrors.Errorf("parse database URL: %w", err)
 	}
 	opt.PoolSize = poolSize
-	opt.ApplicationName = "visor-" + version.String()
+	if opt.ApplicationName == "" {
+		opt.ApplicationName = "visor-" + version.String()
+	}
 
 	return &Database{
 		opt:   opt,
