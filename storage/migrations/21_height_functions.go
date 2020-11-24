@@ -4,7 +4,7 @@ import (
 	"github.com/go-pg/migrations/v8"
 )
 
-// Schema version 19 adds helper functions to convert from unix epoch to fil epoch
+// Schema version 21 adds helper functions to convert from unix epoch to fil epoch
 
 func init() {
 	up := batch(`
