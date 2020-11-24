@@ -12,12 +12,15 @@ import (
 	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
 	bstore "github.com/filecoin-project/lotus/lib/blockstore"
+	sa0init "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	samarket "github.com/filecoin-project/specs-actors/actors/builtin/market"
 	sa0power "github.com/filecoin-project/specs-actors/actors/builtin/power"
 	sa0reward "github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	sa2init "github.com/filecoin-project/specs-actors/v2/actors/builtin/init"
 	sa2power "github.com/filecoin-project/specs-actors/v2/actors/builtin/power"
 	sa2reward "github.com/filecoin-project/specs-actors/v2/actors/builtin/reward"
+	adt2 "github.com/filecoin-project/specs-actors/v2/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	cbornode "github.com/ipfs/go-ipld-cbor"
 	"golang.org/x/xerrors"
@@ -318,4 +321,20 @@ func (m *MockAPI) newEmptyRewardStateV0(currRealizedPower abi.StoragePower) (*sa
 
 func (m *MockAPI) newEmptyRewardStateV2(currRealizedPower abi.StoragePower) (*sa2reward.State, error) {
 	return sa2reward.ConstructState(currRealizedPower), nil
+}
+
+func (m *MockAPI) newEmptyInitStateV0() (*sa0init.State, error) {
+	emptyMap, err := adt.MakeEmptyMap(m.store).Root()
+	if err != nil {
+		return nil, err
+	}
+	return sa0init.ConstructState(emptyMap, "visor-testing"), nil
+}
+
+func (m *MockAPI) newEmptyInitStateV2() (*sa2init.State, error) {
+	emptyMap, err := adt2.MakeEmptyMap(m.store).Root()
+	if err != nil {
+		return nil, err
+	}
+	return sa2init.ConstructState(emptyMap, "visor-testing"), nil
 }
