@@ -60,6 +60,7 @@ func FixMessageGasEconomy(ctx context.Context, db *storage.Database, opener lens
 	}
 	defer closer()
 
+	log.Infow("Fetching existing data")
 	var msgs []*messagemodel.MessageGasEconomy
 	if err := db.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		err := tx.ModelContext(ctx, &msgs).Order("height DESC").Select()
@@ -70,7 +71,7 @@ func FixMessageGasEconomy(ctx context.Context, db *storage.Database, opener lens
 	}); err != nil {
 		return err
 	}
-	for _, msg := range msgs {
+	for i, msg := range msgs {
 		// get the tipset to recompute the base fee.
 		ts, err := api.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(msg.Height), types.EmptyTSK)
 		if err != nil {
@@ -99,6 +100,10 @@ func FixMessageGasEconomy(ctx context.Context, db *storage.Database, opener lens
 		msg.GasFillRatio = float64(total) / float64(len(ts.Blocks())*build.BlockGasTarget)
 		msg.GasCapacityRatio = float64(unique) / float64(len(ts.Blocks())*build.BlockGasTarget)
 		msg.GasWasteRatio = float64(total-unique) / float64(len(ts.Blocks())*build.BlockGasTarget)
+
+		if i > 0 && i%1000 == 0 {
+			log.Infow("Recomputed 1000 tipsets", "done", i, "remaining", len(msgs)-i)
+		}
 	}
 	batchSize := 1000
 	batch := make([]*messagemodel.MessageGasEconomy, 0, batchSize)
