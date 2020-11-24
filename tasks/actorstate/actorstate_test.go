@@ -136,15 +136,15 @@ func (m *MockAPI) StateMinerSectors(ctx context.Context, a address.Address, fiel
 
 // ----------------- MockAPI Helpers ----------------------------
 
-type MockTsOpts func(bh *types.BlockHeader)
+type FakeTsOpts func(bh *types.BlockHeader)
 
-func WithHeight(h int64) MockTsOpts {
+func WithHeight(h int64) FakeTsOpts {
 	return func(bh *types.BlockHeader) {
 		bh.Height = abi.ChainEpoch(h)
 	}
 }
 
-func (m *MockAPI) mockTipset(minerAddr address.Address, timestamp uint64, opts ...MockTsOpts) *types.TipSet {
+func (m *MockAPI) fakeTipset(minerAddr address.Address, timestamp uint64, opts ...FakeTsOpts) *types.TipSet {
 	bh := &types.BlockHeader{
 		Miner:                 minerAddr,
 		Height:                5,
@@ -173,14 +173,14 @@ func (m *MockAPI) setActor(tsk types.TipSetKey, addr address.Address, actor *typ
 	m.actors[key] = actor
 }
 
-func (m *MockAPI) createMarketState(ctx context.Context, deals map[abi.DealID]*samarket.DealState, props map[abi.DealID]*samarket.DealProposal, balances map[address.Address]balance) cid.Cid {
-	dealRootCid := m.createDealAMT(deals)
+func (m *MockAPI) mustCreateMarketState(ctx context.Context, deals map[abi.DealID]*samarket.DealState, props map[abi.DealID]*samarket.DealProposal, balances map[address.Address]balance) cid.Cid {
+	dealRootCid := m.mustCreateDealAMT(deals)
 
-	propRootCid := m.createProposalAMT(props)
+	propRootCid := m.mustCreateProposalAMT(props)
 
-	balancesCids := m.createBalanceTable(balances)
+	balancesCids := m.mustCreateBalanceTable(balances)
 
-	state := m.newEmptyMarketState()
+	state := m.mustCreateEmptyMarketState()
 
 	state.States = dealRootCid
 	state.Proposals = propRootCid
@@ -193,7 +193,7 @@ func (m *MockAPI) createMarketState(ctx context.Context, deals map[abi.DealID]*s
 	return stateCid
 }
 
-func (m *MockAPI) newEmptyMarketState() *samarket.State {
+func (m *MockAPI) mustCreateEmptyMarketState() *samarket.State {
 	emptyArrayCid, err := adt.MakeEmptyArray(m.store).Root()
 	require.NoError(m.t, err)
 
@@ -203,7 +203,7 @@ func (m *MockAPI) newEmptyMarketState() *samarket.State {
 	return samarket.ConstructState(emptyArrayCid, emptyMap, emptyMap)
 }
 
-func (m *MockAPI) createDealAMT(deals map[abi.DealID]*samarket.DealState) cid.Cid {
+func (m *MockAPI) mustCreateDealAMT(deals map[abi.DealID]*samarket.DealState) cid.Cid {
 	root := adt.MakeEmptyArray(m.store)
 	for dealID, dealState := range deals {
 		err := root.Set(uint64(dealID), dealState)
@@ -215,7 +215,7 @@ func (m *MockAPI) createDealAMT(deals map[abi.DealID]*samarket.DealState) cid.Ci
 	return rootCid
 }
 
-func (m *MockAPI) createProposalAMT(props map[abi.DealID]*samarket.DealProposal) cid.Cid {
+func (m *MockAPI) mustCreateProposalAMT(props map[abi.DealID]*samarket.DealProposal) cid.Cid {
 	root := adt.MakeEmptyArray(m.store)
 	for dealID, prop := range props {
 		err := root.Set(uint64(dealID), prop)
@@ -227,7 +227,7 @@ func (m *MockAPI) createProposalAMT(props map[abi.DealID]*samarket.DealProposal)
 	return rootCid
 }
 
-func (m *MockAPI) createBalanceTable(balances map[address.Address]balance) [2]cid.Cid {
+func (m *MockAPI) mustCreateBalanceTable(balances map[address.Address]balance) [2]cid.Cid {
 	escrowMapRoot := adt.MakeEmptyMap(m.store)
 	escrowMapRootCid, err := escrowMapRoot.Root()
 	require.NoError(m.t, err)
@@ -259,7 +259,7 @@ func (m *MockAPI) createBalanceTable(balances map[address.Address]balance) [2]ci
 	return [2]cid.Cid{escrowRootCid, lockedRootCid}
 }
 
-func (m *MockAPI) newEmptyPowerStateV0() *sa0power.State {
+func (m *MockAPI) mustCreateEmptyPowerStateV0() *sa0power.State {
 	emptyClaimsMap, err := adt.MakeEmptyMap(m.store).Root()
 	require.NoError(m.t, err)
 
@@ -269,7 +269,7 @@ func (m *MockAPI) newEmptyPowerStateV0() *sa0power.State {
 	return sa0power.ConstructState(emptyClaimsMap, cronEventQueueMMap)
 }
 
-func (m *MockAPI) newEmptyPowerStateV2() *sa2power.State {
+func (m *MockAPI) mustCreateEmptyPowerStateV2() *sa2power.State {
 	emptyClaimsMap, err := adt.MakeEmptyMap(m.store).Root()
 	require.NoError(m.t, err)
 
@@ -279,22 +279,22 @@ func (m *MockAPI) newEmptyPowerStateV2() *sa2power.State {
 	return sa2power.ConstructState(emptyClaimsMap, cronEventQueueMMap)
 }
 
-func (m *MockAPI) newEmptyRewardStateV0(currRealizedPower abi.StoragePower) *sa0reward.State {
+func (m *MockAPI) mustCreateEmptyRewardStateV0(currRealizedPower abi.StoragePower) *sa0reward.State {
 	return sa0reward.ConstructState(currRealizedPower)
 }
 
-func (m *MockAPI) newEmptyRewardStateV2(currRealizedPower abi.StoragePower) *sa2reward.State {
+func (m *MockAPI) mustCreateEmptyRewardStateV2(currRealizedPower abi.StoragePower) *sa2reward.State {
 	return sa2reward.ConstructState(currRealizedPower)
 }
 
-func (m *MockAPI) newEmptyInitStateV0() *sa0init.State {
+func (m *MockAPI) mustCreateEmptyInitStateV0() *sa0init.State {
 	emptyMap, err := adt.MakeEmptyMap(m.store).Root()
 	require.NoError(m.t, err)
 
 	return sa0init.ConstructState(emptyMap, "visor-testing")
 }
 
-func (m *MockAPI) newEmptyInitStateV2() *sa2init.State {
+func (m *MockAPI) mustCreateEmptyInitStateV2() *sa2init.State {
 	emptyMap, err := adt2.MakeEmptyMap(m.store).Root()
 	require.NoError(m.t, err)
 
