@@ -92,5 +92,4 @@ func (pb *proxyingBlockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, 
 }
 
 func (pb *proxyingBlockstore) HashOnRead(enabled bool) {
-	return
 }
