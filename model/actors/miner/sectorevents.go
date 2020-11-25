@@ -34,7 +34,7 @@ type MinerSectorEvent struct {
 
 	// https://github.com/go-pg/pg/issues/993
 	// override the SQL type with enum type, see 1_chainwatch.go for enum definition
-	Event string `pg:"type:miner_sector_event_type" pg:",pk,notnull"`
+	Event string `pg:"type:miner_sector_event_type" pg:",pk,notnull"` // nolint: staticcheck
 }
 
 type MinerSectorEventList []*MinerSectorEvent
