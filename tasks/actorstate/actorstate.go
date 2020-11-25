@@ -140,7 +140,10 @@ type ActorStateProcessor struct {
 func trackDuration(topic string, w io.Writer) func() {
 	t := time.Now()
 	return func() {
-		w.Write([]byte(fmt.Sprintf("** %s finished in %s\n", topic, time.Since(t))))
+		_, err := w.Write([]byte(fmt.Sprintf("** %s finished in %s\n", topic, time.Since(t))))
+		if err != nil {
+			log.Warnw("writing track duration", "topic", topic, "error", err.Error())
+		}
 	}
 }
 
