@@ -12,7 +12,7 @@ import (
 )
 
 type ProcessingStat struct {
-	tableName struct{} `pg:"visor_processing_stats"`
+	tableName struct{} `pg:"visor_processing_stats"` // nolint: structcheck,unused
 
 	// RecordedAt is the time the measurement was recorded in the database
 	RecordedAt time.Time `pg:",pk,notnull"`
