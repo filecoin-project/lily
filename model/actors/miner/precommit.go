@@ -57,7 +57,7 @@ func (ml MinerPreCommitInfoList) PersistWithTx(ctx context.Context, tx *pg.Tx) e
 	if _, err := tx.ModelContext(ctx, &ml).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return xerrors.Errorf("persisting miner pre commit info list: %w")
+		return xerrors.Errorf("persisting miner pre commit info list: %w", err)
 	}
 	return nil
 }

@@ -38,7 +38,7 @@ func (pl PowerActorClaimList) PersistWithTx(ctx context.Context, tx *pg.Tx) erro
 	if _, err := tx.ModelContext(ctx, &pl).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return xerrors.Errorf("persisting power actor claim list: %w")
+		return xerrors.Errorf("persisting power actor claim list: %w", err)
 	}
 	return nil
 

@@ -84,13 +84,6 @@ func (m *MockAPI) ChainGetBlockMessages(ctx context.Context, msg cid.Cid) (*api.
 
 func (m *MockAPI) ChainGetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error) {
 	return m.tipsets[tsk], nil
-	blks := make([]*types.BlockHeader, len(tsk.Cids()))
-	for i, cid := range tsk.Cids() {
-		if err := m.store.Get(ctx, cid, blks[i]); err != nil {
-			return nil, err
-		}
-	}
-	return types.NewTipSet(blks)
 }
 
 func (m *MockAPI) StateReadState(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*api.ActorState, error) {

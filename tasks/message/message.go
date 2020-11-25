@@ -256,9 +256,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, node lens.A
 
 		// extract all messages, vmm will include duplicate messages.
 		vmm := make([]*types.Message, 0, len(msgs.Cids))
-		for _, m := range msgs.BlsMessages {
-			vmm = append(vmm, m)
-		}
+		vmm = append(vmm, msgs.BlsMessages...)
 		for _, m := range msgs.SecpkMessages {
 			vmm = append(vmm, &m.Message)
 		}

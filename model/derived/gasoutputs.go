@@ -11,7 +11,7 @@ import (
 )
 
 type GasOutputs struct {
-	tableName          struct{} `pg:"derived_gas_outputs"`
+	tableName          struct{} `pg:"derived_gas_outputs"` //nolint: structcheck,unused
 	Cid                string   `pg:",pk,notnull"`
 	From               string   `pg:",notnull"`
 	To                 string   `pg:",notnull"`

@@ -11,7 +11,7 @@ import (
 )
 
 type ChainEconomics struct {
-	tableName       struct{} `pg:"chain_economics"`
+	tableName       struct{} `pg:"chain_economics"` // nolint: structcheck,unused
 	ParentStateRoot string   `pg:",notnull"`
 	CirculatingFil  string   `pg:",notnull"`
 	VestedFil       string   `pg:",notnull"`

@@ -46,7 +46,7 @@ func TestGenesisProcessor(t *testing.T) {
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
-	defer cleanup()
+	defer require.NoError(t, cleanup())
 
 	t.Logf("truncating database tables")
 	err = truncateGenesisTables(t, db)

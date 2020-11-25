@@ -38,7 +38,7 @@ func (ml MinerFeeDebtList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	if _, err := tx.ModelContext(ctx, &ml).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return xerrors.Errorf("persisting miner fee debt list: %w")
+		return xerrors.Errorf("persisting miner fee debt list: %w", err)
 	}
 	return nil
 }
