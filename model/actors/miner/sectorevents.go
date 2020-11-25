@@ -42,6 +42,11 @@ type MinerSectorEventList []*MinerSectorEvent
 func (l MinerSectorEventList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerSectorEventList.PersistWithTx", trace.WithAttributes(label.Int("count", len(l))))
 	defer span.End()
+
+	if len(l) == 0 {
+		return nil
+	}
+
 	if _, err := tx.ModelContext(ctx, &l).
 		OnConflict("do nothing").
 		Insert(); err != nil {

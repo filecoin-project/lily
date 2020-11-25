@@ -40,7 +40,9 @@ type RunContext struct {
 	db     *storage.Database
 }
 
-func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error) {
+// SetupStorageAndAPI setups of the sentinel database and returns a
+// ready-to-use RunContext with Openers and Closers using the chosen lens.
+func SetupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error) {
 	var opener lens.APIOpener // the api opener that is used by tasks
 	var closer lens.APICloser // a closer that cleans up the opener when exiting the application
 	var err error

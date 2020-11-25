@@ -29,7 +29,7 @@ var Debug = &cli.Command{
 		}
 		defer tcloser()
 
-		ctx, rctx, err := setupStorageAndAPI(cctx)
+		ctx, rctx, err := SetupStorageAndAPI(cctx)
 		if err != nil {
 			return xerrors.Errorf("setup storage and api: %w", err)
 		}
