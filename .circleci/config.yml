@@ -1,4 +1,6 @@
 version: 2.1
+orbs:
+  go: gotest/tools@0.0.9
 
 executors:
   dockerizer:
@@ -6,8 +8,38 @@ executors:
       - image: cimg/go:1.15.2
     environment:
       IMAGE_NAME: filecoin/sentinel-visor
+  golang:
+    docker:
+      - image: circleci/golang:1.13
+
+commands:
+  install-deps:
+    steps:
+      - go/install-ssh
+      - go/install: {package: git}
+  prepare:
+    parameters:
+      linux:
+        default: true
+        description: is a linux build environment?
+        type: boolean
+    steps:
+      - checkout
+      - when:
+          condition: << parameters.linux >>
+          steps:
+            - run: sudo apt-get update
+      - run: git submodule sync
+      - run: git submodule update --init
 
 jobs:
+  mod-tidy-check:
+    executor: golang
+    steps:
+      - install-deps
+      - prepare
+      - go/mod-tidy-check
+
   test:
     docker:
       - image: cimg/go:1.15.2
@@ -74,6 +106,7 @@ workflows:
     # `docker-push` runs master or main branches and tags that look like semver
     # see: https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
     jobs:
+      - mod-tidy-check
       - test
       - docker-build:
           filters:
