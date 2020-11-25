@@ -614,7 +614,7 @@ type PartitionStatus struct {
 }
 
 func extractMinerPartitionsDiff(ctx context.Context, ec *MinerStateExtractionContext) (*PartitionStatus, error) {
-	ctx, span := global.Tracer("").Start(ctx, "StorageMinerExtractor.minerPartitionDiff")
+	ctx, span := global.Tracer("").Start(ctx, "StorageMinerExtractor.minerPartitionDiff") // nolint: ineffassign,staticcheck
 	defer span.End()
 
 	// short circuit genesis state.
