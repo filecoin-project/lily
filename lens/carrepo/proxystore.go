@@ -70,6 +70,7 @@ func (pb *proxyingBlockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, 
 	cctx, cncl := context.WithCancel(ctx)
 	akc, err := pb.cache.AllKeysChan(cctx)
 	if err != nil {
+		cncl()
 		return nil, err
 	}
 	akc2, err2 := pb.store.AllKeysChan(cctx)
