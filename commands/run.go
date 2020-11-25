@@ -255,8 +255,8 @@ var Run = &cli.Command{
 			return xerrors.Errorf("setup storage and api: %w", err)
 		}
 		defer func() {
-			rctx.closer()
-			if err := rctx.db.Close(ctx); err != nil {
+			rctx.Closer()
+			if err := rctx.DB.Close(ctx); err != nil {
 				log.Errorw("close database", "error", err)
 			}
 		}()
@@ -282,8 +282,8 @@ var Run = &cli.Command{
 		if cctx.Bool("indexhead") {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                "ChainHeadIndexer",
-				Task:                indexer.NewChainHeadIndexer(rctx.db, rctx.opener, cctx.Int("indexhead-confidence")),
-				Locker:              NewGlobalSingleton(ChainHeadIndexerLockID, rctx.db), // only want one forward indexer anywhere to be running
+				Task:                indexer.NewChainHeadIndexer(rctx.DB, rctx.Opener, cctx.Int("indexhead-confidence")),
+				Locker:              NewGlobalSingleton(ChainHeadIndexerLockID, rctx.DB), // only want one forward indexer anywhere to be running
 				RestartOnFailure:    false,
 				RestartOnCompletion: false,
 				RestartDelay:        time.Minute,
@@ -294,8 +294,8 @@ var Run = &cli.Command{
 		if cctx.Bool("indexhistory") {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                "ChainHistoryIndexer",
-				Task:                indexer.NewChainHistoryIndexer(rctx.db, rctx.opener, cctx.Int("indexhistory-batch"), heightFrom, heightTo),
-				Locker:              NewGlobalSingleton(ChainHistoryIndexerLockID, rctx.db), // only want one history indexer anywhere to be running
+				Task:                indexer.NewChainHistoryIndexer(rctx.DB, rctx.Opener, cctx.Int("indexhistory-batch"), heightFrom, heightTo),
+				Locker:              NewGlobalSingleton(ChainHistoryIndexerLockID, rctx.DB), // only want one history indexer anywhere to be running
 				RestartOnFailure:    false,
 				RestartOnCompletion: false,
 				RestartDelay:        time.Minute,
@@ -306,7 +306,7 @@ var Run = &cli.Command{
 		for i := 0; i < cctx.Int("statechange-workers"); i++ {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                fmt.Sprintf("ActorStateChangeProcessor%03d", i),
-				Task:                actorstate.NewActorStateChangeProcessor(rctx.db, rctx.opener, cctx.Duration("statechange-lease"), cctx.Int("statechange-batch"), heightFrom, heightTo),
+				Task:                actorstate.NewActorStateChangeProcessor(rctx.DB, rctx.Opener, cctx.Duration("statechange-lease"), cctx.Int("statechange-batch"), heightFrom, heightTo),
 				RestartOnFailure:    false,
 				RestartOnCompletion: false,
 			})
@@ -328,7 +328,7 @@ var Run = &cli.Command{
 			hr := heightRange{min: actorStateHeightFrom, max: heightTo}
 			srs := hr.divide(cctx.Int("actorstate-workers"))
 			for i, sr := range srs {
-				p, err := actorstate.NewActorStateProcessor(rctx.db, rctx.opener, 0, cctx.Int("actorstate-batch"), sr.min, sr.max, actorCodes, false)
+				p, err := actorstate.NewActorStateProcessor(rctx.DB, rctx.Opener, 0, cctx.Int("actorstate-batch"), sr.min, sr.max, actorCodes, false)
 				if err != nil {
 					return err
 				}
@@ -344,7 +344,7 @@ var Run = &cli.Command{
 		} else {
 			// Use workers with leasing
 			for i := 0; i < cctx.Int("actorstate-workers"); i++ {
-				p, err := actorstate.NewActorStateProcessor(rctx.db, rctx.opener, cctx.Duration("actorstate-lease"), cctx.Int("actorstate-batch"), actorStateHeightFrom, heightTo, actorCodes, true)
+				p, err := actorstate.NewActorStateProcessor(rctx.DB, rctx.Opener, cctx.Duration("actorstate-lease"), cctx.Int("actorstate-batch"), actorStateHeightFrom, heightTo, actorCodes, true)
 				if err != nil {
 					return err
 				}
@@ -361,7 +361,7 @@ var Run = &cli.Command{
 		for i := 0; i < cctx.Int("message-workers"); i++ {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                fmt.Sprintf("MessageProcessor%03d", i),
-				Task:                message.NewMessageProcessor(rctx.db, rctx.opener, cctx.Duration("message-lease"), cctx.Int("message-batch"), cctx.Bool("derive-parsed-messages"), heightFrom, heightTo),
+				Task:                message.NewMessageProcessor(rctx.DB, rctx.Opener, cctx.Duration("message-lease"), cctx.Int("message-batch"), cctx.Bool("derive-parsed-messages"), heightFrom, heightTo),
 				RestartOnFailure:    false,
 				RestartOnCompletion: false,
 				RestartDelay:        time.Minute,
@@ -380,7 +380,7 @@ var Run = &cli.Command{
 				log.Debugf("scheduling gas outputs state processor with height range %d to %d", sr.min, sr.max)
 				scheduler.Add(schedule.TaskConfig{
 					Name:                fmt.Sprintf("GasOutputsProcessor%03d", i),
-					Task:                message.NewGasOutputsProcessor(rctx.db, rctx.opener, cctx.Duration("gasoutputs-lease"), cctx.Int("gasoutputs-batch"), sr.min, sr.max, false),
+					Task:                message.NewGasOutputsProcessor(rctx.DB, rctx.Opener, cctx.Duration("gasoutputs-lease"), cctx.Int("gasoutputs-batch"), sr.min, sr.max, false),
 					RestartOnFailure:    true,
 					RestartOnCompletion: true,
 					RestartDelay:        time.Minute,
@@ -391,7 +391,7 @@ var Run = &cli.Command{
 			for i := 0; i < cctx.Int("gasoutputs-workers"); i++ {
 				scheduler.Add(schedule.TaskConfig{
 					Name:                fmt.Sprintf("GasOutputsProcessor%03d", i),
-					Task:                message.NewGasOutputsProcessor(rctx.db, rctx.opener, cctx.Duration("gasoutputs-lease"), cctx.Int("gasoutputs-batch"), heightFrom, heightTo, true),
+					Task:                message.NewGasOutputsProcessor(rctx.DB, rctx.Opener, cctx.Duration("gasoutputs-lease"), cctx.Int("gasoutputs-batch"), heightFrom, heightTo, true),
 					RestartOnFailure:    true,
 					RestartOnCompletion: true,
 					RestartDelay:        time.Minute,
@@ -403,7 +403,7 @@ var Run = &cli.Command{
 		for i := 0; i < cctx.Int("chaineconomics-workers"); i++ {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                fmt.Sprintf("ChainEconomicsProcessor%03d", i),
-				Task:                chain.NewChainEconomicsProcessor(rctx.db, rctx.opener, cctx.Duration("chaineconomics-lease"), cctx.Int("chaineconomics-batch"), heightFrom, heightTo),
+				Task:                chain.NewChainEconomicsProcessor(rctx.DB, rctx.Opener, cctx.Duration("chaineconomics-lease"), cctx.Int("chaineconomics-batch"), heightFrom, heightTo),
 				RestartOnFailure:    false,
 				RestartOnCompletion: false,
 				RestartDelay:        time.Minute,
@@ -415,8 +415,8 @@ var Run = &cli.Command{
 		if cctx.Duration("chainvis-refresh-rate") != 0 {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                "ChainVisRefresher",
-				Locker:              NewGlobalSingleton(ChainVisRefresherLockID, rctx.db), // only need one chain vis refresher anywhere
-				Task:                views.NewChainVisRefresher(rctx.db, cctx.Duration("chainvis-refresh-rate")),
+				Locker:              NewGlobalSingleton(ChainVisRefresherLockID, rctx.DB), // only need one chain vis refresher anywhere
+				Task:                views.NewChainVisRefresher(rctx.DB, cctx.Duration("chainvis-refresh-rate")),
 				RestartOnFailure:    false,
 				RestartOnCompletion: false,
 				RestartDelay:        time.Minute,
@@ -426,8 +426,8 @@ var Run = &cli.Command{
 		if cctx.Duration("processingstats-refresh-rate") != 0 {
 			scheduler.Add(schedule.TaskConfig{
 				Name:                "ProcessingStatsRefresher",
-				Locker:              NewGlobalSingleton(ProcessingStatsRefresherLockID, rctx.db),
-				Task:                stats.NewProcessingStatsRefresher(rctx.db, cctx.Duration("processingstats-refresh-rate")),
+				Locker:              NewGlobalSingleton(ProcessingStatsRefresherLockID, rctx.DB),
+				Task:                stats.NewProcessingStatsRefresher(rctx.DB, cctx.Duration("processingstats-refresh-rate")),
 				RestartOnFailure:    true,
 				RestartOnCompletion: true,
 				RestartDelay:        time.Minute,

@@ -34,13 +34,13 @@ var Debug = &cli.Command{
 			return xerrors.Errorf("setup storage and api: %w", err)
 		}
 		defer func() {
-			rctx.closer()
-			if err := rctx.db.Close(ctx); err != nil {
+			rctx.Closer()
+			if err := rctx.DB.Close(ctx); err != nil {
 				log.Errorw("close database", "error", err)
 			}
 		}()
 
-		p, err := actorstate.NewActorStateProcessor(rctx.db, rctx.opener, 0, 0, 0, 0, actorstate.SupportedActorCodes(), false)
+		p, err := actorstate.NewActorStateProcessor(rctx.DB, rctx.Opener, 0, 0, 0, 0, actorstate.SupportedActorCodes(), false)
 		if err != nil {
 			return err
 		}

@@ -34,10 +34,11 @@ import (
 
 var log = logging.Logger("visor")
 
+// RunContext wraps lens and DB connections.
 type RunContext struct {
-	opener lens.APIOpener
-	closer lens.APICloser
-	db     *storage.Database
+	Opener lens.APIOpener
+	Closer lens.APICloser
+	DB     *storage.Database
 }
 
 // SetupStorageAndAPI setups of the sentinel database and returns a
@@ -98,9 +99,9 @@ func SetupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error)
 	}
 
 	return ctx, &RunContext{
-		opener: opener,
-		closer: closer,
-		db:     db,
+		Opener: opener,
+		Closer: closer,
+		DB:     db,
 	}, nil
 }
 
