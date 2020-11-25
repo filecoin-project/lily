@@ -62,9 +62,8 @@ type Scheduler struct {
 }
 
 // Add add a task config to the scheduler. This must not be called after Run.
-func (s *Scheduler) Add(tc TaskConfig) error {
+func (s *Scheduler) Add(tc TaskConfig) {
 	s.tasks = append(s.tasks, tc)
-	return nil
 }
 
 // Run starts running the scheduler and blocks until the context is done or
