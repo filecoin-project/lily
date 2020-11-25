@@ -44,7 +44,7 @@ func (ml MinerSectorPostList) PersistWithTx(ctx context.Context, tx *pg.Tx) erro
 	if _, err := tx.ModelContext(ctx, &ml).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return xerrors.Errorf("persisting miner sector post list: %w")
+		return xerrors.Errorf("persisting miner sector post list: %w", err)
 	}
 	return nil
 }

@@ -139,7 +139,7 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 	if a.Epoch != 0 {
 		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet)
 		if err != nil {
-			return nil, xerrors.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet, a.Epoch)
+			return nil, xerrors.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet, a.Epoch, err)
 		}
 
 		prevState, err = multisig.Load(node.Store(), prevActor)
