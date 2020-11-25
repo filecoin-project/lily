@@ -343,7 +343,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, node lens.A
 					dstActorCode = dstActor.Code.String()
 				}
 
-				if pm, err := parseMsg(message, ts, dstActorCode); err == nil {
+				if pm, err := ParseMsg(message, ts, dstActorCode); err == nil {
 					result.ParsedMessages = append(result.ParsedMessages, pm)
 				} else {
 					return nil, nil, xerrors.Errorf("parse message %s failed: %w", message.Cid().String(), err)
@@ -385,7 +385,9 @@ func cidsEqual(c1, c2 []cid.Cid) bool {
 	return true
 }
 
-func parseMsg(m *types.Message, ts *types.TipSet, destCode string) (*messagemodel.ParsedMessage, error) {
+// ParseMsg extracts message parameters and encodes them as JSON by looking at
+// the messages destination actor type.
+func ParseMsg(m *types.Message, ts *types.TipSet, destCode string) (*messagemodel.ParsedMessage, error) {
 	pm := &messagemodel.ParsedMessage{
 		Cid:    m.Cid().String(),
 		Height: int64(ts.Height()),

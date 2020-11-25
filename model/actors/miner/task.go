@@ -6,6 +6,8 @@ import (
 	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
 	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
 )
@@ -82,8 +84,72 @@ func (res *MinerTaskResult) Persist(ctx context.Context, db *pg.DB) error {
 type MinerTaskResultList []*MinerTaskResult
 
 func (ml MinerTaskResultList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerTaskResultList.PersistWithTx", trace.WithAttributes(label.Int("count", len(ml))))
+	defer span.End()
+
 	for _, res := range ml {
 		if err := res.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// MinerTaskLists allow better batched insertion of Miner-related models.
+type MinerTaskLists struct {
+	MinerInfoModel           MinerInfoList
+	FeeDebtModel             MinerFeeDebtList
+	LockedFundsModel         MinerLockedFundsList
+	CurrentDeadlineInfoModel MinerCurrentDeadlineInfoList
+	PreCommitsModel          MinerPreCommitInfoList
+	SectorsModel             MinerSectorInfoList
+	SectorEventsModel        MinerSectorEventList
+	SectorDealsModel         MinerSectorDealList
+}
+
+// PersistWithTx calls PersistWithTx on every field of MinerTasklists which
+// should result in batched commits of the items since they are lists.
+func (mtl *MinerTaskLists) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerTaskLists.PersistWithTx")
+	defer span.End()
+
+	if mtl.PreCommitsModel != nil {
+		if err := mtl.PreCommitsModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if mtl.SectorsModel != nil {
+		if err := mtl.SectorsModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if len(mtl.SectorEventsModel) > 0 {
+		if err := mtl.SectorEventsModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if mtl.MinerInfoModel != nil {
+		if err := mtl.MinerInfoModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if mtl.LockedFundsModel != nil {
+		if err := mtl.LockedFundsModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if mtl.FeeDebtModel != nil {
+		if err := mtl.FeeDebtModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if mtl.CurrentDeadlineInfoModel != nil {
+		if err := mtl.CurrentDeadlineInfoModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if mtl.SectorDealsModel != nil {
+		if err := mtl.SectorDealsModel.PersistWithTx(ctx, tx); err != nil {
 			return err
 		}
 	}
