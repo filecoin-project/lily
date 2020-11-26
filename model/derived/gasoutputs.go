@@ -12,6 +12,7 @@ import (
 
 type GasOutputs struct {
 	tableName          struct{} `pg:"derived_gas_outputs"` //nolint: structcheck,unused
+	Height             int64    `pg:",pk,use_zero,notnull"`
 	Cid                string   `pg:",pk,notnull"`
 	From               string   `pg:",notnull"`
 	To                 string   `pg:",notnull"`
@@ -22,6 +23,7 @@ type GasOutputs struct {
 	SizeBytes          int      `pg:",use_zero,notnull"`
 	Nonce              uint64   `pg:",use_zero,notnull"`
 	Method             uint64   `pg:",use_zero,notnull"`
+	ActorName          string   `pg:",notnull"`
 	StateRoot          string   `pg:",notnull"`
 	ExitCode           int64    `pg:",use_zero,notnull"`
 	GasUsed            int64    `pg:",use_zero,notnull"`
@@ -64,9 +66,4 @@ func (l GasOutputsList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 		return xerrors.Errorf("persisting derived gas outputs: %w", err)
 	}
 	return nil
-}
-
-type ProcessingGasOutputs struct {
-	Height int64
-	GasOutputs
 }
