@@ -101,6 +101,14 @@ func NewDatabase(ctx context.Context, url string, poolSize int) (*Database, erro
 	}, nil
 }
 
+func AsStorage(db *pg.DB) *Database {
+	return &Database{
+		DB:    db,
+		opt:   db.Options(),
+		Clock: clock.New(),
+	}
+}
+
 type Database struct {
 	DB    *pg.DB
 	opt   *pg.Options

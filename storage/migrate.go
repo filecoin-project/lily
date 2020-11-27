@@ -10,6 +10,8 @@ import (
 	"golang.org/x/xerrors"
 )
 
+var ErrVersionIsCurrent = xerrors.New("database schema is already at requested version")
+
 // GetSchemaVersions returns the schema version in the database and the latest schema version defined by the available
 // migrations.
 func (d *Database) GetSchemaVersions(ctx context.Context) (int, int, error) {
@@ -82,7 +84,8 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target int) error {
 	}
 
 	if dbVersion == target {
-		return xerrors.Errorf("database schema is already at version %d", dbVersion)
+		log.Warnw("%s: %d", ErrVersionIsCurrent.Error(), dbVersion)
+		return ErrVersionIsCurrent
 	}
 
 	if err := checkMigrationSequence(ctx, dbVersion, target); err != nil {

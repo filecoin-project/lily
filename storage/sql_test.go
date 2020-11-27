@@ -61,6 +61,13 @@ func TestLeaseStateChanges(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { require.NoError(t, cleanup()) }()
 
+	if err := AsStorage(db).MigrateSchema(ctx); err != ErrVersionIsCurrent {
+		t.Fatal(err)
+	}
+
+	if err := AsStorage(db).MigrateSchema(ctx); err != ErrVersionIsCurrent {
+		t.Fatal(err)
+	}
 	truncateVisorProcessingTables(t, db)
 
 	indexedTipsets := visor.ProcessingTipSetList{
@@ -185,6 +192,9 @@ func TestLeaseActors(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { require.NoError(t, cleanup()) }()
 
+	if err := AsStorage(db).MigrateSchema(ctx); err != ErrVersionIsCurrent {
+		t.Fatal(err)
+	}
 	truncateVisorProcessingTables(t, db)
 
 	indexedActors := visor.ProcessingActorList{
@@ -293,6 +303,9 @@ func TestMarkActorComplete(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { require.NoError(t, cleanup()) }()
 
+	if err := AsStorage(db).MigrateSchema(ctx); err != ErrVersionIsCurrent {
+		t.Fatal(err)
+	}
 	truncateVisorProcessingTables(t, db)
 
 	indexedActors := visor.ProcessingActorList{
@@ -364,6 +377,9 @@ func TestLeaseTipSetMessages(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { require.NoError(t, cleanup()) }()
 
+	if err := AsStorage(db).MigrateSchema(ctx); err != ErrVersionIsCurrent {
+		t.Fatal(err)
+	}
 	truncateVisorProcessingTables(t, db)
 
 	indexedMessageTipSets := visor.ProcessingTipSetList{
@@ -463,6 +479,9 @@ func TestLeaseGasOutputsMessages(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { require.NoError(t, cleanup()) }()
 
+	if err := AsStorage(db).MigrateSchema(ctx); err != ErrVersionIsCurrent {
+		t.Fatal(err)
+	}
 	truncateVisorProcessingTables(t, db)
 
 	indexedMessages := visor.ProcessingMessageList{
@@ -677,6 +696,9 @@ func TestFindGasOutputsMessages(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { require.NoError(t, cleanup()) }()
 
+	if err := AsStorage(db).MigrateSchema(ctx); err != ErrVersionIsCurrent {
+		t.Fatal(err)
+	}
 	truncateVisorProcessingTables(t, db)
 
 	indexedMessages := visor.ProcessingMessageList{
@@ -885,6 +907,9 @@ func TestMarkGasOutputsMessagesComplete(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { require.NoError(t, cleanup()) }()
 
+	if err := AsStorage(db).MigrateSchema(ctx); err != ErrVersionIsCurrent {
+		t.Fatal(err)
+	}
 	truncateVisorProcessingTables(t, db)
 
 	indexedMessages := visor.ProcessingMessageList{
@@ -955,6 +980,9 @@ func TestLeaseTipSetEconomics(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { require.NoError(t, cleanup()) }()
 
+	if err := AsStorage(db).MigrateSchema(ctx); err != ErrVersionIsCurrent {
+		t.Fatal(err)
+	}
 	truncateVisorProcessingTables(t, db)
 
 	indexedMessageTipSets := visor.ProcessingTipSetList{
@@ -1054,6 +1082,9 @@ func TestMarkTipSetComplete(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { require.NoError(t, cleanup()) }()
 
+	if err := AsStorage(db).MigrateSchema(ctx); err != ErrVersionIsCurrent {
+		t.Fatal(err)
+	}
 	truncateVisorProcessingTables(t, db)
 
 	indexedMessages := visor.ProcessingTipSetList{
