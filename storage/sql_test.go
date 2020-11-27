@@ -264,7 +264,7 @@ func TestLeaseActors(t *testing.T) {
 		DB:    db,
 		Clock: testutil.NewMockClock(),
 	}
-	claimed, err := d.LeaseActors(ctx, claimUntil, batchSize, 0, 500, allowedCodes)
+	claimed, err := d.LeaseActors(ctx, claimUntil, batchSize, 0, 500, allowedCodes, nil)
 	require.NoError(t, err)
 	require.Equal(t, batchSize, len(claimed), "number of claimed actors")
 

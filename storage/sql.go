@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -361,7 +362,7 @@ func (d *Database) GetActorByHead(ctx context.Context, head string) (*visor.Proc
 }
 
 // LeaseActors leases a set of actors to process. minHeight and maxHeight define an inclusive range of heights to process.
-func (d *Database) LeaseActors(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64, codes []string) (visor.ProcessingActorList, error) {
+func (d *Database) LeaseActors(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64, codes []string, addrs []string) (visor.ProcessingActorList, error) {
 	stop := metrics.Timer(ctx, metrics.BatchSelectionDuration)
 	defer stop()
 	var actors visor.ProcessingActorList
@@ -372,7 +373,21 @@ func (d *Database) LeaseActors(ctx context.Context, claimUntil time.Time, batchS
 	}
 
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		_, err := tx.QueryContext(ctx, &actors, `
+		var params []interface{}
+		var cond string
+		if len(codes) > 0 {
+			if len(addrs) > 0 {
+				cond = "AND (code IN (?) OR address IN (?))"
+				params = []interface{}{claimUntil, d.Clock.Now(), minHeight, maxHeight, pg.In(codes), pg.In(addrs), batchSize, minHeight, maxHeight}
+			} else {
+				cond = "AND code IN (?)"
+				params = []interface{}{claimUntil, d.Clock.Now(), minHeight, maxHeight, pg.In(codes), batchSize, minHeight, maxHeight}
+			}
+		} else if len(addrs) > 0 {
+			cond = "AND address IN (?)"
+			params = []interface{}{claimUntil, d.Clock.Now(), minHeight, maxHeight, pg.In(addrs), batchSize, minHeight, maxHeight}
+		}
+		_, err := tx.QueryContext(ctx, &actors, fmt.Sprintf(`
 WITH leased AS (
     UPDATE visor_processing_actors a
     SET claimed_until = ?
@@ -381,8 +396,7 @@ WITH leased AS (
 	    FROM visor_processing_actors
 	    WHERE completed_at IS null AND
 	          (claimed_until IS null OR claimed_until < ?) AND
-	          height >= ? AND height <= ? AND
-	          code IN (?)
+	          height >= ? AND height <= ? %s
 	    ORDER BY height DESC
 	    LIMIT ?
 	    FOR UPDATE SKIP LOCKED
@@ -391,7 +405,7 @@ WITH leased AS (
  	AND a.height >= ? AND a.height <= ?
    RETURNING a.head, a.code, a.nonce, a.balance, a.address, a.parent_state_root, a.tip_set, a.parent_tip_set, a.height)
 SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set, height from leased;
-    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, pg.In(codes), batchSize, minHeight, maxHeight)
+    `, cond), params...)
 		if err != nil {
 			return err
 		}
@@ -403,7 +417,7 @@ SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_t
 }
 
 // FindActors finds a set of actors to process but does not take a lease out. minHeight and maxHeight define an inclusive range of heights to process.
-func (d *Database) FindActors(ctx context.Context, batchSize int, minHeight, maxHeight int64, codes []string) (visor.ProcessingActorList, error) {
+func (d *Database) FindActors(ctx context.Context, batchSize int, minHeight, maxHeight int64, codes []string, addrs []string) (visor.ProcessingActorList, error) {
 	stop := metrics.Timer(ctx, metrics.BatchSelectionDuration)
 	defer stop()
 	var actors visor.ProcessingActorList
@@ -414,30 +428,26 @@ func (d *Database) FindActors(ctx context.Context, batchSize int, minHeight, max
 	}
 
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		var err error
-		switch len(codes) {
-		case 0:
-			_, err = tx.QueryContext(ctx, &actors, `
-				    SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set, height
-				    FROM visor_processing_actors
-				    WHERE completed_at IS null AND height >= ? AND height <= ?
-				    ORDER BY height DESC
-				    LIMIT ?`, minHeight, maxHeight, batchSize)
-		case 1:
-			_, err = tx.QueryContext(ctx, &actors, `
-				    SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set, height
-				    FROM visor_processing_actors
-				    WHERE completed_at IS null AND height >= ? AND height <= ? AND code = ?
-				    ORDER BY height DESC
-				    LIMIT ?`, minHeight, maxHeight, codes[0], batchSize)
-		default:
-			_, err = tx.QueryContext(ctx, &actors, `
-				    SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set, height
-				    FROM visor_processing_actors
-				    WHERE completed_at IS null AND height >= ? AND height <= ? AND code IN (?)
-				    ORDER BY height DESC
-				    LIMIT ?`, minHeight, maxHeight, pg.In(codes), batchSize)
+		var params []interface{}
+		var cond string
+		if len(codes) > 0 {
+			if len(addrs) > 0 {
+				cond = "AND (code IN (?) OR address IN (?))"
+				params = []interface{}{minHeight, maxHeight, pg.In(codes), pg.In(addrs), batchSize}
+			} else {
+				cond = "AND code IN (?)"
+				params = []interface{}{minHeight, maxHeight, pg.In(codes), batchSize}
+			}
+		} else if len(addrs) > 0 {
+			cond = "AND address IN (?)"
+			params = []interface{}{minHeight, maxHeight, pg.In(addrs), batchSize}
 		}
+		_, err := tx.QueryContext(ctx, &actors, fmt.Sprintf(`
+			SELECT head, code, nonce, balance, address, parent_state_root, tip_set, parent_tip_set, height
+			FROM visor_processing_actors
+			WHERE completed_at IS null AND height >= ? AND height <= ? %s
+			ORDER BY height DESC
+			LIMIT ?`, cond), params...)
 		if err != nil {
 			return err
 		}

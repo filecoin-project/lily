@@ -95,7 +95,16 @@ func SupportedActorCodes() []cid.Cid {
 	return codes
 }
 
-func NewActorStateProcessor(d *storage.Database, opener lens.APIOpener, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64, actorCodes []cid.Cid, useLeases bool) (*ActorStateProcessor, error) {
+// ActorSelector is a selector for actors whose state should be extracted.
+type ActorSelector struct {
+	Codes     []cid.Cid
+	Addresses []address.Address
+}
+
+// defaultActorAddresses is the actor addresses that are selected by default.
+var defaultActorAddresses = []address.Address{builtin2.BurntFundsActorAddr}
+
+func NewActorStateProcessor(d *storage.Database, opener lens.APIOpener, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64, actorSelections ActorSelector, useLeases bool) (*ActorStateProcessor, error) {
 	p := &ActorStateProcessor{
 		opener:      opener,
 		storage:     d,
@@ -106,17 +115,30 @@ func NewActorStateProcessor(d *storage.Database, opener lens.APIOpener, leaseLen
 		extractors:  map[cid.Cid]ActorStateExtractor{},
 		clock:       clock.New(),
 		useLeases:   useLeases,
+		selections:  actorSelections,
 	}
 
 	extractorsMu.Lock()
 	defer extractorsMu.Unlock()
-	for _, code := range actorCodes {
+	for _, code := range actorSelections.Codes {
 		e, exists := extractors[code]
 		if !exists {
-			return nil, xerrors.Errorf("unsupport actor code: %s", code.String())
+			return nil, xerrors.Errorf("unsupported actor code: %s", code.String())
 		}
-		p.actorCodes = append(p.actorCodes, code.String())
 		p.extractors[code] = e
+	}
+
+	for _, a := range defaultActorAddresses {
+		found := false
+		for _, sa := range actorSelections.Addresses {
+			if sa == a {
+				found = true
+				break
+			}
+		}
+		if !found {
+			p.selections.Addresses = append(p.selections.Addresses, a)
+		}
 	}
 
 	return p, nil
@@ -131,7 +153,7 @@ type ActorStateProcessor struct {
 	batchSize   int                             // number of blocks to lease in a batch
 	minHeight   int64                           // limit processing to tipsets equal to or above this height
 	maxHeight   int64                           // limit processing to tipsets equal to or below this height
-	actorCodes  []string                        // list of actor codes that will be requested
+	selections  ActorSelector                   // selector for actors that will be requested
 	extractors  map[cid.Cid]ActorStateExtractor // list of extractors that will be used
 	clock       clock.Clock
 	useLeases   bool // when true this task will update the claimed_until column in the processing table (which can cause contention)
@@ -235,10 +257,19 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (
 	var batch visor.ProcessingActorList
 	var err error
 
+	var actorCodes []string
+	for _, c := range p.selections.Codes {
+		actorCodes = append(actorCodes, c.String())
+	}
+	var actorAddrs []string
+	for _, a := range p.selections.Addresses {
+		actorAddrs = append(actorAddrs, a.String())
+	}
+
 	if p.useLeases {
-		batch, err = p.storage.LeaseActors(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
+		batch, err = p.storage.LeaseActors(ctx, claimUntil, p.batchSize, p.minHeight, p.maxHeight, actorCodes, actorAddrs)
 	} else {
-		batch, err = p.storage.FindActors(ctx, p.batchSize, p.minHeight, p.maxHeight, p.actorCodes)
+		batch, err = p.storage.FindActors(ctx, p.batchSize, p.minHeight, p.maxHeight, actorCodes, actorAddrs)
 	}
 	if err != nil {
 		return true, err
