@@ -1,4 +1,4 @@
-package sqlrepo
+package s3repo
 
 import (
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -12,5 +12,5 @@ func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 		return nil, nil, err
 	}
 
-	return util.NewAPIOpener(c, bs, bs.(*SqlBlockstore).getMasterTsKey)
+	return util.NewAPIOpener(c, bs, bs.(*S3Blockstore).getMasterTsKey)
 }
