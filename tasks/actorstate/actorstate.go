@@ -314,7 +314,7 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, node lens.API, i
 	// Find a specific extractor for the actor type
 	extractor, exists := p.extractors[info.Actor.Code]
 	if !exists {
-		return xerrors.Errorf("no extractor defined for actor code %q", info.Actor.Code.String())
+		return nil
 	}
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, ActorNameByCode(info.Actor.Code)))
