@@ -22,6 +22,47 @@ Build the `sentinel-visor` binary to the root of the project directory:
 $ make build
 ```
 
+Install PostgreSQL:
+
+```sh
+brew install postgres@12
+```
+
+Install TimescaleDB:
+
+```sh
+brew tap timescale/tap
+brew install timescaledb
+```
+
+You may need to run the following to get timescale to compile:
+
+```sh
+ln -s /usr/local/Cellar/postgresql@12/12.5/include/postgresql/server /usr/local/Cellar/postgresql@12/12.5/include/server
+```
+
+Activate TimescaleDB by adding `shared_preload_libraries = 'timescaledb'` to `postgresql.conf`. Restart the postgres server if it's running.
+
+### Running tests
+
+Create a new DB in postgres for testing:
+
+```sql
+CREATE DATABASE visor_test;
+```
+
+Migrate the database to the latest schema:
+
+```sh
+visor --db "postgres://username@localhost/visor_test?sslmode=disable" migrate --latest
+```
+
+Run the tests:
+
+```sh
+VISOR_TEST_DB="postgres://username@localhost/visor_test?sslmode=disable" go test ./...
+```
+
 ### Usage
 
 ```
