@@ -88,7 +88,7 @@ func main() {
 			&cli.StringFlag{
 				Name:    "jaeger-service-name",
 				EnvVars: []string{"JAEGER_SERVICE_NAME"},
-				Value:   "sentinel-visor",
+				Value:   "visor",
 			},
 			&cli.StringFlag{
 				Name:    "jaeger-sampler-type",
