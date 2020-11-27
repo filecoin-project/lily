@@ -1,16 +1,19 @@
-package actorstate
+package actorstate_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/lotus/chain/actors/builtin/power"
 	"github.com/filecoin-project/lotus/chain/actors/builtin/reward"
 	"github.com/filecoin-project/lotus/chain/types"
+	tutils "github.com/filecoin-project/specs-actors/support/testing"
+
 	rewardmodel "github.com/filecoin-project/sentinel-visor/model/actors/reward"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
+
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa0smoothing "github.com/filecoin-project/specs-actors/actors/util/smoothing"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
@@ -22,10 +25,9 @@ import (
 func TestRewardExtractV0(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := NewMockAPI()
+	mapi := NewMockAPI(t)
 
-	state, err := mapi.newEmptyRewardStateV0(abi.NewStoragePower(500))
-	require.NoError(t, err)
+	state := mapi.mustCreateEmptyRewardStateV0(abi.NewStoragePower(500))
 
 	state.CumsumBaseline = big.NewInt(1000)
 	state.CumsumRealized = big.NewInt(2000)
@@ -39,20 +41,17 @@ func TestRewardExtractV0(t *testing.T) {
 	stateCid, err := mapi.Store().Put(ctx, state)
 	require.NoError(t, err)
 
-	minerAddr, err := address.NewFromString("t00")
-	require.NoError(t, err)
-	stateTs, err := mockTipset(minerAddr, 1)
-	require.NoError(t, err)
+	minerAddr := tutils.NewIDAddr(t, 00)
+	stateTs := mapi.fakeTipset(minerAddr, 1)
+	mapi.setActor(stateTs.Key(), reward.Address, &types.Actor{Code: sa0builtin.RewardActorCodeID, Head: stateCid})
 
-	info := ActorInfo{
+	info := actorstate.ActorInfo{
 		Actor:   types.Actor{Code: sa0builtin.RewardActorCodeID, Head: stateCid},
 		Address: power.Address,
 		TipSet:  stateTs.Key(),
 	}
 
-	mapi.setActor(stateTs.Key(), reward.Address, &types.Actor{Code: sa0builtin.RewardActorCodeID, Head: stateCid})
-
-	ex := RewardExtractor{}
+	ex := actorstate.RewardExtractor{}
 	res, err := ex.Extract(ctx, info, mapi)
 	require.NoError(t, err)
 
@@ -62,8 +61,7 @@ func TestRewardExtractV0(t *testing.T) {
 
 	assert.EqualValues(t, info.ParentStateRoot.String(), cr.StateRoot, "StateRoot")
 	assert.EqualValues(t, state.CumsumBaseline.String(), cr.CumSumBaseline, "CumSumBaseline")
-	// TODO: assertion fails due to bug in lotus see https://github.com/filecoin-project/lotus/pull/4268
-	// assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
+	assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
 	assert.EqualValues(t, state.EffectiveBaselinePower.String(), cr.EffectiveBaselinePower, "EffectiveBaselinePower")
 	assert.EqualValues(t, state.ThisEpochBaselinePower.String(), cr.NewBaselinePower, "NewBaselinePower")
 	assert.EqualValues(t, state.ThisEpochRewardSmoothed.PositionEstimate.String(), cr.NewRewardSmoothedPositionEstimate, "NewRewardSmoothedPositionEstimate")
@@ -76,10 +74,9 @@ func TestRewardExtractV0(t *testing.T) {
 func TestRewardExtractV2(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := NewMockAPI()
+	mapi := NewMockAPI(t)
 
-	state, err := mapi.newEmptyRewardStateV2(abi.NewStoragePower(500))
-	require.NoError(t, err)
+	state := mapi.mustCreateEmptyRewardStateV2(abi.NewStoragePower(500))
 
 	state.CumsumBaseline = big.NewInt(1000)
 	state.CumsumRealized = big.NewInt(2000)
@@ -93,20 +90,17 @@ func TestRewardExtractV2(t *testing.T) {
 	stateCid, err := mapi.Store().Put(ctx, state)
 	require.NoError(t, err)
 
-	minerAddr, err := address.NewFromString("t00")
-	require.NoError(t, err)
-	stateTs, err := mockTipset(minerAddr, 1)
-	require.NoError(t, err)
+	minerAddr := tutils.NewIDAddr(t, 123)
+	stateTs := mapi.fakeTipset(minerAddr, 1)
+	mapi.setActor(stateTs.Key(), reward.Address, &types.Actor{Code: sa2builtin.RewardActorCodeID, Head: stateCid})
 
-	info := ActorInfo{
+	info := actorstate.ActorInfo{
 		Actor:   types.Actor{Code: sa2builtin.RewardActorCodeID, Head: stateCid},
 		Address: power.Address,
 		TipSet:  stateTs.Key(),
 	}
 
-	mapi.setActor(stateTs.Key(), reward.Address, &types.Actor{Code: sa2builtin.RewardActorCodeID, Head: stateCid})
-
-	ex := RewardExtractor{}
+	ex := actorstate.RewardExtractor{}
 	res, err := ex.Extract(ctx, info, mapi)
 	require.NoError(t, err)
 
@@ -116,8 +110,7 @@ func TestRewardExtractV2(t *testing.T) {
 
 	assert.EqualValues(t, info.ParentStateRoot.String(), cr.StateRoot, "StateRoot")
 	assert.EqualValues(t, state.CumsumBaseline.String(), cr.CumSumBaseline, "CumSumBaseline")
-	// TODO: assertion fails due to bug in lotus see https://github.com/filecoin-project/lotus/pull/4268
-	// assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
+	assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
 	assert.EqualValues(t, state.EffectiveBaselinePower.String(), cr.EffectiveBaselinePower, "EffectiveBaselinePower")
 	assert.EqualValues(t, state.ThisEpochBaselinePower.String(), cr.NewBaselinePower, "NewBaselinePower")
 	assert.EqualValues(t, state.ThisEpochRewardSmoothed.PositionEstimate.String(), cr.NewRewardSmoothedPositionEstimate, "NewRewardSmoothedPositionEstimate")

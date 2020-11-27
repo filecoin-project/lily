@@ -43,7 +43,7 @@ func (ml MinerCurrentDeadlineInfoList) PersistWithTx(ctx context.Context, tx *pg
 	if _, err := tx.ModelContext(ctx, &ml).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return xerrors.Errorf("persisting miner current deadline list: %w")
+		return xerrors.Errorf("persisting miner current deadline list: %w", err)
 	}
 	return nil
 }

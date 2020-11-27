@@ -34,7 +34,7 @@ func TestSchemaIsCurrent(t *testing.T) {
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
-	defer require.NoError(t, cleanup())
+	defer func() { require.NoError(t, cleanup()) }()
 
 	for _, model := range models {
 		t.Run(fmt.Sprintf("%T", model), func(t *testing.T) {
@@ -59,7 +59,7 @@ func TestLeaseStateChanges(t *testing.T) {
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
-	defer require.NoError(t, cleanup())
+	defer func() { require.NoError(t, cleanup()) }()
 
 	truncateVisorProcessingTables(t, db)
 
@@ -183,7 +183,7 @@ func TestLeaseActors(t *testing.T) {
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
-	defer require.NoError(t, cleanup())
+	defer func() { require.NoError(t, cleanup()) }()
 
 	truncateVisorProcessingTables(t, db)
 
@@ -291,7 +291,7 @@ func TestMarkActorComplete(t *testing.T) {
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
-	defer require.NoError(t, cleanup())
+	defer func() { require.NoError(t, cleanup()) }()
 
 	truncateVisorProcessingTables(t, db)
 
@@ -362,7 +362,7 @@ func TestLeaseTipSetMessages(t *testing.T) {
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
-	defer require.NoError(t, cleanup())
+	defer func() { require.NoError(t, cleanup()) }()
 
 	truncateVisorProcessingTables(t, db)
 
@@ -461,7 +461,7 @@ func TestLeaseGasOutputsMessages(t *testing.T) {
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
-	defer require.NoError(t, cleanup())
+	defer func() { require.NoError(t, cleanup()) }()
 
 	truncateVisorProcessingTables(t, db)
 
@@ -675,7 +675,7 @@ func TestFindGasOutputsMessages(t *testing.T) {
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
-	defer cleanup()
+	defer func() { require.NoError(t, cleanup()) }()
 
 	truncateVisorProcessingTables(t, db)
 
@@ -883,7 +883,7 @@ func TestMarkGasOutputsMessagesComplete(t *testing.T) {
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
-	defer require.NoError(t, cleanup())
+	defer func() { require.NoError(t, cleanup()) }()
 
 	truncateVisorProcessingTables(t, db)
 
@@ -953,7 +953,7 @@ func TestLeaseTipSetEconomics(t *testing.T) {
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
-	defer require.NoError(t, cleanup())
+	defer func() { require.NoError(t, cleanup()) }()
 
 	truncateVisorProcessingTables(t, db)
 
@@ -1052,7 +1052,7 @@ func TestMarkTipSetComplete(t *testing.T) {
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
-	defer require.NoError(t, cleanup())
+	defer func() { require.NoError(t, cleanup()) }()
 
 	truncateVisorProcessingTables(t, db)
 

@@ -256,9 +256,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, node lens.A
 
 		// extract all messages, vmm will include duplicate messages.
 		vmm := make([]*types.Message, 0, len(msgs.Cids))
-		for _, m := range msgs.BlsMessages {
-			vmm = append(vmm, m)
-		}
+		vmm = append(vmm, msgs.BlsMessages...)
 		for _, m := range msgs.SecpkMessages {
 			vmm = append(vmm, &m.Message)
 		}
@@ -271,11 +269,11 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, node lens.A
 				Message: message.Cid().String(),
 			})
 
-			totalUniqGasLimit += message.GasLimit
+			totalGasLimit += message.GasLimit
 			if _, seen := msgsSeen[message.Cid()]; seen {
 				continue
 			}
-			totalGasLimit += message.GasLimit
+			totalUniqGasLimit += message.GasLimit
 
 			// record this message for processing by later stages
 			pmsgModels = append(pmsgModels, visor.NewProcessingMessage(message, int64(ts.Height())))
@@ -343,7 +341,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, node lens.A
 					dstActorCode = dstActor.Code.String()
 				}
 
-				if pm, err := parseMsg(message, ts, dstActorCode); err == nil {
+				if pm, err := ParseMsg(message, ts, dstActorCode); err == nil {
 					result.ParsedMessages = append(result.ParsedMessages, pm)
 				} else {
 					return nil, nil, xerrors.Errorf("parse message %s failed: %w", message.Cid().String(), err)
@@ -352,6 +350,7 @@ func (p *MessageProcessor) extractMessageModels(ctx context.Context, node lens.A
 		}
 
 	}
+	// implemented based on: https://github.com/filecoin-project/lotus/blob/c296e1bbcac98225f1d5ef7b34e9790c3dbed31e/tools/stats/metrics.go#L135-L189
 	newBaseFee := store.ComputeNextBaseFee(ts.Blocks()[0].ParentBaseFee, totalUniqGasLimit, len(ts.Blocks()), ts.Height())
 	baseFeeRat := new(big.Rat).SetFrac(newBaseFee.Int, new(big.Int).SetUint64(build.FilecoinPrecision))
 	baseFee, _ := baseFeeRat.Float64()
@@ -385,7 +384,9 @@ func cidsEqual(c1, c2 []cid.Cid) bool {
 	return true
 }
 
-func parseMsg(m *types.Message, ts *types.TipSet, destCode string) (*messagemodel.ParsedMessage, error) {
+// ParseMsg extracts message parameters and encodes them as JSON by looking at
+// the messages destination actor type.
+func ParseMsg(m *types.Message, ts *types.TipSet, destCode string) (*messagemodel.ParsedMessage, error) {
 	pm := &messagemodel.ParsedMessage{
 		Cid:    m.Cid().String(),
 		Height: int64(ts.Height()),

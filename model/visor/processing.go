@@ -27,7 +27,7 @@ func NewProcessingTipSet(ts *types.TipSet) *ProcessingTipSet {
 }
 
 type ProcessingTipSet struct {
-	tableName struct{} `pg:"visor_processing_tipsets"`
+	tableName struct{} `pg:"visor_processing_tipsets"` // nolint: structcheck,unused
 
 	TipSet string `pg:",pk,notnull"`
 
@@ -121,7 +121,7 @@ func TipSetKeyFromString(s string) (types.TipSetKey, error) {
 }
 
 type ProcessingActor struct {
-	tableName struct{} `pg:"visor_processing_actors"`
+	tableName struct{} `pg:"visor_processing_actors"` // nolint: structcheck,unused
 
 	Head            string `pg:",pk,notnull"`
 	Code            string `pg:",pk,notnull"`
@@ -193,7 +193,7 @@ func NewProcessingMessage(m *types.Message, height int64) *ProcessingMessage {
 }
 
 type ProcessingMessage struct {
-	tableName struct{} `pg:"visor_processing_messages"`
+	tableName struct{} `pg:"visor_processing_messages"` // nolint: structcheck,unused
 
 	Cid    string `pg:",pk,notnull"`
 	Height int64  `pg:",use_zero"`

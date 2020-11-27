@@ -34,7 +34,7 @@ type MinerSectorEvent struct {
 
 	// https://github.com/go-pg/pg/issues/993
 	// override the SQL type with enum type, see 1_chainwatch.go for enum definition
-	Event string `pg:"type:miner_sector_event_type" pg:",pk,notnull"`
+	Event string `pg:"type:miner_sector_event_type" pg:",pk,notnull"` // nolint: staticcheck
 }
 
 type MinerSectorEventList []*MinerSectorEvent
@@ -42,6 +42,11 @@ type MinerSectorEventList []*MinerSectorEvent
 func (l MinerSectorEventList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerSectorEventList.PersistWithTx", trace.WithAttributes(label.Int("count", len(l))))
 	defer span.End()
+
+	if len(l) == 0 {
+		return nil
+	}
+
 	if _, err := tx.ModelContext(ctx, &l).
 		OnConflict("do nothing").
 		Insert(); err != nil {

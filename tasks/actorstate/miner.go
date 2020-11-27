@@ -109,7 +109,7 @@ func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 	if a.Epoch != 0 {
 		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet)
 		if err != nil {
-			return nil, xerrors.Errorf("loading previous miner %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet, a.Epoch)
+			return nil, xerrors.Errorf("loading previous miner %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet, a.Epoch, err)
 		}
 
 		prevState, err = miner.Load(node.Store(), prevActor)
@@ -614,7 +614,7 @@ type PartitionStatus struct {
 }
 
 func extractMinerPartitionsDiff(ctx context.Context, ec *MinerStateExtractionContext) (*PartitionStatus, error) {
-	ctx, span := global.Tracer("").Start(ctx, "StorageMinerExtractor.minerPartitionDiff")
+	ctx, span := global.Tracer("").Start(ctx, "StorageMinerExtractor.minerPartitionDiff") // nolint: ineffassign,staticcheck
 	defer span.End()
 
 	// short circuit genesis state.

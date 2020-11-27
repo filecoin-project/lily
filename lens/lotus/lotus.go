@@ -9,7 +9,6 @@ import (
 	"github.com/filecoin-project/lotus/api/client"
 	"github.com/filecoin-project/lotus/node/repo"
 	lru "github.com/hashicorp/golang-lru"
-	logging "github.com/ipfs/go-log/v2"
 	"github.com/mitchellh/go-homedir"
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr/net"
@@ -18,8 +17,6 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 )
-
-var log = logging.Logger("visor/lens/lotus")
 
 type APIOpener struct {
 	cache   *lru.ARCCache // cache shared across all instances of the api

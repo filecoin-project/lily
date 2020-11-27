@@ -15,12 +15,10 @@ require (
 	github.com/filecoin-project/specs-actors v0.9.12
 	github.com/filecoin-project/specs-actors/v2 v2.2.0
 	github.com/filecoin-project/statediff v0.0.8-0.20201027195725-7eaa5391a639
-	github.com/git-chglog/git-chglog v0.0.0-20200414013904-db796966b373 // indirect
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.3.1
 	github.com/go-pg/pgext v0.1.4
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/ipfs/go-block-format v0.0.2
 	github.com/ipfs/go-cid v0.0.7
 	github.com/ipfs/go-datastore v0.4.5
@@ -29,8 +27,7 @@ require (
 	github.com/ipld/go-ipld-prime v0.5.1-0.20201021195245-109253e8a018
 	github.com/jackc/pgx/v4 v4.9.0
 	github.com/lib/pq v1.8.0
-	github.com/libp2p/go-libp2p-peer v0.2.0
-	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
+	github.com/libp2p/go-libp2p-core v0.7.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/multiformats/go-multibase v0.0.3
@@ -39,8 +36,6 @@ require (
 	github.com/raulk/clock v1.1.0
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/stretchr/testify v1.6.1
-	github.com/tsuyoshiwada/go-gitcmd v0.0.0-20180205145712-5f1f5f9475df // indirect
-	github.com/urfave/cli v1.22.5 // indirect
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/whyrusleeping/cbor-gen v0.0.0-20200826160007-0b9f6c5fb163
 	github.com/willscott/carbs v0.0.3
@@ -50,8 +45,6 @@ require (
 	go.opentelemetry.io/otel/sdk v0.12.0
 	golang.org/x/sys v0.0.0-20201112073958-5cba982894dd // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
-	gopkg.in/AlecAivazis/survey.v1 v1.8.8 // indirect
-	gopkg.in/kyokomi/emoji.v1 v1.5.1 // indirect
 )
 
 replace github.com/filecoin-project/filecoin-ffi => github.com/filecoin-project/statediff/extern/filecoin-ffi v0.0.0-20201028183730-8e6631500d49

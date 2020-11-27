@@ -6,6 +6,9 @@ import (
 
 	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
 )
@@ -45,6 +48,26 @@ func (cp *ChainPower) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 		OnConflict("do nothing").
 		Insert(); err != nil {
 		return fmt.Errorf("persisting chain power: %w", err)
+	}
+	return nil
+}
+
+// ChainPowerList is a slice of ChainPowers for batch insertion.
+type ChainPowerList []*ChainPower
+
+// PersistWithTx makes a batch insertion of the list using the given
+// transaction.
+func (cpl ChainPowerList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	ctx, span := global.Tracer("").Start(ctx, "ChainPowerList.PersistWithTx", trace.WithAttributes(label.Int("count", len(cpl))))
+	defer span.End()
+
+	if len(cpl) == 0 {
+		return nil
+	}
+	if _, err := tx.ModelContext(ctx, &cpl).
+		OnConflict("do nothing").
+		Insert(); err != nil {
+		return xerrors.Errorf("persisting chain power list: %w", err)
 	}
 	return nil
 }
