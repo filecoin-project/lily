@@ -29,12 +29,16 @@ func DatabaseOptions() string {
 // exclusive access is granted. It returns a cleanup function that should be called to close the database connection.
 func WaitForExclusiveDatabase(ctx context.Context, tb testing.TB) (*pg.DB, func() error, error) {
 	require.NotEmpty(tb, testDatabase, "No test database available: VISOR_TEST_DB not set")
-
 	opt, err := pg.ParseURL(testDatabase)
 	require.NoError(tb, err)
 
 	db := pg.Connect(opt)
 	db = db.WithContext(ctx)
+
+	// Check if connection credentials are valid and PostgreSQL is up and running.
+	if err := db.Ping(ctx); err != nil {
+		return nil, db.Close, xerrors.Errorf("ping database: %w", err)
+	}
 
 	release, err := WaitForExclusiveDatabaseLock(ctx, db)
 	if err != nil {
