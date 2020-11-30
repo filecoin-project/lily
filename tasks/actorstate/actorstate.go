@@ -68,6 +68,11 @@ type ActorStateExtractor interface {
 	Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error)
 }
 
+// FilteredExtractor provides functionality to determine which actors should be extracted.
+type FilteredExtractor interface {
+	Filter(a ActorInfo) bool
+}
+
 // All supported actor state extractors
 var (
 	extractorsMu sync.Mutex
