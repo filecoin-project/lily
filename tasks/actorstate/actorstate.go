@@ -305,7 +305,7 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, node lens.API, i
 	ctx, span := global.Tracer("").Start(ctx, "ActorStateProcessor.processActor")
 	defer span.End()
 
-	// Find a specific extractor for the actor type
+	// Find the extractor for the actor type
 	extractor, exists := p.extractors[info.Actor.Code]
 	if !exists {
 		return xerrors.Errorf("no extractor defined for actor code %q", info.Actor.Code.String())
