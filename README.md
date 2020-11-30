@@ -35,13 +35,13 @@ brew tap timescale/tap
 brew install timescaledb
 ```
 
-You may need to run the following to get timescale to compile:
+You may need to run the following _before_ installing timescale to get it to compile:
 
 ```sh
 ln -s /usr/local/Cellar/postgresql@12/12.5/include/postgresql/server /usr/local/Cellar/postgresql@12/12.5/include/server
 ```
 
-Activate TimescaleDB by adding `shared_preload_libraries = 'timescaledb'` to `postgresql.conf`. Restart the postgres server if it's running.
+Run `timescaledb-tune` and/or activate TimescaleDB by adding `shared_preload_libraries = 'timescaledb'` to `postgresql.conf`. Ensure you run `timescaledb_move.sh` as homebrew asks to finish the installation and then restart the postgres server if it's running.
 
 ### Running tests
 
