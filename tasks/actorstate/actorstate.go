@@ -305,6 +305,19 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, node lens.API, i
 	ctx, span := global.Tracer("").Start(ctx, "ActorStateProcessor.processActor")
 	defer span.End()
 
+	// Find a specific extractor for the actor type
+	extractor, exists := p.extractors[info.Actor.Code]
+	if !exists {
+		return xerrors.Errorf("no extractor defined for actor code %q", info.Actor.Code.String())
+	}
+
+	// Filter out this particular actor?
+	if fe, ok := extractor.(FilteredExtractor); ok {
+		if !fe.Filter(info) {
+			return nil
+		}
+	}
+
 	var ae ActorExtractor
 
 	// Persist the raw state
@@ -314,12 +327,6 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, node lens.API, i
 	}
 	if err := data.Persist(ctx, p.storage.DB); err != nil {
 		return xerrors.Errorf("persisting raw state: %w", err)
-	}
-
-	// Find a specific extractor for the actor type
-	extractor, exists := p.extractors[info.Actor.Code]
-	if !exists {
-		return xerrors.Errorf("no extractor defined for actor code %q", info.Actor.Code.String())
 	}
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, ActorNameByCode(info.Actor.Code)))
