@@ -25,7 +25,7 @@ $ make build
 Install PostgreSQL:
 
 ```sh
-brew install postgres@12
+brew install postgresql@12
 ```
 
 Install TimescaleDB:
