@@ -56,7 +56,7 @@ func TestChainHeadIndexer(t *testing.T) {
 	require.NoError(t, err, "truncating tables")
 
 	t.Logf("preparing chain")
-	nodes, sn := nodetest.Builder(t, apitest.DefaultFullOpts(1), apitest.OneMiner)
+	nodes, sn := nodetest.RPCMockSbBuilder(t, apitest.OneFull, apitest.OneMiner)
 
 	node := nodes[0]
 	opener := testutil.NewAPIOpener(node)
