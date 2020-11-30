@@ -212,9 +212,6 @@ func truncateBlockTables(tb testing.TB, db *pg.DB) error {
 	_, err = db.Exec(`TRUNCATE TABLE block_parents`)
 	require.NoError(tb, err, "block_parents")
 
-	_, err = db.Exec(`TRUNCATE TABLE drand_entries`)
-	require.NoError(tb, err, "drand_entries")
-
 	_, err = db.Exec(`TRUNCATE TABLE drand_block_entries`)
 	require.NoError(tb, err, "drand_block_entries")
 
