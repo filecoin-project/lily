@@ -1,8 +1,8 @@
 package main
 
 import (
+	"fmt"
 	"os"
-	"strconv"
 
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
@@ -21,7 +21,7 @@ func main() {
 	defaultName := "visor_" + version.String()
 	hostname, err := os.Hostname()
 	if err == nil {
-		defaultName += "_" + hostname + "_" + strconv.Itoa(os.Getpid())
+		defaultName = fmt.Sprintf("%s_%s_%d", defaultName, hostname, os.Getpid())
 	}
 
 	app := &cli.App{

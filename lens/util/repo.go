@@ -225,7 +225,7 @@ func (m fakeVerifier) GenerateWinningPoStSectorChallenge(ctx context.Context, pr
 // No attempt at deduplication of messages is made.
 func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
 	if !types.CidArrsEqual(ts.Parents().Cids(), pts.Cids()) {
-		return nil, xerrors.Errorf("child is not on the same chain")
+		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", ts.Key(), pts.Key())
 	}
 
 	stateTree, err := state.LoadStateTree(cs.Store(ctx), ts.ParentState())

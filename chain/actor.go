@@ -89,7 +89,7 @@ func (p *ActorStateProcessor) processStateChanges(ctx context.Context, ts *types
 	}
 
 	if !types.CidArrsEqual(ts.Parents().Cids(), pts.Cids()) {
-		report.ErrorsDetected = xerrors.Errorf("child is not on the same chain")
+		report.ErrorsDetected = xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", ts.Key(), pts.Key())
 		return nil, report, nil
 	}
 
@@ -125,7 +125,7 @@ func (p *ActorStateProcessor) processStateChanges(ctx context.Context, ts *types
 
 		if res.Error != nil {
 			lla.Errorw("actor returned with error", "error", res.Error.Error())
-			errorsDetected = append(errorsDetected, &ActorStateError{
+			report.ErrorsDetected = append(errorsDetected, &ActorStateError{
 				Code:    res.Code.String(),
 				Name:    actorstate.ActorNameByCode(res.Code),
 				Head:    res.Head.String(),

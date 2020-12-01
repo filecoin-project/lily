@@ -18,7 +18,7 @@ const (
 )
 
 type ProcessingReport struct {
-	tableName struct{} `pg:"visor_processing_reports"`
+	tableName struct{} `pg:"visor_processing_reports"` // nolint: structcheck,unused
 
 	Height    int64  `pg:",pk,use_zero"`
 	StateRoot string `pg:",pk,notnull"`
@@ -58,7 +58,7 @@ func (l ProcessingReportList) PersistWithTx(ctx context.Context, tx *pg.Tx) erro
 	if _, err := tx.ModelContext(ctx, &l).
 		OnConflict("do nothing").
 		Insert(); err != nil {
-		return fmt.Errorf("persisting processing report: %w", err)
+		return fmt.Errorf("persisting processing report list: %w", err)
 	}
 	return nil
 }

@@ -194,7 +194,7 @@ func (aw *APIWrapper) StateVMCirculatingSupplyInternal(ctx context.Context, tsk 
 // No attempt at deduplication of messages is made.
 func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
 	if !types.CidArrsEqual(ts.Parents().Cids(), pts.Cids()) {
-		return nil, xerrors.Errorf("child is not on the same chain")
+		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", ts.Key(), pts.Key())
 	}
 
 	stateTree, err := state.LoadStateTree(aw.Store(), ts.ParentState())
@@ -249,7 +249,7 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 	// Get receipts for parent messages
 	rcpts, err := aw.ChainGetParentReceipts(ctx, ts.Cids()[0])
 	if err != nil {
-		return nil, xerrors.Errorf("get parent messages: %w", err)
+		return nil, xerrors.Errorf("get parent receipts: %w", err)
 	}
 
 	if len(rcpts) != len(msgs) {
