@@ -62,6 +62,7 @@ jobs:
           name: waiting for db
           command: dockerize -wait tcp://localhost:5432 -timeout 1m
       - run: ./visor migrate --latest
+      - run: env VISOR_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test ./... -v
 
   docker-build:
     executor: dockerizer
