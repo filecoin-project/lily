@@ -6,8 +6,8 @@ import "github.com/go-pg/migrations/v8"
 
 func init() {
 	up := batch(`
-	ALTER TABLE public.derived_gas_outputs ADD COLUMN height bigint;
-	ALTER TABLE public.derived_gas_outputs ADD COLUMN actor_name text;
+	ALTER TABLE public.derived_gas_outputs ADD COLUMN height bigint NOT NULL;
+	ALTER TABLE public.derived_gas_outputs ADD COLUMN actor_name text NOT NULL;
 `)
 	down := batch(`
 	ALTER TABLE public.derived_gas_outputs DROP COLUMN height;
