@@ -8,8 +8,11 @@ func init() {
 	up := batch(`
 	ALTER TABLE public.derived_gas_outputs ADD COLUMN height bigint NOT NULL;
 	ALTER TABLE public.derived_gas_outputs ADD COLUMN actor_name text NOT NULL;
+	ALTER TABLE public.derived_gas_outputs ADD PRIMARY KEY (height);
 `)
 	down := batch(`
+	ALTER TABLE public.derived_gas_outputs DROP CONSTRAINT derived_gas_outputs_pkey;
+	ALTER TABLE public.derived_gas_outputs ADD PRIMARY KEY (cid);
 	ALTER TABLE public.derived_gas_outputs DROP COLUMN height;
 	ALTER TABLE public.derived_gas_outputs DROP COLUMN actor_name;
 `)
