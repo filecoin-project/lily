@@ -1,6 +1,7 @@
 version: 2.1
 orbs:
   go: gotest/tools@0.0.9
+  codecov: codecov/codecov@1.0.2
 
 executors:
   dockerizer:
@@ -57,12 +58,19 @@ jobs:
       - run: sudo apt-get install -y pkg-config jq
       - run: make deps
       - run: make build
-      - run: make testshort
       - run:
           name: waiting for db
           command: dockerize -wait tcp://localhost:5432 -timeout 1m
       - run: ./visor migrate --latest
-      - run: env VISOR_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test ./... -v
+      - run:
+          command: |
+            make test-coverage
+            mkdir -p /tmp/artifacts
+            mv coverage.out /tmp/artifacts/coverage.out
+      - codecov/upload:
+          file: /tmp/artifacts/coverage.out
+      - store_artifacts:
+          path: sentinel-visor
 
   docker-build:
     executor: dockerizer
