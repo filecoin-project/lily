@@ -12,5 +12,9 @@ func (noData) Persist(ctx context.Context, db *pg.DB) error {
 	return nil
 }
 
+func (noData) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	return nil
+}
+
 // NoData is a model with no data to persist.
 var NoData = noData{}
