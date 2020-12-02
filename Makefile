@@ -46,8 +46,10 @@ dockerdown:
 
 # testfull runs all tests
 .PHONY: testfull
-testfull:
+testfull: build
 	docker-compose up -d
+	sleep 2
+	./visor migrate --latest
 	TZ= PGSSLMODE=disable go test ./... -v || echo ""
 	docker-compose down
 
