@@ -4,7 +4,7 @@ import (
 	"github.com/go-pg/migrations/v8"
 )
 
-// Schema version 22 updates adds hints to our helper fns so postgres can optimise them.
+// Schema version 24 updates adds hints to our helper fns so postgres can optimise them.
 
 // IMMUTABLE - the function cannot modify the database and always returns the same result when given the same argument value
 // RETURNS NULL ON NULL INPUT - the function is not executed when there are null arguments; instead a null result is assumed automatically.
