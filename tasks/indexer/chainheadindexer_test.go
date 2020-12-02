@@ -63,9 +63,9 @@ func TestChainHeadIndexer(t *testing.T) {
 
 	apitest.MineUntilBlock(ctx, t, node, sn[0], nil)
 
-	d := &storage.Database{DB: db}
+	blockIndexer := NewTipSetBlockIndexer(&storage.Database{DB: db})
 	t.Logf("initializing indexer")
-	idx := NewChainHeadIndexer(d, opener, 0)
+	idx := NewChainHeadIndexer(blockIndexer, opener, 0)
 
 	newHeads, err := node.ChainNotify(ctx)
 	require.NoError(t, err, "chain notify")

@@ -1,9 +1,10 @@
 package sqlrepo
 
 import (
+	"github.com/urfave/cli/v2"
+
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/lens/util"
-	"github.com/urfave/cli/v2"
 )
 
 func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {

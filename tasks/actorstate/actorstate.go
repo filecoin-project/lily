@@ -65,7 +65,7 @@ type ActorStateAPI interface {
 
 // An ActorStateExtractor extracts actor state into a persistable format
 type ActorStateExtractor interface {
-	Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error)
+	Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.PersistableWithTx, error)
 }
 
 // All supported actor state extractors
@@ -93,6 +93,13 @@ func SupportedActorCodes() []cid.Cid {
 		codes = append(codes, code)
 	}
 	return codes
+}
+
+func GetActorStateExtractor(code cid.Cid) (ActorStateExtractor, bool) {
+	extractorsMu.Lock()
+	defer extractorsMu.Unlock()
+	ase, ok := extractors[code]
+	return ase, ok
 }
 
 func NewActorStateProcessor(d *storage.Database, opener lens.APIOpener, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64, actorCodes []cid.Cid, useLeases bool) (*ActorStateProcessor, error) {
@@ -307,7 +314,8 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, node lens.API, i
 	if err != nil {
 		return xerrors.Errorf("extract actor state: %w", err)
 	}
-	if err := data.Persist(ctx, p.storage.DB); err != nil {
+
+	if err := p.storage.Persist(ctx, data); err != nil {
 		return xerrors.Errorf("persisting raw state: %w", err)
 	}
 
@@ -327,10 +335,9 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, node lens.API, i
 
 	log.Debugw("persisting extracted state", "addr", info.Address.String())
 
-	if err := data.Persist(ctx, p.storage.DB); err != nil {
+	if err := p.storage.Persist(ctx, data); err != nil {
 		return xerrors.Errorf("persisting extracted state: %w", err)
 	}
-
 	return nil
 }
 

@@ -10,6 +10,7 @@ import (
 
 	lotus_api "github.com/filecoin-project/lotus/api"
 	store "github.com/filecoin-project/lotus/chain/store"
+	"github.com/filecoin-project/lotus/chain/types"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
@@ -18,13 +19,18 @@ import (
 
 var log = logging.Logger("indexer")
 
+// A TipSetObserver waits for notifications of new tipsets.
+type TipSetObserver interface {
+	TipSet(ctx context.Context, ts *types.TipSet) error
+}
+
 // NewChainHeadIndexer creates a new ChainHeadIndexer. confidence sets the number of tipsets that will be held
 // in a cache awaiting possible reversion. Tipsets will be written to the database when they are evicted from
 // the cache due to incoming later tipsets.
-func NewChainHeadIndexer(d *storage.Database, opener lens.APIOpener, confidence int) *ChainHeadIndexer {
+func NewChainHeadIndexer(obs TipSetObserver, opener lens.APIOpener, confidence int) *ChainHeadIndexer {
 	return &ChainHeadIndexer{
 		opener:     opener,
-		storage:    d,
+		obs:        obs,
 		confidence: confidence,
 		cache:      NewTipSetCache(confidence),
 	}
@@ -33,7 +39,7 @@ func NewChainHeadIndexer(d *storage.Database, opener lens.APIOpener, confidence 
 // ChainHeadIndexer is a task that indexes blocks by following the chain head.
 type ChainHeadIndexer struct {
 	opener     lens.APIOpener
-	storage    *storage.Database
+	obs        TipSetObserver
 	confidence int          // size of tipset cache
 	cache      *TipSetCache // caches tipsets for possible reversion
 }
@@ -74,8 +80,6 @@ func (c *ChainHeadIndexer) index(ctx context.Context, headEvents []*lotus_api.He
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "indexheadblock"))
 
-	data := NewUnindexedBlockData()
-
 	for _, ch := range headEvents {
 		switch ch.Type {
 		case store.HCCurrent:
@@ -85,9 +89,9 @@ func (c *ChainHeadIndexer) index(ctx context.Context, headEvents []*lotus_api.He
 				log.Errorw("tipset cache set current", "error", err.Error())
 			}
 
-			// If we have a zero confidence window then we need to index every tipset we see
+			// If we have a zero confidence window then we need to notify every tipset we see
 			if c.confidence == 0 {
-				data.AddTipSet(ch.Val)
+				c.obs.TipSet(ctx, ch.Val)
 			}
 		case store.HCApply:
 			log.Debugw("add tipset", "height", ch.Val.Height(), "tipset", ch.Val.Key().String())
@@ -96,9 +100,9 @@ func (c *ChainHeadIndexer) index(ctx context.Context, headEvents []*lotus_api.He
 				log.Errorw("tipset cache add", "error", err.Error())
 			}
 
-			// Send the tipset that fell out of the confidence window to the database
+			// Send the tipset that fell out of the confidence window to the observer
 			if tail != nil {
-				data.AddTipSet(tail)
+				c.obs.TipSet(ctx, tail)
 			}
 
 		case store.HCRevert:
@@ -112,12 +116,33 @@ func (c *ChainHeadIndexer) index(ctx context.Context, headEvents []*lotus_api.He
 
 	log.Debugw("tipset cache", "height", c.cache.Height(), "tail_height", c.cache.TailHeight(), "length", c.cache.Len())
 
-	if data.Size() > 0 {
+	return nil
+}
+
+var _ TipSetObserver = (*TipSetBlockIndexer)(nil)
+
+// A TipSetBlockIndexer waits for tipsets and persists their block data into a database.
+type TipSetBlockIndexer struct {
+	data    *UnindexedBlockData
+	storage *storage.Database
+}
+
+func NewTipSetBlockIndexer(d *storage.Database) *TipSetBlockIndexer {
+	return &TipSetBlockIndexer{
+		data:    NewUnindexedBlockData(),
+		storage: d,
+	}
+}
+
+func (t *TipSetBlockIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
+	t.data.AddTipSet(ts)
+	if t.data.Size() > 0 {
 		// persist the blocks to storage
-		log.Debugw("persisting batch", "count", data.Size(), "height", data.Height())
-		if err := data.Persist(ctx, c.storage.DB); err != nil {
+		log.Debugw("persisting batch", "count", t.data.Size(), "height", t.data.Height())
+		if err := t.data.Persist(ctx, t.storage.DB); err != nil {
 			return xerrors.Errorf("persist: %w", err)
 		}
 	}
+
 	return nil
 }

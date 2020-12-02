@@ -8,7 +8,6 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/go-pg/pg/v10"
 	"github.com/raulk/clock"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -216,10 +215,7 @@ func (p *ActorStateChangeProcessor) processTipSet(ctx context.Context, node lens
 		})
 	}
 
-	ll.Debugw("persisting tipset", "state_changes", len(palist))
-	if err := p.storage.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return palist.PersistWithTx(ctx, tx)
-	}); err != nil {
+	if err := p.storage.Persist(ctx, palist); err != nil {
 		return xerrors.Errorf("persist: %w", err)
 	}
 
