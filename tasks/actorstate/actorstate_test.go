@@ -13,6 +13,7 @@ import (
 	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
 	bstore "github.com/filecoin-project/lotus/lib/blockstore"
+	sa0account "github.com/filecoin-project/specs-actors/actors/builtin/account"
 	sa0init "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	samarket "github.com/filecoin-project/specs-actors/actors/builtin/market"
 	sa0power "github.com/filecoin-project/specs-actors/actors/builtin/power"
@@ -292,4 +293,8 @@ func (m *MockAPI) mustCreateEmptyInitStateV2() *sa2init.State {
 	require.NoError(m.t, err)
 
 	return sa2init.ConstructState(emptyMap, "visor-testing")
+}
+
+func (m *MockAPI) mustCreateAccountStateV0(addr address.Address) *sa0account.State {
+	return &sa0account.State{Address: addr}
 }
