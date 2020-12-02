@@ -49,23 +49,23 @@ func TestChainHeadIndexer(t *testing.T) {
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
-	defer require.NoError(t, cleanup())
+	defer func() { require.NoError(t, cleanup()) }()
 
 	t.Logf("truncating database tables")
 	err = truncateBlockTables(t, db)
 	require.NoError(t, err, "truncating tables")
 
 	t.Logf("preparing chain")
-	nodes, sn := nodetest.Builder(t, apitest.DefaultFullOpts(1), apitest.OneMiner)
+	nodes, sn := nodetest.RPCMockSbBuilder(t, apitest.OneFull, apitest.OneMiner)
 
 	node := nodes[0]
 	opener := testutil.NewAPIOpener(node)
 
 	apitest.MineUntilBlock(ctx, t, node, sn[0], nil)
 
-	d := &storage.Database{DB: db}
+	blockIndexer := NewTipSetBlockIndexer(&storage.Database{DB: db})
 	t.Logf("initializing indexer")
-	idx := NewChainHeadIndexer(d, opener, 0)
+	idx := NewChainHeadIndexer(blockIndexer, opener, 0)
 
 	newHeads, err := node.ChainNotify(ctx)
 	require.NoError(t, err, "chain notify")
@@ -211,9 +211,6 @@ func truncateBlockTables(tb testing.TB, db *pg.DB) error {
 
 	_, err = db.Exec(`TRUNCATE TABLE block_parents`)
 	require.NoError(tb, err, "block_parents")
-
-	_, err = db.Exec(`TRUNCATE TABLE drand_entries`)
-	require.NoError(tb, err, "drand_entries")
 
 	_, err = db.Exec(`TRUNCATE TABLE drand_block_entries`)
 	require.NoError(tb, err, "drand_block_entries")

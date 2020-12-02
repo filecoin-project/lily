@@ -15,7 +15,7 @@ type MinerSectorDeal struct {
 	Height   int64  `pg:",pk,notnull,use_zero"`
 	MinerID  string `pg:",pk,notnull"`
 	SectorID uint64 `pg:",pk,use_zero"`
-	DealID   uint64 `pg:",use_zero"`
+	DealID   uint64 `pg:",pk,use_zero"`
 }
 
 func (ds *MinerSectorDeal) PersistWithTx(ctx context.Context, tx *pg.Tx) error {

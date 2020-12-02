@@ -25,7 +25,7 @@ func init() {
 	Register(sa2builtin.InitActorCodeID, InitExtractor{})
 }
 
-func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
+func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.PersistableWithTx, error) {
 	// genesis state.
 	if a.Epoch == 0 {
 		initActorState, err := init_.Load(node.Store(), &a.Actor)

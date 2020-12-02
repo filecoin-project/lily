@@ -27,14 +27,14 @@ func TestChainHistoryIndexer(t *testing.T) {
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
-	defer require.NoError(t, cleanup())
+	defer func() { require.NoError(t, cleanup()) }()
 
 	t.Logf("truncating database tables")
 	err = truncateBlockTables(t, db)
 	require.NoError(t, err, "truncating tables")
 
 	t.Logf("preparing chain")
-	nodes, sn := nodetest.Builder(t, apitest.DefaultFullOpts(1), apitest.OneMiner)
+	nodes, sn := nodetest.RPCMockSbBuilder(t, apitest.OneFull, apitest.OneMiner)
 
 	node := nodes[0]
 	opener := testutil.NewAPIOpener(node)
@@ -56,12 +56,12 @@ func TestChainHistoryIndexer(t *testing.T) {
 	cids := bhs.Cids()
 	rounds := bhs.Rounds()
 
-	d := &storage.Database{DB: db}
+	blockIndexer := NewTipSetBlockIndexer(&storage.Database{DB: db})
 	t.Logf("initializing indexer")
-	idx := NewChainHistoryIndexer(d, opener, 1, 0, 1000)
+	idx := NewChainHistoryIndexer(blockIndexer, opener, 0, int64(head.Height()))
 
 	t.Logf("indexing chain")
-	err = idx.WalkChain(ctx, openedAPI, int64(head.Height()))
+	err = idx.WalkChain(ctx, openedAPI, head)
 	require.NoError(t, err, "WalkChain")
 
 	t.Run("block_headers", func(t *testing.T) {

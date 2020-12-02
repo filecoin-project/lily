@@ -32,7 +32,7 @@ func init() {
 	Register(sa2builtin.StorageMinerActorCodeID, StorageMinerExtractor{})
 }
 
-func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
+func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.PersistableWithTx, error) {
 	// TODO all processing below can, and probably should, be done in parallel.
 	ctx, span := global.Tracer("").Start(ctx, "StorageMinerExtractor")
 	defer span.End()
@@ -42,7 +42,7 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node Ac
 
 	ec, err := NewMinerStateExtractionContext(ctx, a, node)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("creating miner state extraction context: %w", err)
 	}
 
 	minerInfoModel, err := ExtractMinerInfo(a, ec)

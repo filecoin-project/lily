@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	logging "github.com/ipfs/go-log/v2"
@@ -15,6 +16,12 @@ var log = logging.Logger("visor")
 func main() {
 	if err := logging.SetLogLevel("*", "info"); err != nil {
 		log.Fatal(err)
+	}
+
+	defaultName := "visor_" + version.String()
+	hostname, err := os.Hostname()
+	if err == nil {
+		defaultName = fmt.Sprintf("%s_%s_%d", defaultName, hostname, os.Getpid())
 	}
 
 	app := &cli.App{
@@ -70,6 +77,12 @@ func main() {
 				Value:   "",
 				Usage:   "A comma delimited list of named loggers and log levels formatted as name:level, for example 'logger1:debug,logger2:info'",
 			},
+			&cli.StringFlag{
+				Name:    "name",
+				EnvVars: []string{"VISOR_NAME"},
+				Value:   defaultName,
+				Usage:   "A name that helps to identify this instance of visor.",
+			},
 			&cli.BoolFlag{
 				Name:    "tracing",
 				EnvVars: []string{"VISOR_TRACING"},
@@ -88,7 +101,7 @@ func main() {
 			&cli.StringFlag{
 				Name:    "jaeger-service-name",
 				EnvVars: []string{"JAEGER_SERVICE_NAME"},
-				Value:   "sentinel-visor",
+				Value:   "visor",
 			},
 			&cli.StringFlag{
 				Name:    "jaeger-sampler-type",
@@ -115,6 +128,8 @@ func main() {
 			commands.Migrate,
 			commands.Run,
 			commands.Debug,
+			commands.Watch,
+			commands.Walk,
 		},
 	}
 

@@ -46,14 +46,14 @@ func TestGenesisProcessor(t *testing.T) {
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
-	defer require.NoError(t, cleanup())
+	defer func() { require.NoError(t, cleanup()) }()
 
 	t.Logf("truncating database tables")
 	err = truncateGenesisTables(t, db)
 	require.NoError(t, err, "truncating tables")
 
 	t.Logf("preparing chain")
-	nodes, sn := nodetest.Builder(t, apitest.DefaultFullOpts(1), apitest.OneMiner)
+	nodes, sn := nodetest.RPCMockSbBuilder(t, apitest.OneFull, apitest.OneMiner)
 	node := nodes[0]
 	opener := testutil.NewAPIOpener(node)
 	openedAPI, _, _ := opener.Open(ctx)
@@ -86,16 +86,16 @@ func TestGenesisProcessor(t *testing.T) {
 		assert.NotEqual(t, 0, count)
 	})
 
-	t.Run("miner_powers", func(t *testing.T) {
+	t.Run("power_actor_claims", func(t *testing.T) {
 		var count int
-		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM miner_powers`)
+		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM power_actor_claims`)
 		require.NoError(t, err)
 		assert.NotEqual(t, 0, count)
 	})
 
-	t.Run("miner_states", func(t *testing.T) {
+	t.Run("miner_infos", func(t *testing.T) {
 		var count int
-		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM miner_states`)
+		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM miner_infos`)
 		require.NoError(t, err)
 		assert.NotEqual(t, 0, count)
 	})
@@ -125,8 +125,8 @@ func TestGenesisProcessor(t *testing.T) {
 // truncateGenesisTables ensures the indexing tables are empty
 func truncateGenesisTables(tb testing.TB, db *pg.DB) error {
 	tables := []string{
-		"miner_states",
-		"miner_powers",
+		"miner_infos",
+		"power_actor_claims",
 		"miner_sector_infos",
 		"miner_sector_deals",
 		"market_deal_states",

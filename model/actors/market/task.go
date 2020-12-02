@@ -23,12 +23,16 @@ func (mtr *MarketTaskResult) Persist(ctx context.Context, db *pg.DB) error {
 	defer stop()
 
 	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		if err := mtr.Proposals.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("persisting market deal proposal: %w", err)
-		}
-		if err := mtr.States.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("persisting market deal state: %w", err)
-		}
-		return nil
+		return mtr.PersistWithTx(ctx, tx)
 	})
+}
+
+func (mtr *MarketTaskResult) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if err := mtr.Proposals.PersistWithTx(ctx, tx); err != nil {
+		return fmt.Errorf("persisting market deal proposal: %w", err)
+	}
+	if err := mtr.States.PersistWithTx(ctx, tx); err != nil {
+		return fmt.Errorf("persisting market deal state: %w", err)
+	}
+	return nil
 }

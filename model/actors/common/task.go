@@ -31,3 +31,13 @@ func (a *ActorTaskResult) Persist(ctx context.Context, db *pg.DB) error {
 		return nil
 	})
 }
+
+func (a *ActorTaskResult) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+	if err := a.Actor.PersistWithTx(ctx, tx); err != nil {
+		return err
+	}
+	if err := a.State.PersistWithTx(ctx, tx); err != nil {
+		return err
+	}
+	return nil
+}
