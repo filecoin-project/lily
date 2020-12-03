@@ -69,7 +69,7 @@ type PowerStateExtractionContext struct {
 }
 
 func (p *PowerStateExtractionContext) IsGenesis() bool {
-	return 0 == p.CurrTs.Height()
+	return p.CurrTs.Height() == 0
 }
 
 func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.PersistableWithTx, error) {

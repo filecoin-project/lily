@@ -73,7 +73,9 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, node lens.API, ts *
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "indexhistoryblock"))
 
 	log.Debugw("found tipset", "height", ts.Height())
-	c.obs.TipSet(ctx, ts)
+	if err := c.obs.TipSet(ctx, ts); err != nil {
+		return xerrors.Errorf("notify tipset: %w", err)
+	}
 
 	var err error
 	for int64(ts.Height()) >= c.minHeight && ts.Height() > 0 {
@@ -89,7 +91,9 @@ func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, node lens.API, ts *
 		}
 
 		log.Debugw("found tipset", "height", ts.Height())
-		c.obs.TipSet(ctx, ts)
+		if err := c.obs.TipSet(ctx, ts); err != nil {
+			return xerrors.Errorf("notify tipset: %w", err)
+		}
 
 	}
 

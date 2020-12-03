@@ -134,7 +134,7 @@ type MinerStateExtractionContext struct {
 }
 
 func (m *MinerStateExtractionContext) IsGenesis() bool {
-	return 0 == m.CurrTs.Height()
+	return m.CurrTs.Height() == 0
 }
 
 func ExtractMinerInfo(a ActorInfo, ec *MinerStateExtractionContext) (*minermodel.MinerInfo, error) {
@@ -620,7 +620,7 @@ type PartitionStatus struct {
 }
 
 func extractMinerPartitionsDiff(ctx context.Context, ec *MinerStateExtractionContext) (*PartitionStatus, error) {
-	ctx, span := global.Tracer("").Start(ctx, "StorageMinerExtractor.minerPartitionDiff") // nolint: ineffassign,staticcheck
+	_, span := global.Tracer("").Start(ctx, "StorageMinerExtractor.minerPartitionDiff") // nolint: ineffassign,staticcheck
 	defer span.End()
 
 	// short circuit genesis state.

@@ -23,7 +23,6 @@ type S3Blockstore struct {
 }
 
 func NewBlockStore(connstr string) (blockstore.Blockstore, error) {
-
 	sbs := &S3Blockstore{
 		prefix: connstr,
 		client: http.Client{},
@@ -42,7 +41,7 @@ func (sbs *S3Blockstore) Has(c cid.Cid) (has bool, err error) {
 }
 
 func (sbs *S3Blockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, error) {
-	return nil, fmt.Errorf("Not implemented")
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (sbs *S3Blockstore) Get(c cid.Cid) (blocks.Block, error) {
@@ -51,7 +50,7 @@ func (sbs *S3Blockstore) Get(c cid.Cid) (blocks.Block, error) {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Failed to fetch: %v", resp.StatusCode)
+		return nil, fmt.Errorf("failed to fetch: %v", resp.StatusCode)
 	}
 	defer resp.Body.Close()
 	buf, err := ioutil.ReadAll(resp.Body)
@@ -107,13 +106,13 @@ func (sbs *S3Blockstore) HashOnRead(enabled bool) {
 
 // Put puts a given block to the underlying datastore
 func (sbs *S3Blockstore) Put(b blocks.Block) (err error) {
-	return fmt.Errorf("Not Implemented")
+	return fmt.Errorf("not implemented")
 }
 
 func (sbs *S3Blockstore) PutMany(blks []blocks.Block) error {
-	return fmt.Errorf("Not Implemented")
+	return fmt.Errorf("not implemented")
 }
 
 func (sbs *S3Blockstore) DeleteBlock(cid.Cid) error {
-	return fmt.Errorf("Not Implemented")
+	return fmt.Errorf("not implemented")
 }
