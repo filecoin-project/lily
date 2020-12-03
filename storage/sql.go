@@ -540,10 +540,10 @@ func useNullIfEmpty(s string) *string {
 }
 
 // LeaseGasOutputsMessages leases a set of messages that have receipts for gas output processing. minHeight and maxHeight define an inclusive range of heights to process.
-func (d *Database) LeaseGasOutputsMessages(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) ([]*derived.ProcessingGasOutputs, error) {
+func (d *Database) LeaseGasOutputsMessages(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) ([]*derived.GasOutputs, error) {
 	stop := metrics.Timer(ctx, metrics.BatchSelectionDuration)
 	defer stop()
-	var list []*derived.ProcessingGasOutputs
+	var list []*derived.GasOutputs
 
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.QueryContext(ctx, &list, `
@@ -583,11 +583,11 @@ SELECT * FROM leased;
 }
 
 // FindGasOutputsMessages finds a set of messages that have receipts for gas output processing but does not take a lease out. minHeight and maxHeight define an inclusive range of heights to process.
-func (d *Database) FindGasOutputsMessages(ctx context.Context, batchSize int, minHeight, maxHeight int64) ([]*derived.ProcessingGasOutputs, error) {
+func (d *Database) FindGasOutputsMessages(ctx context.Context, batchSize int, minHeight, maxHeight int64) ([]*derived.GasOutputs, error) {
 	stop := metrics.Timer(ctx, metrics.BatchSelectionDuration)
 	defer stop()
 
-	var list []*derived.ProcessingGasOutputs
+	var list []*derived.GasOutputs
 
 	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		_, err := tx.QueryContext(ctx, &list, `

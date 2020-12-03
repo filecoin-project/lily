@@ -21,6 +21,7 @@ import (
 	derivedmodel "github.com/filecoin-project/sentinel-visor/model/derived"
 	messagemodel "github.com/filecoin-project/sentinel-visor/model/messages"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 )
 
 type MessageProcessor struct {
@@ -164,23 +165,20 @@ func (p *MessageProcessor) processExecutedMessages(ctx context.Context, ts, pts 
 
 		outputs := p.node.ComputeGasOutputs(m.Receipt.GasUsed, m.Message.GasLimit, m.BlockHeader.ParentBaseFee, m.Message.GasFeeCap, m.Message.GasPremium)
 		gasOutput := &derivedmodel.GasOutputs{
-			// TODO: add Height and ActorName as per https://github.com/filecoin-project/sentinel-visor/pull/270
-			// Height: msg.Height,
-			Cid:           msg.Cid,
-			From:          msg.From,
-			To:            msg.To,
-			Value:         msg.Value,
-			GasFeeCap:     msg.GasFeeCap,
-			GasPremium:    msg.GasPremium,
-			GasLimit:      msg.GasLimit,
-			Nonce:         msg.Nonce,
-			Method:        msg.Method,
-			StateRoot:     m.BlockHeader.ParentStateRoot.String(),
-			ExitCode:      rcpt.ExitCode,
-			GasUsed:       rcpt.GasUsed,
-			ParentBaseFee: m.BlockHeader.ParentBaseFee.String(),
-
-			// TODO: is SizeBytes really needed here?
+			Height:             msg.Height,
+			Cid:                msg.Cid,
+			From:               msg.From,
+			To:                 msg.To,
+			Value:              msg.Value,
+			GasFeeCap:          msg.GasFeeCap,
+			GasPremium:         msg.GasPremium,
+			GasLimit:           msg.GasLimit,
+			Nonce:              msg.Nonce,
+			Method:             msg.Method,
+			StateRoot:          m.BlockHeader.ParentStateRoot.String(),
+			ExitCode:           rcpt.ExitCode,
+			GasUsed:            rcpt.GasUsed,
+			ParentBaseFee:      m.BlockHeader.ParentBaseFee.String(),
 			SizeBytes:          msgSize,
 			BaseFeeBurn:        outputs.BaseFeeBurn.String(),
 			OverEstimationBurn: outputs.OverEstimationBurn.String(),
@@ -189,6 +187,7 @@ func (p *MessageProcessor) processExecutedMessages(ctx context.Context, ts, pts 
 			Refund:             outputs.Refund.String(),
 			GasRefund:          outputs.GasRefund,
 			GasBurned:          outputs.GasBurned,
+			ActorName:          actorstate.ActorNameByCode(m.ToActorCode),
 		}
 		gasOutputsResults = append(gasOutputsResults, gasOutput)
 
