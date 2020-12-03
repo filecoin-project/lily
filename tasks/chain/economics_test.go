@@ -5,52 +5,27 @@ import (
 	"testing"
 
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/go-state-types/crypto"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
-	tutils "github.com/filecoin-project/specs-actors/support/testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 
-type MockedEconomicsLens struct {
+type MockedChainEconomicsLens struct {
 	mock.Mock
 }
 
-func (m *MockedEconomicsLens) ChainGetTipSet(ctx context.Context, key types.TipSetKey) (*types.TipSet, error) {
-	args := m.Called(ctx, key)
-	return args.Get(0).(*types.TipSet), args.Error(1)
-}
-
-func (m *MockedEconomicsLens) StateVMCirculatingSupplyInternal(ctx context.Context, key types.TipSetKey) (api.CirculatingSupply, error) {
+func (m *MockedChainEconomicsLens) StateVMCirculatingSupplyInternal(ctx context.Context, key types.TipSetKey) (api.CirculatingSupply, error) {
 	args := m.Called(ctx, key)
 	return args.Get(0).(api.CirculatingSupply), args.Error(1)
-}
-
-func fakeTipset(t testing.TB) *types.TipSet {
-	bh := &types.BlockHeader{
-		Miner:                 tutils.NewIDAddr(t, 123),
-		Height:                1,
-		ParentStateRoot:       testutil.RandomCid(),
-		Messages:              testutil.RandomCid(),
-		ParentMessageReceipts: testutil.RandomCid(),
-		BlockSig:              &crypto.Signature{Type: crypto.SigTypeBLS},
-		BLSAggregate:          &crypto.Signature{Type: crypto.SigTypeBLS},
-		Timestamp:             0,
-	}
-	ts, err := types.NewTipSet([]*types.BlockHeader{bh})
-	if err != nil {
-		panic(err)
-	}
-	return ts
 }
 
 func TestEconomicsModelExtraction(t *testing.T) {
 	ctx := context.Background()
 
-	expectedTs := fakeTipset(t)
+	expectedTs := testutil.FakeTipset(t)
 	expectedCircSupply := api.CirculatingSupply{
 		FilVested:      abi.NewTokenAmount(1),
 		FilMined:       abi.NewTokenAmount(2),
@@ -59,11 +34,10 @@ func TestEconomicsModelExtraction(t *testing.T) {
 		FilCirculating: abi.NewTokenAmount(5),
 	}
 
-	mockedLens := new(MockedEconomicsLens)
-	mockedLens.On("ChainGetTipSet", ctx, expectedTs.Key()).Return(expectedTs, nil)
+	mockedLens := new(MockedChainEconomicsLens)
 	mockedLens.On("StateVMCirculatingSupplyInternal", ctx, expectedTs.Key()).Return(expectedCircSupply, nil)
 
-	em, err := extractChainEconomicsModel(ctx, mockedLens, expectedTs.Key())
+	em, err := ExtractChainEconomicsModel(ctx, mockedLens, expectedTs)
 	assert.NoError(t, err)
 	assert.EqualValues(t, expectedTs.ParentState().String(), em.ParentStateRoot)
 	assert.EqualValues(t, expectedCircSupply.FilBurnt.String(), em.BurntFil)

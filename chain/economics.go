@@ -8,8 +8,8 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
-	chainmodel "github.com/filecoin-project/sentinel-visor/model/chain"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
+	"github.com/filecoin-project/sentinel-visor/tasks/chain"
 )
 
 type ChainEconomicsProcessor struct {
@@ -40,22 +40,13 @@ func (p *ChainEconomicsProcessor) ProcessTipSet(ctx context.Context, ts *types.T
 		StateRoot: ts.ParentState().String(),
 	}
 
-	supply, err := p.node.StateVMCirculatingSupplyInternal(ctx, ts.Key())
+	ce, err := chain.ExtractChainEconomicsModel(ctx, p.node, ts)
 	if err != nil {
-		log.Errorw("error received while fetching circulating supply messages, closing lens", "error", err)
+		log.Errorw("error received while extracting chain economics, closing lens", "error", err)
 		if cerr := p.Close(); cerr != nil {
 			log.Errorw("error received while closing lens", "error", cerr)
 		}
 		return nil, nil, err
-	}
-
-	ce := &chainmodel.ChainEconomics{
-		ParentStateRoot: ts.ParentState().String(),
-		VestedFil:       supply.FilVested.String(),
-		MinedFil:        supply.FilMined.String(),
-		BurntFil:        supply.FilBurnt.String(),
-		LockedFil:       supply.FilLocked.String(),
-		CirculatingFil:  supply.FilCirculating.String(),
 	}
 
 	return ce, report, nil

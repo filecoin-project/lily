@@ -123,12 +123,7 @@ func (p *ChainEconomics) processBatch(ctx context.Context, node lens.API) (bool,
 	return false, nil
 }
 
-type EconomicsProcessItemsLens interface {
-	ChainGetTipSet(context.Context, types.TipSetKey) (*types.TipSet, error)
-	StateVMCirculatingSupplyInternal(context.Context, types.TipSetKey) (api.CirculatingSupply, error)
-}
-
-func (p *ChainEconomics) processItem(ctx context.Context, node EconomicsProcessItemsLens, item *visor.ProcessingTipSet) error {
+func (p *ChainEconomics) processItem(ctx context.Context, node lens.API, item *visor.ProcessingTipSet) error {
 	ctx, span := global.Tracer("").Start(ctx, "ChainEconomics.processItem")
 	defer span.End()
 	span.SetAttributes(label.Any("height", item.Height), label.Any("tipset", item.TipSet))
@@ -141,7 +136,12 @@ func (p *ChainEconomics) processItem(ctx context.Context, node EconomicsProcessI
 		return xerrors.Errorf("get tipsetkey: %w", err)
 	}
 
-	ce, err := extractChainEconomicsModel(ctx, node, tsk)
+	ts, err := node.ChainGetTipSet(ctx, tsk)
+	if err != nil {
+		return xerrors.Errorf("get tipset: %w", err)
+	}
+
+	ce, err := ExtractChainEconomicsModel(ctx, node, ts)
 	if err != nil {
 		return xerrors.Errorf("extracting chain economics model: %w", err)
 	}
@@ -157,13 +157,12 @@ func (p *ChainEconomics) processItem(ctx context.Context, node EconomicsProcessI
 	return nil
 }
 
-func extractChainEconomicsModel(ctx context.Context, node EconomicsProcessItemsLens, tsk types.TipSetKey) (*chainmodel.ChainEconomics, error) {
-	ts, err := node.ChainGetTipSet(ctx, tsk)
-	if err != nil {
-		return nil, xerrors.Errorf("get tipset: %w", err)
-	}
+type ChainEconomicsLens interface {
+	StateVMCirculatingSupplyInternal(context.Context, types.TipSetKey) (api.CirculatingSupply, error)
+}
 
-	supply, err := node.StateVMCirculatingSupplyInternal(ctx, tsk)
+func ExtractChainEconomicsModel(ctx context.Context, node ChainEconomicsLens, ts *types.TipSet) (*chainmodel.ChainEconomics, error) {
+	supply, err := node.StateVMCirculatingSupplyInternal(ctx, ts.Key())
 	if err != nil {
 		return nil, xerrors.Errorf("get circulating supply: %w", err)
 	}
