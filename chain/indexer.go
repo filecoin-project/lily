@@ -31,7 +31,6 @@ var _ indexer.TipSetObserver = (*TipSetIndexer)(nil)
 // A TipSetWatcher waits for tipsets and persists their block data into a database.
 type TipSetIndexer struct {
 	window      time.Duration
-	opener      lens.APIOpener
 	storage     Storage
 	processors  map[string]TipSetProcessor
 	name        string
