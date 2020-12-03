@@ -14,6 +14,7 @@ type GasOutputs struct {
 	tableName          struct{} `pg:"derived_gas_outputs"` //nolint: structcheck,unused
 	Height             int64    `pg:",pk,use_zero,notnull"`
 	Cid                string   `pg:",pk,notnull"`
+	StateRoot          string   `pg:",pk,notnull"`
 	From               string   `pg:",notnull"`
 	To                 string   `pg:",notnull"`
 	Value              string   `pg:",notnull"`
@@ -24,7 +25,6 @@ type GasOutputs struct {
 	Nonce              uint64   `pg:",use_zero,notnull"`
 	Method             uint64   `pg:",use_zero,notnull"`
 	ActorName          string   `pg:",notnull"`
-	StateRoot          string   `pg:",notnull"`
 	ExitCode           int64    `pg:",use_zero,notnull"`
 	GasUsed            int64    `pg:",use_zero,notnull"`
 	ParentBaseFee      string   `pg:",notnull"`
