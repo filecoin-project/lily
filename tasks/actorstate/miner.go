@@ -15,7 +15,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
-	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -377,13 +376,15 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 	return preCommitModel, sectorModel, sectorDealsModel, sectorEventModel, nil
 }
 
-func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtractionContext, node ActorStateAPI) (map[uint64]cid.Cid, error) {
+func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtractionContext, node ActorStateAPI) (minermodel.MinerSectorPostList, error) {
 	// short circuit genesis state, no PoSt messages in genesis blocks.
 	if ec.IsGenesis() {
 		return nil, nil
 	}
-	posts := make(map[uint64]cid.Cid)
+	addr := actor.Address.String()
+	posts := make(minermodel.MinerSectorPostList, 0)
 	block := actor.TipSet.Cids()[0]
+	height := ec.CurrTs.Height()
 	msgs, err := node.ChainGetBlockMessages(ctx, block)
 	if err != nil {
 		return nil, xerrors.Errorf("diffing miner posts: %v", err)
@@ -449,7 +450,12 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 		}
 
 		for _, s := range sectors {
-			posts[s] = msg.Cid()
+			posts = append(posts, &minermodel.MinerSectorPost{
+				Height:         int64(height),
+				MinerID:        addr,
+				SectorID:       s,
+				PostMessageCID: msg.Cid().String(),
+			})
 		}
 		return nil
 	}

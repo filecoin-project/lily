@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/go-pg/pg/v10"
-	"github.com/ipfs/go-cid"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
@@ -13,7 +12,7 @@ import (
 )
 
 type MinerTaskResult struct {
-	Posts map[uint64]cid.Cid
+	Posts MinerSectorPostList
 
 	MinerInfoModel           *MinerInfo
 	FeeDebtModel             *MinerFeeDebt
@@ -66,6 +65,11 @@ func (res *MinerTaskResult) PersistWithTx(ctx context.Context, tx *pg.Tx) error 
 			return err
 		}
 	}
+	if res.Posts != nil {
+		if err := res.Posts.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -105,6 +109,7 @@ type MinerTaskLists struct {
 	SectorsModel             MinerSectorInfoList
 	SectorEventsModel        MinerSectorEventList
 	SectorDealsModel         MinerSectorDealList
+	SectorPostModel          MinerSectorPostList
 }
 
 // PersistWithTx calls PersistWithTx on every field of MinerTasklists which
@@ -150,6 +155,11 @@ func (mtl *MinerTaskLists) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
 	}
 	if mtl.SectorDealsModel != nil {
 		if err := mtl.SectorDealsModel.PersistWithTx(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if mtl.SectorPostModel != nil {
+		if err := mtl.SectorPostModel.PersistWithTx(ctx, tx); err != nil {
 			return err
 		}
 	}
