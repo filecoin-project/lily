@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
@@ -16,7 +18,6 @@ import (
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	chainmodel "github.com/filecoin-project/sentinel-visor/model/chain"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
-	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/wait"
 )
 
@@ -27,7 +28,13 @@ const (
 
 var log = logging.Logger("chain")
 
-func NewChainEconomicsProcessor(d *storage.Database, opener lens.APIOpener, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64) *ChainEconomics {
+type EconomicsStorage interface {
+	RunInTransaction(ctx context.Context, fn func(tx *pg.Tx) error) error
+	MarkTipSetEconomicsComplete(ctx context.Context, tipset string, height int64, completedAt time.Time, errorsDetected string) error
+	LeaseTipSetEconomics(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingTipSetList, error)
+}
+
+func NewChainEconomicsProcessor(d EconomicsStorage, opener lens.APIOpener, leaseLength time.Duration, batchSize int, minHeight, maxHeight int64) *ChainEconomics {
 	return &ChainEconomics{
 		opener:      opener,
 		storage:     d,
@@ -43,7 +50,7 @@ func NewChainEconomicsProcessor(d *storage.Database, opener lens.APIOpener, leas
 // persists the results to the database.
 type ChainEconomics struct {
 	opener      lens.APIOpener
-	storage     *storage.Database
+	storage     EconomicsStorage
 	leaseLength time.Duration // length of time to lease work for
 	batchSize   int           // number of tipsets to lease in a batch
 	minHeight   int64         // limit processing to tipsets equal to or above this height
@@ -134,27 +141,38 @@ func (p *ChainEconomics) processItem(ctx context.Context, node lens.API, item *v
 		return xerrors.Errorf("get tipset: %w", err)
 	}
 
-	supply, err := node.StateVMCirculatingSupplyInternal(ctx, tsk)
+	ce, err := ExtractChainEconomicsModel(ctx, node, ts)
 	if err != nil {
-		return err
+		return xerrors.Errorf("extracting chain economics model: %w", err)
 	}
 
-	ce := &chainmodel.ChainEconomics{
-		ParentStateRoot: ts.ParentState().String(),
-		VestedFil:       supply.FilVested.String(),
-		MinedFil:        supply.FilMined.String(),
-		BurntFil:        supply.FilBurnt.String(),
-		LockedFil:       supply.FilLocked.String(),
-		CirculatingFil:  supply.FilCirculating.String(),
-	}
+	log.Debugw("persisting tipset", "height", item.Height)
 
-	log.Debugw("persisting tipset", "height", int64(ts.Height()))
-
-	if err := p.storage.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+	if err := p.storage.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		return ce.PersistWithTx(ctx, tx)
 	}); err != nil {
 		return xerrors.Errorf("persist: %w", err)
 	}
 
 	return nil
+}
+
+type ChainEconomicsLens interface {
+	StateVMCirculatingSupplyInternal(context.Context, types.TipSetKey) (api.CirculatingSupply, error)
+}
+
+func ExtractChainEconomicsModel(ctx context.Context, node ChainEconomicsLens, ts *types.TipSet) (*chainmodel.ChainEconomics, error) {
+	supply, err := node.StateVMCirculatingSupplyInternal(ctx, ts.Key())
+	if err != nil {
+		return nil, xerrors.Errorf("get circulating supply: %w", err)
+	}
+
+	return &chainmodel.ChainEconomics{
+		ParentStateRoot: ts.ParentState().String(),
+		VestedFil:       supply.FilVested.String(),
+		MinedFil:        supply.FilMined.String(),
+		BurntFil:        supply.FilBurnt.String(),
+		LockedFil:       supply.FilLocked.String(),
+		CirculatingFil:  supply.FilCirculating.String(),
+	}, nil
 }

@@ -707,3 +707,7 @@ func (d *Database) Persist(ctx context.Context, p model.PersistableWithTx) error
 		return p.PersistWithTx(ctx, tx)
 	})
 }
+
+func (d *Database) RunInTransaction(ctx context.Context, fn func(tx *pg.Tx) error) error {
+	return d.DB.RunInTransaction(ctx, fn)
+}
