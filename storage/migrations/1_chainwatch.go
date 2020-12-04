@@ -10,12 +10,6 @@ func init() {
 
 	up := batch(`
 --
--- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
-
---
 -- Name: miner_sector_event_type; Type: TYPE; Schema: public; Owner: postgres
 --
 
