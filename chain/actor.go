@@ -189,7 +189,7 @@ type ActorExtractorMap interface {
 	GetExtractor(code cid.Cid) (actorstate.ActorStateExtractor, bool)
 }
 
-// A RawActorExtractorMap extracts all types of actors using basic actor extraction which only uses shallow state.
+// A RawActorExtractorMap extracts all types of actors using basic actor extraction which only parses shallow state.
 type RawActorExtractorMap struct{}
 
 func (RawActorExtractorMap) Allow(code cid.Cid) bool {
@@ -200,7 +200,7 @@ func (RawActorExtractorMap) GetExtractor(code cid.Cid) (actorstate.ActorStateExt
 	return actorstate.ActorExtractor{}, true
 }
 
-// A TypedActorExtractorMap extracts a single type of actors using full parsing of actor state
+// A TypedActorExtractorMap extracts a single type of actor using full parsing of actor state
 type TypedActorExtractorMap struct {
 	// Simplistic for now, will need to make into a slice when we have more actor versions
 	CodeV1 cid.Cid

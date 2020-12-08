@@ -160,7 +160,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 			}
 		}
 
-		// If no parent tipset available then we need to skip processing. It's likely we receoved the last or first tipset
+		// If no parent tipset available then we need to skip processing. It's likely we received the last or first tipset
 		// in a batch. No report is generated because a different run of the indexer could cover the parent and child
 		// for this tipset.
 		if parent != nil {
