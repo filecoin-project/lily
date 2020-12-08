@@ -98,7 +98,7 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target int) error {
 	// migration), so we run it explicitally here and only when setting
 	// things up for the first time (#179).
 	if dbVersion == 0 {
-		if _, err := d.DB.Exec(`CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public`); err != nil {
+		if _, err := db.Exec(`CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public`); err != nil {
 			return xerrors.Errorf("creating timescaledb extension: %w", err)
 		}
 	}
