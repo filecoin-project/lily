@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	"golang.org/x/xerrors"
@@ -24,7 +23,6 @@ type ActorStateProcessor struct {
 	extractRaw    bool
 	extractParsed bool
 	lastTipSet    *types.TipSet
-	lastStateTree *state.StateTree
 }
 
 func NewActorStateProcessor(opener lens.APIOpener, extractRaw bool, extractParsed bool) *ActorStateProcessor {
@@ -50,25 +48,19 @@ func (p *ActorStateProcessor) ProcessTipSet(ctx context.Context, ts *types.TipSe
 	var report *visormodel.ProcessingReport
 	var err error
 
-	stateTree, err := state.LoadStateTree(p.node.Store(), ts.ParentState())
-	if err != nil {
-		return nil, nil, xerrors.Errorf("failed to load state tree: %w", err)
-	}
-
-	if p.lastTipSet != nil && p.lastStateTree != nil {
+	if p.lastTipSet != nil {
 		if p.lastTipSet.Height() > ts.Height() {
 			// last tipset seen was the child
-			data, report, err = p.processStateChanges(ctx, p.lastTipSet, ts, p.lastStateTree, stateTree)
+			data, report, err = p.processStateChanges(ctx, p.lastTipSet, ts)
 		} else if p.lastTipSet.Height() < ts.Height() {
 			// last tipset seen was the parent
-			data, report, err = p.processStateChanges(ctx, ts, p.lastTipSet, stateTree, p.lastStateTree)
+			data, report, err = p.processStateChanges(ctx, ts, p.lastTipSet)
 		} else {
 			log.Errorw("out of order tipsets", "height", ts.Height(), "last_height", p.lastTipSet.Height())
 		}
 	}
 
 	p.lastTipSet = ts
-	p.lastStateTree = stateTree
 
 	if err != nil {
 		log.Errorw("error received while processing actors, closing lens", "error", err)
@@ -79,7 +71,7 @@ func (p *ActorStateProcessor) ProcessTipSet(ctx context.Context, ts *types.TipSe
 	return data, report, err
 }
 
-func (p *ActorStateProcessor) processStateChanges(ctx context.Context, ts *types.TipSet, pts *types.TipSet, stateTree *state.StateTree, parentStateTree *state.StateTree) (model.PersistableWithTx, *visormodel.ProcessingReport, error) {
+func (p *ActorStateProcessor) processStateChanges(ctx context.Context, ts *types.TipSet, pts *types.TipSet) (model.PersistableWithTx, *visormodel.ProcessingReport, error) {
 	log.Debugw("processing state changes", "height", ts.Height(), "parent_height", pts.Height())
 
 	report := &visormodel.ProcessingReport{
@@ -93,7 +85,7 @@ func (p *ActorStateProcessor) processStateChanges(ctx context.Context, ts *types
 		return nil, report, nil
 	}
 
-	changes, err := state.Diff(parentStateTree, stateTree)
+	changes, err := p.node.StateChangedActors(ctx, pts.ParentState(), ts.ParentState())
 	if err != nil {
 		report.ErrorsDetected = xerrors.Errorf("failed to diff state trees: %w", err)
 		return nil, report, nil
