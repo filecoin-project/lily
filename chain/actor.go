@@ -17,24 +17,22 @@ import (
 )
 
 type ActorStateProcessor struct {
-	node          lens.API
-	opener        lens.APIOpener
-	closer        lens.APICloser
-	extractRaw    bool
-	extractParsed bool
-	lastTipSet    *types.TipSet
+	node         lens.API
+	opener       lens.APIOpener
+	closer       lens.APICloser
+	extracterMap ActorExtractorMap
+	lastTipSet   *types.TipSet
 }
 
-func NewActorStateProcessor(opener lens.APIOpener, extractRaw bool, extractParsed bool) *ActorStateProcessor {
+func NewActorStateProcessor(opener lens.APIOpener, extracterMap ActorExtractorMap) *ActorStateProcessor {
 	p := &ActorStateProcessor{
-		opener:        opener,
-		extractRaw:    extractRaw,
-		extractParsed: extractParsed,
+		opener:       opener,
+		extracterMap: extracterMap,
 	}
 	return p
 }
 
-func (p *ActorStateProcessor) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.PersistableWithTx, *visormodel.ProcessingReport, error) {
+func (p *ActorStateProcessor) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates map[string]types.Actor) (model.PersistableWithTx, *visormodel.ProcessingReport, error) {
 	if p.node == nil {
 		node, closer, err := p.opener.Open(ctx)
 		if err != nil {
@@ -44,35 +42,7 @@ func (p *ActorStateProcessor) ProcessTipSet(ctx context.Context, ts *types.TipSe
 		p.closer = closer
 	}
 
-	var data model.PersistableWithTx
-	var report *visormodel.ProcessingReport
-	var err error
-
-	if p.lastTipSet != nil {
-		if p.lastTipSet.Height() > ts.Height() {
-			// last tipset seen was the child
-			data, report, err = p.processStateChanges(ctx, p.lastTipSet, ts)
-		} else if p.lastTipSet.Height() < ts.Height() {
-			// last tipset seen was the parent
-			data, report, err = p.processStateChanges(ctx, ts, p.lastTipSet)
-		} else {
-			log.Errorw("out of order tipsets", "height", ts.Height(), "last_height", p.lastTipSet.Height())
-		}
-	}
-
-	p.lastTipSet = ts
-
-	if err != nil {
-		log.Errorw("error received while processing actors, closing lens", "error", err)
-		if cerr := p.Close(); cerr != nil {
-			log.Errorw("error received while closing lens", "error", cerr)
-		}
-	}
-	return data, report, err
-}
-
-func (p *ActorStateProcessor) processStateChanges(ctx context.Context, ts *types.TipSet, pts *types.TipSet) (model.PersistableWithTx, *visormodel.ProcessingReport, error) {
-	log.Debugw("processing state changes", "height", ts.Height(), "parent_height", pts.Height())
+	log.Debugw("processing actor state changes", "height", ts.Height(), "parent_height", pts.Height())
 
 	report := &visormodel.ProcessingReport{
 		Height:    int64(ts.Height()),
@@ -80,35 +50,36 @@ func (p *ActorStateProcessor) processStateChanges(ctx context.Context, ts *types
 		Status:    visormodel.ProcessingStatusOK,
 	}
 
-	if !types.CidArrsEqual(ts.Parents().Cids(), pts.Cids()) {
-		report.ErrorsDetected = xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", ts.Key(), pts.Key())
-		return nil, report, nil
-	}
-
-	changes, err := p.node.StateChangedActors(ctx, pts.ParentState(), ts.ParentState())
-	if err != nil {
-		report.ErrorsDetected = xerrors.Errorf("failed to diff state trees: %w", err)
-		return nil, report, nil
-	}
-
 	ll := log.With("height", int64(ts.Height()))
 
-	ll.Debugw("found actor state changes", "count", len(changes))
+	// Filter to just allowed actors
+	actors := map[string]types.Actor{}
+	for addr, act := range candidates {
+		if p.extracterMap.Allow(act.Code) {
+			actors[addr] = act
+		}
+	}
+
+	data := make(PersistableWithTxList, 0, len(actors))
+	errorsDetected := make([]*ActorStateError, 0, len(actors))
+	skippedActors := 0
+
+	if len(actors) == 0 {
+		ll.Debugw("no actor state changes found")
+		return data, report, nil
+	}
 
 	start := time.Now()
+	ll.Debugw("found actor state changes", "count", len(actors))
 
 	// Run each task concurrently
-	results := make(chan *ActorStateResult, len(changes))
-	for addr, act := range changes {
+	results := make(chan *ActorStateResult, len(actors))
+	for addr, act := range actors {
 		go p.runActorStateExtraction(ctx, ts, pts, addr, act, results)
 	}
 
-	data := make(PersistableWithTxList, 0, len(changes))
-	errorsDetected := make([]*ActorStateError, 0, len(changes))
-	skippedActors := 0
-
 	// Gather results
-	inFlight := len(changes)
+	inFlight := len(actors)
 	for inFlight > 0 {
 		res := <-results
 		inFlight--
@@ -172,37 +143,18 @@ func (p *ActorStateProcessor) runActorStateExtraction(ctx context.Context, ts *t
 		ParentTipSet:    pts.Parents(),
 	}
 
-	// TODO: we have the state trees available, can we optimize actor state extraction further?
-
-	var data PersistableWithTxList
-
-	// Extract raw state
-	if p.extractRaw {
-		var ae actorstate.ActorExtractor
-		raw, err := ae.Extract(ctx, info, p.node)
+	extracter, ok := p.extracterMap.GetExtractor(act.Code)
+	if !ok {
+		res.SkippedParse = true
+	} else {
+		// Parse state
+		data, err := extracter.Extract(ctx, info, p.node)
 		if err != nil {
-			res.Error = xerrors.Errorf("failed to extract raw actor state: %w", err)
+			res.Error = xerrors.Errorf("failed to extract parsed actor state: %w", err)
 			return
 		}
-		data = append(data, raw)
+		res.Data = data
 	}
-
-	if p.extractParsed {
-		extracter, ok := actorstate.GetActorStateExtractor(act.Code)
-		if !ok {
-			res.SkippedParse = true
-		} else {
-			// Parse state
-			parsed, err := extracter.Extract(ctx, info, p.node)
-			if err != nil {
-				res.Error = xerrors.Errorf("failed to extract parsed actor state: %w", err)
-				return
-			}
-
-			data = append(data, parsed)
-		}
-	}
-	res.Data = data
 }
 
 func (p *ActorStateProcessor) Close() error {
@@ -229,4 +181,36 @@ type ActorStateError struct {
 	Head    string
 	Address string
 	Error   string
+}
+
+type ActorExtractorMap interface {
+	Allow(code cid.Cid) bool
+	GetExtractor(code cid.Cid) (actorstate.ActorStateExtractor, bool)
+}
+
+type RawActorExtractorMap struct{}
+
+func (RawActorExtractorMap) Allow(code cid.Cid) bool {
+	return true
+}
+
+func (RawActorExtractorMap) GetExtractor(code cid.Cid) (actorstate.ActorStateExtractor, bool) {
+	return actorstate.ActorExtractor{}, true
+}
+
+type TypedActorExtractorMap struct {
+	// Simplistic for now, will need to make into a slice when we have more actor versions
+	CodeV1 cid.Cid
+	CodeV2 cid.Cid
+}
+
+func (t *TypedActorExtractorMap) Allow(code cid.Cid) bool {
+	return code == t.CodeV1 || code == t.CodeV2
+}
+
+func (t *TypedActorExtractorMap) GetExtractor(code cid.Cid) (actorstate.ActorStateExtractor, bool) {
+	if !t.Allow(code) {
+		return nil, false
+	}
+	return actorstate.GetActorStateExtractor(code)
 }

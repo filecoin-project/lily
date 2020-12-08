@@ -31,7 +31,7 @@ var Watch = &cli.Command{
 		&cli.StringFlag{
 			Name:    "tasks",
 			Usage:   "Comma separated list of tasks to run.",
-			Value:   strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorRawStateTask}, ","),
+			Value:   strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorStatesRawTask}, ","),
 			EnvVars: []string{"VISOR_WATCH_TASKS"},
 		},
 	},
