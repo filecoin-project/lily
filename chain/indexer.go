@@ -77,7 +77,7 @@ func NewTipSetIndexer(o lens.APIOpener, d Storage, window time.Duration, name st
 		case ActorStatesRawTask:
 			tsi.actorProcessors[ActorStatesRawTask] = NewActorStateProcessor(o, &RawActorExtractorMap{})
 		case ActorStatesPowerTask:
-			tsi.actorProcessors[ActorStatesRawTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
+			tsi.actorProcessors[ActorStatesPowerTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
 				CodeV1: sa0builtin.StoragePowerActorCodeID,
 				CodeV2: sa2builtin.StoragePowerActorCodeID,
 			})
