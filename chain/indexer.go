@@ -21,12 +21,16 @@ import (
 )
 
 const (
-	ActorStatesRawTask    = "actorstatesraw"    // task that only extracts raw actor state
-	ActorStatesPowerTask  = "actorstatespower"  // task that only extracts power actor states (but not the raw state)
-	ActorStatesRewardTask = "actorstatesreward" // task that only extracts reward actor states (but not the raw state)
-	BlocksTask            = "blocks"            // task that extracts block data
-	MessagesTask          = "messages"          // task that extracts message data
-	ChainEconomicsTask    = "chaineconomics"    // task that extracts chain economics data
+	ActorStatesRawTask      = "actorstatesraw"      // task that only extracts raw actor state
+	ActorStatesPowerTask    = "actorstatespower"    // task that only extracts power actor states (but not the raw state)
+	ActorStatesRewardTask   = "actorstatesreward"   // task that only extracts reward actor states (but not the raw state)
+	ActorStatesMinerTask    = "actorstatesminer"    // task that only extracts miner actor states (but not the raw state)
+	ActorStatesInitTask     = "actorstatesinit"     // task that only extracts init actor states (but not the raw state)
+	ActorStatesMarketTask   = "actorstatesmarket"   // task that only extracts market actor states (but not the raw state)
+	ActorStatesMultisigTask = "actorstatesmultisig" // task that only extracts multisig actor states (but not the raw state)
+	BlocksTask              = "blocks"              // task that extracts block data
+	MessagesTask            = "messages"            // task that extracts message data
+	ChainEconomicsTask      = "chaineconomics"      // task that extracts chain economics data
 )
 
 var log = logging.Logger("chain")
@@ -78,9 +82,29 @@ func NewTipSetIndexer(o lens.APIOpener, d Storage, window time.Duration, name st
 				CodeV2: sa2builtin.StoragePowerActorCodeID,
 			})
 		case ActorStatesRewardTask:
-			tsi.actorProcessors[ActorStatesRawTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
+			tsi.actorProcessors[ActorStatesRewardTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
 				CodeV1: sa0builtin.RewardActorCodeID,
 				CodeV2: sa2builtin.RewardActorCodeID,
+			})
+		case ActorStatesMinerTask:
+			tsi.actorProcessors[ActorStatesMinerTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
+				CodeV1: sa0builtin.StorageMinerActorCodeID,
+				CodeV2: sa2builtin.StorageMinerActorCodeID,
+			})
+		case ActorStatesInitTask:
+			tsi.actorProcessors[ActorStatesInitTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
+				CodeV1: sa0builtin.InitActorCodeID,
+				CodeV2: sa2builtin.InitActorCodeID,
+			})
+		case ActorStatesMarketTask:
+			tsi.actorProcessors[ActorStatesMarketTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
+				CodeV1: sa0builtin.StorageMarketActorCodeID,
+				CodeV2: sa2builtin.StorageMarketActorCodeID,
+			})
+		case ActorStatesMultisigTask:
+			tsi.actorProcessors[ActorStatesMultisigTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
+				CodeV1: sa0builtin.MultisigActorCodeID,
+				CodeV2: sa2builtin.MultisigActorCodeID,
 			})
 		default:
 			return nil, xerrors.Errorf("unknown task: %s", task)
@@ -108,6 +132,9 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	inFlight := 0
 	results := make(chan *TaskResult, len(t.processors)+len(t.actorProcessors))
 
+	// A map to gather the persistable outputs from each task
+	taskOutputs := make(map[string]PersistableWithTxList, len(t.processors)+len(t.actorProcessors))
+
 	// Run each tipset processing task concurrently
 	for name, p := range t.processors {
 		inFlight++
@@ -116,6 +143,8 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 	// Run each actor processing task concurrently if we have any and we've seen a previous tipset to compare with
 	if len(t.actorProcessors) > 0 {
+
+		// Actor processors perform a diff between two tipsets so we need to keep track of parent and child
 		var parent, child *types.TipSet
 		if t.lastTipSet != nil {
 			if t.lastTipSet.Height() > ts.Height() {
@@ -131,6 +160,9 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 			}
 		}
 
+		// If no parent tipset available then we need to skip processing. It's likely we receoved the last or first tipset
+		// in a batch. No report is generated because a different run of the indexer could cover the parent and child
+		// for this tipset.
 		if parent != nil {
 			if t.node == nil {
 				node, closer, err := t.opener.Open(ctx)
@@ -143,7 +175,23 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 			changes, err := t.node.StateChangedActors(tctx, parent.ParentState(), child.ParentState())
 			if err != nil {
-				return xerrors.Errorf("failed to extract actor changes: %w", err)
+
+				terr := xerrors.Errorf("failed to extract actor changes: %w", err)
+				// We need to report that all actor tasks failed
+				for name := range t.actorProcessors {
+					report := &visormodel.ProcessingReport{
+						Height:         int64(ts.Height()),
+						StateRoot:      ts.ParentState().String(),
+						Reporter:       t.name,
+						Task:           name,
+						StartedAt:      start,
+						CompletedAt:    time.Now(),
+						Status:         visormodel.ProcessingStatusError,
+						ErrorsDetected: terr,
+					}
+					taskOutputs[name] = PersistableWithTxList{report}
+				}
+				return terr
 			}
 
 			for name, p := range t.actorProcessors {
@@ -154,9 +202,6 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	}
 
 	ll := log.With("height", int64(ts.Height()))
-
-	// A map to gather the persistable outputs from each task
-	taskOutputs := make(map[string]PersistableWithTxList, inFlight)
 
 	// Wait for all tasks to complete
 	for inFlight > 0 {

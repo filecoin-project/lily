@@ -16,12 +16,12 @@ import (
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 )
 
+// An ActorStateProcessor processes the extraction of actor state according the allowed types in its extracter map.
 type ActorStateProcessor struct {
 	node         lens.API
 	opener       lens.APIOpener
 	closer       lens.APICloser
 	extracterMap ActorExtractorMap
-	lastTipSet   *types.TipSet
 }
 
 func NewActorStateProcessor(opener lens.APIOpener, extracterMap ActorExtractorMap) *ActorStateProcessor {
@@ -183,11 +183,13 @@ type ActorStateError struct {
 	Error   string
 }
 
+// An ActorExtractorMap controls which actor types may be extracted.
 type ActorExtractorMap interface {
 	Allow(code cid.Cid) bool
 	GetExtractor(code cid.Cid) (actorstate.ActorStateExtractor, bool)
 }
 
+// A RawActorExtractorMap extracts all types of actors using basic actor extraction which only uses shallow state.
 type RawActorExtractorMap struct{}
 
 func (RawActorExtractorMap) Allow(code cid.Cid) bool {
@@ -198,6 +200,7 @@ func (RawActorExtractorMap) GetExtractor(code cid.Cid) (actorstate.ActorStateExt
 	return actorstate.ActorExtractor{}, true
 }
 
+// A TypedActorExtractorMap extracts a single type of actors using full parsing of actor state
 type TypedActorExtractorMap struct {
 	// Simplistic for now, will need to make into a slice when we have more actor versions
 	CodeV1 cid.Cid
