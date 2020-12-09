@@ -231,9 +231,13 @@ func verifyCurrentSchema(ctx context.Context, db *pg.DB) error {
 
 func verifyModel(ctx context.Context, db *pg.DB, m *orm.Table) error {
 	tableName := stripQuotes(m.SQLNameForSelects)
+	tableSchema := "public"
+	if getLatestSchemaVersion() >= 27 {
+		tableSchema = "visor"
+	}
 
 	var exists bool
-	_, err := db.QueryOneContext(ctx, pg.Scan(&exists), `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name=?)`, tableName)
+	_, err := db.QueryOneContext(ctx, pg.Scan(&exists), `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema=? AND table_name=?)`, tableSchema, tableName)
 	if err != nil {
 		return xerrors.Errorf("querying table: %v", err)
 	}
@@ -243,7 +247,7 @@ func verifyModel(ctx context.Context, db *pg.DB, m *orm.Table) error {
 
 	for _, fld := range m.Fields {
 		var datatype string
-		_, err := db.QueryOne(pg.Scan(&datatype), `SELECT data_type FROM information_schema.columns WHERE table_schema='public' AND table_name=? AND column_name=?`, tableName, fld.SQLName)
+		_, err := db.QueryOne(pg.Scan(&datatype), `SELECT data_type FROM information_schema.columns WHERE table_schema=? AND table_name=? AND column_name=?`, tableSchema, tableName, fld.SQLName)
 		if err != nil {
 			if errors.Is(err, pg.ErrNoRows) {
 				return xerrors.Errorf("required column %s.%s not found", tableName, fld.SQLName)
@@ -251,7 +255,7 @@ func verifyModel(ctx context.Context, db *pg.DB, m *orm.Table) error {
 			return xerrors.Errorf("querying field: %v %T", err, err)
 		}
 		if datatype == "USER-DEFINED" {
-			_, err := db.QueryOne(pg.Scan(&datatype), `SELECT udt_name FROM information_schema.columns WHERE table_schema='public' AND table_name=? AND column_name=?`, tableName, fld.SQLName)
+			_, err := db.QueryOne(pg.Scan(&datatype), `SELECT udt_name FROM information_schema.columns WHERE table_schema=? AND table_name=? AND column_name=?`, tableSchema, tableName, fld.SQLName)
 			if err != nil {
 				if errors.Is(err, pg.ErrNoRows) {
 					return xerrors.Errorf("required column %s.%s not found", tableName, fld.SQLName)

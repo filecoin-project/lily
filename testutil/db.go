@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+	"github.com/go-pg/migrations/v8"
 	"os"
 	"testing"
 	"time"
@@ -23,6 +24,18 @@ func DatabaseAvailable() bool {
 // Database returns the connection string for connecting to the test database
 func DatabaseOptions() string {
 	return testDatabase
+}
+
+// Latest schema version is based on the highest migration version
+func getLatestSchemaVersion() int {
+	var latestVersion int64
+	ms := migrations.DefaultCollection.Migrations()
+	for _, m := range ms {
+		if m.Version > latestVersion {
+			latestVersion = m.Version
+		}
+	}
+	return int(latestVersion)
 }
 
 // WaitForExclusiveDatabase waits for exclusive access to the test database until the context is done or the
@@ -51,6 +64,16 @@ func WaitForExclusiveDatabase(ctx context.Context, tb testing.TB) (*pg.DB, func(
 		return db.Close()
 	}
 
+	// In migration 27 the visor schema was created and all tables, types, views, and functions were
+	// moved from public to visor. We set the default search path to 'visor' to keep testing code
+	// agnostic to migration versions.
+	if getLatestSchemaVersion() >= 27 {
+		_, err = db.Exec(`set search_path to visor`)
+		if err != nil {
+			db.Close()
+			tb.Fatalf("failed to set search path: %v", err)
+		}
+	}
 	return db, cleanup, nil
 }
 
