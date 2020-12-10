@@ -109,6 +109,10 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		// Was there a fatal error?
 		if res.Error != nil {
 			llt.Errorw("task returned with error", "error", res.Error.Error())
+			// tell all the processors to close their connections to the lens, they can reopen when needed
+			if err := t.Close(); err != nil {
+				log.Errorw("error received while closing tipset indexer", "error", err)
+			}
 			return res.Error
 		}
 
