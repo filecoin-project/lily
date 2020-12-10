@@ -227,7 +227,7 @@ func (p *ActorStateProcessor) Run(ctx context.Context) error {
 	})
 }
 
-func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (bool, error) {
+func (p *ActorStateProcessor) processBatch(ctx context.Context, node ActorStateAPI) (bool, error) {
 	// the actor represents the "raw" actor data model that is persisted
 	// this gets overridden with the specific actor type once we know
 	// which it is.
@@ -303,7 +303,7 @@ func (p *ActorStateProcessor) processBatch(ctx context.Context, node lens.API) (
 	return false, nil
 }
 
-func (p *ActorStateProcessor) processActor(ctx context.Context, node lens.API, info ActorInfo) error {
+func (p *ActorStateProcessor) processActor(ctx context.Context, node ActorStateAPI, info ActorInfo) error {
 	ctx, span := global.Tracer("").Start(ctx, "ActorStateProcessor.processActor")
 	defer span.End()
 
