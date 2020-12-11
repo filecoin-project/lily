@@ -2,7 +2,6 @@ package visor
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -10,12 +9,12 @@ import (
 	"github.com/ipfs/go-cid"
 	"golang.org/x/xerrors"
 
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 func NewProcessingTipSet(ts *types.TipSet) *ProcessingTipSet {
@@ -70,13 +69,8 @@ type ProcessingTipSet struct {
 	EconomicsErrorsDetected string
 }
 
-func (p *ProcessingTipSet) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx, p).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return fmt.Errorf("persisting processing tipset list: %w", err)
-	}
-	return nil
+func (p *ProcessingTipSet) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, p)
 }
 
 func (p *ProcessingTipSet) TipSetKey() (types.TipSetKey, error) {
@@ -85,19 +79,14 @@ func (p *ProcessingTipSet) TipSetKey() (types.TipSetKey, error) {
 
 type ProcessingTipSetList []*ProcessingTipSet
 
-func (pl ProcessingTipSetList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+func (pl ProcessingTipSetList) Persist(ctx context.Context, s model.StorageBatch) error {
 	if len(pl) == 0 {
 		return nil
 	}
-	ctx, span := global.Tracer("").Start(ctx, "ProcessingTipSetList.PersistWithTx", trace.WithAttributes(label.Int("count", len(pl))))
+	ctx, span := global.Tracer("").Start(ctx, "ProcessingTipSetList.Persist", trace.WithAttributes(label.Int("count", len(pl))))
 	defer span.End()
 
-	if _, err := tx.ModelContext(ctx, &pl).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return fmt.Errorf("persisting processing tipset: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, pl)
 }
 
 func TipSetKeyFromString(s string) (types.TipSetKey, error) {
@@ -147,13 +136,8 @@ type ProcessingActor struct {
 	ErrorsDetected string
 }
 
-func (p *ProcessingActor) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx, p).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return fmt.Errorf("persisting processing actor: %w", err)
-	}
-	return nil
+func (p *ProcessingActor) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, p)
 }
 
 func (p *ProcessingActor) TipSetKey() (types.TipSetKey, error) {
@@ -166,22 +150,17 @@ func (p *ProcessingActor) ParentTipSetKey() (types.TipSetKey, error) {
 
 type ProcessingActorList []*ProcessingActor
 
-func (pl ProcessingActorList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+func (pl ProcessingActorList) Persist(ctx context.Context, s model.StorageBatch) error {
 	if len(pl) == 0 {
 		return nil
 	}
-	ctx, span := global.Tracer("").Start(ctx, "ProcessingActorList.PersistWithTx", trace.WithAttributes(label.Int("count", len(pl))))
+	ctx, span := global.Tracer("").Start(ctx, "ProcessingActorList.Persist", trace.WithAttributes(label.Int("count", len(pl))))
 	defer span.End()
 
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
-	if _, err := tx.ModelContext(ctx, &pl).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return fmt.Errorf("persisting processing actor list: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, pl)
 }
 
 func NewProcessingMessage(m *types.Message, height int64) *ProcessingMessage {
@@ -211,27 +190,17 @@ type ProcessingMessage struct {
 	GasOutputsErrorsDetected string
 }
 
-func (p *ProcessingMessage) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx, p).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return fmt.Errorf("persisting processing message: %w", err)
-	}
-	return nil
+func (p *ProcessingMessage) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, p)
 }
 
 type ProcessingMessageList []*ProcessingMessage
 
-func (pl ProcessingMessageList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+func (pl ProcessingMessageList) Persist(ctx context.Context, s model.StorageBatch) error {
 	if len(pl) == 0 {
 		return nil
 	}
-	ctx, span := global.Tracer("").Start(ctx, "ProcessingMessageList.PersistWithTx", trace.WithAttributes(label.Int("count", len(pl))))
+	ctx, span := global.Tracer("").Start(ctx, "ProcessingMessageList.Persist", trace.WithAttributes(label.Int("count", len(pl))))
 	defer span.End()
-	if _, err := tx.ModelContext(ctx, &pl).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return fmt.Errorf("persisting processing message list: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, pl)
 }

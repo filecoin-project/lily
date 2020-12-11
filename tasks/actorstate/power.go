@@ -72,7 +72,7 @@ func (p *PowerStateExtractionContext) IsGenesis() bool {
 	return p.CurrTs.Height() == 0
 }
 
-func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.PersistableWithTx, error) {
+func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "StoragePowerExtractor")
 	defer span.End()
 

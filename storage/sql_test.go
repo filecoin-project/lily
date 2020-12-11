@@ -118,19 +118,18 @@ func TestLeaseStateChanges(t *testing.T) {
 		},
 	}
 
-	if err := db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return indexedTipsets.PersistWithTx(ctx, tx)
-	}); err != nil {
+	d := &Database{
+		DB:    db,
+		Clock: testutil.NewMockClock(),
+	}
+
+	if err := d.PersistBatch(ctx, indexedTipsets); err != nil {
 		t.Fatalf("persisting indexed blocks: %v", err)
 	}
 
 	const batchSize = 3
 
 	claimUntil := testutil.KnownTime.Add(time.Minute * 10)
-	d := &Database{
-		DB:    db,
-		Clock: testutil.NewMockClock(),
-	}
 
 	claimed, err := d.LeaseStateChanges(ctx, claimUntil, batchSize, 0, 500)
 	require.NoError(t, err)
@@ -249,9 +248,11 @@ func TestLeaseActors(t *testing.T) {
 		},
 	}
 
-	if err := db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return indexedActors.PersistWithTx(ctx, tx)
-	}); err != nil {
+	d := &Database{
+		DB:    db,
+		Clock: testutil.NewMockClock(),
+	}
+	if err := d.PersistBatch(ctx, indexedActors); err != nil {
 		t.Fatalf("persisting indexed actors: %v", err)
 	}
 
@@ -260,10 +261,6 @@ func TestLeaseActors(t *testing.T) {
 
 	claimUntil := testutil.KnownTime.Add(time.Minute * 10)
 
-	d := &Database{
-		DB:    db,
-		Clock: testutil.NewMockClock(),
-	}
 	claimed, err := d.LeaseActors(ctx, claimUntil, batchSize, 0, 500, allowedCodes)
 	require.NoError(t, err)
 	require.Equal(t, batchSize, len(claimed), "number of claimed actors")
@@ -316,15 +313,13 @@ func TestMarkActorComplete(t *testing.T) {
 		},
 	}
 
-	if err := db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return indexedActors.PersistWithTx(ctx, tx)
-	}); err != nil {
-		t.Fatalf("persisting indexed actors: %v", err)
-	}
-
 	d := &Database{
 		DB:    db,
 		Clock: testutil.NewMockClock(),
+	}
+
+	if err := d.PersistBatch(ctx, indexedActors); err != nil {
+		t.Fatalf("persisting indexed actors: %v", err)
 	}
 
 	t.Run("with error message", func(t *testing.T) {
@@ -421,19 +416,18 @@ func TestLeaseTipSetMessages(t *testing.T) {
 		},
 	}
 
-	if err := db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return indexedMessageTipSets.PersistWithTx(ctx, tx)
-	}); err != nil {
+	d := &Database{
+		DB:    db,
+		Clock: testutil.NewMockClock(),
+	}
+
+	if err := d.PersistBatch(ctx, indexedMessageTipSets); err != nil {
 		t.Fatalf("persisting indexed blocks: %v", err)
 	}
 
 	const batchSize = 3
 
 	claimUntil := testutil.KnownTime.Add(time.Minute * 10)
-	d := &Database{
-		DB:    db,
-		Clock: testutil.NewMockClock(),
-	}
 
 	claimed, err := d.LeaseTipSetMessages(ctx, claimUntil, batchSize, 0, 500)
 	require.NoError(t, err)
@@ -620,34 +614,18 @@ func TestLeaseGasOutputsMessages(t *testing.T) {
 		},
 	}
 
-	if err := db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		if err := indexedMessages.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("indexedMessages: %w", err)
-		}
-		if err := receipts.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("receipts: %w", err)
-		}
-		if err := msgs.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("msgs: %w", err)
-		}
-		if err := blockHeaders.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("blockHeaders: %w", err)
-		}
-		if err := blockMessages.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("blockMessages: %w", err)
-		}
-		return nil
-	}); err != nil {
-		t.Fatalf("persisting indexed messages: %v", err)
+	d := &Database{
+		DB:    db,
+		Clock: testutil.NewMockClock(),
+	}
+
+	if err := d.PersistBatch(ctx, indexedMessages, receipts, msgs, blockHeaders, blockMessages); err != nil {
+		t.Fatalf("persisting data: %v", err)
 	}
 
 	const batchSize = 3
 
 	claimUntil := testutil.KnownTime.Add(time.Minute * 10)
-	d := &Database{
-		DB:    db,
-		Clock: testutil.NewMockClock(),
-	}
 
 	claimed, err := d.LeaseGasOutputsMessages(ctx, claimUntil, batchSize, 0, 500)
 	require.NoError(t, err)
@@ -834,33 +812,16 @@ func TestFindGasOutputsMessages(t *testing.T) {
 		},
 	}
 
-	if err := db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		if err := indexedMessages.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("indexedMessages: %w", err)
-		}
-		if err := receipts.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("receipts: %w", err)
-		}
-		if err := msgs.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("msgs: %w", err)
-		}
-		if err := blockHeaders.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("blockHeaders: %w", err)
-		}
-		if err := blockMessages.PersistWithTx(ctx, tx); err != nil {
-			return fmt.Errorf("blockMessages: %w", err)
-		}
-		return nil
-	}); err != nil {
-		t.Fatalf("persisting indexed messages: %v", err)
-	}
-
-	const batchSize = 3
-
 	d := &Database{
 		DB:    db,
 		Clock: testutil.NewMockClock(),
 	}
+
+	if err := d.PersistBatch(ctx, indexedMessages, receipts, msgs, blockHeaders, blockMessages); err != nil {
+		t.Fatalf("persisting data: %v", err)
+	}
+
+	const batchSize = 3
 
 	found, err := d.FindGasOutputsMessages(ctx, batchSize, 0, 500)
 	require.NoError(t, err)
@@ -907,15 +868,13 @@ func TestMarkGasOutputsMessagesComplete(t *testing.T) {
 		},
 	}
 
-	if err := db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return indexedMessages.PersistWithTx(ctx, tx)
-	}); err != nil {
-		t.Fatalf("persisting indexed message blocks: %v", err)
-	}
-
 	d := &Database{
 		DB:    db,
 		Clock: testutil.NewMockClock(),
+	}
+
+	if err := d.PersistBatch(ctx, indexedMessages); err != nil {
+		t.Fatalf("persisting indexed message blocks: %v", err)
 	}
 
 	t.Run("with error message", func(t *testing.T) {
@@ -1012,19 +971,17 @@ func TestLeaseTipSetEconomics(t *testing.T) {
 		},
 	}
 
-	if err := db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return indexedMessageTipSets.PersistWithTx(ctx, tx)
-	}); err != nil {
+	d := &Database{
+		DB:    db,
+		Clock: testutil.NewMockClock(),
+	}
+	if err := d.PersistBatch(ctx, indexedMessageTipSets); err != nil {
 		t.Fatalf("persisting indexed blocks: %v", err)
 	}
 
 	const batchSize = 3
 
 	claimUntil := testutil.KnownTime.Add(time.Minute * 10)
-	d := &Database{
-		DB:    db,
-		Clock: testutil.NewMockClock(),
-	}
 
 	claimed, err := d.LeaseTipSetEconomics(ctx, claimUntil, batchSize, 0, 500)
 	require.NoError(t, err)
@@ -1076,15 +1033,13 @@ func TestMarkTipSetComplete(t *testing.T) {
 		},
 	}
 
-	if err := db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return indexedMessages.PersistWithTx(ctx, tx)
-	}); err != nil {
-		t.Fatalf("persisting indexed message blocks: %v", err)
-	}
-
 	d := &Database{
 		DB:    db,
 		Clock: testutil.NewMockClock(),
+	}
+
+	if err := d.PersistBatch(ctx, indexedMessages); err != nil {
+		t.Fatalf("persisting indexed message blocks: %v", err)
 	}
 
 	t.Run("statechange with error", func(t *testing.T) {

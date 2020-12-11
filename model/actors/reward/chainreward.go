@@ -3,10 +3,10 @@ package reward
 import (
 	"context"
 
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type ChainReward struct {
@@ -24,23 +24,12 @@ type ChainReward struct {
 	EffectiveNetworkTime int64  `pg:",use_zero"`
 }
 
-func (r *ChainReward) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "ChainReward.PersistWithTx")
+func (r *ChainReward) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "ChainReward.Persist")
 	defer span.End()
 
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
-	if _, err := tx.ModelContext(ctx, r).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *ChainReward) Persist(ctx context.Context, db *pg.DB) error {
-	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return r.PersistWithTx(ctx, tx)
-	})
+	return s.PersistModel(ctx, r)
 }

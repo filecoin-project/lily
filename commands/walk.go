@@ -14,6 +14,8 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/chain"
+	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/tasks/indexer"
 )
 
@@ -38,6 +40,11 @@ var Walk = &cli.Command{
 			Usage:   "Comma separated list of tasks to run. Each task is reported separately in the database.",
 			Value:   strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorStatesRawTask}, ","),
 			EnvVars: []string{"VISOR_WALK_TASKS"},
+		},
+		&cli.StringFlag{
+			Name:   "csv",
+			Usage:  "Path to write csv files.",
+			Hidden: true,
 		},
 	},
 	Action: walk,
@@ -76,17 +83,24 @@ func walk(cctx *cli.Context) error {
 		lensCloser()
 	}()
 
-	var storage chain.Storage = &chain.NullStorage{}
-	if cctx.String("db") == "" {
-		log.Warnw("database not specified, data will not be persisted")
-	} else {
-		db, err := setupDatabase(cctx)
+	var strg model.Storage = &storage.NullStorage{}
+	if cctx.String("csv") != "" {
+		csvStorage, err := storage.NewCSVStorage(cctx.String("csv"))
 		if err != nil {
-			return xerrors.Errorf("setup database: %w", err)
+			return xerrors.Errorf("new csv storage: %w", err)
 		}
-		storage = db
+		strg = csvStorage
+	} else {
+		if cctx.String("db") == "" {
+			log.Warnw("database not specified, data will not be persisted")
+		} else {
+			db, err := setupDatabase(cctx)
+			if err != nil {
+				return xerrors.Errorf("setup database: %w", err)
+			}
+			strg = db
+		}
 	}
-
 	// Set up a context that is canceled when the command is interrupted
 	ctx, cancel := context.WithCancel(cctx.Context)
 	defer cancel()
@@ -104,7 +118,7 @@ func walk(cctx *cli.Context) error {
 
 	scheduler := schedule.NewScheduler(cctx.Duration("task-delay"))
 
-	tsIndexer, err := chain.NewTipSetIndexer(lensOpener, storage, 0, cctx.String("name"), tasks)
+	tsIndexer, err := chain.NewTipSetIndexer(lensOpener, strg, 0, cctx.String("name"), tasks)
 	if err != nil {
 		return xerrors.Errorf("setup indexer: %w", err)
 	}

@@ -3,9 +3,9 @@ package miner
 import (
 	"context"
 
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
-	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type MinerLockedFund struct {
@@ -18,29 +18,19 @@ type MinerLockedFund struct {
 	PreCommitDeposits string `pg:",notnull"`
 }
 
-func (m *MinerLockedFund) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerLockedFund.PersistWithTx")
+func (m *MinerLockedFund) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerLockedFund.Persist")
 	defer span.End()
-	if _, err := tx.ModelContext(ctx, m).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting miner locked funds: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, m)
 }
 
 type MinerLockedFundsList []*MinerLockedFund
 
-func (ml MinerLockedFundsList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerLockedFundsList.PersistWithTx")
+func (ml MinerLockedFundsList) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerLockedFundsList.Persist")
 	defer span.End()
 	if len(ml) == 0 {
 		return nil
 	}
-	if _, err := tx.ModelContext(ctx, &ml).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting miner locked funds list: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, ml)
 }

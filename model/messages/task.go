@@ -3,10 +3,7 @@ package messages
 import (
 	"context"
 
-	"github.com/go-pg/pg/v10"
-	"go.opentelemetry.io/otel/api/global"
-
-	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type MessageTaskResult struct {
@@ -17,36 +14,20 @@ type MessageTaskResult struct {
 	MessageGasEconomy *MessageGasEconomy
 }
 
-func (mtr *MessageTaskResult) Persist(ctx context.Context, db *pg.DB) error {
-	ctx, span := global.Tracer("").Start(ctx, "MessageTaskResult.Persist")
-	defer span.End()
-
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
-	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return mtr.PersistWithTx(ctx, tx)
-	})
-
-}
-
-func (mtr *MessageTaskResult) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MessageTaskResult.PersistWithTx")
-	defer span.End()
-
-	if err := mtr.Messages.PersistWithTx(ctx, tx); err != nil {
+func (mtr *MessageTaskResult) Persist(ctx context.Context, s model.StorageBatch) error {
+	if err := mtr.Messages.Persist(ctx, s); err != nil {
 		return err
 	}
-	if err := mtr.BlockMessages.PersistWithTx(ctx, tx); err != nil {
+	if err := mtr.BlockMessages.Persist(ctx, s); err != nil {
 		return err
 	}
-	if err := mtr.Receipts.PersistWithTx(ctx, tx); err != nil {
+	if err := mtr.Receipts.Persist(ctx, s); err != nil {
 		return err
 	}
-	if err := mtr.MessageGasEconomy.PersistWithTx(ctx, tx); err != nil {
+	if err := mtr.MessageGasEconomy.Persist(ctx, s); err != nil {
 		return err
 	}
-	if err := mtr.ParsedMessages.PersistWithTx(ctx, tx); err != nil {
+	if err := mtr.ParsedMessages.Persist(ctx, s); err != nil {
 		return err
 	}
 

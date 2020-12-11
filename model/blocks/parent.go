@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
-	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type BlockParent struct {
@@ -17,13 +17,8 @@ type BlockParent struct {
 	Parent string `pg:",notnull"`
 }
 
-func (bp *BlockParent) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx, bp).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting block parents: %w", err)
-	}
-	return nil
+func (bp *BlockParent) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, bp)
 }
 
 type BlockParents []*BlockParent
@@ -40,22 +35,11 @@ func NewBlockParents(header *types.BlockHeader) BlockParents {
 	return out
 }
 
-func (bps BlockParents) Persist(ctx context.Context, db *pg.DB) error {
-	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return bps.PersistWithTx(ctx, tx)
-	})
-}
-
-func (bps BlockParents) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+func (bps BlockParents) Persist(ctx context.Context, s model.StorageBatch) error {
 	if len(bps) == 0 {
 		return nil
 	}
-	ctx, span := global.Tracer("").Start(ctx, "BlockParents.PersistWithTx", trace.WithAttributes(label.Int("count", len(bps))))
+	ctx, span := global.Tracer("").Start(ctx, "BlockParents.Persist", trace.WithAttributes(label.Int("count", len(bps))))
 	defer span.End()
-	if _, err := tx.ModelContext(ctx, &bps).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting block parents: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, bps)
 }

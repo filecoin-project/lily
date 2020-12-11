@@ -16,7 +16,7 @@ import (
 // ActorExtractor extracts common actor state
 type ActorExtractor struct{}
 
-func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.PersistableWithTx, error) {
+func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "ActorExtractor")
 	defer span.End()
 

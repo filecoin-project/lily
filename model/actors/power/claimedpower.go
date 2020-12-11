@@ -3,9 +3,9 @@ package power
 import (
 	"context"
 
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
-	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type PowerActorClaim struct {
@@ -16,30 +16,19 @@ type PowerActorClaim struct {
 	QualityAdjPower string `pg:",notnull"`
 }
 
-func (p *PowerActorClaim) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "PowerActorClaim.PersistWithTx")
+func (p *PowerActorClaim) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "PowerActorClaim.Persist")
 	defer span.End()
-	if _, err := tx.ModelContext(ctx, p).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting power actors claim: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, p)
 }
 
 type PowerActorClaimList []*PowerActorClaim
 
-func (pl PowerActorClaimList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "PowerActorClaimList.PersistWithTx")
+func (pl PowerActorClaimList) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "PowerActorClaimList.Persist")
 	defer span.End()
 	if len(pl) == 0 {
 		return nil
 	}
-	if _, err := tx.ModelContext(ctx, &pl).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting power actor claim list: %w", err)
-	}
-	return nil
-
+	return s.PersistModel(ctx, pl)
 }

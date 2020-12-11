@@ -215,7 +215,7 @@ func (p *ActorStateChangeProcessor) processTipSet(ctx context.Context, node lens
 		})
 	}
 
-	if err := p.storage.Persist(ctx, palist); err != nil {
+	if err := p.storage.PersistBatch(ctx, palist); err != nil {
 		return xerrors.Errorf("persist: %w", err)
 	}
 

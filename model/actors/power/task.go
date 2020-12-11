@@ -3,10 +3,7 @@ package power
 import (
 	"context"
 
-	"github.com/go-pg/pg/v10"
-	"go.opentelemetry.io/otel/api/global"
-
-	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type PowerTaskResult struct {
@@ -14,28 +11,16 @@ type PowerTaskResult struct {
 	ClaimStateModel PowerActorClaimList
 }
 
-func (p *PowerTaskResult) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+func (p *PowerTaskResult) Persist(ctx context.Context, s model.StorageBatch) error {
 	if p.ChainPowerModel != nil {
-		if err := p.ChainPowerModel.PersistWithTx(ctx, tx); err != nil {
+		if err := p.ChainPowerModel.Persist(ctx, s); err != nil {
 			return err
 		}
 	}
 	if p.ClaimStateModel != nil {
-		if err := p.ClaimStateModel.PersistWithTx(ctx, tx); err != nil {
+		if err := p.ClaimStateModel.Persist(ctx, s); err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func (p *PowerTaskResult) Persist(ctx context.Context, db *pg.DB) error {
-	ctx, span := global.Tracer("").Start(ctx, "PowerTaskResult.Persist")
-	defer span.End()
-
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
-	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return p.PersistWithTx(ctx, tx)
-	})
 }

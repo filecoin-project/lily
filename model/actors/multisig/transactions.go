@@ -3,8 +3,7 @@ package multisig
 import (
 	"context"
 
-	"github.com/go-pg/pg/v10"
-	"golang.org/x/xerrors"
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type MultisigTransaction struct {
@@ -21,34 +20,12 @@ type MultisigTransaction struct {
 	Approved []string `pg:",notnull"`
 }
 
-func (m *MultisigTransaction) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx, m).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting multisig transaction: %w", err)
-	}
-	return nil
-}
-
-func (m *MultisigTransaction) Persist(ctx context.Context, db *pg.DB) error {
-	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return m.PersistWithTx(ctx, tx)
-	})
+func (m *MultisigTransaction) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, m)
 }
 
 type MultisigTransactionList []*MultisigTransaction
 
-func (ml MultisigTransactionList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx, ml).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting multisig transaction list: %w", err)
-	}
-	return nil
-}
-
-func (ml MultisigTransactionList) Persist(ctx context.Context, db *pg.DB) error {
-	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return ml.PersistWithTx(ctx, tx)
-	})
+func (ml MultisigTransactionList) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, ml)
 }

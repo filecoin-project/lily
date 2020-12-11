@@ -17,8 +17,8 @@ func NewBlockProcessor() *BlockProcessor {
 	return &BlockProcessor{}
 }
 
-func (p *BlockProcessor) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.PersistableWithTx, *visormodel.ProcessingReport, error) {
-	var pl PersistableWithTxList
+func (p *BlockProcessor) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+	var pl model.PersistableList
 	for _, bh := range ts.Blocks() {
 		select {
 		case <-ctx.Done():

@@ -2,13 +2,13 @@ package visor
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type ProcessingStat struct {
@@ -27,28 +27,18 @@ type ProcessingStat struct {
 	Value int64 `pg:",use_zero,notnull"`
 }
 
-func (s *ProcessingStat) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx, s).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return fmt.Errorf("persisting processing stat: %w", err)
-	}
-	return nil
+func (p *ProcessingStat) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, p)
 }
 
 type ProcessingStatList []*ProcessingStat
 
-func (l ProcessingStatList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if len(l) == 0 {
+func (pl ProcessingStatList) Persist(ctx context.Context, s model.StorageBatch) error {
+	if len(pl) == 0 {
 		return nil
 	}
-	ctx, span := global.Tracer("").Start(ctx, "ProcessingStatList.PersistWithTx", trace.WithAttributes(label.Int("count", len(l))))
+	ctx, span := global.Tracer("").Start(ctx, "ProcessingStatList.Persist", trace.WithAttributes(label.Int("count", len(pl))))
 	defer span.End()
 
-	if _, err := tx.ModelContext(ctx, &l).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return fmt.Errorf("persisting processing stats: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, pl)
 }

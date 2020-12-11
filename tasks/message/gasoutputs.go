@@ -10,7 +10,6 @@ import (
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
 	"github.com/raulk/clock"
 	"go.opencensus.io/tag"
@@ -189,9 +188,7 @@ func (p *GasOutputsProcessor) processItem(ctx context.Context, node lens.API, it
 	item.GasRefund = outputs.GasRefund
 	item.GasBurned = outputs.GasBurned
 
-	if err := p.storage.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return item.PersistWithTx(ctx, tx)
-	}); err != nil {
+	if err := p.storage.PersistBatch(ctx, item); err != nil {
 		return xerrors.Errorf("persisting gas outputs: %w", err)
 	}
 

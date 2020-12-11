@@ -3,34 +3,25 @@ package multisig
 import (
 	"context"
 
-	"github.com/go-pg/pg/v10"
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type MultisigTaskResult struct {
 	TransactionModel MultisigTransactionList
 }
 
-func (m *MultisigTaskResult) Persist(ctx context.Context, db *pg.DB) error {
-	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		if len(m.TransactionModel) > 0 {
-			return m.TransactionModel.PersistWithTx(ctx, tx)
-		}
-		return nil
-	})
-}
-
-func (m *MultisigTaskResult) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if len(m.TransactionModel) > 0 {
-		return m.TransactionModel.PersistWithTx(ctx, tx)
+func (mtr *MultisigTaskResult) Persist(ctx context.Context, s model.StorageBatch) error {
+	if len(mtr.TransactionModel) > 0 {
+		return mtr.TransactionModel.Persist(ctx, s)
 	}
 	return nil
 }
 
 type MultisigTaskResultList []*MultisigTaskResult
 
-func (ml MultisigTaskResultList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+func (ml MultisigTaskResultList) Persist(ctx context.Context, s model.StorageBatch) error {
 	for _, res := range ml {
-		if err := res.PersistWithTx(ctx, tx); err != nil {
+		if err := res.Persist(ctx, s); err != nil {
 			return err
 		}
 	}

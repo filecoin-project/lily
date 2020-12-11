@@ -3,11 +3,11 @@ package derived
 import (
 	"context"
 
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
-	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type GasOutputs struct {
@@ -37,33 +37,17 @@ type GasOutputs struct {
 	GasBurned          int64    `pg:",use_zero,notnull"`
 }
 
-func (g *GasOutputs) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx, g).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting derived gas outputs: %w", err)
-	}
-	return nil
+func (g *GasOutputs) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, g)
 }
 
 type GasOutputsList []*GasOutputs
 
-func (l GasOutputsList) Persist(ctx context.Context, db *pg.DB) error {
-	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return l.PersistWithTx(ctx, tx)
-	})
-}
-
-func (l GasOutputsList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+func (l GasOutputsList) Persist(ctx context.Context, s model.StorageBatch) error {
 	if len(l) == 0 {
 		return nil
 	}
-	ctx, span := global.Tracer("").Start(ctx, "GasOutputsList.PersistWithTx", trace.WithAttributes(label.Int("count", len(l))))
+	ctx, span := global.Tracer("").Start(ctx, "GasOutputsList.Persist", trace.WithAttributes(label.Int("count", len(l))))
 	defer span.End()
-	if _, err := tx.ModelContext(ctx, &l).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting derived gas outputs: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, l)
 }

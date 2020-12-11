@@ -40,7 +40,7 @@ var _ indexer.TipSetObserver = (*TipSetIndexer)(nil)
 // A TipSetWatcher waits for tipsets and persists their block data into a database.
 type TipSetIndexer struct {
 	window          time.Duration
-	storage         Storage
+	storage         model.Storage
 	processors      map[string]TipSetProcessor
 	actorProcessors map[string]ActorProcessor
 	name            string
@@ -55,7 +55,7 @@ type TipSetIndexer struct {
 // and persistence are concurrent. Extraction of the a tipset can proceed while data from the previous extraction is
 // being persisted. The indexer may be given a time window in which to complete data extraction. The name of the
 // indexer is used as the reporter in the visor_processing_reports table.
-func NewTipSetIndexer(o lens.APIOpener, d Storage, window time.Duration, name string, tasks []string) (*TipSetIndexer, error) {
+func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, name string, tasks []string) (*TipSetIndexer, error) {
 	tsi := &TipSetIndexer{
 		storage:         d,
 		window:          window,
@@ -133,7 +133,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	results := make(chan *TaskResult, len(t.processors)+len(t.actorProcessors))
 
 	// A map to gather the persistable outputs from each task
-	taskOutputs := make(map[string]PersistableWithTxList, len(t.processors)+len(t.actorProcessors))
+	taskOutputs := make(map[string]model.PersistableList, len(t.processors)+len(t.actorProcessors))
 
 	// Run each tipset processing task concurrently
 	for name, p := range t.processors {
@@ -189,7 +189,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 						Status:         visormodel.ProcessingStatusError,
 						ErrorsDetected: terr,
 					}
-					taskOutputs[name] = PersistableWithTxList{report}
+					taskOutputs[name] = model.PersistableList{report}
 				}
 				return terr
 			}
@@ -243,7 +243,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		llt.Infow("task report", "status", res.Report.Status, "time", res.Report.CompletedAt.Sub(res.Report.StartedAt))
 
 		// Persist the processing report and the data in a single transaction
-		taskOutputs[res.Task] = PersistableWithTxList{res.Report, res.Data}
+		taskOutputs[res.Task] = model.PersistableList{res.Report, res.Data}
 	}
 
 	// remember the last tipset we observed
@@ -277,9 +277,9 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 		// Persist each processor's data concurrently since they don't overlap
 		for task, p := range taskOutputs {
-			go func(task string, p model.PersistableWithTx) {
+			go func(task string, p model.Persistable) {
 				defer wg.Done()
-				if err := t.storage.Persist(ctx, p); err != nil {
+				if err := t.storage.PersistBatch(ctx, p); err != nil {
 					ll.Errorw("persistence failed", "task", task, "error", err)
 					return
 				}
@@ -356,19 +356,19 @@ type TaskResult struct {
 	Task   string
 	Error  error
 	Report *visormodel.ProcessingReport
-	Data   model.PersistableWithTx
+	Data   model.Persistable
 }
 
 type TipSetProcessor interface {
 	// ProcessTipSet processes a tipset. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
-	ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.PersistableWithTx, *visormodel.ProcessingReport, error)
+	ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
 	Close() error
 }
 
 type ActorProcessor interface {
 	// ProcessActor processes a set of actors. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
-	ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors map[string]types.Actor) (model.PersistableWithTx, *visormodel.ProcessingReport, error)
+	ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors map[string]types.Actor) (model.Persistable, *visormodel.ProcessingReport, error)
 	Close() error
 }

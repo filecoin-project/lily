@@ -19,6 +19,7 @@ require (
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.3.1
 	github.com/go-pg/pgext v0.1.4
+	github.com/gocarina/gocsv v0.0.0-20201208093247-67c824bc04d4
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/ipfs/go-block-format v0.0.2
 	github.com/ipfs/go-cid v0.0.7
@@ -28,6 +29,7 @@ require (
 	github.com/ipfs/go-log/v2 v2.1.2-0.20200626104915-0016c0b4b3e4
 	github.com/ipld/go-ipld-prime v0.5.1-0.20201021195245-109253e8a018
 	github.com/jackc/pgx/v4 v4.9.0
+	github.com/jinzhu/inflection v1.0.0
 	github.com/lib/pq v1.8.0
 	github.com/libp2p/go-libp2p-core v0.7.0
 	github.com/mitchellh/go-homedir v1.1.0
