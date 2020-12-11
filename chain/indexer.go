@@ -7,9 +7,12 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/tasks/indexer"
@@ -187,6 +190,11 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 }
 
 func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, name string, ts *types.TipSet, results chan *TaskResult) {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
+	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
+	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	defer stop()
+
 	data, report, err := p.ProcessTipSet(ctx, ts)
 	if err != nil {
 		results <- &TaskResult{

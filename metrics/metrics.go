@@ -70,6 +70,12 @@ var (
 		Aggregation: defaultMillisecondsDistribution,
 		TagKeys:     []tag.Key{TaskType, API},
 	}
+	LensRequestTotal = &view.View{
+		Name:        "lens_request_total",
+		Measure:     LensRequestDuration,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{TaskType, API},
+	}
 	TipsetHeightView = &view.View{
 		Measure:     TipsetHeight,
 		Aggregation: view.LastValue(),
