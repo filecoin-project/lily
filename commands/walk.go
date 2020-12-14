@@ -117,7 +117,7 @@ func walk(cctx *cli.Context) error {
 	scheduler.Add(schedule.TaskConfig{
 		Name:                "ChainHistoryIndexer",
 		Task:                indexer.NewChainHistoryIndexer(tsIndexer, lensOpener, heightFrom, heightTo),
-		RestartOnFailure:    true,
+		RestartOnFailure:    false, // Don't restart after a failure otherwise the walk will start from the beginning again
 		RestartOnCompletion: false,
 		RestartDelay:        time.Minute,
 	})
