@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -89,7 +90,7 @@ var (
 
 const MaxPostgresNameLength = 64
 
-func NewDatabase(ctx context.Context, url string, poolSize int, name string) (*Database, error) {
+func NewDatabase(ctx context.Context, url string, poolSize int, name string, upsert bool) (*Database, error) {
 	if len(name) > MaxPostgresNameLength {
 		return nil, ErrNameTooLong
 	}
@@ -104,15 +105,17 @@ func NewDatabase(ctx context.Context, url string, poolSize int, name string) (*D
 	}
 
 	return &Database{
-		opt:   opt,
-		Clock: clock.New(),
+		opt:    opt,
+		Clock:  clock.New(),
+		Upsert: upsert,
 	}, nil
 }
 
 type Database struct {
-	DB    *pg.DB
-	opt   *pg.Options
-	Clock clock.Clock
+	DB     *pg.DB
+	opt    *pg.Options
+	Clock  clock.Clock
+	Upsert bool
 }
 
 // Connect opens a connection to the database and checks that the schema is compatible the the version required
@@ -715,7 +718,8 @@ func (d *Database) RunInTransaction(ctx context.Context, fn func(tx *pg.Tx) erro
 func (d *Database) PersistBatch(ctx context.Context, ps ...model.Persistable) error {
 	return d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		txs := &TxStorage{
-			tx: tx,
+			tx:     tx,
+			upsert: d.Upsert,
 		}
 
 		for _, p := range ps {
@@ -729,7 +733,8 @@ func (d *Database) PersistBatch(ctx context.Context, ps ...model.Persistable) er
 }
 
 type TxStorage struct {
-	tx *pg.Tx
+	tx     *pg.Tx
+	upsert bool
 }
 
 // PersistModel persists a single model
@@ -755,10 +760,79 @@ func (s *TxStorage) PersistModel(ctx context.Context, m interface{}) error {
 		}
 
 	}
-	if _, err := s.tx.ModelContext(ctx, m).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting model: %w", err)
+	if s.upsert {
+		conflict, upsert := GenerateUpsertStrings(m)
+		if _, err := s.tx.ModelContext(ctx, m).
+			OnConflict(conflict).
+			Set(upsert).
+			Insert(); err != nil {
+			return xerrors.Errorf("upserting model: %w", err)
+		}
+	} else {
+		if _, err := s.tx.ModelContext(ctx, m).
+			OnConflict("do nothing").
+			Insert(); err != nil {
+			return xerrors.Errorf("persisting model: %w", err)
+		}
 	}
 	return nil
+}
+
+// GenerateUpsertString accepts a visor model and returns two string containing SQL that may be used
+// to upsert the model. The first string is the conflict statement and the second is the insert.
+//
+// Example given the below model:
+//
+// type SomeModel struct {
+// 	Height    int64  `pg:",pk,notnull,use_zero"`
+// 	MinerID   string `pg:",pk,notnull"`
+// 	StateRoot string `pg:",pk,notnull"`
+// 	OwnerID  string `pg:",notnull"`
+// 	WorkerID string `pg:",notnull"`
+// }
+//
+// The strings returned are:
+// conflict string:
+//	"(cid, height, state_root) DO UPDATE"
+// update string:
+// 	"owner_id" = EXCLUDED.owner_id, "worker_id" = EXCLUDED.worker_id
+func GenerateUpsertStrings(model interface{}) (string, string) {
+	var cf []string
+	var ucf []string
+
+	// gather all public keys
+	for _, pk := range pg.Model(model).TableModel().Table().PKs {
+		cf = append(cf, pk.SQLName)
+	}
+	// gather all other fields
+	for _, field := range pg.Model(model).TableModel().Table().DataFields {
+		ucf = append(ucf, field.SQLName)
+	}
+
+	// consistent ordering in sql statements.
+	sort.Strings(cf)
+	sort.Strings(ucf)
+
+	// build the conflict string
+	var conflict strings.Builder
+	conflict.WriteString("(")
+	for i, str := range cf {
+		conflict.WriteString(str)
+		// if this isn't the last field in the conflict statement add a comma.
+		if !(i == len(cf)-1) {
+			conflict.WriteString(", ")
+		}
+	}
+	conflict.WriteString(") DO UPDATE")
+
+	// build the upsert string
+	var upsert strings.Builder
+	for i, str := range ucf {
+		upsert.WriteString("\"" + str + "\"" + " = EXCLUDED." + str)
+		// if this isn't the last field in the upsert statement add a comma.
+		if !(i == len(ucf)-1) {
+			upsert.WriteString(", ")
+		}
+	}
+	return conflict.String(), upsert.String()
 }
