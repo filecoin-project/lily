@@ -28,7 +28,7 @@ var Migrate = &cli.Command{
 
 		ctx := cctx.Context
 
-		db, err := storage.NewDatabase(ctx, cctx.String("db"), cctx.Int("db-pool-size"), cctx.String("name"))
+		db, err := storage.NewDatabase(ctx, cctx.String("db"), cctx.Int("db-pool-size"), cctx.String("name"), false)
 		if err != nil {
 			return xerrors.Errorf("connect database: %w", err)
 		}

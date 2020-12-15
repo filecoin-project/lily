@@ -66,7 +66,7 @@ func SetupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error)
 
 func setupDatabase(cctx *cli.Context) (*storage.Database, error) {
 	ctx := cctx.Context
-	db, err := storage.NewDatabase(ctx, cctx.String("db"), cctx.Int("db-pool-size"), cctx.String("name"))
+	db, err := storage.NewDatabase(ctx, cctx.String("db"), cctx.Int("db-pool-size"), cctx.String("name"), cctx.Bool("db-allow-upsert"))
 	if err != nil {
 		return nil, xerrors.Errorf("new database: %w", err)
 	}

@@ -60,6 +60,11 @@ func main() {
 				EnvVars: []string{"LOTUS_DB_POOL_SIZE"},
 				Value:   75,
 			},
+			&cli.BoolFlag{
+				Name:    "db-allow-upsert",
+				EnvVars: []string{"LOTUS_DB_ALLOW_UPSERT"},
+				Value:   false,
+			},
 			&cli.IntFlag{
 				Name:    "lens-cache-hint",
 				EnvVars: []string{"VISOR_LENS_CACHE_HINT"},
