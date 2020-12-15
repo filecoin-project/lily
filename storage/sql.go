@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"reflect"
 	"strings"
 	"time"
 
@@ -699,15 +700,58 @@ func (d *Database) MarkTipSetEconomicsComplete(ctx context.Context, tipset strin
 	return nil
 }
 
-func (d *Database) Persist(ctx context.Context, p model.PersistableWithTx) error {
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
+func (d *Database) RunInTransaction(ctx context.Context, fn func(tx *pg.Tx) error) error {
+	return d.DB.RunInTransaction(ctx, fn)
+}
 
+// PersistBatch persists a batch of models in a single transaction
+func (d *Database) PersistBatch(ctx context.Context, ps ...model.Persistable) error {
 	return d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return p.PersistWithTx(ctx, tx)
+		txs := &TxStorage{
+			tx: tx,
+		}
+
+		for _, p := range ps {
+			if err := p.Persist(ctx, txs); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	})
 }
 
-func (d *Database) RunInTransaction(ctx context.Context, fn func(tx *pg.Tx) error) error {
-	return d.DB.RunInTransaction(ctx, fn)
+type TxStorage struct {
+	tx *pg.Tx
+}
+
+// PersistModel persists a single model
+func (s *TxStorage) PersistModel(ctx context.Context, m interface{}) error {
+	value := reflect.ValueOf(m)
+
+	elemKind := value.Kind()
+	if value.Kind() == reflect.Ptr {
+		elemKind = value.Elem().Kind()
+	}
+
+	if elemKind == reflect.Slice || elemKind == reflect.Array {
+		// Avoid persisting zero length lists
+		if value.Len() == 0 {
+			return nil
+		}
+
+		// go-pg expects pointers to slices. We can fix it up.
+		if value.Kind() != reflect.Ptr {
+			p := reflect.New(value.Type())
+			p.Elem().Set(value)
+			m = p.Interface()
+		}
+
+	}
+	if _, err := s.tx.ModelContext(ctx, m).
+		OnConflict("do nothing").
+		Insert(); err != nil {
+		return xerrors.Errorf("persisting model: %w", err)
+	}
+	return nil
 }

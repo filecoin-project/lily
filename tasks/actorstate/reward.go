@@ -23,7 +23,7 @@ func init() {
 	Register(sa2builtin.RewardActorCodeID, RewardExtractor{})
 }
 
-func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.PersistableWithTx, error) {
+func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "RewardExtractor")
 	defer span.End()
 

@@ -2,12 +2,12 @@ package common
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type Actor struct {
@@ -20,34 +20,24 @@ type Actor struct {
 	Nonce     uint64 `pg:",use_zero"`
 }
 
-func (a *Actor) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "Actor.PersistWithTx")
+func (a *Actor) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "Actor.Persist")
 	defer span.End()
-	if _, err := tx.ModelContext(ctx, a).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return err
-	}
-	return nil
+	return s.PersistModel(ctx, a)
 }
 
 // ActorList is a slice of Actors persistable in a single batch.
 type ActorList []*Actor
 
 // Persist
-func (actors ActorList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "ActorList.PersistWithTx", trace.WithAttributes(label.Int("count", len(actors))))
+func (actors ActorList) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "ActorList.Persist", trace.WithAttributes(label.Int("count", len(actors))))
 	defer span.End()
 
 	if len(actors) == 0 {
 		return nil
 	}
-	if _, err := tx.ModelContext(ctx, &actors).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return fmt.Errorf("persisting actors: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, actors)
 }
 
 type ActorState struct {
@@ -58,32 +48,22 @@ type ActorState struct {
 }
 
 // PersistWithTx inserts the batch using the given transaction.
-func (s *ActorState) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "ActorState.PersistWithTx")
+func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "ActorState.Persist")
 	defer span.End()
-	if _, err := tx.ModelContext(ctx, s).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return err
-	}
-	return nil
+	return s.PersistModel(ctx, as)
 }
 
 // ActorStateList is a list of ActorStates persistable in a single batch.
 type ActorStateList []*ActorState
 
 // PersistWithTx inserts the batch using the given transaction.
-func (states ActorStateList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "ActorStateList.PersistWithTx", trace.WithAttributes(label.Int("count", len(states))))
+func (states ActorStateList) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "ActorStateList.Persist", trace.WithAttributes(label.Int("count", len(states))))
 	defer span.End()
 
 	if len(states) == 0 {
 		return nil
 	}
-	if _, err := tx.ModelContext(ctx, &states).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return fmt.Errorf("persisting actorStates: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, states)
 }

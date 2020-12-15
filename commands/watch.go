@@ -15,6 +15,8 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/chain"
+	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/tasks/indexer"
 )
 
@@ -63,7 +65,7 @@ func watch(cctx *cli.Context) error {
 		lensCloser()
 	}()
 
-	var storage chain.Storage = &chain.NullStorage{}
+	var storage model.Storage = &storage.NullStorage{}
 	if cctx.String("db") == "" {
 		log.Warnw("database not specified, data will not be persisted")
 	} else {

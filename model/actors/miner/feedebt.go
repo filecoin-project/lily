@@ -3,9 +3,9 @@ package miner
 import (
 	"context"
 
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
-	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type MinerFeeDebt struct {
@@ -16,29 +16,19 @@ type MinerFeeDebt struct {
 	FeeDebt string `pg:",notnull"`
 }
 
-func (m *MinerFeeDebt) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerFeeDebt.PersistWithTx")
+func (m *MinerFeeDebt) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerFeeDebt.Persist")
 	defer span.End()
-	if _, err := tx.ModelContext(ctx, m).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting miner fee debt: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, m)
 }
 
 type MinerFeeDebtList []*MinerFeeDebt
 
-func (ml MinerFeeDebtList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerFeeDebtList.PersistWithTx")
+func (ml MinerFeeDebtList) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerFeeDebtList.Persist")
 	defer span.End()
 	if len(ml) == 0 {
 		return nil
 	}
-	if _, err := tx.ModelContext(ctx, &ml).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting miner fee debt list: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, ml)
 }

@@ -3,10 +3,11 @@ package market
 import (
 	"context"
 
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type MarketDealProposal struct {
@@ -31,22 +32,17 @@ type MarketDealProposal struct {
 	Label      string
 }
 
-func (dp *MarketDealProposal) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx, dp).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return err
-	}
-	return nil
+func (dp *MarketDealProposal) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, dp)
 }
 
 type MarketDealProposals []*MarketDealProposal
 
-func (dps MarketDealProposals) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MarketDealProposals.PersistWithTx", trace.WithAttributes(label.Int("count", len(dps))))
+func (dps MarketDealProposals) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "MarketDealProposals.Persist", trace.WithAttributes(label.Int("count", len(dps))))
 	defer span.End()
 	for _, dp := range dps {
-		if err := dp.PersistWithTx(ctx, tx); err != nil {
+		if err := s.PersistModel(ctx, dp); err != nil {
 			return err
 		}
 	}

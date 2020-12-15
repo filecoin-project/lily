@@ -3,11 +3,11 @@ package miner
 import (
 	"context"
 
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
-	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 const (
@@ -39,18 +39,13 @@ type MinerSectorEvent struct {
 
 type MinerSectorEventList []*MinerSectorEvent
 
-func (l MinerSectorEventList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerSectorEventList.PersistWithTx", trace.WithAttributes(label.Int("count", len(l))))
+func (l MinerSectorEventList) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerSectorEventList.Persist", trace.WithAttributes(label.Int("count", len(l))))
 	defer span.End()
 
 	if len(l) == 0 {
 		return nil
 	}
 
-	if _, err := tx.ModelContext(ctx, &l).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting miner sector event entries: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, l)
 }

@@ -17,7 +17,7 @@ func init() {
 }
 
 // Extract will create persistable data for a given actor's state.
-func (AccountExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.PersistableWithTx, error) {
+func (AccountExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	return model.NoData, nil
 }
 

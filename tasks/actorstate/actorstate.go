@@ -65,7 +65,7 @@ type ActorStateAPI interface {
 
 // An ActorStateExtractor extracts actor state into a persistable format
 type ActorStateExtractor interface {
-	Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.PersistableWithTx, error)
+	Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error)
 }
 
 // All supported actor state extractors
@@ -315,7 +315,7 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, node ActorStateA
 		return xerrors.Errorf("extract actor state: %w", err)
 	}
 
-	if err := p.storage.Persist(ctx, data); err != nil {
+	if err := p.storage.PersistBatch(ctx, data); err != nil {
 		return xerrors.Errorf("persisting raw state: %w", err)
 	}
 
@@ -335,7 +335,7 @@ func (p *ActorStateProcessor) processActor(ctx context.Context, node ActorStateA
 
 	log.Debugw("persisting extracted state", "addr", info.Address.String())
 
-	if err := p.storage.Persist(ctx, data); err != nil {
+	if err := p.storage.PersistBatch(ctx, data); err != nil {
 		return xerrors.Errorf("persisting extracted state: %w", err)
 	}
 	return nil

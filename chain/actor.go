@@ -32,7 +32,7 @@ func NewActorStateProcessor(opener lens.APIOpener, extracterMap ActorExtractorMa
 	return p
 }
 
-func (p *ActorStateProcessor) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates map[string]types.Actor) (model.PersistableWithTx, *visormodel.ProcessingReport, error) {
+func (p *ActorStateProcessor) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates map[string]types.Actor) (model.Persistable, *visormodel.ProcessingReport, error) {
 	if p.node == nil {
 		node, closer, err := p.opener.Open(ctx)
 		if err != nil {
@@ -60,7 +60,7 @@ func (p *ActorStateProcessor) ProcessActors(ctx context.Context, ts *types.TipSe
 		}
 	}
 
-	data := make(PersistableWithTxList, 0, len(actors))
+	data := make(model.PersistableList, 0, len(actors))
 	errorsDetected := make([]*ActorStateError, 0, len(actors))
 	skippedActors := 0
 
@@ -172,7 +172,7 @@ type ActorStateResult struct {
 	Address      string
 	Error        error
 	SkippedParse bool
-	Data         model.PersistableWithTx
+	Data         model.Persistable
 }
 
 type ActorStateError struct {

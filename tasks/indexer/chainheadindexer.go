@@ -14,6 +14,7 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
@@ -128,7 +129,7 @@ var _ TipSetObserver = (*TipSetBlockIndexer)(nil)
 // A TipSetBlockIndexer waits for tipsets and persists their block data into a database.
 type TipSetBlockIndexer struct {
 	data    *UnindexedBlockData
-	storage *storage.Database
+	storage model.Storage
 }
 
 func NewTipSetBlockIndexer(d *storage.Database) *TipSetBlockIndexer {
@@ -143,7 +144,7 @@ func (t *TipSetBlockIndexer) TipSet(ctx context.Context, ts *types.TipSet) error
 	if t.data.Size() > 0 {
 		// persist the blocks to storage
 		log.Debugw("persisting batch", "count", t.data.Size(), "height", t.data.Height())
-		if err := t.data.Persist(ctx, t.storage.DB); err != nil {
+		if err := t.storage.PersistBatch(ctx, t.data); err != nil {
 			return xerrors.Errorf("persist: %w", err)
 		}
 	}

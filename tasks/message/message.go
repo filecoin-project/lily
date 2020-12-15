@@ -15,7 +15,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/ipld/go-ipld-prime"
@@ -28,6 +27,7 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
 	messagemodel "github.com/filecoin-project/sentinel-visor/model/messages"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
@@ -199,15 +199,7 @@ func (p *MessageProcessor) processTipSet(ctx context.Context, node lens.API, ts 
 
 	ll.Debugw("persisting tipset", "messages", len(result.Messages), "block_messages", len(result.BlockMessages), "receipts", len(rcts))
 
-	if err := p.storage.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		if err := result.PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
-		if err := processingMsgs.PersistWithTx(ctx, tx); err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
+	if err := p.storage.PersistBatch(ctx, model.PersistableList{result, processingMsgs}); err != nil {
 		return xerrors.Errorf("persist: %w", err)
 	}
 

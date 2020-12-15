@@ -6,7 +6,6 @@ import (
 
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/go-pg/pg/v10"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
 	"go.opencensus.io/tag"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
 	chainmodel "github.com/filecoin-project/sentinel-visor/model/chain"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/wait"
@@ -29,7 +29,7 @@ const (
 var log = logging.Logger("chain")
 
 type EconomicsStorage interface {
-	RunInTransaction(ctx context.Context, fn func(tx *pg.Tx) error) error
+	PersistBatch(ctx context.Context, ps ...model.Persistable) error
 	MarkTipSetEconomicsComplete(ctx context.Context, tipset string, height int64, completedAt time.Time, errorsDetected string) error
 	LeaseTipSetEconomics(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingTipSetList, error)
 }
@@ -148,9 +148,7 @@ func (p *ChainEconomics) processItem(ctx context.Context, node lens.API, item *v
 
 	log.Debugw("persisting tipset", "height", item.Height)
 
-	if err := p.storage.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return ce.PersistWithTx(ctx, tx)
-	}); err != nil {
+	if err := p.storage.PersistBatch(ctx, ce); err != nil {
 		return xerrors.Errorf("persist: %w", err)
 	}
 
