@@ -26,6 +26,7 @@ require (
 	github.com/ipfs/go-ipfs-blockstore v1.0.3 // indirect
 	github.com/ipfs/go-ipld-cbor v0.0.5
 	github.com/ipfs/go-log/v2 v2.1.2-0.20200626104915-0016c0b4b3e4
+	github.com/ipld/go-car v0.1.1-0.20201015032735-ff6ccdc46acc
 	github.com/ipld/go-ipld-prime v0.5.1-0.20201021195245-109253e8a018
 	github.com/jackc/pgx/v4 v4.9.0
 	github.com/lib/pq v1.8.0

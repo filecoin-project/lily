@@ -2,8 +2,8 @@ package actorstate_test
 
 import (
 	"context"
-	"testing"
-
+	"encoding/json"
+	"fmt"
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
@@ -16,27 +16,40 @@ import (
 	sa0account "github.com/filecoin-project/specs-actors/actors/builtin/account"
 	sa0init "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	samarket "github.com/filecoin-project/specs-actors/actors/builtin/market"
+	sa0miner "github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	sa0power "github.com/filecoin-project/specs-actors/actors/builtin/power"
 	sa0reward "github.com/filecoin-project/specs-actors/actors/builtin/reward"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	tutils "github.com/filecoin-project/specs-actors/support/testing"
 	sa2init "github.com/filecoin-project/specs-actors/v2/actors/builtin/init"
 	sa2power "github.com/filecoin-project/specs-actors/v2/actors/builtin/power"
 	sa2reward "github.com/filecoin-project/specs-actors/v2/actors/builtin/reward"
 	adt2 "github.com/filecoin-project/specs-actors/v2/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	cbornode "github.com/ipfs/go-ipld-cbor"
+	"github.com/ipld/go-car"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/xerrors"
+	"io/ioutil"
+	"os"
+	"testing"
 
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
+
+var VectorsDir string
+
+func init() {
+	VectorsDir = "/home/frrist/src/github.com/filecoin-project/sentinel-visor/tasks/actorstate/vectors"
+}
 
 var _ actorstate.ActorStateAPI = (*MockAPI)(nil)
 
 type MockAPI struct {
 	t       testing.TB
 	actors  map[actorKey]*types.Actor
+	miners  map[actorKey]miner.State
 	tipsets map[types.TipSetKey]*types.TipSet
 	bs      bstore.Blockstore
 	store   adt.Store
@@ -48,6 +61,7 @@ func NewMockAPI(test testing.TB) *MockAPI {
 		t:       test,
 		bs:      bs,
 		tipsets: make(map[types.TipSetKey]*types.TipSet),
+		miners:  make(map[actorKey]miner.State),
 		actors:  make(map[actorKey]*types.Actor),
 		store:   adt.WrapStore(context.Background(), cbornode.NewCborStore(bs)),
 	}
@@ -125,7 +139,14 @@ func (m *MockAPI) StateMinerPower(ctx context.Context, addr address.Address, tsk
 }
 
 func (m *MockAPI) StateMinerSectors(ctx context.Context, a address.Address, field *bitfield.BitField, key types.TipSetKey) ([]*miner.SectorOnChainInfo, error) {
-	panic("not implemented yet")
+	state, ok := m.miners[actorKey{
+		tsk:  key,
+		addr: a,
+	}]
+	if !ok {
+		return nil, xerrors.New("Miner not found")
+	}
+	return state.LoadSectors(field)
 }
 
 // ----------------- MockAPI Helpers ----------------------------
@@ -295,6 +316,163 @@ func (m *MockAPI) mustCreateEmptyInitStateV2() *sa2init.State {
 	return sa2init.ConstructState(emptyMap, "visor-testing")
 }
 
+func (m *MockAPI) mustCreateEmptyMinerStateV0() *sa0miner.State {
+	ctx := context.TODO()
+	emptyMap, err := adt.MakeEmptyMap(m.store).Root()
+	require.NoError(m.t, err)
+
+	emptyArray, err := adt.MakeEmptyArray(m.store).Root()
+	require.NoError(m.t, err)
+
+	emptyBitfield := bitfield.NewFromSet(nil)
+	emptyBitfieldCid, err := m.store.Put(ctx, emptyBitfield)
+	require.NoError(m.t, err)
+
+	emptyDeadline := sa0miner.ConstructDeadline(emptyArray)
+	emptyDeadlineCid, err := m.store.Put(ctx, emptyDeadline)
+	require.NoError(m.t, err)
+
+	emptyDeadlines := sa0miner.ConstructDeadlines(emptyDeadlineCid)
+	emptyVestingFunds := sa0miner.ConstructVestingFunds()
+	emptyDeadlinesCid, err := m.store.Put(ctx, emptyDeadlines)
+	require.NoError(m.t, err)
+
+	emptyVestingFundsCid, err := m.store.Put(ctx, emptyVestingFunds)
+	require.NoError(m.t, err)
+
+	ownerAddr := tutils.NewIDAddr(m.t, 123)
+	workerAddr := ownerAddr
+	controlAddrs := []address.Address{ownerAddr, workerAddr}
+	info, err := sa0miner.ConstructMinerInfo(ownerAddr, workerAddr, controlAddrs, nil, nil, abi.RegisteredSealProof_StackedDrg64GiBV1)
+	require.NoError(m.t, err)
+
+	infoCid, err := m.store.Put(ctx, info)
+	require.NoError(m.t, err)
+
+	state, err := sa0miner.ConstructState(infoCid, 0, emptyBitfieldCid, emptyArray, emptyMap, emptyDeadlinesCid, emptyVestingFundsCid)
+	require.NoError(m.t, err)
+
+	return state
+}
+
 func (m *MockAPI) mustCreateAccountStateV0(addr address.Address) *sa0account.State {
 	return &sa0account.State{Address: addr}
+}
+
+type ImportedActor struct {
+	Address string `json:"address"`
+	TipSet  string `json:"tipset"`
+	Code    string `json:"code"`
+	Head    string `json:"head"`
+	Balance string `json:"balance"`
+	Nonce   uint64 `json:"nonce"`
+}
+
+func (a *ImportedActor) AsActorType() *types.Actor {
+	code, err := cid.Decode(a.Code)
+	if err != nil {
+		panic(err)
+	}
+
+	head, err := cid.Decode(a.Head)
+	if err != nil {
+		panic(err)
+	}
+
+	balance, err := types.BigFromString(a.Balance)
+	if err != nil {
+		panic(err)
+	}
+
+	return &types.Actor{
+		Code:    code,
+		Head:    head,
+		Nonce:   a.Nonce,
+		Balance: balance,
+	}
+}
+
+type ActorVector struct {
+	Address address.Address
+	TipSet  types.TipSetKey
+	Actor   *types.Actor
+}
+
+type MinerVector struct {
+	Info  ActorVector
+	State miner.State
+}
+
+func (m *MockAPI) MinerVectorForHead(headStr string, tipset *types.TipSet) *MinerVector {
+	headCID, err := cid.Decode(headStr)
+	require.NoError(m.t, err)
+
+	actorF, err := actorFileForHead(headCID)
+	require.NoError(m.t, err)
+	defer actorF.Close()
+
+	actorB, err := ioutil.ReadAll(actorF)
+	require.NoError(m.t, err)
+
+	importedActor := new(ImportedActor)
+	err = json.Unmarshal(actorB, importedActor)
+	require.NoError(m.t, err)
+
+	addr, err := address.NewFromString(importedActor.Address)
+	require.NoError(m.t, err)
+
+	stateF, err := stateFileForHead(headCID)
+	require.NoError(m.t, err)
+	defer stateF.Close()
+
+	header, err := car.LoadCar(m.bs, stateF)
+	require.NoError(m.t, err)
+	require.Len(m.t, header.Roots, 1)
+	require.Equal(m.t, headCID, header.Roots[0])
+
+	state, err := miner.Load(m.store, importedActor.AsActorType())
+	require.NoError(m.t, err)
+
+	ak := actorKey{
+		tsk:  tipset.Key(),
+		addr: addr,
+	}
+	m.actors[ak] = importedActor.AsActorType()
+	m.miners[ak] = state
+	return &MinerVector{
+		Info: ActorVector{
+			Address: addr,
+			TipSet:  tipset.Key(),
+			Actor:   importedActor.AsActorType(),
+		},
+		State: state,
+	}
+}
+
+func actorFileForHead(head cid.Cid) (*os.File, error) {
+	return os.Open(fmt.Sprintf("%s/%s/actor.json", VectorsDir, head))
+}
+
+func stateFileForHead(head cid.Cid) (*os.File, error) {
+	return os.Open(fmt.Sprintf("%s/%s/state.car", VectorsDir, head))
+}
+
+func (m *MockAPI) MinerV0StateFromVector(tsk types.TipSetKey, addr address.Address, info types.Actor) miner.State {
+	f, err := os.Open(fmt.Sprintf("%s/%s.car", VectorsDir, info.Head))
+	require.NoError(m.t, err)
+
+	header, err := car.LoadCar(m.bs, f)
+	require.NoError(m.t, err)
+	require.Len(m.t, header.Roots, 1)
+	require.Equal(m.t, info.Head, header.Roots[0])
+
+	state, err := miner.Load(m.store, &info)
+	require.NoError(m.t, err)
+
+	m.miners[actorKey{
+		tsk:  tsk,
+		addr: addr,
+	}] = state
+
+	return state
 }
