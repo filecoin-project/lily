@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -1113,4 +1114,14 @@ func TestMarkTipSetComplete(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 1, count)
 	})
+}
+
+func TestLongNames(t *testing.T) {
+	justLongEnough := strings.Repeat("x", MaxPostgresNameLength)
+	_, err := NewDatabase(context.Background(), "postgres://example.com/fakedb", 1, justLongEnough)
+	require.NoError(t, err)
+
+	tooLong := strings.Repeat("x", MaxPostgresNameLength+1)
+	_, err = NewDatabase(context.Background(), "postgres://example.com/fakedb", 1, tooLong)
+	require.Error(t, err)
 }

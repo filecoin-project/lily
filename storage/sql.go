@@ -84,9 +84,16 @@ var (
 var (
 	ErrSchemaTooOld = errors.New("database schema is too old and requires migration")
 	ErrSchemaTooNew = errors.New("database schema is too new for this version of visor")
+	ErrNameTooLong  = errors.New("name exceeds maximum length for postgres application names")
 )
 
+const MaxPostgresNameLength = 64
+
 func NewDatabase(ctx context.Context, url string, poolSize int, name string) (*Database, error) {
+	if len(name) > MaxPostgresNameLength {
+		return nil, ErrNameTooLong
+	}
+
 	opt, err := pg.ParseURL(url)
 	if err != nil {
 		return nil, xerrors.Errorf("parse database URL: %w", err)
