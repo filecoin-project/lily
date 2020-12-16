@@ -118,20 +118,6 @@ jobs:
 
 workflows:
   version: 2
-  #deploy-master-nightly:
-    #triggers:
-      #- schedule:
-          #cron: "0 0 * * *"
-          #filters:
-            #branches:
-              #only:
-                #- /^(master|main)$/
-    #jobs:
-      #- deploy-master-dev-eks:
-          #filters:
-            #branches:
-              #only:
-                #- mg/feat-automated-deploy
   check:
     # `test` and `mod-tidy-check` runs for all branches
     jobs:
@@ -145,7 +131,7 @@ workflows:
           # build and push latest master docker image
           filters:
             branches:
-              only: /^(master|main|v0.4.0-release)$/
+              only: /^(master|main)$/
             tags:
               ignore: /.*/
       - build-push-semver-tag:
