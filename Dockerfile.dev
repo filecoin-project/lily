@@ -1,0 +1,13 @@
+FROM golang:1.15.2
+
+# Install deps for filecoin-project/filecoin-ffi
+RUN apt-get update
+RUN apt-get install -y jq mesa-opencl-icd ocl-icd-opencl-dev
+
+RUN go get github.com/go-delve/delve/cmd/dlv
+
+WORKDIR /go/src/github.com/filecoin-project/sentinel-visor
+COPY . .
+RUN make deps && make build
+
+ENTRYPOINT ["/bin/bash"]
