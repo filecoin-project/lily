@@ -14,16 +14,16 @@ type ChainPower struct {
 	Height    int64  `pg:",pk,notnull,use_zero"`
 	StateRoot string `pg:",pk"`
 
-	TotalRawBytesPower string `pg:",notnull"`
-	TotalQABytesPower  string `pg:",notnull"`
+	TotalRawBytesPower string `pg:"type:numeric,notnull"`
+	TotalQABytesPower  string `pg:"type:numeric,notnull"`
 
-	TotalRawBytesCommitted string `pg:",notnull"`
-	TotalQABytesCommitted  string `pg:",notnull"`
+	TotalRawBytesCommitted string `pg:"type:numeric,notnull"`
+	TotalQABytesCommitted  string `pg:"type:numeric,notnull"`
 
-	TotalPledgeCollateral string `pg:",notnull"`
+	TotalPledgeCollateral string `pg:"type:numeric,notnull"`
 
-	QASmoothedPositionEstimate string `pg:",notnull"`
-	QASmoothedVelocityEstimate string `pg:",notnull"`
+	QASmoothedPositionEstimate string `pg:"type:numeric,notnull"`
+	QASmoothedVelocityEstimate string `pg:"type:numeric,notnull"`
 
 	MinerCount              uint64 `pg:",use_zero"`
 	ParticipatingMinerCount uint64 `pg:",use_zero"`
