@@ -9,5 +9,7 @@ RUN go get github.com/go-delve/delve/cmd/dlv
 WORKDIR /go/src/github.com/filecoin-project/sentinel-visor
 COPY . .
 RUN make deps && make build
+RUN cp ./visor /usr/bin/
 
-ENTRYPOINT ["/bin/bash"]
+ENTRYPOINT ["/usr/bin/visor"]
+CMD ["--help"]
