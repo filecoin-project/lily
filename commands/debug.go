@@ -1,12 +1,8 @@
 package commands
 
 import (
-	"os"
-
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
-
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 )
 
 var Debug = &cli.Command{
@@ -40,11 +36,15 @@ var Debug = &cli.Command{
 			}
 		}()
 
-		p, err := actorstate.NewActorStateProcessor(rctx.DB, rctx.Opener, 0, 0, 0, 0, actorstate.SupportedActorCodes(), false)
-		if err != nil {
-			return err
-		}
+		return nil
+		// TODO(frrist): wire up new logic from chain package
+		/*
+			p, err := actorstate.NewActorStateProcessor(rctx.DB, rctx.Opener, 0, 0, 0, 0, actorstate.SupportedActorCodes(), false)
+			if err != nil {
+				return err
+			}
 
-		return p.Debug(ctx, cctx.String("actor-head"), os.Stdout)
+			return p.Debug(ctx, cctx.String("actor-head"), os.Stdout)
+		*/
 	},
 }
