@@ -26,7 +26,6 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/chain"
 	"github.com/filecoin-project/sentinel-visor/model/derived"
 	"github.com/filecoin-project/sentinel-visor/model/messages"
-	"github.com/filecoin-project/sentinel-visor/model/visor"
 )
 
 var models = []interface{}{
@@ -61,12 +60,6 @@ var models = []interface{}{
 	(*common.ActorState)(nil),
 
 	(*init_.IdAddress)(nil),
-
-	(*visor.ProcessingTipSet)(nil),
-	(*visor.ProcessingActor)(nil),
-	(*visor.ProcessingMessage)(nil),
-
-	(*visor.ProcessingStat)(nil),
 
 	(*derived.GasOutputs)(nil),
 	(*chain.ChainEconomics)(nil),
