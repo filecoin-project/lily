@@ -34,7 +34,7 @@ func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node A
 	defer stop()
 
 	pred := state.NewStatePredicates(node)
-	stateDiff := pred.OnStorageMarketActorChanged(storageMarketChangesPred(pred))
+	stateDiff := pred.OnStorageMarketActorChanged(StorageMarketChangesPred(pred))
 	changed, val, err := stateDiff(ctx, a.ParentTipSet, a.TipSet)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node A
 		return nil, xerrors.Errorf("no state change detected")
 	}
 
-	mchanges, ok := val.(*marketChanges)
+	mchanges, ok := val.(*MarketChanges)
 	if !ok {
 		return nil, xerrors.Errorf("Unknown type returned by market changes predicate: %T", val)
 	}
@@ -51,7 +51,7 @@ func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node A
 	res := &marketmodel.MarketTaskResult{}
 
 	if mchanges.ProposalChanges != nil {
-		proposals, err := m.marketDealProposalChanges(ctx, a, mchanges.ProposalChanges)
+		proposals, err := m.MarketDealProposalChanges(ctx, a, mchanges.ProposalChanges)
 		if err != nil {
 			return nil, err
 		}
@@ -59,7 +59,7 @@ func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node A
 	}
 
 	if mchanges.DealChanges != nil {
-		states, err := m.marketDealStateChanges(ctx, a, mchanges.DealChanges)
+		states, err := m.MarketDealStateChanges(ctx, a, mchanges.DealChanges)
 		if err != nil {
 			return nil, err
 		}
@@ -69,7 +69,7 @@ func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node A
 	return res, nil
 }
 
-func (m StorageMarketExtractor) marketDealStateChanges(ctx context.Context, a ActorInfo, changes *market.DealStateChanges) (marketmodel.MarketDealStates, error) {
+func (m StorageMarketExtractor) MarketDealStateChanges(ctx context.Context, a ActorInfo, changes *market.DealStateChanges) (marketmodel.MarketDealStates, error) {
 	out := make(marketmodel.MarketDealStates, len(changes.Added)+len(changes.Modified))
 	idx := 0
 	for _, add := range changes.Added {
@@ -97,7 +97,7 @@ func (m StorageMarketExtractor) marketDealStateChanges(ctx context.Context, a Ac
 	return out, nil
 }
 
-func (m StorageMarketExtractor) marketDealProposalChanges(ctx context.Context, a ActorInfo, changes *market.DealProposalChanges) (marketmodel.MarketDealProposals, error) {
+func (m StorageMarketExtractor) MarketDealProposalChanges(ctx context.Context, a ActorInfo, changes *market.DealProposalChanges) (marketmodel.MarketDealProposals, error) {
 	out := make(marketmodel.MarketDealProposals, len(changes.Added))
 
 	for idx, add := range changes.Added {
@@ -122,16 +122,16 @@ func (m StorageMarketExtractor) marketDealProposalChanges(ctx context.Context, a
 	return out, nil
 }
 
-type marketChanges struct {
+type MarketChanges struct {
 	DealChanges     *market.DealStateChanges
 	ProposalChanges *market.DealProposalChanges
 }
 
-// storageMarketChangesPred returns a DiffStorageMarketStateFunc that extracts deal state and deal proposal changes from
+// StorageMarketChangesPred returns a DiffStorageMarketStateFunc that extracts deal state and deal proposal changes from
 // a single state change.
-func storageMarketChangesPred(pred *state.StatePredicates) state.DiffStorageMarketStateFunc {
+func StorageMarketChangesPred(pred *state.StatePredicates) state.DiffStorageMarketStateFunc {
 	return func(ctx context.Context, oldState market.State, newState market.State) (changed bool, user state.UserData, err error) {
-		changes := &marketChanges{}
+		changes := &MarketChanges{}
 
 		dealsPred := pred.OnDealStateChanged(pred.OnDealStateAmtChanged())
 		dealsChanged, dealUserData, err := dealsPred(ctx, oldState, newState)
