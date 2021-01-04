@@ -371,66 +371,6 @@ func (d *Database) GetActorByHead(ctx context.Context, head string) (*visor.Proc
 	return a, nil
 }
 
-// LeaseTipSetMessages leases a set of tipsets containing messages to process. minHeight and maxHeight define an inclusive range of heights to process.
-func (d *Database) LeaseTipSetMessages(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingTipSetList, error) {
-	stop := metrics.Timer(ctx, metrics.BatchSelectionDuration)
-	defer stop()
-	var messages visor.ProcessingTipSetList
-
-	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		_, err := tx.QueryContext(ctx, &messages, `
-WITH leased AS (
-    UPDATE visor_processing_tipsets
-    SET message_claimed_until = ?
-    FROM (
-	    SELECT *
-	    FROM visor_processing_tipsets
-	    WHERE message_completed_at IS null AND
-	          (message_claimed_until IS null OR message_claimed_until < ?) AND
-	          height >= ? AND height <= ?
-	    ORDER BY height DESC
-	    LIMIT ?
-	    FOR UPDATE SKIP LOCKED
-	) candidates
-	WHERE visor_processing_tipsets.tip_set = candidates.tip_set AND visor_processing_tipsets.height = candidates.height
-	AND visor_processing_tipsets.height >= ? AND visor_processing_tipsets.height <= ?
-    RETURNING visor_processing_tipsets.tip_set, visor_processing_tipsets.height
-)
-SELECT tip_set,height FROM leased;
-    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize, minHeight, maxHeight)
-		if err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-	return messages, nil
-}
-
-func (d *Database) MarkTipSetMessagesComplete(ctx context.Context, tipset string, height int64, completedAt time.Time, errorsDetected string) error {
-	stop := metrics.Timer(ctx, metrics.CompletionDuration)
-	defer stop()
-	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		_, err := tx.ExecContext(ctx, `
-    UPDATE visor_processing_tipsets
-    SET message_claimed_until = null,
-        message_completed_at = ?,
-        message_errors_detected = ?
-    WHERE tip_set = ? AND height = ?
-`, completedAt, useNullIfEmpty(errorsDetected), tipset, height)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func useNullIfEmpty(s string) *string {
 	if s == "" {
 		return nil

@@ -174,104 +174,6 @@ func truncateVisorProcessingTables(tb testing.TB, db *pg.DB) {
 	require.NoError(tb, err, "truncating block_messages")
 }
 
-func TestLeaseTipSetMessages(t *testing.T) {
-	if testing.Short() {
-		t.Skip("short testing requested")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
-	require.NoError(t, err)
-	defer func() { require.NoError(t, cleanup()) }()
-
-	truncateVisorProcessingTables(t, db)
-
-	indexedMessageTipSets := visor.ProcessingTipSetList{
-		// Unclaimed, incomplete tipset
-		{
-			TipSet:  "cid0a,cid0b",
-			Height:  0,
-			AddedAt: testutil.KnownTime,
-		},
-
-		// Unclaimed, incomplete tipset
-		{
-			TipSet:  "cid1a",
-			Height:  1,
-			AddedAt: testutil.KnownTime,
-		},
-
-		// Unclaimed, incomplete tipset
-		{
-			TipSet:  "cid2a,cid2b,cid2c",
-			Height:  2,
-			AddedAt: testutil.KnownTime,
-		},
-
-		// Unclaimed, incomplete tipset
-		{
-			TipSet:  "cid3a",
-			Height:  3,
-			AddedAt: testutil.KnownTime,
-		},
-
-		// Tipset completed with stale claim
-		{
-			TipSet:              "cid4a",
-			Height:              4,
-			AddedAt:             testutil.KnownTime,
-			MessageClaimedUntil: testutil.KnownTime.Add(-time.Minute * 15),
-			MessageCompletedAt:  testutil.KnownTime.Add(-time.Minute * 5),
-		},
-
-		// Tipset claimed by another process that has expired
-		{
-			TipSet:              "cid5a",
-			Height:              5,
-			AddedAt:             testutil.KnownTime,
-			MessageClaimedUntil: testutil.KnownTime.Add(-time.Minute * 5),
-		},
-
-		// Tipset claimed by another process
-		{
-			TipSet:              "cid6a,cid6b",
-			Height:              6,
-			AddedAt:             testutil.KnownTime,
-			MessageClaimedUntil: testutil.KnownTime.Add(time.Minute * 15),
-		},
-	}
-
-	d := &Database{
-		DB:    db,
-		Clock: testutil.NewMockClock(),
-	}
-
-	if err := d.PersistBatch(ctx, indexedMessageTipSets); err != nil {
-		t.Fatalf("persisting indexed blocks: %v", err)
-	}
-
-	const batchSize = 3
-
-	claimUntil := testutil.KnownTime.Add(time.Minute * 10)
-
-	claimed, err := d.LeaseTipSetMessages(ctx, claimUntil, batchSize, 0, 500)
-	require.NoError(t, err)
-	require.Equal(t, batchSize, len(claimed), "number of claimed message blocks")
-
-	// Tipsets are selected in descending height order, ignoring completed and claimed blocks
-	assert.Equal(t, "cid5a", claimed[0].TipSet, "first claimed message tipset")
-	assert.Equal(t, "cid3a", claimed[1].TipSet, "second claimed message tipset")
-	assert.Equal(t, "cid2a,cid2b,cid2c", claimed[2].TipSet, "third claimed message tipset")
-
-	// Check the database contains the leases
-	var count int
-	_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_tipsets WHERE message_claimed_until=?`, claimUntil)
-	require.NoError(t, err)
-	assert.Equal(t, batchSize, count)
-}
-
 func TestLeaseGasOutputsMessages(t *testing.T) {
 	if testing.Short() {
 		t.Skip("short testing requested")
@@ -889,30 +791,6 @@ func TestMarkTipSetComplete(t *testing.T) {
 		// Check the database contains the updated row with a null errors_detected column
 		var count int
 		_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_tipsets WHERE statechange_completed_at=? AND statechange_errors_detected IS NULL`, completedAt)
-		require.NoError(t, err)
-		assert.Equal(t, 1, count)
-	})
-
-	t.Run("message with error", func(t *testing.T) {
-		completedAt := testutil.KnownTime.Add(time.Minute * 1)
-		err = d.MarkTipSetMessagesComplete(ctx, "cid1", 1, completedAt, "message")
-		require.NoError(t, err)
-
-		// Check the database contains the updated row
-		var count int
-		_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_tipsets WHERE message_completed_at=?`, completedAt)
-		require.NoError(t, err)
-		assert.Equal(t, 1, count)
-	})
-
-	t.Run("message without error", func(t *testing.T) {
-		completedAt := testutil.KnownTime.Add(time.Minute * 2)
-		err = d.MarkTipSetMessagesComplete(ctx, "cid1", 1, completedAt, "")
-		require.NoError(t, err)
-
-		// Check the database contains the updated row with a null errors_detected column
-		var count int
-		_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_tipsets WHERE message_completed_at=? AND message_errors_detected IS NULL`, completedAt)
 		require.NoError(t, err)
 		assert.Equal(t, 1, count)
 	})
