@@ -3,11 +3,10 @@ package market
 import (
 	"context"
 
+	"github.com/filecoin-project/sentinel-visor/model"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
-
-	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type MarketDealProposal struct {
@@ -41,10 +40,5 @@ type MarketDealProposals []*MarketDealProposal
 func (dps MarketDealProposals) Persist(ctx context.Context, s model.StorageBatch) error {
 	ctx, span := global.Tracer("").Start(ctx, "MarketDealProposals.Persist", trace.WithAttributes(label.Int("count", len(dps))))
 	defer span.End()
-	for _, dp := range dps {
-		if err := s.PersistModel(ctx, dp); err != nil {
-			return err
-		}
-	}
-	return nil
+	return s.PersistModel(ctx, dps)
 }
