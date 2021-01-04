@@ -177,30 +177,6 @@ func (d *Database) Close(ctx context.Context) error {
 	return err
 }
 
-func (d *Database) UnprocessedIndexedTipSets(ctx context.Context, maxHeight, limit int) (visor.ProcessingTipSetList, error) {
-	var blkSynced visor.ProcessingTipSetList
-	if err := d.DB.ModelContext(ctx, &blkSynced).
-		Where("height <= ?", maxHeight).
-		Where("statechange_claimed_until is null").
-		Order("height desc").
-		Limit(limit).
-		Select(); err != nil {
-		return nil, err
-	}
-	return blkSynced, nil
-}
-
-func (d *Database) MostRecentAddedTipSet(ctx context.Context) (*visor.ProcessingTipSet, error) {
-	blkSynced := &visor.ProcessingTipSet{}
-	if err := d.DB.ModelContext(ctx, blkSynced).
-		Order("height desc").
-		Limit(1).
-		Select(); err != nil {
-		return nil, err
-	}
-	return blkSynced, nil
-}
-
 // VerifyCurrentSchema compares the schema present in the database with the models used by visor
 // and returns an error if they are incompatible
 func (d *Database) VerifyCurrentSchema(ctx context.Context) error {
@@ -286,30 +262,6 @@ func verifyModel(ctx context.Context, db *pg.DB, m *orm.Table) error {
 
 func stripQuotes(s types.Safe) string {
 	return strings.Trim(string(s), `"`)
-}
-
-// GetActorByHead returns an actor without a lease by its CID
-func (d *Database) GetActorByHead(ctx context.Context, head string) (*visor.ProcessingActor, error) {
-	if len(head) == 0 {
-		return nil, xerrors.Errorf("lookup actor head was empty")
-	}
-
-	d.DB.AddQueryHook(pgext.DebugHook{
-		Verbose: true, // Print all queries.
-	})
-
-	a := new(visor.ProcessingActor)
-	if err := d.DB.ModelContext(ctx, a).
-		Where("head = ?", head).
-		Limit(1).
-		Select(); err != nil {
-		return nil, err
-	}
-	return a, nil
-}
-
-func (d *Database) RunInTransaction(ctx context.Context, fn func(tx *pg.Tx) error) error {
-	return d.DB.RunInTransaction(ctx, fn)
 }
 
 // PersistBatch persists a batch of models in a single transaction
