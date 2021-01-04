@@ -3,11 +3,6 @@ package storage
 import (
 	"context"
 	"errors"
-	"reflect"
-	"sort"
-	"strings"
-	"time"
-
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
 	"github.com/go-pg/pg/v10/types"
@@ -15,8 +10,10 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
 	"golang.org/x/xerrors"
+	"reflect"
+	"sort"
+	"strings"
 
-	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/model/actors/common"
 	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init"
@@ -309,76 +306,6 @@ func (d *Database) GetActorByHead(ctx context.Context, head string) (*visor.Proc
 		return nil, err
 	}
 	return a, nil
-}
-
-func useNullIfEmpty(s string) *string {
-	if s == "" {
-		return nil
-	}
-
-	return &s
-}
-
-// LeaseTipSetEconomics leases a set of tipsets containing chain economics to process. minHeight and maxHeight define an inclusive range of heights to process.
-// TODO: refactor all the tipset leasing methods into a more general function
-func (d *Database) LeaseTipSetEconomics(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingTipSetList, error) {
-	stop := metrics.Timer(ctx, metrics.BatchSelectionDuration)
-	defer stop()
-	var tipsets visor.ProcessingTipSetList
-
-	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		_, err := tx.QueryContext(ctx, &tipsets, `
-WITH leased AS (
-    UPDATE visor_processing_tipsets
-    SET economics_claimed_until = ?
-    FROM (
-	    SELECT *
-	    FROM visor_processing_tipsets
-	    WHERE economics_completed_at IS null AND
-	          (economics_claimed_until IS null OR economics_claimed_until < ?) AND
-	          height >= ? AND height <= ?
-	    ORDER BY height DESC
-	    LIMIT ?
-	    FOR UPDATE SKIP LOCKED
-	) candidates
-	WHERE visor_processing_tipsets.tip_set = candidates.tip_set AND visor_processing_tipsets.height = candidates.height
-	AND visor_processing_tipsets.height >= ? AND visor_processing_tipsets.height <= ?
-    RETURNING visor_processing_tipsets.tip_set, visor_processing_tipsets.height
-)
-SELECT tip_set,height FROM leased;
-    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize, minHeight, maxHeight)
-		if err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-	return tipsets, nil
-}
-
-func (d *Database) MarkTipSetEconomicsComplete(ctx context.Context, tipset string, height int64, completedAt time.Time, errorsDetected string) error {
-	stop := metrics.Timer(ctx, metrics.CompletionDuration)
-	defer stop()
-
-	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		_, err := tx.ExecContext(ctx, `
-    UPDATE visor_processing_tipsets
-    SET economics_claimed_until = null,
-        economics_completed_at = ?,
-        economics_errors_detected = ?
-    WHERE tip_set = ? AND height = ?
-`, completedAt, useNullIfEmpty(errorsDetected), tipset, height)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (d *Database) RunInTransaction(ctx context.Context, fn func(tx *pg.Tx) error) error {
