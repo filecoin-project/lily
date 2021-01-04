@@ -291,66 +291,6 @@ func stripQuotes(s types.Safe) string {
 	return strings.Trim(string(s), `"`)
 }
 
-func (d *Database) LeaseStateChanges(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingTipSetList, error) {
-	stop := metrics.Timer(ctx, metrics.BatchSelectionDuration)
-	defer stop()
-
-	var blocks visor.ProcessingTipSetList
-
-	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		_, err := tx.QueryContext(ctx, &blocks, `
-WITH leased AS (
-    UPDATE visor_processing_tipsets
-    SET statechange_claimed_until = ?
-    FROM (
-	    SELECT *
-	    FROM visor_processing_tipsets
-	    WHERE statechange_completed_at IS null AND
-	          (statechange_claimed_until IS null OR statechange_claimed_until < ?) AND
-	          height >= ? AND height <= ?
-	    ORDER BY height DESC
-	    LIMIT ?
-	    FOR UPDATE SKIP LOCKED
-	) candidates
-	WHERE visor_processing_tipsets.tip_set = candidates.tip_set AND visor_processing_tipsets.height = candidates.height
-	AND visor_processing_tipsets.height >= ? AND visor_processing_tipsets.height <= ?
-    RETURNING visor_processing_tipsets.tip_set, visor_processing_tipsets.height
-)
-SELECT tip_set,height FROM leased;
-    `, claimUntil, d.Clock.Now(), minHeight, maxHeight, batchSize, minHeight, maxHeight)
-		if err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-	return blocks, nil
-}
-
-func (d *Database) MarkStateChangeComplete(ctx context.Context, tsk string, height int64, completedAt time.Time, errorsDetected string) error {
-	stop := metrics.Timer(ctx, metrics.CompletionDuration)
-	defer stop()
-	if err := d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		_, err := tx.ExecContext(ctx, `
-    UPDATE visor_processing_tipsets
-    SET statechange_claimed_until = null,
-        statechange_completed_at = ?,
-        statechange_errors_detected = ?
-    WHERE tip_set = ? AND height = ?
-`, completedAt, useNullIfEmpty(errorsDetected), tsk, height)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // GetActorByHead returns an actor without a lease by its CID
 func (d *Database) GetActorByHead(ctx context.Context, head string) (*visor.ProcessingActor, error) {
 	if len(head) == 0 {
