@@ -2,19 +2,15 @@ package chain
 
 import (
 	"context"
-	"github.com/filecoin-project/sentinel-visor/tasks/indexer"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
 	lotus_api "github.com/filecoin-project/lotus/api"
 	store "github.com/filecoin-project/lotus/chain/store"
-	"github.com/filecoin-project/lotus/chain/types"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
 // NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held
@@ -112,34 +108,6 @@ func (c *Watcher) index(ctx context.Context, headEvents []*lotus_api.HeadChange)
 	}
 
 	log.Debugw("tipset cache", "height", c.cache.Height(), "tail_height", c.cache.TailHeight(), "length", c.cache.Len())
-
-	return nil
-}
-
-var _ TipSetObserver = (*TipSetBlockIndexer)(nil)
-
-// A TipSetBlockIndexer waits for tipsets and persists their block data into a database.
-type TipSetBlockIndexer struct {
-	data    *indexer.UnindexedBlockData
-	storage model.Storage
-}
-
-func NewTipSetBlockIndexer(d *storage.Database) *TipSetBlockIndexer {
-	return &TipSetBlockIndexer{
-		data:    indexer.NewUnindexedBlockData(),
-		storage: d,
-	}
-}
-
-func (t *TipSetBlockIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
-	t.data.AddTipSet(ts)
-	if t.data.Size() > 0 {
-		// persist the blocks to storage
-		log.Debugw("persisting batch", "count", t.data.Size(), "height", t.data.Height())
-		if err := t.storage.PersistBatch(ctx, t.data); err != nil {
-			return xerrors.Errorf("persist: %w", err)
-		}
-	}
 
 	return nil
 }

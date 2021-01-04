@@ -2,6 +2,8 @@ package chain
 
 import (
 	"context"
+	"github.com/filecoin-project/lotus/chain/actors/builtin"
+	"github.com/raulk/clock"
 	"testing"
 	"time"
 
@@ -12,12 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
-	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 
-func TestChainHistoryIndexer(t *testing.T) {
+func TestWalker(t *testing.T) {
 	if testing.Short() {
 		t.Skip("short testing requested")
 	}
@@ -50,19 +51,27 @@ func TestChainHistoryIndexer(t *testing.T) {
 	bhs, err := collectBlockHeaders(openedAPI, head)
 	require.NoError(t, err, "collect chain blocks")
 
-	tipSetKeys, err := collectTipSetKeys(openedAPI, head)
-	require.NoError(t, err, "collect chain blocks")
-
 	cids := bhs.Cids()
 	rounds := bhs.Rounds()
 
-	blockIndexer := NewTipSetBlockIndexer(&storage.Database{DB: db})
+	strg := &storage.Database{
+		DB:     db,
+		Clock:  clock.NewMock(),
+		Upsert: false,
+	}
+
+	tsIndexer, err := NewTipSetIndexer(opener, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
 	t.Logf("initializing indexer")
-	idx := NewWalker(blockIndexer, opener, 0, int64(head.Height()))
+	idx := NewWalker(tsIndexer, opener, 0, int64(head.Height()))
 
 	t.Logf("indexing chain")
 	err = idx.WalkChain(ctx, openedAPI, head)
 	require.NoError(t, err, "WalkChain")
+
+	// TODO NewTipSetIndexer runs its processors in their own go routines (started when TipSet() is called)
+	// this causes this test to behave nondeterministicly so we sleep here to ensure all async jobs
+	// have completed before asserting results
+	time.Sleep(time.Second * 3)
 
 	t.Run("block_headers", func(t *testing.T) {
 		var count int
@@ -103,20 +112,6 @@ func TestChainHistoryIndexer(t *testing.T) {
 			exists, err := db.Model(m).Where("round = ?", round).Exists()
 			require.NoError(t, err)
 			assert.True(t, exists, "round: %d", round)
-		}
-	})
-
-	t.Run("visor_processing_tipsets", func(t *testing.T) {
-		var count int
-		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_tipsets`)
-		require.NoError(t, err)
-		assert.Equal(t, len(tipSetKeys), count)
-
-		var m *visor.ProcessingTipSet
-		for _, tsk := range tipSetKeys {
-			exists, err := db.Model(m).Where("tip_set = ?", tsk).Exists()
-			require.NoError(t, err)
-			assert.True(t, exists, "tsk: %s", tsk)
 		}
 	})
 }
