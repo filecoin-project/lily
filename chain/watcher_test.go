@@ -1,4 +1,4 @@
-package indexer
+package chain
 
 import (
 	"context"
@@ -65,7 +65,7 @@ func TestChainHeadIndexer(t *testing.T) {
 
 	blockIndexer := NewTipSetBlockIndexer(&storage.Database{DB: db})
 	t.Logf("initializing indexer")
-	idx := NewChainHeadIndexer(blockIndexer, opener, 0)
+	idx := NewWatcher(blockIndexer, opener, 0)
 
 	newHeads, err := node.ChainNotify(ctx)
 	require.NoError(t, err, "chain notify")

@@ -17,7 +17,6 @@ import (
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
-	"github.com/filecoin-project/sentinel-visor/tasks/indexer"
 )
 
 const (
@@ -35,7 +34,7 @@ const (
 
 var log = logging.Logger("chain")
 
-var _ indexer.TipSetObserver = (*TipSetIndexer)(nil)
+var _ TipSetObserver = (*TipSetIndexer)(nil)
 
 // A TipSetWatcher waits for tipsets and persists their block data into a database.
 type TipSetIndexer struct {

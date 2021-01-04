@@ -1,4 +1,4 @@
-package indexer
+package chain
 
 import (
 	"context"
@@ -58,7 +58,7 @@ func TestChainHistoryIndexer(t *testing.T) {
 
 	blockIndexer := NewTipSetBlockIndexer(&storage.Database{DB: db})
 	t.Logf("initializing indexer")
-	idx := NewChainHistoryIndexer(blockIndexer, opener, 0, int64(head.Height()))
+	idx := NewWalker(blockIndexer, opener, 0, int64(head.Height()))
 
 	t.Logf("indexing chain")
 	err = idx.WalkChain(ctx, openedAPI, head)
