@@ -17,7 +17,6 @@ import (
 	"github.com/filecoin-project/sentinel-visor/chain"
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/storage"
-	"github.com/filecoin-project/sentinel-visor/tasks/indexer"
 )
 
 var Watch = &cli.Command{
@@ -98,8 +97,8 @@ func watch(cctx *cli.Context) error {
 
 	scheduler := schedule.NewScheduler(cctx.Duration("task-delay"))
 	scheduler.Add(schedule.TaskConfig{
-		Name: "ChainHeadIndexer",
-		Task: indexer.NewChainHeadIndexer(tsIndexer, lensOpener, cctx.Int("indexhead-confidence")),
+		Name: "Watcher",
+		Task: chain.NewWatcher(tsIndexer, lensOpener, cctx.Int("indexhead-confidence")),
 		// TODO: add locker
 		// Locker:              NewGlobalSingleton(ChainHeadIndexerLockID, rctx.db), // only want one forward indexer anywhere to be running
 		RestartOnFailure:    true,

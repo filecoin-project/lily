@@ -1,35 +1,23 @@
-package indexer
+package chain
 
 import (
 	"context"
-
-	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
 	lotus_api "github.com/filecoin-project/lotus/api"
 	store "github.com/filecoin-project/lotus/chain/store"
-	"github.com/filecoin-project/lotus/chain/types"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
-var log = logging.Logger("indexer")
-
-// A TipSetObserver waits for notifications of new tipsets.
-type TipSetObserver interface {
-	TipSet(ctx context.Context, ts *types.TipSet) error
-}
-
-// NewChainHeadIndexer creates a new ChainHeadIndexer. confidence sets the number of tipsets that will be held
+// NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held
 // in a cache awaiting possible reversion. Tipsets will be written to the database when they are evicted from
 // the cache due to incoming later tipsets.
-func NewChainHeadIndexer(obs TipSetObserver, opener lens.APIOpener, confidence int) *ChainHeadIndexer {
-	return &ChainHeadIndexer{
+func NewWatcher(obs TipSetObserver, opener lens.APIOpener, confidence int) *Watcher {
+	return &Watcher{
 		opener:     opener,
 		obs:        obs,
 		confidence: confidence,
@@ -37,8 +25,8 @@ func NewChainHeadIndexer(obs TipSetObserver, opener lens.APIOpener, confidence i
 	}
 }
 
-// ChainHeadIndexer is a task that indexes blocks by following the chain head.
-type ChainHeadIndexer struct {
+// Watcher is a task that indexes blocks by following the chain head.
+type Watcher struct {
 	opener     lens.APIOpener
 	obs        TipSetObserver
 	confidence int          // size of tipset cache
@@ -47,7 +35,7 @@ type ChainHeadIndexer struct {
 
 // Run starts following the chain head and blocks until the context is done or
 // an error occurs.
-func (c *ChainHeadIndexer) Run(ctx context.Context) error {
+func (c *Watcher) Run(ctx context.Context) error {
 	node, closer, err := c.opener.Open(ctx)
 	if err != nil {
 		return xerrors.Errorf("open lens: %w", err)
@@ -75,8 +63,8 @@ func (c *ChainHeadIndexer) Run(ctx context.Context) error {
 	}
 }
 
-func (c *ChainHeadIndexer) index(ctx context.Context, headEvents []*lotus_api.HeadChange) error {
-	ctx, span := global.Tracer("").Start(ctx, "ChainHeadIndexer.index")
+func (c *Watcher) index(ctx context.Context, headEvents []*lotus_api.HeadChange) error {
+	ctx, span := global.Tracer("").Start(ctx, "Watcher.index")
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "indexheadblock"))
@@ -120,34 +108,6 @@ func (c *ChainHeadIndexer) index(ctx context.Context, headEvents []*lotus_api.He
 	}
 
 	log.Debugw("tipset cache", "height", c.cache.Height(), "tail_height", c.cache.TailHeight(), "length", c.cache.Len())
-
-	return nil
-}
-
-var _ TipSetObserver = (*TipSetBlockIndexer)(nil)
-
-// A TipSetBlockIndexer waits for tipsets and persists their block data into a database.
-type TipSetBlockIndexer struct {
-	data    *UnindexedBlockData
-	storage model.Storage
-}
-
-func NewTipSetBlockIndexer(d *storage.Database) *TipSetBlockIndexer {
-	return &TipSetBlockIndexer{
-		data:    NewUnindexedBlockData(),
-		storage: d,
-	}
-}
-
-func (t *TipSetBlockIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
-	t.data.AddTipSet(ts)
-	if t.data.Size() > 0 {
-		// persist the blocks to storage
-		log.Debugw("persisting batch", "count", t.data.Size(), "height", t.data.Height())
-		if err := t.storage.PersistBatch(ctx, t.data); err != nil {
-			return xerrors.Errorf("persist: %w", err)
-		}
-	}
 
 	return nil
 }

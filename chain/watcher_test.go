@@ -1,7 +1,9 @@
-package indexer
+package chain
 
 import (
 	"context"
+	"github.com/filecoin-project/lotus/chain/actors/builtin"
+	"github.com/raulk/clock"
 	"os"
 	"testing"
 	"time"
@@ -21,7 +23,6 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
-	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
@@ -39,7 +40,7 @@ func init() {
 	verifreg.MinVerifiedDealSize = big.NewInt(256)
 }
 
-func TestChainHeadIndexer(t *testing.T) {
+func TestWatcher(t *testing.T) {
 	if testing.Short() {
 		t.Skip("short testing requested")
 	}
@@ -63,9 +64,15 @@ func TestChainHeadIndexer(t *testing.T) {
 
 	apitest.MineUntilBlock(ctx, t, node, sn[0], nil)
 
-	blockIndexer := NewTipSetBlockIndexer(&storage.Database{DB: db})
+	strg := &storage.Database{
+		DB:     db,
+		Clock:  clock.NewMock(),
+		Upsert: false,
+	}
+
+	tsIndexer, err := NewTipSetIndexer(opener, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
 	t.Logf("initializing indexer")
-	idx := NewChainHeadIndexer(blockIndexer, opener, 0)
+	idx := NewWatcher(tsIndexer, opener, 0)
 
 	newHeads, err := node.ChainNotify(ctx)
 	require.NoError(t, err, "chain notify")
@@ -80,13 +87,14 @@ func TestChainHeadIndexer(t *testing.T) {
 
 	cids := bhs.Cids()
 	rounds := bhs.Rounds()
-	chainHead, err := node.ChainHead(ctx)
-	require.NoError(t, err, "ChainHead")
-
-	tipSetKeys := []string{chainHead.Key().String()}
 
 	err = idx.index(ctx, nh)
 	require.NoError(t, err, "index")
+
+	// TODO NewTipSetIndexer runs its processors in their own go routines (started when TipSet() is called)
+	// this causes this test to behave nondeterministicly so we sleep here to ensure all async jobs
+	// have completed before asserting results
+	time.Sleep(time.Second * 3)
 
 	t.Run("block_headers", func(t *testing.T) {
 		var count int
@@ -126,20 +134,6 @@ func TestChainHeadIndexer(t *testing.T) {
 			exists, err := db.Model(m).Where("round = ?", round).Exists()
 			require.NoError(t, err)
 			assert.True(t, exists, "round: %d", round)
-		}
-	})
-
-	t.Run("visor_processing_tipsets", func(t *testing.T) {
-		var count int
-		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_tipsets`)
-		require.NoError(t, err)
-		assert.Equal(t, len(tipSetKeys), count)
-
-		var m *visor.ProcessingTipSet
-		for _, tsk := range tipSetKeys {
-			exists, err := db.Model(m).Where("tip_set = ?", tsk).Exists()
-			require.NoError(t, err)
-			assert.True(t, exists, "tsk: %s", tsk)
 		}
 	})
 }
@@ -214,9 +208,6 @@ func truncateBlockTables(tb testing.TB, db *pg.DB) error {
 
 	_, err = db.Exec(`TRUNCATE TABLE drand_block_entries`)
 	require.NoError(tb, err, "drand_block_entries")
-
-	_, err = db.Exec(`TRUNCATE TABLE visor_processing_tipsets`)
-	require.NoError(tb, err, "visor_processing_tipsets")
 
 	return nil
 }

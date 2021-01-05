@@ -1,8 +1,7 @@
-package indexer
+package chain
 
 import (
 	"context"
-
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opencensus.io/tag"
@@ -15,8 +14,8 @@ import (
 	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
-func NewChainHistoryIndexer(obs TipSetObserver, opener lens.APIOpener, minHeight, maxHeight int64) *ChainHistoryIndexer {
-	return &ChainHistoryIndexer{
+func NewWalker(obs TipSetObserver, opener lens.APIOpener, minHeight, maxHeight int64) *Walker {
+	return &Walker{
 		opener:    opener,
 		obs:       obs,
 		finality:  900,
@@ -25,8 +24,8 @@ func NewChainHistoryIndexer(obs TipSetObserver, opener lens.APIOpener, minHeight
 	}
 }
 
-// ChainHistoryIndexer is a task that indexes blocks by following the chain history.
-type ChainHistoryIndexer struct {
+// Walker is a task that indexes blocks by walking the chain history.
+type Walker struct {
 	opener    lens.APIOpener
 	obs       TipSetObserver
 	finality  int   // epochs after which chain state is considered final
@@ -36,7 +35,7 @@ type ChainHistoryIndexer struct {
 
 // Run starts walking the chain history and continues until the context is done or
 // the start of the chain is reached.
-func (c *ChainHistoryIndexer) Run(ctx context.Context) error {
+func (c *Walker) Run(ctx context.Context) error {
 	node, closer, err := c.opener.Open(ctx)
 	if err != nil {
 		return xerrors.Errorf("open lens: %w", err)
@@ -66,8 +65,8 @@ func (c *ChainHistoryIndexer) Run(ctx context.Context) error {
 	return nil
 }
 
-func (c *ChainHistoryIndexer) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet) error {
-	ctx, span := global.Tracer("").Start(ctx, "ChainHistoryIndexer.WalkChain", trace.WithAttributes(label.Int64("height", c.maxHeight)))
+func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet) error {
+	ctx, span := global.Tracer("").Start(ctx, "Walker.WalkChain", trace.WithAttributes(label.Int64("height", c.maxHeight)))
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "indexhistoryblock"))
