@@ -104,6 +104,7 @@ func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 		return nil, xerrors.Errorf("loading current miner state: %w", err)
 	}
 
+	prevTipset := curTipset
 	prevState := curState
 	if a.Epoch != 0 {
 		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet)
@@ -115,10 +116,16 @@ func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 		if err != nil {
 			return nil, xerrors.Errorf("loading previous miner actor state: %w", err)
 		}
+
+		prevTipset, err = node.ChainGetTipSet(ctx, a.ParentTipSet)
+		if err != nil {
+			return nil, xerrors.Errorf("loading previous tipset: %w", err)
+		}
 	}
 
 	return &MinerStateExtractionContext{
 		PrevState: prevState,
+		PrevTs:    prevTipset,
 		CurrActor: curActor,
 		CurrState: curState,
 		CurrTs:    curTipset,
@@ -127,6 +134,7 @@ func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 
 type MinerStateExtractionContext struct {
 	PrevState miner.State
+	PrevTs    *types.TipSet
 
 	CurrActor *types.Actor
 	CurrState miner.State
@@ -384,8 +392,7 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 	addr := actor.Address.String()
 	posts := make(minermodel.MinerSectorPostList, 0)
 	block := actor.TipSet.Cids()[0]
-	height := ec.CurrTs.Height()
-	msgs, err := node.ChainGetBlockMessages(ctx, block)
+	msgs, err := node.ChainGetParentMessages(ctx, block)
 	if err != nil {
 		return nil, xerrors.Errorf("diffing miner posts: %v", err)
 	}
@@ -424,8 +431,9 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 			return err
 		}
 
+		// use previous miner state and tipset state since we are using parent messages
 		if partitions == nil {
-			partitions, err = loadPartitions(ec.CurrState, ec.CurrTs.Height())
+			partitions, err = loadPartitions(ec.PrevState, ec.PrevTs.Height())
 			if err != nil {
 				return err
 			}
@@ -451,7 +459,7 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 
 		for _, s := range sectors {
 			posts = append(posts, &minermodel.MinerSectorPost{
-				Height:         int64(height),
+				Height:         int64(ec.PrevTs.Height()),
 				MinerID:        addr,
 				SectorID:       s,
 				PostMessageCID: msg.Cid().String(),
@@ -460,16 +468,9 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 		return nil
 	}
 
-	for _, msg := range msgs.BlsMessages {
-		if msg.To == actor.Address && msg.Method == 5 /* miner.SubmitWindowedPoSt */ {
-			if err := processPostMsg(msg); err != nil {
-				return nil, err
-			}
-		}
-	}
-	for _, msg := range msgs.SecpkMessages {
+	for _, msg := range msgs {
 		if msg.Message.To == actor.Address && msg.Message.Method == 5 /* miner.SubmitWindowedPoSt */ {
-			if err := processPostMsg(&msg.Message); err != nil {
+			if err := processPostMsg(msg.Message); err != nil {
 				return nil, err
 			}
 		}

@@ -26,7 +26,6 @@ type StoreAPI interface {
 	Store() adt.Store
 }
 
-
 type ChainAPI interface {
 	ChainNotify(context.Context) (<-chan []*api.HeadChange, error)
 	ChainHead(context.Context) (*types.TipSet, error)
@@ -56,7 +55,6 @@ type StateAPI interface {
 	StateReadState(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.ActorState, error)
 	StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error)
 	StateVMCirculatingSupplyInternal(context.Context, types.TipSetKey) (api.CirculatingSupply, error)
-
 }
 
 type APICloser func()

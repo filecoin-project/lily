@@ -75,12 +75,8 @@ func (m *MockAPI) ChainReadObj(ctx context.Context, c cid.Cid) ([]byte, error) {
 	return blk.RawData(), nil
 }
 
-func (m *MockAPI) ChainGetBlockMessages(ctx context.Context, msg cid.Cid) (*api.BlockMessages, error) {
-	return &api.BlockMessages{
-		BlsMessages:   []*types.Message{},
-		SecpkMessages: []*types.SignedMessage{},
-		Cids:          []cid.Cid{},
-	}, nil
+func (m *MockAPI) ChainGetParentMessages(ctx context.Context, msg cid.Cid) ([]api.Message, error) {
+	return []api.Message{}, nil
 }
 
 func (m *MockAPI) ChainGetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error) {

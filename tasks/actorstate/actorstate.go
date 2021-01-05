@@ -32,7 +32,7 @@ type ActorInfo struct {
 // ActorStateAPI is the minimal subset of lens.API that is needed for actor state extraction
 type ActorStateAPI interface {
 	ChainGetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error)
-	ChainGetBlockMessages(ctx context.Context, msg cid.Cid) (*api.BlockMessages, error)
+	ChainGetParentMessages(ctx context.Context, msg cid.Cid) ([]api.Message, error)
 	StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error)
 	ChainHasObj(ctx context.Context, obj cid.Cid) (bool, error)
 	ChainReadObj(ctx context.Context, obj cid.Cid) ([]byte, error)
