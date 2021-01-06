@@ -49,6 +49,19 @@ func init() {
 	COMMENT ON COLUMN chain_economics.mined_fil IS 'The amount of FIL (atto-FIL) that has been mined by storage miners.';
 	COMMENT ON COLUMN chain_economics.parent_state_root IS 'CID of the parent state root at this epoch.';
 	COMMENT ON COLUMN chain_economics.vested_fil IS 'Total amount of FIL (atto-FIL) that is vested from genesis allocation.';
+
+	COMMENT ON TABLE chain_powers IS 'Power summaries.';
+	COMMENT ON COLUMN chain_powers.height IS 'Epoch this power summary applies to.';
+	COMMENT ON COLUMN chain_powers.miner_count IS 'Total number of miners.';
+	COMMENT ON COLUMN chain_powers.participating_miner_count IS 'Total number of miners with power above the minimum miner threshold.';
+	COMMENT ON COLUMN chain_powers.qa_smoothed_position_estimate IS 'Total power smoothed position estimate - Alpha Beta Filter "position" (value) estimate in Q.128 format.';
+	COMMENT ON COLUMN chain_powers.qa_smoothed_velocity_estimate IS 'Total power smoothed velocity estimate - Alpha Beta Filter "velocity" (rate of change of value) estimate in Q.128 format.';
+	COMMENT ON COLUMN chain_powers.state_root IS 'CID of the parent state root at this epoch.';
+	COMMENT ON COLUMN chain_powers.total_pledge_collateral IS 'Total locked FIL (atto-FIL) miners have pledged as collateral in order to participate in the economy.';
+	COMMENT ON COLUMN chain_powers.total_qa_bytes_committed IS 'Total provably committed, quality adjusted storage power in bytes.';
+	COMMENT ON COLUMN chain_powers.total_qa_bytes_power IS 'Total quality adjusted storage power in bytes in the network.';
+	COMMENT ON COLUMN chain_powers.total_raw_bytes_committed IS 'Total provably committed storage power in bytes.';
+	COMMENT ON COLUMN chain_powers.total_raw_bytes_power IS 'Total storage power in bytes in the network.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -94,6 +107,19 @@ func init() {
 	COMMENT ON COLUMN chain_economics.mined_fil IS NULL;
 	COMMENT ON COLUMN chain_economics.parent_state_root IS NULL;
 	COMMENT ON COLUMN chain_economics.vested_fil IS NULL;
+
+	COMMENT ON TABLE chain_powers IS NULL;
+	COMMENT ON COLUMN chain_powers.height IS NULL;
+	COMMENT ON COLUMN chain_powers.miner_count IS NULL;
+	COMMENT ON COLUMN chain_powers.participating_miner_count IS NULL;
+	COMMENT ON COLUMN chain_powers.qa_smoothed_position_estimate IS NULL;
+	COMMENT ON COLUMN chain_powers.qa_smoothed_velocity_estimate IS NULL;
+	COMMENT ON COLUMN chain_powers.state_root IS NULL;
+	COMMENT ON COLUMN chain_powers.total_pledge_collateral IS NULL;
+	COMMENT ON COLUMN chain_powers.total_qa_bytes_committed IS NULL;
+	COMMENT ON COLUMN chain_powers.total_qa_bytes_power IS NULL;
+	COMMENT ON COLUMN chain_powers.total_raw_bytes_committed IS NULL;
+	COMMENT ON COLUMN chain_powers.total_raw_bytes_power IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
