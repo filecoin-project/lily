@@ -41,6 +41,14 @@ func init() {
 	COMMENT ON COLUMN block_parents.block IS 'CID of the block.';
 	COMMENT ON COLUMN block_parents.height IS 'Epoch when the block was mined.';
 	COMMENT ON COLUMN block_parents.parent IS 'CID of the parent block.';
+
+	COMMENT ON TABLE chain_economics IS 'Economic summaries per state root CID.';
+	COMMENT ON COLUMN chain_economics.burnt_fil IS 'Total FIL (atto-FIL) burned as part of penalties and on-chain computations.';
+	COMMENT ON COLUMN chain_economics.circulating_fil IS 'The amount of FIL (atto-FIL) circulating and tradeable in the economy. The basis for Market Cap calculations.';
+	COMMENT ON COLUMN chain_economics.locked_fil IS 'The amount of FIL (atto-FIL) locked as part of mining, deals, and other mechanisms.';
+	COMMENT ON COLUMN chain_economics.mined_fil IS 'The amount of FIL (atto-FIL) that has been mined by storage miners.';
+	COMMENT ON COLUMN chain_economics.parent_state_root IS 'CID of the parent state root at this epoch.';
+	COMMENT ON COLUMN chain_economics.vested_fil IS 'Total amount of FIL (atto-FIL) that is vested from genesis allocation.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -78,6 +86,14 @@ func init() {
 	COMMENT ON COLUMN block_parents.block IS NULL;
 	COMMENT ON COLUMN block_parents.height IS NULL;
 	COMMENT ON COLUMN block_parents.parent IS NULL;
+
+	COMMENT ON TABLE chain_economics IS NULL;
+	COMMENT ON COLUMN chain_economics.burnt_fil IS NULL;
+	COMMENT ON COLUMN chain_economics.circulating_fil IS NULL;
+	COMMENT ON COLUMN chain_economics.locked_fil IS NULL;
+	COMMENT ON COLUMN chain_economics.mined_fil IS NULL;
+	COMMENT ON COLUMN chain_economics.parent_state_root IS NULL;
+	COMMENT ON COLUMN chain_economics.vested_fil IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
