@@ -36,6 +36,11 @@ func init() {
 	COMMENT ON COLUMN block_messages.block IS 'CID of the block that contains the message.';
 	COMMENT ON COLUMN block_messages.height IS 'Epoch when the block was mined.';
 	COMMENT ON COLUMN block_messages.message IS 'CID of a message in the block.';
+
+	COMMENT ON TABLE block_parents IS 'Block CIDs to many parent Block CIDs.';
+	COMMENT ON COLUMN block_parents.block IS 'CID of the block.';
+	COMMENT ON COLUMN block_parents.height IS 'Epoch when the block was mined.';
+	COMMENT ON COLUMN block_parents.parent IS 'CID of the parent block.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -68,6 +73,11 @@ func init() {
 	COMMENT ON COLUMN block_messages.block IS NULL;
 	COMMENT ON COLUMN block_messages.height IS NULL;
 	COMMENT ON COLUMN block_messages.message IS NULL;
+
+	COMMENT ON TABLE block_parents IS NULL;
+	COMMENT ON COLUMN block_parents.block IS NULL;
+	COMMENT ON COLUMN block_parents.height IS NULL;
+	COMMENT ON COLUMN block_parents.parent IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
