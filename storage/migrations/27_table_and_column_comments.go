@@ -31,9 +31,43 @@ func init() {
 	COMMENT ON COLUMN block_headers.parent_weight IS 'Aggregate chain weight of the block''s parent set.';
 	COMMENT ON COLUMN block_headers.timestamp IS 'Time the block was mined in Unix time, the number of seconds elapsed since January 1, 1970 UTC.';
 	COMMENT ON COLUMN block_headers.win_count IS 'Number of reward units won in this block.';
+
+	COMMENT ON TABLE block_messages IS 'Message CIDs and the Blocks CID which contain them.';
+	COMMENT ON COLUMN block_messages.block IS 'CID of the block that contains the message.';
+	COMMENT ON COLUMN block_messages.height IS 'Epoch when the block was mined.';
+	COMMENT ON COLUMN block_messages.message IS 'CID of a message in the block.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
+	COMMENT ON COLUMN actor_states.code IS NULL;
+	COMMENT ON COLUMN actor_states.head IS NULL;
+	COMMENT ON COLUMN actor_states.height IS NULL;
+	COMMENT ON COLUMN actor_states.state IS NULL;
+
+	COMMENT ON TABLE actors IS NULL;
+	COMMENT ON COLUMN actors.balance IS NULL;
+	COMMENT ON COLUMN actors.code IS NULL;
+	COMMENT ON COLUMN actors.head IS NULL;
+	COMMENT ON COLUMN actors.height IS NULL;
+	COMMENT ON COLUMN actors.id IS NULL;
+	COMMENT ON COLUMN actors.nonce IS NULL;
+	COMMENT ON COLUMN actors.state_root IS NULL;
+
+	COMMENT ON TABLE block_headers IS NULL;
+	COMMENT ON COLUMN block_headers.cid IS NULL;
+	COMMENT ON COLUMN block_headers.fork_signaling IS NULL;
+	COMMENT ON COLUMN block_headers.height IS NULL;
+	COMMENT ON COLUMN block_headers.miner IS NULL;
+	COMMENT ON COLUMN block_headers.parent_base_fee IS NULL;
+	COMMENT ON COLUMN block_headers.parent_state_root IS NULL;
+	COMMENT ON COLUMN block_headers.parent_weight IS NULL;
+	COMMENT ON COLUMN block_headers.timestamp IS NULL;
+	COMMENT ON COLUMN block_headers.win_count IS NULL;
+
+	COMMENT ON TABLE block_messages IS NULL;
+	COMMENT ON COLUMN block_messages.block IS NULL;
+	COMMENT ON COLUMN block_messages.height IS NULL;
+	COMMENT ON COLUMN block_messages.message IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
