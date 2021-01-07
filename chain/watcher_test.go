@@ -2,11 +2,12 @@ package chain
 
 import (
 	"context"
-	"github.com/filecoin-project/lotus/chain/actors/builtin"
-	"github.com/raulk/clock"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/filecoin-project/lotus/chain/actors/builtin"
+	"github.com/raulk/clock"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
@@ -71,6 +72,7 @@ func TestWatcher(t *testing.T) {
 	}
 
 	tsIndexer, err := NewTipSetIndexer(opener, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
+	require.NoError(t, err, "NewTipSetIndexer")
 	t.Logf("initializing indexer")
 	idx := NewWatcher(tsIndexer, opener, 0)
 
@@ -157,21 +159,6 @@ func (b blockHeaderList) Rounds() []uint64 {
 	}
 
 	return rounds
-}
-
-func collectTipSetKeys(n lens.API, ts *types.TipSet) ([]string, error) {
-	keys := []string{ts.Key().String()}
-
-	for ts.Height() > 0 {
-		parent, err := n.ChainGetTipSet(context.TODO(), ts.Parents())
-		if err != nil {
-			return nil, err
-		}
-		keys = append(keys, parent.Key().String())
-		ts = parent
-	}
-
-	return keys, nil
 }
 
 // collectBlockHeaders walks the chain to collect blocks that should be indexed
