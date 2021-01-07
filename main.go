@@ -53,7 +53,8 @@ func main() {
 			&cli.StringFlag{
 				Name:    "db",
 				EnvVars: []string{"LOTUS_DB"},
-				Value:   "postgres://postgres:password@localhost:5432/postgres?sslmode=disable",
+				Value:   "",
+				Usage:   "A connection string for the postgres database, for example postgres://postgres:password@localhost:5432/postgres",
 			},
 			&cli.IntFlag{
 				Name:    "db-pool-size",
