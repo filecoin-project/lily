@@ -19,7 +19,7 @@ func init() {
 	COMMENT ON COLUMN actors.height IS 'Epoch when this actor was created or updated.';
 	COMMENT ON COLUMN actors.id IS 'Actor address.';
 	COMMENT ON COLUMN actors.nonce IS 'The next actor nonce that is expected to appear on chain.';
-	COMMENT ON COLUMN actors.state_root IS 'CID of the state root at this epoch.';
+	COMMENT ON COLUMN actors.state_root IS 'CID of the state root.';
 
 	COMMENT ON TABLE block_headers IS 'Blocks included in tipsets at an epoch.';
 	COMMENT ON COLUMN block_headers.cid IS 'CID of the block.';
@@ -27,7 +27,7 @@ func init() {
 	COMMENT ON COLUMN block_headers.height IS 'Epoch when this block was mined.';
 	COMMENT ON COLUMN block_headers.miner IS 'Address of the miner who mined this block.';
 	COMMENT ON COLUMN block_headers.parent_base_fee IS 'The base fee after executing the parent tipset.';
-	COMMENT ON COLUMN block_headers.parent_state_root IS 'CID of the block''s parent state root at this epoch.';
+	COMMENT ON COLUMN block_headers.parent_state_root IS 'CID of the block''s parent state root.';
 	COMMENT ON COLUMN block_headers.parent_weight IS 'Aggregate chain weight of the block''s parent set.';
 	COMMENT ON COLUMN block_headers.timestamp IS 'Time the block was mined in Unix time, the number of seconds elapsed since January 1, 1970 UTC.';
 	COMMENT ON COLUMN block_headers.win_count IS 'Number of reward units won in this block.';
@@ -47,21 +47,34 @@ func init() {
 	COMMENT ON COLUMN chain_economics.circulating_fil IS 'The amount of FIL (atto-FIL) circulating and tradeable in the economy. The basis for Market Cap calculations.';
 	COMMENT ON COLUMN chain_economics.locked_fil IS 'The amount of FIL (atto-FIL) locked as part of mining, deals, and other mechanisms.';
 	COMMENT ON COLUMN chain_economics.mined_fil IS 'The amount of FIL (atto-FIL) that has been mined by storage miners.';
-	COMMENT ON COLUMN chain_economics.parent_state_root IS 'CID of the parent state root at this epoch.';
+	COMMENT ON COLUMN chain_economics.parent_state_root IS 'CID of the parent state root.';
 	COMMENT ON COLUMN chain_economics.vested_fil IS 'Total amount of FIL (atto-FIL) that is vested from genesis allocation.';
 
-	COMMENT ON TABLE chain_powers IS 'Power summaries.';
+	COMMENT ON TABLE chain_powers IS 'Power summaries from the Power actor.';
 	COMMENT ON COLUMN chain_powers.height IS 'Epoch this power summary applies to.';
 	COMMENT ON COLUMN chain_powers.miner_count IS 'Total number of miners.';
 	COMMENT ON COLUMN chain_powers.participating_miner_count IS 'Total number of miners with power above the minimum miner threshold.';
 	COMMENT ON COLUMN chain_powers.qa_smoothed_position_estimate IS 'Total power smoothed position estimate - Alpha Beta Filter "position" (value) estimate in Q.128 format.';
 	COMMENT ON COLUMN chain_powers.qa_smoothed_velocity_estimate IS 'Total power smoothed velocity estimate - Alpha Beta Filter "velocity" (rate of change of value) estimate in Q.128 format.';
-	COMMENT ON COLUMN chain_powers.state_root IS 'CID of the parent state root at this epoch.';
+	COMMENT ON COLUMN chain_powers.state_root IS 'CID of the parent state root.';
 	COMMENT ON COLUMN chain_powers.total_pledge_collateral IS 'Total locked FIL (atto-FIL) miners have pledged as collateral in order to participate in the economy.';
 	COMMENT ON COLUMN chain_powers.total_qa_bytes_committed IS 'Total provably committed, quality adjusted storage power in bytes.';
 	COMMENT ON COLUMN chain_powers.total_qa_bytes_power IS 'Total quality adjusted storage power in bytes in the network.';
 	COMMENT ON COLUMN chain_powers.total_raw_bytes_committed IS 'Total provably committed storage power in bytes.';
 	COMMENT ON COLUMN chain_powers.total_raw_bytes_power IS 'Total storage power in bytes in the network.';
+
+	COMMENT ON TABLE chain_rewards IS 'Reward summaries from the Reward actor.';
+	COMMENT ON COLUMN chain_rewards.cum_sum_baseline IS 'Target that CumsumRealized needs to reach for EffectiveNetworkTime to increase. It is measured in byte-epochs (space * time) representing power committed to the network for some duration.';
+	COMMENT ON COLUMN chain_rewards.cum_sum_realized IS 'Cumulative sum of network power capped by BaselinePower(epoch). It is measured in byte-epochs (space * time) representing power committed to the network for some duration.';
+	COMMENT ON COLUMN chain_rewards.effective_baseline_power IS 'The baseline power (in bytes) at the EffectiveNetworkTime epoch.';
+	COMMENT ON COLUMN chain_rewards.effective_network_time IS 'Ceiling of real effective network time "theta" based on CumsumBaselinePower(theta) == CumsumRealizedPower. Theta captures the notion of how much the network has progressed in its baseline and in advancing network time.';
+	COMMENT ON COLUMN chain_rewards.height IS 'Epoch this rewards summary applies to.';
+	COMMENT ON COLUMN chain_rewards.new_baseline_power IS 'The baseline power (in bytes) the network is targeting.';
+	COMMENT ON COLUMN chain_rewards.new_reward IS 'The reward to be paid in per WinCount to block producers. The actual reward total paid out depends on the number of winners in any round. This value is recomputed every non-null epoch and used in the next non-null epoch.';
+	COMMENT ON COLUMN chain_rewards.new_reward_smoothed_position_estimate IS 'Smoothed reward position estimate - Alpha Beta Filter "position" (value) estimate in Q.128 format.';
+	COMMENT ON COLUMN chain_rewards.new_reward_smoothed_velocity_estimate IS 'Smoothed reward velocity estimate - Alpha Beta Filter "velocity" (rate of change of value) estimate in Q.128 format.';
+	COMMENT ON COLUMN chain_rewards.state_root IS 'CID of the parent state root.';
+	COMMENT ON COLUMN chain_rewards.total_mined_reward IS 'The total FIL (atto-FIL) awarded to block miners.'
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
