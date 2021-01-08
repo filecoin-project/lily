@@ -6,20 +6,12 @@ import (
 
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
-	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/model"
 	chainmodel "github.com/filecoin-project/sentinel-visor/model/chain"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 )
-
-const (
-	idleSleepInterval = 60 * time.Second       // time to wait if the processor runs out of blocks to process
-	batchInterval     = 100 * time.Millisecond // time to wait between batches
-)
-
-var log = logging.Logger("chain")
 
 type EconomicsStorage interface {
 	PersistBatch(ctx context.Context, ps ...model.Persistable) error

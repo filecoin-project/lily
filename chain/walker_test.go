@@ -2,10 +2,11 @@ package chain
 
 import (
 	"context"
-	"github.com/filecoin-project/lotus/chain/actors/builtin"
-	"github.com/raulk/clock"
 	"testing"
 	"time"
+
+	"github.com/filecoin-project/lotus/chain/actors/builtin"
+	"github.com/raulk/clock"
 
 	apitest "github.com/filecoin-project/lotus/api/test"
 	nodetest "github.com/filecoin-project/lotus/node/test"
@@ -61,6 +62,7 @@ func TestWalker(t *testing.T) {
 	}
 
 	tsIndexer, err := NewTipSetIndexer(opener, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
+	require.NoError(t, err, "NewTipSetIndexer")
 	t.Logf("initializing indexer")
 	idx := NewWalker(tsIndexer, opener, 0, int64(head.Height()))
 

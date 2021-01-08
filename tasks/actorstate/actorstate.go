@@ -3,7 +3,6 @@ package actorstate
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
@@ -20,8 +19,6 @@ import (
 )
 
 var log = logging.Logger("actorstate")
-
-const batchInterval = 100 * time.Millisecond // time to wait between batches
 
 type ActorInfo struct {
 	Actor           types.Actor
