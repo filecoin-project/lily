@@ -74,7 +74,7 @@ func init() {
 	COMMENT ON COLUMN chain_rewards.new_reward_smoothed_position_estimate IS 'Smoothed reward position estimate - Alpha Beta Filter "position" (value) estimate in Q.128 format.';
 	COMMENT ON COLUMN chain_rewards.new_reward_smoothed_velocity_estimate IS 'Smoothed reward velocity estimate - Alpha Beta Filter "velocity" (rate of change of value) estimate in Q.128 format.';
 	COMMENT ON COLUMN chain_rewards.state_root IS 'CID of the parent state root.';
-	COMMENT ON COLUMN chain_rewards.total_mined_reward IS 'The total FIL (atto-FIL) awarded to block miners.'
+	COMMENT ON COLUMN chain_rewards.total_mined_reward IS 'The total FIL (atto-FIL) awarded to block miners.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -133,6 +133,19 @@ func init() {
 	COMMENT ON COLUMN chain_powers.total_qa_bytes_power IS NULL;
 	COMMENT ON COLUMN chain_powers.total_raw_bytes_committed IS NULL;
 	COMMENT ON COLUMN chain_powers.total_raw_bytes_power IS NULL;
+
+	COMMENT ON TABLE chain_rewards IS NULL;
+	COMMENT ON COLUMN chain_rewards.cum_sum_baseline IS NULL;
+	COMMENT ON COLUMN chain_rewards.cum_sum_realized IS NULL;
+	COMMENT ON COLUMN chain_rewards.effective_baseline_power IS NULL;
+	COMMENT ON COLUMN chain_rewards.effective_network_time IS NULL;
+	COMMENT ON COLUMN chain_rewards.height IS NULL;
+	COMMENT ON COLUMN chain_rewards.new_baseline_power IS NULL;
+	COMMENT ON COLUMN chain_rewards.new_reward IS NULL;
+	COMMENT ON COLUMN chain_rewards.new_reward_smoothed_position_estimate IS NULL;
+	COMMENT ON COLUMN chain_rewards.new_reward_smoothed_velocity_estimate IS NULL;
+	COMMENT ON COLUMN chain_rewards.state_root IS NULL;
+	COMMENT ON COLUMN chain_rewards.total_mined_reward IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
