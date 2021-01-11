@@ -130,6 +130,7 @@ func main() {
 			},
 		},
 		Commands: []*cli.Command{
+			commands.Dot,
 			commands.Migrate,
 			commands.Walk,
 			commands.Watch,
