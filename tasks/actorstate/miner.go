@@ -3,6 +3,7 @@ package actorstate
 import (
 	"bytes"
 	"context"
+	"errors"
 
 	"github.com/filecoin-project/go-address"
 	maddr "github.com/multiformats/go-multiaddr"
@@ -109,6 +110,9 @@ func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 	if a.Epoch != 0 {
 		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet)
 		if err != nil {
+			if errors.Is(err, types.ErrActorNotFound) {
+				log.Info("can't find it")
+			}
 			return nil, xerrors.Errorf("loading previous miner %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet, a.Epoch, err)
 		}
 
