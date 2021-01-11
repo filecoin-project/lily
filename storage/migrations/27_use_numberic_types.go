@@ -2,7 +2,7 @@ package migrations
 
 import "github.com/go-pg/migrations/v8"
 
-// Schema version 26 converts string types containing numbers to numeric types.
+// Schema version 27 converts string types containing numbers to numeric types.
 
 func init() {
 	up := batch(`
