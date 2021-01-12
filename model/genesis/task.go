@@ -3,59 +3,61 @@ package genesis
 import (
 	"context"
 
-	"github.com/go-pg/pg/v10"
-	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
 	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
+	"github.com/filecoin-project/sentinel-visor/model/actors/multisig"
 	"github.com/filecoin-project/sentinel-visor/model/actors/power"
 )
 
 type ProcessGenesisSingletonResult struct {
 	minerResults    miner.MinerTaskResultList
+	msigResults     multisig.MultisigTaskResultList
 	marketResult    *GenesisMarketTaskResult
 	initActorResult *GenesisInitActorTaskResult
 	powerResult     *power.PowerTaskResult
 }
 
-func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, db *pg.DB) error {
-	ctx, span := global.Tracer("").Start(ctx, "ProcessGenesisSingletonResult.Persist")
-	defer span.End()
+func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, s model.StorageBatch) error {
+	// marshal miner actors
+	if err := r.minerResults.Persist(ctx, s); err != nil {
+		return xerrors.Errorf("persisting miner task result list: %w", err)
+	}
+	// marshal market actor
+	if r.marketResult != nil {
+		if err := r.marketResult.DealModels.Persist(ctx, s); err != nil {
+			return err
+		}
+		if err := r.marketResult.ProposalModels.Persist(ctx, s); err != nil {
+			return err
+		}
+	}
+	// marshal init actor
+	if r.initActorResult != nil {
+		if err := r.initActorResult.AddressMap.Persist(ctx, s); err != nil {
+			return err
+		}
+	}
+	// marshal power actor
+	if r.powerResult != nil {
+		if err := r.powerResult.Persist(ctx, s); err != nil {
+			return err
+		}
+	}
+	// marshal multisig actor
+	if r.msigResults != nil {
+		if err := r.msigResults.Persist(ctx, s); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
-	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		// persist miner actors
-		if err := r.minerResults.PersistWithTx(ctx, tx); err != nil {
-			return xerrors.Errorf("persisting miner task result list: %w", err)
-		}
-		// persist market actor
-		if r.marketResult != nil {
-			if err := r.marketResult.DealModels.PersistWithTx(ctx, tx); err != nil {
-				return err
-			}
-			if err := r.marketResult.ProposalModels.PersistWithTx(ctx, tx); err != nil {
-				return err
-			}
-		}
-		// persist init actor
-		if r.initActorResult != nil {
-			if err := r.initActorResult.AddressMap.PersistWithTx(ctx, tx); err != nil {
-				return err
-			}
-		}
-		// persist power actor
-		if r.powerResult != nil {
-			if err := r.powerResult.PersistWithTx(ctx, tx); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
+func (r *ProcessGenesisSingletonResult) AddMsig(m *multisig.MultisigTaskResult) {
+	r.msigResults = append(r.msigResults, m)
 }
 
 func (r *ProcessGenesisSingletonResult) AddMiner(m *miner.MinerTaskResult) {
@@ -97,6 +99,27 @@ type GenesisMarketTaskResult struct {
 	ProposalModels market.MarketDealProposals
 }
 
+func (g *GenesisMarketTaskResult) Persist(ctx context.Context, s model.StorageBatch) error {
+	if g.DealModels != nil {
+		if err := g.DealModels.Persist(ctx, s); err != nil {
+			return err
+		}
+	}
+	if g.ProposalModels != nil {
+		if err := g.ProposalModels.Persist(ctx, s); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type GenesisInitActorTaskResult struct {
 	AddressMap init_.IdAddressList
+}
+
+func (g *GenesisInitActorTaskResult) Persist(ctx context.Context, s model.StorageBatch) error {
+	if g.AddressMap != nil {
+		return g.AddressMap.Persist(ctx, s)
+	}
+	return nil
 }

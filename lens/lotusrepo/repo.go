@@ -9,18 +9,14 @@ import (
 	"github.com/filecoin-project/go-fil-markets/storagemarket"
 	"github.com/filecoin-project/go-multistore"
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lotus/journal"
-	"github.com/filecoin-project/sentinel-visor/lens"
-	peer "github.com/libp2p/go-libp2p-peer"
-	"github.com/urfave/cli/v2"
-
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/lotus/extern/sector-storage/ffiwrapper"
-	"github.com/filecoin-project/lotus/lib/cachebs"
+	"github.com/filecoin-project/lotus/journal"
+	"github.com/filecoin-project/lotus/lib/bufbstore"
 	"github.com/filecoin-project/lotus/lib/ulimit"
 	marketevents "github.com/filecoin-project/lotus/markets/loggers"
 	"github.com/filecoin-project/lotus/node/impl"
@@ -29,8 +25,12 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/runtime/proof"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
-	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	cbor "github.com/ipfs/go-ipld-cbor"
+	peer "github.com/libp2p/go-libp2p-core/peer"
+	"github.com/urfave/cli/v2"
+
+	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/lens/util"
 )
 
 type APIOpener struct {
@@ -58,12 +58,21 @@ func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 		return nil, nil, fmt.Errorf("lotus repo doesn't exist")
 	}
 
-	lr, err := r.LockRO(repo.FullNode)
+	var lr repo.LockedRepo
+	if c.Bool("repo-read-only") {
+		lr, err = r.LockRO(repo.FullNode)
+	} else {
+		lr, err = r.Lock(repo.FullNode)
+	}
 	if err != nil {
 		return nil, nil, err
 	}
 
-	ds, err := lr.Datastore("/chain")
+	sf := func() {
+		lr.Close()
+	}
+
+	bs, err := lr.Blockstore(repo.BlockstoreChain)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -73,7 +82,7 @@ func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 		return nil, nil, err
 	}
 
-	cs := store.NewChainStore(blockstore.NewBlockstore(ds), mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
+	cs := store.NewChainStore(bs, bs, mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
 	if err := cs.Load(); err != nil {
 		return nil, nil, err
 	}
@@ -85,10 +94,6 @@ func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 	rapi.FullNodeAPI.StateAPI.Chain = cs
 	rapi.FullNodeAPI.StateAPI.StateManager = sm
 	rapi.FullNodeAPI.StateAPI.StateModuleAPI = &full.StateModule{Chain: cs, StateManager: sm}
-
-	sf := func() {
-		lr.Close()
-	}
 
 	rapi.Context = c.Context
 	rapi.cacheSize = c.Int("lens-cache-hint")
@@ -109,9 +114,13 @@ func (ra *RepoAPI) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, g
 	return vm.ComputeGasOutputs(gasUsed, gasLimit, baseFee, feeCap, gasPremium)
 }
 
+func (ra *RepoAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
+	return util.GetExecutedMessagesForTipset(ctx, ra.FullNodeAPI.ChainAPI.Chain, ts, pts)
+}
+
 func (ra *RepoAPI) Store() adt.Store {
 	bs := ra.FullNodeAPI.ChainAPI.Chain.Blockstore()
-	cachedStore := cachebs.NewBufferedBstore(bs, ra.cacheSize)
+	cachedStore := bufbstore.NewBufferedBstore(bs)
 	cs := cbor.NewCborStore(cachedStore)
 	adtStore := adt.WrapStore(ra.Context, cs)
 	return adtStore

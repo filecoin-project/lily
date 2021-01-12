@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
-	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type BlockHeader struct {
@@ -22,9 +22,6 @@ type BlockHeader struct {
 	WinCount      int64  `pg:",use_zero"`
 	Timestamp     uint64 `pg:",use_zero"`
 	ForkSignaling uint64 `pg:",use_zero"`
-
-	Ticket        []byte
-	ElectionProof []byte
 }
 
 func NewBlockHeader(bh *types.BlockHeader) *BlockHeader {
@@ -38,38 +35,20 @@ func NewBlockHeader(bh *types.BlockHeader) *BlockHeader {
 		WinCount:        bh.ElectionProof.WinCount,
 		Timestamp:       bh.Timestamp,
 		ForkSignaling:   bh.ForkSignaling,
-		Ticket:          bh.Ticket.VRFProof,
-		ElectionProof:   bh.ElectionProof.VRFProof,
 	}
 }
 
-func (bh *BlockHeader) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx, bh).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting block header: %w", err)
-	}
-	return nil
+func (bh *BlockHeader) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, bh)
 }
 
 type BlockHeaders []*BlockHeader
 
-func (bh BlockHeaders) Persist(ctx context.Context, db *pg.DB) error {
-	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return bh.PersistWithTx(ctx, tx)
-	})
-}
-
-func (bh BlockHeaders) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if len(bh) == 0 {
+func (bhl BlockHeaders) Persist(ctx context.Context, s model.StorageBatch) error {
+	if len(bhl) == 0 {
 		return nil
 	}
-	ctx, span := global.Tracer("").Start(ctx, "BlockHeaders.PersistWithTx", trace.WithAttributes(label.Int("count", len(bh))))
+	ctx, span := global.Tracer("").Start(ctx, "BlockHeaders.Persist", trace.WithAttributes(label.Int("count", len(bhl))))
 	defer span.End()
-	if _, err := tx.ModelContext(ctx, &bh).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting block headers: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, bhl)
 }

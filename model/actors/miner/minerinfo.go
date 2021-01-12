@@ -3,9 +3,9 @@ package miner
 import (
 	"context"
 
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
-	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type MinerInfo struct {
@@ -26,29 +26,19 @@ type MinerInfo struct {
 	MultiAddresses   []string
 }
 
-func (m *MinerInfo) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerInfoModel.PersistWithTx")
+func (m *MinerInfo) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerInfoModel.Persist")
 	defer span.End()
-	if _, err := tx.ModelContext(ctx, m).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting miner info current: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, m)
 }
 
 type MinerInfoList []*MinerInfo
 
-func (ml MinerInfoList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerInfoList.PersistWithTx")
+func (ml MinerInfoList) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerInfoList.Persist")
 	defer span.End()
 	if len(ml) == 0 {
 		return nil
 	}
-	if _, err := tx.ModelContext(ctx, &ml).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting miner info list: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, ml)
 }

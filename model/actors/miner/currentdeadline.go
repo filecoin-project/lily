@@ -3,9 +3,9 @@ package miner
 import (
 	"context"
 
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
-	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type MinerCurrentDeadlineInfo struct {
@@ -21,29 +21,19 @@ type MinerCurrentDeadlineInfo struct {
 	FaultCutoff   int64  `pg:",notnull,use_zero"`
 }
 
-func (m *MinerCurrentDeadlineInfo) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerCurrentDeadlineInfo.PersistWithTx")
+func (m *MinerCurrentDeadlineInfo) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerCurrentDeadlineInfo.Persist")
 	defer span.End()
-	if _, err := tx.ModelContext(ctx, m).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting miner current deadline: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, m)
 }
 
 type MinerCurrentDeadlineInfoList []*MinerCurrentDeadlineInfo
 
-func (ml MinerCurrentDeadlineInfoList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerCurrentDeadlineInfoList.PersistWithTx")
+func (ml MinerCurrentDeadlineInfoList) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerCurrentDeadlineInfoList.Persist")
 	defer span.End()
 	if len(ml) == 0 {
 		return nil
 	}
-	if _, err := tx.ModelContext(ctx, &ml).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting miner current deadline list: %w")
-	}
-	return nil
+	return s.PersistModel(ctx, ml)
 }

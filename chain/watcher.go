@@ -1,9 +1,7 @@
-package indexer
+package chain
 
 import (
 	"context"
-
-	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
@@ -13,34 +11,31 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
-var log = logging.Logger("indexer")
-
-// NewChainHeadIndexer creates a new ChainHeadIndexer. confidence sets the number of tipsets that will be held
+// NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held
 // in a cache awaiting possible reversion. Tipsets will be written to the database when they are evicted from
 // the cache due to incoming later tipsets.
-func NewChainHeadIndexer(d *storage.Database, opener lens.APIOpener, confidence int) *ChainHeadIndexer {
-	return &ChainHeadIndexer{
+func NewWatcher(obs TipSetObserver, opener lens.APIOpener, confidence int) *Watcher {
+	return &Watcher{
 		opener:     opener,
-		storage:    d,
+		obs:        obs,
 		confidence: confidence,
 		cache:      NewTipSetCache(confidence),
 	}
 }
 
-// ChainHeadIndexer is a task that indexes blocks by following the chain head.
-type ChainHeadIndexer struct {
+// Watcher is a task that indexes blocks by following the chain head.
+type Watcher struct {
 	opener     lens.APIOpener
-	storage    *storage.Database
+	obs        TipSetObserver
 	confidence int          // size of tipset cache
 	cache      *TipSetCache // caches tipsets for possible reversion
 }
 
 // Run starts following the chain head and blocks until the context is done or
 // an error occurs.
-func (c *ChainHeadIndexer) Run(ctx context.Context) error {
+func (c *Watcher) Run(ctx context.Context) error {
 	node, closer, err := c.opener.Open(ctx)
 	if err != nil {
 		return xerrors.Errorf("open lens: %w", err)
@@ -68,13 +63,11 @@ func (c *ChainHeadIndexer) Run(ctx context.Context) error {
 	}
 }
 
-func (c *ChainHeadIndexer) index(ctx context.Context, headEvents []*lotus_api.HeadChange) error {
-	ctx, span := global.Tracer("").Start(ctx, "ChainHeadIndexer.index")
+func (c *Watcher) index(ctx context.Context, headEvents []*lotus_api.HeadChange) error {
+	ctx, span := global.Tracer("").Start(ctx, "Watcher.index")
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "indexheadblock"))
-
-	data := NewUnindexedBlockData()
 
 	for _, ch := range headEvents {
 		switch ch.Type {
@@ -85,9 +78,11 @@ func (c *ChainHeadIndexer) index(ctx context.Context, headEvents []*lotus_api.He
 				log.Errorw("tipset cache set current", "error", err.Error())
 			}
 
-			// If we have a zero confidence window then we need to index every tipset we see
+			// If we have a zero confidence window then we need to notify every tipset we see
 			if c.confidence == 0 {
-				data.AddTipSet(ch.Val)
+				if err := c.obs.TipSet(ctx, ch.Val); err != nil {
+					return xerrors.Errorf("notify tipset: %w", err)
+				}
 			}
 		case store.HCApply:
 			log.Debugw("add tipset", "height", ch.Val.Height(), "tipset", ch.Val.Key().String())
@@ -96,9 +91,11 @@ func (c *ChainHeadIndexer) index(ctx context.Context, headEvents []*lotus_api.He
 				log.Errorw("tipset cache add", "error", err.Error())
 			}
 
-			// Send the tipset that fell out of the confidence window to the database
+			// Send the tipset that fell out of the confidence window to the observer
 			if tail != nil {
-				data.AddTipSet(tail)
+				if err := c.obs.TipSet(ctx, tail); err != nil {
+					return xerrors.Errorf("notify tipset: %w", err)
+				}
 			}
 
 		case store.HCRevert:
@@ -112,12 +109,5 @@ func (c *ChainHeadIndexer) index(ctx context.Context, headEvents []*lotus_api.He
 
 	log.Debugw("tipset cache", "height", c.cache.Height(), "tail_height", c.cache.TailHeight(), "length", c.cache.Len())
 
-	if data.Size() > 0 {
-		// persist the blocks to storage
-		log.Debugw("persisting batch", "count", data.Size(), "height", data.Height())
-		if err := data.Persist(ctx, c.storage.DB); err != nil {
-			return xerrors.Errorf("persist: %w", err)
-		}
-	}
 	return nil
 }

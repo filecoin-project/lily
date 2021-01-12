@@ -70,6 +70,12 @@ var (
 		Aggregation: defaultMillisecondsDistribution,
 		TagKeys:     []tag.Key{TaskType, API},
 	}
+	LensRequestTotal = &view.View{
+		Name:        "lens_request_total",
+		Measure:     LensRequestDuration,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{TaskType, API},
+	}
 	TipsetHeightView = &view.View{
 		Measure:     TipsetHeight,
 		Aggregation: view.LastValue(),
@@ -77,7 +83,7 @@ var (
 	}
 )
 
-var DefaultViews = append([]*view.View{
+var DefaultViews = []*view.View{
 	ProcessingDurationView,
 	PersistDurationView,
 	BatchSelectionDurationView,
@@ -87,7 +93,7 @@ var DefaultViews = append([]*view.View{
 	EpochsToSyncView,
 	LensRequestDurationView,
 	TipsetHeightView,
-})
+}
 
 // SinceInMilliseconds returns the duration of time since the provide time as a float64.
 func SinceInMilliseconds(startTime time.Time) float64 {

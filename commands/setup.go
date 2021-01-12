@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/pprof"
-	_ "net/http/pprof"
 	"strings"
 	"time"
 
@@ -27,48 +26,54 @@ import (
 	carapi "github.com/filecoin-project/sentinel-visor/lens/carrepo"
 	vapi "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	repoapi "github.com/filecoin-project/sentinel-visor/lens/lotusrepo"
+	s3api "github.com/filecoin-project/sentinel-visor/lens/s3repo"
 	sqlapi "github.com/filecoin-project/sentinel-visor/lens/sqlrepo"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/storage"
+	"github.com/filecoin-project/sentinel-visor/version"
 )
 
 var log = logging.Logger("visor")
 
+// RunContext wraps lens and DB connections.
 type RunContext struct {
-	opener lens.APIOpener
-	closer lens.APICloser
-	db     *storage.Database
+	Opener lens.APIOpener
+	Closer lens.APICloser
+	DB     *storage.Database
 }
 
-func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error) {
-	var opener lens.APIOpener // the api opener that is used by tasks
-	var closer lens.APICloser // a closer that cleans up the opener when exiting the application
-	var err error
-
+// SetupStorageAndAPI setups of the sentinel database and returns a
+// ready-to-use RunContext with Openers and Closers using the chosen lens.
+func SetupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error) {
 	ctx := cctx.Context
-
-	if cctx.String("lens") == "lotus" {
-		opener, closer, err = vapi.NewAPIOpener(cctx, 10_000)
-	} else if cctx.String("lens") == "lotusrepo" {
-		opener, closer, err = repoapi.NewAPIOpener(cctx)
-	} else if cctx.String("lens") == "carrepo" {
-		opener, closer, err = carapi.NewAPIOpener(cctx)
-	} else if cctx.String("lens") == "sql" {
-		opener, closer, err = sqlapi.NewAPIOpener(cctx)
-	}
+	opener, closer, err := setupLens(cctx)
 	if err != nil {
-		return nil, nil, xerrors.Errorf("get node api: %w", err)
+		return nil, nil, xerrors.Errorf("setup lens: %w", err)
 	}
 
-	db, err := storage.NewDatabase(ctx, cctx.String("db"), cctx.Int("db-pool-size"))
+	db, err := setupDatabase(cctx)
 	if err != nil {
 		closer()
-		return nil, nil, xerrors.Errorf("new database: %w", err)
+		return nil, nil, xerrors.Errorf("setup database: %w", err)
+	}
+
+	return ctx, &RunContext{
+		Opener: opener,
+		Closer: closer,
+		DB:     db,
+	}, nil
+}
+
+func setupDatabase(cctx *cli.Context) (*storage.Database, error) {
+	ctx := cctx.Context
+	db, err := storage.NewDatabase(ctx, cctx.String("db"), cctx.Int("db-pool-size"), cctx.String("name"), cctx.Bool("db-allow-upsert"))
+	if err != nil {
+		return nil, xerrors.Errorf("new database: %w", err)
 	}
 
 	if err := db.Connect(ctx); err != nil {
 		if !errors.Is(err, storage.ErrSchemaTooOld) || !cctx.Bool("allow-schema-migration") {
-			return nil, nil, xerrors.Errorf("connect database: %w", err)
+			return nil, xerrors.Errorf("connect database: %w", err)
 		}
 
 		log.Infof("connect database: %v", err.Error())
@@ -77,29 +82,39 @@ func setupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error)
 		log.Info("Migrating schema to latest version")
 		err := db.MigrateSchema(ctx)
 		if err != nil {
-			closer()
-			return nil, nil, xerrors.Errorf("migrate schema: %w", err)
+			return nil, xerrors.Errorf("migrate schema: %w", err)
 		}
 
 		// Try to connect again
 		if err := db.Connect(ctx); err != nil {
-			closer()
-			return nil, nil, xerrors.Errorf("connect database: %w", err)
+			return nil, xerrors.Errorf("connect database: %w", err)
 		}
 	}
 
 	// Make sure the schema is a compatible with what this version of Visor requires
 	if err := db.VerifyCurrentSchema(ctx); err != nil {
-		closer()
 		db.Close(ctx)
-		return nil, nil, xerrors.Errorf("verify schema: %w", err)
+		return nil, xerrors.Errorf("verify schema: %w", err)
 	}
 
-	return ctx, &RunContext{
-		opener: opener,
-		closer: closer,
-		db:     db,
-	}, nil
+	return db, nil
+}
+
+func setupLens(cctx *cli.Context) (lens.APIOpener, lens.APICloser, error) {
+	switch cctx.String("lens") {
+	case "lotus":
+		return vapi.NewAPIOpener(cctx, 10_000)
+	case "lotusrepo":
+		return repoapi.NewAPIOpener(cctx)
+	case "carrepo":
+		return carapi.NewAPIOpener(cctx)
+	case "sql":
+		return sqlapi.NewAPIOpener(cctx)
+	case "s3":
+		return s3api.NewAPIOpener(cctx)
+	default:
+		return nil, nil, xerrors.Errorf("unsupported lens type: %s", cctx.String("lens"))
+	}
 }
 
 func setupTracing(cctx *cli.Context) (func(), error) {
@@ -179,6 +194,8 @@ func setupLogging(cctx *cli.Context) error {
 		}
 
 	}
+
+	log.Infof("Visor version:%s", version.String())
 
 	return nil
 }

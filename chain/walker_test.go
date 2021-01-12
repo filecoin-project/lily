@@ -1,9 +1,12 @@
-package indexer
+package chain
 
 import (
 	"context"
 	"testing"
 	"time"
+
+	"github.com/filecoin-project/lotus/chain/actors/builtin"
+	"github.com/raulk/clock"
 
 	apitest "github.com/filecoin-project/lotus/api/test"
 	nodetest "github.com/filecoin-project/lotus/node/test"
@@ -12,12 +15,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
-	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 
-func TestChainHistoryIndexer(t *testing.T) {
+func TestWalker(t *testing.T) {
 	if testing.Short() {
 		t.Skip("short testing requested")
 	}
@@ -27,14 +29,14 @@ func TestChainHistoryIndexer(t *testing.T) {
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
-	defer cleanup()
+	defer func() { require.NoError(t, cleanup()) }()
 
 	t.Logf("truncating database tables")
 	err = truncateBlockTables(t, db)
 	require.NoError(t, err, "truncating tables")
 
 	t.Logf("preparing chain")
-	nodes, sn := nodetest.Builder(t, apitest.DefaultFullOpts(1), apitest.OneMiner)
+	nodes, sn := nodetest.RPCMockSbBuilder(t, apitest.OneFull, apitest.OneMiner)
 
 	node := nodes[0]
 	opener := testutil.NewAPIOpener(node)
@@ -50,19 +52,28 @@ func TestChainHistoryIndexer(t *testing.T) {
 	bhs, err := collectBlockHeaders(openedAPI, head)
 	require.NoError(t, err, "collect chain blocks")
 
-	tipSetKeys, err := collectTipSetKeys(openedAPI, head)
-	require.NoError(t, err, "collect chain blocks")
-
 	cids := bhs.Cids()
 	rounds := bhs.Rounds()
 
-	d := &storage.Database{DB: db}
+	strg := &storage.Database{
+		DB:     db,
+		Clock:  clock.NewMock(),
+		Upsert: false,
+	}
+
+	tsIndexer, err := NewTipSetIndexer(opener, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
+	require.NoError(t, err, "NewTipSetIndexer")
 	t.Logf("initializing indexer")
-	idx := NewChainHistoryIndexer(d, opener, 1)
+	idx := NewWalker(tsIndexer, opener, 0, int64(head.Height()))
 
 	t.Logf("indexing chain")
-	err = idx.WalkChain(ctx, openedAPI, int64(head.Height()))
+	err = idx.WalkChain(ctx, openedAPI, head)
 	require.NoError(t, err, "WalkChain")
+
+	// TODO NewTipSetIndexer runs its processors in their own go routines (started when TipSet() is called)
+	// this causes this test to behave nondeterministicly so we sleep here to ensure all async jobs
+	// have completed before asserting results
+	time.Sleep(time.Second * 3)
 
 	t.Run("block_headers", func(t *testing.T) {
 		var count int
@@ -92,20 +103,6 @@ func TestChainHistoryIndexer(t *testing.T) {
 		}
 	})
 
-	t.Run("drand_entries", func(t *testing.T) {
-		var count int
-		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM drand_entries`)
-		require.NoError(t, err)
-		assert.Equal(t, len(rounds), count)
-
-		var m *blocks.DrandEntrie
-		for _, round := range rounds {
-			exists, err := db.Model(m).Where("round = ?", round).Exists()
-			require.NoError(t, err)
-			assert.True(t, exists, "round: %d", round)
-		}
-	})
-
 	t.Run("drand_block_entries", func(t *testing.T) {
 		var count int
 		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM drand_block_entries`)
@@ -117,20 +114,6 @@ func TestChainHistoryIndexer(t *testing.T) {
 			exists, err := db.Model(m).Where("round = ?", round).Exists()
 			require.NoError(t, err)
 			assert.True(t, exists, "round: %d", round)
-		}
-	})
-
-	t.Run("visor_processing_tipsets", func(t *testing.T) {
-		var count int
-		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM visor_processing_tipsets`)
-		require.NoError(t, err)
-		assert.Equal(t, len(tipSetKeys), count)
-
-		var m *visor.ProcessingTipSet
-		for _, tsk := range tipSetKeys {
-			exists, err := db.Model(m).Where("tip_set = ?", tsk).Exists()
-			require.NoError(t, err)
-			assert.True(t, exists, "tsk: %s", tsk)
 		}
 	})
 }

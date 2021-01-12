@@ -2,43 +2,32 @@ package miner
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
-	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type MinerSectorDeal struct {
 	Height   int64  `pg:",pk,notnull,use_zero"`
 	MinerID  string `pg:",pk,notnull"`
 	SectorID uint64 `pg:",pk,use_zero"`
-	DealID   uint64 `pg:",use_zero"`
+	DealID   uint64 `pg:",pk,use_zero"`
 }
 
-func (ds *MinerSectorDeal) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx, ds).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return fmt.Errorf("persisting marker deal sector: %v", err)
-	}
-	return nil
+func (ds *MinerSectorDeal) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, ds)
 }
 
 type MinerSectorDealList []*MinerSectorDeal
 
-func (ml MinerSectorDealList) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerSectorDealList.PersistWithTx", trace.WithAttributes(label.Int("count", len(ml))))
+func (ml MinerSectorDealList) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "MinerSectorDealList.Persist", trace.WithAttributes(label.Int("count", len(ml))))
 	defer span.End()
 	if len(ml) == 0 {
 		return nil
 	}
-	if _, err := tx.ModelContext(ctx, &ml).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting miner deal sector list: %w")
-	}
-	return nil
+	return s.PersistModel(ctx, ml)
 }

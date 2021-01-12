@@ -2,12 +2,12 @@ package power
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/go-pg/pg/v10"
 	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 
-	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type ChainPower struct {
@@ -29,22 +29,23 @@ type ChainPower struct {
 	ParticipatingMinerCount uint64 `pg:",use_zero"`
 }
 
-func (cp *ChainPower) Persist(ctx context.Context, db *pg.DB) error {
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
-	return db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		return cp.PersistWithTx(ctx, tx)
-	})
-}
-
-func (cp *ChainPower) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+func (cp *ChainPower) Persist(ctx context.Context, s model.StorageBatch) error {
 	ctx, span := global.Tracer("").Start(ctx, "ChainPower.PersistWithTx")
 	defer span.End()
-	if _, err := tx.ModelContext(ctx, cp).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return fmt.Errorf("persisting chain power: %w", err)
+	return s.PersistModel(ctx, cp)
+}
+
+// ChainPowerList is a slice of ChainPowers for batch insertion.
+type ChainPowerList []*ChainPower
+
+// PersistWithTx makes a batch insertion of the list using the given
+// transaction.
+func (cpl ChainPowerList) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, span := global.Tracer("").Start(ctx, "ChainPowerList.PersistWithTx", trace.WithAttributes(label.Int("count", len(cpl))))
+	defer span.End()
+
+	if len(cpl) == 0 {
+		return nil
 	}
-	return nil
+	return s.PersistModel(ctx, cpl)
 }

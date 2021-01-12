@@ -3,12 +3,11 @@ package messages
 import (
 	"context"
 
-	"github.com/go-pg/pg/v10"
-	"golang.org/x/xerrors"
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type MessageGasEconomy struct {
-	tableName struct{} `pg:"message_gas_economy"`
+	tableName struct{} `pg:"message_gas_economy"` // nolint: structcheck,unused
 	Height    int64    `pg:",pk,notnull,use_zero"`
 	StateRoot string   `pg:",pk,notnull"`
 
@@ -23,11 +22,6 @@ type MessageGasEconomy struct {
 	GasWasteRatio    float64 `pg:",use_zero"`
 }
 
-func (g *MessageGasEconomy) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx, g).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return xerrors.Errorf("persisting derived gas economy: %w", err)
-	}
-	return nil
+func (g *MessageGasEconomy) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, g)
 }

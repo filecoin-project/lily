@@ -3,18 +3,19 @@ package lotus
 import (
 	"context"
 
-	cid "github.com/ipfs/go-cid"
-	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/api/global"
-
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
+	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	cid "github.com/ipfs/go-cid"
+	"go.opencensus.io/tag"
+	"go.opentelemetry.io/otel/api/global"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
@@ -190,4 +191,91 @@ func (aw *APIWrapper) StateVMCirculatingSupplyInternal(ctx context.Context, tsk 
 	ctx, span := global.Tracer("").Start(ctx, "Lotus.StateCirculatingSupply")
 	defer span.End()
 	return aw.FullNode.StateVMCirculatingSupplyInternal(ctx, tsk)
+}
+
+// GetExecutedMessagesForTipset returns a list of messages sent as part of pts (parent) with receipts found in ts (child).
+// No attempt at deduplication of messages is made.
+func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
+	if !types.CidArrsEqual(ts.Parents().Cids(), pts.Cids()) {
+		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", ts.Key(), pts.Key())
+	}
+
+	stateTree, err := state.LoadStateTree(aw.Store(), ts.ParentState())
+	if err != nil {
+		return nil, xerrors.Errorf("load state tree: %w", err)
+	}
+
+	// Build a lookup of actor codes
+	actorCodes := map[address.Address]cid.Cid{}
+	if err := stateTree.ForEach(func(a address.Address, act *types.Actor) error {
+		actorCodes[a] = act.Code
+		return nil
+	}); err != nil {
+		return nil, xerrors.Errorf("iterate actors: %w", err)
+	}
+
+	getActorCode := func(a address.Address) cid.Cid {
+		c, ok := actorCodes[a]
+		if ok {
+			return c
+		}
+
+		return cid.Undef
+	}
+
+	// Build a lookup of which block headers indexed by their cid
+	blockHeaders := map[cid.Cid]*types.BlockHeader{}
+	for _, bh := range pts.Blocks() {
+		blockHeaders[bh.Cid()] = bh
+	}
+
+	// Build a lookup of which blocks each message appears in
+	messageBlocks := map[cid.Cid][]cid.Cid{}
+
+	for _, blkCid := range pts.Cids() {
+		blkMsgs, err := aw.ChainGetBlockMessages(ctx, blkCid)
+		if err != nil {
+			return nil, xerrors.Errorf("get block messages: %w", err)
+		}
+
+		for _, mcid := range blkMsgs.Cids {
+			messageBlocks[mcid] = append(messageBlocks[mcid], blkCid)
+		}
+	}
+
+	// Get messages that were processed in the parent tipset
+	msgs, err := aw.ChainGetParentMessages(ctx, ts.Cids()[0])
+	if err != nil {
+		return nil, xerrors.Errorf("get parent messages: %w", err)
+	}
+
+	// Get receipts for parent messages
+	rcpts, err := aw.ChainGetParentReceipts(ctx, ts.Cids()[0])
+	if err != nil {
+		return nil, xerrors.Errorf("get parent receipts: %w", err)
+	}
+
+	if len(rcpts) != len(msgs) {
+		// logic error somewhere
+		return nil, xerrors.Errorf("mismatching number of receipts: got %d wanted %d", len(rcpts), len(msgs))
+	}
+
+	// Start building a list of completed message with receipt
+	emsgs := make([]*lens.ExecutedMessage, 0, len(msgs))
+
+	for index, m := range msgs {
+		emsgs = append(emsgs, &lens.ExecutedMessage{
+			Cid:           m.Cid,
+			Height:        pts.Height(),
+			Message:       m.Message,
+			Receipt:       rcpts[index],
+			BlockHeader:   blockHeaders[messageBlocks[m.Cid][0]],
+			Blocks:        messageBlocks[m.Cid],
+			Index:         uint64(index),
+			FromActorCode: getActorCode(m.Message.From),
+			ToActorCode:   getActorCode(m.Message.To),
+		})
+	}
+
+	return emsgs, nil
 }

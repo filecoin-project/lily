@@ -47,7 +47,7 @@ func NewPowerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 	if a.Epoch != 0 {
 		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet)
 		if err != nil {
-			return nil, xerrors.Errorf("loading previous power actor at tipset %s epoch %d: %w", a.ParentTipSet, a.Epoch)
+			return nil, xerrors.Errorf("loading previous power actor at tipset %s epoch %d: %w", a.ParentTipSet, a.Epoch, err)
 		}
 
 		prevState, err = power.Load(node.Store(), prevActor)
@@ -69,7 +69,7 @@ type PowerStateExtractionContext struct {
 }
 
 func (p *PowerStateExtractionContext) IsGenesis() bool {
-	return 0 == p.CurrTs.Height()
+	return p.CurrTs.Height() == 0
 }
 
 func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
@@ -122,6 +122,7 @@ func ExtractChainPower(ec *PowerStateExtractionContext) (*powermodel.ChainPower,
 	}
 
 	return &powermodel.ChainPower{
+		Height:                     int64(ec.CurrTs.Height()),
 		StateRoot:                  ec.CurrTs.ParentState().String(),
 		TotalRawBytesPower:         pow.RawBytePower.String(),
 		TotalQABytesPower:          pow.QualityAdjPower.String(),

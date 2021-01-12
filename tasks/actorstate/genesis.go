@@ -13,15 +13,16 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/model"
 	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	marketmodel "github.com/filecoin-project/sentinel-visor/model/actors/market"
 	minermodel "github.com/filecoin-project/sentinel-visor/model/actors/miner"
+	multisigmodel "github.com/filecoin-project/sentinel-visor/model/actors/multisig"
 	powermodel "github.com/filecoin-project/sentinel-visor/model/actors/power"
 	genesismodel "github.com/filecoin-project/sentinel-visor/model/genesis"
-	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
-func NewGenesisProcessor(d *storage.Database, node lens.API) *GenesisProcessor {
+func NewGenesisProcessor(d model.Storage, node lens.API) *GenesisProcessor {
 	return &GenesisProcessor{
 		node:    node,
 		storage: d,
@@ -31,7 +32,7 @@ func NewGenesisProcessor(d *storage.Database, node lens.API) *GenesisProcessor {
 // GenesisProcessor is a task that processes the genesis block
 type GenesisProcessor struct {
 	node    lens.API
-	storage *storage.Database
+	storage model.Storage
 }
 
 func (p *GenesisProcessor) ProcessGenesis(ctx context.Context, gen *types.TipSet) error {
@@ -43,6 +44,7 @@ func (p *GenesisProcessor) ProcessGenesis(ctx context.Context, gen *types.TipSet
 		return xerrors.Errorf("list actors: %w", err)
 	}
 
+	msigExtractor := MultiSigActorExtractor{}
 	minerExtractor := StorageMinerExtractor{}
 	powerExtractor := StoragePowerExtractor{}
 
@@ -106,7 +108,18 @@ func (p *GenesisProcessor) ProcessGenesis(ctx context.Context, gen *types.TipSet
 		case builtin.PaymentChannelActorCodeID:
 			// TODO
 		case builtin.MultisigActorCodeID:
-			// TODO
+			res, err := msigExtractor.Extract(ctx, ActorInfo{
+				Actor:           *genesisAct,
+				Address:         addr,
+				ParentStateRoot: gen.ParentState(),
+				Epoch:           gen.Height(),
+				TipSet:          gen.Key(),
+				ParentTipSet:    gen.Parents(),
+			}, p.node)
+			if err != nil {
+				return xerrors.Errorf("multisig actor state: %w", err)
+			}
+			result.AddMsig(res.(*multisigmodel.MultisigTaskResult))
 		case builtin.RewardActorCodeID:
 			// TODO
 		case builtin.VerifiedRegistryActorCodeID:
@@ -116,7 +129,7 @@ func (p *GenesisProcessor) ProcessGenesis(ctx context.Context, gen *types.TipSet
 		}
 	}
 
-	if err := result.Persist(ctx, p.storage.DB); err != nil {
+	if err := p.storage.PersistBatch(ctx, result); err != nil {
 		return xerrors.Errorf("persist genesis: %w", err)
 	}
 

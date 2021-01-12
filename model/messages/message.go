@@ -2,15 +2,14 @@ package messages
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/go-pg/pg/v10"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type Message struct {
@@ -27,36 +26,24 @@ type Message struct {
 	SizeBytes int    `pg:",use_zero"`
 	Nonce     uint64 `pg:",use_zero"`
 	Method    uint64 `pg:",use_zero"`
-
-	Params []byte
 }
 
-func (m *Message) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
-	if _, err := tx.ModelContext(ctx, m).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return fmt.Errorf("persisting message: %w", err)
-	}
-	return nil
+func (m *Message) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, m)
 }
 
 type Messages []*Message
 
-func (ms Messages) PersistWithTx(ctx context.Context, tx *pg.Tx) error {
+func (ms Messages) Persist(ctx context.Context, s model.StorageBatch) error {
 	if len(ms) == 0 {
 		return nil
 	}
-	ctx, span := global.Tracer("").Start(ctx, "Messages.PersistWithTx", trace.WithAttributes(label.Int("count", len(ms))))
+	ctx, span := global.Tracer("").Start(ctx, "Messages.Persist", trace.WithAttributes(label.Int("count", len(ms))))
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "message/message"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
-	if _, err := tx.ModelContext(ctx, &ms).
-		OnConflict("do nothing").
-		Insert(); err != nil {
-		return fmt.Errorf("persisting messages: %w", err)
-	}
-	return nil
+	return s.PersistModel(ctx, ms)
 }
