@@ -18,9 +18,9 @@ type Message struct {
 
 	From       string `pg:",notnull"`
 	To         string `pg:",notnull"`
-	Value      string `pg:",notnull"`
-	GasFeeCap  string `pg:",notnull"`
-	GasPremium string `pg:",notnull"`
+	Value      string `pg:"type:numeric,notnull"`
+	GasFeeCap  string `pg:"type:numeric,notnull"`
+	GasPremium string `pg:"type:numeric,notnull"`
 
 	GasLimit  int64  `pg:",use_zero"`
 	SizeBytes int    `pg:",use_zero"`

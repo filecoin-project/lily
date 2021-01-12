@@ -12,15 +12,15 @@ import (
 type ChainReward struct {
 	Height                            int64  `pg:",pk,notnull,use_zero"`
 	StateRoot                         string `pg:",pk,notnull"`
-	CumSumBaseline                    string `pg:",notnull"`
-	CumSumRealized                    string `pg:",notnull"`
-	EffectiveBaselinePower            string `pg:",notnull"`
-	NewBaselinePower                  string `pg:",notnull"`
-	NewRewardSmoothedPositionEstimate string `pg:",notnull"`
-	NewRewardSmoothedVelocityEstimate string `pg:",notnull"`
-	TotalMinedReward                  string `pg:",notnull"`
+	CumSumBaseline                    string `pg:"type:numeric,notnull"`
+	CumSumRealized                    string `pg:"type:numeric,notnull"`
+	EffectiveBaselinePower            string `pg:"type:numeric,notnull"`
+	NewBaselinePower                  string `pg:"type:numeric,notnull"`
+	NewRewardSmoothedPositionEstimate string `pg:"type:numeric,notnull"`
+	NewRewardSmoothedVelocityEstimate string `pg:"type:numeric,notnull"`
+	TotalMinedReward                  string `pg:"type:numeric,notnull"`
 
-	NewReward            string `pg:",use_zero"`
+	NewReward            string `pg:"type:numeric,use_zero"`
 	EffectiveNetworkTime int64  `pg:",use_zero"`
 }
 

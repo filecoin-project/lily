@@ -17,9 +17,9 @@ type GasOutputs struct {
 	StateRoot          string   `pg:",pk,notnull"`
 	From               string   `pg:",notnull"`
 	To                 string   `pg:",notnull"`
-	Value              string   `pg:",notnull"`
-	GasFeeCap          string   `pg:",notnull"`
-	GasPremium         string   `pg:",notnull"`
+	Value              string   `pg:"type:numeric,notnull"`
+	GasFeeCap          string   `pg:"type:numeric,notnull"`
+	GasPremium         string   `pg:"type:numeric,notnull"`
 	GasLimit           int64    `pg:",use_zero,notnull"`
 	SizeBytes          int      `pg:",use_zero,notnull"`
 	Nonce              uint64   `pg:",use_zero,notnull"`
@@ -27,12 +27,12 @@ type GasOutputs struct {
 	ActorName          string   `pg:",notnull"`
 	ExitCode           int64    `pg:",use_zero,notnull"`
 	GasUsed            int64    `pg:",use_zero,notnull"`
-	ParentBaseFee      string   `pg:",notnull"`
-	BaseFeeBurn        string   `pg:",notnull"`
-	OverEstimationBurn string   `pg:",notnull"`
-	MinerPenalty       string   `pg:",notnull"`
-	MinerTip           string   `pg:",notnull"`
-	Refund             string   `pg:",notnull"`
+	ParentBaseFee      string   `pg:"type:numeric,notnull"`
+	BaseFeeBurn        string   `pg:"type:numeric,notnull"`
+	OverEstimationBurn string   `pg:"type:numeric,notnull"`
+	MinerPenalty       string   `pg:"type:numeric,notnull"`
+	MinerTip           string   `pg:"type:numeric,notnull"`
+	Refund             string   `pg:"type:numeric,notnull"`
 	GasRefund          int64    `pg:",use_zero,notnull"`
 	GasBurned          int64    `pg:",use_zero,notnull"`
 }

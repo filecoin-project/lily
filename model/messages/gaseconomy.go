@@ -11,11 +11,11 @@ type MessageGasEconomy struct {
 	Height    int64    `pg:",pk,notnull,use_zero"`
 	StateRoot string   `pg:",pk,notnull"`
 
-	BaseFee          float64 `pg:",use_zero"`
+	BaseFee          float64 `pg:"type:numeric,use_zero"`
 	BaseFeeChangeLog float64 `pg:",use_zero"`
 
-	GasLimitTotal       int64 `pg:",use_zero"`
-	GasLimitUniqueTotal int64 `pg:",use_zero"`
+	GasLimitTotal       int64 `pg:"type:numeric,use_zero"`
+	GasLimitUniqueTotal int64 `pg:"type:numeric,use_zero"`
 
 	GasFillRatio     float64 `pg:",use_zero"`
 	GasCapacityRatio float64 `pg:",use_zero"`
