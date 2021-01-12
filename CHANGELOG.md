@@ -5,6 +5,101 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+
+<a name="v0.4.0"></a>
+## [v0.4.0] - 2020-12-16
+### Chore
+- remove test branch and temp deploy config
+
+### Fix
+- Make visor the entrypoint for dev containers
+
+
+<a name="v0.4.0-rc2"></a>
+## [v0.4.0-rc2] - 2020-12-16
+### Feat
+- **ci:** Dockerfile.dev; Refactor docker push steps in circleci.yaml
+
+
+<a name="v0.4.0-rc1"></a>
+## [v0.4.0-rc1] - 2020-12-02
+### DEPRECATION
+
+The CLI interface has shifted again to deprecate the `run` subcommand in favor of dedicated subcommands for `indexer` and `processor` behaviors.
+
+Previously the indexer and procerror would be started via:
+
+```sh
+  sentinel-visor run --indexhead
+  sentinel-visor run --indexhistory
+```
+
+After this change:
+
+```sh
+  sentinel-visor watch
+  sentinel-visor walk
+```
+
+The `run` subcommand will be removed in v0.5.0.
+
+### Feat
+- extract basic account actor states ([#278](https://github.com/filecoin-project/sentinel-visor/issues/278))
+- add watch and walk commands to index chain during traversal ([#249](https://github.com/filecoin-project/sentinel-visor/issues/249))
+- functions to convert unix epoch to fil epoch ([#252](https://github.com/filecoin-project/sentinel-visor/issues/252))
+- add repo-read-only flag to enable read or write on lotus repo ([#250](https://github.com/filecoin-project/sentinel-visor/issues/250))
+- allow application name to be passed in postgres connection url ([#243](https://github.com/filecoin-project/sentinel-visor/issues/243))
+- limit history indexer by height ([#234](https://github.com/filecoin-project/sentinel-visor/issues/234))
+- extract msig transaction hamt
+
+### Fix
+- optimisable height functions ([#268](https://github.com/filecoin-project/sentinel-visor/issues/268))
+- don't update go modules when running make
+- gracefully disconnect from postgres on exit
+- truncated tables in tests ([#277](https://github.com/filecoin-project/sentinel-visor/issues/277))
+- tests defer database cleanup without invoking ([#274](https://github.com/filecoin-project/sentinel-visor/issues/274))
+- totalGasLimit and totalUniqueGasLimit are correct
+- missed while closing [#201](https://github.com/filecoin-project/sentinel-visor/issues/201)
+- include height with chain power results ([#255](https://github.com/filecoin-project/sentinel-visor/issues/255))
+- avoid panic when miner has no peer id ([#254](https://github.com/filecoin-project/sentinel-visor/issues/254))
+- Remove hack to RestartOnFailure
+- Reorder migrations after merging latest master ([#248](https://github.com/filecoin-project/sentinel-visor/issues/248))
+- multisig actor migration
+- lotus chain store is a blockstore
+- panic in multisig genesis task casting
+- **actorstate:** adjust account extractor to conform to new interface ([#294](https://github.com/filecoin-project/sentinel-visor/issues/294))
+- **init:** extract idAddress instead of actorID
+- **schema:** fix primary key for miner_sector_deals table ([#291](https://github.com/filecoin-project/sentinel-visor/issues/291))
+
+### Refactor
+- **cmd:** Modify command line default parameters ([#271](https://github.com/filecoin-project/sentinel-visor/issues/271))
+
+### Test
+- add multisig actor extractor tests
+- power actor claim extration test
+- **init:** test coverage for init actor extractor
+
+### Chore
+- Avoid ingesting binary and unused data ([#241](https://github.com/filecoin-project/sentinel-visor/issues/241))
+- remove unused tables and views
+
+### CI
+- **test:** add code coverage
+- **test:** run full testing suite
+
+### Build
+- **ci:** add go mod tidy check ([#266](https://github.com/filecoin-project/sentinel-visor/issues/266))
+
+### Docs
+- expand getting started guide and add running tests section ([#275](https://github.com/filecoin-project/sentinel-visor/issues/275))
+
+### Polish
+- Avoid duplicate work when reading receipts
+- use new init actor diffing logic
+- **mockapi:** names reflect method action
+- **mockapi:** remove returned errors and condense mockTipset
+- **mockapi:** accepts testing.TB, no errors
+
 <a name="v0.3.0"></a>
 ## [v0.3.0] - 2020-11-03
 ### Feat
@@ -79,13 +174,18 @@ this changes the cli interface to remove the run subcommand.
 
 Previously the indexer and procerror would be started via:
 
+```sh
   sentinel-visor run indexer
   sentinel-visor run processor
+```
 
 After this change:
 
+```sh
   sentinel-visor index
   sentinel-visor process
+```
+
 ### Feat
 - add standard build targets ([#18](https://github.com/filecoin-project/sentinel-visor/issues/18))
 - add licenses and skeleton readme ([#5](https://github.com/filecoin-project/sentinel-visor/issues/5))
@@ -158,5 +258,8 @@ After this change:
 ### Test
 - **storage:** add test to check for duplicate schema migrations ([#80](https://github.com/filecoin-project/sentinel-visor/issues/80))
 
+[v0.4.0]: https://github.com/filecoin-project/sentinel-visor/compare/v0.4.0-rc2...v0.4.0
+[v0.4.0-rc2]: https://github.com/filecoin-project/sentinel-visor/compare/v0.4.0-rc1...v0.4.0-rc2
+[v0.4.0-rc1]: https://github.com/filecoin-project/sentinel-visor/compare/v0.3.0...v0.4.0-rc1
 [v0.3.0]: https://github.com/filecoin-project/sentinel-visor/compare/v0.2.0...v0.3.0
 [v0.2.0]: https://github.com/filecoin-project/sentinel-visor/compare/b7044af...v0.2.0

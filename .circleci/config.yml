@@ -32,15 +32,59 @@ commands:
             - run: sudo apt-get update
       - run: git submodule sync
       - run: git submodule update --init
+  build-docker-and-maybe-push:
+    parameters:
+      tagname:
+        description: docker tag name with which to build and push
+        type: string
+        default: $CIRCLE_TAG
+      push:
+        description: whether to push created docker image after build
+        type: boolean
+        default: false
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: "18.09.3"
+      - run:
+          name: Build Dev Docker image
+          command: docker build -t ${IMAGE_NAME}-dev -f Dockerfile.dev .
+      - run:
+          name: Build Production Docker image
+          command: docker build -t $IMAGE_NAME -f Dockerfile .
+      - when:
+          condition: << parameters.push >>
+          steps:
+            - run:
+                name: Publish Dev Docker Image to Docker Hub
+                command: |
+                  echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                  ./scripts/push-docker-tags.sh "${IMAGE_NAME}-dev" "$CIRCLE_SHA1" "$CIRCLE_BRANCH" "<< parameters.tagname >>-dev"
+            - run:
+                name: Publish Production Docker Image to Docker Hub
+                command: |
+                  echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                  ./scripts/push-docker-tags.sh "$IMAGE_NAME" "$CIRCLE_SHA1" "$CIRCLE_BRANCH" "<< parameters.tagname >>"
 
 jobs:
+  build-push-master:
+    executor: dockerizer
+    steps:
+      - build-docker-and-maybe-push:
+          push: true
+          tagname: master-latest
+  build-push-semver-tag:
+    executor: dockerizer
+    steps:
+      - build-docker-and-maybe-push:
+          push: true
+          # use default tagname
   mod-tidy-check:
     executor: golang
     steps:
       - install-deps
       - prepare
       - go/mod-tidy-check
-
   test:
     docker:
       - image: cimg/go:1.15.2
@@ -49,7 +93,7 @@ jobs:
           POSTGRES_PASSWORD: password
     steps:
       - checkout
-      - run:
+      - run: # dep for DB wait script
           name: install dockerize
           command: wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && sudo tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
           environment:
@@ -76,62 +120,29 @@ jobs:
       - store_artifacts:
           path: sentinel-visor
 
-  docker-build:
-    executor: dockerizer
-    steps:
-      - checkout
-      - setup_remote_docker:
-          version: "18.09.3"
-      - run:
-          name: Build Docker image
-          command: |
-            docker build -t $IMAGE_NAME .
-      - run:
-          name: Archive Docker image
-          command: docker save -o docker-image.tar $IMAGE_NAME
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./docker-image.tar
-
-  docker-push:
-    executor: dockerizer
-    steps:
-      - checkout
-      - setup_remote_docker:
-          version: "18.09.3"
-      - attach_workspace:
-          at: /tmp/workspace
-      - run:
-          name: Load archived Docker image
-          command: docker load -i /tmp/workspace/docker-image.tar
-      - run:
-          name: Publish Docker Image to Docker Hub
-          command: |
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            ./scripts/push-docker-tags.sh "$IMAGE_NAME" "$CIRCLE_SHA1" "$CIRCLE_BRANCH" "$CIRCLE_TAG"
-
 workflows:
   version: 2
   check:
-    # `test` runs for all branches
-    # `docker-build` runs for all branches and tags that look like semver
-    # `docker-push` runs master or main branches and tags that look like semver
-    # see: https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
+    # `test` and `mod-tidy-check` runs for all branches
     jobs:
       - mod-tidy-check
       - test
-      - docker-build:
+  docker-and-deploy:
+    # `build-push-*` runs on master or main branches and tags that look like semver
+    # see: https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
+    jobs:
+      - build-push-master:
+          # build and push latest master docker image
+          filters:
+            branches:
+              only: /^(master|main)$/
+            tags:
+              ignore: /.*/
+      - build-push-semver-tag:
+          # build and push semver tags docker image
           filters:
             branches:
               ignore: /.*/
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)*/  # incl v0.0.0 or v0.0.0-rc0
-      - docker-push:
-          requires:
-            - docker-build
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)*/  # incl v0.0.0 or v0.0.0-rc0
+
