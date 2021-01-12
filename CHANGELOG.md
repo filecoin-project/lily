@@ -29,13 +29,17 @@ The CLI interface has shifted again to deprecate the `run` subcommand in favor o
 
 Previously the indexer and procerror would be started via:
 
+```sh
   sentinel-visor run --indexhead
   sentinel-visor run --indexhistory
+```
 
 After this change:
 
+```sh
   sentinel-visor watch
   sentinel-visor walk
+```
 
 The `run` subcommand will be removed in v0.5.0.
 
@@ -170,13 +174,18 @@ this changes the cli interface to remove the run subcommand.
 
 Previously the indexer and procerror would be started via:
 
+```sh
   sentinel-visor run indexer
   sentinel-visor run processor
+```
 
 After this change:
 
+```sh
   sentinel-visor index
   sentinel-visor process
+```
+
 ### Feat
 - add standard build targets ([#18](https://github.com/filecoin-project/sentinel-visor/issues/18))
 - add licenses and skeleton readme ([#5](https://github.com/filecoin-project/sentinel-visor/issues/5))
