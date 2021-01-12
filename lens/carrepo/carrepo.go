@@ -32,5 +32,6 @@ func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 		tsk := types.NewTipSetKey(c...)
 		return &tsk, nil
 	}
+
 	return util.NewAPIOpener(c, cacheDB, h)
 }
