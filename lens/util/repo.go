@@ -106,7 +106,7 @@ type LensAPI struct {
 
 // TODO: Remove. See https://github.com/filecoin-project/sentinel-visor/issues/196
 func (ra *LensAPI) StateGetActor(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
-	return lens.OptimizedStateGetActorWithFallback(ctx, ra.ChainAPI.Chain, ra.FullNodeAPI, actor, tsk)
+	return lens.OptimizedStateGetActorWithFallback(ctx, ra.cs.Store(ctx), ra.FullNodeAPI.ChainAPI, ra.FullNodeAPI.StateAPI, actor, tsk)
 }
 
 func (ra *LensAPI) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs {
