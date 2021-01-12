@@ -22,28 +22,21 @@ Build the `sentinel-visor` binary to the root of the project directory:
 $ make build
 ```
 
-Install PostgreSQL:
+Install TimescaleDB v1.7.4:
+
+In a separate shell, use docker-compose to start the appropriate version of Postgres with TimescaleDB. (Note: Visor requires TimescaleDB v1.7.x and will not work with v2.0.)
 
 ```sh
-brew install postgresql@12
+docker-compose up --build timescaledb
 ```
-
-Install TimescaleDB:
-
-```sh
-brew tap timescale/tap
-brew install timescaledb
-```
-
-You may need to run the following _before_ installing timescale to get it to compile:
-
-```sh
-ln -s /usr/local/Cellar/postgresql@12/12.5/include/postgresql/server /usr/local/Cellar/postgresql@12/12.5/include/server
-```
-
-Run `timescaledb-tune` and/or activate TimescaleDB by adding `shared_preload_libraries = 'timescaledb'` to `postgresql.conf`. Ensure you run `timescaledb_move.sh` as homebrew asks to finish the installation and then restart the postgres server if it's running.
 
 ### Running tests
+
+To quickly run tests, you can provide the `VISOR_TEST_DB` envvar and execute `make test` like so:
+
+`VISOR_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" make test`
+
+For more, manual test running, you could also prepare your environment in the following way:
 
 Create a new DB in postgres for testing:
 
