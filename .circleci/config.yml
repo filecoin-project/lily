@@ -88,7 +88,7 @@ jobs:
   test:
     docker:
       - image: cimg/go:1.15.2
-      - image: timescale/timescaledb:latest-pg12
+      - image: timescale/timescaledb:1.7.4-pg12
         environment:
           POSTGRES_PASSWORD: password
     steps:
