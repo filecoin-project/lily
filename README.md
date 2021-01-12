@@ -32,6 +32,12 @@ docker-compose up --build timescaledb
 
 ### Running tests
 
+To quickly run tests, you can provide the `VISOR_TEST_DB` envvar and execute `make test` like so:
+
+`VISOR_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" make test`
+
+For more, manual test running, you could also prepare your environment in the following way:
+
 Create a new DB in postgres for testing:
 
 ```sql
