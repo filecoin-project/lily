@@ -61,7 +61,11 @@ jobs:
       - run:
           name: waiting for db
           command: dockerize -wait tcp://localhost:5432 -timeout 1m
-      - run: ./visor migrate --latest
+      - run: 
+          name: installing schema
+          command: ./visor migrate --latest
+          environment:
+            LOTUS_DB: postgres://postgres:password@localhost:5432/postgres?sslmode=disable
       - run:
           command: |
             make test-coverage
