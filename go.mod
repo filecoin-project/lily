@@ -48,6 +48,7 @@ require (
 	go.opentelemetry.io/otel/sdk v0.12.0
 	golang.org/x/sys v0.0.0-20201112073958-5cba982894dd // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
 replace github.com/filecoin-project/filecoin-ffi => github.com/filecoin-project/statediff/extern/filecoin-ffi v0.0.0-20201028183730-8e6631500d49
