@@ -234,6 +234,11 @@ func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts,
 		return nil, xerrors.Errorf("load state tree: %w", err)
 	}
 
+	parentStateTree, err := state.LoadStateTree(cs.Store(ctx), pts.ParentState())
+	if err != nil {
+		return nil, xerrors.Errorf("load state tree: %w", err)
+	}
+
 	// Build a lookup of actor codes
 	actorCodes := map[address.Address]cid.Cid{}
 	if err := stateTree.ForEach(func(a address.Address, act *types.Actor) error {
@@ -335,6 +340,16 @@ func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts,
 		return nil, xerrors.Errorf("mismatching number of receipts: got %d wanted %d", rs.Length(), len(emsgs))
 	}
 
+	// Create a skeleton vm just for calling ShouldBurn
+	vmi, err := vm.NewVM(ctx, &vm.VMOpts{
+		StateBase: pts.ParentState(),
+		Epoch:     pts.Height(),
+		Bstore:    cs.Blockstore(),
+	})
+	if err != nil {
+		return nil, xerrors.Errorf("creating temporary vm: %w", err)
+	}
+
 	// Receipts are in same order as BlockMsgsForTipset
 	for _, em := range emsgs {
 		var r types.MessageReceipt
@@ -345,7 +360,7 @@ func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts,
 		}
 		em.Receipt = &r
 
-		burn, err := vm.ShouldBurn(stateTree, em.Message, em.Receipt.ExitCode)
+		burn, err := vmi.ShouldBurn(parentStateTree, em.Message, em.Receipt.ExitCode)
 		if err != nil {
 			return nil, xerrors.Errorf("deciding whether should burn failed: %w", err)
 		}
