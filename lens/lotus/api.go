@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
@@ -200,6 +201,11 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 		return nil, xerrors.Errorf("load state tree: %w", err)
 	}
 
+	parentStateTree, err := state.LoadStateTree(aw.Store(), pts.ParentState())
+	if err != nil {
+		return nil, xerrors.Errorf("load parent state tree: %w", err)
+	}
+
 	// Build a lookup of actor codes
 	actorCodes := map[address.Address]cid.Cid{}
 	if err := stateTree.ForEach(func(a address.Address, act *types.Actor) error {
@@ -258,6 +264,16 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 	// Start building a list of completed message with receipt
 	emsgs := make([]*lens.ExecutedMessage, 0, len(msgs))
 
+	// Create a skeleton vm just for calling ShouldBurn
+	vmi, err := vm.NewVM(ctx, &vm.VMOpts{
+		StateBase: pts.ParentState(),
+		Epoch:     pts.Height(),
+		Bstore:    &apiBlockstore{api: aw.FullNode}, // sadly vm wraps this to turn it back into an adt.Store
+	})
+	if err != nil {
+		return nil, xerrors.Errorf("creating temporary vm: %w", err)
+	}
+
 	for index, m := range msgs {
 
 		em := &lens.ExecutedMessage{
@@ -272,7 +288,7 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 			ToActorCode:   getActorCode(m.Message.To),
 		}
 
-		burn, err := vm.ShouldBurn(stateTree, m.Message, rcpts[index].ExitCode)
+		burn, err := vmi.ShouldBurn(parentStateTree, m.Message, rcpts[index].ExitCode)
 		if err != nil {
 			return nil, xerrors.Errorf("deciding whether should burn failed: %w", err)
 		}
@@ -282,4 +298,52 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 	}
 
 	return emsgs, nil
+}
+
+type apiBlockstore struct {
+	api interface {
+		ChainReadObj(context.Context, cid.Cid) ([]byte, error)
+		ChainHasObj(context.Context, cid.Cid) (bool, error)
+	}
+}
+
+func (a *apiBlockstore) Get(c cid.Cid) (blocks.Block, error) {
+	data, err := a.api.ChainReadObj(context.Background(), c)
+	if err != nil {
+		return nil, err
+	}
+
+	return blocks.NewBlockWithCid(data, c)
+}
+
+func (a *apiBlockstore) Has(c cid.Cid) (bool, error) {
+	return a.api.ChainHasObj(context.Background(), c)
+}
+
+func (a *apiBlockstore) DeleteBlock(c cid.Cid) error {
+	return xerrors.Errorf("DeleteBlock not supported by apiBlockstore")
+}
+
+func (a *apiBlockstore) GetSize(c cid.Cid) (int, error) {
+	data, err := a.api.ChainReadObj(context.Background(), c)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(data), nil
+}
+
+func (a *apiBlockstore) Put(b blocks.Block) error {
+	return xerrors.Errorf("Put not supported by apiBlockstore")
+}
+
+func (a *apiBlockstore) PutMany(bs []blocks.Block) error {
+	return xerrors.Errorf("PutMany not supported by apiBlockstore")
+}
+
+func (a *apiBlockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, error) {
+	return nil, xerrors.Errorf("AllKeysChan not supported by apiBlockstore")
+}
+
+func (a *apiBlockstore) HashOnRead(enabled bool) {
 }

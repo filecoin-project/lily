@@ -12,7 +12,7 @@ require (
 	github.com/filecoin-project/go-fil-markets v1.0.10
 	github.com/filecoin-project/go-multistore v0.0.3
 	github.com/filecoin-project/go-state-types v0.0.0-20201102161440-c8033295a1fc
-	github.com/filecoin-project/lotus v1.4.0
+	github.com/filecoin-project/lotus v1.4.1-pre1.0.20210114132837-5453e70cabb9
 	github.com/filecoin-project/specs-actors v0.9.13
 	github.com/filecoin-project/specs-actors/v2 v2.3.3
 	github.com/filecoin-project/statediff v0.0.8-0.20201027195725-7eaa5391a639
