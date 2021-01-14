@@ -163,7 +163,6 @@ func (p *MessageProcessor) processExecutedMessages(ctx context.Context, ts, pts 
 		}
 		receiptResults = append(receiptResults, rcpt)
 
-		outputs := p.node.ComputeGasOutputs(m.Receipt.GasUsed, m.Message.GasLimit, m.BlockHeader.ParentBaseFee, m.Message.GasFeeCap, m.Message.GasPremium)
 		gasOutput := &derivedmodel.GasOutputs{
 			Height:             msg.Height,
 			Cid:                msg.Cid,
@@ -180,13 +179,13 @@ func (p *MessageProcessor) processExecutedMessages(ctx context.Context, ts, pts 
 			GasUsed:            rcpt.GasUsed,
 			ParentBaseFee:      m.BlockHeader.ParentBaseFee.String(),
 			SizeBytes:          msgSize,
-			BaseFeeBurn:        outputs.BaseFeeBurn.String(),
-			OverEstimationBurn: outputs.OverEstimationBurn.String(),
-			MinerPenalty:       outputs.MinerPenalty.String(),
-			MinerTip:           outputs.MinerTip.String(),
-			Refund:             outputs.Refund.String(),
-			GasRefund:          outputs.GasRefund,
-			GasBurned:          outputs.GasBurned,
+			BaseFeeBurn:        m.GasOutputs.BaseFeeBurn.String(),
+			OverEstimationBurn: m.GasOutputs.OverEstimationBurn.String(),
+			MinerPenalty:       m.GasOutputs.MinerPenalty.String(),
+			MinerTip:           m.GasOutputs.MinerTip.String(),
+			Refund:             m.GasOutputs.Refund.String(),
+			GasRefund:          m.GasOutputs.GasRefund,
+			GasBurned:          m.GasOutputs.GasBurned,
 			ActorName:          actorstate.ActorNameByCode(m.ToActorCode),
 		}
 		gasOutputsResults = append(gasOutputsResults, gasOutput)

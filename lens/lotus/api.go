@@ -5,7 +5,6 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
-	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/state"
@@ -133,7 +132,7 @@ func (aw *APIWrapper) StateGetActor(ctx context.Context, actor address.Address, 
 	stop := metrics.Timer(ctx, metrics.LensRequestDuration)
 	defer stop()
 
-	//return aw.FullNode.StateGetActor(ctx, actor, tsk)
+	// return aw.FullNode.StateGetActor(ctx, actor, tsk)
 	// TODO idk how to get a store.ChainStore here
 	return lens.OptimizedStateGetActorWithFallback(ctx, aw.Store(), aw.FullNode, aw.FullNode, actor, tsk)
 }
@@ -181,10 +180,6 @@ func (aw *APIWrapper) StateReadState(ctx context.Context, actor address.Address,
 	stop := metrics.Timer(ctx, metrics.LensRequestDuration)
 	defer stop()
 	return aw.FullNode.StateReadState(ctx, actor, tsk)
-}
-
-func (aw *APIWrapper) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs {
-	return vm.ComputeGasOutputs(gasUsed, gasLimit, baseFee, feeCap, gasPremium)
 }
 
 func (aw *APIWrapper) StateVMCirculatingSupplyInternal(ctx context.Context, tsk types.TipSetKey) (api.CirculatingSupply, error) {
@@ -264,7 +259,8 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 	emsgs := make([]*lens.ExecutedMessage, 0, len(msgs))
 
 	for index, m := range msgs {
-		emsgs = append(emsgs, &lens.ExecutedMessage{
+
+		em := &lens.ExecutedMessage{
 			Cid:           m.Cid,
 			Height:        pts.Height(),
 			Message:       m.Message,
@@ -274,7 +270,15 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 			Index:         uint64(index),
 			FromActorCode: getActorCode(m.Message.From),
 			ToActorCode:   getActorCode(m.Message.To),
-		})
+		}
+
+		burn, err := vm.ShouldBurn(stateTree, m.Message, rcpts[index].ExitCode)
+		if err != nil {
+			return nil, xerrors.Errorf("deciding whether should burn failed: %w", err)
+		}
+
+		em.GasOutputs = vm.ComputeGasOutputs(em.Receipt.GasUsed, em.Message.GasLimit, em.BlockHeader.ParentBaseFee, em.Message.GasFeeCap, em.Message.GasPremium, burn)
+		emsgs = append(emsgs, em)
 	}
 
 	return emsgs, nil

@@ -109,10 +109,6 @@ func (ra *LensAPI) StateGetActor(ctx context.Context, actor address.Address, tsk
 	return lens.OptimizedStateGetActorWithFallback(ctx, ra.cs.Store(ctx), ra.FullNodeAPI.ChainAPI, ra.FullNodeAPI.StateAPI, actor, tsk)
 }
 
-func (ra *LensAPI) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs {
-	return vm.ComputeGasOutputs(gasUsed, gasLimit, baseFee, feeCap, gasPremium)
-}
-
 func (ra *LensAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
 	return GetExecutedMessagesForTipset(ctx, ra.cs, ts, pts)
 }
@@ -348,6 +344,14 @@ func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts,
 			return nil, xerrors.Errorf("failed to find receipt %d", em.Index)
 		}
 		em.Receipt = &r
+
+		burn, err := vm.ShouldBurn(stateTree, em.Message, em.Receipt.ExitCode)
+		if err != nil {
+			return nil, xerrors.Errorf("deciding whether should burn failed: %w", err)
+		}
+
+		em.GasOutputs = vm.ComputeGasOutputs(em.Receipt.GasUsed, em.Message.GasLimit, em.BlockHeader.ParentBaseFee, em.Message.GasFeeCap, em.Message.GasPremium, burn)
+
 	}
 
 	return emsgs, nil
