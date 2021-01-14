@@ -52,8 +52,6 @@ require (
 replace (
 	github.com/filecoin-project/fil-blst => ./extern/fil-blst
 	github.com/filecoin-project/filecoin-ffi => ./extern/filecoin-ffi-stub
-
-	github.com/filecoin-project/lotus => ../../iand/lotus
 	github.com/ipld/go-car => github.com/ipld/go-car v0.1.1-0.20201119040415-11b6074b6d4d
 	github.com/supranational/blst => ./extern/fil-blst/blst
 )
