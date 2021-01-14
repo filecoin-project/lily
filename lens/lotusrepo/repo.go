@@ -110,10 +110,6 @@ type RepoAPI struct {
 	cacheSize int
 }
 
-func (ra *RepoAPI) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs {
-	return vm.ComputeGasOutputs(gasUsed, gasLimit, baseFee, feeCap, gasPremium)
-}
-
 func (ra *RepoAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
 	return util.GetExecutedMessagesForTipset(ctx, ra.FullNodeAPI.ChainAPI.Chain, ts, pts)
 }

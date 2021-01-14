@@ -39,7 +39,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/whyrusleeping/cbor-gen v0.0.0-20200826160007-0b9f6c5fb163
-	github.com/willscott/carbs v0.0.3
+	github.com/willscott/carbs v0.0.4
 	go.opencensus.io v0.22.5
 	go.opentelemetry.io/otel v0.12.0
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.12.0
@@ -52,6 +52,5 @@ require (
 replace (
 	github.com/filecoin-project/fil-blst => ./extern/fil-blst
 	github.com/filecoin-project/filecoin-ffi => ./extern/filecoin-ffi-stub
-	github.com/ipld/go-car => github.com/ipld/go-car v0.1.1-0.20201119040415-11b6074b6d4d
 	github.com/supranational/blst => ./extern/fil-blst/blst
 )
