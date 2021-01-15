@@ -13,9 +13,9 @@ type MinerLockedFund struct {
 	MinerID   string `pg:",pk,notnull"`
 	StateRoot string `pg:",pk,notnull"`
 
-	LockedFunds       string `pg:"type:numeric,notnull"`
-	InitialPledge     string `pg:"type:numeric,notnull"`
-	PreCommitDeposits string `pg:"type:numeric,notnull"`
+	LockedFunds       string `pg:",notnull"`
+	InitialPledge     string `pg:",notnull"`
+	PreCommitDeposits string `pg:",notnull"`
 }
 
 func (m *MinerLockedFund) Persist(ctx context.Context, s model.StorageBatch) error {
