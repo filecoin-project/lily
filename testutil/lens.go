@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/filecoin-project/go-state-types/abi"
 	apitest "github.com/filecoin-project/lotus/api/test"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	cid "github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -38,10 +36,6 @@ type APIWrapper struct {
 
 func (aw *APIWrapper) Store() adt.Store {
 	return aw
-}
-
-func (aw *APIWrapper) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs {
-	return vm.ComputeGasOutputs(gasUsed, gasLimit, baseFee, feeCap, gasPremium)
 }
 
 func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {

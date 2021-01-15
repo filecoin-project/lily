@@ -5,13 +5,13 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
-	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
@@ -133,7 +133,7 @@ func (aw *APIWrapper) StateGetActor(ctx context.Context, actor address.Address, 
 	stop := metrics.Timer(ctx, metrics.LensRequestDuration)
 	defer stop()
 
-	//return aw.FullNode.StateGetActor(ctx, actor, tsk)
+	// return aw.FullNode.StateGetActor(ctx, actor, tsk)
 	// TODO idk how to get a store.ChainStore here
 	return lens.OptimizedStateGetActorWithFallback(ctx, aw.Store(), aw.FullNode, aw.FullNode, actor, tsk)
 }
@@ -183,10 +183,6 @@ func (aw *APIWrapper) StateReadState(ctx context.Context, actor address.Address,
 	return aw.FullNode.StateReadState(ctx, actor, tsk)
 }
 
-func (aw *APIWrapper) ComputeGasOutputs(gasUsed, gasLimit int64, baseFee, feeCap, gasPremium abi.TokenAmount) vm.GasOutputs {
-	return vm.ComputeGasOutputs(gasUsed, gasLimit, baseFee, feeCap, gasPremium)
-}
-
 func (aw *APIWrapper) StateVMCirculatingSupplyInternal(ctx context.Context, tsk types.TipSetKey) (api.CirculatingSupply, error) {
 	ctx, span := global.Tracer("").Start(ctx, "Lotus.StateCirculatingSupply")
 	defer span.End()
@@ -203,6 +199,11 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 	stateTree, err := state.LoadStateTree(aw.Store(), ts.ParentState())
 	if err != nil {
 		return nil, xerrors.Errorf("load state tree: %w", err)
+	}
+
+	parentStateTree, err := state.LoadStateTree(aw.Store(), pts.ParentState())
+	if err != nil {
+		return nil, xerrors.Errorf("load parent state tree: %w", err)
 	}
 
 	// Build a lookup of actor codes
@@ -263,8 +264,19 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 	// Start building a list of completed message with receipt
 	emsgs := make([]*lens.ExecutedMessage, 0, len(msgs))
 
+	// Create a skeleton vm just for calling ShouldBurn
+	vmi, err := vm.NewVM(ctx, &vm.VMOpts{
+		StateBase: pts.ParentState(),
+		Epoch:     pts.Height(),
+		Bstore:    &apiBlockstore{api: aw.FullNode}, // sadly vm wraps this to turn it back into an adt.Store
+	})
+	if err != nil {
+		return nil, xerrors.Errorf("creating temporary vm: %w", err)
+	}
+
 	for index, m := range msgs {
-		emsgs = append(emsgs, &lens.ExecutedMessage{
+
+		em := &lens.ExecutedMessage{
 			Cid:           m.Cid,
 			Height:        pts.Height(),
 			Message:       m.Message,
@@ -274,8 +286,64 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 			Index:         uint64(index),
 			FromActorCode: getActorCode(m.Message.From),
 			ToActorCode:   getActorCode(m.Message.To),
-		})
+		}
+
+		burn, err := vmi.ShouldBurn(parentStateTree, m.Message, rcpts[index].ExitCode)
+		if err != nil {
+			return nil, xerrors.Errorf("deciding whether should burn failed: %w", err)
+		}
+
+		em.GasOutputs = vm.ComputeGasOutputs(em.Receipt.GasUsed, em.Message.GasLimit, em.BlockHeader.ParentBaseFee, em.Message.GasFeeCap, em.Message.GasPremium, burn)
+		emsgs = append(emsgs, em)
 	}
 
 	return emsgs, nil
+}
+
+type apiBlockstore struct {
+	api interface {
+		ChainReadObj(context.Context, cid.Cid) ([]byte, error)
+		ChainHasObj(context.Context, cid.Cid) (bool, error)
+	}
+}
+
+func (a *apiBlockstore) Get(c cid.Cid) (blocks.Block, error) {
+	data, err := a.api.ChainReadObj(context.Background(), c)
+	if err != nil {
+		return nil, err
+	}
+
+	return blocks.NewBlockWithCid(data, c)
+}
+
+func (a *apiBlockstore) Has(c cid.Cid) (bool, error) {
+	return a.api.ChainHasObj(context.Background(), c)
+}
+
+func (a *apiBlockstore) DeleteBlock(c cid.Cid) error {
+	return xerrors.Errorf("DeleteBlock not supported by apiBlockstore")
+}
+
+func (a *apiBlockstore) GetSize(c cid.Cid) (int, error) {
+	data, err := a.api.ChainReadObj(context.Background(), c)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(data), nil
+}
+
+func (a *apiBlockstore) Put(b blocks.Block) error {
+	return xerrors.Errorf("Put not supported by apiBlockstore")
+}
+
+func (a *apiBlockstore) PutMany(bs []blocks.Block) error {
+	return xerrors.Errorf("PutMany not supported by apiBlockstore")
+}
+
+func (a *apiBlockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, error) {
+	return nil, xerrors.Errorf("AllKeysChan not supported by apiBlockstore")
+}
+
+func (a *apiBlockstore) HashOnRead(enabled bool) {
 }
