@@ -20,10 +20,10 @@ type MinerPreCommitInfo struct {
 	SealRandEpoch   int64  `pg:",use_zero"`
 	ExpirationEpoch int64  `pg:",use_zero"`
 
-	PreCommitDeposit   string `pg:",notnull"`
+	PreCommitDeposit   string `pg:"type:numeric,notnull"`
 	PreCommitEpoch     int64  `pg:",use_zero"`
-	DealWeight         string `pg:",notnull"`
-	VerifiedDealWeight string `pg:",notnull"`
+	DealWeight         string `pg:"type:numeric,notnull"`
+	VerifiedDealWeight string `pg:"type:numeric,notnull"`
 
 	IsReplaceCapacity      bool
 	ReplaceSectorDeadline  uint64 `pg:",use_zero"`

@@ -21,12 +21,12 @@ type MinerSectorInfo struct {
 	ActivationEpoch int64 `pg:",use_zero"`
 	ExpirationEpoch int64 `pg:",use_zero"`
 
-	DealWeight         string `pg:",notnull"`
-	VerifiedDealWeight string `pg:",notnull"`
+	DealWeight         string `pg:"type:numeric,notnull"`
+	VerifiedDealWeight string `pg:"type:numeric,notnull"`
 
-	InitialPledge         string `pg:",notnull"`
-	ExpectedDayReward     string `pg:",notnull"`
-	ExpectedStoragePledge string `pg:",notnull"`
+	InitialPledge         string `pg:"type:numeric,notnull"`
+	ExpectedDayReward     string `pg:"type:numeric,notnull"`
+	ExpectedStoragePledge string `pg:"type:numeric,notnull"`
 }
 
 func (msi *MinerSectorInfo) Persist(ctx context.Context, s model.StorageBatch) error {
