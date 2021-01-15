@@ -13,7 +13,7 @@ type MinerFeeDebt struct {
 	MinerID   string `pg:",pk,notnull"`
 	StateRoot string `pg:",pk,notnull"`
 
-	FeeDebt string `pg:"type:numeric,notnull"`
+	FeeDebt string `pg:",notnull"`
 }
 
 func (m *MinerFeeDebt) Persist(ctx context.Context, s model.StorageBatch) error {

@@ -12,8 +12,8 @@ type PowerActorClaim struct {
 	Height          int64  `pg:",pk,notnull,use_zero"`
 	MinerID         string `pg:",pk,notnull"`
 	StateRoot       string `pg:",pk,notnull"`
-	RawBytePower    string `pg:"type:numeric,notnull"`
-	QualityAdjPower string `pg:"type:numeric,notnull"`
+	RawBytePower    string `pg:",notnull"`
+	QualityAdjPower string `pg:",notnull"`
 }
 
 func (p *PowerActorClaim) Persist(ctx context.Context, s model.StorageBatch) error {
