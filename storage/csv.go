@@ -3,17 +3,21 @@ package storage
 import (
 	"context"
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"sync"
+	"time"
 
 	"github.com/go-pg/pg/v10/orm"
 
 	"github.com/filecoin-project/sentinel-visor/model"
 )
+
+const PostgresTimestampFormat = "2006-01-02T15:04:05.999Z07:00"
 
 var ErrMarshalUnsupportedType = errors.New("cannot marshal unsupported type")
 
@@ -169,10 +173,29 @@ func (c *CSVBatch) PersistModel(ctx context.Context, m interface{}) error {
 		for i, f := range t.fields {
 			fv := value.FieldByName(f)
 			fk := fv.Kind()
-			if (fk == reflect.Slice || fk == reflect.Map || fk == reflect.Ptr || fk == reflect.Chan || fk == reflect.Func) && fv.IsNil() {
+			if (fk == reflect.Slice || fk == reflect.Map || fk == reflect.Ptr || fk == reflect.Chan || fk == reflect.Func || fk == reflect.Interface) && fv.IsNil() {
 				row[i] = "NULL"
 				continue
 			}
+
+			if fk == reflect.Interface {
+				v, err := json.Marshal(fv.Interface())
+				if err != nil {
+					return err
+				}
+				row[i] = string(v)
+				continue
+			}
+
+			ft := fv.Type()
+
+			// Special formatting for known types
+			if ft.PkgPath() == "time" && ft.Name() == "Time" {
+				v := fv.Interface().(time.Time)
+				row[i] = v.Format(PostgresTimestampFormat)
+				continue
+			}
+
 			row[i] = fmt.Sprint(fv)
 		}
 		c.data[t.name] = append(c.data[t.name], row)
