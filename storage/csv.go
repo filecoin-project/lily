@@ -192,7 +192,7 @@ func (c *CSVBatch) PersistModel(ctx context.Context, m interface{}) error {
 			// Special formatting for known types
 			if ft.PkgPath() == "time" && ft.Name() == "Time" {
 				v := fv.Interface().(time.Time)
-				row[i] = v.Format("2006-01-02T15:04:05.999Z07:00")
+				row[i] = v.Format(PostgresTimestampFormat)
 				continue
 			}
 
