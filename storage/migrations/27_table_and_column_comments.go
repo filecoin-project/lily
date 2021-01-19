@@ -136,16 +136,27 @@ func init() {
 	COMMENT ON COLUMN market_deal_states.state_root IS 'CID of the parent state root for this deal.';
 
 	COMMENT ON TABLE message_gas_economy IS 'Gas economics for all messages in all blocks at each epoch.';
-	COMMENT ON COLUMN message_gas_economy.state_root IS 'CID of the parent state root at this epoch.';
-	COMMENT ON COLUMN message_gas_economy.gas_limit_total IS 'The sum of all the gas limits.';
-	COMMENT ON COLUMN message_gas_economy.gas_limit_unique_total IS 'The sum of all the gas limits of unique messages.';
 	COMMENT ON COLUMN message_gas_economy.base_fee IS 'The set price per unit of gas (measured in attoFIL/gas unit) to be burned (sent to an unrecoverable address) for every message execution.';
 	COMMENT ON COLUMN message_gas_economy.base_fee_change_log IS 'The logarithm of the change between new and old base fee.';
-	COMMENT ON COLUMN message_gas_economy.gas_fill_ratio IS 'The gas_limit_total / target gas limit total for all blocks.';
 	COMMENT ON COLUMN message_gas_economy.gas_capacity_ratio IS 'The gas_limit_unique_total / target gas limit total for all blocks.';
+	COMMENT ON COLUMN message_gas_economy.gas_fill_ratio IS 'The gas_limit_total / target gas limit total for all blocks.';
+	COMMENT ON COLUMN message_gas_economy.gas_limit_total IS 'The sum of all the gas limits.';
+	COMMENT ON COLUMN message_gas_economy.gas_limit_unique_total IS 'The sum of all the gas limits of unique messages.';
 	COMMENT ON COLUMN message_gas_economy.gas_waste_ratio IS '(gas_limit_total - gas_limit_unique_total) / target gas limit total for all blocks.';
 	COMMENT ON COLUMN message_gas_economy.height IS 'Epoch these economics apply to.';
+	COMMENT ON COLUMN message_gas_economy.state_root IS 'CID of the parent state root at this epoch.';
 
+	COMMENT ON TABLE messages IS 'Validated on-chain messages by their CID and their metadata.';
+	COMMENT ON COLUMN messages.cid IS 'CID of the message.';
+	COMMENT ON COLUMN messages.from IS 'Address of the actor that sent the message.';
+	COMMENT ON COLUMN messages.gas_fee_cap IS 'The maximum price that the message sender is willing to pay per unit of gas.';
+	COMMENT ON COLUMN messages.gas_premium IS 'The price per unit of gas (measured in attoFIL/gas) that the message sender is willing to pay (on top of the BaseFee) to "tip" the miner that will include this message in a block.';
+	COMMENT ON COLUMN messages.height IS 'Epoch this message was executed at.';
+	COMMENT ON COLUMN messages.method IS 'The method number invoked on the recipient actor. Only unique to the actor the method is being invoked on. A method number of 0 is a plain token transfer - no method exectution.';
+	COMMENT ON COLUMN messages.nonce IS 'The message nonce, which protects against duplicate messages and multiple messages with the same values.';
+	COMMENT ON COLUMN messages.size_bytes IS 'Size of the serialized message in bytes.';
+	COMMENT ON COLUMN messages.to IS 'Address of the actor that received the message.';
+	COMMENT ON COLUMN messages.value IS 'Amount of FIL (in attoFIL) transferred by this message.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -278,15 +289,27 @@ func init() {
 	COMMENT ON COLUMN market_deal_states.state_root IS NULL;
 
 	COMMENT ON TABLE message_gas_economy IS NULL;
-	COMMENT ON COLUMN message_gas_economy.state_root IS NULL;
-	COMMENT ON COLUMN message_gas_economy.gas_limit_total IS NULL;
-	COMMENT ON COLUMN message_gas_economy.gas_limit_unique_total IS NULL;
 	COMMENT ON COLUMN message_gas_economy.base_fee IS NULL;
 	COMMENT ON COLUMN message_gas_economy.base_fee_change_log IS NULL;
-	COMMENT ON COLUMN message_gas_economy.gas_fill_ratio IS NULL;
 	COMMENT ON COLUMN message_gas_economy.gas_capacity_ratio IS NULL;
+	COMMENT ON COLUMN message_gas_economy.gas_fill_ratio IS NULL;
+	COMMENT ON COLUMN message_gas_economy.gas_limit_total IS NULL;
+	COMMENT ON COLUMN message_gas_economy.gas_limit_unique_total IS NULL;
 	COMMENT ON COLUMN message_gas_economy.gas_waste_ratio IS NULL;
 	COMMENT ON COLUMN message_gas_economy.height IS NULL;
+	COMMENT ON COLUMN message_gas_economy.state_root IS NULL;
+
+	COMMENT ON TABLE messages IS NULL;
+	COMMENT ON COLUMN messages.cid IS NULL;
+	COMMENT ON COLUMN messages.from IS NULL;
+	COMMENT ON COLUMN messages.gas_fee_cap IS NULL;
+	COMMENT ON COLUMN messages.gas_premium IS NULL;
+	COMMENT ON COLUMN messages.height IS NULL;
+	COMMENT ON COLUMN messages.method IS NULL;
+	COMMENT ON COLUMN messages.nonce IS NULL;
+	COMMENT ON COLUMN messages.size_bytes IS NULL;
+	COMMENT ON COLUMN messages.to IS NULL;
+	COMMENT ON COLUMN messages.value IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
