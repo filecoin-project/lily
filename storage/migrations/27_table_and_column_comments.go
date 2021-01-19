@@ -106,9 +106,26 @@ func init() {
 	COMMENT ON COLUMN drand_block_entries.round IS 'The round number of the randomness used.';
 
 	COMMENT ON TABLE id_addresses IS 'Mapping of IDs to robust addresses from the init actor's state.';
-	COMMENT ON COLUMN address IS 'Robust address of the actor.';
-	COMMENT ON COLUMN id IS 'ID of the actor.';
-	COMMENT ON COLUMN state_root IS 'Parent state root at which this address mapping was added.';
+	COMMENT ON COLUMN id_addresses.address IS 'Robust address of the actor.';
+	COMMENT ON COLUMN id_addresses.id IS 'ID of the actor.';
+	COMMENT ON COLUMN id_addresses.state_root IS 'CID of the parent state root at which this address mapping was added.';
+
+	COMMENT ON TABLE market_deal_proposals IS 'All storage deal states with latest values applied to end_epoch and slashed_epoch when updates are detected on-chain.';
+	COMMENT ON COLUMN market_deal_proposals.client_collateral IS 'The amount of FIL (in attoFIL) the client has pledged as collateral.';
+	COMMENT ON COLUMN market_deal_proposals.client_id IS 'Address of the actor proposing the deal.';
+	COMMENT ON COLUMN market_deal_proposals.deal_id IS 'Identifier for the deal.';
+	COMMENT ON COLUMN market_deal_proposals.end_epoch IS 'The epoch at which this deal with end.';
+	COMMENT ON COLUMN market_deal_proposals.height IS 'Epoch at which this deal proposal was added or changed.';
+	COMMENT ON COLUMN market_deal_proposals.is_verified IS 'Deal is with a verified provider.';
+	COMMENT ON COLUMN market_deal_proposals.label IS 'An arbitrary client chosen label to apply to the deal.';
+	COMMENT ON COLUMN market_deal_proposals.padded_piece_size IS 'The piece size in bytes with padding.';
+	COMMENT ON COLUMN market_deal_proposals.piece_cid IS 'CID of a sector piece. A Piece is an object that represents a whole or part of a File.';
+	COMMENT ON COLUMN market_deal_proposals.provider_collateral IS 'The amount of FIL (in attoFIL) the provider has pledged as collateral. The Provider deal collateral is only slashed when a sector is terminated before the deal expires.';
+	COMMENT ON COLUMN market_deal_proposals.provider_id IS 'Address of the actor providing the services.';
+	COMMENT ON COLUMN market_deal_proposals.start_epoch IS 'The epoch at which this deal with begin. Storage deal must appear in a sealed (proven) sector no later than start_epoch, otherwise it is invalid.';
+	COMMENT ON COLUMN market_deal_proposals.state_root IS 'CID of the paranet state root for this deal.';
+	COMMENT ON COLUMN market_deal_proposals.storage_price_per_epoch IS 'The amount of FIL (in attoFIL) that will be transferred from the client to the provider every epoch this deal is active for.';
+	COMMENT ON COLUMN market_deal_proposals.unpadded_piece_size IS 'The piece size in bytes without padding.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -211,9 +228,26 @@ func init() {
 	COMMENT ON COLUMN drand_block_entries.round IS NULL;
 
 	COMMENT ON TABLE id_addresses IS NULL;
-	COMMENT ON COLUMN address IS NULL;
-	COMMENT ON COLUMN id IS NULL;
-	COMMENT ON COLUMN state_root IS NULL;
+	COMMENT ON COLUMN id_addresses.address IS NULL;
+	COMMENT ON COLUMN id_addresses.id IS NULL;
+	COMMENT ON COLUMN id_addresses.state_root IS NULL;
+
+	COMMENT ON TABLE market_deal_proposals IS NULL;
+	COMMENT ON COLUMN market_deal_proposals.client_collateral IS NULL;
+	COMMENT ON COLUMN market_deal_proposals.client_id IS NULL;
+	COMMENT ON COLUMN market_deal_proposals.deal_id IS NULL;
+	COMMENT ON COLUMN market_deal_proposals.end_epoch IS NULL;
+	COMMENT ON COLUMN market_deal_proposals.height IS NULL;
+	COMMENT ON COLUMN market_deal_proposals.is_verified IS NULL;
+	COMMENT ON COLUMN market_deal_proposals.label IS NULL;
+	COMMENT ON COLUMN market_deal_proposals.padded_piece_size IS NULL;
+	COMMENT ON COLUMN market_deal_proposals.piece_cid IS NULL;
+	COMMENT ON COLUMN market_deal_proposals.provider_collateral IS NULL;
+	COMMENT ON COLUMN market_deal_proposals.provider_id IS NULL;
+	COMMENT ON COLUMN market_deal_proposals.start_epoch IS NULL;
+	COMMENT ON COLUMN market_deal_proposals.state_root IS NULL;
+	COMMENT ON COLUMN market_deal_proposals.storage_price_per_epoch IS NULL;
+	COMMENT ON COLUMN market_deal_proposals.unpadded_piece_size IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
