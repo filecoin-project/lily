@@ -100,6 +100,10 @@ func init() {
 	COMMENT ON COLUMN derived_gas_outputs.state_root IS 'CID of the parent state root.';
 	COMMENT ON COLUMN derived_gas_outputs.to IS 'Address of actor that received the message.';
 	COMMENT ON COLUMN derived_gas_outputs.value IS 'The FIL value transferred (attoFIL) to the message receiver.';
+
+	COMMENT ON TABLE drand_block_entries IS 'Drand randomness round numbers used in each block.';
+	COMMENT ON COLUMN drand_block_entries.round IS 'The round number of the randomness used.';
+	COMMENT ON COLUMN drand_block_entries.block IS 'CID of the block.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -196,6 +200,10 @@ func init() {
 	COMMENT ON COLUMN derived_gas_outputs.state_root IS NULL;
 	COMMENT ON COLUMN derived_gas_outputs.to IS NULL;
 	COMMENT ON COLUMN derived_gas_outputs.value IS NULL;
+
+	COMMENT ON TABLE drand_block_entries IS NULL;
+	COMMENT ON COLUMN drand_block_entries.round IS NULL;
+	COMMENT ON COLUMN drand_block_entries.block IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
