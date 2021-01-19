@@ -110,7 +110,7 @@ func init() {
 	COMMENT ON COLUMN id_addresses.id IS 'ID of the actor.';
 	COMMENT ON COLUMN id_addresses.state_root IS 'CID of the parent state root at which this address mapping was added.';
 
-	COMMENT ON TABLE market_deal_proposals IS 'All storage deal states with latest values applied to end_epoch and slashed_epoch when updates are detected on-chain.';
+	COMMENT ON TABLE market_deal_proposals IS 'All storage deal states with latest values applied to end_epoch when updates are detected on-chain.';
 	COMMENT ON COLUMN market_deal_proposals.client_collateral IS 'The amount of FIL (in attoFIL) the client has pledged as collateral.';
 	COMMENT ON COLUMN market_deal_proposals.client_id IS 'Address of the actor proposing the deal.';
 	COMMENT ON COLUMN market_deal_proposals.deal_id IS 'Identifier for the deal.';
@@ -126,6 +126,14 @@ func init() {
 	COMMENT ON COLUMN market_deal_proposals.state_root IS 'CID of the paranet state root for this deal.';
 	COMMENT ON COLUMN market_deal_proposals.storage_price_per_epoch IS 'The amount of FIL (in attoFIL) that will be transferred from the client to the provider every epoch this deal is active for.';
 	COMMENT ON COLUMN market_deal_proposals.unpadded_piece_size IS 'The piece size in bytes without padding.';
+
+	COMMENT ON TABLE market_deal_states IS 'All storage deal state transitions detected on-chain.';
+	COMMENT ON COLUMN market_deal_states.deal_id IS 'Identifier for the deal.';
+	COMMENT ON COLUMN market_deal_states.height IS 'Epoch at which this deal was added or changed.';
+	COMMENT ON COLUMN market_deal_states.last_update_epoch IS 'Epoch this deal was last updated at. -1 if deal state never updated.';
+	COMMENT ON COLUMN market_deal_states.sector_start_epoch IS 'Epoch this deal was included in a proven sector. -1 if not yet included in proven sector.';
+	COMMENT ON COLUMN market_deal_states.slash_epoch IS 'Epoch this deal was slashed at. -1 if deal was never slashed.';
+	COMMENT ON COLUMN market_deal_states.state_root IS 'CID of the paranet state root for this deal.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -248,6 +256,14 @@ func init() {
 	COMMENT ON COLUMN market_deal_proposals.state_root IS NULL;
 	COMMENT ON COLUMN market_deal_proposals.storage_price_per_epoch IS NULL;
 	COMMENT ON COLUMN market_deal_proposals.unpadded_piece_size IS NULL;
+
+	COMMENT ON TABLE market_deal_states IS NULL;
+	COMMENT ON COLUMN market_deal_states.deal_id IS NULL;
+	COMMENT ON COLUMN market_deal_states.height IS NULL;
+	COMMENT ON COLUMN market_deal_states.last_update_epoch IS NULL;
+	COMMENT ON COLUMN market_deal_states.sector_start_epoch IS NULL;
+	COMMENT ON COLUMN market_deal_states.slash_epoch IS NULL;
+	COMMENT ON COLUMN market_deal_states.state_root IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
