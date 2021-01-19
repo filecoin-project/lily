@@ -105,7 +105,7 @@ func init() {
 	COMMENT ON COLUMN drand_block_entries.block IS 'CID of the block.';
 	COMMENT ON COLUMN drand_block_entries.round IS 'The round number of the randomness used.';
 
-	COMMENT ON TABLE id_addresses IS 'Mapping of IDs to robust addresses from the init actor's state.';
+	COMMENT ON TABLE id_addresses IS 'Mapping of IDs to robust addresses from the init actor''s state.';
 	COMMENT ON COLUMN id_addresses.address IS 'Robust address of the actor.';
 	COMMENT ON COLUMN id_addresses.id IS 'ID of the actor.';
 	COMMENT ON COLUMN id_addresses.state_root IS 'CID of the parent state root at which this address mapping was added.';
