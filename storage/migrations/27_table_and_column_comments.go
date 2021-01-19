@@ -123,7 +123,7 @@ func init() {
 	COMMENT ON COLUMN market_deal_proposals.provider_collateral IS 'The amount of FIL (in attoFIL) the provider has pledged as collateral. The Provider deal collateral is only slashed when a sector is terminated before the deal expires.';
 	COMMENT ON COLUMN market_deal_proposals.provider_id IS 'Address of the actor providing the services.';
 	COMMENT ON COLUMN market_deal_proposals.start_epoch IS 'The epoch at which this deal with begin. Storage deal must appear in a sealed (proven) sector no later than start_epoch, otherwise it is invalid.';
-	COMMENT ON COLUMN market_deal_proposals.state_root IS 'CID of the paranet state root for this deal.';
+	COMMENT ON COLUMN market_deal_proposals.state_root IS 'CID of the parent state root for this deal.';
 	COMMENT ON COLUMN market_deal_proposals.storage_price_per_epoch IS 'The amount of FIL (in attoFIL) that will be transferred from the client to the provider every epoch this deal is active for.';
 	COMMENT ON COLUMN market_deal_proposals.unpadded_piece_size IS 'The piece size in bytes without padding.';
 
@@ -133,7 +133,19 @@ func init() {
 	COMMENT ON COLUMN market_deal_states.last_update_epoch IS 'Epoch this deal was last updated at. -1 if deal state never updated.';
 	COMMENT ON COLUMN market_deal_states.sector_start_epoch IS 'Epoch this deal was included in a proven sector. -1 if not yet included in proven sector.';
 	COMMENT ON COLUMN market_deal_states.slash_epoch IS 'Epoch this deal was slashed at. -1 if deal was never slashed.';
-	COMMENT ON COLUMN market_deal_states.state_root IS 'CID of the paranet state root for this deal.';
+	COMMENT ON COLUMN market_deal_states.state_root IS 'CID of the parent state root for this deal.';
+
+	COMMENT ON TABLE message_gas_economy IS 'Gas economics for all messages in all blocks at each epoch.';
+	COMMENT ON COLUMN message_gas_economy.state_root IS 'CID of the parent state root at this epoch.';
+	COMMENT ON COLUMN message_gas_economy.gas_limit_total IS 'The sum of all the gas limits.';
+	COMMENT ON COLUMN message_gas_economy.gas_limit_unique_total IS 'The sum of all the gas limits of unique messages.';
+	COMMENT ON COLUMN message_gas_economy.base_fee IS 'The set price per unit of gas (measured in attoFIL/gas unit) to be burned (sent to an unrecoverable address) for every message execution.';
+	COMMENT ON COLUMN message_gas_economy.base_fee_change_log IS 'The logarithm of the change between new and old base fee.';
+	COMMENT ON COLUMN message_gas_economy.gas_fill_ratio IS 'The gas_limit_total / target gas limit total for all blocks.';
+	COMMENT ON COLUMN message_gas_economy.gas_capacity_ratio IS 'The gas_limit_unique_total / target gas limit total for all blocks.';
+	COMMENT ON COLUMN message_gas_economy.gas_waste_ratio IS '(gas_limit_total - gas_limit_unique_total) / target gas limit total for all blocks.';
+	COMMENT ON COLUMN message_gas_economy.height IS 'Epoch these economics apply to.';
+
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -264,6 +276,17 @@ func init() {
 	COMMENT ON COLUMN market_deal_states.sector_start_epoch IS NULL;
 	COMMENT ON COLUMN market_deal_states.slash_epoch IS NULL;
 	COMMENT ON COLUMN market_deal_states.state_root IS NULL;
+
+	COMMENT ON TABLE message_gas_economy IS NULL;
+	COMMENT ON COLUMN message_gas_economy.state_root IS NULL;
+	COMMENT ON COLUMN message_gas_economy.gas_limit_total IS NULL;
+	COMMENT ON COLUMN message_gas_economy.gas_limit_unique_total IS NULL;
+	COMMENT ON COLUMN message_gas_economy.base_fee IS NULL;
+	COMMENT ON COLUMN message_gas_economy.base_fee_change_log IS NULL;
+	COMMENT ON COLUMN message_gas_economy.gas_fill_ratio IS NULL;
+	COMMENT ON COLUMN message_gas_economy.gas_capacity_ratio IS NULL;
+	COMMENT ON COLUMN message_gas_economy.gas_waste_ratio IS NULL;
+	COMMENT ON COLUMN message_gas_economy.height IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
