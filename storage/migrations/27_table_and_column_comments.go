@@ -168,6 +168,12 @@ func init() {
 	COMMENT ON COLUMN miner_current_deadline_infos.open IS 'First epoch from which a proof may be submitted (>= CurrentEpoch).';
 	COMMENT ON COLUMN miner_current_deadline_infos.period_start IS 'First epoch of the proving period (<= CurrentEpoch).';
 	COMMENT ON COLUMN miner_current_deadline_infos.state_root IS 'CID of the parent state root at this epoch.';
+
+	COMMENT ON TABLE miner_fee_debts IS 'Miner debts per epoch from unpaid fees.';
+	COMMENT ON COLUMN miner_fee_debts.fee_debt IS 'Absolute value of debt this miner owes from unpaid fees in attoFIL.';
+	COMMENT ON COLUMN miner_fee_debts.height IS 'Epoch at which this debt applies.';
+	COMMENT ON COLUMN miner_fee_debts.miner_id IS 'Address of the miner that owes fees.';
+	COMMENT ON COLUMN miner_fee_debts.state_root IS 'CID of the parent state root at this epoch.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -332,6 +338,12 @@ func init() {
 	COMMENT ON COLUMN miner_current_deadline_infos.open IS NULL;
 	COMMENT ON COLUMN miner_current_deadline_infos.period_start IS NULL;
 	COMMENT ON COLUMN miner_current_deadline_infos.state_root IS NULL;
+
+	COMMENT ON TABLE miner_fee_debts IS NULL;
+	COMMENT ON COLUMN miner_fee_debts.fee_debt IS NULL;
+	COMMENT ON COLUMN miner_fee_debts.height IS NULL;
+	COMMENT ON COLUMN miner_fee_debts.miner_id IS NULL;
+	COMMENT ON COLUMN miner_fee_debts.state_root IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
