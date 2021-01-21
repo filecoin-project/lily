@@ -45,6 +45,7 @@ func getCSVModelTable(v interface{}) table {
 	for _, fld := range m.Fields {
 		t.columns = append(t.columns, fld.SQLName)
 		t.fields = append(t.fields, fld.GoName)
+		t.types = append(t.types, fld.SQLType)
 	}
 	csvModelTables[name] = t
 
@@ -68,6 +69,7 @@ type table struct {
 	name    string
 	columns []string
 	fields  []string
+	types   []string
 }
 
 func NewCSVStorage(path string) (*CSVStorage, error) {
@@ -174,16 +176,12 @@ func (c *CSVBatch) PersistModel(ctx context.Context, m interface{}) error {
 			fv := value.FieldByName(f)
 			fk := fv.Kind()
 			if (fk == reflect.Slice || fk == reflect.Map || fk == reflect.Ptr || fk == reflect.Chan || fk == reflect.Func || fk == reflect.Interface) && fv.IsNil() {
-				row[i] = "NULL"
-				continue
-			}
-
-			if fk == reflect.Interface {
-				v, err := json.Marshal(fv.Interface())
-				if err != nil {
-					return err
+				switch t.types[i] {
+				case "json", "jsonb":
+					row[i] = "null" // this is a json value of null
+				default:
+					row[i] = "NULL"
 				}
-				row[i] = string(v)
 				continue
 			}
 
@@ -193,6 +191,24 @@ func (c *CSVBatch) PersistModel(ctx context.Context, m interface{}) error {
 			if ft.PkgPath() == "time" && ft.Name() == "Time" {
 				v := fv.Interface().(time.Time)
 				row[i] = v.Format(PostgresTimestampFormat)
+				continue
+			}
+
+			var encodeAsJSON bool
+
+			// Strings marked as json type are assumed to already be encoded
+			if fk != reflect.String && (t.types[i] == "json" || t.types[i] == "jsonb") {
+				encodeAsJSON = true
+			} else if fk == reflect.Interface {
+				encodeAsJSON = true
+			}
+
+			if encodeAsJSON {
+				v, err := json.Marshal(fv.Interface())
+				if err != nil {
+					return err
+				}
+				row[i] = string(v)
 				continue
 			}
 

@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -44,9 +43,36 @@ func (im *InterfaceModel) Persist(ctx context.Context, s model.StorageBatch) err
 	return s.PersistModel(ctx, im)
 }
 
+type InterfaceJSONModel struct {
+	Height int64       `pg:",pk,notnull,use_zero"`
+	Value  interface{} `pg:",type:jsonb"`
+}
+
+func (im *InterfaceJSONModel) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, im)
+}
+
+type JSONModel struct {
+	Height int64  `pg:",pk,notnull,use_zero"`
+	Value  string `pg:",type:jsonb"` // this is a string that already contains json and should not be encoded again
+}
+
+func (tm *JSONModel) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, tm)
+}
+
+type StringSliceModel struct {
+	Height    int64    `pg:",pk,notnull,use_zero"`
+	Addresses []string // this will automatically be encoded as json
+}
+
+func (im *StringSliceModel) Persist(ctx context.Context, s model.StorageBatch) error {
+	return s.PersistModel(ctx, im)
+}
+
 type ProcessingError struct {
 	Source string
-	Error  error
+	Error  string
 }
 
 func TestCSVTable(t *testing.T) {
@@ -254,7 +280,7 @@ func TestCSVPersistInterfaceValue(t *testing.T) {
 		Value: []*ProcessingError{
 			{
 				Source: "some task",
-				Error:  fmt.Errorf("processing error"),
+				Error:  "processing error",
 			},
 		},
 	}
@@ -274,6 +300,106 @@ func TestCSVPersistInterfaceValue(t *testing.T) {
 	require.NoError(t, err)
 	assert.EqualValues(t,
 		"height,value\n"+
-			"42,\"[{\"\"Source\"\":\"\"some task\"\",\"\"Error\"\":{}}]\"\n",
+			"42,\"[{\"\"Source\"\":\"\"some task\"\",\"\"Error\"\":\"\"processing error\"\"}]\"\n",
+		string(written))
+}
+
+func TestCSVPersistInterfaceNilJSON(t *testing.T) {
+	tm := &InterfaceJSONModel{
+		Height: 42,
+		Value:  nil,
+	}
+
+	dir, err := ioutil.TempDir("", t.Name())
+	require.NoError(t, err)
+
+	defer os.RemoveAll(dir)
+
+	st, err := NewCSVStorage(dir)
+	require.NoError(t, err)
+
+	err = st.PersistBatch(context.Background(), tm)
+	require.NoError(t, err)
+
+	written, err := ioutil.ReadFile(filepath.Join(dir, "interface_json_models.csv"))
+	require.NoError(t, err)
+	assert.EqualValues(t,
+		"height,value\n"+
+			"42,null\n",
+		string(written))
+}
+
+func TestCSVPersistInterfaceValueJSON(t *testing.T) {
+	tm := &InterfaceJSONModel{
+		Height: 42,
+		Value:  []string{"f083047", "f088207"},
+	}
+
+	dir, err := ioutil.TempDir("", t.Name())
+	require.NoError(t, err)
+
+	defer os.RemoveAll(dir)
+
+	st, err := NewCSVStorage(dir)
+	require.NoError(t, err)
+
+	err = st.PersistBatch(context.Background(), tm)
+	require.NoError(t, err)
+
+	written, err := ioutil.ReadFile(filepath.Join(dir, "interface_json_models.csv"))
+	require.NoError(t, err)
+	assert.EqualValues(t,
+		"height,value\n"+
+			"42,"+`"[""f083047"",""f088207""]"`+"\n",
+		string(written))
+}
+
+func TestCSVPersistValueJSON(t *testing.T) {
+	tm := &JSONModel{
+		Height: 42,
+		Value:  `{"some":"json"}`,
+	}
+
+	dir, err := ioutil.TempDir("", t.Name())
+	require.NoError(t, err)
+
+	defer os.RemoveAll(dir)
+
+	st, err := NewCSVStorage(dir)
+	require.NoError(t, err)
+
+	err = st.PersistBatch(context.Background(), tm)
+	require.NoError(t, err)
+
+	written, err := ioutil.ReadFile(filepath.Join(dir, "json_models.csv"))
+	require.NoError(t, err)
+	assert.EqualValues(t,
+		"height,value\n"+
+			"42,"+`"{""some"":""json""}"`+"\n",
+		string(written))
+}
+
+func TestCSVPersistValueStringSlice(t *testing.T) {
+	tm := &StringSliceModel{
+		Height:    42,
+		Addresses: []string{"f083047", "f088207"},
+	}
+
+	dir, err := ioutil.TempDir("", t.Name())
+	require.NoError(t, err)
+
+	defer os.RemoveAll(dir)
+
+	st, err := NewCSVStorage(dir)
+	require.NoError(t, err)
+
+	err = st.PersistBatch(context.Background(), tm)
+	require.NoError(t, err)
+
+	written, err := ioutil.ReadFile(filepath.Join(dir, "string_slice_models.csv"))
+	require.NoError(t, err)
+	assert.EqualValues(t,
+		"height,addresses\n"+
+			"42,"+`"[""f083047"",""f088207""]"`+"\n",
 		string(written))
 }
