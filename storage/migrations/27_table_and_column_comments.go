@@ -212,6 +212,12 @@ func init() {
 	COMMENT ON COLUMN miner_pre_commit_infos.sector_id IS 'Numeric identifier for the sector.';
 	COMMENT ON COLUMN miner_pre_commit_infos.state_root IS 'CID of the parent state root at this epoch.';
 	COMMENT ON COLUMN miner_pre_commit_infos.verified_deal_weight IS 'Total space*time of submitted verified deals.';
+
+	COMMENT ON TABLE miner_sector_deals IS 'Mapping of Deal IDs to their respective Miner and Sector IDs.';
+	COMMENT ON COLUMN miner_sector_deals.deal_id IS 'Numeric identifier for the deal.';
+	COMMENT ON COLUMN miner_sector_deals.height IS 'Epoch at which this deal was added/updated.';
+	COMMENT ON COLUMN miner_sector_deals.miner_id IS 'Address of the miner the deal is with.';
+	COMMENT ON COLUMN miner_sector_deals.sector_id IS 'Numeric identifier of the sector the deal is for.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -420,6 +426,12 @@ func init() {
 	COMMENT ON COLUMN miner_pre_commit_infos.sector_id IS NULL;
 	COMMENT ON COLUMN miner_pre_commit_infos.state_root IS NULL;
 	COMMENT ON COLUMN miner_pre_commit_infos.verified_deal_weight IS NULL;
+
+	COMMENT ON TABLE miner_sector_deals IS NULL;
+	COMMENT ON COLUMN miner_sector_deals.deal_id IS NULL;
+	COMMENT ON COLUMN miner_sector_deals.height IS NULL;
+	COMMENT ON COLUMN miner_sector_deals.miner_id IS NULL;
+	COMMENT ON COLUMN miner_sector_deals.sector_id IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
