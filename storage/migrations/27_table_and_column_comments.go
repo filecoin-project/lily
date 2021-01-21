@@ -204,7 +204,7 @@ func init() {
 	COMMENT ON COLUMN miner_pre_commit_infos.miner_id IS 'Address of the miner who owns the sector.';
 	COMMENT ON COLUMN miner_pre_commit_infos.pre_commit_deposit IS 'Amount of FIL (in attoFIL) used as a PreCommit deposit. If the Sector is not ProveCommitted on time, this deposit is removed and burned.';
 	COMMENT ON COLUMN miner_pre_commit_infos.pre_commit_epoch IS 'Epoch this PreCommit was created.';
-	COMMENT ON COLUMN miner_pre_commit_infos.replace_sector_deadline IS 'The partition location of the sector to replace.';
+	COMMENT ON COLUMN miner_pre_commit_infos.replace_sector_deadline IS 'The deadline location of the sector to replace.';
 	COMMENT ON COLUMN miner_pre_commit_infos.replace_sector_number IS 'ID of the committed capacity sector to replace.';
 	COMMENT ON COLUMN miner_pre_commit_infos.replace_sector_partition IS 'The partition location of the sector to replace.';
 	COMMENT ON COLUMN miner_pre_commit_infos.seal_rand_epoch IS 'Seal challenge epoch. Epoch at which randomness should be drawn to tie Proof-of-Replication to a chain.';
