@@ -157,6 +157,17 @@ func init() {
 	COMMENT ON COLUMN messages.size_bytes IS 'Size of the serialized message in bytes.';
 	COMMENT ON COLUMN messages.to IS 'Address of the actor that received the message.';
 	COMMENT ON COLUMN messages.value IS 'Amount of FIL (in attoFIL) transferred by this message.';
+
+	COMMENT ON TABLE miner_current_deadline_infos IS 'Deadline refers to the window during which proofs may be submitted.';
+	COMMENT ON COLUMN miner_current_deadline_infos.challenge IS 'Epoch at which to sample the chain for challenge (< Open).';
+	COMMENT ON COLUMN miner_current_deadline_infos.close IS 'First epoch from which a proof may no longer be submitted (>= Open).';
+	COMMENT ON COLUMN miner_current_deadline_infos.deadline_index IS 'A deadline index, in [0..d.WPoStProvingPeriodDeadlines) unless period elapsed.';
+	COMMENT ON COLUMN miner_current_deadline_infos.fault_cutoff IS 'First epoch at which a fault declaration is rejected (< Open).';
+	COMMENT ON COLUMN miner_current_deadline_infos.height IS 'Epoch at which this info was calculated.';
+	COMMENT ON COLUMN miner_current_deadline_infos.miner_id IS 'Address of the miner this info relates to.';
+	COMMENT ON COLUMN miner_current_deadline_infos.open IS 'First epoch from which a proof may be submitted (>= CurrentEpoch).';
+	COMMENT ON COLUMN miner_current_deadline_infos.period_start IS 'First epoch of the proving period (<= CurrentEpoch).';
+	COMMENT ON COLUMN miner_current_deadline_infos.state_root IS 'CID of the parent state root at this epoch.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -310,6 +321,17 @@ func init() {
 	COMMENT ON COLUMN messages.size_bytes IS NULL;
 	COMMENT ON COLUMN messages.to IS NULL;
 	COMMENT ON COLUMN messages.value IS NULL;
+
+	COMMENT ON TABLE miner_current_deadline_infos IS NULL;
+	COMMENT ON COLUMN miner_current_deadline_infos.challenge IS NULL;
+	COMMENT ON COLUMN miner_current_deadline_infos.close IS NULL;
+	COMMENT ON COLUMN miner_current_deadline_infos.deadline_index IS NULL;
+	COMMENT ON COLUMN miner_current_deadline_infos.fault_cutoff IS NULL;
+	COMMENT ON COLUMN miner_current_deadline_infos.height IS NULL;
+	COMMENT ON COLUMN miner_current_deadline_infos.miner_id IS NULL;
+	COMMENT ON COLUMN miner_current_deadline_infos.open IS NULL;
+	COMMENT ON COLUMN miner_current_deadline_infos.period_start IS NULL;
+	COMMENT ON COLUMN miner_current_deadline_infos.state_root IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
