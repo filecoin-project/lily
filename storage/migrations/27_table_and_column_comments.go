@@ -218,6 +218,13 @@ func init() {
 	COMMENT ON COLUMN miner_sector_deals.height IS 'Epoch at which this deal was added/updated.';
 	COMMENT ON COLUMN miner_sector_deals.miner_id IS 'Address of the miner the deal is with.';
 	COMMENT ON COLUMN miner_sector_deals.sector_id IS 'Numeric identifier of the sector the deal is for.';
+
+	COMMENT ON TABLE miner_sector_events IS 'Sector events on-chain per Miner/Sector.';
+	COMMENT ON COLUMN miner_sector_events.event IS 'Name of the event that occurred.';
+	COMMENT ON COLUMN miner_sector_events.height IS 'Epoch at which this event occurred.';
+	COMMENT ON COLUMN miner_sector_events.miner_id IS 'Address of the miner who owns the sector.';
+	COMMENT ON COLUMN miner_sector_events.sector_id IS 'Numeric identifier of the sector.';
+	COMMENT ON COLUMN miner_sector_events.state_root IS 'CID of the parent state root for this epoch.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -432,6 +439,13 @@ func init() {
 	COMMENT ON COLUMN miner_sector_deals.height IS NULL;
 	COMMENT ON COLUMN miner_sector_deals.miner_id IS NULL;
 	COMMENT ON COLUMN miner_sector_deals.sector_id IS NULL;
+
+	COMMENT ON TABLE miner_sector_events IS NULL;
+	COMMENT ON COLUMN miner_sector_events.event IS NULL;
+	COMMENT ON COLUMN miner_sector_events.height IS NULL;
+	COMMENT ON COLUMN miner_sector_events.miner_id IS NULL;
+	COMMENT ON COLUMN miner_sector_events.sector_id IS NULL;
+	COMMENT ON COLUMN miner_sector_events.state_root IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
