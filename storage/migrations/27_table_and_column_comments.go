@@ -178,7 +178,7 @@ func init() {
 	COMMENT ON TABLE miner_infos IS 'Miner Account IDs for all associated addresses plus peer ID. See https://docs.filecoin.io/mine/lotus/miner-addresses/ for more information.';
 	COMMENT ON COLUMN miner_infos.consensus_faulted_elapsed IS 'The next epoch this miner is eligible for certain permissioned actor methods and winning block elections as a result of being reported for a consensus fault.';
 	COMMENT ON COLUMN miner_infos.control_addresses IS 'JSON array of control addresses. Control addresses are used to submit WindowPoSts proofs to the chain. WindowPoSt is the mechanism through which storage is verified in Filecoin and is required by miners to submit proofs for all sectors every 24 hours. Those proofs are submitted as messages to the blockchain and therefore need to pay the respective fees.';
-	COMMENT ON COLUMN miner_infos.height IS 'Epoch at which this miner infor was added/changed.';
+	COMMENT ON COLUMN miner_infos.height IS 'Epoch at which this miner info was added/changed.';
 	COMMENT ON COLUMN miner_infos.miner_id IS 'Address of miner this info applies to.';
 	COMMENT ON COLUMN miner_infos.multi_addresses IS 'JSON array of multiaddrs at which this miner can be reached.';
 	COMMENT ON COLUMN miner_infos.new_worker IS 'Address of a new worker address that will become effective at worker_change_epoch.';
@@ -187,6 +187,14 @@ func init() {
 	COMMENT ON COLUMN miner_infos.state_root IS 'CID of the parent state root at this epoch.';
 	COMMENT ON COLUMN miner_infos.worker_id IS 'Address of actor designated as the worker. The worker is responsible for doing all of the work, submitting proofs, committing new sectors, and all other day to day activities.';
 	COMMENT ON COLUMN miner_infos.worker_change_epoch IS 'Epoch at which a new_worker address will become effective.';
+
+	COMMENT ON TABLE miner_locked_funds IS 'Details of Miner funds locked and unavailable for use.';
+	COMMENT ON COLUMN miner_locked_funds.height IS 'Epoch at which these details were added/changed.';
+	COMMENT ON COLUMN miner_locked_funds.initial_pledge IS 'Amount of FIL (in attoFIL) locked due to it being pledged as collateral. When a Miner ProveCommits a Sector, they must supply an "initial pledge" for the Sector, which acts as collateral. If the Sector is terminated, this deposit is removed and burned along with rewards earned by this sector up to a limit.';
+	COMMENT ON COLUMN miner_locked_funds.locked_funds IS 'Amount of FIL (in attoFIL) locked due to vesting. When a Miner receives tokens from block rewards, the tokens are locked and added to the Miner''s vesting table to be unlocked linearly over some future epochs.';
+	COMMENT ON COLUMN miner_locked_funds.miner_id IS 'Address of the miner these details apply to.';
+	COMMENT ON COLUMN miner_locked_funds.pre_commit_deposits IS 'Amount of FIL (in attoFIL) locked due to it being used as a PreCommit deposit. When a Miner PreCommits a Sector, they must supply a "precommit deposit" for the Sector, which acts as collateral. If the Sector is not ProveCommitted on time, this deposit is removed and burned.';
+	COMMENT ON COLUMN miner_locked_funds.state_root IS 'CID of the parent state root at this epoch.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -370,6 +378,14 @@ func init() {
 	COMMENT ON COLUMN miner_infos.state_root IS NULL;
 	COMMENT ON COLUMN miner_infos.worker_id IS NULL;
 	COMMENT ON COLUMN miner_infos.worker_change_epoch IS NULL;
+
+	COMMENT ON TABLE miner_locked_funds IS NULL;
+	COMMENT ON COLUMN miner_locked_funds.height IS NULL;
+	COMMENT ON COLUMN miner_locked_funds.initial_pledge IS NULL;
+	COMMENT ON COLUMN miner_locked_funds.locked_funds IS NULL;
+	COMMENT ON COLUMN miner_locked_funds.miner_id IS NULL;
+	COMMENT ON COLUMN miner_locked_funds.pre_commit_deposits IS NULL;
+	COMMENT ON COLUMN miner_locked_funds.state_root IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
