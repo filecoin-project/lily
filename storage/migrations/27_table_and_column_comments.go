@@ -174,6 +174,19 @@ func init() {
 	COMMENT ON COLUMN miner_fee_debts.height IS 'Epoch at which this debt applies.';
 	COMMENT ON COLUMN miner_fee_debts.miner_id IS 'Address of the miner that owes fees.';
 	COMMENT ON COLUMN miner_fee_debts.state_root IS 'CID of the parent state root at this epoch.';
+
+	COMMENT ON TABLE miner_infos IS 'Miner Account IDs for all associated addresses plus peer ID. See https://docs.filecoin.io/mine/lotus/miner-addresses/ for more information.';
+	COMMENT ON COLUMN miner_infos.consensus_faulted_elapsed IS 'The next epoch this miner is eligible for certain permissioned actor methods and winning block elections as a result of being reported for a consensus fault.';
+	COMMENT ON COLUMN miner_infos.control_addresses IS 'JSON array of control addresses. Control addresses are used to submit WindowPoSts proofs to the chain. WindowPoSt is the mechanism through which storage is verified in Filecoin and is required by miners to submit proofs for all sectors every 24 hours. Those proofs are submitted as messages to the blockchain and therefore need to pay the respective fees.';
+	COMMENT ON COLUMN miner_infos.height IS 'Epoch at which this miner infor was added/changed.';
+	COMMENT ON COLUMN miner_infos.miner_id IS 'Address of miner this info applies to.';
+	COMMENT ON COLUMN miner_infos.multi_addresses IS 'JSON array of multiaddrs at which this miner can be reached.';
+	COMMENT ON COLUMN miner_infos.new_worker IS 'Address of a new worker address that will become effective at worker_change_epoch.';
+	COMMENT ON COLUMN miner_infos.owner_id IS 'Address of actor designated as the owner. The owner address is the address that created the miner, paid the collateral, and has block rewards paid out to it.';
+	COMMENT ON COLUMN miner_infos.peer_id IS 'Current libp2p Peer ID of the miner.';
+	COMMENT ON COLUMN miner_infos.state_root IS 'CID of the parent state root at this epoch.';
+	COMMENT ON COLUMN miner_infos.worker_id IS 'Address of actor designated as the worker. The worker is responsible for doing all of the work, submitting proofs, committing new sectors, and all other day to day activities.';
+	COMMENT ON COLUMN miner_infos.worker_change_epoch IS 'Epoch at which a new_worker address will become effective.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -344,6 +357,19 @@ func init() {
 	COMMENT ON COLUMN miner_fee_debts.height IS NULL;
 	COMMENT ON COLUMN miner_fee_debts.miner_id IS NULL;
 	COMMENT ON COLUMN miner_fee_debts.state_root IS NULL;
+
+	COMMENT ON TABLE miner_infos IS NULL;
+	COMMENT ON COLUMN miner_infos.consensus_faulted_elapsed IS NULL;
+	COMMENT ON COLUMN miner_infos.control_addresses IS NULL;
+	COMMENT ON COLUMN miner_infos.height IS NULL;
+	COMMENT ON COLUMN miner_infos.miner_id IS NULL;
+	COMMENT ON COLUMN miner_infos.multi_addresses IS NULL;
+	COMMENT ON COLUMN miner_infos.new_worker IS NULL;
+	COMMENT ON COLUMN miner_infos.owner_id IS NULL;
+	COMMENT ON COLUMN miner_infos.peer_id IS NULL;
+	COMMENT ON COLUMN miner_infos.state_root IS NULL;
+	COMMENT ON COLUMN miner_infos.worker_id IS NULL;
+	COMMENT ON COLUMN miner_infos.worker_change_epoch IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
