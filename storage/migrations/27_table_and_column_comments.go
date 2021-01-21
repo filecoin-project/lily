@@ -195,6 +195,23 @@ func init() {
 	COMMENT ON COLUMN miner_locked_funds.miner_id IS 'Address of the miner these details apply to.';
 	COMMENT ON COLUMN miner_locked_funds.pre_commit_deposits IS 'Amount of FIL (in attoFIL) locked due to it being used as a PreCommit deposit. When a Miner PreCommits a Sector, they must supply a "precommit deposit" for the Sector, which acts as collateral. If the Sector is not ProveCommitted on time, this deposit is removed and burned.';
 	COMMENT ON COLUMN miner_locked_funds.state_root IS 'CID of the parent state root at this epoch.';
+
+	COMMENT ON TABLE miner_pre_commit_infos IS 'Information on sector PreCommits.';
+	COMMENT ON COLUMN miner_pre_commit_infos.deal_weight IS 'Total space*time of submitted deals.';
+	COMMENT ON COLUMN miner_pre_commit_infos.expiration_epoch IS 'Epoch this sector expires.';
+	COMMENT ON COLUMN miner_pre_commit_infos.height IS 'Epoch this PreCommit information was added/changed.';
+	COMMENT ON COLUMN miner_pre_commit_infos.is_replace_capacity IS 'Whether to replace a "committed capacity" no-deal sector (requires non-empty DealIDs).';
+	COMMENT ON COLUMN miner_pre_commit_infos.miner_id IS 'Address of the miner who owns the sector.';
+	COMMENT ON COLUMN miner_pre_commit_infos.pre_commit_deposit IS 'Amount of FIL (in attoFIL) used as a PreCommit deposit. If the Sector is not ProveCommitted on time, this deposit is removed and burned.';
+	COMMENT ON COLUMN miner_pre_commit_infos.pre_commit_epoch IS 'Epoch this PreCommit was created.';
+	COMMENT ON COLUMN miner_pre_commit_infos.replace_sector_deadline IS 'The partition location of the sector to replace.';
+	COMMENT ON COLUMN miner_pre_commit_infos.replace_sector_number IS 'ID of the committed capacity sector to replace.';
+	COMMENT ON COLUMN miner_pre_commit_infos.replace_sector_partition IS 'The partition location of the sector to replace.';
+	COMMENT ON COLUMN miner_pre_commit_infos.seal_rand_epoch IS 'Seal challenge epoch. Epoch at which randomness should be drawn to tie Proof-of-Replication to a chain.';
+	COMMENT ON COLUMN miner_pre_commit_infos.sealed_cid IS 'CID of the sealed sector.';
+	COMMENT ON COLUMN miner_pre_commit_infos.sector_id IS 'Numeric identifier for the sector.';
+	COMMENT ON COLUMN miner_pre_commit_infos.state_root IS 'CID of the parent state root at this epoch.';
+	COMMENT ON COLUMN miner_pre_commit_infos.verified_deal_weight IS 'Total space*time of submitted verified deals.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -386,6 +403,23 @@ func init() {
 	COMMENT ON COLUMN miner_locked_funds.miner_id IS NULL;
 	COMMENT ON COLUMN miner_locked_funds.pre_commit_deposits IS NULL;
 	COMMENT ON COLUMN miner_locked_funds.state_root IS NULL;
+
+	COMMENT ON TABLE miner_pre_commit_infos IS NULL;
+	COMMENT ON COLUMN miner_pre_commit_infos.deal_weight IS NULL;
+	COMMENT ON COLUMN miner_pre_commit_infos.expiration_epoch IS NULL;
+	COMMENT ON COLUMN miner_pre_commit_infos.height IS NULL;
+	COMMENT ON COLUMN miner_pre_commit_infos.is_replace_capacity IS NULL;
+	COMMENT ON COLUMN miner_pre_commit_infos.miner_id IS NULL;
+	COMMENT ON COLUMN miner_pre_commit_infos.pre_commit_deposit IS NULL;
+	COMMENT ON COLUMN miner_pre_commit_infos.pre_commit_epoch IS NULL;
+	COMMENT ON COLUMN miner_pre_commit_infos.replace_sector_deadline IS NULL;
+	COMMENT ON COLUMN miner_pre_commit_infos.replace_sector_number IS NULL;
+	COMMENT ON COLUMN miner_pre_commit_infos.replace_sector_partition IS NULL;
+	COMMENT ON COLUMN miner_pre_commit_infos.seal_rand_epoch IS NULL;
+	COMMENT ON COLUMN miner_pre_commit_infos.sealed_cid IS NULL;
+	COMMENT ON COLUMN miner_pre_commit_infos.sector_id IS NULL;
+	COMMENT ON COLUMN miner_pre_commit_infos.state_root IS NULL;
+	COMMENT ON COLUMN miner_pre_commit_infos.verified_deal_weight IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
