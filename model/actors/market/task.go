@@ -15,7 +15,7 @@ func (mtr *MarketTaskResult) Persist(ctx context.Context, s model.StorageBatch) 
 	if err := mtr.Proposals.Persist(ctx, s); err != nil {
 		return err
 	}
-	if err := mtr.Proposals.Persist(ctx, s); err != nil {
+	if err := mtr.States.Persist(ctx, s); err != nil {
 		return err
 	}
 	return nil
