@@ -69,6 +69,23 @@ Use the following env vars to configure the lotus node that visor reads from, an
 - `LOTUS_PATH` - path to the lotus data dir. _default: `~/.lotus`_
 - `LOTUS_DB` - database connection . _default: `postgres://postgres:password@localhost:5432/postgres?sslmode=disable`_
 
+The `walk` and `watch` commands expect a list of tasks to be provided. Each task is responsible for reading a particular type of data from the chain and persisting it to the database.
+The mapping between available tasks and database tables is as follows:
+
+| Task Name           | Database Tables |
+|---------------------|-----------------|
+| blocks              | block_headers, block_parents, drand_block_entries |
+| messages            | messages, receipts, block_messages, parsed_messages, derived_gas_outputs, message_gas_economy |
+| chaineconomics      | chain_economics |
+| actorstatesraw      | actors, actor_states |
+| actorstatespower    | chain_powers, power_actor_claims |
+| actorstatesreward   | chain_rewards |
+| actorstatesminer    | miner_current_deadline_infos, miner_fee_debts, miner_locked_funds, miner_infos, miner_sector_posts, miner_pre_commit_infos, miner_sector_infos, miner_sector_events, miner_sector_deals |
+| actorstatesinit     | id_addresses |
+| actorstatesmarket   | market_deal_proposals, market_deal_states |
+| actorstatesmultisig | multisig_transactions |
+
+
 ### Configuring Tracing
 
 The global flag `--tracing=<bool>` turns tracing on or off. It is on by default.
