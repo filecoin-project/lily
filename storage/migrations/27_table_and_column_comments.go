@@ -239,6 +239,12 @@ func init() {
 	COMMENT ON COLUMN miner_sector_infos.sector_id IS 'Numeric identifier of the sector.';
 	COMMENT ON COLUMN miner_sector_infos.state_root IS 'CID of the parent state root for this epoch.';
 	COMMENT ON COLUMN miner_sector_infos.verified_deal_weight IS 'Integral of active verified deals over sector lifetime.';
+
+	COMMENT ON TABLE miner_sector_posts IS 'Proof of Spacetime for sectors.';
+	COMMENT ON COLUMN miner_sector_posts.height IS 'Epoch at which this PoSt message was executed.';
+	COMMENT ON COLUMN miner_sector_posts.miner_id IS 'Address of the miner who owns the sector.';
+	COMMENT ON COLUMN miner_sector_posts.post_message_cid IS 'CID of the PoSt message.';
+	COMMENT ON COLUMN miner_sector_posts.sector_id IS 'Numeric identifier of the sector.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -474,6 +480,12 @@ func init() {
 	COMMENT ON COLUMN miner_sector_infos.sector_id IS NULL;
 	COMMENT ON COLUMN miner_sector_infos.state_root IS NULL;
 	COMMENT ON COLUMN miner_sector_infos.verified_deal_weight IS NULL;
+
+	COMMENT ON TABLE miner_sector_posts IS NULL;
+	COMMENT ON COLUMN miner_sector_posts.height IS NULL;
+	COMMENT ON COLUMN miner_sector_posts.miner_id IS NULL;
+	COMMENT ON COLUMN miner_sector_posts.post_message_cid IS NULL;
+	COMMENT ON COLUMN miner_sector_posts.sector_id IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
