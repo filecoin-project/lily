@@ -225,6 +225,20 @@ func init() {
 	COMMENT ON COLUMN miner_sector_events.miner_id IS 'Address of the miner who owns the sector.';
 	COMMENT ON COLUMN miner_sector_events.sector_id IS 'Numeric identifier of the sector.';
 	COMMENT ON COLUMN miner_sector_events.state_root IS 'CID of the parent state root for this epoch.';
+
+	COMMENT ON TABLE miner_sector_infos IS 'Latest state of sectors by Miner.';
+	COMMENT ON COLUMN miner_sector_infos.activation_epoch IS 'Epoch during which the sector proof was accepted.';
+	COMMENT ON COLUMN miner_sector_infos.deal_weight IS 'Integral of active deals over sector lifetime.';
+	COMMENT ON COLUMN miner_sector_infos.expected_day_reward IS 'Expected one day projection of reward for sector computed at activation time (in attoFIL).';
+	COMMENT ON COLUMN miner_sector_infos.expected_storage_pledge IS 'Expected twenty day projection of reward for sector computed at activation time (in attoFIL).';
+	COMMENT ON COLUMN miner_sector_infos.expiration_epoch IS 'Epoch during which the sector expires.';
+	COMMENT ON COLUMN miner_sector_infos.height IS 'Epoch at which this sector info was added/updated.';
+	COMMENT ON COLUMN miner_sector_infos.initial_pledge IS 'Pledge collected to commit this sector (in attoFIL).';
+	COMMENT ON COLUMN miner_sector_infos.miner_id IS 'Address of the miner who owns the sector.';
+	COMMENT ON COLUMN miner_sector_infos.sealed_cid IS 'The root CID of the Sealed Sector’s merkle tree. Also called CommR, or "replica commitment".';
+	COMMENT ON COLUMN miner_sector_infos.sector_id IS 'Numeric identifier of the sector.';
+	COMMENT ON COLUMN miner_sector_infos.state_root IS 'CID of the parent state root for this epoch.';
+	COMMENT ON COLUMN miner_sector_infos.verified_deal_weight IS 'Integral of active verified deals over sector lifetime.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -446,6 +460,20 @@ func init() {
 	COMMENT ON COLUMN miner_sector_events.miner_id IS NULL;
 	COMMENT ON COLUMN miner_sector_events.sector_id IS NULL;
 	COMMENT ON COLUMN miner_sector_events.state_root IS NULL;
+
+	COMMENT ON TABLE miner_sector_infos IS NULL;
+	COMMENT ON COLUMN miner_sector_infos.activation_epoch IS NULL;
+	COMMENT ON COLUMN miner_sector_infos.deal_weight IS NULL;
+	COMMENT ON COLUMN miner_sector_infos.expected_day_reward IS NULL;
+	COMMENT ON COLUMN miner_sector_infos.expected_storage_pledge IS NULL;
+	COMMENT ON COLUMN miner_sector_infos.expiration_epoch IS NULL;
+	COMMENT ON COLUMN miner_sector_infos.height IS NULL;
+	COMMENT ON COLUMN miner_sector_infos.initial_pledge IS NULL;
+	COMMENT ON COLUMN miner_sector_infos.miner_id IS NULL;
+	COMMENT ON COLUMN miner_sector_infos.sealed_cid IS NULL;
+	COMMENT ON COLUMN miner_sector_infos.sector_id IS NULL;
+	COMMENT ON COLUMN miner_sector_infos.state_root IS NULL;
+	COMMENT ON COLUMN miner_sector_infos.verified_deal_weight IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
