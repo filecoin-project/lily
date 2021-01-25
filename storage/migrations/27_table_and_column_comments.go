@@ -224,7 +224,7 @@ func init() {
 	COMMENT ON COLUMN miner_sector_events.height IS 'Epoch at which this event occurred.';
 	COMMENT ON COLUMN miner_sector_events.miner_id IS 'Address of the miner who owns the sector.';
 	COMMENT ON COLUMN miner_sector_events.sector_id IS 'Numeric identifier of the sector.';
-	COMMENT ON COLUMN miner_sector_events.state_root IS 'CID of the parent state root for this epoch.';
+	COMMENT ON COLUMN miner_sector_events.state_root IS 'CID of the parent state root at this epoch.';
 
 	COMMENT ON TABLE miner_sector_infos IS 'Latest state of sectors by Miner.';
 	COMMENT ON COLUMN miner_sector_infos.activation_epoch IS 'Epoch during which the sector proof was accepted.';
@@ -237,7 +237,7 @@ func init() {
 	COMMENT ON COLUMN miner_sector_infos.miner_id IS 'Address of the miner who owns the sector.';
 	COMMENT ON COLUMN miner_sector_infos.sealed_cid IS 'The root CID of the Sealed Sector’s merkle tree. Also called CommR, or "replica commitment".';
 	COMMENT ON COLUMN miner_sector_infos.sector_id IS 'Numeric identifier of the sector.';
-	COMMENT ON COLUMN miner_sector_infos.state_root IS 'CID of the parent state root for this epoch.';
+	COMMENT ON COLUMN miner_sector_infos.state_root IS 'CID of the parent state root at this epoch.';
 	COMMENT ON COLUMN miner_sector_infos.verified_deal_weight IS 'Integral of active verified deals over sector lifetime.';
 
 	COMMENT ON TABLE miner_sector_posts IS 'Proof of Spacetime for sectors.';
@@ -245,6 +245,17 @@ func init() {
 	COMMENT ON COLUMN miner_sector_posts.miner_id IS 'Address of the miner who owns the sector.';
 	COMMENT ON COLUMN miner_sector_posts.post_message_cid IS 'CID of the PoSt message.';
 	COMMENT ON COLUMN miner_sector_posts.sector_id IS 'Numeric identifier of the sector.';
+
+	COMMENT ON TABLE multisig_transactions IS 'Details of pending transactions involving multisig actors.';
+	COMMENT ON COLUMN multisig_transactions.approved IS 'Addresses of signers who have approved the transaction. 0th entry is the proposer.';
+	COMMENT ON COLUMN multisig_transactions.height IS 'Epoch at which this transaction was executed.';
+	COMMENT ON COLUMN multisig_transactions.method IS 'The method number to invoke on the recipient if the proposal is approved. Only unique to the actor the method is being invoked on. A method number of 0 is a plain token transfer - no method exectution.';
+	COMMENT ON COLUMN multisig_transactions.multisig_id IS 'Address of the multisig actor involved in the transaction.';
+	COMMENT ON COLUMN multisig_transactions.params IS 'CBOR encoded bytes of parameters to send to the method that will be invoked if the proposal is approved.';
+	COMMENT ON COLUMN multisig_transactions.state_root IS 'CID of the parent state root at this epoch.';
+	COMMENT ON COLUMN multisig_transactions.to IS 'Address of the recipient who will be sent a message if the proposal is approved.';
+	COMMENT ON COLUMN multisig_transactions.transaction_id IS 'Number identifier for the transaction - unique per multisig.';
+	COMMENT ON COLUMN multisig_transactions.value IS 'Amount of FIL (in attoFIL) that will be transferred if the proposal is approved.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -486,6 +497,17 @@ func init() {
 	COMMENT ON COLUMN miner_sector_posts.miner_id IS NULL;
 	COMMENT ON COLUMN miner_sector_posts.post_message_cid IS NULL;
 	COMMENT ON COLUMN miner_sector_posts.sector_id IS NULL;
+
+	COMMENT ON TABLE multisig_transactions IS NULL;
+	COMMENT ON COLUMN multisig_transactions.approved IS NULL;
+	COMMENT ON COLUMN multisig_transactions.height IS NULL;
+	COMMENT ON COLUMN multisig_transactions.method IS NULL;
+	COMMENT ON COLUMN multisig_transactions.multisig_id IS NULL;
+	COMMENT ON COLUMN multisig_transactions.params IS NULL;
+	COMMENT ON COLUMN multisig_transactions.state_root IS NULL;
+	COMMENT ON COLUMN multisig_transactions.to IS NULL;
+	COMMENT ON COLUMN multisig_transactions.transaction_id IS NULL;
+	COMMENT ON COLUMN multisig_transactions.value IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
