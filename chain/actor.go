@@ -205,10 +205,11 @@ type TypedActorExtractorMap struct {
 	// Simplistic for now, will need to make into a slice when we have more actor versions
 	CodeV1 cid.Cid
 	CodeV2 cid.Cid
+	CodeV3 cid.Cid
 }
 
 func (t *TypedActorExtractorMap) Allow(code cid.Cid) bool {
-	return code == t.CodeV1 || code == t.CodeV2
+	return code == t.CodeV1 || code == t.CodeV2 || code == t.CodeV3
 }
 
 func (t *TypedActorExtractorMap) GetExtractor(code cid.Cid) (actorstate.ActorStateExtractor, bool) {

@@ -23,6 +23,9 @@ import (
 	sa2power "github.com/filecoin-project/specs-actors/v2/actors/builtin/power"
 	sa2reward "github.com/filecoin-project/specs-actors/v2/actors/builtin/reward"
 	adt2 "github.com/filecoin-project/specs-actors/v2/actors/util/adt"
+	sa3init "github.com/filecoin-project/specs-actors/v3/actors/builtin/init"
+	sa3power "github.com/filecoin-project/specs-actors/v3/actors/builtin/power"
+	sa3reward "github.com/filecoin-project/specs-actors/v3/actors/builtin/reward"
 	"github.com/ipfs/go-cid"
 	cbornode "github.com/ipfs/go-ipld-cbor"
 	"github.com/stretchr/testify/require"
@@ -269,12 +272,22 @@ func (m *MockAPI) mustCreateEmptyPowerStateV2() *sa2power.State {
 	return sa2power.ConstructState(emptyClaimsMap, cronEventQueueMMap)
 }
 
+func (m *MockAPI) mustCreateEmptyPowerStateV3() *sa3power.State {
+	st, err := sa3power.ConstructState(m.store)
+	require.NoError(m.t, err)
+	return st
+}
+
 func (m *MockAPI) mustCreateEmptyRewardStateV0(currRealizedPower abi.StoragePower) *sa0reward.State {
 	return sa0reward.ConstructState(currRealizedPower)
 }
 
 func (m *MockAPI) mustCreateEmptyRewardStateV2(currRealizedPower abi.StoragePower) *sa2reward.State {
 	return sa2reward.ConstructState(currRealizedPower)
+}
+
+func (m *MockAPI) mustCreateEmptyRewardStateV3(currRealizedPower abi.StoragePower) *sa3reward.State {
+	return sa3reward.ConstructState(currRealizedPower)
 }
 
 func (m *MockAPI) mustCreateEmptyInitStateV0() *sa0init.State {
@@ -289,6 +302,12 @@ func (m *MockAPI) mustCreateEmptyInitStateV2() *sa2init.State {
 	require.NoError(m.t, err)
 
 	return sa2init.ConstructState(emptyMap, "visor-testing")
+}
+
+func (m *MockAPI) mustCreateEmptyInitStateV3() *sa3init.State {
+	st, err := sa3init.ConstructState(m.store, "visor-testing")
+	require.NoError(m.t, err)
+	return st
 }
 
 func (m *MockAPI) mustCreateAccountStateV0(addr address.Address) *sa0account.State {

@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
+	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
@@ -18,6 +19,7 @@ import (
 func init() {
 	Register(sa0builtin.MultisigActorCodeID, MultiSigActorExtractor{})
 	Register(sa2builtin.MultisigActorCodeID, MultiSigActorExtractor{})
+	Register(sa3builtin.MultisigActorCodeID, MultiSigActorExtractor{})
 }
 
 type MultiSigActorExtractor struct{}
