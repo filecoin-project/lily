@@ -256,6 +256,15 @@ func init() {
 	COMMENT ON COLUMN multisig_transactions.to IS 'Address of the recipient who will be sent a message if the proposal is approved.';
 	COMMENT ON COLUMN multisig_transactions.transaction_id IS 'Number identifier for the transaction - unique per multisig.';
 	COMMENT ON COLUMN multisig_transactions.value IS 'Amount of FIL (in attoFIL) that will be transferred if the proposal is approved.';
+
+	COMMENT ON TABLE parsed_messages IS 'Messages parsed to extract useful information.';
+	COMMENT ON COLUMN parsed_messages.cid IS 'CID of the message.';
+	COMMENT ON COLUMN parsed_messages.from IS 'Address of the actor that sent the message.';
+	COMMENT ON COLUMN parsed_messages.height IS 'Epoch this message was executed at.';
+	COMMENT ON COLUMN parsed_messages.method IS 'The name of the method that was invoked on the recipient actor.';
+	COMMENT ON COLUMN parsed_messages.params IS 'Method paramaters parsed and serialized as a JSON object.';
+	COMMENT ON COLUMN parsed_messages.to IS 'Address of the actor that received the message.';
+	COMMENT ON COLUMN parsed_messages.value IS 'Amount of FIL (in attoFIL) transferred by this message.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -508,6 +517,15 @@ func init() {
 	COMMENT ON COLUMN multisig_transactions.to IS NULL;
 	COMMENT ON COLUMN multisig_transactions.transaction_id IS NULL;
 	COMMENT ON COLUMN multisig_transactions.value IS NULL;
+
+	COMMENT ON TABLE parsed_messages IS NULL;
+	COMMENT ON COLUMN parsed_messages.cid IS NULL;
+	COMMENT ON COLUMN parsed_messages.from IS NULL;
+	COMMENT ON COLUMN parsed_messages.height IS NULL;
+	COMMENT ON COLUMN parsed_messages.method IS NULL;
+	COMMENT ON COLUMN parsed_messages.params IS NULL;
+	COMMENT ON COLUMN parsed_messages.to IS NULL;
+	COMMENT ON COLUMN parsed_messages.value IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
