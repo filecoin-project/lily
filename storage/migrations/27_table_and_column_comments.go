@@ -58,10 +58,10 @@ func init() {
 	COMMENT ON COLUMN chain_powers.qa_smoothed_velocity_estimate IS 'Total power smoothed velocity estimate - Alpha Beta Filter "velocity" (rate of change of value) estimate in Q.128 format.';
 	COMMENT ON COLUMN chain_powers.state_root IS 'CID of the parent state root.';
 	COMMENT ON COLUMN chain_powers.total_pledge_collateral IS 'Total locked FIL (attoFIL) miners have pledged as collateral in order to participate in the economy.';
-	COMMENT ON COLUMN chain_powers.total_qa_bytes_committed IS 'Total provably committed, quality adjusted storage power in bytes.';
-	COMMENT ON COLUMN chain_powers.total_qa_bytes_power IS 'Total quality adjusted storage power in bytes in the network.';
-	COMMENT ON COLUMN chain_powers.total_raw_bytes_committed IS 'Total provably committed storage power in bytes.';
-	COMMENT ON COLUMN chain_powers.total_raw_bytes_power IS 'Total storage power in bytes in the network.';
+	COMMENT ON COLUMN chain_powers.total_qa_bytes_committed IS 'Total provably committed, quality adjusted storage power in bytes. Quality adjusted power is a weighted average of the quality of its space and it is based on the size, duration and quality of its deals.';
+	COMMENT ON COLUMN chain_powers.total_qa_bytes_power IS 'Total quality adjusted storage power in bytes in the network. Quality adjusted power is a weighted average of the quality of its space and it is based on the size, duration and quality of its deals.';
+	COMMENT ON COLUMN chain_powers.total_raw_bytes_committed IS 'Total provably committed storage power in bytes. Raw byte power is the size of a sector in bytes.';
+	COMMENT ON COLUMN chain_powers.total_raw_bytes_power IS 'Total storage power in bytes in the network. Raw byte power is the size of a sector in bytes.';
 
 	COMMENT ON TABLE chain_rewards IS 'Reward summaries from the Reward actor.';
 	COMMENT ON COLUMN chain_rewards.cum_sum_baseline IS 'Target that CumsumRealized needs to reach for EffectiveNetworkTime to increase. It is measured in byte-epochs (space * time) representing power committed to the network for some duration.';
@@ -265,6 +265,13 @@ func init() {
 	COMMENT ON COLUMN parsed_messages.params IS 'Method paramaters parsed and serialized as a JSON object.';
 	COMMENT ON COLUMN parsed_messages.to IS 'Address of the actor that received the message.';
 	COMMENT ON COLUMN parsed_messages.value IS 'Amount of FIL (in attoFIL) transferred by this message.';
+
+	COMMENT ON TABLE power_actor_claims IS 'Miner power claims recorded by the power actor.';
+	COMMENT ON COLUMN power_actor_claims.height IS 'Epoch this claim was made.';
+	COMMENT ON COLUMN power_actor_claims.miner_id IS 'Address of miner making the claim.';
+	COMMENT ON COLUMN power_actor_claims.quality_adj_power IS 'Sum of quality adjusted storage power for a miner''s sectors. Quality adjusted power is a weighted average of the quality of its space and it is based on the size, duration and quality of its deals.';
+	COMMENT ON COLUMN power_actor_claims.raw_byte_power IS 'Sum of raw byte storage power for a miner''s sectors. Raw byte power is the size of a sector in bytes.';
+	COMMENT ON COLUMN power_actor_claims.state_root IS 'CID of the parent state root at this epoch.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -526,6 +533,13 @@ func init() {
 	COMMENT ON COLUMN parsed_messages.params IS NULL;
 	COMMENT ON COLUMN parsed_messages.to IS NULL;
 	COMMENT ON COLUMN parsed_messages.value IS NULL;
+
+	COMMENT ON TABLE power_actor_claims IS NULL;
+	COMMENT ON COLUMN power_actor_claims.height IS NULL;
+	COMMENT ON COLUMN power_actor_claims.miner_id IS NULL;
+	COMMENT ON COLUMN power_actor_claims.quality_adj_power IS NULL;
+	COMMENT ON COLUMN power_actor_claims.raw_byte_power IS NULL;
+	COMMENT ON COLUMN power_actor_claims.state_root IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
