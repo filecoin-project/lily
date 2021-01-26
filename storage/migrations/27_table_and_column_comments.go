@@ -272,6 +272,14 @@ func init() {
 	COMMENT ON COLUMN power_actor_claims.quality_adj_power IS 'Sum of quality adjusted storage power for a miner''s sectors. Quality adjusted power is a weighted average of the quality of its space and it is based on the size, duration and quality of its deals.';
 	COMMENT ON COLUMN power_actor_claims.raw_byte_power IS 'Sum of raw byte storage power for a miner''s sectors. Raw byte power is the size of a sector in bytes.';
 	COMMENT ON COLUMN power_actor_claims.state_root IS 'CID of the parent state root at this epoch.';
+
+	COMMENT ON TABLE receipts IS 'Message reciepts after being applied to chain state by message CID and parent state root CID of tipset when message was executed.';
+	COMMENT ON COLUMN receipts.exit_code IS 'The exit code that was returned as a result of executing the message. Exit code 0 indicates success. Codes 0-15 are reserved for use by the runtime. Codes 16-31 are common codes shared by different actors. Codes 32+ are actor specific.';
+	COMMENT ON COLUMN receipts.gas_used IS 'A measure of the amount of resources (or units of gas) consumed, in order to execute a message.';
+	COMMENT ON COLUMN receipts.height IS 'Epoch the message was executed and receipt generated.';
+	COMMENT ON COLUMN receipts.idx IS 'Index of message indicating execution order.';
+	COMMENT ON COLUMN receipts.message IS 'CID of the message this receipt belongs to.';
+	COMMENT ON COLUMN receipts.state_root IS 'CID of the parent state root that this epoch.';
 `)
 	down := batch(`
 	COMMENT ON TABLE actor_states IS NULL;
@@ -540,6 +548,14 @@ func init() {
 	COMMENT ON COLUMN power_actor_claims.quality_adj_power IS NULL;
 	COMMENT ON COLUMN power_actor_claims.raw_byte_power IS NULL;
 	COMMENT ON COLUMN power_actor_claims.state_root IS NULL;
+
+	COMMENT ON TABLE receipts IS NULL;
+	COMMENT ON COLUMN receipts.exit_code IS NULL;
+	COMMENT ON COLUMN receipts.gas_used IS NULL;
+	COMMENT ON COLUMN receipts.height IS NULL;
+	COMMENT ON COLUMN receipts.idx IS NULL;
+	COMMENT ON COLUMN receipts.message IS NULL;
+	COMMENT ON COLUMN receipts.state_root IS NULL;
 `)
 
 	migrations.MustRegisterTx(up, down)
