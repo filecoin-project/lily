@@ -5,6 +5,64 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.5.0-rc2"></a>
+## [v0.5.0-rc2] - 2021-01-27
+
+Required schema version: `27`
+
+### Notable for this release:
+- update specs-actors to support v3 upgrade
+- CSV exporting for easier ingestion into the DB of your choice
+- bug fix for incorrect gas outputs (which changed after FIP-0009 was applied)
+- inline schema documentation
+
+### Feat
+- remove default value for --db parameter ([#348](https://github.com/filecoin-project/sentinel-visor/issues/348))
+- abstract model storage and add csv output for walk command ([#316](https://github.com/filecoin-project/sentinel-visor/issues/316))
+- allow finer-grained actor task processing ([#305](https://github.com/filecoin-project/sentinel-visor/issues/305))
+- record metrics for watch and walk commands ([#312](https://github.com/filecoin-project/sentinel-visor/issues/312))
+- **db:** allow model upsertion
+- **gas outputs:** Add Height and ActorName ([#270](https://github.com/filecoin-project/sentinel-visor/issues/270))
+- **lens:** Optimize StateGetActor calls. ([#214](https://github.com/filecoin-project/sentinel-visor/issues/214))
+
+### Fix
+- persist market deal states ([#367](https://github.com/filecoin-project/sentinel-visor/issues/367))
+- improve inferred json encoding for csv output ([#364](https://github.com/filecoin-project/sentinel-visor/issues/364))
+- csv output handles time and interface values ([#351](https://github.com/filecoin-project/sentinel-visor/issues/351))
+- adjust calculation of gas outputs for FIP-0009 ([#356](https://github.com/filecoin-project/sentinel-visor/issues/356))
+- reject names that exceed maximum postgres name length ([#323](https://github.com/filecoin-project/sentinel-visor/issues/323))
+- don't restart a walk if it fails ([#320](https://github.com/filecoin-project/sentinel-visor/issues/320))
+- close all processor connections to lotus on fatal error ([#309](https://github.com/filecoin-project/sentinel-visor/issues/309))
+- use migration database connection when installing timescale extension ([#304](https://github.com/filecoin-project/sentinel-visor/issues/304))
+- **ci:** Pin TimescaleDB to v1.7 on Postgres v12 ([#340](https://github.com/filecoin-project/sentinel-visor/issues/340))
+- **migration:** don't recreate miner_sector_deals primary key if it is correct ([#300](https://github.com/filecoin-project/sentinel-visor/issues/300))
+- **migrations:** CREATE EXTENSION deadlocks inside migrations global lock ([#210](https://github.com/filecoin-project/sentinel-visor/issues/210))
+- **miner:** extract miner PoSt's from parent messages
+
+### Chore
+- update imports and ffi stub for lotus 1.5.0-pre1 ([#371](https://github.com/filecoin-project/sentinel-visor/issues/371))
+- fix some linting issues ([#349](https://github.com/filecoin-project/sentinel-visor/issues/349))
+- **api:** trim the lens API to required methods
+- **lint:** fix linter errors
+- **lint:** fix staticcheck linting issues ([#299](https://github.com/filecoin-project/sentinel-visor/issues/299))
+- **sql:** user numeric type to represent numbers ([#327](https://github.com/filecoin-project/sentinel-visor/issues/327))
+
+### Perf
+- replace local state diffing with StateChangeActors API method ([#303](https://github.com/filecoin-project/sentinel-visor/issues/303))
+
+### Test
+- **actorstate:** unit test actorstate actor task
+- **chain:** refactor and test chain economics extraction ([#298](https://github.com/filecoin-project/sentinel-visor/issues/298))
+
+### Docs
+- table and column comments ([#346](https://github.com/filecoin-project/sentinel-visor/issues/346))
+- Update README and docker-compose to require use of TimescaleDB v1.7 ([#341](https://github.com/filecoin-project/sentinel-visor/issues/341))
+- document mapping between tasks and tables ([#369](https://github.com/filecoin-project/sentinel-visor/issues/369))
+
+### Polish
+- **test:** allow `make test` to "just work"
+
+## [v0.5.0-rc1] - Re-released as [v0.5.0-rc2](#v0.5.0-rc2)
 
 <a name="v0.4.0"></a>
 ## [v0.4.0] - 2020-12-16
@@ -258,6 +316,7 @@ After this change:
 ### Test
 - **storage:** add test to check for duplicate schema migrations ([#80](https://github.com/filecoin-project/sentinel-visor/issues/80))
 
+[v0.5.0-rc2]: https://github.com/filecoin-project/sentinel-visor/compare/v0.4.0...v0.5.0-rc1
 [v0.4.0]: https://github.com/filecoin-project/sentinel-visor/compare/v0.4.0-rc2...v0.4.0
 [v0.4.0-rc2]: https://github.com/filecoin-project/sentinel-visor/compare/v0.4.0-rc1...v0.4.0-rc2
 [v0.4.0-rc1]: https://github.com/filecoin-project/sentinel-visor/compare/v0.3.0...v0.4.0-rc1
