@@ -6,6 +6,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/actors/builtin/reward"
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
+	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
@@ -21,6 +22,7 @@ type RewardExtractor struct{}
 func init() {
 	Register(sa0builtin.RewardActorCodeID, RewardExtractor{})
 	Register(sa2builtin.RewardActorCodeID, RewardExtractor{})
+	Register(sa3builtin.RewardActorCodeID, RewardExtractor{})
 }
 
 func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {

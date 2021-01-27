@@ -8,6 +8,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
+	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -79,31 +80,37 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 			tsi.actorProcessors[ActorStatesPowerTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
 				CodeV1: sa0builtin.StoragePowerActorCodeID,
 				CodeV2: sa2builtin.StoragePowerActorCodeID,
+				CodeV3: sa3builtin.StoragePowerActorCodeID,
 			})
 		case ActorStatesRewardTask:
 			tsi.actorProcessors[ActorStatesRewardTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
 				CodeV1: sa0builtin.RewardActorCodeID,
 				CodeV2: sa2builtin.RewardActorCodeID,
+				CodeV3: sa3builtin.RewardActorCodeID,
 			})
 		case ActorStatesMinerTask:
 			tsi.actorProcessors[ActorStatesMinerTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
 				CodeV1: sa0builtin.StorageMinerActorCodeID,
 				CodeV2: sa2builtin.StorageMinerActorCodeID,
+				CodeV3: sa3builtin.StorageMinerActorCodeID,
 			})
 		case ActorStatesInitTask:
 			tsi.actorProcessors[ActorStatesInitTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
 				CodeV1: sa0builtin.InitActorCodeID,
 				CodeV2: sa2builtin.InitActorCodeID,
+				CodeV3: sa3builtin.InitActorCodeID,
 			})
 		case ActorStatesMarketTask:
 			tsi.actorProcessors[ActorStatesMarketTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
 				CodeV1: sa0builtin.StorageMarketActorCodeID,
 				CodeV2: sa2builtin.StorageMarketActorCodeID,
+				CodeV3: sa3builtin.StorageMarketActorCodeID,
 			})
 		case ActorStatesMultisigTask:
 			tsi.actorProcessors[ActorStatesMultisigTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
 				CodeV1: sa0builtin.MultisigActorCodeID,
 				CodeV2: sa2builtin.MultisigActorCodeID,
+				CodeV3: sa3builtin.MultisigActorCodeID,
 			})
 		default:
 			return nil, xerrors.Errorf("unknown task: %s", task)

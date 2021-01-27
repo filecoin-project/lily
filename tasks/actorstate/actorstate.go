@@ -10,12 +10,14 @@ import (
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
+	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 var log = logging.Logger("actorstate")
@@ -77,5 +79,8 @@ func ActorNameByCode(code cid.Cid) string {
 	if name := builtin.ActorNameByCode(code); name != "<unknown>" {
 		return name
 	}
-	return builtin2.ActorNameByCode(code)
+	if name := builtin2.ActorNameByCode(code); name != "<unknown>" {
+		return name
+	}
+	return builtin3.ActorNameByCode(code)
 }

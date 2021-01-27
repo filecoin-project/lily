@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/actors/builtin/power"
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
+	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -25,6 +26,7 @@ type StoragePowerExtractor struct{}
 func init() {
 	Register(sa0builtin.StoragePowerActorCodeID, StoragePowerExtractor{})
 	Register(sa2builtin.StoragePowerActorCodeID, StoragePowerExtractor{})
+	Register(sa3builtin.StoragePowerActorCodeID, StoragePowerExtractor{})
 }
 
 func NewPowerStateExtractionContext(ctx context.Context, a ActorInfo, node ActorStateAPI) (*PowerStateExtractionContext, error) {
