@@ -8,7 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 <a name="v0.5.0-rc2"></a>
 ## [v0.5.0-rc2] - 2021-01-27
 
-This release expects schema to be migrated to version `27`.
+Required schema version: `27`
+
+### Notable for this release:
+- update specs-actors to support v3 upgrade
+- CSV exporting for easier ingestion into the DB of your choice
+- bug fix for incorrect gas outputs (which changed after FIP-0009 was applied)
+- inline schema documentation
 
 ### Feat
 - remove default value for --db parameter ([#348](https://github.com/filecoin-project/sentinel-visor/issues/348))
