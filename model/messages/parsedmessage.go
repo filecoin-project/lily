@@ -24,6 +24,10 @@ type ParsedMessage struct {
 }
 
 func (pm *ParsedMessage) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "parsed_messages"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, pm)
 }
 
@@ -36,7 +40,7 @@ func (pms ParsedMessages) Persist(ctx context.Context, s model.StorageBatch) err
 	ctx, span := global.Tracer("").Start(ctx, "ParsedMessages.Persist", trace.WithAttributes(label.Int("count", len(pms))))
 	defer span.End()
 
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "message/parsed"))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "parsed_messages"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 

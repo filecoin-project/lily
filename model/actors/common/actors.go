@@ -3,10 +3,12 @@ package common
 import (
 	"context"
 
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 )
 
@@ -23,6 +25,11 @@ type Actor struct {
 func (a *Actor) Persist(ctx context.Context, s model.StorageBatch) error {
 	ctx, span := global.Tracer("").Start(ctx, "Actor.Persist")
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actors"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, a)
 }
 
@@ -33,6 +40,10 @@ type ActorList []*Actor
 func (actors ActorList) Persist(ctx context.Context, s model.StorageBatch) error {
 	ctx, span := global.Tracer("").Start(ctx, "ActorList.Persist", trace.WithAttributes(label.Int("count", len(actors))))
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actors"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
 
 	if len(actors) == 0 {
 		return nil
@@ -51,6 +62,11 @@ type ActorState struct {
 func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch) error {
 	ctx, span := global.Tracer("").Start(ctx, "ActorState.Persist")
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_states"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, as)
 }
 
@@ -61,6 +77,10 @@ type ActorStateList []*ActorState
 func (states ActorStateList) Persist(ctx context.Context, s model.StorageBatch) error {
 	ctx, span := global.Tracer("").Start(ctx, "ActorStateList.Persist", trace.WithAttributes(label.Int("count", len(states))))
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_states"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
 
 	if len(states) == 0 {
 		return nil

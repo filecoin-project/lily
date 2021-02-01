@@ -23,6 +23,10 @@ type Receipt struct {
 }
 
 func (r *Receipt) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "receipts"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, r)
 }
 
@@ -35,7 +39,7 @@ func (rs Receipts) Persist(ctx context.Context, s model.StorageBatch) error {
 	ctx, span := global.Tracer("").Start(ctx, "Receipts.Persist", trace.WithAttributes(label.Int("count", len(rs))))
 	defer span.End()
 
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "message/receipt"))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "receipts"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 

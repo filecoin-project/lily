@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/filecoin-project/lotus/chain/types"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 )
 
@@ -28,6 +30,10 @@ type DrandBlockEntrie struct {
 }
 
 func (dbe *DrandBlockEntrie) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "drand_block_entries"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, dbe)
 }
 
@@ -39,5 +45,10 @@ func (dbes DrandBlockEntries) Persist(ctx context.Context, s model.StorageBatch)
 	}
 	ctx, span := global.Tracer("").Start(ctx, "DrandBlockEntries.Persist", trace.WithAttributes(label.Int("count", len(dbes))))
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "drand_block_entries"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, dbes)
 }

@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/filecoin-project/lotus/chain/types"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 )
 
@@ -39,6 +41,10 @@ func NewBlockHeader(bh *types.BlockHeader) *BlockHeader {
 }
 
 func (bh *BlockHeader) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "block_headers"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, bh)
 }
 
@@ -50,5 +56,10 @@ func (bhl BlockHeaders) Persist(ctx context.Context, s model.StorageBatch) error
 	}
 	ctx, span := global.Tracer("").Start(ctx, "BlockHeaders.Persist", trace.WithAttributes(label.Int("count", len(bhl))))
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "block_headers"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, bhl)
 }

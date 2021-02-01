@@ -121,6 +121,8 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 
 // TipSet is called when a new tipset has been discovered
 func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Name, t.name))
+
 	var cancel func()
 	var tctx context.Context // cancellable context for the task
 	if t.window > 0 {
@@ -285,7 +287,10 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		for task, p := range taskOutputs {
 			go func(task string, p model.Persistable) {
 				defer wg.Done()
+				ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, task))
+
 				if err := t.storage.PersistBatch(ctx, p); err != nil {
+					stats.Record(ctx, metrics.PersistFailure.M(1))
 					ll.Errorw("persistence failed", "task", task, "error", err)
 					return
 				}
@@ -307,6 +312,7 @@ func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, nam
 
 	data, report, err := p.ProcessTipSet(ctx, ts)
 	if err != nil {
+		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
 			Task:  name,
 			Error: err,
@@ -321,8 +327,14 @@ func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, nam
 }
 
 func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor, name string, ts, pts *types.TipSet, actors map[string]types.Actor, results chan *TaskResult) {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
+	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
+	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	defer stop()
+
 	data, report, err := p.ProcessActors(ctx, ts, pts, actors)
 	if err != nil {
+		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
 			Task:  name,
 			Error: err,

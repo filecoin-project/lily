@@ -3,7 +3,9 @@ package multisig
 import (
 	"context"
 
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
+	"go.opencensus.io/tag"
 )
 
 type MultisigTransaction struct {
@@ -21,11 +23,19 @@ type MultisigTransaction struct {
 }
 
 func (m *MultisigTransaction) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "multisig_transactions"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, m)
 }
 
 type MultisigTransactionList []*MultisigTransaction
 
 func (ml MultisigTransactionList) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "multisig_transactions"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, ml)
 }

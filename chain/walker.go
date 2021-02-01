@@ -2,16 +2,15 @@ package chain
 
 import (
 	"context"
+
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
 func NewWalker(obs TipSetObserver, opener lens.APIOpener, minHeight, maxHeight int64) *Walker {
@@ -68,8 +67,6 @@ func (c *Walker) Run(ctx context.Context) error {
 func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet) error {
 	ctx, span := global.Tracer("").Start(ctx, "Walker.WalkChain", trace.WithAttributes(label.Int64("height", c.maxHeight)))
 	defer span.End()
-
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "indexhistoryblock"))
 
 	log.Debugw("found tipset", "height", ts.Height())
 	if err := c.obs.TipSet(ctx, ts); err != nil {

@@ -78,6 +78,11 @@ func (aw *APIWrapper) ChainGetParentMessages(ctx context.Context, bcid cid.Cid) 
 func (aw *APIWrapper) StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error) {
 	ctx, span := global.Tracer("").Start(ctx, "Lotus.StateGetReceipt")
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.API, "StateGetReceipt"))
+	stop := metrics.Timer(ctx, metrics.LensRequestDuration)
+	defer stop()
+
 	return aw.FullNode.StateGetReceipt(ctx, bcid, tsk)
 }
 
@@ -186,12 +191,21 @@ func (aw *APIWrapper) StateReadState(ctx context.Context, actor address.Address,
 func (aw *APIWrapper) StateVMCirculatingSupplyInternal(ctx context.Context, tsk types.TipSetKey) (api.CirculatingSupply, error) {
 	ctx, span := global.Tracer("").Start(ctx, "Lotus.StateCirculatingSupply")
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.API, "StateVMCirculatingSupplyInternal"))
+	stop := metrics.Timer(ctx, metrics.LensRequestDuration)
+	defer stop()
+
 	return aw.FullNode.StateVMCirculatingSupplyInternal(ctx, tsk)
 }
 
 // GetExecutedMessagesForTipset returns a list of messages sent as part of pts (parent) with receipts found in ts (child).
 // No attempt at deduplication of messages is made.
 func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.API, "GetExecutedMessagesForTipset"))
+	stop := metrics.Timer(ctx, metrics.LensRequestDuration)
+	defer stop()
+
 	if !types.CidArrsEqual(ts.Parents().Cids(), pts.Cids()) {
 		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", ts.Key(), pts.Key())
 	}

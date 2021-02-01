@@ -29,6 +29,10 @@ type Message struct {
 }
 
 func (m *Message) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "messages"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, m)
 }
 
@@ -41,7 +45,7 @@ func (ms Messages) Persist(ctx context.Context, s model.StorageBatch) error {
 	ctx, span := global.Tracer("").Start(ctx, "Messages.Persist", trace.WithAttributes(label.Int("count", len(ms))))
 	defer span.End()
 
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "message/message"))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "messages"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 

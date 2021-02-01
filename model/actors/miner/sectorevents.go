@@ -3,10 +3,12 @@ package miner
 import (
 	"context"
 
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 )
 
@@ -37,11 +39,23 @@ type MinerSectorEvent struct {
 	Event string `pg:"type:miner_sector_event_type" pg:",pk,notnull"` // nolint: staticcheck
 }
 
+func (mse *MinerSectorEvent) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_sector_events"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
+	return s.PersistModel(ctx, mse)
+}
+
 type MinerSectorEventList []*MinerSectorEvent
 
 func (l MinerSectorEventList) Persist(ctx context.Context, s model.StorageBatch) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerSectorEventList.Persist", trace.WithAttributes(label.Int("count", len(l))))
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_sector_events"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
 
 	if len(l) == 0 {
 		return nil

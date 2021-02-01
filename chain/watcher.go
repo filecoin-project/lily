@@ -2,7 +2,7 @@ package chain
 
 import (
 	"context"
-	"go.opencensus.io/tag"
+
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
@@ -10,7 +10,6 @@ import (
 	store "github.com/filecoin-project/lotus/chain/store"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
 // NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held
@@ -66,8 +65,6 @@ func (c *Watcher) Run(ctx context.Context) error {
 func (c *Watcher) index(ctx context.Context, headEvents []*lotus_api.HeadChange) error {
 	ctx, span := global.Tracer("").Start(ctx, "Watcher.index")
 	defer span.End()
-
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "indexheadblock"))
 
 	for _, ch := range headEvents {
 		switch ch.Type {
