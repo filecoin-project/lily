@@ -27,9 +27,6 @@ SELECT create_hypertable(
 	if_not_exists => TRUE
 );
 
--- Set retention policy for stats, 3 months of data
-SELECT add_drop_chunks_policy('visor_processing_stats', INTERVAL '3 months');
-
 `)
 
 	down := batch(`
