@@ -5,6 +5,25 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.5.1"></a>
+## [v0.5.1] - 2021-02-09
+
+### Feat
+- record actor task metrics ([#376](https://github.com/filecoin-project/sentinel-visor/issues/376))
+
+### Chore
+- increase lens object cache size ([#377](https://github.com/filecoin-project/sentinel-visor/issues/377))
+
+### Schema
+- remove use of add_drop_chunks_policy timescale function ([#379](https://github.com/filecoin-project/sentinel-visor/issues/379))
+
+
+<a name="v0.5.0"></a>
+## [v0.5.0] - 2021-02-09
+
+No changes from v0.5.0-rc2
+
+
 <a name="v0.5.0-rc2"></a>
 ## [v0.5.0-rc2] - 2021-01-27
 
