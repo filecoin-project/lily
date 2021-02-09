@@ -103,7 +103,7 @@ func setupDatabase(cctx *cli.Context) (*storage.Database, error) {
 func setupLens(cctx *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 	switch cctx.String("lens") {
 	case "lotus":
-		return vapi.NewAPIOpener(cctx, 10_000)
+		return vapi.NewAPIOpener(cctx, 50_000)
 	case "lotusrepo":
 		return repoapi.NewAPIOpener(cctx)
 	case "carrepo":
