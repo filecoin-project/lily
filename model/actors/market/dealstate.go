@@ -3,10 +3,13 @@ package market
 import (
 	"context"
 
-	"github.com/filecoin-project/sentinel-visor/model"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+
+	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type MarketDealState struct {
@@ -20,6 +23,10 @@ type MarketDealState struct {
 }
 
 func (ds *MarketDealState) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "market_deal_states"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, ds)
 }
 
@@ -28,5 +35,10 @@ type MarketDealStates []*MarketDealState
 func (dss MarketDealStates) Persist(ctx context.Context, s model.StorageBatch) error {
 	ctx, span := global.Tracer("").Start(ctx, "MarketDealStates.PersistWithTx", trace.WithAttributes(label.Int("count", len(dss))))
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "market_deal_states"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, dss)
 }

@@ -3,6 +3,7 @@ package reward
 import (
 	"context"
 
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
@@ -28,6 +29,7 @@ func (r *ChainReward) Persist(ctx context.Context, s model.StorageBatch) error {
 	ctx, span := global.Tracer("").Start(ctx, "ChainReward.Persist")
 	defer span.End()
 
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_rewards"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 

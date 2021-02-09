@@ -3,8 +3,10 @@ package miner
 import (
 	"context"
 
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 )
 
@@ -24,6 +26,11 @@ type MinerCurrentDeadlineInfo struct {
 func (m *MinerCurrentDeadlineInfo) Persist(ctx context.Context, s model.StorageBatch) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerCurrentDeadlineInfo.Persist")
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_current_deadline_infos"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, m)
 }
 
@@ -32,6 +39,11 @@ type MinerCurrentDeadlineInfoList []*MinerCurrentDeadlineInfo
 func (ml MinerCurrentDeadlineInfoList) Persist(ctx context.Context, s model.StorageBatch) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerCurrentDeadlineInfoList.Persist")
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_current_deadline_infos"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	if len(ml) == 0 {
 		return nil
 	}

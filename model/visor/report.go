@@ -4,10 +4,12 @@ import (
 	"context"
 	"time"
 
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 )
 
@@ -38,6 +40,10 @@ type ProcessingReport struct {
 }
 
 func (p *ProcessingReport) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "visor_processing_reports"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, p)
 }
 
@@ -49,6 +55,10 @@ func (pl ProcessingReportList) Persist(ctx context.Context, s model.StorageBatch
 	}
 	ctx, span := global.Tracer("").Start(ctx, "ProcessingReportList.Persist", trace.WithAttributes(label.Int("count", len(pl))))
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "visor_processing_reports"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
 
 	return s.PersistModel(ctx, pl)
 }

@@ -19,6 +19,10 @@ type BlockMessage struct {
 }
 
 func (bm *BlockMessage) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "block_messages"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, bm)
 }
 
@@ -31,7 +35,7 @@ func (bms BlockMessages) Persist(ctx context.Context, s model.StorageBatch) erro
 	ctx, span := global.Tracer("").Start(ctx, "BlockMessages.Persist", trace.WithAttributes(label.Int("count", len(bms))))
 	defer span.End()
 
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, "message/blockmessage"))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "block_messages"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 

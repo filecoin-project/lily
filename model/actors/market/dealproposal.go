@@ -3,10 +3,13 @@ package market
 import (
 	"context"
 
-	"github.com/filecoin-project/sentinel-visor/model"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+
+	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type MarketDealProposal struct {
@@ -32,6 +35,10 @@ type MarketDealProposal struct {
 }
 
 func (dp *MarketDealProposal) Persist(ctx context.Context, s model.StorageBatch) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "market_deal_proposals"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, dp)
 }
 
@@ -40,5 +47,10 @@ type MarketDealProposals []*MarketDealProposal
 func (dps MarketDealProposals) Persist(ctx context.Context, s model.StorageBatch) error {
 	ctx, span := global.Tracer("").Start(ctx, "MarketDealProposals.Persist", trace.WithAttributes(label.Int("count", len(dps))))
 	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "market_deal_proposals"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
 	return s.PersistModel(ctx, dps)
 }
