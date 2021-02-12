@@ -18,44 +18,16 @@ A non-prescriptive example of the release process might look like the following:
 ```sh
 git checkout master
 git pull                                # checkout/pull latest master
-git checkout -b vx.x.x-release          # create release branch
+git checkout -b vX.Y.Z(-rcN)-release          # create release branch
 vi CHANGELOG.md                         # update CHANGELOG.md
 make visor                              # validate build
 go mod tidy                             # ensure tidy go.mod for release
 git add CHANGELOG.md go.mod go.sum
-git commit -m "chore(docs): Update CHANGELOG for vx.x.x-rc1"
+git commit -m "chore(docs): Update CHANGELOG for vX.Y.Z(-rcN)"
                                         # commit CHANGELOG/go.mod updates
-git tag -asm vx.x.x-rc1 vx.x.x-rc1      # create signed/annotated tag
-git push --tags origin vx.x.x-release
+git tag -asm vX.Y.Z-rcN vX.Y.Z(-rcN)    # create signed/annotated tag
+git push --tags origin vX.Y.Z(-rcN)-release
                                         # push release branch and tags
-
-# release validation
-
-# optional hotfix flow
-git commit -m "fix: Hotfix desc"        # optional hotfixes applied to release branch
-vi CHANGELOG.md                         # update CHANGELOG.md
-make visor                              # validate build
-go mod tidy                             # ensure tidy go.mod for release
-git add CHANGELOG.md go.mod go.sum
-git commit -m "chore(docs): Update CHANGELOG for vx.x.x-rc2"
-git tag -asm vx.x.x-rc2 vx.x.x-rc2
-git push --tags origin vx.x.x-release   # push hotfix and new release candidate tag
-
-# release acceptance
-
-vi CHANGELOG.md
-git add CHANGELOG.md
-git commit -m "chore(docs): Update CHANGELOG for vx.x.x"
-                                        # update/add/commit CHANGELOG.md
-git tag -asm vx.x.x vx.x.x
-git push --tags origin vx.x.x-release   # tag and push final release
-
-git merge master                        # resolve upstream changes within release branch
-git push origin vx.x.x-release          # push merge resolution
-
-git checkout master
-git merge vx.x.x-release
-git push origin master                  # clean merge commit of release branch into master and push
 ```
 
 NOTE: `sentinel-visor` pull requests prefer to be squash-merged into `master`, however considering this workflow tags release candidate within the release branch which we want to easily resolve in the repository's history, it is preferred to not squash and instead merge the release branch into `master`.
@@ -79,9 +51,9 @@ go run github.com/git-chglog/git-chglog/cmd/git-chglog -o CHANGELOG_updates.md -
 
 # reconcile CHANGELOG_updates.md into CHANGELOG.md applying the preferred section order
 vi CHANGELOG*.md
+rm CHANGELOG_updates.md
 
 # commit changes
-rm CHANGELOG_updates.md
 git add CHANGELOG.md
 git commit -m 'chore(docs): Update CHANGELOG for v0.5.0-rc1'
 ```

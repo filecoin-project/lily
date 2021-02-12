@@ -84,10 +84,6 @@ dist-clean:
 	git submodule deinit --all -f
 .PHONY: dist-clean
 
-.PHONY: changelog
-changelog:
-	go run github.com/git-chglog/git-chglog/cmd/git-chglog -o CHANGELOG.md
-
 test-coverage:
 	VISOR_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test -coverprofile=coverage.out ./...
 .PHONY: test-coverage
