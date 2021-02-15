@@ -72,12 +72,12 @@ func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 		lr.Close()
 	}
 
-	bs, err := lr.Blockstore(repo.BlockstoreChain)
+	bs, err := lr.Blockstore(c.Context, repo.BlockstoreChain)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	mds, err := lr.Datastore("/metadata")
+	mds, err := lr.Datastore(c.Context, "/metadata")
 	if err != nil {
 		return nil, nil, err
 	}
