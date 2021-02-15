@@ -332,6 +332,8 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	}
 
 	// Persist all results
+	var wg sync.WaitGroup
+	wg.Add(len(taskOutputs))
 	go func() {
 		// free up the slot when done
 		defer func() {
@@ -339,8 +341,6 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		}()
 
 		ll.Debugw("persisting data", "time", time.Since(start))
-		var wg sync.WaitGroup
-		wg.Add(len(taskOutputs))
 
 		// Persist each processor's data concurrently since they don't overlap
 		for task, p := range taskOutputs {
@@ -356,9 +356,9 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 				ll.Debugw("task data persisted", "task", task, "time", time.Since(start))
 			}(task, p)
 		}
-		wg.Wait()
 		ll.Debugw("tipset complete", "total_time", time.Since(start))
 	}()
+	wg.Wait()
 
 	return nil
 }
