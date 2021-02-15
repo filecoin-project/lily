@@ -20,10 +20,11 @@ import (
 
 // An ActorStateProcessor processes the extraction of actor state according the allowed types in its extracter map.
 type ActorStateProcessor struct {
-	node         lens.API
-	opener       lens.APIOpener
-	closer       lens.APICloser
-	extracterMap ActorExtractorMap
+	node          lens.API
+	opener        lens.APIOpener
+	closer        lens.APICloser
+	extracterMap  ActorExtractorMap
+	addressFilter *AddressFilter
 }
 
 func NewActorStateProcessor(opener lens.APIOpener, extracterMap ActorExtractorMap) *ActorStateProcessor {
@@ -191,6 +192,10 @@ type ActorStateError struct {
 type ActorExtractorMap interface {
 	Allow(code cid.Cid) bool
 	GetExtractor(code cid.Cid) (actorstate.ActorStateExtractor, bool)
+}
+
+type ActorExtractorFilter interface {
+	AllowAddress(addr string) bool
 }
 
 // A RawActorExtractorMap extracts all types of actors using basic actor extraction which only parses shallow state.
