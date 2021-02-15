@@ -78,6 +78,7 @@ func NewAPIOpener(c *cli.Context, bs blockstore.Blockstore, head HeadMthd) (*API
 
 	sm := stmgr.NewStateManager(cs)
 
+	rapi.cs = cs
 	rapi.FullNodeAPI.ChainAPI.Chain = cs
 	rapi.FullNodeAPI.ChainAPI.ChainModuleAPI = &full.ChainModule{Chain: cs}
 	rapi.FullNodeAPI.StateAPI.Chain = cs
