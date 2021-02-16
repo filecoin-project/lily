@@ -66,7 +66,7 @@ lint:
 .PHONY: visor
 visor:
 	rm -f visor
-	go build $(GOFLAGS) -o visor .
+	go build $(GOFLAGS) -o visor -mod=readonly .
 
 BINS+=visor
 
@@ -83,10 +83,6 @@ dist-clean:
 	git clean -xdff
 	git submodule deinit --all -f
 .PHONY: dist-clean
-
-.PHONY: changelog
-changelog:
-	go run github.com/git-chglog/git-chglog/cmd/git-chglog -o CHANGELOG.md
 
 test-coverage:
 	VISOR_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test -coverprofile=coverage.out ./...

@@ -5,7 +5,6 @@ A component of [**Sentinel**](https://github.com/filecoin-project/sentinel), a c
 
 A **Visor** process collects _permanent_ Filecoin chain meterics from a [**Lotus**](https://github.com/filecoin-project/lotus/) daemon, and writes them to a [**TimescaleDB**](https://github.com/timescale/timescaledb) time-series and relational datastore.
 
-
 ## Getting Started
 
 Clone the repo and build the dependencies:
@@ -113,61 +112,17 @@ or by specifying the following flags:
   --jaeger-sampler-type=const jaeger-sampler-param=1
 ```
 
-## Deployment
-
-### Schema Migrations
-
-The database schema is versioned and every change requires a migration script to be executed. See [storage/migrations/README.md](storage/migrations/README.md) for more information.
-
-### Checking current schema version
-
-The visor `migrate` subcommand compares the **database schema version** to the **latest schema version** and reports any differences.
-It also verifies that the **database schema** matches the requirements of the models used by visor. It is safe to run and will not alter the database.
-
-Visor also verifies that the schema is compatible when the index or process subcommands are executed.
-
-### Migrating schema to latest version
-
-To migrate a database schema to the latest version, run:
-
-    visor migrate --latest
-
-Visor will only migrate a schema if it determines that it has exclusive access to the database. 
-
-Visor can also be configured to automatically migrate the database when indexing or processing by passing the `--allow-schema-migration` flag.
-
-### Reverting a schema migration
-
-To revert to an earlier version, run:
-
-    visor migrate --to <version>
-
-**WARNING: reverting a migration is very likely to lose data in tables and columns that are not present in the earlier version**
-
-
 ## Versioning and Releases
 
 Feature branches and master are designated as **unstable** which are internal-only development builds. 
 
 Periodically a build will be designated as **stable** and will be assigned a version number by tagging the repository
 using Semantic Versioning in the following format: `vMajor.Minor.Patch`.
- 
-### Release Process
 
-Between releases we keep track of notable changes in CHANGELOG.md.
+## Other Topics
 
-When we want to make a release we should update CHANGELOG.md to contain the release notes for the planned release in a section for
-the proposed release number. This update is the commit that will be tagged with as the actual release which ensures that each release
-contains a copy of it's own release notes. 
-
-We should also copy the release notes to the Github releases page, but CHANGELOG.md is the primary place to keep the release notes. 
-
-The release commit should be tagged with a signed tag:
-
-    git tag -s vx.x.x
-    git push --tags
-
-
+- [Release Management](docs/release_management.md)
+- [Schema/Migration Management](docs/migrations.md)
 
 ## Code of Conduct
 
