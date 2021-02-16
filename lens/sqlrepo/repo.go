@@ -13,5 +13,5 @@ func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 		return nil, nil, err
 	}
 
-	return util.NewAPIOpener(c, bs, bs.(*SqlBlockstore).getMasterTsKey)
+	return util.NewAPIOpener(c.Context, bs, bs.(*SqlBlockstore).getMasterTsKey, c.Int("lens-cache-hint"))
 }

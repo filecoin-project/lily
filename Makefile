@@ -31,6 +31,7 @@ build/.update-modules:
 
 .PHONY: deps
 deps: build/.update-modules
+	cd ./vector; ./fetch_vectors.sh
 
 # test starts dependencies and runs all tests
 .PHONY: test
@@ -77,6 +78,7 @@ docker-image:
 
 clean:
 	rm -rf $(CLEAN) $(BINS)
+	rm ./vector/data/*json
 .PHONY: clean
 
 dist-clean:

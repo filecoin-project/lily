@@ -126,7 +126,7 @@ func execute(cctx *cli.Context) error {
 	if err := setupLogging(cctx); err != nil {
 		return xerrors.Errorf("setup logging: %w", err)
 	}
-	runner, err := vector.NewRunner(cctx)
+	runner, err := vector.NewRunner(ctx, cctx.String("vector-file"), 0)
 	if err != nil {
 		return err
 	}

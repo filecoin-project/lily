@@ -30,7 +30,6 @@ import (
 	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
 	peer "github.com/libp2p/go-libp2p-core/peer"
-	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -43,7 +42,7 @@ type APIOpener struct {
 
 type HeadMthd func(ctx context.Context, lookback int) (*types.TipSetKey, error)
 
-func NewAPIOpener(c *cli.Context, bs blockstore.Blockstore, head HeadMthd) (*APIOpener, lens.APICloser, error) {
+func NewAPIOpener(ctx context.Context, bs blockstore.Blockstore, head HeadMthd, cacheHint int) (*APIOpener, lens.APICloser, error) {
 	rapi := LensAPI{}
 
 	if _, _, err := ulimit.ManageFdLimit(); err != nil {
@@ -65,7 +64,7 @@ func NewAPIOpener(c *cli.Context, bs blockstore.Blockstore, head HeadMthd) (*API
 
 	const safetyLookBack = 5
 
-	headKey, err := head(c.Context, safetyLookBack)
+	headKey, err := head(ctx, safetyLookBack)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -91,8 +90,8 @@ func NewAPIOpener(c *cli.Context, bs blockstore.Blockstore, head HeadMthd) (*API
 		lr.Close()
 	}
 
-	rapi.Context = c.Context
-	rapi.cacheSize = c.Int("lens-cache-hint")
+	rapi.Context = ctx
+	rapi.cacheSize = cacheHint
 	return &APIOpener{rapi: &rapi}, sf, nil
 }
 

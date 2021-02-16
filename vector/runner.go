@@ -7,6 +7,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"github.com/filecoin-project/sentinel-visor/model/actors/common"
 	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init"
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
@@ -16,12 +20,9 @@ import (
 	modelchain "github.com/filecoin-project/sentinel-visor/model/chain"
 	"github.com/filecoin-project/sentinel-visor/model/derived"
 	"github.com/filecoin-project/sentinel-visor/model/messages"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"os"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ipld/go-car"
-	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lotus/chain/types"
@@ -51,8 +52,7 @@ type Runner struct {
 	closer lens.APICloser
 }
 
-func NewRunner(cctx *cli.Context) (*Runner, error) {
-	vectorPath := cctx.String("vector-file")
+func NewRunner(ctx context.Context, vectorPath string, cacheHint int) (*Runner, error) {
 	fecVile, err := os.OpenFile(vectorPath, os.O_RDONLY, 0o644)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func NewRunner(cctx *cli.Context) (*Runner, error) {
 		return &tsk, nil
 	}
 
-	opener, closer, err := util.NewAPIOpener(cctx, cacheDB, h)
+	opener, closer, err := util.NewAPIOpener(ctx, cacheDB, h, cacheHint)
 	if err != nil {
 		return nil, err
 	}
@@ -129,31 +129,36 @@ func (r *Runner) Validate(ctx context.Context) error {
 			continue
 		}
 
-		log.Infow("Validating Model", "name", expTable)
-
 		actData, ok := actual[expTable]
 		if !ok {
 			return xerrors.Errorf("Missing Table: %s", expTable)
 		}
 
-		err := modelTypeFromTable(expTable, expData, actData)
+		diff, err := modelTypeFromTable(expTable, expData, actData)
 		if err != nil {
 			return err
+		}
+
+		if diff != "" {
+			log.Errorf("Validate Model %s: Failed\n", expTable)
+			fmt.Println(diff)
+		} else {
+			log.Infof("Validate Model %s: Passed\n", expTable)
 		}
 	}
 	return nil
 }
 
-func modelTypeFromTable(tableName string, expected json.RawMessage, actual []interface{}) error {
+func modelTypeFromTable(tableName string, expected json.RawMessage, actual []interface{}) (string, error) {
 	// TODO: something with reflection someday
 	switch tableName {
 	default:
-		log.Warnw("Validation not implemented", "table", tableName)
+		return "", xerrors.Errorf("validation no implemented for model table %s", tableName)
 
 	case "block_headers":
 		var expType blocks.BlockHeaders
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType blocks.BlockHeaders
@@ -164,18 +169,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "block_parents":
 		var expType blocks.BlockParents
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType blocks.BlockParents
@@ -186,18 +184,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "drand_block_entries":
 		var expType blocks.DrandBlockEntries
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType blocks.DrandBlockEntries
@@ -208,19 +199,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
-
+		return cmp.Diff(actType, expType), nil
 	case "derived_gas_outputs":
 		var expType derived.GasOutputsList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType derived.GasOutputsList
@@ -231,19 +214,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType, cmpopts.IgnoreUnexported(derived.GasOutputs{}))
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
-
+		return cmp.Diff(actType, expType, cmpopts.IgnoreUnexported(derived.GasOutputs{})), nil
 	case "receipts":
 		var expType messages.Receipts
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType messages.Receipts
@@ -254,18 +229,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "parsed_messages":
 		var expType messages.ParsedMessages
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType messages.ParsedMessages
@@ -276,18 +244,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "block_messages":
 		var expType messages.BlockMessages
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType messages.BlockMessages
@@ -298,18 +259,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "message_gas_economy":
 		var expType []*messages.MessageGasEconomy
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType []*messages.MessageGasEconomy
@@ -320,18 +274,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType, cmpopts.IgnoreUnexported(messages.MessageGasEconomy{}))
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType, cmpopts.IgnoreUnexported(messages.MessageGasEconomy{})), nil
 	case "messages":
 		var expType messages.Messages
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType messages.Messages
@@ -342,19 +289,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
-
+		return cmp.Diff(actType, expType), nil
 	case "miner_current_deadline_infos":
 		var expType miner.MinerCurrentDeadlineInfoList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType miner.MinerCurrentDeadlineInfoList
@@ -365,18 +304,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "miner_fee_debts":
 		var expType miner.MinerFeeDebtList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType miner.MinerFeeDebtList
@@ -387,18 +319,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "miner_locked_funds":
 		var expType miner.MinerLockedFundsList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType miner.MinerLockedFundsList
@@ -409,18 +334,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "miner_pre_commit_infos":
 		var expType miner.MinerPreCommitInfoList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType miner.MinerPreCommitInfoList
@@ -431,18 +349,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "miner_sector_events":
 		var expType miner.MinerSectorEventList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType miner.MinerSectorEventList
@@ -453,18 +364,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "miner_sector_infos":
 		var expType miner.MinerSectorInfoList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType miner.MinerSectorInfoList
@@ -475,18 +379,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "miner_infos":
 		var expType miner.MinerInfoList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType miner.MinerInfoList
@@ -497,18 +394,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "miner_sector_posts":
 		var expType miner.MinerSectorPostList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType miner.MinerSectorPostList
@@ -519,18 +409,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "miner_sector_deals":
 		var expType miner.MinerSectorDealList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType miner.MinerSectorDealList
@@ -541,19 +424,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
-
+		return cmp.Diff(actType, expType), nil
 	case "market_deal_proposals":
 		var expType market.MarketDealProposals
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType market.MarketDealProposals
@@ -564,18 +439,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "market_deal_states":
 		var expType market.MarketDealStates
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType market.MarketDealStates
@@ -586,19 +454,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
-
+		return cmp.Diff(actType, expType), nil
 	case "multisig_transactions":
 		var expType multisig.MultisigTransactionList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType multisig.MultisigTransactionList
@@ -609,19 +469,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
-
+		return cmp.Diff(actType, expType), nil
 	case "chain_powers":
 		var expType power.ChainPowerList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType power.ChainPowerList
@@ -632,18 +484,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "power_actor_claims":
 		var expType power.PowerActorClaimList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType power.PowerActorClaimList
@@ -654,19 +499,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
-
+		return cmp.Diff(actType, expType), nil
 	case "chain_rewards":
 		var expType []*reward.ChainReward
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType []*reward.ChainReward
@@ -677,19 +514,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
-
+		return cmp.Diff(actType, expType), nil
 	case "actors":
 		var expType common.ActorList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType common.ActorList
@@ -700,18 +529,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
+		return cmp.Diff(actType, expType), nil
 	case "actor_states":
 		var expType common.ActorStateList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType common.ActorStateList
@@ -722,19 +544,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
-
+		return cmp.Diff(actType, expType), nil
 	case "id_addresses":
 		var expType init_.IdAddressList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType init_.IdAddressList
@@ -745,19 +559,11 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
-
+		return cmp.Diff(actType, expType), nil
 	case "chain_economics":
 		var expType modelchain.ChainEconomicsList
 		if err := json.Unmarshal(expected, &expType); err != nil {
-			return err
+			return "", err
 		}
 
 		var actType modelchain.ChainEconomicsList
@@ -768,15 +574,6 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-
-		diff := cmp.Diff(actType, expType)
-		if diff != "" {
-			log.Errorw("Vector Model Fail", "name", tableName)
-			fmt.Println(diff)
-		} else {
-			log.Infow("Vector Model Pass", "name", tableName)
-		}
-
+		return cmp.Diff(actType, expType), nil
 	}
-	return nil
 }
