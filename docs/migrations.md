@@ -1,6 +1,6 @@
 # Schema Migrations
 
-The database schema is versioned and every change requires a migration script to be executed. See [storage/migrations/README.md](storage/migrations/README.md) for more information.
+The database schema is versioned and every change requires a migration script to be executed. See [../storage/migrations/README.md](../storage/migrations/README.md) for more information.
 
 ## Checking current schema version
 
