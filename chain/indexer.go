@@ -19,6 +19,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/tasks/messages"
+	"github.com/filecoin-project/sentinel-visor/tasks/msapprovals"
 )
 
 const (
@@ -32,6 +33,7 @@ const (
 	BlocksTask              = "blocks"              // task that extracts block data
 	MessagesTask            = "messages"            // task that extracts message data
 	ChainEconomicsTask      = "chaineconomics"      // task that extracts chain economics data
+	MultisigApprovalsTask   = "msapprovals"         // task that extracts multisig actor approvals
 )
 
 var log = logging.Logger("chain")
@@ -115,6 +117,8 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 				CodeV2: sa2builtin.MultisigActorCodeID,
 				CodeV3: sa3builtin.MultisigActorCodeID,
 			})
+		case MultisigApprovalsTask:
+			tsi.messageProcessors[MultisigApprovalsTask] = msapprovals.NewTask(o)
 		default:
 			return nil, xerrors.Errorf("unknown task: %s", task)
 		}
