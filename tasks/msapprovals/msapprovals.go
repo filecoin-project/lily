@@ -129,6 +129,16 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 		appr.InitialBalance = ib.String()
 
+		threshold, err := actorState.Threshold()
+		if err != nil {
+			errorsDetected = append(errorsDetected, &MultisigError{
+				Addr:  m.Message.To.String(),
+				Error: xerrors.Errorf("failed to read initial balance: %w", err).Error(),
+			})
+			continue
+		}
+		appr.Threshold = threshold
+
 		signers, err := actorState.Signers()
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
