@@ -59,6 +59,8 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		default:
 		}
 
+		ll.Infow("found message", "to", m.ToActorCode, "addr", m.Message.To.String())
+
 		if !isMultisigActor(m.ToActorCode) {
 			continue
 		}
