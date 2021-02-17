@@ -58,8 +58,6 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		StateRoot: pts.ParentState().String(),
 	}
 
-	ll := log.With("height", int64(pts.Height()))
-
 	errorsDetected := make([]*MultisigError, 0, len(emsgs))
 	results := make(msapprovals.MultisigApprovalList, 0) // no inital size capacity since approvals are rare
 
@@ -83,11 +81,36 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			continue
 		}
 
-		ll.Infow("found multisig", "addr", m.Message.To.String(), "method", m.Message.Method, "exit_code", m.Receipt.ExitCode, "gas_used", m.Receipt.GasUsed)
-
 		// Only interested in propose and approve messages
 		if m.Message.Method != ProposeMethodNum && m.Message.Method != ApproveMethodNum {
 			continue
+		}
+
+		applied, tx, err := p.getTransactionIfApplied(ctx, m.Message, m.Receipt, pts)
+		if err != nil {
+			errorsDetected = append(errorsDetected, &MultisigError{
+				Addr:  m.Message.To.String(),
+				Error: xerrors.Errorf("failed to find transaction: %w", err).Error(),
+			})
+			continue
+		}
+
+		// Only interested in messages that applied a transaction
+		if !applied {
+			continue
+		}
+
+		appr := msapprovals.MultisigApproval{
+			Height:        int64(pts.Height()),
+			StateRoot:     pts.ParentState().String(),
+			MultisigID:    m.Message.To.String(),
+			Message:       m.Cid.String(),
+			Method:        uint64(m.Message.Method),
+			Approver:      m.Message.From.String(),
+			GasUsed:       m.Receipt.GasUsed,
+			TransactionID: tx.id,
+			To:            tx.to,
+			Value:         tx.value,
 		}
 
 		// Get state of actor after the message has been applied
@@ -107,16 +130,6 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 				Error: xerrors.Errorf("failed to load actor state: %w", err).Error(),
 			})
 			continue
-		}
-
-		appr := msapprovals.MultisigApproval{
-			Height:     int64(pts.Height()),
-			StateRoot:  pts.ParentState().String(),
-			MultisigID: m.Message.To.String(),
-			Message:    m.Cid.String(),
-			Method:     uint64(m.Message.Method),
-			Approver:   m.Message.From.String(),
-			GasUsed:    m.Receipt.GasUsed,
 		}
 
 		ib, err := actorState.InitialBalance()
@@ -151,88 +164,6 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			appr.Signers = append(appr.Signers, addr.String())
 		}
 
-		// If the message is a proposal then the parameters will contain details of the transaction
-		if m.Message.Method == ProposeMethodNum {
-			// The return value will tell us if the multisig was approved
-			var ret multisig.ProposeReturn
-			err := ret.UnmarshalCBOR(bytes.NewReader(m.Receipt.Return))
-			if err != nil {
-				errorsDetected = append(errorsDetected, &MultisigError{
-					Addr:  m.Message.To.String(),
-					Error: xerrors.Errorf("failed to decode return value: %w", err).Error(),
-				})
-				continue
-			}
-
-			// this type is the same between v0 and v3
-			var params multisig3.ProposeParams
-			err = params.UnmarshalCBOR(bytes.NewReader(m.Message.Params))
-			if err != nil {
-				errorsDetected = append(errorsDetected, &MultisigError{
-					Addr:  m.Message.To.String(),
-					Error: xerrors.Errorf("failed to decode message params: %w", err).Error(),
-				})
-				continue
-			}
-
-			appr.TransactionID = int64(ret.TxnID)
-			appr.To = params.To.String()
-			appr.Value = params.Value.String()
-
-		} else if m.Message.Method == ApproveMethodNum {
-			// If the message is an approve then the params will contain the id of a pending transaction
-
-			// this type is the same between v0 and v3
-			var params multisig3.TxnIDParams
-			err = params.UnmarshalCBOR(bytes.NewReader(m.Message.Params))
-			if err != nil {
-				errorsDetected = append(errorsDetected, &MultisigError{
-					Addr:  m.Message.To.String(),
-					Error: xerrors.Errorf("failed to decode message params: %w", err).Error(),
-				})
-				continue
-			}
-
-			appr.TransactionID = int64(params.ID)
-
-			// Get state of actor before the message was applied
-			act, err := p.node.StateGetActor(ctx, m.Message.To, pts.Key())
-			if err != nil {
-				errorsDetected = append(errorsDetected, &MultisigError{
-					Addr:  m.Message.To.String(),
-					Error: xerrors.Errorf("failed to load previous actor: %w", err).Error(),
-				})
-				continue
-			}
-
-			prevActorState, err := multisig.Load(p.node.Store(), act)
-			if err != nil {
-				errorsDetected = append(errorsDetected, &MultisigError{
-					Addr:  m.Message.To.String(),
-					Error: xerrors.Errorf("failed to load previous actor state: %w", err).Error(),
-				})
-				continue
-			}
-
-			if err := prevActorState.ForEachPendingTxn(func(id int64, txn multisig.Transaction) error {
-				if id == int64(params.ID) {
-					appr.To = txn.To.String()
-					appr.Value = txn.Value.String()
-					return nil
-				}
-				return xerrors.Errorf("pending transaction %d not found", params.ID)
-			}); err != nil {
-				errorsDetected = append(errorsDetected, &MultisigError{
-					Addr:  m.Message.To.String(),
-					Error: xerrors.Errorf("failed to read transaction details: %w", err).Error(),
-				})
-				continue
-
-			}
-		}
-
-		log.Debugf("MultisigApproval: %+v", appr)
-
 		results = append(results, &appr)
 	}
 
@@ -259,4 +190,99 @@ func isMultisigActor(code cid.Cid) bool {
 type MultisigError struct {
 	Addr  string
 	Error string
+}
+
+type transaction struct {
+	id    int64
+	to    string
+	value string
+}
+
+// getTransactionIfApplied returns the transaction associated with the message if the transaction was applied (i.e. had enough
+// approvals). Returns true and the transaction if the transaction was applied, false otherwise.
+func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, rcpt *types.MessageReceipt, pts *types.TipSet) (bool, *transaction, error) {
+	switch msg.Method {
+	case ProposeMethodNum:
+		// If the message is a proposal then the parameters will contain details of the transaction
+
+		// The return value will tell us if the multisig transaction was applied
+		var ret multisig.ProposeReturn
+		err := ret.UnmarshalCBOR(bytes.NewReader(rcpt.Return))
+		if err != nil {
+			return false, nil, xerrors.Errorf("failed to decode return value: %w", err)
+		}
+
+		// Only interested in applied transactions
+		if !ret.Applied {
+			return false, nil, nil
+		}
+
+		// this type is the same between v0 and v3
+		var params multisig3.ProposeParams
+		err = params.UnmarshalCBOR(bytes.NewReader(msg.Params))
+		if err != nil {
+			return false, nil, xerrors.Errorf("failed to decode message params: %w", err)
+		}
+
+		return true, &transaction{
+			id:    int64(ret.TxnID),
+			to:    params.To.String(),
+			value: params.Value.String(),
+		}, nil
+
+	case ApproveMethodNum:
+		// If the message is an approve then the params will contain the id of a pending transaction
+
+		// this type is the same between v0 and v3
+		var ret multisig3.ApproveReturn
+		err := ret.UnmarshalCBOR(bytes.NewReader(rcpt.Return))
+		if err != nil {
+			return false, nil, xerrors.Errorf("failed to decode return value: %w", err)
+		}
+
+		// Only interested in applied transactions
+		if !ret.Applied {
+			return false, nil, nil
+		}
+
+		// this type is the same between v0 and v3
+		var params multisig3.TxnIDParams
+		err = params.UnmarshalCBOR(bytes.NewReader(msg.Params))
+		if err != nil {
+			return false, nil, xerrors.Errorf("failed to decode message params: %w", err)
+		}
+
+		// Get state of actor before the message was applied
+		act, err := p.node.StateGetActor(ctx, msg.To, pts.Key())
+		if err != nil {
+			return false, nil, xerrors.Errorf("failed to load previous actor: %w", err)
+		}
+
+		prevActorState, err := multisig.Load(p.node.Store(), act)
+		if err != nil {
+			return false, nil, xerrors.Errorf("failed to load previous actor state: %w", err)
+		}
+
+		var tx transaction
+
+		if err := prevActorState.ForEachPendingTxn(func(id int64, txn multisig.Transaction) error {
+			if id == int64(params.ID) {
+				tx.id = int64(params.ID)
+				tx.to = txn.To.String()
+				tx.value = txn.Value.String()
+				return nil
+			}
+			return xerrors.Errorf("pending transaction %d not found", params.ID)
+		}); err != nil {
+			return false, nil, xerrors.Errorf("failed to read transaction details: %w", err)
+		}
+
+		return true, &tx, nil
+
+	default:
+		// Not interested in any other methods
+
+		return false, nil, nil
+
+	}
 }
