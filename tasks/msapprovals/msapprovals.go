@@ -3,8 +3,10 @@
 package msapprovals
 
 import (
+	"bytes"
 	"context"
 
+	"github.com/filecoin-project/lotus/chain/actors/builtin/multisig"
 	"github.com/filecoin-project/lotus/chain/types"
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
@@ -53,6 +55,8 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 
 	ll := log.With("height", int64(pts.Height()))
 
+	errorsDetected := make([]*MultisigError, 0, len(emsgs))
+
 	for _, m := range emsgs {
 		// Stop processing if we have been told to cancel
 		select {
@@ -75,17 +79,32 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			continue
 		}
 
-		ll.Infow("found multisig", "addr", m.Message.To.String(), "method", m.Message.Method)
-
 		// Only interested in successful messages
 		if !m.Receipt.ExitCode.IsSuccess() {
 			continue
 		}
 
+		// The return value will tell us if the multisig was approved
+		var ret multisig.ProposeReturn
+		err := ret.UnmarshalCBOR(bytes.NewReader(m.Receipt.Return))
+		if err != nil {
+			errorsDetected = append(errorsDetected, &MultisigError{
+				Addr:  m.Message.To.String(),
+				Error: xerrors.Errorf("failed to decode return value: %w", err).Error(),
+			})
+			continue
+		}
+
+		ll.Infow("found multisig", "txn_id", ret.TxnID, "applied", ret.Applied, "code", ret.Code)
+
 		// ExitCode exitcode.ExitCode
 		// Return   []byte
 		// GasUsed  int64
 
+	}
+
+	if len(errorsDetected) != 0 {
+		report.ErrorsDetected = errorsDetected
 	}
 
 	return nil, report, nil
@@ -102,4 +121,9 @@ func (p *Task) Close() error {
 
 func isMultisigActor(code cid.Cid) bool {
 	return code == sa0builtin.MultisigActorCodeID || code == sa2builtin.MultisigActorCodeID || code == sa3builtin.MultisigActorCodeID
+}
+
+type MultisigError struct {
+	Addr  string
+	Error string
 }
