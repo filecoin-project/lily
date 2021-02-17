@@ -60,6 +60,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 	ll := log.With("height", int64(pts.Height()))
 
 	errorsDetected := make([]*MultisigError, 0, len(emsgs))
+	results := make(msapprovals.MultisigApprovalList, 0) // no inital size capacity since approvals are rare
 
 	for _, m := range emsgs {
 		// Stop processing if we have been told to cancel
@@ -154,6 +155,8 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 
 		log.Debugf("MultisigApproval: %+v", appr)
 
+		results = append(results, &appr)
+
 		// ExitCode exitcode.ExitCode
 		// Return   []byte
 		// GasUsed  int64
@@ -176,7 +179,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		report.ErrorsDetected = errorsDetected
 	}
 
-	return nil, report, nil
+	return results, report, nil
 }
 
 func (p *Task) Close() error {
