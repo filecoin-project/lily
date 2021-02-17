@@ -17,12 +17,16 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/sentinel-visor/model/msapprovals"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 )
 
 var log = logging.Logger("msapprovals")
 
-const ProposeMethodNum = 2
+const (
+	ProposeMethodNum = 2
+	ApproveMethodNum = 3
+)
 
 type Task struct {
 	node       lens.API
@@ -72,15 +76,15 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			continue
 		}
 
-		ll.Infow("found multisig", "addr", m.Message.To.String(), "method", m.Message.Method, "exit_code", m.Receipt.ExitCode, "gas_used", m.Receipt.GasUsed)
-
-		// Only interested in propose messages
-		if m.Message.Method != ProposeMethodNum {
+		// Only interested in successful messages
+		if !m.Receipt.ExitCode.IsSuccess() {
 			continue
 		}
 
-		// Only interested in successful messages
-		if !m.Receipt.ExitCode.IsSuccess() {
+		ll.Infow("found multisig", "addr", m.Message.To.String(), "method", m.Message.Method, "exit_code", m.Receipt.ExitCode, "gas_used", m.Receipt.GasUsed)
+
+		// Only interested in propose and approve messages
+		if m.Message.Method != ProposeMethodNum && m.Message.Method != ApproveMethodNum {
 			continue
 		}
 
@@ -97,9 +101,61 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 
 		ll.Infow("found multisig", "txn_id", ret.TxnID, "applied", ret.Applied, "code", ret.Code)
 
+		// Get state of actor after the message has been applied
+		act, err := p.node.StateGetActor(ctx, m.Message.To, ts.Key())
+		if err != nil {
+			errorsDetected = append(errorsDetected, &MultisigError{
+				Addr:  m.Message.To.String(),
+				Error: xerrors.Errorf("failed to load actor: %w", err).Error(),
+			})
+			continue
+		}
+
+		actorState, err := multisig.Load(p.node.Store(), act)
+		if err != nil {
+			errorsDetected = append(errorsDetected, &MultisigError{
+				Addr:  m.Message.To.String(),
+				Error: xerrors.Errorf("failed to load actor state: %w", err).Error(),
+			})
+			continue
+		}
+
+		appr := msapprovals.MultisigApproval{
+			Height:        int64(pts.Height()),
+			StateRoot:     pts.ParentState().String(),
+			MultisigID:    m.Message.To.String(),
+			Message:       m.Cid.String(),
+			TransactionID: int64(ret.TxnID),
+			Method:        uint64(m.Message.Method),
+		}
+
+		ib, err := actorState.InitialBalance()
+		if err != nil {
+			errorsDetected = append(errorsDetected, &MultisigError{
+				Addr:  m.Message.To.String(),
+				Error: xerrors.Errorf("failed to read initial balance: %w", err).Error(),
+			})
+			continue
+		}
+		appr.InitialBalance = ib.String()
+
+		log.Debugf("MultisigApproval: %+v", appr)
+
 		// ExitCode exitcode.ExitCode
 		// Return   []byte
 		// GasUsed  int64
+
+		// previb, _ := ec.PrevState.InitialBalance()
+		// prevlb, _ := ec.PrevState.LockedBalance(ec.CurrTs.Height() - 1)
+		// prevud, _ := ec.PrevState.UnlockDuration()
+		// prevthres, _ := ec.PrevState.Threshold()
+		// prevsigners, _ := ec.PrevState.Signers()
+		// log.Debugw("multisig previous state", "initial_balance", previb, "locked_balance", prevlb, "unlock_duration", prevud, "threshold", prevthres, "signers", len(prevsigners))
+
+		// approved := make([]string, len(added.Tx.Approved))
+		// for i, addr := range added.Tx.Approved {
+		// 	approved[i] = addr.String()
+		// }
 
 	}
 
