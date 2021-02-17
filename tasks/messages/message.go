@@ -1,4 +1,4 @@
-package chain
+package messages
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 	"github.com/filecoin-project/statediff"
 	"github.com/filecoin-project/statediff/codec/fcjson"
 	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
 	"github.com/ipld/go-ipld-prime"
 	"golang.org/x/xerrors"
 
@@ -24,73 +25,22 @@ import (
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 )
 
-type MessageExtractor struct {
+var log = logging.Logger("messages")
+
+type Task struct {
 	node       lens.API
 	opener     lens.APIOpener
 	closer     lens.APICloser
 	lastTipSet *types.TipSet
 }
 
-func NewMessageExtractor(opener lens.APIOpener) *MessageExtractor {
-	return &MessageExtractor{
+func NewTask(opener lens.APIOpener) *Task {
+	return &Task{
 		opener: opener,
 	}
 }
 
-func (p *MessageExtractor) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
-	if p.node == nil {
-		node, closer, err := p.opener.Open(ctx)
-		if err != nil {
-			return nil, nil, xerrors.Errorf("unable to open lens: %w", err)
-		}
-		p.node = node
-		p.closer = closer
-	}
-
-	var data model.Persistable
-	var report *visormodel.ProcessingReport
-	var err error
-
-	if p.lastTipSet != nil {
-		if p.lastTipSet.Height() > ts.Height() {
-			// last tipset seen was the child
-			data, report, err = p.processExecutedMessages(ctx, p.lastTipSet, ts)
-		} else if p.lastTipSet.Height() < ts.Height() {
-			// last tipset seen was the parent
-			data, report, err = p.processExecutedMessages(ctx, ts, p.lastTipSet)
-		} else {
-			log.Errorw("out of order tipsets", "height", ts.Height(), "last_height", p.lastTipSet.Height())
-		}
-	}
-
-	p.lastTipSet = ts
-
-	if err != nil {
-		log.Errorw("error received while processing messages, closing lens", "error", err)
-		if cerr := p.Close(); cerr != nil {
-			log.Errorw("error received while closing lens", "error", cerr)
-		}
-	}
-	return data, report, err
-}
-
-// Note that all this processing is in the context of the parent tipset. The child is only used for receipts
-func (p *MessageExtractor) processExecutedMessages(ctx context.Context, ts, pts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
-	report := &visormodel.ProcessingReport{
-		Height:    int64(pts.Height()),
-		StateRoot: pts.ParentState().String(),
-	}
-
-	emsgs, err := p.node.GetExecutedMessagesForTipset(ctx, ts, pts)
-	if err != nil {
-		report.ErrorsDetected = xerrors.Errorf("failed to get executed messages: %w", err)
-		return nil, report, nil
-	}
-
-	return p.ProcessMessages(ctx, ts, pts, emsgs)
-}
-
-func (p *MessageExtractor) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
 	if p.node == nil {
 		node, closer, err := p.opener.Open(ctx)
 		if err != nil {
@@ -261,7 +211,7 @@ func (p *MessageExtractor) ProcessMessages(ctx context.Context, ts *types.TipSet
 	}, report, nil
 }
 
-func (p *MessageExtractor) parseMessageParams(m *types.Message, destCode cid.Cid) (string, string, error) {
+func (p *Task) parseMessageParams(m *types.Message, destCode cid.Cid) (string, string, error) {
 	actor, ok := statediff.LotusActorCodes[destCode.String()]
 	if !ok {
 		actor = statediff.LotusTypeUnknown
@@ -308,7 +258,7 @@ func (p *MessageExtractor) parseMessageParams(m *types.Message, destCode cid.Cid
 	return method, encoded, nil
 }
 
-func (p *MessageExtractor) Close() error {
+func (p *Task) Close() error {
 	if p.closer != nil {
 		p.closer()
 		p.closer = nil

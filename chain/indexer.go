@@ -18,6 +18,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
+	"github.com/filecoin-project/sentinel-visor/tasks/messages"
 )
 
 const (
@@ -73,7 +74,7 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 		case BlocksTask:
 			tsi.processors[BlocksTask] = NewBlockProcessor()
 		case MessagesTask:
-			tsi.messageProcessors[MessagesTask] = NewMessageExtractor(o)
+			tsi.messageProcessors[MessagesTask] = messages.NewTask(o)
 		case ChainEconomicsTask:
 			tsi.processors[ChainEconomicsTask] = NewChainEconomicsProcessor(o)
 		case ActorStatesRawTask:
