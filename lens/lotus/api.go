@@ -2,7 +2,6 @@ package lotus
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
@@ -236,8 +235,6 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 	actorCodes := map[address.Address]cid.Cid{}
 	if err := stateTree.ForEach(func(a address.Address, act *types.Actor) error {
 		actorCodes[a] = act.Code
-
-		fmt.Printf("found address=%s  code=%s\n", a.String(), act.Code.String())
 		return nil
 	}); err != nil {
 		return nil, xerrors.Errorf("iterate actors: %w", err)
@@ -246,10 +243,9 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 	getActorCode := func(a address.Address) cid.Cid {
 		ra, found, err := initActorState.ResolveAddress(a)
 		if err == nil && !found {
-			fmt.Printf("not found in init actor address=%s\n", a.String())
+			return cid.Undef
 		}
 		if err != nil {
-			fmt.Printf("resolve address error for address %s: %v\n", a.String(), err)
 			return cid.Undef
 		}
 
@@ -258,7 +254,6 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 			return c
 		}
 
-		fmt.Printf("unknown address=%s\n", a.String())
 		return cid.Undef
 	}
 
