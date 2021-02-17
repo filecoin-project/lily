@@ -20,6 +20,8 @@ import (
 
 var log = logging.Logger("msapprovals")
 
+const ProposeMethodNum = 2
+
 type Task struct {
 	node       lens.API
 	opener     lens.APIOpener
@@ -49,7 +51,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		StateRoot: pts.ParentState().String(),
 	}
 
-	ll := log.With("height", int64(ts.Height()))
+	ll := log.With("height", int64(pts.Height()))
 
 	for _, m := range emsgs {
 		// Stop processing if we have been told to cancel
@@ -61,11 +63,28 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 
 		// ll.Infow("found message", "to", m.ToActorCode.String(), "addr", m.Message.To.String())
 
+		// Only interested in messages to multisig actors
 		if !isMultisigActor(m.ToActorCode) {
 			continue
 		}
 
-		ll.Infow("found multisig", "addr", m.Message.To.String())
+		ll.Infow("found multisig", "addr", m.Message.To.String(), "method", m.Message.Method, "exit_code", m.Receipt.ExitCode, "gas_used", m.Receipt.GasUsed)
+
+		// Only interested in propose messages
+		if m.Message.Method != ProposeMethodNum {
+			continue
+		}
+
+		ll.Infow("found multisig", "addr", m.Message.To.String(), "method", m.Message.Method)
+
+		// Only interested in successful messages
+		if !m.Receipt.ExitCode.IsSuccess() {
+			continue
+		}
+
+		// ExitCode exitcode.ExitCode
+		// Return   []byte
+		// GasUsed  int64
 
 	}
 

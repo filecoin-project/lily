@@ -446,6 +446,7 @@ type TipSetProcessor interface {
 
 type MessageProcessor interface {
 	// ProcessMessages processes messages contained within a tipset. If error is non-nil then the processor encountered a fatal error.
+	// pts is the tipset containing the messages, ts is the tipset containing the receipts
 	// Any data returned must be accompanied by a processing report.
 	ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error)
 	Close() error
