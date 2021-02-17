@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/lotus/api"
+	builtininit "github.com/filecoin-project/lotus/chain/actors/builtin/init"
 	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -221,13 +222,30 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 		return nil, xerrors.Errorf("load parent state tree: %w", err)
 	}
 
+	initActor, err := stateTree.GetActor(builtininit.Address)
+	if err != nil {
+		return nil, xerrors.Errorf("getting init actor: %w", err)
+	}
+
+	ias, err := builtininit.Load(aw.Store(), initActor)
+	if err != nil {
+		return nil, xerrors.Errorf("loading init actor state: %w", err)
+	}
+
 	// Build a lookup of actor codes
 	actorCodes := map[address.Address]cid.Cid{}
 	if err := stateTree.ForEach(func(a address.Address, act *types.Actor) error {
 		actorCodes[a] = act.Code
 
-		id, _ := stateTree.LookupID(a)
-		fmt.Printf("found address=%s id=%s code=%s\n", a.String(), id.String(), act.Code.String())
+		ra, found, err := ias.ResolveAddress(a)
+		if err == nil && !found {
+			fmt.Printf("not found address=%s\n", a.String())
+		}
+		if err != nil {
+			return xerrors.Errorf("resolve address %s: %w", a, err)
+		}
+
+		fmt.Printf("found address=%s ra=%s code=%s\n", a.String(), ra.String(), act.Code.String())
 		return nil
 	}); err != nil {
 		return nil, xerrors.Errorf("iterate actors: %w", err)
