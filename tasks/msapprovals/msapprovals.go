@@ -101,8 +101,8 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 
 		ll.Infow("found multisig", "txn_id", ret.TxnID, "applied", ret.Applied, "code", ret.Code)
 
-		// Get state of actor before the message has been applied
-		act, err := p.node.StateGetActor(ctx, m.Message.To, pts.Key())
+		// Get state of actor after the message has been applied
+		act, err := p.node.StateGetActor(ctx, m.Message.To, ts.Key())
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
@@ -140,6 +140,20 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		appr.InitialBalance = ib.String()
 
 		log.Debugf("MultisigApproval: %+v", appr)
+
+		signers, err := actorState.Signers()
+		if err != nil {
+			errorsDetected = append(errorsDetected, &MultisigError{
+				Addr:  m.Message.To.String(),
+				Error: xerrors.Errorf("failed to read signers: %w", err).Error(),
+			})
+			continue
+		}
+
+		for _, addr := range signers {
+			log.Debugf("signer: %s", addr.String())
+			// approved[i] = addr.String()
+		}
 
 		// ExitCode exitcode.ExitCode
 		// Return   []byte
