@@ -101,8 +101,8 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 
 		ll.Infow("found multisig", "txn_id", ret.TxnID, "applied", ret.Applied, "code", ret.Code)
 
-		// Get state of actor after the message has been applied
-		act, err := p.node.StateGetActor(ctx, m.Message.To, ts.Key())
+		// Get state of actor before the message has been applied
+		act, err := p.node.StateGetActor(ctx, m.Message.To, pts.Key())
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
