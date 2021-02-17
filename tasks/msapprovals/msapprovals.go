@@ -13,7 +13,6 @@ import (
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	multisig3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/multisig"
 	"github.com/ipfs/go-cid"
-	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -22,18 +21,15 @@ import (
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 )
 
-var log = logging.Logger("msapprovals")
-
 const (
 	ProposeMethodNum = 2
 	ApproveMethodNum = 3
 )
 
 type Task struct {
-	node       lens.API
-	opener     lens.APIOpener
-	closer     lens.APICloser
-	lastTipSet *types.TipSet
+	node   lens.API
+	opener lens.APIOpener
+	closer lens.APICloser
 }
 
 func NewTask(opener lens.APIOpener) *Task {

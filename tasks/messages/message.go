@@ -28,10 +28,9 @@ import (
 var log = logging.Logger("messages")
 
 type Task struct {
-	node       lens.API
-	opener     lens.APIOpener
-	closer     lens.APICloser
-	lastTipSet *types.TipSet
+	node   lens.API
+	opener lens.APIOpener
+	closer lens.APICloser
 }
 
 func NewTask(opener lens.APIOpener) *Task {
