@@ -17,10 +17,13 @@ type MultisigApproval struct {
 	Message        string   `pg:",pk,notnull"`       // cid of message
 	Method         uint64   `pg:",notnull,use_zero"` // method number used for the approval 2=propose, 3=approve
 	Approver       string   `pg:",pk,notnull"`       // address of signer that triggerd approval
-	TransactionID  int64    `pg:",notnull,use_zero"`
 	Threshold      uint64   `pg:",notnull,use_zero"`
 	InitialBalance string   `pg:"type:numeric,notnull"`
 	Signers        []string `pg:",notnull"`
+	GasUsed        int64    `pg:",use_zero"`
+	TransactionID  int64    `pg:",notnull,use_zero"`
+	To             string   `pg:",use_zero"`            // address funds will move to in transaction
+	Value          string   `pg:"type:numeric,notnull"` // amount of funds moved in transaction
 }
 
 func (ma *MultisigApproval) Persist(ctx context.Context, s model.StorageBatch) error {

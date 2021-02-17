@@ -11,6 +11,7 @@ import (
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
+	multisig3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/multisig"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/xerrors"
@@ -89,19 +90,6 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			continue
 		}
 
-		// The return value will tell us if the multisig was approved
-		var ret multisig.ProposeReturn
-		err := ret.UnmarshalCBOR(bytes.NewReader(m.Receipt.Return))
-		if err != nil {
-			errorsDetected = append(errorsDetected, &MultisigError{
-				Addr:  m.Message.To.String(),
-				Error: xerrors.Errorf("failed to decode return value: %w", err).Error(),
-			})
-			continue
-		}
-
-		ll.Infow("found multisig", "txn_id", ret.TxnID, "applied", ret.Applied, "code", ret.Code)
-
 		// Get state of actor after the message has been applied
 		act, err := p.node.StateGetActor(ctx, m.Message.To, ts.Key())
 		if err != nil {
@@ -122,13 +110,13 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 
 		appr := msapprovals.MultisigApproval{
-			Height:        int64(pts.Height()),
-			StateRoot:     pts.ParentState().String(),
-			MultisigID:    m.Message.To.String(),
-			Message:       m.Cid.String(),
-			TransactionID: int64(ret.TxnID),
-			Method:        uint64(m.Message.Method),
-			Approver:      m.Message.From.String(),
+			Height:     int64(pts.Height()),
+			StateRoot:  pts.ParentState().String(),
+			MultisigID: m.Message.To.String(),
+			Message:    m.Cid.String(),
+			Method:     uint64(m.Message.Method),
+			Approver:   m.Message.From.String(),
+			GasUsed:    m.Receipt.GasUsed,
 		}
 
 		ib, err := actorState.InitialBalance()
@@ -153,26 +141,89 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			appr.Signers = append(appr.Signers, addr.String())
 		}
 
+		// If the message is a proposal then the parameters will contain details of the transaction
+		if m.Message.Method == ProposeMethodNum {
+			// The return value will tell us if the multisig was approved
+			var ret multisig.ProposeReturn
+			err := ret.UnmarshalCBOR(bytes.NewReader(m.Receipt.Return))
+			if err != nil {
+				errorsDetected = append(errorsDetected, &MultisigError{
+					Addr:  m.Message.To.String(),
+					Error: xerrors.Errorf("failed to decode return value: %w", err).Error(),
+				})
+				continue
+			}
+
+			// this type is the same between v0 and v3
+			var params multisig3.ProposeParams
+			err = params.UnmarshalCBOR(bytes.NewReader(m.Message.Params))
+			if err != nil {
+				errorsDetected = append(errorsDetected, &MultisigError{
+					Addr:  m.Message.To.String(),
+					Error: xerrors.Errorf("failed to decode message params: %w", err).Error(),
+				})
+				continue
+			}
+
+			appr.TransactionID = int64(ret.TxnID)
+			appr.To = params.To.String()
+			appr.Value = params.Value.String()
+
+		} else if m.Message.Method == ApproveMethodNum {
+			// If the message is an approve then the params will contain the id of a pending transaction
+
+			// this type is the same between v0 and v3
+			var params multisig3.TxnIDParams
+			err = params.UnmarshalCBOR(bytes.NewReader(m.Message.Params))
+			if err != nil {
+				errorsDetected = append(errorsDetected, &MultisigError{
+					Addr:  m.Message.To.String(),
+					Error: xerrors.Errorf("failed to decode message params: %w", err).Error(),
+				})
+				continue
+			}
+
+			appr.TransactionID = int64(params.ID)
+
+			// Get state of actor before the message was applied
+			act, err := p.node.StateGetActor(ctx, m.Message.To, pts.Key())
+			if err != nil {
+				errorsDetected = append(errorsDetected, &MultisigError{
+					Addr:  m.Message.To.String(),
+					Error: xerrors.Errorf("failed to load previous actor: %w", err).Error(),
+				})
+				continue
+			}
+
+			prevActorState, err := multisig.Load(p.node.Store(), act)
+			if err != nil {
+				errorsDetected = append(errorsDetected, &MultisigError{
+					Addr:  m.Message.To.String(),
+					Error: xerrors.Errorf("failed to load previous actor state: %w", err).Error(),
+				})
+				continue
+			}
+
+			if err := prevActorState.ForEachPendingTxn(func(id int64, txn multisig.Transaction) error {
+				if id == int64(params.ID) {
+					appr.To = txn.To.String()
+					appr.Value = txn.Value.String()
+					return nil
+				}
+				return xerrors.Errorf("pending transaction %d not found", params.ID)
+			}); err != nil {
+				errorsDetected = append(errorsDetected, &MultisigError{
+					Addr:  m.Message.To.String(),
+					Error: xerrors.Errorf("failed to read transaction details: %w", err).Error(),
+				})
+				continue
+
+			}
+		}
+
 		log.Debugf("MultisigApproval: %+v", appr)
 
 		results = append(results, &appr)
-
-		// ExitCode exitcode.ExitCode
-		// Return   []byte
-		// GasUsed  int64
-
-		// previb, _ := ec.PrevState.InitialBalance()
-		// prevlb, _ := ec.PrevState.LockedBalance(ec.CurrTs.Height() - 1)
-		// prevud, _ := ec.PrevState.UnlockDuration()
-		// prevthres, _ := ec.PrevState.Threshold()
-		// prevsigners, _ := ec.PrevState.Signers()
-		// log.Debugw("multisig previous state", "initial_balance", previb, "locked_balance", prevlb, "unlock_duration", prevud, "threshold", prevthres, "signers", len(prevsigners))
-
-		// approved := make([]string, len(added.Tx.Approved))
-		// for i, addr := range added.Tx.Approved {
-		// 	approved[i] = addr.String()
-		// }
-
 	}
 
 	if len(errorsDetected) != 0 {
