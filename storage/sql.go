@@ -3,6 +3,10 @@ package storage
 import (
 	"context"
 	"errors"
+	"reflect"
+	"sort"
+	"strings"
+
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
 	"github.com/go-pg/pg/v10/types"
@@ -10,9 +14,6 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
 	"golang.org/x/xerrors"
-	"reflect"
-	"sort"
-	"strings"
 
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/model/actors/common"
@@ -26,6 +27,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/chain"
 	"github.com/filecoin-project/sentinel-visor/model/derived"
 	"github.com/filecoin-project/sentinel-visor/model/messages"
+	"github.com/filecoin-project/sentinel-visor/model/msapprovals"
 )
 
 var models = []interface{}{
@@ -63,6 +65,7 @@ var models = []interface{}{
 
 	(*derived.GasOutputs)(nil),
 	(*chain.ChainEconomics)(nil),
+	(*msapprovals.MultisigApproval)(nil),
 }
 
 var log = logging.Logger("storage")
