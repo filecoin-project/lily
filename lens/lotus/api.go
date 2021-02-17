@@ -227,7 +227,7 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 		return nil, xerrors.Errorf("getting init actor: %w", err)
 	}
 
-	ias, err := builtininit.Load(aw.Store(), initActor)
+	initActorState, err := builtininit.Load(aw.Store(), initActor)
 	if err != nil {
 		return nil, xerrors.Errorf("loading init actor state: %w", err)
 	}
@@ -237,22 +237,23 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 	if err := stateTree.ForEach(func(a address.Address, act *types.Actor) error {
 		actorCodes[a] = act.Code
 
-		ra, found, err := ias.ResolveAddress(a)
-		if err == nil && !found {
-			fmt.Printf("not found address=%s\n", a.String())
-		}
-		if err != nil {
-			return xerrors.Errorf("resolve address %s: %w", a, err)
-		}
-
-		fmt.Printf("found address=%s ra=%s code=%s\n", a.String(), ra.String(), act.Code.String())
+		fmt.Printf("found address=%s  code=%s\n", a.String(), act.Code.String())
 		return nil
 	}); err != nil {
 		return nil, xerrors.Errorf("iterate actors: %w", err)
 	}
 
 	getActorCode := func(a address.Address) cid.Cid {
-		c, ok := actorCodes[a]
+		ra, found, err := initActorState.ResolveAddress(a)
+		if err == nil && !found {
+			fmt.Printf("not found in init actor address=%s\n", a.String())
+		}
+		if err != nil {
+			fmt.Printf("resolve address error for address %s: %v\n", a.String(), err)
+			return cid.Undef
+		}
+
+		c, ok := actorCodes[ra]
 		if ok {
 			return c
 		}
