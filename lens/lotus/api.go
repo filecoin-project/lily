@@ -225,7 +225,9 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 	actorCodes := map[address.Address]cid.Cid{}
 	if err := stateTree.ForEach(func(a address.Address, act *types.Actor) error {
 		actorCodes[a] = act.Code
-		fmt.Printf("found address=%s code=%s\n", a.String(), act.Code.String())
+
+		id, _ := stateTree.LookupID(a)
+		fmt.Printf("found address=%s id=%s code=%s\n", a.String(), id.String(), act.Code.String())
 		return nil
 	}); err != nil {
 		return nil, xerrors.Errorf("iterate actors: %w", err)
