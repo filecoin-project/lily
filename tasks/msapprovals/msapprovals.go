@@ -127,6 +127,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			Message:       m.Cid.String(),
 			TransactionID: int64(ret.TxnID),
 			Method:        uint64(m.Message.Method),
+			Approver:      m.Message.From.String(),
 		}
 
 		ib, err := actorState.InitialBalance()
@@ -139,8 +140,6 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 		appr.InitialBalance = ib.String()
 
-		log.Debugf("MultisigApproval: %+v", appr)
-
 		signers, err := actorState.Signers()
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
@@ -149,11 +148,11 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			})
 			continue
 		}
-
 		for _, addr := range signers {
-			log.Debugf("signer: %s", addr.String())
-			// approved[i] = addr.String()
+			appr.Signers = append(appr.Signers, addr.String())
 		}
+
+		log.Debugf("MultisigApproval: %+v", appr)
 
 		// ExitCode exitcode.ExitCode
 		// Return   []byte

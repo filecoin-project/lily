@@ -14,11 +14,13 @@ type MultisigApproval struct {
 	Height         int64    `pg:",pk,notnull,use_zero"`
 	StateRoot      string   `pg:",pk,notnull"`
 	MultisigID     string   `pg:",pk,notnull"`
-	Message        string   `pg:",pk,notnull"` // cid of message
-	TransactionID  int64    `pg:",notnull,use_zero"`
+	Message        string   `pg:",pk,notnull"`       // cid of message
 	Method         uint64   `pg:",notnull,use_zero"` // method number used for the approval 2=propose, 3=approve
+	Approver       string   `pg:",pk,notnull"`       // address of signer that triggerd approval
+	TransactionID  int64    `pg:",notnull,use_zero"`
 	Threshold      uint64   `pg:",notnull,use_zero"`
 	InitialBalance string   `pg:"type:numeric,notnull"`
+	Signers        []string `pg:",notnull"`
 }
 
 func (ma *MultisigApproval) Persist(ctx context.Context, s model.StorageBatch) error {
