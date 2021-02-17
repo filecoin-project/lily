@@ -70,10 +70,32 @@ func ExtractMultisigTransactions(a ActorInfo, ec *MsigExtractionContext) (multis
 		return out, nil
 	}
 
+	previb, _ := ec.PrevState.InitialBalance()
+	prevlb, _ := ec.PrevState.LockedBalance(ec.CurrTs.Height() - 1)
+	prevud, _ := ec.PrevState.UnlockDuration()
+	prevthres, _ := ec.PrevState.Threshold()
+	prevsigners, _ := ec.PrevState.Signers()
+	log.Debugw("multisig previous state", "initial_balance", previb, "locked_balance", prevlb, "unlock_duration", prevud, "threshold", prevthres, "signers", len(prevsigners))
+
+	currib, _ := ec.CurrState.InitialBalance()
+	currlb, _ := ec.CurrState.LockedBalance(ec.CurrTs.Height())
+	currud, _ := ec.CurrState.UnlockDuration()
+	currthres, _ := ec.CurrState.Threshold()
+	currsigners, _ := ec.CurrState.Signers()
+	log.Debugw("multisig current state", "initial_balance", currib, "locked_balance", currlb, "unlock_duration", currud, "threshold", currthres, "signers", len(currsigners))
+
+	// StartEpoch() (abi.ChainEpoch, error)
+	// UnlockDuration() (abi.ChainEpoch, error)
+	// InitialBalance() (abi.TokenAmount, error)
+	// Threshold() (uint64, error)
+	// Signers() ([]address.Address, error)
+
 	changes, err := multisig.DiffPendingTransactions(ec.PrevState, ec.CurrState)
 	if err != nil {
 		return nil, xerrors.Errorf("diffing pending transactions: %w", err)
 	}
+
+	log.Debugw("multisig diff", "added", len(changes.Added), "modified", len(changes.Modified), "removed", len(changes.Removed))
 
 	for _, added := range changes.Added {
 		approved := make([]string, len(added.Tx.Approved))

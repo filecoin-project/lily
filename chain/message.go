@@ -24,20 +24,20 @@ import (
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 )
 
-type MessageProcessor struct {
+type MessageExtractor struct {
 	node       lens.API
 	opener     lens.APIOpener
 	closer     lens.APICloser
 	lastTipSet *types.TipSet
 }
 
-func NewMessageProcessor(opener lens.APIOpener) *MessageProcessor {
-	return &MessageProcessor{
+func NewMessageExtractor(opener lens.APIOpener) *MessageExtractor {
+	return &MessageExtractor{
 		opener: opener,
 	}
 }
 
-func (p *MessageProcessor) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (p *MessageExtractor) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	if p.node == nil {
 		node, closer, err := p.opener.Open(ctx)
 		if err != nil {
@@ -75,7 +75,7 @@ func (p *MessageProcessor) ProcessTipSet(ctx context.Context, ts *types.TipSet) 
 }
 
 // Note that all this processing is in the context of the parent tipset. The child is only used for receipts
-func (p *MessageProcessor) processExecutedMessages(ctx context.Context, ts, pts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (p *MessageExtractor) processExecutedMessages(ctx context.Context, ts, pts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	report := &visormodel.ProcessingReport{
 		Height:    int64(pts.Height()),
 		StateRoot: pts.ParentState().String(),
@@ -85,6 +85,24 @@ func (p *MessageProcessor) processExecutedMessages(ctx context.Context, ts, pts 
 	if err != nil {
 		report.ErrorsDetected = xerrors.Errorf("failed to get executed messages: %w", err)
 		return nil, report, nil
+	}
+
+	return p.ProcessMessages(ctx, ts, pts, emsgs)
+}
+
+func (p *MessageExtractor) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
+	if p.node == nil {
+		node, closer, err := p.opener.Open(ctx)
+		if err != nil {
+			return nil, nil, xerrors.Errorf("unable to open lens: %w", err)
+		}
+		p.node = node
+		p.closer = closer
+	}
+
+	report := &visormodel.ProcessingReport{
+		Height:    int64(pts.Height()),
+		StateRoot: pts.ParentState().String(),
 	}
 
 	var (
@@ -243,7 +261,7 @@ func (p *MessageProcessor) processExecutedMessages(ctx context.Context, ts, pts 
 	}, report, nil
 }
 
-func (p *MessageProcessor) parseMessageParams(m *types.Message, destCode cid.Cid) (string, string, error) {
+func (p *MessageExtractor) parseMessageParams(m *types.Message, destCode cid.Cid) (string, string, error) {
 	actor, ok := statediff.LotusActorCodes[destCode.String()]
 	if !ok {
 		actor = statediff.LotusTypeUnknown
@@ -290,7 +308,7 @@ func (p *MessageProcessor) parseMessageParams(m *types.Message, destCode cid.Cid
 	return method, encoded, nil
 }
 
-func (p *MessageProcessor) Close() error {
+func (p *MessageExtractor) Close() error {
 	if p.closer != nil {
 		p.closer()
 		p.closer = nil
