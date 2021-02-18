@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -34,35 +33,6 @@ import (
 )
 
 var log = logging.Logger("visor")
-
-// RunContext wraps lens and DB connections.
-type RunContext struct {
-	Opener lens.APIOpener
-	Closer lens.APICloser
-	DB     *storage.Database
-}
-
-// SetupStorageAndAPI setups of the sentinel database and returns a
-// ready-to-use RunContext with Openers and Closers using the chosen lens.
-func SetupStorageAndAPI(cctx *cli.Context) (context.Context, *RunContext, error) {
-	ctx := cctx.Context
-	opener, closer, err := setupLens(cctx)
-	if err != nil {
-		return nil, nil, xerrors.Errorf("setup lens: %w", err)
-	}
-
-	db, err := setupDatabase(cctx)
-	if err != nil {
-		closer()
-		return nil, nil, xerrors.Errorf("setup database: %w", err)
-	}
-
-	return ctx, &RunContext{
-		Opener: opener,
-		Closer: closer,
-		DB:     db,
-	}, nil
-}
 
 func setupDatabase(cctx *cli.Context) (*storage.Database, error) {
 	ctx := cctx.Context
@@ -198,34 +168,6 @@ func setupLogging(cctx *cli.Context) error {
 	log.Infof("Visor version:%s", version.String())
 
 	return nil
-}
-
-const (
-	ChainHeadIndexerLockID         = 98981111
-	ChainHistoryIndexerLockID      = 98981112
-	ChainVisRefresherLockID        = 98981113
-	ProcessingStatsRefresherLockID = 98981114
-)
-
-func NewGlobalSingleton(id int64, d *storage.Database) *GlobalSingleton {
-	return &GlobalSingleton{
-		LockID:  storage.AdvisoryLock(id),
-		Storage: d,
-	}
-}
-
-// GlobalSingleton is a task locker that ensures only one task can run across all processes
-type GlobalSingleton struct {
-	LockID  storage.AdvisoryLock
-	Storage *storage.Database
-}
-
-func (g *GlobalSingleton) Lock(ctx context.Context) error {
-	return g.LockID.LockExclusive(ctx, g.Storage.DB)
-}
-
-func (g *GlobalSingleton) Unlock(ctx context.Context) error {
-	return g.LockID.UnlockExclusive(ctx, g.Storage.DB)
 }
 
 func setupMetrics(cctx *cli.Context) error {
