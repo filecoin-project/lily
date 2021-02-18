@@ -6,6 +6,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/lotus/api"
+	builtininit "github.com/filecoin-project/lotus/chain/actors/builtin/init"
 	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -220,6 +221,16 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 		return nil, xerrors.Errorf("load parent state tree: %w", err)
 	}
 
+	initActor, err := stateTree.GetActor(builtininit.Address)
+	if err != nil {
+		return nil, xerrors.Errorf("getting init actor: %w", err)
+	}
+
+	initActorState, err := builtininit.Load(aw.Store(), initActor)
+	if err != nil {
+		return nil, xerrors.Errorf("loading init actor state: %w", err)
+	}
+
 	// Build a lookup of actor codes
 	actorCodes := map[address.Address]cid.Cid{}
 	if err := stateTree.ForEach(func(a address.Address, act *types.Actor) error {
@@ -230,7 +241,12 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 	}
 
 	getActorCode := func(a address.Address) cid.Cid {
-		c, ok := actorCodes[a]
+		ra, found, err := initActorState.ResolveAddress(a)
+		if err != nil || !found {
+			return cid.Undef
+		}
+
+		c, ok := actorCodes[ra]
 		if ok {
 			return c
 		}

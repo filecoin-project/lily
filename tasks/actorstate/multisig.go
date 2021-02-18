@@ -75,6 +75,8 @@ func ExtractMultisigTransactions(a ActorInfo, ec *MsigExtractionContext) (multis
 		return nil, xerrors.Errorf("diffing pending transactions: %w", err)
 	}
 
+	log.Debugw("multisig diff", "added", len(changes.Added), "modified", len(changes.Modified), "removed", len(changes.Removed))
+
 	for _, added := range changes.Added {
 		approved := make([]string, len(added.Tx.Approved))
 		for i, addr := range added.Tx.Approved {
