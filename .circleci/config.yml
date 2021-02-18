@@ -163,8 +163,7 @@ workflows:
     # `test` and `mod-tidy-check` runs for all branches
     jobs:
       - mod-tidy-check
-      - lint-all:
-          concurrency: "16"   # expend all docker 2xlarge CPUs.
+      - lint-all
       - test
   docker-and-deploy:
     # `build-push-*` runs on master or main branches and tags that look like semver
