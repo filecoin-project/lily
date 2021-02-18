@@ -65,45 +65,6 @@ commands:
                 command: |
                   echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
                   ./scripts/push-docker-tags.sh "$IMAGE_NAME" "$CIRCLE_SHA1" "$CIRCLE_BRANCH" "<< parameters.tagname >>"
-  lint: &lint
-    description: |
-      Run golangci-lint.
-    parameters:
-      executor:
-        type: executor
-        default: golang
-      golangci-lint-version:
-        type: string
-        default: 1.27.0
-      concurrency:
-        type: string
-        default: '2'
-        description: |
-          Concurrency used to run linters. Defaults to 2 because NumCPU is not
-          aware of container CPU limits.
-      args:
-        type: string
-        default: ''
-        description: |
-          Arguments to pass to golangci-lint
-    executor: << parameters.executor >>
-    steps:
-      - install-deps
-      - prepare
-      - run:
-          command: make deps
-          no_output_timeout: 30m
-      - go/install-golangci-lint:
-          gobin: $HOME/.local/bin
-          version: << parameters.golangci-lint-version >>
-      - run:
-          name: Lint
-          command: |
-            $HOME/.local/bin/golangci-lint run -v --timeout 2m \
-              --concurrency << parameters.concurrency >> << parameters.args >>
-  lint-all:
-    <<: *lint
-
 jobs:
   build-push-master:
     executor: dockerizer
@@ -157,6 +118,44 @@ jobs:
           file: /tmp/artifacts/coverage.out
       - store_artifacts:
           path: sentinel-visor
+  lint: &lint
+    description: |
+      Run golangci-lint.
+    parameters:
+      executor:
+        type: executor
+        default: golang
+      golangci-lint-version:
+        type: string
+        default: 1.27.0
+      concurrency:
+        type: string
+        default: '2'
+        description: |
+          Concurrency used to run linters. Defaults to 2 because NumCPU is not
+          aware of container CPU limits.
+      args:
+        type: string
+        default: ''
+        description: |
+          Arguments to pass to golangci-lint
+    executor: << parameters.executor >>
+    steps:
+      - install-deps
+      - prepare
+      - run:
+          command: make deps
+          no_output_timeout: 30m
+      - go/install-golangci-lint:
+          gobin: $HOME/.local/bin
+          version: << parameters.golangci-lint-version >>
+      - run:
+          name: Lint
+          command: |
+            $HOME/.local/bin/golangci-lint run -v --timeout 2m \
+              --concurrency << parameters.concurrency >> << parameters.args >>
+  lint-all:
+    <<: *lint
 
 workflows:
   version: 2
