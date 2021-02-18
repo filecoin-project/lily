@@ -4,7 +4,7 @@ import (
 	"github.com/go-pg/migrations/v8"
 )
 
-// Schema version 28 adds an integer now function to each hypertable
+// Schema version 29 adds an integer now function to each hypertable
 
 func init() {
 	up := batch(`
