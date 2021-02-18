@@ -3,10 +3,7 @@ package commands
 import (
 	"context"
 	"errors"
-	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/filecoin-project/sentinel-visor/schedule"
@@ -75,21 +72,6 @@ func watch(cctx *cli.Context) error {
 		storage = db
 	}
 
-	// Set up a context that is canceled when the command is interrupted
-	ctx, cancel := context.WithCancel(cctx.Context)
-	defer cancel()
-
-	// Set up a signal handler to cancel the context
-	go func() {
-		interrupt := make(chan os.Signal, 1)
-		signal.Notify(interrupt, syscall.SIGTERM, syscall.SIGINT)
-		select {
-		case <-interrupt:
-			cancel()
-		case <-ctx.Done():
-		}
-	}()
-
 	tsIndexer, err := chain.NewTipSetIndexer(lensOpener, storage, builtin.EpochDurationSeconds*time.Second, cctx.String("name"), tasks)
 	if err != nil {
 		return xerrors.Errorf("setup indexer: %w", err)
@@ -107,7 +89,7 @@ func watch(cctx *cli.Context) error {
 	})
 
 	// Start the scheduler and wait for it to complete or to be cancelled.
-	err = scheduler.Run(ctx)
+	err = scheduler.Run(cctx.Context)
 	if !errors.Is(err, context.Canceled) {
 		return err
 	}
