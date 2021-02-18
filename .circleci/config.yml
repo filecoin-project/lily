@@ -32,50 +32,68 @@ commands:
             - run: sudo apt-get update
       - run: git submodule sync
       - run: git submodule update --init
-  build-docker-and-maybe-push:
-    parameters:
-      push:
-        description: whether to push created docker image after build
-        type: boolean
-        default: false
+  publish-docker-master-production:
     steps:
-      - checkout
-      - setup_remote_docker:
-          version: "18.09.3"
-      - run:
-          name: Build Dev Docker image
-          command: docker build -t ${IMAGE_NAME}-dev -f Dockerfile.dev .
       - run:
           name: Build Production Docker image
           command: docker build -t $IMAGE_NAME -f Dockerfile .
-      - when:
-          condition: << parameters.push >>
-          steps:
-            - run:
-                name: Publish Dev Docker Image to Docker Hub
-                command: |
-                  echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                  tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-                  ./scripts/push-docker-tags.sh "${IMAGE_NAME}-dev" "$CIRCLE_SHA1" "${CIRCLE_BRANCH}-${tag_suffix}-dev"
-            - run:
-                name: Publish Production Docker Image to Docker Hub
-                command: |
-                  echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                  tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-                  ./scripts/push-docker-tags.sh "${IMAGE_NAME}-dev" "$CIRCLE_SHA1" "${CIRCLE_BRANCH}-${tag_suffix}"
-                when: always
+      - run:
+          name: Publish Production Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
+            ./scripts/push-docker-tags.sh "${IMAGE_NAME}" "$CIRCLE_SHA1" "${CIRCLE_BRANCH}-${tag_suffix}"
+  publish-docker-master-dev:
+    steps:
+      - run:
+          name: Build Dev Docker image
+          command: docker build -t ${IMAGE_NAME} -f Dockerfile.dev .
+      - run:
+          name: Publish Dev Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
+            ./scripts/push-docker-tags.sh "${IMAGE_NAME}" "$CIRCLE_SHA1" "${CIRCLE_BRANCH}-${tag_suffix}-dev"
+  publish-docker-semver-production:
+    steps:
+      - run:
+          name: Build Production Semver Docker image
+          command: docker build -t ${IMAGE_NAME} -f Dockerfile .
+      - run:
+          name: Publish Production Semver Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            ./scripts/push-docker-tags.sh "${IMAGE_NAME}" "$CIRCLE_SHA1" "${CIRCLE_TAG}"
+  publish-docker-semver-dev:
+    steps:
+      - run:
+          name: Build Dev Semver Docker image
+          command: docker build -t ${IMAGE_NAME} -f Dockerfile.dev .
+      - run:
+          name: Publish Dev Semver Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            ./scripts/push-docker-tags.sh "${IMAGE_NAME}" "$CIRCLE_SHA1" "${CIRCLE_TAG}-dev"
 
 jobs:
-  build-push-master:
+  publish-docker-from-master:
     executor: dockerizer
     steps:
-      - build-docker-and-maybe-push:
-          push: true
-  build-push-semver-tag:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: "18.09.3"
+      - publish-docker-master-dev
+      - publish-docker-master-production
+  publish-docker-from-tag:
     executor: dockerizer
     steps:
-      - build-docker-and-maybe-push:
-          push: true
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: "18.09.3"
+      - publish-docker-semver-dev
+      - publish-docker-semver-production
   mod-tidy-check:
     executor: golang
     steps:
@@ -124,18 +142,18 @@ workflows:
     jobs:
       - mod-tidy-check
       - test
-  docker-and-deploy:
+  build-docker-images:
     # `build-push-*` runs on master or main branches and tags that look like semver
     # see: https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
     jobs:
-      - build-push-master:
+      - publish-docker-from-master:
           # build and push latest master docker image
           filters:
             branches:
               only: /^(master|main)$/
             tags:
               ignore: /.*/
-      - build-push-semver-tag:
+      - publish-docker-from-tag:
           # build and push semver tags docker image
           filters:
             branches:
