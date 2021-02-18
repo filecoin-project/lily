@@ -34,10 +34,6 @@ commands:
       - run: git submodule update --init
   build-docker-and-maybe-push:
     parameters:
-      tagname:
-        description: docker tag name with which to build and push
-        type: string
-        default: $CIRCLE_TAG
       push:
         description: whether to push created docker image after build
         type: boolean
@@ -59,12 +55,15 @@ commands:
                 name: Publish Dev Docker Image to Docker Hub
                 command: |
                   echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                  ./scripts/push-docker-tags.sh "${IMAGE_NAME}-dev" "$CIRCLE_SHA1" "$CIRCLE_BRANCH" "<< parameters.tagname >>-dev"
+                  tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
+                  ./scripts/push-docker-tags.sh "${IMAGE_NAME}-dev" "$CIRCLE_SHA1" "${CIRCLE_BRANCH}-${tag_suffix}-dev"
             - run:
                 name: Publish Production Docker Image to Docker Hub
                 command: |
                   echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                  ./scripts/push-docker-tags.sh "$IMAGE_NAME" "$CIRCLE_SHA1" "$CIRCLE_BRANCH" "<< parameters.tagname >>"
+                  tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
+                  ./scripts/push-docker-tags.sh "${IMAGE_NAME}-dev" "$CIRCLE_SHA1" "${CIRCLE_BRANCH}-${tag_suffix}"
+                when: always
 
 jobs:
   build-push-master:
@@ -72,13 +71,11 @@ jobs:
     steps:
       - build-docker-and-maybe-push:
           push: true
-          tagname: master-latest
   build-push-semver-tag:
     executor: dockerizer
     steps:
       - build-docker-and-maybe-push:
           push: true
-          # use default tagname
   mod-tidy-check:
     executor: golang
     steps:
