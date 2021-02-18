@@ -22,7 +22,7 @@ func init() {
         "to"               text    not null,
         "value"            numeric not null,
         "signers"          jsonb  not null,
-        PRIMARY KEY ("height", "state_root", "multisig_id")
+        PRIMARY KEY ("height", "state_root", "multisig_id",  "message", "approver")
 	);
 
 	-- Chunked per 30 days (86400 epochs)

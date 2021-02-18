@@ -242,10 +242,7 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 
 	getActorCode := func(a address.Address) cid.Cid {
 		ra, found, err := initActorState.ResolveAddress(a)
-		if err == nil && !found {
-			return cid.Undef
-		}
-		if err != nil {
+		if err != nil || !found {
 			return cid.Undef
 		}
 

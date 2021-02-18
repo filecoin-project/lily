@@ -65,8 +65,6 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		default:
 		}
 
-		// ll.Infow("found message", "to", m.ToActorCode.String(), "addr", m.Message.To.String())
-
 		// Only interested in messages to multisig actors
 		if !isMultisigActor(m.ToActorCode) {
 			continue

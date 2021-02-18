@@ -10,6 +10,7 @@ import (
 	"github.com/filecoin-project/go-multistore"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
+	builtininit "github.com/filecoin-project/lotus/chain/actors/builtin/init"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
@@ -24,7 +25,6 @@ import (
 	"github.com/filecoin-project/lotus/node/impl"
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/lotus/node/repo"
-	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/specs-actors/actors/runtime/proof"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
@@ -32,6 +32,8 @@ import (
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/sentinel-visor/lens"
 )
 
 type APIOpener struct {
@@ -240,6 +242,16 @@ func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts,
 		return nil, xerrors.Errorf("load state tree: %w", err)
 	}
 
+	initActor, err := stateTree.GetActor(builtininit.Address)
+	if err != nil {
+		return nil, xerrors.Errorf("getting init actor: %w", err)
+	}
+
+	initActorState, err := builtininit.Load(cs.Store(ctx), initActor)
+	if err != nil {
+		return nil, xerrors.Errorf("loading init actor state: %w", err)
+	}
+
 	// Build a lookup of actor codes
 	actorCodes := map[address.Address]cid.Cid{}
 	if err := stateTree.ForEach(func(a address.Address, act *types.Actor) error {
@@ -250,7 +262,12 @@ func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts,
 	}
 
 	getActorCode := func(a address.Address) cid.Cid {
-		c, ok := actorCodes[a]
+		ra, found, err := initActorState.ResolveAddress(a)
+		if err != nil || !found {
+			return cid.Undef
+		}
+
+		c, ok := actorCodes[ra]
 		if ok {
 			return c
 		}
