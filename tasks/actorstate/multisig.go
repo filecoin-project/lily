@@ -113,6 +113,9 @@ func ExtractMultisigTransactions(a ActorInfo, ec *MsigExtractionContext) (multis
 		})
 
 	}
+	for _, removed := range changes.Removed {
+		log.Debugw("multisig tx removed", "id", removed.TxID, "to", removed.Tx.To.String())
+	}
 	return out, nil
 }
 
