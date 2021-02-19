@@ -13,7 +13,6 @@ import (
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	multisig3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/multisig"
 	"github.com/ipfs/go-cid"
-	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -21,8 +20,6 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/msapprovals"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 )
-
-var log = logging.Logger("msapprovals")
 
 const (
 	ProposeMethodNum = 2
@@ -42,8 +39,6 @@ func NewTask(opener lens.APIOpener) *Task {
 }
 
 func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
-	log.Debugw("ProcessMessages", "ts_height", ts.Height(), "pts_height", pts.Height())
-
 	// TODO: refactor this boilerplate into a helper
 	if p.node == nil {
 		node, closer, err := p.opener.Open(ctx)
@@ -87,7 +82,6 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 
 		applied, tx, err := p.getTransactionIfApplied(ctx, m.Message, m.Receipt, pts)
 		if err != nil {
-			log.Debugw("failed to get transaction", "error", err.Error(), "addr", m.Message.To.String())
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
 				Error: xerrors.Errorf("failed to find transaction: %w", err).Error(),
@@ -253,6 +247,8 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		}
 
 		// Get state of actor before the message was applied
+		// pts is the tipset containing the messages, so we need the state as seen at the start of message processing
+		// for that tipset
 		act, err := p.node.StateGetActor(ctx, msg.To, pts.Parents())
 		if err != nil {
 			return false, nil, xerrors.Errorf("failed to load previous actor: %w", err)
@@ -266,7 +262,6 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		var tx *transaction
 
 		if err := prevActorState.ForEachPendingTxn(func(id int64, txn multisig.Transaction) error {
-			log.Debugw("reading pending txn", "id", id, "to", txn.To.String())
 			if id == int64(params.ID) {
 				tx = &transaction{
 					id:    int64(params.ID),
