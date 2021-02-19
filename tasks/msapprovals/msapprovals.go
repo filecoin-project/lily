@@ -83,7 +83,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			continue
 		}
 
-		applied, tx, err := p.getTransactionIfApplied(ctx, m.Message, m.Receipt, ts, pts)
+		applied, tx, err := p.getTransactionIfApplied(ctx, m.Message, m.Receipt, pts)
 		if err != nil {
 			log.Debugw("failed to get transaction", "error", err.Error(), "addr", m.Message.To.String())
 			errorsDetected = append(errorsDetected, &MultisigError{
@@ -198,7 +198,7 @@ type transaction struct {
 
 // getTransactionIfApplied returns the transaction associated with the message if the transaction was applied (i.e. had enough
 // approvals). Returns true and the transaction if the transaction was applied, false otherwise.
-func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, rcpt *types.MessageReceipt, ts, pts *types.TipSet) (bool, *transaction, error) {
+func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, rcpt *types.MessageReceipt, pts *types.TipSet) (bool, *transaction, error) {
 	switch msg.Method {
 	case ProposeMethodNum:
 		// If the message is a proposal then the parameters will contain details of the transaction
@@ -251,7 +251,7 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		}
 
 		// Get state of actor before the message was applied
-		act, err := p.node.StateGetActor(ctx, msg.To, ts.Key())
+		act, err := p.node.StateGetActor(ctx, msg.To, pts.Key())
 		if err != nil {
 			return false, nil, xerrors.Errorf("failed to load previous actor: %w", err)
 		}
@@ -264,7 +264,7 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		var tx *transaction
 
 		if err := prevActorState.ForEachPendingTxn(func(id int64, txn multisig.Transaction) error {
-			log.Debugf("reading pending txn", "id", id, "to", txn.To.String())
+			log.Debugw("reading pending txn", "id", id, "to", txn.To.String())
 			if id == int64(params.ID) {
 				tx = &transaction{
 					id:    int64(params.ID),
