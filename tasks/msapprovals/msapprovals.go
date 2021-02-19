@@ -247,7 +247,9 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		}
 
 		// Get state of actor before the message was applied
-		act, err := p.node.StateGetActor(ctx, msg.To, pts.Key())
+		// pts is the tipset containing the messages, so we need the state as seen at the start of message processing
+		// for that tipset
+		act, err := p.node.StateGetActor(ctx, msg.To, pts.Parents())
 		if err != nil {
 			return false, nil, xerrors.Errorf("failed to load previous actor: %w", err)
 		}
@@ -257,21 +259,26 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 			return false, nil, xerrors.Errorf("failed to load previous actor state: %w", err)
 		}
 
-		var tx transaction
+		var tx *transaction
 
 		if err := prevActorState.ForEachPendingTxn(func(id int64, txn multisig.Transaction) error {
 			if id == int64(params.ID) {
-				tx.id = int64(params.ID)
-				tx.to = txn.To.String()
-				tx.value = txn.Value.String()
-				return nil
+				tx = &transaction{
+					id:    int64(params.ID),
+					to:    txn.To.String(),
+					value: txn.Value.String(),
+				}
 			}
-			return xerrors.Errorf("pending transaction %d not found", params.ID)
+			return nil
 		}); err != nil {
 			return false, nil, xerrors.Errorf("failed to read transaction details: %w", err)
 		}
 
-		return true, &tx, nil
+		if tx == nil {
+			return false, nil, xerrors.Errorf("pending transaction %d not found", params.ID)
+		}
+
+		return true, tx, nil
 
 	default:
 		// Not interested in any other methods
