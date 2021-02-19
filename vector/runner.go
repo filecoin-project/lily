@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 
@@ -118,8 +117,6 @@ func (r *Runner) Run(ctx context.Context) error {
 	if err := chain.NewWalker(tsIndexer, r.opener, r.schema.Params.From, r.schema.Params.To).Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 		return err
 	}
-	// TODO remove when https://github.com/filecoin-project/sentinel-visor/issues/374 is fixed
-	time.Sleep(3 * time.Second)
 	return nil
 }
 
