@@ -193,6 +193,10 @@ type ActorExtractorMap interface {
 	GetExtractor(code cid.Cid) (actorstate.ActorStateExtractor, bool)
 }
 
+type ActorExtractorFilter interface {
+	AllowAddress(addr string) bool
+}
+
 // A RawActorExtractorMap extracts all types of actors using basic actor extraction which only parses shallow state.
 type RawActorExtractorMap struct{}
 

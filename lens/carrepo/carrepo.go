@@ -33,5 +33,5 @@ func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 		return &tsk, nil
 	}
 
-	return util.NewAPIOpener(c, cacheDB, h)
+	return util.NewAPIOpener(c.Context, cacheDB, h, c.Int("lens-cache-hint"))
 }

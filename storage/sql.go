@@ -57,6 +57,7 @@ var models = []interface{}{
 	(*multisig.MultisigTransaction)(nil),
 
 	(*power.ChainPower)(nil),
+	(*power.PowerActorClaim)(nil),
 	(*reward.ChainReward)(nil),
 	(*common.Actor)(nil),
 	(*common.ActorState)(nil),

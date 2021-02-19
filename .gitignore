@@ -19,3 +19,4 @@ visor
 sentinel-visor
 
 build/.*
+vector/data/*.json
