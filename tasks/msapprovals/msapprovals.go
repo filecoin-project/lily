@@ -13,6 +13,7 @@ import (
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	multisig3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/multisig"
 	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -20,6 +21,8 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/msapprovals"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 )
+
+var log = logging.Logger("msapprovals")
 
 const (
 	ProposeMethodNum = 2
@@ -260,6 +263,7 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		var tx transaction
 
 		if err := prevActorState.ForEachPendingTxn(func(id int64, txn multisig.Transaction) error {
+			log.Debugw("found pending transaction", "id", id, "to", txn.To.String())
 			if id == int64(params.ID) {
 				tx.id = int64(params.ID)
 				tx.to = txn.To.String()
