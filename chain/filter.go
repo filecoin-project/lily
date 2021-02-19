@@ -9,8 +9,5 @@ type AddressFilter struct {
 }
 
 func (f *AddressFilter) Allow(addr string) bool {
-	if f.address == addr {
-		return true
-	}
-	return false
+	return f.address == addr
 }

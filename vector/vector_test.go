@@ -10,7 +10,7 @@ import (
 func TestExecuteVectors(t *testing.T) {
 	ctx := context.Background()
 	var vectorPaths []string
-	if err := filepath.Walk("./data", func(path string, info os.FileInfo, err error) error {
+	if err := filepath.Walk("./data", func(path string, info os.FileInfo, _ error) error {
 		if filepath.Ext(path) != ".json" {
 			return nil
 		}

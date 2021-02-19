@@ -20,11 +20,10 @@ import (
 
 // An ActorStateProcessor processes the extraction of actor state according the allowed types in its extracter map.
 type ActorStateProcessor struct {
-	node          lens.API
-	opener        lens.APIOpener
-	closer        lens.APICloser
-	extracterMap  ActorExtractorMap
-	addressFilter *AddressFilter
+	node         lens.API
+	opener       lens.APIOpener
+	closer       lens.APICloser
+	extracterMap ActorExtractorMap
 }
 
 func NewActorStateProcessor(opener lens.APIOpener, extracterMap ActorExtractorMap) *ActorStateProcessor {

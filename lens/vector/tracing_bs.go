@@ -1,12 +1,12 @@
 package vector
 
 import (
+	"sync"
+
 	"github.com/filecoin-project/lotus/lib/blockstore"
-	"github.com/filecoin-project/lotus/node/impl"
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
-	"sync"
 )
 
 func NewTracingBlockstore(bs blockstore.Blockstore) *TracingBlockstore {
@@ -24,8 +24,6 @@ var (
 )
 
 type TracingBlockstore struct {
-	api impl.FullNodeAPI
-
 	tracedMu sync.Mutex
 	traced   map[cid.Cid]struct{}
 
