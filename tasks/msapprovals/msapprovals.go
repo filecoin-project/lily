@@ -253,7 +253,7 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		}
 
 		// Get state of actor before the message was applied
-		act, err := p.node.StateGetActor(ctx, msg.To, pts.Key())
+		act, err := p.node.StateGetActor(ctx, msg.To, pts.Parents())
 		if err != nil {
 			return false, nil, xerrors.Errorf("failed to load previous actor: %w", err)
 		}
