@@ -144,6 +144,13 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 
 	prevState := curState
 	if a.Epoch != 0 {
+
+		prevTipset, err := node.ChainGetTipSet(ctx, a.ParentTipSet)
+		if err != nil {
+			return nil, xerrors.Errorf("loading current tipset %s: %w", a.TipSet.String(), err)
+		}
+		log.Debugw("MultiSigActorExtractor", "ts_height", curTipset.Height(), "pts_height", prevTipset.Height())
+
 		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet)
 		if err != nil {
 			return nil, xerrors.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet, a.Epoch, err)
