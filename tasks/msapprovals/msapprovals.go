@@ -85,6 +85,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 
 		applied, tx, err := p.getTransactionIfApplied(ctx, m.Message, m.Receipt, pts)
 		if err != nil {
+			log.Debugw("failed to get transaction", "error", err.Error(), "addr", m.Message.To.String())
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
 				Error: xerrors.Errorf("failed to find transaction: %w", err).Error(),
