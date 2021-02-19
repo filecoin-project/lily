@@ -264,6 +264,7 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		var tx *transaction
 
 		if err := prevActorState.ForEachPendingTxn(func(id int64, txn multisig.Transaction) error {
+			log.Debugf("reading pending txn", "id", id, "to", txn.To.String())
 			if id == int64(params.ID) {
 				tx = &transaction{
 					id:    int64(params.ID),
