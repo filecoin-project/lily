@@ -261,22 +261,26 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 			return false, nil, xerrors.Errorf("failed to load previous actor state: %w", err)
 		}
 
-		var tx transaction
+		var tx *transaction
 
 		if err := prevActorState.ForEachPendingTxn(func(id int64, txn multisig.Transaction) error {
-			log.Debugw("found pending transaction", "id", id, "to", txn.To.String())
 			if id == int64(params.ID) {
-				tx.id = int64(params.ID)
-				tx.to = txn.To.String()
-				tx.value = txn.Value.String()
-				return nil
+				tx = &transaction{
+					id:    int64(params.ID),
+					to:    txn.To.String(),
+					value: txn.Value.String(),
+				}
 			}
-			return xerrors.Errorf("pending transaction %d not found", params.ID)
+			return nil
 		}); err != nil {
 			return false, nil, xerrors.Errorf("failed to read transaction details: %w", err)
 		}
 
-		return true, &tx, nil
+		if tx == nil {
+			return false, nil, xerrors.Errorf("pending transaction %d not found", params.ID)
+		}
+
+		return true, tx, nil
 
 	default:
 		// Not interested in any other methods
