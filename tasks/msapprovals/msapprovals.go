@@ -42,6 +42,8 @@ func NewTask(opener lens.APIOpener) *Task {
 }
 
 func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
+	log.Debugw("ProcessMessages", "ts_height", ts.Height(), "pts_height", pts.Height())
+
 	// TODO: refactor this boilerplate into a helper
 	if p.node == nil {
 		node, closer, err := p.opener.Open(ctx)
