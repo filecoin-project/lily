@@ -17,7 +17,7 @@ import (
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 )
 
-// An Task processes the extraction of actor state according the allowed types in its extracter map.
+// A Task processes the extraction of actor state according the allowed types in its extracter map.
 type Task struct {
 	node         lens.API
 	opener       lens.APIOpener
