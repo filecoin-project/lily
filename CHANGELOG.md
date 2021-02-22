@@ -5,6 +5,21 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.5.2"></a>
+## [v0.5.2] - 2021-02-22
+
+### Feat
+- record multisig approvals ([#389](https://github.com/filecoin-project/sentinel-visor/issues/389))
+- implement test vector builder and executer ([#370](https://github.com/filecoin-project/sentinel-visor/issues/370))
+
+### Fix
+- msapprovals missing pending transaction ([#395](https://github.com/filecoin-project/sentinel-visor/issues/395))
+- correct docker image name; simplify build pipeline ([#393](https://github.com/filecoin-project/sentinel-visor/issues/393))
+- set chainstore on repo lens util
+
+### Chore
+- add release process details and workflow ([#353](https://github.com/filecoin-project/sentinel-visor/issues/353))
+
 <a name="v0.5.1"></a>
 ## [v0.5.1] - 2021-02-09
 
