@@ -574,6 +574,6 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
-		return cmp.Diff(actType, expType), nil
+		return cmp.Diff(actType, expType, cmpopts.IgnoreUnexported(modelchain.ChainEconomics{})), nil
 	}
 }

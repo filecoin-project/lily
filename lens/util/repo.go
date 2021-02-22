@@ -10,6 +10,7 @@ import (
 	"github.com/filecoin-project/go-multistore"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/build"
 	builtininit "github.com/filecoin-project/lotus/chain/actors/builtin/init"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/stmgr"
@@ -24,10 +25,12 @@ import (
 	marketevents "github.com/filecoin-project/lotus/markets/loggers"
 	"github.com/filecoin-project/lotus/node/impl"
 	"github.com/filecoin-project/lotus/node/impl/full"
+	"github.com/filecoin-project/lotus/node/modules"
 	"github.com/filecoin-project/lotus/node/repo"
 	"github.com/filecoin-project/specs-actors/actors/runtime/proof"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
+	dstore "github.com/ipfs/go-datastore"
 	cbor "github.com/ipfs/go-ipld-cbor"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	"golang.org/x/xerrors"
@@ -55,7 +58,7 @@ func NewAPIOpener(ctx context.Context, bs blockstore.Blockstore, head HeadMthd, 
 		return nil, nil, err
 	}
 
-	mds, err := lr.Datastore("/metadata")
+	mds, err := lr.Datastore(ctx, "/metadata")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -88,6 +91,14 @@ func NewAPIOpener(ctx context.Context, bs blockstore.Blockstore, head HeadMthd, 
 
 	sf := func() {
 		lr.Close()
+	}
+
+	genesisBlkHeader, err := modules.LoadGenesis(build.MaybeGenesis())(bs)()
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := mds.Put(dstore.NewKey("0"), genesisBlkHeader.Cid().Bytes()); err != nil {
+		return nil, nil, err
 	}
 
 	rapi.Context = ctx

@@ -7,15 +7,15 @@ require (
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/fatih/color v1.10.0 // indirect
-	github.com/filecoin-project/go-address v0.0.5-0.20201103152444-f2023ef3f5bb
-	github.com/filecoin-project/go-bitfield v0.2.3-0.20201110211213-fe2c1862e816
-	github.com/filecoin-project/go-fil-markets v1.1.2
+	github.com/filecoin-project/go-address v0.0.5
+	github.com/filecoin-project/go-bitfield v0.2.4
+	github.com/filecoin-project/go-fil-markets v1.1.7
 	github.com/filecoin-project/go-multistore v0.0.3
 	github.com/filecoin-project/go-state-types v0.0.0-20210119062722-4adba5aaea71
-	github.com/filecoin-project/lotus v1.5.0-pre1
+	github.com/filecoin-project/lotus v1.4.2
 	github.com/filecoin-project/specs-actors v0.9.13
 	github.com/filecoin-project/specs-actors/v2 v2.3.4
-	github.com/filecoin-project/specs-actors/v3 v3.0.1-0.20210122191213-c7ea99141c44
+	github.com/filecoin-project/specs-actors/v3 v3.0.1-0.20210128235937-57195d8909b1
 	github.com/filecoin-project/statediff v0.0.8-0.20201027195725-7eaa5391a639
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.3.1
@@ -43,9 +43,9 @@ require (
 	github.com/prometheus/client_golang v1.6.0
 	github.com/raulk/clock v1.1.0
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/urfave/cli/v2 v2.3.0
-	github.com/whyrusleeping/cbor-gen v0.0.0-20200826160007-0b9f6c5fb163
+	github.com/whyrusleeping/cbor-gen v0.0.0-20210118024343-169e9d70c0c2
 	github.com/willscott/carbs v0.0.4
 	go.opencensus.io v0.22.5
 	go.opentelemetry.io/otel v0.12.0
