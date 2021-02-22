@@ -1,4 +1,4 @@
-package chain
+package actorstate
 
 import (
 	"context"
@@ -15,33 +15,32 @@ import (
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 )
 
-// An ActorStateProcessor processes the extraction of actor state according the allowed types in its extracter map.
-type ActorStateProcessor struct {
+// An Task processes the extraction of actor state according the allowed types in its extracter map.
+type Task struct {
 	node         lens.API
 	opener       lens.APIOpener
 	closer       lens.APICloser
 	extracterMap ActorExtractorMap
 }
 
-func NewActorStateProcessor(opener lens.APIOpener, extracterMap ActorExtractorMap) *ActorStateProcessor {
-	p := &ActorStateProcessor{
+func NewTask(opener lens.APIOpener, extracterMap ActorExtractorMap) *Task {
+	p := &Task{
 		opener:       opener,
 		extracterMap: extracterMap,
 	}
 	return p
 }
 
-func (p *ActorStateProcessor) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates map[string]types.Actor) (model.Persistable, *visormodel.ProcessingReport, error) {
-	if p.node == nil {
-		node, closer, err := p.opener.Open(ctx)
+func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates map[string]types.Actor) (model.Persistable, *visormodel.ProcessingReport, error) {
+	if t.node == nil {
+		node, closer, err := t.opener.Open(ctx)
 		if err != nil {
 			return nil, nil, xerrors.Errorf("unable to open lens: %w", err)
 		}
-		p.node = node
-		p.closer = closer
+		t.node = node
+		t.closer = closer
 	}
 
 	log.Debugw("processing actor state changes", "height", ts.Height(), "parent_height", pts.Height())
@@ -57,7 +56,7 @@ func (p *ActorStateProcessor) ProcessActors(ctx context.Context, ts *types.TipSe
 	// Filter to just allowed actors
 	actors := map[string]types.Actor{}
 	for addr, act := range candidates {
-		if p.extracterMap.Allow(act.Code) {
+		if t.extracterMap.Allow(act.Code) {
 			actors[addr] = act
 		}
 	}
@@ -77,7 +76,7 @@ func (p *ActorStateProcessor) ProcessActors(ctx context.Context, ts *types.TipSe
 	// Run each task concurrently
 	results := make(chan *ActorStateResult, len(actors))
 	for addr, act := range actors {
-		go p.runActorStateExtraction(ctx, ts, pts, addr, act, results)
+		go t.runActorStateExtraction(ctx, ts, pts, addr, act, results)
 	}
 
 	// Gather results
@@ -86,13 +85,13 @@ func (p *ActorStateProcessor) ProcessActors(ctx context.Context, ts *types.TipSe
 		res := <-results
 		inFlight--
 		elapsed := time.Since(start)
-		lla := log.With("height", int64(ts.Height()), "actor", actorstate.ActorNameByCode(res.Code), "address", res.Address)
+		lla := log.With("height", int64(ts.Height()), "actor", ActorNameByCode(res.Code), "address", res.Address)
 
 		if res.Error != nil {
 			lla.Errorw("actor returned with error", "error", res.Error.Error())
 			report.ErrorsDetected = append(errorsDetected, &ActorStateError{
 				Code:    res.Code.String(),
-				Name:    actorstate.ActorNameByCode(res.Code),
+				Name:    ActorNameByCode(res.Code),
 				Head:    res.Head.String(),
 				Address: res.Address,
 				Error:   res.Error.Error(),
@@ -120,8 +119,8 @@ func (p *ActorStateProcessor) ProcessActors(ctx context.Context, ts *types.TipSe
 	return data, report, nil
 }
 
-func (p *ActorStateProcessor) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pts *types.TipSet, addrStr string, act types.Actor, results chan *ActorStateResult) {
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ActorCode, actorstate.ActorNameByCode(act.Code)))
+func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pts *types.TipSet, addrStr string, act types.Actor, results chan *ActorStateResult) {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ActorCode, ActorNameByCode(act.Code)))
 
 	res := &ActorStateResult{
 		Code:    act.Code,
@@ -138,7 +137,7 @@ func (p *ActorStateProcessor) runActorStateExtraction(ctx context.Context, ts *t
 		return
 	}
 
-	info := actorstate.ActorInfo{
+	info := ActorInfo{
 		Actor:           act,
 		Address:         addr,
 		ParentStateRoot: pts.ParentState(),
@@ -147,12 +146,12 @@ func (p *ActorStateProcessor) runActorStateExtraction(ctx context.Context, ts *t
 		ParentTipSet:    pts.Parents(),
 	}
 
-	extracter, ok := p.extracterMap.GetExtractor(act.Code)
+	extracter, ok := t.extracterMap.GetExtractor(act.Code)
 	if !ok {
 		res.SkippedParse = true
 	} else {
 		// Parse state
-		data, err := extracter.Extract(ctx, info, p.node)
+		data, err := extracter.Extract(ctx, info, t.node)
 		if err != nil {
 			res.Error = xerrors.Errorf("failed to extract parsed actor state: %w", err)
 			return
@@ -161,12 +160,12 @@ func (p *ActorStateProcessor) runActorStateExtraction(ctx context.Context, ts *t
 	}
 }
 
-func (p *ActorStateProcessor) Close() error {
-	if p.closer != nil {
-		p.closer()
-		p.closer = nil
+func (t *Task) Close() error {
+	if t.closer != nil {
+		t.closer()
+		t.closer = nil
 	}
-	p.node = nil
+	t.node = nil
 	return nil
 }
 
@@ -190,7 +189,7 @@ type ActorStateError struct {
 // An ActorExtractorMap controls which actor types may be extracted.
 type ActorExtractorMap interface {
 	Allow(code cid.Cid) bool
-	GetExtractor(code cid.Cid) (actorstate.ActorStateExtractor, bool)
+	GetExtractor(code cid.Cid) (ActorStateExtractor, bool)
 }
 
 type ActorExtractorFilter interface {
@@ -204,8 +203,8 @@ func (RawActorExtractorMap) Allow(code cid.Cid) bool {
 	return true
 }
 
-func (RawActorExtractorMap) GetExtractor(code cid.Cid) (actorstate.ActorStateExtractor, bool) {
-	return actorstate.ActorExtractor{}, true
+func (RawActorExtractorMap) GetExtractor(code cid.Cid) (ActorStateExtractor, bool) {
+	return ActorExtractor{}, true
 }
 
 // A TypedActorExtractorMap extracts a single type of actor using full parsing of actor state
@@ -220,9 +219,9 @@ func (t *TypedActorExtractorMap) Allow(code cid.Cid) bool {
 	return code == t.CodeV1 || code == t.CodeV2 || code == t.CodeV3
 }
 
-func (t *TypedActorExtractorMap) GetExtractor(code cid.Cid) (actorstate.ActorStateExtractor, bool) {
+func (t *TypedActorExtractorMap) GetExtractor(code cid.Cid) (ActorStateExtractor, bool) {
 	if !t.Allow(code) {
 		return nil, false
 	}
-	return actorstate.GetActorStateExtractor(code)
+	return GetActorStateExtractor(code)
 }

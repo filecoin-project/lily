@@ -18,6 +18,9 @@ import (
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
+	"github.com/filecoin-project/sentinel-visor/tasks/blocks"
+	"github.com/filecoin-project/sentinel-visor/tasks/chaineconomics"
 	"github.com/filecoin-project/sentinel-visor/tasks/messages"
 	"github.com/filecoin-project/sentinel-visor/tasks/msapprovals"
 )
@@ -83,45 +86,45 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 	for _, task := range tasks {
 		switch task {
 		case BlocksTask:
-			tsi.processors[BlocksTask] = NewBlockProcessor()
+			tsi.processors[BlocksTask] = blocks.NewTask()
 		case MessagesTask:
 			tsi.messageProcessors[MessagesTask] = messages.NewTask(o)
 		case ChainEconomicsTask:
-			tsi.processors[ChainEconomicsTask] = NewChainEconomicsProcessor(o)
+			tsi.processors[ChainEconomicsTask] = chaineconomics.NewTask(o)
 		case ActorStatesRawTask:
-			tsi.actorProcessors[ActorStatesRawTask] = NewActorStateProcessor(o, &RawActorExtractorMap{})
+			tsi.actorProcessors[ActorStatesRawTask] = actorstate.NewTask(o, &actorstate.RawActorExtractorMap{})
 		case ActorStatesPowerTask:
-			tsi.actorProcessors[ActorStatesPowerTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
+			tsi.actorProcessors[ActorStatesPowerTask] = actorstate.NewTask(o, &actorstate.TypedActorExtractorMap{
 				CodeV1: sa0builtin.StoragePowerActorCodeID,
 				CodeV2: sa2builtin.StoragePowerActorCodeID,
 				CodeV3: sa3builtin.StoragePowerActorCodeID,
 			})
 		case ActorStatesRewardTask:
-			tsi.actorProcessors[ActorStatesRewardTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
+			tsi.actorProcessors[ActorStatesRewardTask] = actorstate.NewTask(o, &actorstate.TypedActorExtractorMap{
 				CodeV1: sa0builtin.RewardActorCodeID,
 				CodeV2: sa2builtin.RewardActorCodeID,
 				CodeV3: sa3builtin.RewardActorCodeID,
 			})
 		case ActorStatesMinerTask:
-			tsi.actorProcessors[ActorStatesMinerTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
+			tsi.actorProcessors[ActorStatesMinerTask] = actorstate.NewTask(o, &actorstate.TypedActorExtractorMap{
 				CodeV1: sa0builtin.StorageMinerActorCodeID,
 				CodeV2: sa2builtin.StorageMinerActorCodeID,
 				CodeV3: sa3builtin.StorageMinerActorCodeID,
 			})
 		case ActorStatesInitTask:
-			tsi.actorProcessors[ActorStatesInitTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
+			tsi.actorProcessors[ActorStatesInitTask] = actorstate.NewTask(o, &actorstate.TypedActorExtractorMap{
 				CodeV1: sa0builtin.InitActorCodeID,
 				CodeV2: sa2builtin.InitActorCodeID,
 				CodeV3: sa3builtin.InitActorCodeID,
 			})
 		case ActorStatesMarketTask:
-			tsi.actorProcessors[ActorStatesMarketTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
+			tsi.actorProcessors[ActorStatesMarketTask] = actorstate.NewTask(o, &actorstate.TypedActorExtractorMap{
 				CodeV1: sa0builtin.StorageMarketActorCodeID,
 				CodeV2: sa2builtin.StorageMarketActorCodeID,
 				CodeV3: sa3builtin.StorageMarketActorCodeID,
 			})
 		case ActorStatesMultisigTask:
-			tsi.actorProcessors[ActorStatesMultisigTask] = NewActorStateProcessor(o, &TypedActorExtractorMap{
+			tsi.actorProcessors[ActorStatesMultisigTask] = actorstate.NewTask(o, &actorstate.TypedActorExtractorMap{
 				CodeV1: sa0builtin.MultisigActorCodeID,
 				CodeV2: sa2builtin.MultisigActorCodeID,
 				CodeV3: sa3builtin.MultisigActorCodeID,

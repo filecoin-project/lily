@@ -1,4 +1,4 @@
-package chain
+package blocks
 
 import (
 	"context"
@@ -10,14 +10,14 @@ import (
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 )
 
-type BlockProcessor struct {
+type Task struct {
 }
 
-func NewBlockProcessor() *BlockProcessor {
-	return &BlockProcessor{}
+func NewTask() *Task {
+	return &Task{}
 }
 
-func (p *BlockProcessor) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	var pl model.PersistableList
 	for _, bh := range ts.Blocks() {
 		select {
@@ -39,6 +39,6 @@ func (p *BlockProcessor) ProcessTipSet(ctx context.Context, ts *types.TipSet) (m
 	return pl, report, nil
 }
 
-func (p *BlockProcessor) Close() error {
+func (p *Task) Close() error {
 	return nil
 }

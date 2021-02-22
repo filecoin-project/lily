@@ -1,30 +1,32 @@
-package chain
+package chaineconomics
 
 import (
 	"context"
 
 	"github.com/filecoin-project/lotus/chain/types"
+	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
-	"github.com/filecoin-project/sentinel-visor/tasks/chain"
 )
 
-type ChainEconomicsProcessor struct {
+var log = logging.Logger("chaineconomics")
+
+type Task struct {
 	node   lens.API
 	opener lens.APIOpener
 	closer lens.APICloser
 }
 
-func NewChainEconomicsProcessor(opener lens.APIOpener) *ChainEconomicsProcessor {
-	return &ChainEconomicsProcessor{
+func NewTask(opener lens.APIOpener) *Task {
+	return &Task{
 		opener: opener,
 	}
 }
 
-func (p *ChainEconomicsProcessor) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	if p.node == nil {
 		node, closer, err := p.opener.Open(ctx)
 		if err != nil {
@@ -40,7 +42,7 @@ func (p *ChainEconomicsProcessor) ProcessTipSet(ctx context.Context, ts *types.T
 		StateRoot: ts.ParentState().String(),
 	}
 
-	ce, err := chain.ExtractChainEconomicsModel(ctx, p.node, ts)
+	ce, err := ExtractChainEconomicsModel(ctx, p.node, ts)
 	if err != nil {
 		log.Errorw("error received while extracting chain economics, closing lens", "error", err)
 		if cerr := p.Close(); cerr != nil {
@@ -52,7 +54,7 @@ func (p *ChainEconomicsProcessor) ProcessTipSet(ctx context.Context, ts *types.T
 	return ce, report, nil
 }
 
-func (p *ChainEconomicsProcessor) Close() error {
+func (p *Task) Close() error {
 	if p.closer != nil {
 		p.closer()
 		p.closer = nil
