@@ -9,14 +9,11 @@
 # what tag, if any, to push to dockerhub.
 #
 # Usage:
-#   ./push-docker-tags.sh <image name> <git commit sha1> [git tag name] [dry run]
+#   ./push-docker-tags.sh <image name> <git commit sha1> <docker tag> [dry run]
 #
 # Example:
 #   # dry run. pass a 5th arg to have it print what it would do rather than do it.
 #   ./push-docker-tags.sh myiamge testingsha "" dryrun
-#
-#   # push tag for commit on the main branch
-#   ./push-docker-tags.sh myimage testingsha
 #
 #   # push tag for a new release tag
 #   ./push-docker-tags.sh myimage testingsha v0.5.0
@@ -26,10 +23,10 @@
 #
 set -euo pipefail
 
-if [[ $# -lt 2 ]] ; then
-  echo 'At least 2 args required. Pass 4 args for a dry run.'
+if [[ $# -lt 3 ]] ; then
+  echo 'At least 3 args required. Pass 4 args for a dry run.'
   echo 'Usage:'
-  echo './push-docker-tags.sh <image name> <git commit sha1> [git tag name] [dry run]'
+  echo './push-docker-tags.sh <image name> <git commit sha1> <docker tag> [dry run]'
   exit 1
 fi
 
@@ -40,7 +37,7 @@ GIT_TAG=${3:-""}
 DRY_RUN=${4:-false}
 
 pushTag () {
-  local IMAGE_TAG="${1/\//-}"
+  local IMAGE_TAG="${1//\//-}"
   if [ "$DRY_RUN" != false ]; then
     echo "DRY RUN!"
     echo docker tag "$IMAGE_NAME" "$IMAGE_NAME:$IMAGE_TAG"
@@ -52,8 +49,4 @@ pushTag () {
   fi
 }
 
-if [ -z "${GIT_TAG}" ]; then
-	pushTag "${GIT_BRANCH}-${GIT_SHA1_SHORT}"
-else
-	pushTag "${GIT_TAG}"
-fi
+pushTag "${GIT_TAG}"
