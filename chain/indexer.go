@@ -446,6 +446,8 @@ func (t *TipSetIndexer) Close() error {
 			log.Errorw("error received while closing actor task processor", "error", err, "task", name)
 		}
 	}
+	// ensure there are no persist go routines left running
+	t.persistSlot <- struct{}{}
 	return nil
 }
 
