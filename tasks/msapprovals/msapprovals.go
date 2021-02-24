@@ -13,6 +13,7 @@ import (
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	multisig3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/multisig"
 	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -20,6 +21,8 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/msapprovals"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 )
+
+var log = logging.Logger("msapprovals")
 
 const (
 	ProposeMethodNum = 2
@@ -157,6 +160,8 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		for _, addr := range signers {
 			appr.Signers = append(appr.Signers, addr.String())
 		}
+
+		log.Infof("appr: %+v", appr)
 
 		results = append(results, &appr)
 	}
