@@ -228,12 +228,12 @@ func (p *Task) parseMessageParams(m *types.Message, destCode cid.Cid) (string, s
 				err = xerrors.Errorf("recovered panic: %v", r)
 			}
 		}()
-		params, method, err = statediff.ParseParams(m.Params, int(m.Method), actor)
+		params, method, err = statediff.ParseParams(m.Params, int64(m.Method), actor)
 	}()
 	if err != nil && actor != statediff.LotusTypeUnknown {
 		// fall back to generic cbor->json conversion.
 		actor = statediff.LotusTypeUnknown
-		params, method, err = statediff.ParseParams(m.Params, int(m.Method), actor)
+		params, method, err = statediff.ParseParams(m.Params, int64(m.Method), actor)
 	}
 	if method == "Unknown" {
 		method = fmt.Sprintf("%s.%d", actor, m.Method)
