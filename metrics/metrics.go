@@ -18,6 +18,7 @@ var (
 	ConnState, _ = tag.NewKey("conn_state")
 	API, _       = tag.NewKey("api")        // name of method on lotus api
 	ActorCode, _ = tag.NewKey("actor_code") // human readable code of actor being processed
+
 )
 
 var (
@@ -25,9 +26,10 @@ var (
 	PersistDuration     = stats.Float64("persist_duration_ms", "Duration of a models persist operation", stats.UnitMilliseconds)
 	DBConns             = stats.Int64("db_conns", "Database connections held", stats.UnitDimensionless)
 	LensRequestDuration = stats.Float64("lens_request_duration_ms", "Duration of lotus api requets", stats.UnitMilliseconds)
-	TipsetHeight        = stats.Int64("tipset_height", "The height of the tipset being processed", stats.UnitDimensionless)
+	TipsetHeight        = stats.Int64("tipset_height", "The height of the tipset being processed by a task", stats.UnitDimensionless)
 	ProcessingFailure   = stats.Int64("processing_failure", "Number of processing failures", stats.UnitDimensionless)
 	PersistFailure      = stats.Int64("persist_failure", "Number of persistence failures", stats.UnitDimensionless)
+	WatchHeight         = stats.Int64("watch_height", "The height of the tipset last seen by the watch command", stats.UnitDimensionless)
 )
 
 var (
@@ -73,6 +75,11 @@ var (
 		Measure:     PersistFailure,
 		Aggregation: view.Sum(),
 		TagKeys:     []tag.Key{TaskType, Table, ActorCode},
+	}
+	WatchHeightView = &view.View{
+		Measure:     WatchHeight,
+		Aggregation: view.LastValue(),
+		TagKeys:     []tag.Key{},
 	}
 )
 
