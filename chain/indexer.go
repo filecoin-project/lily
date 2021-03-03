@@ -284,7 +284,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		if res.Error != nil {
 			llt.Errorw("task returned with error", "error", res.Error.Error())
 			// tell all the processors to close their connections to the lens, they can reopen when needed
-			if err := t.Close(); err != nil {
+			if err := t.closeProcessors(); err != nil {
 				log.Errorw("error received while closing tipset indexer", "error", err)
 			}
 			return res.Error
@@ -432,7 +432,7 @@ func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor,
 	}
 }
 
-func (t *TipSetIndexer) Close() error {
+func (t *TipSetIndexer) closeProcessors() error {
 	if t.closer != nil {
 		t.closer()
 		t.closer = nil
@@ -444,14 +444,25 @@ func (t *TipSetIndexer) Close() error {
 			log.Errorw("error received while closing task processor", "error", err, "task", name)
 		}
 	}
+	for name, p := range t.messageProcessors {
+		if err := p.Close(); err != nil {
+			log.Errorw("error received while closing message task processor", "error", err, "task", name)
+		}
+	}
 	for name, p := range t.actorProcessors {
 		if err := p.Close(); err != nil {
 			log.Errorw("error received while closing actor task processor", "error", err, "task", name)
 		}
 	}
+
+	return nil
+}
+
+func (t *TipSetIndexer) Close() error {
 	// ensure there are no persist go routines left running
 	t.persistSlot <- struct{}{}
-	return nil
+
+	return t.closeProcessors()
 }
 
 // A TaskResult is either some data to persist or an error which indicates that the task did not complete. Partial
