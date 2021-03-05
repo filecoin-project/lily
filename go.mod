@@ -9,6 +9,7 @@ require (
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/filecoin-project/go-address v0.0.5
 	github.com/filecoin-project/go-bitfield v0.2.4
+	github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210305102109-22e1adc443d6 // indirect
 	github.com/filecoin-project/go-fil-markets v1.1.9
 	github.com/filecoin-project/go-multistore v0.0.3
 	github.com/filecoin-project/go-state-types v0.1.0
@@ -30,7 +31,7 @@ require (
 	github.com/ipfs/go-ipfs-exchange-offline v0.0.1
 	github.com/ipfs/go-ipld-cbor v0.0.5
 	github.com/ipfs/go-ipld-format v0.2.0
-	github.com/ipfs/go-log/v2 v2.1.2-0.20200626104915-0016c0b4b3e4
+	github.com/ipfs/go-log/v2 v2.1.2
 	github.com/ipfs/go-merkledag v0.3.2
 	github.com/ipld/go-car v0.1.1-0.20201119040415-11b6074b6d4d
 	github.com/ipld/go-ipld-prime v0.7.0
