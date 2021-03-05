@@ -9,7 +9,7 @@ require (
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/filecoin-project/go-address v0.0.5
 	github.com/filecoin-project/go-bitfield v0.2.4
-	github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210305102109-22e1adc443d6 // indirect
+	github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210305102109-22e1adc443d6
 	github.com/filecoin-project/go-fil-markets v1.1.9
 	github.com/filecoin-project/go-multistore v0.0.3
 	github.com/filecoin-project/go-state-types v0.1.0
@@ -40,7 +40,6 @@ require (
 	github.com/libp2p/go-libp2p-core v0.7.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.3.1
-	github.com/multiformats/go-multibase v0.0.3
 	github.com/multiformats/go-multihash v0.0.14
 	github.com/prometheus/client_golang v1.6.0
 	github.com/raulk/clock v1.1.0
