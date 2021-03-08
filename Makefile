@@ -69,7 +69,12 @@ visor:
 	rm -f visor
 	go build $(GOFLAGS) -o visor -mod=readonly .
 
-BINS+=visor
+.PHONY: lily
+lily:
+	rm -f lily
+	go build $(GOFLAGS) -o lily -mod=readonly ./node/
+
+BINS+=lily
 
 .PHONY: docker-image
 docker-image:
@@ -89,4 +94,5 @@ dist-clean:
 test-coverage:
 	VISOR_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test -coverprofile=coverage.out ./...
 .PHONY: test-coverage
+
 

@@ -17,6 +17,7 @@
 visor
 !model/visor
 sentinel-visor
+lily
 
 build/.*
 vector/data/*.json
