@@ -35,17 +35,16 @@ func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 	if customCacheSizeStr := os.Getenv(envVarCacheGiB); customCacheSizeStr != "" {
 		var parseErr error
 		if pgbsCfg.CacheSizeGiB, parseErr = strconv.ParseUint(customCacheSizeStr, 10, 8); parseErr != nil {
-			return nil, nil, fmt.Errorf("failed to parse requested cache size '%s': %s", customCacheSizeStr, parseErr)
+			return nil, nil, fmt.Errorf("failed to parse requested cache size '%s': %w", customCacheSizeStr, parseErr)
 		}
 	}
 
 	pgbs, err := pgchainbs.NewPgBlockstore(c.Context, pgbsCfg)
 	if err != nil {
-		return nil, nil, fmt.Errorf("blockstore instantiation failed: %s", err)
+		return nil, nil, fmt.Errorf("blockstore instantiation failed: %w", err)
 	}
 
-	var getHeadWithOffset util.HeadMthd
-	getHeadWithOffset = func(ctx context.Context, lookback int) (*types.TipSetKey, error) {
+	var getHeadWithOffset util.HeadMthd = func(ctx context.Context, lookback int) (*types.TipSetKey, error) {
 		cur, err := pgbs.GetFilTipSetHead(ctx)
 		if err != nil {
 			return nil, err
