@@ -1,18 +1,62 @@
 package sqlrepo
 
 import (
+	"context"
+	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/urfave/cli/v2"
 
+	pgchainbs "github.com/filecoin-project/go-bs-postgres-chainnotated"
+	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/lens/sqlrepo/tstracker"
 	"github.com/filecoin-project/sentinel-visor/lens/util"
 )
 
 func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
-	bs, err := tstracker.NewTrackingPgChainstore(c.Context, c.String("repo"))
-	if err != nil {
-		return nil, nil, err
+
+	pgbsCfg := pgchainbs.PgBlockstoreConfig{
+		PgxConnectString:        c.String("repo"),
+		CacheInactiveBeforeRead: true,
+		DisableBlocklinkParsing: true,
+		LogCacheStatsOnUSR1:     true,
 	}
 
-	return util.NewAPIOpener(c.Context, bs, bs.GetCurrentTipset, c.Int("lens-cache-hint"))
+	envVarCacheGiB := "LOTUS_CHAINSTORE_CACHE_GIB"
+	envVarNamespace := "LOTUS_CHAINSTORE_SCHEMA_NAMESPACE"
+
+	pgbsCfg.InstanceNamespace = os.Getenv(envVarNamespace)
+	if pgbsCfg.InstanceNamespace == "" {
+		pgbsCfg.InstanceNamespace = "main"
+	}
+
+	if customCacheSizeStr := os.Getenv(envVarCacheGiB); customCacheSizeStr != "" {
+		var parseErr error
+		if pgbsCfg.CacheSizeGiB, parseErr = strconv.ParseUint(customCacheSizeStr, 10, 8); parseErr != nil {
+			return nil, nil, fmt.Errorf("failed to parse requested cache size '%s': %s", customCacheSizeStr, parseErr)
+		}
+	}
+
+	pgbs, err := pgchainbs.NewPgBlockstore(c.Context, pgbsCfg)
+	if err != nil {
+		return nil, nil, fmt.Errorf("blockstore instantiation failed: %s", err)
+	}
+
+	var getHeadWithOffset util.HeadMthd
+	getHeadWithOffset = func(ctx context.Context, lookback int) (*types.TipSetKey, error) {
+		cur, err := pgbs.GetFilTipSetHead(ctx)
+		if err != nil {
+			return nil, err
+		}
+		tgt, err := pgbs.FindFilTipSet(ctx, cur.TipSetCids, abi.ChainEpoch(lookback))
+		if err != nil {
+			return nil, err
+		}
+		tsk := types.NewTipSetKey(tgt.TipSetCids...)
+		return &tsk, nil
+	}
+
+	return util.NewAPIOpener(c.Context, pgbs, getHeadWithOffset, c.Int("lens-cache-hint"))
 }
