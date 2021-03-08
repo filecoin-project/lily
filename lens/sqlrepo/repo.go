@@ -45,15 +45,20 @@ func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 	}
 
 	var getHeadWithOffset util.HeadMthd = func(ctx context.Context, lookback int) (*types.TipSetKey, error) {
-		cur, err := pgbs.GetFilTipSetHead(ctx)
+
+		tsd, err := pgbs.GetFilTipSetHead(ctx)
 		if err != nil {
 			return nil, err
 		}
-		tgt, err := pgbs.FindFilTipSet(ctx, cur.TipSetCids, abi.ChainEpoch(lookback))
-		if err != nil {
-			return nil, err
+
+		if lookback != 0 {
+			tsd, err = pgbs.FindFilTipSet(ctx, tsd.TipSetCids, abi.ChainEpoch(lookback))
+			if err != nil {
+				return nil, err
+			}
 		}
-		tsk := types.NewTipSetKey(tgt.TipSetCids...)
+
+		tsk := types.NewTipSetKey(tsd.TipSetCids...)
 		return &tsk, nil
 	}
 
