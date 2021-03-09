@@ -5,6 +5,12 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.5.4"></a>
+## [v0.5.4] - 2021-03-09
+
+### Fix
+- guard concurrent accesses to node api ([#412](https://github.com/filecoin-project/sentinel-visor/issues/412))
+- avoid deadlock in indexer when processor errors ([#407](https://github.com/filecoin-project/sentinel-visor/issues/407))
 
 <a name="v0.5.3"></a>
 ## [v0.5.3] - 2021-03-02
@@ -360,6 +366,11 @@ After this change:
 ### Test
 - **storage:** add test to check for duplicate schema migrations ([#80](https://github.com/filecoin-project/sentinel-visor/issues/80))
 
+[v0.5.4]: https://github.com/filecoin-project/sentinel-visor/compare/v0.5.3...v0.5.4
+[v0.5.3]: https://github.com/filecoin-project/sentinel-visor/compare/v0.5.2...v0.5.3
+[v0.5.2]: https://github.com/filecoin-project/sentinel-visor/compare/v0.5.1...v0.5.2
+[v0.5.1]: https://github.com/filecoin-project/sentinel-visor/compare/v0.5.0...v0.5.1
+[v0.5.0]: https://github.com/filecoin-project/sentinel-visor/compare/v0.5.0-rc2...v0.5.0
 [v0.5.0-rc2]: https://github.com/filecoin-project/sentinel-visor/compare/v0.4.0...v0.5.0-rc1
 [v0.4.0]: https://github.com/filecoin-project/sentinel-visor/compare/v0.4.0-rc2...v0.4.0
 [v0.4.0-rc2]: https://github.com/filecoin-project/sentinel-visor/compare/v0.4.0-rc1...v0.4.0-rc2
