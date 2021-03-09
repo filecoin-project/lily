@@ -88,7 +88,7 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 		case BlocksTask:
 			tsi.processors[BlocksTask] = blocks.NewTask()
 		case MessagesTask:
-			tsi.messageProcessors[MessagesTask] = messages.NewTask(o)
+			tsi.messageProcessors[MessagesTask] = messages.NewTask()
 		case ChainEconomicsTask:
 			tsi.processors[ChainEconomicsTask] = chaineconomics.NewTask(o)
 		case ActorStatesRawTask:

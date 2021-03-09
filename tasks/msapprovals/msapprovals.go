@@ -5,6 +5,7 @@ package msapprovals
 import (
 	"bytes"
 	"context"
+	"sync"
 
 	"github.com/filecoin-project/lotus/chain/actors/builtin/multisig"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -27,6 +28,7 @@ const (
 )
 
 type Task struct {
+	nodeMu sync.Mutex // guards mutations to node, opener and closer
 	node   lens.API
 	opener lens.APIOpener
 	closer lens.APICloser
@@ -39,6 +41,10 @@ func NewTask(opener lens.APIOpener) *Task {
 }
 
 func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
+	// We use p.node continually through this method so take a broad lock
+	p.nodeMu.Lock()
+	defer p.nodeMu.Unlock()
+
 	// TODO: refactor this boilerplate into a helper
 	if p.node == nil {
 		node, closer, err := p.opener.Open(ctx)
@@ -169,6 +175,9 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 }
 
 func (p *Task) Close() error {
+	p.nodeMu.Lock()
+	defer p.nodeMu.Unlock()
+
 	if p.closer != nil {
 		p.closer()
 		p.closer = nil
