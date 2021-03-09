@@ -3,6 +3,7 @@ package actorstate
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/filecoin-project/go-address"
@@ -19,9 +20,11 @@ import (
 
 // A Task processes the extraction of actor state according the allowed types in its extracter map.
 type Task struct {
-	node         lens.API
-	opener       lens.APIOpener
-	closer       lens.APICloser
+	nodeMu sync.Mutex // guards mutations to node, opener and closer
+	node   lens.API
+	opener lens.APIOpener
+	closer lens.APICloser
+
 	extracterMap ActorExtractorMap
 }
 
@@ -34,14 +37,18 @@ func NewTask(opener lens.APIOpener, extracterMap ActorExtractorMap) *Task {
 }
 
 func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates map[string]types.Actor) (model.Persistable, *visormodel.ProcessingReport, error) {
+	// t.node is used only by goroutines started by this method
+	t.nodeMu.Lock()
 	if t.node == nil {
 		node, closer, err := t.opener.Open(ctx)
 		if err != nil {
+			t.nodeMu.Unlock()
 			return nil, nil, xerrors.Errorf("unable to open lens: %w", err)
 		}
 		t.node = node
 		t.closer = closer
 	}
+	t.nodeMu.Unlock()
 
 	log.Debugw("processing actor state changes", "height", ts.Height(), "parent_height", pts.Height())
 
@@ -150,8 +157,18 @@ func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pt
 	if !ok {
 		res.SkippedParse = true
 	} else {
+		// get reference to the lens api, which may have been closed due to a failure elsewhere
+		t.nodeMu.Lock()
+		nodeAPI := t.node
+		t.nodeMu.Unlock()
+
+		if nodeAPI == nil {
+			res.Error = xerrors.Errorf("failed to extract parsed actor state: no connection to api")
+			return
+		}
+
 		// Parse state
-		data, err := extracter.Extract(ctx, info, t.node)
+		data, err := extracter.Extract(ctx, info, nodeAPI)
 		if err != nil {
 			res.Error = xerrors.Errorf("failed to extract parsed actor state: %w", err)
 			return
@@ -161,6 +178,8 @@ func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pt
 }
 
 func (t *Task) Close() error {
+	t.nodeMu.Lock()
+	defer t.nodeMu.Unlock()
 	if t.closer != nil {
 		t.closer()
 		t.closer = nil
