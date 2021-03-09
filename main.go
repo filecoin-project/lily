@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/filecoin-project/lotus/node/repo"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
 
@@ -153,8 +154,13 @@ func main() {
 			commands.Vector,
 			commands.Walk,
 			commands.Watch,
+			commands.DaemonCmd,
+			// Commands require daemon
+			commands.SentinelStartWatchCmd,
 		},
 	}
+	app.Setup()
+	app.Metadata["repoType"] = repo.FullNode
 
 	if err := app.RunContext(ctx, os.Args); err != nil {
 		log.Fatal(err)

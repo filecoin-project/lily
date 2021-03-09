@@ -1,4 +1,4 @@
-package cli
+package commands
 
 import (
 	"context"
@@ -12,8 +12,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/sentinel-visor/chain"
-	api2 "github.com/filecoin-project/sentinel-visor/node/api"
-	"github.com/filecoin-project/sentinel-visor/node/api/apistruct"
+	"github.com/filecoin-project/sentinel-visor/lens/lily"
 )
 
 var SentinelStartWatchCmd = &cli.Command{
@@ -33,12 +32,12 @@ var SentinelStartWatchCmd = &cli.Command{
 		ctx := cli2.ReqContext(cctx)
 
 		// TODO: add a config to Lily and inject it to set these configs
-		cfg := &api2.LilyWatchConfig{
+		cfg := &lily.LilyWatchConfig{
 			Name:       "lily",
 			Tasks:      chain.AllTheTasks,
 			Window:     builtin.EpochDurationSeconds * time.Second,
 			Confidence: 0,
-			Database: &api2.LilyDatabaseConfig{
+			Database: &lily.LilyDatabaseConfig{
 				URL:                  "postgres://postgres:password@localhost:5432/postgres?sslmode=disable",
 				Name:                 "lily-database",
 				PoolSize:             75,
@@ -56,7 +55,7 @@ var SentinelStartWatchCmd = &cli.Command{
 	},
 }
 
-func GetSentinelNodeAPI(ctx *cli.Context) (api2.LilyNode, jsonrpc.ClientCloser, error) {
+func GetSentinelNodeAPI(ctx *cli.Context) (lily.LilyAPI, jsonrpc.ClientCloser, error) {
 	addr, headers, err := cli2.GetRawAPI(ctx, repo.FullNode)
 	if err != nil {
 		return nil, nil, err
@@ -65,12 +64,10 @@ func GetSentinelNodeAPI(ctx *cli.Context) (api2.LilyNode, jsonrpc.ClientCloser, 
 	return NewSentinelNodeRPC(ctx.Context, addr, headers)
 }
 
-func NewSentinelNodeRPC(ctx context.Context, addr string, requestHeader http.Header) (api2.LilyNode, jsonrpc.ClientCloser, error) {
-	var res apistruct.LilyNodeStruct
+func NewSentinelNodeRPC(ctx context.Context, addr string, requestHeader http.Header) (lily.LilyAPI, jsonrpc.ClientCloser, error) {
+	var res lily.LilyAPIStruct
 	closer, err := jsonrpc.NewMergeClient(ctx, addr, "Filecoin",
 		[]interface{}{
-			&res.CommonStruct.Internal,
-			&res.FullNodeStruct.Internal,
 			&res.Internal,
 		},
 		requestHeader,

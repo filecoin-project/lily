@@ -1,18 +1,13 @@
-package observer
+package chain
 
 import (
 	"context"
 
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/types"
-	logging "github.com/ipfs/go-log/v2"
-
-	"github.com/filecoin-project/sentinel-visor/chain"
 )
 
-var log = logging.Logger("lily-indexer")
-
-func NewIndexingTipSetObserver(obs chain.TipSetObserver, cache *chain.TipSetCache) *IndexingTipSetObserver {
+func NewIndexingTipSetObserver(obs TipSetObserver, cache *TipSetCache) *IndexingTipSetObserver {
 	return &IndexingTipSetObserver{
 		obs:   obs,
 		cache: cache,
@@ -20,8 +15,8 @@ func NewIndexingTipSetObserver(obs chain.TipSetObserver, cache *chain.TipSetCach
 }
 
 type IndexingTipSetObserver struct {
-	obs   chain.TipSetObserver
-	cache *chain.TipSetCache
+	obs   TipSetObserver
+	cache *TipSetCache
 }
 
 func (i *IndexingTipSetObserver) Apply(ctx context.Context, ts *types.TipSet) error {

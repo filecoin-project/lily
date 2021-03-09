@@ -1,4 +1,4 @@
-package cli
+package util
 
 import (
 	"context"
@@ -12,20 +12,20 @@ import (
 
 	"github.com/filecoin-project/go-jsonrpc"
 	"github.com/filecoin-project/go-jsonrpc/auth"
+	logging "github.com/ipfs/go-log/v2"
 	"github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr/net"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/metrics"
 	"github.com/filecoin-project/lotus/node"
 
-	api2 "github.com/filecoin-project/sentinel-visor/node/api"
-	"github.com/filecoin-project/sentinel-visor/node/api/apistruct"
+	"github.com/filecoin-project/sentinel-visor/lens/lily"
 )
 
+var log = logging.Logger("util")
 var Endpoint, _ = tag.NewKey("endpoint")
 var APIRequestDuration = stats.Float64("api/request_duration_ms", "Duration of API requests", stats.UnitMilliseconds)
 
@@ -41,11 +41,9 @@ const (
 var AllPermissions = []auth.Permission{PermRead, PermWrite, PermSign, PermAdmin}
 var DefaultPerms = []auth.Permission{PermRead}
 
-func MetricsSentinelAPI(a api2.LilyNode) api2.LilyNode {
-	var out apistruct.LilyNodeStruct
+func MetricsSentinelAPI(a lily.LilyAPI) lily.LilyAPI {
+	var out lily.LilyAPIStruct
 	proxy(a, &out.Internal)
-	proxy(a, &out.CommonStruct.Internal)
-	proxy(a, &out.FullNodeStruct.Internal)
 	return &out
 }
 
@@ -71,15 +69,13 @@ func proxy(in interface{}, out interface{}) {
 	}
 }
 
-func PermissionedSentinelAPI(a api.FullNode) api.FullNode {
-	var out apistruct.LilyNodeStruct
+func PermissionedSentinelAPI(a lily.LilyAPI) lily.LilyAPI {
+	var out lily.LilyAPIStruct
 	auth.PermissionedProxy(AllPermissions, DefaultPerms, a, &out.Internal)
-	auth.PermissionedProxy(AllPermissions, DefaultPerms, a, &out.CommonStruct.Internal)
-	auth.PermissionedProxy(AllPermissions, DefaultPerms, a, &out.FullNodeStruct.Internal)
 	return &out
 }
 
-func serveRPC(a api2.LilyNode, stop node.StopFunc, addr multiaddr.Multiaddr, shutdownCh <-chan struct{}, maxRequestSize int64) error {
+func ServeRPC(a lily.LilyAPI, stop node.StopFunc, addr multiaddr.Multiaddr, shutdownCh <-chan struct{}, maxRequestSize int64) error {
 	serverOptions := make([]jsonrpc.ServerOption, 0)
 	if maxRequestSize != 0 { // config set
 		serverOptions = append(serverOptions, jsonrpc.WithMaxRequestSize(maxRequestSize))
