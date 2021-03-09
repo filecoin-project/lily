@@ -1,4 +1,4 @@
-package commands
+package lily
 
 import (
 	"context"
@@ -8,11 +8,13 @@ import (
 	lotusbuild "github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/events"
 	lcli "github.com/filecoin-project/lotus/cli"
+	"github.com/filecoin-project/lotus/lib/lotuslog"
 	"github.com/filecoin-project/lotus/lib/peermgr"
 	"github.com/filecoin-project/lotus/node"
 	lotusmodules "github.com/filecoin-project/lotus/node/modules"
 	"github.com/filecoin-project/lotus/node/modules/dtypes"
 	"github.com/filecoin-project/lotus/node/repo"
+	logging "github.com/ipfs/go-log/v2"
 	"github.com/mitchellh/go-homedir"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/urfave/cli/v2"
@@ -23,7 +25,9 @@ import (
 	"github.com/filecoin-project/sentinel-visor/lens/lily/modules"
 )
 
-var DaemonCmd = &cli.Command{
+var log = logging.Logger("lily-cli")
+
+var LilyDaemon = &cli.Command{
 	Name:  "daemon",
 	Usage: "Start a lily daemon process",
 	Flags: []cli.Flag{
@@ -49,6 +53,8 @@ var DaemonCmd = &cli.Command{
 		},
 	},
 	Action: func(cctx *cli.Context) error {
+		lotuslog.SetupLogLevels()
+
 		ctx := context.Background()
 		{
 			dir, err := homedir.Expand(cctx.String("repo"))
@@ -143,16 +149,4 @@ var DaemonCmd = &cli.Command{
 		// TODO: properly parse api endpoint (or make it a URL)
 		return util.ServeRPC(api, stop, endpoint, shutdownChan, int64(cctx.Int("api-max-req-size")))
 	},
-}
-
-// Lily Node settings for injection into lotus node.
-func LilyNodeAPIOption(out *lily.LilyAPI, fopts ...node.Option) node.Option {
-	resAPI := &lily.LilyNodeAPI{}
-	opts := node.Options(
-		node.WithRepoType(repo.FullNode),
-		node.Options(fopts...),
-		node.WithInvokesKey(node.ExtractApiKey, resAPI),
-	)
-	*out = resAPI
-	return opts
 }

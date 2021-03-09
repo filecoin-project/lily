@@ -12,6 +12,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/sentinel-visor/commands"
+	"github.com/filecoin-project/sentinel-visor/commands/lily"
 	"github.com/filecoin-project/sentinel-visor/version"
 )
 
@@ -154,13 +155,12 @@ func main() {
 			commands.Vector,
 			commands.Walk,
 			commands.Watch,
-			commands.DaemonCmd,
-			// Commands require daemon
-			commands.SentinelStartWatchCmd,
+			lily.LilyCmd,
 		},
 	}
 	app.Setup()
 	app.Metadata["repoType"] = repo.FullNode
+	app.Metadata["traceContext"] = ctx
 
 	if err := app.RunContext(ctx, os.Args); err != nil {
 		log.Fatal(err)
