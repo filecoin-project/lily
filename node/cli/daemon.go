@@ -32,6 +32,7 @@ import (
 
 	sentinelAPI "github.com/filecoin-project/sentinel-visor/node/api"
 	"github.com/filecoin-project/sentinel-visor/node/impl"
+	"github.com/filecoin-project/sentinel-visor/node/impl/worker"
 )
 
 var log = logging.Logger("lotus-visor")
@@ -120,6 +121,7 @@ var DaemonCmd = &cli.Command{
 			// Start Sentinel Dep injection
 			LilyNodeAPIOption(&api),
 			node.Override(new(*events.Events), impl.NewEvents),
+			node.Override(new(*worker.WatchWorkerManager), worker.NewWatchWorkerManager),
 			// End Injection
 
 			node.Override(new(dtypes.Bootstrapper), isBootstrapper),

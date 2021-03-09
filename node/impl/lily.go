@@ -15,6 +15,7 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/chain"
 	"github.com/filecoin-project/sentinel-visor/node/api"
+	"github.com/filecoin-project/sentinel-visor/node/impl/worker"
 	"github.com/filecoin-project/sentinel-visor/node/observer"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
@@ -25,7 +26,8 @@ type LilyNodeAPI struct {
 	fx.In
 
 	impl.FullNodeAPI
-	Events *events.Events
+	Events  *events.Events
+	Watches *worker.WatchWorkerManager
 }
 
 func (m *LilyNodeAPI) Store() adt.Store {
@@ -37,6 +39,7 @@ func (m *LilyNodeAPI) Store() adt.Store {
 }
 
 func (m *LilyNodeAPI) LilyWatchStart(ctx context.Context, cfg *api.LilyWatchConfig) error {
+	// TODO: probably don't want to use the ctx parameter since it lives with the `watch` cli command.
 	log.Info("starting sentinel watch")
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
@@ -73,6 +76,8 @@ func (m *LilyNodeAPI) LilyWatchStart(ctx context.Context, cfg *api.LilyWatchConf
 
 	obs := observer.NewIndexingTipSetObserver(indexer, tsCache)
 
+	worker := m.Watches.NewWatchWorker(m.ChainModuleAPI, indexer, cfg.Confidence)
+	return worker.Start()
 	if err := m.Events.Observe(obs); err != nil {
 		return err
 	}

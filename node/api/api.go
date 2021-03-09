@@ -12,7 +12,20 @@ var log = logging.Logger("sentinel")
 
 type LilyNode interface {
 	api.FullNode
-	LilyWatchStart(ctx context.Context, cfg *LilyWatchConfig) error
+	LilyWatchCreate(ctx context.Context, cfg *LilyWatchConfig, start bool) (int, error)
+	LilyWatchStart(ctx context.Context, ID int) error
+	LilyWatchStop(ctx context.Context, ID int) error
+	LilyWatchList(ctx context.Context) (LilyListResult, error)
+}
+
+type LilyListResult struct {
+	Result []LilyWatchStatus
+}
+
+type LilyWatchStatus struct {
+	ID     int
+	Status string
+	Config *LilyDatabaseConfig
 }
 
 type LilyWatchConfig struct {

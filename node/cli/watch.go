@@ -18,7 +18,7 @@ import (
 
 var SentinelStartWatchCmd = &cli.Command{
 	Name:  "watch",
-	Usage: "start a watch against the chain",
+	Usage: "control watch(s) against the chain",
 	Flags: []cli.Flag{
 		&cli.Int64Flag{
 			Name: "confidence",
