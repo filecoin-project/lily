@@ -1,6 +1,7 @@
 package lily
 
 import (
+	"strings"
 	"time"
 
 	"github.com/filecoin-project/lotus/chain/actors/builtin"
@@ -8,6 +9,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/sentinel-visor/chain"
+	"github.com/filecoin-project/sentinel-visor/commands"
 	"github.com/filecoin-project/sentinel-visor/lens/lily"
 )
 
@@ -19,38 +21,60 @@ var LilyWatchCmd = &cli.Command{
 	},
 }
 
+type watchOps struct {
+	confidence int
+	tasks      string
+	window     time.Duration
+}
+
+var watchFlags watchOps
+
 var LilyWatchStartCmd = &cli.Command{
-	Name:  "start",
-	Usage: "start a watch against the chain",
+	Name:   "start",
+	Usage:  "start a watch against the chain",
+	Before: initialize,
+	After:  destroy,
 	Flags: []cli.Flag{
-		&cli.Int64Flag{
-			Name: "confidence",
+		&cli.IntFlag{
+			Name:        "indexhead-confidence",
+			Usage:       "Sets the size of the cache used to hold tipsets for possible reversion before being committed to the database",
+			Value:       2,
+			EnvVars:     []string{"SENTINEL_LILY_WATCH_CONFIDENCE"},
+			Destination: &watchFlags.confidence,
+		},
+		&cli.StringFlag{
+			Name:        "tasks",
+			Usage:       "Comma separated list of tasks to run. Each task is reported separately in the database.",
+			Value:       strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorStatesRawTask}, ","),
+			EnvVars:     []string{"SENTINEL_LILY_WATCH_TASKS"},
+			Destination: &watchFlags.tasks,
+		},
+		&cli.DurationFlag{
+			Name:        "window",
+			Usage:       "Duration after which any indexing work not completed will be marked incomplete",
+			Value:       builtin.EpochDurationSeconds * time.Second,
+			EnvVars:     []string{"SENTINEL_LILY_WATCH_WINDOW"},
+			Destination: &watchFlags.window,
 		},
 	},
 	Action: func(cctx *cli.Context) error {
-		apic, closer, err := GetSentinelNodeAPI(cctx)
-		if err != nil {
-			return err
-		}
-		defer closer()
 		ctx := lotuscli.ReqContext(cctx)
 
-		// TODO: add a config to Lily and inject it to set these configs
 		cfg := &lily.LilyWatchConfig{
 			Name:       "lily",
-			Tasks:      chain.AllTheTasks,
-			Window:     builtin.EpochDurationSeconds * time.Second,
-			Confidence: 0,
+			Tasks:      strings.Split(watchFlags.tasks, ","),
+			Window:     watchFlags.window,
+			Confidence: watchFlags.confidence,
 			Database: &lily.LilyDatabaseConfig{
-				URL:                  "postgres://postgres:password@localhost:5432/postgres?sslmode=disable",
-				Name:                 "lily-database",
-				PoolSize:             75,
-				AllowUpsert:          false,
-				AllowSchemaMigration: false,
+				URL:                  commands.VisorCmdFlags.DB,
+				Name:                 commands.VisorCmdFlags.Name,
+				PoolSize:             commands.VisorCmdFlags.DBPoolSize,
+				AllowUpsert:          commands.VisorCmdFlags.DBAllowUpsert,
+				AllowSchemaMigration: commands.VisorCmdFlags.DBAllowMigrations,
 			},
 		}
 
-		if err := apic.LilyWatchStart(ctx, cfg); err != nil {
+		if err := lilyAPI.LilyWatchStart(ctx, cfg); err != nil {
 			return err
 		}
 		// wait for user to cancel

@@ -13,6 +13,27 @@ import (
 	"github.com/filecoin-project/sentinel-visor/lens/lily"
 )
 
+// lilyAPI is a JSON-RPC client targeting a lily node. It's initialized in a
+// cli.BeforeFunc.
+var lilyAPI lily.LilyAPI
+var Closer jsonrpc.ClientCloser
+
+func initialize(c *cli.Context) error {
+	var err error
+	lilyAPI, Closer, err = GetSentinelNodeAPI(c)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func destroy(c *cli.Context) error {
+	if Closer != nil {
+		Closer()
+	}
+	return nil
+}
+
 var LilyCmd = &cli.Command{
 	Name:  "lily",
 	Usage: "interact with the lily daemon",

@@ -27,37 +27,64 @@ import (
 
 var log = logging.Logger("lily-cli")
 
+type daemonOpts struct {
+	api            string
+	repo           string
+	bootstrap      bool
+	config         string
+	importsnapshot string
+	genesis        string
+}
+
+var daemonFlags daemonOpts
+
 var LilyDaemon = &cli.Command{
 	Name:  "daemon",
 	Usage: "Start a lily daemon process",
+	After: destroy,
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:  "api",
-			Value: "1234",
+			Name:        "api",
+			EnvVars:     []string{"SENTINEL_LILY_API"},
+			Value:       "1234",
+			Destination: &daemonFlags.api,
+		},
+		&cli.StringFlag{
+			Name:        "repo",
+			EnvVars:     []string{"SENTINEL_LILY_REPO"},
+			Value:       "~/.lotus",
+			Destination: &daemonFlags.repo,
 		},
 		&cli.BoolFlag{
-			Name:  "bootstrap",
-			Value: true,
+			Name:        "bootstrap",
+			EnvVars:     []string{"SENTINEL_LILY_BOOTSTRAP"},
+			Value:       true,
+			Destination: &daemonFlags.bootstrap,
 		},
 		&cli.StringFlag{
-			Name:  "config",
-			Usage: "specify path of config file to use",
+			Name:        "config",
+			Usage:       "specify path of config file to use",
+			EnvVars:     []string{"SENTINEL_LILY_CONFIG"},
+			Destination: &daemonFlags.config,
 		},
 		&cli.StringFlag{
-			Name:  "import-snapshot",
-			Usage: "import chain state from a given chain export file or url",
+			Name:        "import-snapshot",
+			Usage:       "import chain state from a given chain export file or url",
+			EnvVars:     []string{"SENTINEL_LILY_SNAPSHOT"},
+			Destination: &daemonFlags.importsnapshot,
 		},
 		&cli.StringFlag{
-			Name:  "genesis",
-			Usage: "genesis file to use for first node run",
+			Name:        "genesis",
+			Usage:       "genesis file to use for first node run",
+			EnvVars:     []string{"SENTINEL_LILY_GENESIS"},
+			Destination: &daemonFlags.genesis,
 		},
 	},
-	Action: func(cctx *cli.Context) error {
+	Action: func(c *cli.Context) error {
 		lotuslog.SetupLogLevels()
-
 		ctx := context.Background()
 		{
-			dir, err := homedir.Expand(cctx.String("repo"))
+			dir, err := homedir.Expand(daemonFlags.repo)
 			if err != nil {
 				log.Warnw("could not expand repo location", "error", err)
 			} else {
@@ -65,13 +92,13 @@ var LilyDaemon = &cli.Command{
 			}
 		}
 
-		r, err := repo.NewFS(cctx.String("repo"))
+		r, err := repo.NewFS(daemonFlags.repo)
 		if err != nil {
 			return xerrors.Errorf("opening fs repo: %w", err)
 		}
 
-		if cctx.String("config") != "" {
-			r.SetConfigPath(cctx.String("config"))
+		if daemonFlags.config != "" {
+			r.SetConfigPath(daemonFlags.config)
 		}
 
 		err = r.Init(repo.FullNode)
@@ -79,13 +106,13 @@ var LilyDaemon = &cli.Command{
 			return xerrors.Errorf("repo init error: %w", err)
 		}
 
-		if err := paramfetch.GetParams(lcli.ReqContext(cctx), lotusbuild.ParametersJSON(), 0); err != nil {
+		if err := paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), 0); err != nil {
 			return xerrors.Errorf("fetching proof parameters: %w", err)
 		}
 
 		var genBytes []byte
-		if cctx.String("genesis") != "" {
-			genBytes, err = ioutil.ReadFile(cctx.String("genesis"))
+		if c.String("genesis") != "" {
+			genBytes, err = ioutil.ReadFile(daemonFlags.genesis)
 			if err != nil {
 				return xerrors.Errorf("reading genesis: %w", err)
 			}
@@ -93,9 +120,8 @@ var LilyDaemon = &cli.Command{
 			genBytes = lotusbuild.MaybeGenesis()
 		}
 
-		snapshot := cctx.String("import-snapshot")
-		if snapshot != "" {
-			if err := util.ImportChain(ctx, r, snapshot, true); err != nil {
+		if daemonFlags.importsnapshot != "" {
+			if err := util.ImportChain(ctx, r, daemonFlags.importsnapshot, true); err != nil {
 				return err
 			}
 		}
@@ -106,7 +132,7 @@ var LilyDaemon = &cli.Command{
 		}
 
 		isBootstrapper := false
-		shutdownChan := make(chan struct{})
+		shutdown := make(chan struct{})
 		liteModeDeps := node.Options()
 		var api lily.LilyAPI
 		stop, err := node.New(ctx,
@@ -116,23 +142,23 @@ var LilyDaemon = &cli.Command{
 			// End Injection
 
 			node.Override(new(dtypes.Bootstrapper), isBootstrapper),
-			node.Override(new(dtypes.ShutdownChan), shutdownChan),
+			node.Override(new(dtypes.ShutdownChan), shutdown),
 			node.Online(),
 			node.Repo(r),
 
 			genesis,
 			liteModeDeps,
 
-			node.ApplyIf(func(s *node.Settings) bool { return cctx.IsSet("api") },
+			node.ApplyIf(func(s *node.Settings) bool { return c.IsSet("api") },
 				node.Override(node.SetApiEndpointKey, func(lr repo.LockedRepo) error {
 					apima, err := multiaddr.NewMultiaddr("/ip4/127.0.0.1/tcp/" +
-						cctx.String("api"))
+						c.String("api"))
 					if err != nil {
 						return err
 					}
 					return lr.SetAPIEndpoint(apima)
 				})),
-			node.ApplyIf(func(s *node.Settings) bool { return !cctx.Bool("bootstrap") },
+			node.ApplyIf(func(s *node.Settings) bool { return !daemonFlags.bootstrap },
 				node.Unset(node.RunPeerMgrKey),
 				node.Unset(new(*peermgr.PeerMgr)),
 			),
@@ -147,6 +173,7 @@ var LilyDaemon = &cli.Command{
 		}
 
 		// TODO: properly parse api endpoint (or make it a URL)
-		return util.ServeRPC(api, stop, endpoint, shutdownChan, int64(cctx.Int("api-max-req-size")))
+		maxAPIRequestSize := int64(0)
+		return util.ServeRPC(api, stop, endpoint, shutdown, maxAPIRequestSize)
 	},
 }
