@@ -1,5 +1,4 @@
 // Package msapprovals provides a task for recording multisig approvals
-
 package msapprovals
 
 import (
@@ -61,7 +60,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 	}
 
 	errorsDetected := make([]*MultisigError, 0, len(emsgs))
-	results := make(msapprovals.MultisigApprovalList, 0) // no inital size capacity since approvals are rare
+	results := make(msapprovals.MultisigApprovalList, 0) // no initial size capacity since approvals are rare
 
 	for _, m := range emsgs {
 		// Stop processing if we have been told to cancel

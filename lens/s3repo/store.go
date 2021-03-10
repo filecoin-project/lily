@@ -52,7 +52,7 @@ func (sbs *S3Blockstore) Get(c cid.Cid) (blocks.Block, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to fetch: %v", resp.StatusCode)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint: errcheck
 	buf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (sbs *S3Blockstore) getMasterTsKey(ctx context.Context, lookback int) (*typ
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint: errcheck
 	buf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err

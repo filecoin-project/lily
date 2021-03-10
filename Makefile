@@ -59,16 +59,10 @@ testfull: build
 testshort:
 	go test -short ./... -v
 
-# lint runs linting against code base
-.PHONY: lint
-lint:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint run
-
 .PHONY: visor
 visor:
 	rm -f visor
 	go build $(GOFLAGS) -o visor -mod=readonly .
-
 BINS+=visor
 
 .PHONY: docker-image
@@ -76,17 +70,28 @@ docker-image:
 	docker build -t "filecoin/sentinel-visor" .
 	docker tag "filecoin/sentinel-visor:latest" "filecoin/sentinel-visor:$(COMMIT)"
 
+.PHONY: clean
 clean:
 	rm -rf $(CLEAN) $(BINS)
 	rm ./vector/data/*json
-.PHONY: clean
 
+.PHONY: dist-clean
 dist-clean:
 	git clean -xdff
 	git submodule deinit --all -f
-.PHONY: dist-clean
 
+.PHONY: test-coverage
 test-coverage:
 	VISOR_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test -coverprofile=coverage.out ./...
-.PHONY: test-coverage
 
+# tools
+toolspath:=support/tools
+
+$(toolspath)/bin/golangci-lint: $(toolspath)/go.mod
+	@mkdir -p $(dir $@)
+	(cd $(toolspath); go build -tags tools -o $(@:$(toolspath)/%=%) github.com/golangci/golangci-lint/cmd/golangci-lint)
+
+
+.PHONY: lint
+lint: $(toolspath)/bin/golangci-lint
+	$(toolspath)/bin/golangci-lint run ./...

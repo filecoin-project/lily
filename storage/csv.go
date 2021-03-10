@@ -107,7 +107,7 @@ func (c *CSVStorage) PersistBatch(ctx context.Context, ps ...model.Persistable) 
 		f, err := os.OpenFile(filename, os.O_APPEND|os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o644)
 		if err == nil {
 			// Created file successfully
-			defer f.Close()
+			defer f.Close() // nolint: errcheck
 
 			// Write the headers
 			w = csv.NewWriter(f)
@@ -126,7 +126,7 @@ func (c *CSVStorage) PersistBatch(ctx context.Context, ps ...model.Persistable) 
 			if err != nil {
 				return fmt.Errorf("open file %q: %w", filename, err)
 			}
-			defer f.Close()
+			defer f.Close() // nolint: errcheck
 			w = csv.NewWriter(f)
 		}
 

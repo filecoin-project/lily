@@ -63,7 +63,7 @@ func setupDatabase(cctx *cli.Context) (*storage.Database, error) {
 
 	// Make sure the schema is a compatible with what this version of Visor requires
 	if err := db.VerifyCurrentSchema(ctx); err != nil {
-		db.Close(ctx)
+		db.Close(ctx) // nolint: errcheck
 		return nil, xerrors.Errorf("verify schema: %w", err)
 	}
 

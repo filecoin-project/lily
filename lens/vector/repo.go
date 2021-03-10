@@ -65,7 +65,7 @@ func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 	}
 
 	sf := func() {
-		lr.Close()
+		lr.Close() // nolint: errcheck
 	}
 
 	bs, err := lr.Blockstore(c.Context, repo.BlockstoreChain)
@@ -106,10 +106,10 @@ type APIOpener struct {
 func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) {
 	return o.capi, lens.APICloser(func() {}), nil
 }
-func (c *APIOpener) CaptureAsCAR(ctx context.Context, w io.Writer, roots ...cid.Cid) error {
+func (o *APIOpener) CaptureAsCAR(ctx context.Context, w io.Writer, roots ...cid.Cid) error {
 	carWalkFn := func(nd format.Node) (out []*format.Link, err error) {
 		for _, link := range nd.Links() {
-			if _, ok := c.capi.tbs.traced[link.Cid]; !ok {
+			if _, ok := o.capi.tbs.traced[link.Cid]; !ok {
 				continue
 			}
 			if link.Cid.Prefix().Codec == cid.FilCommitmentSealed || link.Cid.Prefix().Codec == cid.FilCommitmentUnsealed {
@@ -121,8 +121,8 @@ func (c *APIOpener) CaptureAsCAR(ctx context.Context, w io.Writer, roots ...cid.
 	}
 
 	var (
-		offl    = offline.Exchange(c.capi.tbs)
-		blkserv = blockservice.New(c.capi.tbs, offl)
+		offl    = offline.Exchange(o.capi.tbs)
+		blkserv = blockservice.New(o.capi.tbs, offl)
 		dserv   = merkledag.NewDAGService(blkserv)
 	)
 

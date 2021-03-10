@@ -3,10 +3,11 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
 
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
@@ -35,7 +36,8 @@ func TestSchemaIsCurrent(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { require.NoError(t, cleanup()) }()
 
-	for _, model := range models {
+	for _, m := range models {
+		model := m
 		t.Run(fmt.Sprintf("%T", model), func(t *testing.T) {
 			q := db.Model(model)
 			err := verifyModel(ctx, db, q.TableModel().Table())

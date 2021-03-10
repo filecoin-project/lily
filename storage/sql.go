@@ -124,18 +124,18 @@ func (d *Database) Connect(ctx context.Context) error {
 	// Check if the version of the schema is compatible
 	dbVersion, latestVersion, err := getSchemaVersions(ctx, db)
 	if err != nil {
-		_ = db.Close()
+		_ = db.Close() // nolint: errcheck
 		return xerrors.Errorf("get schema versions: %w", err)
 	}
 
 	switch {
 	case latestVersion < dbVersion:
 		// porridge too hot
-		_ = db.Close()
+		_ = db.Close() // nolint: errcheck
 		return ErrSchemaTooNew
 	case latestVersion > dbVersion:
 		// porridge too cold
-		_ = db.Close()
+		_ = db.Close() // nolint: errcheck
 		return ErrSchemaTooOld
 	default:
 		// just right
@@ -156,7 +156,7 @@ func connect(ctx context.Context, opt *pg.Options) (*pg.DB, error) {
 
 	// Acquire a shared lock on the schema to notify other instances that we are running
 	if err := SchemaLock.LockShared(ctx, db); err != nil {
-		_ = db.Close()
+		_ = db.Close() // nolint: errcheck
 		return nil, xerrors.Errorf("failed to acquire schema lock, possible migration in progress: %w", err)
 	}
 
@@ -187,7 +187,7 @@ func (d *Database) VerifyCurrentSchema(ctx context.Context) error {
 	if err != nil {
 		return xerrors.Errorf("connect: %w", err)
 	}
-	defer db.Close()
+	defer db.Close() // nolint: errcheck
 	return verifyCurrentSchema(ctx, db)
 }
 

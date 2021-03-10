@@ -25,8 +25,9 @@ func TestExecuteVectors(t *testing.T) {
 	}
 
 	for _, vp := range vectorPaths {
-		t.Run(filepath.Base(vp), func(t *testing.T) {
-			runner, err := NewRunner(ctx, vp, 0)
+		vpath := vp
+		t.Run(filepath.Base(vpath), func(t *testing.T) {
+			runner, err := NewRunner(ctx, vpath, 0)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -90,7 +90,7 @@ func NewAPIOpener(ctx context.Context, bs blockstore.Blockstore, head HeadMthd, 
 	rapi.FullNodeAPI.StateAPI.StateModuleAPI = &full.StateModule{Chain: cs, StateManager: sm}
 
 	sf := func() {
-		lr.Close()
+		lr.Close() // nolint: errcheck
 	}
 
 	genesisBlkHeader, err := modules.LoadGenesis(build.MaybeGenesis())(bs)()
