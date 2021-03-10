@@ -42,13 +42,13 @@ func WaitForExclusiveDatabase(ctx context.Context, tb testing.TB) (*pg.DB, func(
 
 	release, err := WaitForExclusiveDatabaseLock(ctx, db)
 	if err != nil {
-		db.Close()
+		db.Close() // nolint: errcheck
 		tb.Fatalf("failed to get exclusive database access: %v", err)
 	}
 
 	cleanup := func() error {
 		_ = release()
-		return db.Close()
+		return db.Close() // nolint: errcheck
 	}
 
 	return db, cleanup, nil

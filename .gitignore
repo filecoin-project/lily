@@ -20,3 +20,5 @@ sentinel-visor
 
 build/.*
 vector/data/*.json
+support/tools/bin
+

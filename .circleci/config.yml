@@ -11,7 +11,7 @@ executors:
       IMAGE_NAME: filecoin/sentinel-visor
   golang:
     docker:
-      - image: circleci/golang:1.13
+      - image: circleci/golang:1.15
 
 commands:
   install-deps:
@@ -31,6 +31,7 @@ commands:
           steps:
             - run: sudo apt-get update
       - run: git submodule sync
+      - run: sudo apt-get install gcc libc-dev
       - run: git submodule update --init
   publish-docker-master-production:
     steps:
@@ -134,6 +135,40 @@ jobs:
           file: /tmp/artifacts/coverage.out
       - store_artifacts:
           path: sentinel-visor
+  lint: &lint
+    description: |
+      Run golangci-lint.
+    parameters:
+      executor:
+        type: executor
+        default: golang
+      golangci-lint-version:
+        type: string
+        default: 1.28.2
+      concurrency:
+        type: string
+        default: '2'
+        description: |
+          Concurrency used to run linters. Defaults to 2 because NumCPU is not
+          aware of container CPU limits.
+      args:
+        type: string
+        default: ''
+        description: |
+          Arguments to pass to golangci-lint
+    executor: << parameters.executor >>
+    steps:
+      - install-deps
+      - prepare
+      - run:
+          command: make -j3 support/tools/bin/golangci-lint
+      - run:
+          name: Lint
+          command: |
+            support/tools/bin/golangci-lint run -v \
+              --timeout 3m --concurrency << parameters.concurrency >> ./...
+  lint-all:
+    <<: *lint
 
 workflows:
   version: 2
@@ -141,6 +176,7 @@ workflows:
     # `test` and `mod-tidy-check` runs for all branches
     jobs:
       - mod-tidy-check
+      - lint-all
       - test
   build-docker-images:
     # `build-push-*` runs on master or main branches and tags that look like semver

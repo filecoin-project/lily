@@ -100,7 +100,7 @@ func TestCSVPersist(t *testing.T) {
 	dir, err := ioutil.TempDir("", t.Name())
 	require.NoError(t, err)
 
-	defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir) // nolint: errcheck
 
 	st, err := NewCSVStorage(dir)
 	require.NoError(t, err)
@@ -140,7 +140,7 @@ func TestCSVPersistMulti(t *testing.T) {
 	dir, err := ioutil.TempDir("", t.Name())
 	require.NoError(t, err)
 
-	defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir) // nolint: errcheck
 
 	st, err := NewCSVStorage(dir)
 	require.NoError(t, err)
@@ -198,7 +198,7 @@ func TestCSVPersistComposite(t *testing.T) {
 	dir, err := ioutil.TempDir("", t.Name())
 	require.NoError(t, err)
 
-	defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir) // nolint: errcheck
 
 	st, err := NewCSVStorage(dir)
 	require.NoError(t, err)
@@ -233,7 +233,7 @@ func TestCSVPersistTime(t *testing.T) {
 	dir, err := ioutil.TempDir("", t.Name())
 	require.NoError(t, err)
 
-	defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir) // nolint: errcheck
 
 	st, err := NewCSVStorage(dir)
 	require.NoError(t, err)
@@ -258,7 +258,7 @@ func TestCSVPersistInterfaceNil(t *testing.T) {
 	dir, err := ioutil.TempDir("", t.Name())
 	require.NoError(t, err)
 
-	defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir) // nolint: errcheck
 
 	st, err := NewCSVStorage(dir)
 	require.NoError(t, err)
@@ -288,7 +288,7 @@ func TestCSVPersistInterfaceValue(t *testing.T) {
 	dir, err := ioutil.TempDir("", t.Name())
 	require.NoError(t, err)
 
-	defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir) // nolint: errcheck
 
 	st, err := NewCSVStorage(dir)
 	require.NoError(t, err)
@@ -313,7 +313,7 @@ func TestCSVPersistInterfaceNilJSON(t *testing.T) {
 	dir, err := ioutil.TempDir("", t.Name())
 	require.NoError(t, err)
 
-	defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir) // nolint: errcheck
 
 	st, err := NewCSVStorage(dir)
 	require.NoError(t, err)
@@ -338,7 +338,7 @@ func TestCSVPersistInterfaceValueJSON(t *testing.T) {
 	dir, err := ioutil.TempDir("", t.Name())
 	require.NoError(t, err)
 
-	defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir) // nolint: errcheck
 
 	st, err := NewCSVStorage(dir)
 	require.NoError(t, err)
@@ -363,7 +363,7 @@ func TestCSVPersistValueJSON(t *testing.T) {
 	dir, err := ioutil.TempDir("", t.Name())
 	require.NoError(t, err)
 
-	defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir) // nolint: errcheck
 
 	st, err := NewCSVStorage(dir)
 	require.NoError(t, err)
@@ -388,7 +388,7 @@ func TestCSVPersistValueStringSlice(t *testing.T) {
 	dir, err := ioutil.TempDir("", t.Name())
 	require.NoError(t, err)
 
-	defer os.RemoveAll(dir)
+	defer os.RemoveAll(dir) // nolint: errcheck
 
 	st, err := NewCSVStorage(dir)
 	require.NoError(t, err)

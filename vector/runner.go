@@ -70,7 +70,7 @@ func NewRunner(ctx context.Context, vectorPath string, cacheHint int) (*Runner, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to inflate gzipped CAR: %s", err)
 	}
-	defer r.Close()
+	defer r.Close() // nolint: errcheck
 
 	// put the thing in the blockstore.
 	// TODO: the entire car file is now in memory, this is an unrealistic expectation, adjust at some point.

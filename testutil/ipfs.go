@@ -16,7 +16,7 @@ var cidPref = cid.Prefix{
 }
 
 func RandomCid() cid.Cid {
-	c, err := cidPref.Sum([]byte(strconv.Itoa(rand.Int())))
+	c, err := cidPref.Sum([]byte(strconv.Itoa(rand.Int()))) // nolint: gosec
 	if err != nil {
 		panic("randomCid: " + err.Error())
 	}

@@ -23,7 +23,7 @@ func (d *Database) GetSchemaVersions(ctx context.Context) (int, int, error) {
 	if err != nil {
 		return 0, 0, xerrors.Errorf("connect: %w", err)
 	}
-	defer db.Close()
+	defer db.Close() // nolint: errcheck
 	return getSchemaVersions(ctx, db)
 }
 
@@ -69,7 +69,7 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target int) error {
 	if err != nil {
 		return xerrors.Errorf("connect: %w", err)
 	}
-	defer db.Close()
+	defer db.Close() // nolint: errcheck
 
 	dbVersion, latestVersion, err := getSchemaVersions(ctx, db)
 	if err != nil {

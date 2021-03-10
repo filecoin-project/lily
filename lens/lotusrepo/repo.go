@@ -69,7 +69,7 @@ func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 	}
 
 	sf := func() {
-		lr.Close()
+		lr.Close() // nolint: errcheck
 	}
 
 	bs, err := lr.Blockstore(c.Context, repo.BlockstoreChain)
