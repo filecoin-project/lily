@@ -1,5 +1,6 @@
 PG_IMAGE?=postgres:10
 REDIS_IMAGE?=redis:6
+BUILD_DEPS+=build/.update-modules
 COMMIT := $(shell git rev-parse --short HEAD)
 
 # GITVERSION is the nearest tag plus number of commits and short form of most recent commit since the tag, if any
@@ -29,8 +30,10 @@ build/.update-modules:
 	git submodule update --init --recursive
 	touch $@
 
+CLEAN+=build/.update-modules
+
 .PHONY: deps
-deps: build/.update-modules
+deps: $(BUILD_DEPS)
 	cd ./vector; ./fetch_vectors.sh
 
 # test starts dependencies and runs all tests
