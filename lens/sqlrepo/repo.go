@@ -3,9 +3,6 @@ package sqlrepo
 import (
 	"context"
 	"fmt"
-	"os"
-	"strconv"
-	"strings"
 
 	"github.com/urfave/cli/v2"
 
@@ -30,7 +27,7 @@ func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 	}
 
 	if customCacheSize := c.Int("lens-cache-hint"); customCacheSize != 1024*1024 {
-		pgbsCfg.CacheSizeGiB = customCacheSize
+		pgbsCfg.CacheSizeGiB = uint64(customCacheSize)
 	}
 
 	pgbs, err := pgchainbs.NewPgBlockstore(c.Context, pgbsCfg)
