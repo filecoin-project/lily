@@ -3,13 +3,14 @@ package chain
 import (
 	"context"
 
+	lotus_api "github.com/filecoin-project/lotus/api"
+	store "github.com/filecoin-project/lotus/chain/store"
+	"go.opencensus.io/stats"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
-	lotus_api "github.com/filecoin-project/lotus/api"
-	store "github.com/filecoin-project/lotus/chain/store"
-
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
 // NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held
@@ -67,9 +68,10 @@ func (c *Watcher) index(ctx context.Context, headEvents []*lotus_api.HeadChange)
 	defer span.End()
 
 	for _, ch := range headEvents {
+		stats.Record(ctx, metrics.WatchHeight.M(int64(ch.Val.Height())))
+
 		switch ch.Type {
 		case store.HCCurrent:
-			log.Debugw("current tipset", "height", ch.Val.Height(), "tipset", ch.Val.Key().String())
 			err := c.cache.SetCurrent(ch.Val)
 			if err != nil {
 				log.Errorw("tipset cache set current", "error", err.Error())
@@ -82,7 +84,6 @@ func (c *Watcher) index(ctx context.Context, headEvents []*lotus_api.HeadChange)
 				}
 			}
 		case store.HCApply:
-			log.Debugw("add tipset", "height", ch.Val.Height(), "tipset", ch.Val.Key().String())
 			tail, err := c.cache.Add(ch.Val)
 			if err != nil {
 				log.Errorw("tipset cache add", "error", err.Error())
@@ -96,7 +97,6 @@ func (c *Watcher) index(ctx context.Context, headEvents []*lotus_api.HeadChange)
 			}
 
 		case store.HCRevert:
-			log.Debugw("revert tipset", "height", ch.Val.Height(), "tipset", ch.Val.Key().String())
 			err := c.cache.Revert(ch.Val)
 			if err != nil {
 				log.Errorw("tipset cache revert", "error", err.Error())
