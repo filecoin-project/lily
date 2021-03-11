@@ -147,6 +147,11 @@ func main() {
 				EnvVars: []string{"VISOR_PROMETHEUS_PORT"},
 				Value:   ":9991",
 			},
+			&cli.StringFlag{
+				Name:    "lens-postgres-namespace",
+				EnvVars: []string{"VISOR_POSTGRES_NAMESPACE"},
+				Value:   "",
+			},
 		},
 		Commands: []*cli.Command{
 			commands.Migrate,
