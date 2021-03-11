@@ -25,6 +25,7 @@ type API interface {
 }
 
 type StoreAPI interface {
+	// TODO this should be the lotus store not the specs-actors store.
 	Store() adt.Store
 }
 

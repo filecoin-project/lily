@@ -91,12 +91,11 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	for inFlight > 0 {
 		res := <-results
 		inFlight--
-		elapsed := time.Since(start)
 		lla := log.With("height", int64(ts.Height()), "actor", ActorNameByCode(res.Code), "address", res.Address)
 
 		if res.Error != nil {
 			lla.Errorw("actor returned with error", "error", res.Error.Error())
-			report.ErrorsDetected = append(errorsDetected, &ActorStateError{
+			errorsDetected = append(errorsDetected, &ActorStateError{
 				Code:    res.Code.String(),
 				Name:    ActorNameByCode(res.Code),
 				Head:    res.Head.String(),
@@ -111,9 +110,10 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 			skippedActors++
 		}
 
-		lla.Debugw("actor returned with data", "time", elapsed)
 		data = append(data, res.Data)
 	}
+
+	log.Debugw("completed processing actor state changes", "height", ts.Height(), "success", len(actors)-len(errorsDetected)-skippedActors, "errors", len(errorsDetected), "skipped", skippedActors, "time", time.Since(start))
 
 	if skippedActors > 0 {
 		report.StatusInformation = fmt.Sprintf("did not parse %d actors", skippedActors)
@@ -147,10 +147,10 @@ func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pt
 	info := ActorInfo{
 		Actor:           act,
 		Address:         addr,
-		ParentStateRoot: pts.ParentState(),
+		ParentStateRoot: ts.ParentState(),
 		Epoch:           ts.Height(),
-		TipSet:          pts.Key(),
-		ParentTipSet:    pts.Parents(),
+		TipSet:          ts.Key(),
+		ParentTipSet:    ts.Parents(),
 	}
 
 	extracter, ok := t.extracterMap.GetExtractor(act.Code)

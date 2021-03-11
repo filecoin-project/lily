@@ -32,6 +32,14 @@ type Walker struct {
 	maxHeight int64 // limit persisting to tipsets equal to or below this height}
 }
 
+func (c *Walker) Params() map[string]interface{} {
+	out := make(map[string]interface{})
+	out["finality"] = c.finality
+	out["minHeight"] = c.minHeight
+	out["maxHeight"] = c.maxHeight
+	return out
+}
+
 // Run starts walking the chain history and continues until the context is done or
 // the start of the chain is reached.
 func (c *Walker) Run(ctx context.Context) error {
@@ -39,7 +47,13 @@ func (c *Walker) Run(ctx context.Context) error {
 	if err != nil {
 		return xerrors.Errorf("open lens: %w", err)
 	}
-	defer closer()
+
+	defer func() {
+		closer()
+		if err := c.obs.Close(); err != nil {
+			log.Errorw("walker failed to close TipSetObserver", "error", err)
+		}
+	}()
 
 	ts, err := node.ChainHead(ctx)
 	if err != nil {

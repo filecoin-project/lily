@@ -14,16 +14,16 @@ import (
 	"github.com/filecoin-project/sentinel-visor/vector"
 )
 
-var Vector = &cli.Command{
+var VectorCmd = &cli.Command{
 	Name:  "vector",
 	Usage: "Vector tooling for Visor.",
 	Subcommands: []*cli.Command{
-		BuildVector,
-		ExecuteVector,
+		BuildVectorCmd,
+		ExecuteVectorCmd,
 	},
 }
 
-var BuildVector = &cli.Command{
+var BuildVectorCmd = &cli.Command{
 	Name:  "build",
 	Usage: "Create a vector.",
 	Flags: []cli.Flag{
@@ -95,7 +95,7 @@ func build(cctx *cli.Context) error {
 	return schema.Persist(cctx.String("vector-file"))
 }
 
-var ExecuteVector = &cli.Command{
+var ExecuteVectorCmd = &cli.Command{
 	Name:  "execute",
 	Usage: "execute a test vector",
 	Flags: []cli.Flag{

@@ -143,6 +143,7 @@ func TestMarketPredicates(t *testing.T) {
 		Address:      market.Address,
 		TipSet:       newStateTs.Key(),
 		ParentTipSet: oldStateTs.Key(),
+		Epoch:        1, // must be greater than zero else this has special handling for genesis block.
 	}
 
 	ex := actorstate.StorageMarketExtractor{}
@@ -157,7 +158,7 @@ func TestMarketPredicates(t *testing.T) {
 		require.Equal(t, 1, len(mtr.Proposals))
 
 		assert.EqualValues(t, abi.DealID(3), mtr.Proposals[0].DealID, "DealID")
-		assert.EqualValues(t, info.ParentStateRoot.String(), mtr.Proposals[0].StateRoot, "StateRoot")
+		assert.EqualValues(t, newStateTs.ParentState().String(), mtr.Proposals[0].StateRoot, "StateRoot")
 		assert.EqualValues(t, newProp3.PieceSize, mtr.Proposals[0].PaddedPieceSize, "PaddedPieceSize")
 		assert.EqualValues(t, newProp3.PieceSize.Unpadded(), mtr.Proposals[0].UnpaddedPieceSize, "UnpaddedPieceSize")
 		assert.EqualValues(t, newProp3.StartEpoch, mtr.Proposals[0].StartEpoch, "StartEpoch")
@@ -179,12 +180,12 @@ func TestMarketPredicates(t *testing.T) {
 		assert.EqualValues(t, newDeal3.SectorStartEpoch, mtr.States[0].SectorStartEpoch, "SectorStartEpoch")
 		assert.EqualValues(t, newDeal3.LastUpdatedEpoch, mtr.States[0].LastUpdateEpoch, "LastUpdateEpoch")
 		assert.EqualValues(t, newDeal3.SlashEpoch, mtr.States[0].SlashEpoch, "SlashEpoch")
-		assert.EqualValues(t, info.ParentStateRoot.String(), mtr.States[0].StateRoot, "StateRoot")
+		assert.EqualValues(t, newStateTs.ParentState().String(), mtr.States[0].StateRoot, "StateRoot")
 
 		assert.EqualValues(t, abi.DealID(1), mtr.States[1].DealID, "DealID")
 		assert.EqualValues(t, newDeal1.SectorStartEpoch, mtr.States[1].SectorStartEpoch, "SectorStartEpoch")
 		assert.EqualValues(t, newDeal1.LastUpdatedEpoch, mtr.States[1].LastUpdateEpoch, "LastUpdateEpoch")
 		assert.EqualValues(t, newDeal1.SlashEpoch, mtr.States[1].SlashEpoch, "SlashEpoch")
-		assert.EqualValues(t, info.ParentStateRoot.String(), mtr.States[1].StateRoot, "StateRoot")
+		assert.EqualValues(t, newStateTs.ParentState().String(), mtr.States[1].StateRoot, "StateRoot")
 	})
 }

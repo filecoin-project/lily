@@ -1,3 +1,5 @@
+SHELL=/usr/bin/env bash
+
 PG_IMAGE?=postgres:10
 REDIS_IMAGE?=redis:6
 COMMIT := $(shell git rev-parse --short HEAD)
@@ -12,6 +14,44 @@ BINS:=
 
 GOFLAGS:=
 
+.PHONY: all
+all: build
+
+## FFI
+
+FFI_PATH:=extern/filecoin-ffi/
+FFI_DEPS:=.install-filcrypto
+FFI_DEPS:=$(addprefix $(FFI_PATH),$(FFI_DEPS))
+
+$(FFI_DEPS): build/.filecoin-install ;
+
+build/.filecoin-install: $(FFI_PATH)
+	$(MAKE) -C $(FFI_PATH) $(FFI_DEPS:$(FFI_PATH)%=%)
+	@touch $@
+
+MODULES+=$(FFI_PATH)
+BUILD_DEPS+=build/.filecoin-install
+CLEAN+=build/.filecoin-install
+
+ffi-version-check:
+	@[[ "$$(awk '/const Version/{print $$5}' extern/filecoin-ffi/version.go)" -eq 2 ]] || (echo "FFI version mismatch, update submodules"; exit 1)
+BUILD_DEPS+=ffi-version-check
+
+.PHONY: ffi-version-check
+
+
+$(MODULES): build/.update-modules ;
+# dummy file that marks the last time modules were updated
+build/.update-modules:
+	git submodule update --init --recursive
+	touch $@
+
+CLEAN+=build/.update-modules
+
+# tools
+toolspath:=support/tools
+
+
 ldflags=-X=github.com/filecoin-project/sentinel-visor/version.GitVersion=$(GITVERSION)
 ifneq ($(strip $(LDFLAGS)),)
 	ldflags+=-extldflags=$(LDFLAGS)
@@ -24,13 +64,8 @@ all: build
 .PHONY: build
 build: deps visor
 
-# dummy file that marks the last time modules were updated
-build/.update-modules:
-	git submodule update --init --recursive
-	touch $@
-
 .PHONY: deps
-deps: build/.update-modules
+deps: $(BUILD_DEPS)
 	cd ./vector; ./fetch_vectors.sh
 
 # test starts dependencies and runs all tests
@@ -60,9 +95,10 @@ testshort:
 	go test -short ./... -v
 
 .PHONY: visor
-visor:
+visor: $(toolspath)/bin/rice
 	rm -f visor
 	go build $(GOFLAGS) -o visor -mod=readonly .
+	$(toolspath)/bin/rice append --exec visor -i github.com/filecoin-project/lotus/build
 BINS+=visor
 
 .PHONY: docker-image
@@ -74,6 +110,7 @@ docker-image:
 clean:
 	rm -rf $(CLEAN) $(BINS)
 	rm ./vector/data/*json
+.PHONY: vector-clean
 
 .PHONY: dist-clean
 dist-clean:
@@ -85,11 +122,15 @@ test-coverage:
 	VISOR_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test -coverprofile=coverage.out ./...
 
 # tools
-toolspath:=support/tools
 
 $(toolspath)/bin/golangci-lint: $(toolspath)/go.mod
 	@mkdir -p $(dir $@)
 	(cd $(toolspath); go build -tags tools -o $(@:$(toolspath)/%=%) github.com/golangci/golangci-lint/cmd/golangci-lint)
+
+
+$(toolspath)/bin/rice: $(toolspath)/go.mod
+	@mkdir -p $(dir $@)
+	(cd $(toolspath); go build -tags tools -o $(@:$(toolspath)/%=%) github.com/GeertJohan/go.rice/rice)
 
 
 .PHONY: lint

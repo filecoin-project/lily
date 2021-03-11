@@ -20,13 +20,14 @@ import (
 	modelchain "github.com/filecoin-project/sentinel-visor/model/chain"
 	"github.com/filecoin-project/sentinel-visor/model/derived"
 	"github.com/filecoin-project/sentinel-visor/model/messages"
+	"github.com/filecoin-project/sentinel-visor/model/msapprovals"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ipld/go-car"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/lotus/lib/blockstore"
 
 	"github.com/filecoin-project/sentinel-visor/chain"
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -47,6 +48,7 @@ type Runner struct {
 	schema RunnerSchema
 
 	storage *storage.MemStorage
+	bs      *util.ProxyingBlockstore
 
 	opener lens.APIOpener
 	closer lens.APICloser
@@ -62,7 +64,7 @@ func NewRunner(ctx context.Context, vectorPath string, cacheHint int) (*Runner, 
 		return nil, err
 	}
 	// need to go from bytes representing a car file to a blockstore, then to a Lotus API.
-	bs := blockstore.Blockstore(blockstore.NewTemporary())
+	bs := blockstore.Blockstore(blockstore.NewMemorySync())
 
 	// Read the base64-encoded CAR from the vector, and inflate the gzip.
 	buf := bytes.NewReader(vs.CAR)
@@ -94,6 +96,7 @@ func NewRunner(ctx context.Context, vectorPath string, cacheHint int) (*Runner, 
 	return &Runner{
 		schema:  vs,
 		storage: storage.NewMemStorage(),
+		bs:      cacheDB,
 		opener:  opener,
 		closer:  closer,
 	}, nil
@@ -108,11 +111,6 @@ func (r *Runner) Run(ctx context.Context) error {
 	if err != nil {
 		return xerrors.Errorf("setup indexer: %w", err)
 	}
-	defer func() {
-		if err := tsIndexer.Close(); err != nil {
-			log.Errorw("failed to close tipset indexer cleanly", "error", err)
-		}
-	}()
 
 	if err := chain.NewWalker(tsIndexer, r.opener, r.schema.Params.From, r.schema.Params.To).Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 		return err
@@ -147,6 +145,15 @@ func (r *Runner) Validate(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (r *Runner) Reset() {
+	r.storage = storage.NewMemStorage()
+	r.bs.ResetMetrics()
+}
+
+func (r *Runner) BlockstoreGetCount() int64 {
+	return r.bs.GetCount()
 }
 
 func modelTypeFromTable(tableName string, expected json.RawMessage, actual []interface{}) (string, error) {
@@ -575,5 +582,20 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			actType = append(actType, act)
 		}
 		return cmp.Diff(actType, expType, cmpopts.IgnoreUnexported(modelchain.ChainEconomics{})), nil
+	case "multisig_approvals":
+		var expType msapprovals.MultisigApprovalList
+		if err := json.Unmarshal(expected, &expType); err != nil {
+			return "", err
+		}
+
+		var actType msapprovals.MultisigApprovalList
+		for _, raw := range actual {
+			act, ok := raw.(*msapprovals.MultisigApproval)
+			if !ok {
+				panic("developer error")
+			}
+			actType = append(actType, act)
+		}
+		return cmp.Diff(actType, expType, cmpopts.IgnoreUnexported(msapprovals.MultisigApproval{})), nil
 	}
 }
