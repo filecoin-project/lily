@@ -2,6 +2,7 @@ package chaineconomics
 
 import (
 	"context"
+	"sync"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
@@ -15,6 +16,7 @@ import (
 var log = logging.Logger("chaineconomics")
 
 type Task struct {
+	nodeMu sync.Mutex // guards mutations to node, opener and closer
 	node   lens.API
 	opener lens.APIOpener
 	closer lens.APICloser
@@ -27,6 +29,10 @@ func NewTask(opener lens.APIOpener) *Task {
 }
 
 func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+	// We use p.node continually through this method so take a broad lock
+	p.nodeMu.Lock()
+	defer p.nodeMu.Unlock()
+
 	if p.node == nil {
 		node, closer, err := p.opener.Open(ctx)
 		if err != nil {
@@ -55,6 +61,9 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 }
 
 func (p *Task) Close() error {
+	p.nodeMu.Lock()
+	defer p.nodeMu.Unlock()
+
 	if p.closer != nil {
 		p.closer()
 		p.closer = nil

@@ -28,27 +28,13 @@ import (
 var log = logging.Logger("messages")
 
 type Task struct {
-	node   lens.API
-	opener lens.APIOpener
-	closer lens.APICloser
 }
 
-func NewTask(opener lens.APIOpener) *Task {
-	return &Task{
-		opener: opener,
-	}
+func NewTask() *Task {
+	return &Task{}
 }
 
 func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
-	if p.node == nil {
-		node, closer, err := p.opener.Open(ctx)
-		if err != nil {
-			return nil, nil, xerrors.Errorf("unable to open lens: %w", err)
-		}
-		p.node = node
-		p.closer = closer
-	}
-
 	report := &visormodel.ProcessingReport{
 		Height:    int64(pts.Height()),
 		StateRoot: pts.ParentState().String(),
@@ -258,11 +244,6 @@ func (p *Task) parseMessageParams(m *types.Message, destCode cid.Cid) (string, s
 }
 
 func (p *Task) Close() error {
-	if p.closer != nil {
-		p.closer()
-		p.closer = nil
-	}
-	p.node = nil
 	return nil
 }
 
