@@ -12,6 +12,10 @@ BINS:=
 
 GOFLAGS:=
 
+# tools
+toolspath:=support/tools
+
+
 ldflags=-X=github.com/filecoin-project/sentinel-visor/version.GitVersion=$(GITVERSION)
 ifneq ($(strip $(LDFLAGS)),)
 	ldflags+=-extldflags=$(LDFLAGS)
@@ -60,9 +64,10 @@ testshort:
 	go test -short ./... -v
 
 .PHONY: visor
-visor:
+visor: $(toolspath)/bin/rice
 	rm -f visor
 	go build $(GOFLAGS) -o visor -mod=readonly .
+	$(toolspath)/bin/rice append --exec visor -i github.com/filecoin-project/lotus/build
 BINS+=visor
 
 .PHONY: docker-image
@@ -84,12 +89,15 @@ dist-clean:
 test-coverage:
 	VISOR_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test -coverprofile=coverage.out ./...
 
-# tools
-toolspath:=support/tools
 
 $(toolspath)/bin/golangci-lint: $(toolspath)/go.mod
 	@mkdir -p $(dir $@)
 	(cd $(toolspath); go build -tags tools -o $(@:$(toolspath)/%=%) github.com/golangci/golangci-lint/cmd/golangci-lint)
+
+
+$(toolspath)/bin/rice: $(toolspath)/go.mod
+	@mkdir -p $(dir $@)
+	(cd $(toolspath); go build -tags tools -o $(@:$(toolspath)/%=%) github.com/GeertJohan/go.rice/rice)
 
 
 .PHONY: lint
