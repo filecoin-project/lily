@@ -3,6 +3,7 @@ package lily
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -60,8 +61,8 @@ func (m *LilyNodeAPI) LilyWatchStart(ctx context.Context, cfg *LilyWatchConfig) 
 		return err
 	}
 
-	// instantiate a tipset cache based on our confidence window
-	tsCache := chain.NewTipSetCache(cfg.Confidence)
+	// HeadNotifier bridges between the event system and the watcher
+	obs := &HeadNotifier{}
 
 	// get the current head and set it on the tipset cache (mimic chain.watcher behaviour)
 	head, err := m.ChainModuleAPI.ChainHead(ctx)
@@ -69,22 +70,27 @@ func (m *LilyNodeAPI) LilyWatchStart(ctx context.Context, cfg *LilyWatchConfig) 
 		return err
 	}
 
-	if err := tsCache.SetCurrent(head); err != nil {
-		return err
-	}
-
-	// If we have a zero confidence window then we need to notify every tipset we see
-	if cfg.Confidence == 0 {
-		if err := indexer.TipSet(ctx, head); err != nil {
-			return err
+	// Need to set current tipset concurrently because it will block otherwise
+	go func() {
+		if err := obs.SetCurrent(ctx, head); err != nil {
+			log.Errorw("failed to set current head tipset", "error", err)
 		}
-	}
+	}()
 
-	obs := chain.NewIndexingTipSetObserver(indexer, tsCache)
+	// TODO: rework this when we introduce job management. For the moment we start the watcher but have no way of
+	// stopping it
+	watcher := chain.NewWatcher(indexer, obs, cfg.Confidence)
+	go func() {
+		if err := watcher.Run(ctx); err != nil {
+			log.Errorw("watcher stopped", "error", err)
+		}
+	}()
 
+	// Hook up the notifier to the event system
 	if err := m.Events.Observe(obs); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -124,3 +130,96 @@ func setupDatabase(ctx context.Context, cfg *LilyDatabaseConfig) (*storage.Datab
 }
 
 var _ LilyAPI = &LilyNodeAPI{}
+
+type HeadNotifier struct {
+	mu     sync.Mutex            // protects following fields
+	events chan *chain.HeadEvent // created lazily, closed by first cancel call
+	err    error                 // set to non-nil by the first cancel call
+}
+
+func (h *HeadNotifier) eventsCh() chan *chain.HeadEvent {
+	// caller must hold mu
+	if h.events == nil {
+		h.events = make(chan *chain.HeadEvent)
+	}
+	return h.events
+}
+
+func (h *HeadNotifier) HeadEvents() <-chan *chain.HeadEvent {
+	h.mu.Lock()
+	ev := h.eventsCh()
+	h.mu.Unlock()
+	return ev
+}
+
+func (h *HeadNotifier) Err() error {
+	h.mu.Lock()
+	err := h.err
+	h.mu.Unlock()
+	return err
+}
+
+func (h *HeadNotifier) Cancel(err error) {
+	h.mu.Lock()
+	if h.err != nil {
+		h.mu.Unlock()
+		return
+	}
+	h.err = err
+	if h.events == nil {
+		h.events = make(chan *chain.HeadEvent)
+	}
+	close(h.events)
+	h.mu.Unlock()
+}
+
+func (h *HeadNotifier) SetCurrent(ctx context.Context, ts *types.TipSet) error {
+	h.mu.Lock()
+	if h.err != nil {
+		err := h.err
+		h.mu.Unlock()
+		return err
+	}
+	ev := h.eventsCh()
+	h.mu.Unlock()
+
+	ev <- &chain.HeadEvent{
+		Type:   chain.HeadEventCurrent,
+		TipSet: ts,
+	}
+	return nil
+}
+
+func (h *HeadNotifier) Apply(ctx context.Context, ts *types.TipSet) error {
+	h.mu.Lock()
+	if h.err != nil {
+		err := h.err
+		h.mu.Unlock()
+		return err
+	}
+	ev := h.eventsCh()
+	h.mu.Unlock()
+
+	ev <- &chain.HeadEvent{
+		Type:   chain.HeadEventApply,
+		TipSet: ts,
+	}
+	return nil
+}
+
+func (h *HeadNotifier) Revert(ctx context.Context, ts *types.TipSet) error {
+	h.mu.Lock()
+	if h.err != nil {
+		err := h.err
+		h.mu.Unlock()
+		return err
+	}
+	ev := h.eventsCh()
+	h.mu.Unlock()
+
+	ev <- &chain.HeadEvent{
+		Type:   chain.HeadEventRevert,
+		TipSet: ts,
+	}
+	return nil
+}
