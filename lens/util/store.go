@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"sync/atomic"
 
 	"github.com/filecoin-project/lotus/lib/blockstore"
 	blocks "github.com/ipfs/go-block-format"
@@ -9,22 +10,24 @@ import (
 	ds "github.com/ipfs/go-datastore"
 )
 
-func NewCachingStore(backing blockstore.Blockstore) blockstore.Blockstore {
+func NewCachingStore(backing blockstore.Blockstore) *ProxyingBlockstore {
 	cache := ds.NewMapDatastore()
 	bs := blockstore.NewBlockstore(cache)
 
-	return &proxyingBlockstore{
+	return &ProxyingBlockstore{
 		cache: bs,
 		store: backing,
 	}
 }
 
-type proxyingBlockstore struct {
+type ProxyingBlockstore struct {
 	cache blockstore.Blockstore
 	store blockstore.Blockstore
+	gets  int64 // updated atomically
 }
 
-func (pb *proxyingBlockstore) Get(c cid.Cid) (blocks.Block, error) {
+func (pb *ProxyingBlockstore) Get(c cid.Cid) (blocks.Block, error) {
+	atomic.AddInt64(&pb.gets, 1)
 	if block, err := pb.cache.Get(c); err == nil {
 		return block, err
 	}
@@ -32,7 +35,7 @@ func (pb *proxyingBlockstore) Get(c cid.Cid) (blocks.Block, error) {
 	return pb.store.Get(c)
 }
 
-func (pb *proxyingBlockstore) Has(c cid.Cid) (bool, error) {
+func (pb *ProxyingBlockstore) Has(c cid.Cid) (bool, error) {
 	if h, err := pb.cache.Has(c); err == nil && h {
 		return true, nil
 	}
@@ -40,22 +43,22 @@ func (pb *proxyingBlockstore) Has(c cid.Cid) (bool, error) {
 	return pb.store.Has(c)
 }
 
-func (pb *proxyingBlockstore) DeleteBlock(c cid.Cid) error {
+func (pb *ProxyingBlockstore) DeleteBlock(c cid.Cid) error {
 	return pb.cache.DeleteBlock(c)
 }
 
-func (pb *proxyingBlockstore) GetSize(c cid.Cid) (int, error) {
+func (pb *ProxyingBlockstore) GetSize(c cid.Cid) (int, error) {
 	if s, err := pb.cache.GetSize(c); err == nil {
 		return s, nil
 	}
 	return pb.store.GetSize(c)
 }
 
-func (pb *proxyingBlockstore) Put(b blocks.Block) error {
+func (pb *ProxyingBlockstore) Put(b blocks.Block) error {
 	return pb.cache.Put(b)
 }
 
-func (pb *proxyingBlockstore) PutMany(bs []blocks.Block) error {
+func (pb *ProxyingBlockstore) PutMany(bs []blocks.Block) error {
 	for _, b := range bs {
 		if err := pb.Put(b); err != nil {
 			return err
@@ -64,7 +67,7 @@ func (pb *proxyingBlockstore) PutMany(bs []blocks.Block) error {
 	return nil
 }
 
-func (pb *proxyingBlockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, error) {
+func (pb *ProxyingBlockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, error) {
 	outChan := make(chan cid.Cid, 10)
 
 	cctx, cncl := context.WithCancel(ctx)
@@ -92,5 +95,14 @@ func (pb *proxyingBlockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, 
 	return outChan, nil
 }
 
-func (pb *proxyingBlockstore) HashOnRead(enabled bool) {
+func (pb *ProxyingBlockstore) HashOnRead(enabled bool) {
+}
+
+func (pb *ProxyingBlockstore) GetCount() int64 {
+	c := atomic.LoadInt64(&pb.gets)
+	return c
+}
+
+func (pb *ProxyingBlockstore) ResetMetrics() {
+	atomic.StoreInt64(&pb.gets, 0)
 }
