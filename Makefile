@@ -14,6 +14,9 @@ BINS:=
 
 GOFLAGS:=
 
+.PHONY: all
+all: build
+
 ## FFI
 
 FFI_PATH:=extern/filecoin-ffi/
