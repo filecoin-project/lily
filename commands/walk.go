@@ -98,22 +98,20 @@ func walk(cctx *cli.Context) error {
 		}
 	}
 
-	scheduler := schedule.NewScheduler(cctx.Duration("task-delay"))
-
 	tsIndexer, err := chain.NewTipSetIndexer(lensOpener, strg, 0, cctx.String("name"), tasks)
 	if err != nil {
 		return xerrors.Errorf("setup indexer: %w", err)
 	}
 
-	scheduler.Add(schedule.TaskConfig{
-		Name:                "Walker",
-		Task:                chain.NewWalker(tsIndexer, lensOpener, heightFrom, heightTo),
-		RestartOnFailure:    false, // Don't restart after a failure otherwise the walk will start from the beginning again
-		RestartOnCompletion: false,
-		RestartDelay:        time.Minute,
-	})
+	scheduler := schedule.NewScheduler(cctx.Duration("task-delay"),
+		&schedule.JobConfig{
+			Name:                "Walker",
+			Job:                 chain.NewWalker(tsIndexer, lensOpener, heightFrom, heightTo),
+			RestartOnFailure:    false, // Don't restart after a failure otherwise the walk will start from the beginning again
+			RestartOnCompletion: false,
+			RestartDelay:        time.Minute,
+		})
 
-	// Start the scheduler and wait for it to complete or to be cancelled.
 	err = scheduler.Run(cctx.Context)
 	if !errors.Is(err, context.Canceled) {
 		return err

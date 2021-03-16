@@ -18,6 +18,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/chain"
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/lens/util"
+	"github.com/filecoin-project/sentinel-visor/schedule"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
@@ -27,11 +28,104 @@ type LilyNodeAPI struct {
 	full.ChainAPI
 	full.StateAPI
 	common.CommonAPI
-	Events *events.Events
+	Events    *events.Events
+	Scheduler *schedule.Scheduler
+}
+
+func (m *LilyNodeAPI) LilyWatch(ctx context.Context, cfg *LilyWatchConfig) (schedule.JobID, error) {
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx = context.Background()
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	db, err := SetupDatabase(ctx, cfg.Database)
+	if err != nil {
+		return schedule.InvalidJobID, err
+	}
+
+	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the db.
+	indexer, err := chain.NewTipSetIndexer(m, db, cfg.Window, cfg.Name, cfg.Tasks)
+	if err != nil {
+		return schedule.InvalidJobID, err
+	}
+
+	// HeadNotifier bridges between the event system and the watcher
+	obs := &HeadNotifier{} // get the current head and set it on the tipset cache (mimic chain.watcher behaviour)
+
+	head, err := m.ChainModuleAPI.ChainHead(ctx)
+	if err != nil {
+		return schedule.InvalidJobID, err
+	}
+
+	// Need to set current tipset concurrently because it will block otherwise
+	go func() {
+		if err := obs.SetCurrent(ctx, head); err != nil {
+			log.Errorw("failed to set current head tipset", "error", err)
+		}
+	}()
+
+	// Hook up the notifier to the event system
+	if err := m.Events.Observe(obs); err != nil {
+		return schedule.InvalidJobID, err
+	}
+
+	id := m.Scheduler.Submit(&schedule.JobConfig{
+		Name:                cfg.Name,
+		Job:                 chain.NewWatcher(indexer, obs, cfg.Confidence),
+		RestartOnFailure:    cfg.RestartOnFailure,
+		RestartOnCompletion: cfg.RestartOnCompletion,
+		RestartDelay:        cfg.RestartDelay,
+	})
+
+	return id, nil
+}
+
+func (m *LilyNodeAPI) LilyWalk(ctx context.Context, cfg *LilyWalkConfig) (schedule.JobID, error) {
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx = context.Background()
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	db, err := SetupDatabase(ctx, cfg.Database)
+	if err != nil {
+		return schedule.InvalidJobID, err
+	}
+
+	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the db.
+	indexer, err := chain.NewTipSetIndexer(m, db, cfg.Window, cfg.Name, cfg.Tasks)
+	if err != nil {
+		return schedule.InvalidJobID, err
+	}
+
+	id := m.Scheduler.Submit(&schedule.JobConfig{
+		Name:                cfg.Name,
+		Job:                 chain.NewWalker(indexer, m, cfg.From, cfg.To),
+		RestartOnFailure:    cfg.RestartOnFailure,
+		RestartOnCompletion: cfg.RestartOnCompletion,
+		RestartDelay:        cfg.RestartDelay,
+	})
+
+	return id, nil
+}
+
+func (m *LilyNodeAPI) LilyJobStart(ctx context.Context, ID schedule.JobID) error {
+	if err := m.Scheduler.StartJob(ID); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *LilyNodeAPI) LilyJobStop(ctx context.Context, ID schedule.JobID) error {
+	if err := m.Scheduler.StopJob(ID); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *LilyNodeAPI) LilyJobList(ctx context.Context) ([]schedule.JobResult, error) {
+	return m.Scheduler.Jobs(), nil
 }
 
 func (m *LilyNodeAPI) Open(ctx context.Context) (lens.API, lens.APICloser, error) {
-	return m, nil, nil
+	return m, func() {}, nil
 }
 
 func (m *LilyNodeAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
@@ -46,55 +140,7 @@ func (m *LilyNodeAPI) Store() adt.Store {
 	return adtStore
 }
 
-func (m *LilyNodeAPI) LilyWatchStart(ctx context.Context, cfg *LilyWatchConfig) error {
-	log.Info("starting sentinel watch")
-
-	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	db, err := setupDatabase(ctx, cfg.Database)
-	if err != nil {
-		return err
-	}
-
-	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the db.
-	indexer, err := chain.NewTipSetIndexer(m, db, cfg.Window, cfg.Name, cfg.Tasks)
-	if err != nil {
-		return err
-	}
-
-	// HeadNotifier bridges between the event system and the watcher
-	obs := &HeadNotifier{}
-
-	// get the current head and set it on the tipset cache (mimic chain.watcher behaviour)
-	head, err := m.ChainModuleAPI.ChainHead(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Need to set current tipset concurrently because it will block otherwise
-	go func() {
-		if err := obs.SetCurrent(ctx, head); err != nil {
-			log.Errorw("failed to set current head tipset", "error", err)
-		}
-	}()
-
-	// TODO: rework this when we introduce job management. For the moment we start the watcher but have no way of
-	// stopping it
-	watcher := chain.NewWatcher(indexer, obs, cfg.Confidence)
-	go func() {
-		if err := watcher.Run(ctx); err != nil {
-			log.Errorw("watcher stopped", "error", err)
-		}
-	}()
-
-	// Hook up the notifier to the event system
-	if err := m.Events.Observe(obs); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func setupDatabase(ctx context.Context, cfg *LilyDatabaseConfig) (*storage.Database, error) {
+func SetupDatabase(ctx context.Context, cfg *LilyDatabaseConfig) (*storage.Database, error) {
 	db, err := storage.NewDatabase(ctx, cfg.URL, cfg.PoolSize, cfg.Name, cfg.AllowUpsert)
 	if err != nil {
 		return nil, xerrors.Errorf("new database: %w", err)

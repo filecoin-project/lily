@@ -40,6 +40,8 @@ var LilyCmd = &cli.Command{
 	Subcommands: []*cli.Command{
 		LilyDaemon,
 		LilyWatchCmd,
+		LilyWalkCmd,
+		LilyJobCmd,
 	},
 }
 

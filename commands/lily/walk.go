@@ -15,18 +15,19 @@ import (
 	"github.com/filecoin-project/sentinel-visor/lens/lily"
 )
 
-type watchOps struct {
+type walkOps struct {
 	confidence int
+	from       int64
+	to         int64
 	tasks      string
 	window     time.Duration
-	start      bool
 }
 
-var watchFlags watchOps
+var walkFlags walkOps
 
-var LilyWatchCmd = &cli.Command{
-	Name:   "watch",
-	Usage:  "Watch the filecoin blockchain",
+var LilyWalkCmd = &cli.Command{
+	Name:   "walk",
+	Usage:  "walk the filecoin blockchain",
 	Before: initialize,
 	After:  destroy,
 	Flags: []cli.Flag{
@@ -34,32 +35,48 @@ var LilyWatchCmd = &cli.Command{
 			Name:        "indexhead-confidence",
 			Usage:       "Sets the size of the cache used to hold tipsets for possible reversion before being committed to the database",
 			Value:       2,
-			EnvVars:     []string{"SENTINEL_LILY_WATCH_CONFIDENCE"},
-			Destination: &watchFlags.confidence,
+			EnvVars:     []string{"SENTINEL_LILY_WALK_CONFIDENCE"},
+			Destination: &walkFlags.confidence,
 		},
 		&cli.StringFlag{
 			Name:        "tasks",
 			Usage:       "Comma separated list of tasks to run. Each task is reported separately in the database.",
 			Value:       strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorStatesRawTask}, ","),
-			EnvVars:     []string{"SENTINEL_LILY_WATCH_TASKS"},
-			Destination: &watchFlags.tasks,
+			EnvVars:     []string{"SENTINEL_LILY_WALK_TASKS"},
+			Destination: &walkFlags.tasks,
 		},
 		&cli.DurationFlag{
 			Name:        "window",
 			Usage:       "Duration after which any indexing work not completed will be marked incomplete",
 			Value:       builtin.EpochDurationSeconds * time.Second,
-			EnvVars:     []string{"SENTINEL_LILY_WATCH_WINDOW"},
-			Destination: &watchFlags.window,
+			EnvVars:     []string{"SENTINEL_LILY_WALK_WINDOW"},
+			Destination: &walkFlags.window,
+		},
+		&cli.Int64Flag{
+			Name:        "from",
+			Usage:       "Limit actor and message processing to tipsets at or above `HEIGHT`",
+			EnvVars:     []string{"SENTINEL_LILLY_WALK_HEIGHT_FROM"},
+			Destination: &walkFlags.from,
+		},
+		&cli.Int64Flag{
+			Name:        "to",
+			Usage:       "Limit actor and message processing to tipsets at or below `HEIGHT`",
+			Value:       estimateCurrentEpoch(),
+			DefaultText: "MaxInt64",
+			EnvVars:     []string{"SENTINEL_LILLY_WALK_HEIGHT_TO"},
+			Destination: &walkFlags.to,
 		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
-		cfg := &lily.LilyWatchConfig{
+		cfg := &lily.LilyWalkConfig{
 			Name:                "lily",
-			Tasks:               strings.Split(watchFlags.tasks, ","),
-			Window:              watchFlags.window,
-			Confidence:          watchFlags.confidence,
+			Tasks:               strings.Split(walkFlags.tasks, ","),
+			Window:              walkFlags.window,
+			Confidence:          walkFlags.confidence,
+			From:                walkFlags.from,
+			To:                  walkFlags.to,
 			RestartDelay:        0,
 			RestartOnCompletion: false,
 			RestartOnFailure:    false,
@@ -72,7 +89,7 @@ var LilyWatchCmd = &cli.Command{
 			},
 		}
 
-		watchID, err := lilyAPI.LilyWatch(ctx, cfg)
+		watchID, err := lilyAPI.LilyWalk(ctx, cfg)
 		if err != nil {
 			return err
 		}
@@ -81,4 +98,10 @@ var LilyWatchCmd = &cli.Command{
 		}
 		return nil
 	},
+}
+
+var mainnetGenesis = time.Date(2020, 8, 24, 22, 0, 0, 0, time.UTC)
+
+func estimateCurrentEpoch() int64 {
+	return int64(time.Since(mainnetGenesis) / (builtin.EpochDurationSeconds))
 }

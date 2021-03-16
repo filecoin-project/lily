@@ -39,7 +39,6 @@ func (c *Walker) Run(ctx context.Context) error {
 	if err != nil {
 		return xerrors.Errorf("open lens: %w", err)
 	}
-
 	defer func() {
 		closer()
 		if err := c.obs.Close(); err != nil {
