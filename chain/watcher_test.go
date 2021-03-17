@@ -74,7 +74,7 @@ func TestWatcher(t *testing.T) {
 	tsIndexer, err := NewTipSetIndexer(opener, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
 	require.NoError(t, err, "NewTipSetIndexer")
 	t.Logf("initializing indexer")
-	idx := NewWatcher(tsIndexer, opener, 0)
+	idx := NewWatcher(tsIndexer, NullHeadNotifier{}, 0)
 
 	newHeads, err := node.ChainNotify(ctx)
 	require.NoError(t, err, "chain notify")
@@ -90,8 +90,11 @@ func TestWatcher(t *testing.T) {
 	cids := bhs.Cids()
 	rounds := bhs.Rounds()
 
-	err = idx.index(ctx, nh)
-	require.NoError(t, err, "index")
+	for _, hc := range nh {
+		he := &HeadEvent{Type: hc.Type, TipSet: hc.Val}
+		err = idx.index(ctx, he)
+		require.NoError(t, err, "index")
+	}
 
 	// TODO NewTipSetIndexer runs its processors in their own go routines (started when TipSet() is called)
 	// this causes this test to behave nondeterministicly so we sleep here to ensure all async jobs
@@ -198,3 +201,8 @@ func truncateBlockTables(tb testing.TB, db *pg.DB) error {
 
 	return nil
 }
+
+type NullHeadNotifier struct{}
+
+func (NullHeadNotifier) HeadEvents() <-chan *HeadEvent { return nil }
+func (NullHeadNotifier) Err() error                    { return nil }
