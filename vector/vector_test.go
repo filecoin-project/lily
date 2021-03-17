@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -29,7 +30,7 @@ func TestExecuteVectors(t *testing.T) {
 
 	for _, vp := range vectorPaths {
 		vpath := vp
-		t.Run(filepath.Base(vpath), func(t *testing.T) {
+		t.Run(testName(vpath), func(t *testing.T) {
 			runner, err := NewRunner(ctx, vpath, 0)
 			if err != nil {
 				t.Fatal(err)
@@ -67,7 +68,7 @@ func BenchmarkExecuteVectors(b *testing.B) {
 
 	for _, vp := range vectorPaths {
 		vpath := vp
-		b.Run(filepath.Base(vpath), func(b *testing.B) {
+		b.Run(testName(vpath), func(b *testing.B) {
 			runner, err := NewRunner(ctx, vpath, 0)
 			if err != nil {
 				b.Fatal(err)
@@ -83,4 +84,23 @@ func BenchmarkExecuteVectors(b *testing.B) {
 			}
 		})
 	}
+}
+
+func testName(vpath string) string {
+	name := filepath.Base(vpath)
+
+	ext := filepath.Ext(name)
+
+	if len(ext) > 0 {
+		name = name[:len(name)-len(ext)]
+	}
+
+	if strings.HasPrefix(name, "Qm") {
+		idx := strings.Index(name, "_")
+		if idx > 0 {
+			name = name[idx+1:]
+		}
+	}
+
+	return name
 }
