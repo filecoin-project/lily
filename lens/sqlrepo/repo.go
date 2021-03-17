@@ -3,6 +3,7 @@ package sqlrepo
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/urfave/cli/v2"
 
@@ -19,6 +20,11 @@ func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 		CacheInactiveBeforeRead: true,
 		DisableBlocklinkParsing: true,
 		LogCacheStatsOnUSR1:     true,
+	}
+
+	enablePreload := os.Getenv("LOTUS_CHAINSTORE_PRELOAD_RECENTS")
+	if enablePreload != "" && enablePreload != "0" && enablePreload != "false" {
+		pgbsCfg.CachePreloadRecentBlocks = true
 	}
 
 	pgbsCfg.InstanceNamespace = c.String("lens-postgres-namespace")

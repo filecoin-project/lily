@@ -9,7 +9,7 @@ require (
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/filecoin-project/go-address v0.0.5
 	github.com/filecoin-project/go-bitfield v0.2.4
-	github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210308115802-ced2e3b4509a
+	github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210317220859-00d7e157c2a9
 	github.com/filecoin-project/go-fil-markets v1.1.9
 	github.com/filecoin-project/go-multistore v0.0.3
 	github.com/filecoin-project/go-state-types v0.1.0
