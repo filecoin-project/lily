@@ -81,6 +81,7 @@ func Until(ctx context.Context, f func(context.Context) error) error {
 
 // Jitter returns a random duration ranging from base to base+base*factor
 func Jitter(base time.Duration, factor float64) time.Duration {
+	//nolint:gosec
 	return base + time.Duration(float64(base)*factor*rand.Float64())
 }
 

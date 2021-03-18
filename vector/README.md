@@ -105,6 +105,26 @@ $ go test -v ./vector/...
 Push your changes to `VECTOR_MANIFEST` up execution in CI.
 
 
+## Running vector benchmarks
+
+The vectors can be executed as part of a Go benchmark suite. The benchmarks output numbers of blockstore gets per operation as a custom metric.
+
+Due to the length of time needed to execute, it is recommended to supply a custom benchtime for running each benchmark and an overall timeout for the test run that is greater than the expected benchtime for all benchmarks.
+
+To run benchmarks for all the vectors
+
+```
+go test -v -bench=BenchmarkExecuteVectors/.* -benchtime 1m -timeout 30m  ./vector/...
+```
+
+To run benchmarks for a single vector:
+
+```
+go test -v -bench=BenchmarkExecuteVectors/QmYhszKDYDFvXyFQF8KefF4M8gcNaoTC8FMYFcgKmfq6pi_miner.* -benchtime 1m -timeout 30m  ./vector/...
+```
+
+Use `go test -run=^$` to disable running the vector tests.
+
 
 
 
