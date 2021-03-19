@@ -47,6 +47,7 @@ type Runner struct {
 	schema RunnerSchema
 
 	storage *storage.MemStorage
+	bs      *util.ProxyingBlockstore
 
 	opener lens.APIOpener
 	closer lens.APICloser
@@ -94,6 +95,7 @@ func NewRunner(ctx context.Context, vectorPath string, cacheHint int) (*Runner, 
 	return &Runner{
 		schema:  vs,
 		storage: storage.NewMemStorage(),
+		bs:      cacheDB,
 		opener:  opener,
 		closer:  closer,
 	}, nil
@@ -147,6 +149,15 @@ func (r *Runner) Validate(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (r *Runner) Reset() {
+	r.storage = storage.NewMemStorage()
+	r.bs.ResetMetrics()
+}
+
+func (r *Runner) BlockstoreGetCount() int64 {
+	return r.bs.GetCount()
 }
 
 func modelTypeFromTable(tableName string, expected json.RawMessage, actual []interface{}) (string, error) {
