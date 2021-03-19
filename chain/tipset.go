@@ -11,6 +11,7 @@ import (
 // A TipSetObserver waits for notifications of new tipsets.
 type TipSetObserver interface {
 	TipSet(ctx context.Context, ts *types.TipSet) error
+	Close() error
 }
 
 var ErrCacheEmpty = errors.New("cache empty")
