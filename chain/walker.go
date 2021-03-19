@@ -39,7 +39,13 @@ func (c *Walker) Run(ctx context.Context) error {
 	if err != nil {
 		return xerrors.Errorf("open lens: %w", err)
 	}
-	defer closer()
+
+	defer func() {
+		closer()
+		if err := c.obs.Close(); err != nil {
+			log.Errorw("walker failed to close TipSetObserver", "error", err)
+		}
+	}()
 
 	ts, err := node.ChainHead(ctx)
 	if err != nil {
