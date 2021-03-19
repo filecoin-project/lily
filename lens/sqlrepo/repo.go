@@ -3,7 +3,6 @@ package sqlrepo
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/urfave/cli/v2"
 
@@ -16,18 +15,15 @@ import (
 
 func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 	pgbsCfg := pgchainbs.PgBlockstoreConfig{
-		PgxConnectString:        c.String("repo"),
-		CacheInactiveBeforeRead: true,
-		DisableBlocklinkParsing: true,
-		LogCacheStatsOnUSR1:     true,
+		PgxConnectString:         c.String("repo"),
+		InstanceNamespace:        c.String("lens-postgres-namespace"),
+		CachePreloadRecentBlocks: c.Bool("lens-postgres-preload-recents"),
+		CacheInactiveBeforeRead:  true,
+		DisableBlocklinkParsing:  true,
+		LogCacheStatsOnUSR1:      true,
 	}
 
-	enablePreload := os.Getenv("LOTUS_CHAINSTORE_PRELOAD_RECENTS")
-	if enablePreload != "" && enablePreload != "0" && enablePreload != "false" {
-		pgbsCfg.CachePreloadRecentBlocks = true
-	}
-
-	pgbsCfg.InstanceNamespace = c.String("lens-postgres-namespace")
+	// we need *some* namespace specified, otherwise GetFilTipSetHead() can't work
 	if pgbsCfg.InstanceNamespace == "" {
 		pgbsCfg.InstanceNamespace = "main"
 	}
