@@ -23,11 +23,6 @@ func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 		LogCacheStatsOnUSR1:      true,
 	}
 
-	// we need *some* namespace specified, otherwise GetFilTipSetHead() can't work
-	if pgbsCfg.InstanceNamespace == "" {
-		pgbsCfg.InstanceNamespace = "main"
-	}
-
 	if customCacheSize := c.Int("lens-cache-hint"); customCacheSize != 1024*1024 {
 		pgbsCfg.CacheSizeGiB = uint64(customCacheSize)
 	}

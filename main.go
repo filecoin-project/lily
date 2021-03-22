@@ -150,7 +150,14 @@ func main() {
 			&cli.StringFlag{
 				Name:    "lens-postgres-namespace",
 				EnvVars: []string{"VISOR_POSTGRES_NAMESPACE"},
-				Value:   "",
+				Value:   "main", // we need *some* namespace specified, otherwise GetFilTipSetHead() can't work
+				Usage:   "Namespace consulted for current chain head and recency records",
+			},
+			&cli.BoolFlag{
+				Name:    "lens-postgres-preload-recents",
+				EnvVars: []string{"VISOR_POSTGRES_PRELOAD_RECENTS"},
+				Value:   false,
+				Usage:   "List recent reads within selected namespace, and preload as much as possible into the LRU",
 			},
 		},
 		Commands: []*cli.Command{
