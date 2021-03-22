@@ -159,6 +159,12 @@ func main() {
 				Value:   false,
 				Usage:   "List recent reads within selected namespace, and preload as much as possible into the LRU",
 			},
+			&cli.IntFlag{
+				Name:    "lens-postgres-get-prefetch-depth",
+				EnvVars: []string{"VISOR_POSTGRES_GET_PREFETCH_DEPTH"},
+				Value:   0,
+				Usage:   "Prefetch that many additional DAG layers of descendents when Get()ing a block",
+			},
 		},
 		Commands: []*cli.Command{
 			commands.Migrate,
