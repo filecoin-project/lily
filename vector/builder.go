@@ -105,11 +105,6 @@ func (b *Builder) Build(ctx context.Context) (*BuilderSchema, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("setup indexer: %w", err)
 	}
-	defer func() {
-		if err := tsIndexer.Close(); err != nil {
-			log.Errorw("failed to close tipset indexer cleanly", "error", err)
-		}
-	}()
 
 	if err := chain.NewWalker(tsIndexer, b.opener, b.From, b.To).Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 		return nil, err
