@@ -93,7 +93,10 @@ func NewSchedulerDaemon(mctx helpers.MetricsCtx, lc fx.Lifecycle) *Scheduler {
 	s := NewScheduler(0)
 	go func() {
 		if err := s.Run(mctx); err != nil {
-			log.Errorw("Scheduler Stopped", "error", err)
+			if err != context.Canceled {
+				log.Errorw("Scheduler Stopped", "error", err)
+			}
+			log.Infow("Scheduler Stopper", "error", err)
 		}
 	}()
 
@@ -210,7 +213,6 @@ func (s *Scheduler) StopJob(id JobID) error {
 
 	job.log.Info("stopping job")
 	job.cancel()
-	job.running = false
 	return nil
 }
 
