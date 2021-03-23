@@ -19,7 +19,6 @@ type watchOps struct {
 	confidence int
 	tasks      string
 	window     time.Duration
-	start      bool
 }
 
 var watchFlags watchOps

@@ -32,9 +32,9 @@ type LilyNodeAPI struct {
 	Scheduler *schedule.Scheduler
 }
 
-func (m *LilyNodeAPI) LilyWatch(ctx context.Context, cfg *LilyWatchConfig) (schedule.JobID, error) {
+func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedule.JobID, error) {
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
-	ctx = context.Background()
+	ctx := context.Background()
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
 	db, err := SetupDatabase(ctx, cfg.Database)
@@ -79,9 +79,9 @@ func (m *LilyNodeAPI) LilyWatch(ctx context.Context, cfg *LilyWatchConfig) (sche
 	return id, nil
 }
 
-func (m *LilyNodeAPI) LilyWalk(ctx context.Context, cfg *LilyWalkConfig) (schedule.JobID, error) {
+func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (schedule.JobID, error) {
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
-	ctx = context.Background()
+	ctx := context.Background()
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
 	db, err := SetupDatabase(ctx, cfg.Database)
@@ -106,25 +106,25 @@ func (m *LilyNodeAPI) LilyWalk(ctx context.Context, cfg *LilyWalkConfig) (schedu
 	return id, nil
 }
 
-func (m *LilyNodeAPI) LilyJobStart(ctx context.Context, ID schedule.JobID) error {
+func (m *LilyNodeAPI) LilyJobStart(_ context.Context, ID schedule.JobID) error {
 	if err := m.Scheduler.StartJob(ID); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *LilyNodeAPI) LilyJobStop(ctx context.Context, ID schedule.JobID) error {
+func (m *LilyNodeAPI) LilyJobStop(_ context.Context, ID schedule.JobID) error {
 	if err := m.Scheduler.StopJob(ID); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *LilyNodeAPI) LilyJobList(ctx context.Context) ([]schedule.JobResult, error) {
+func (m *LilyNodeAPI) LilyJobList(_ context.Context) ([]schedule.JobResult, error) {
 	return m.Scheduler.Jobs(), nil
 }
 
-func (m *LilyNodeAPI) Open(ctx context.Context) (lens.API, lens.APICloser, error) {
+func (m *LilyNodeAPI) Open(_ context.Context) (lens.API, lens.APICloser, error) {
 	return m, func() {}, nil
 }
 
