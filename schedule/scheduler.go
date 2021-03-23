@@ -136,7 +136,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	// used as context for jobs submitted, ensure they are canceled when context is canceled.
 	s.context = ctx
 
-	s.jobsMu.Lock()
+	// we don't lock here since jobs can only be written to in the for loop following this.
 	for _, tc := range s.jobs {
 		go s.execute(tc, s.scheduledJobComplete)
 
@@ -148,7 +148,6 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		// A little jitter between scheduledTasks to reduce thundering herd effects on api.
 		wait.SleepWithJitter(s.jobDelay, 2)
 	}
-	s.jobsMu.Unlock()
 
 	// Wait until the context is done and handle new jobs as they are submitted.
 	for {
@@ -229,6 +228,8 @@ var InvalidJobID = JobID(0)
 type JobID int
 
 func (s *Scheduler) Jobs() []JobResult {
+	s.jobsMu.Lock()
+	defer s.jobsMu.Unlock()
 	if len(s.jobs) == 0 {
 		return nil
 	}
@@ -250,6 +251,7 @@ func (s *Scheduler) execute(tc *JobConfig, complete chan struct{}) {
 	ctx, cancel := context.WithCancel(s.context)
 	tc.cancel = cancel
 	tc.running = true
+
 	// Report job is complete when this goroutine exits
 	defer func() {
 		complete <- struct{}{}
