@@ -104,11 +104,6 @@ func walk(cctx *cli.Context) error {
 	if err != nil {
 		return xerrors.Errorf("setup indexer: %w", err)
 	}
-	defer func() {
-		if err := tsIndexer.Close(); err != nil {
-			log.Errorw("failed to close tipset indexer cleanly", "error", err)
-		}
-	}()
 
 	scheduler.Add(schedule.TaskConfig{
 		Name:                "Walker",
