@@ -31,6 +31,7 @@ func TestExecuteVectors(t *testing.T) {
 	for _, vp := range vectorPaths {
 		vpath := vp
 		t.Run(testName(vpath), func(t *testing.T) {
+			t.Parallel()
 			runner, err := NewRunner(ctx, vpath, 0)
 			if err != nil {
 				t.Fatal(err)
