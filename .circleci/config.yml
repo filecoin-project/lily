@@ -166,7 +166,7 @@ jobs:
           name: Lint
           command: |
             support/tools/bin/golangci-lint run -v \
-              --timeout 3m --concurrency << parameters.concurrency >> ./...
+              --timeout 5m --concurrency << parameters.concurrency >> ./...
   lint-all:
     <<: *lint
 
