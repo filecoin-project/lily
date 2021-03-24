@@ -17,13 +17,13 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/lotus/extern/sector-storage/ffiwrapper"
 	"github.com/filecoin-project/lotus/journal"
-	"github.com/filecoin-project/lotus/lib/bufbstore"
 	"github.com/filecoin-project/lotus/lib/ulimit"
 	"github.com/filecoin-project/lotus/node/impl"
 	"github.com/filecoin-project/lotus/node/impl/full"
@@ -106,6 +106,7 @@ type APIOpener struct {
 func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) {
 	return o.capi, lens.APICloser(func() {}), nil
 }
+
 func (o *APIOpener) CaptureAsCAR(ctx context.Context, w io.Writer, roots ...cid.Cid) error {
 	carWalkFn := func(nd format.Node) (out []*format.Link, err error) {
 		for _, link := range nd.Links() {
@@ -138,7 +139,7 @@ type CaptureAPI struct {
 }
 
 func (c *CaptureAPI) Store() adt.Store {
-	cachedStore := bufbstore.NewBufferedBstore(c.tbs)
+	cachedStore := blockstore.NewBuffered(c.tbs)
 	cs := cbor.NewCborStore(cachedStore)
 	adtStore := adt.WrapStore(c.Context, cs)
 	return adtStore
@@ -153,7 +154,7 @@ func (c *CaptureAPI) StateGetActor(ctx context.Context, addr address.Address, ts
 	if err != nil {
 		return nil, err
 	}
-	//c.tbs.Record(act.Head)
+	// c.tbs.Record(act.Head)
 	return act, nil
 }
 

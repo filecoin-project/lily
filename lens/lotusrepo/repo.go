@@ -10,13 +10,13 @@ import (
 	"github.com/filecoin-project/go-multistore"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/lotus/extern/sector-storage/ffiwrapper"
 	"github.com/filecoin-project/lotus/journal"
-	"github.com/filecoin-project/lotus/lib/bufbstore"
 	"github.com/filecoin-project/lotus/lib/ulimit"
 	marketevents "github.com/filecoin-project/lotus/markets/loggers"
 	"github.com/filecoin-project/lotus/node/impl"
@@ -116,7 +116,7 @@ func (ra *RepoAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *ty
 
 func (ra *RepoAPI) Store() adt.Store {
 	bs := ra.FullNodeAPI.ChainAPI.Chain.Blockstore()
-	cachedStore := bufbstore.NewBufferedBstore(bs)
+	cachedStore := blockstore.NewBuffered(bs)
 	cs := cbor.NewCborStore(cachedStore)
 	adtStore := adt.WrapStore(ra.Context, cs)
 	return adtStore

@@ -13,7 +13,7 @@ require (
 	github.com/filecoin-project/go-fil-markets v1.1.9
 	github.com/filecoin-project/go-multistore v0.0.3
 	github.com/filecoin-project/go-state-types v0.1.0
-	github.com/filecoin-project/lotus v1.5.0
+	github.com/filecoin-project/lotus v1.5.3
 	github.com/filecoin-project/specs-actors v0.9.13
 	github.com/filecoin-project/specs-actors/v2 v2.3.4
 	github.com/filecoin-project/specs-actors/v3 v3.0.3
@@ -68,8 +68,8 @@ replace (
 )
 
 // Supports go-ipld-prime v7
-// TODO: remove once https://github.com/filecoin-project/statediff/pull/155 is merged
-replace github.com/filecoin-project/statediff => github.com/filecoin-project/statediff v0.0.19-0.20210225063407-9e38aa4b7ede
+// TODO: remove once https://github.com/filecoin-project/statediff/pull/175 is merged
+replace github.com/filecoin-project/statediff => github.com/iand/statediff v0.0.23-0.20210324172629-d54151645002
 
 // Supports go-ipld-prime v7
 // TODO: remove once https://github.com/filecoin-project/go-hamt-ipld/pull/70 is merged to github.com/filecoin-project/go-hamt-ipld
