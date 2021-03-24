@@ -122,7 +122,7 @@ func setupDatabase(ctx context.Context, cfg *LilyDatabaseConfig) (*storage.Datab
 
 	// Make sure the schema is a compatible with what this version of Visor requires
 	if err := db.VerifyCurrentSchema(ctx); err != nil {
-		db.Close(ctx)
+		db.Close(ctx) // nolint: errcheck
 		return nil, xerrors.Errorf("verify schema: %w", err)
 	}
 
