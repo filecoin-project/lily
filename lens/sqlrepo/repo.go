@@ -15,15 +15,13 @@ import (
 
 func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 	pgbsCfg := pgchainbs.PgBlockstoreConfig{
-		PgxConnectString:        c.String("repo"),
-		CacheInactiveBeforeRead: true,
-		DisableBlocklinkParsing: true,
-		LogCacheStatsOnUSR1:     true,
-	}
-
-	pgbsCfg.InstanceNamespace = c.String("lens-postgres-namespace")
-	if pgbsCfg.InstanceNamespace == "" {
-		pgbsCfg.InstanceNamespace = "main"
+		PgxConnectString:          c.String("repo"),
+		InstanceNamespace:         c.String("lens-postgres-namespace"),
+		CachePreloadRecentBlocks:  c.Bool("lens-postgres-preload-recents"),
+		PrefetchDagLayersOnDbRead: int32(c.Int("lens-postgres-get-prefetch-depth")),
+		CacheInactiveBeforeRead:   true,
+		DisableBlocklinkParsing:   true,
+		LogCacheStatsOnUSR1:       true,
 	}
 
 	if customCacheSize := c.Int("lens-cache-hint"); customCacheSize != 1024*1024 {

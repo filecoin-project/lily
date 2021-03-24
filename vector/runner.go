@@ -110,11 +110,6 @@ func (r *Runner) Run(ctx context.Context) error {
 	if err != nil {
 		return xerrors.Errorf("setup indexer: %w", err)
 	}
-	defer func() {
-		if err := tsIndexer.Close(); err != nil {
-			log.Errorw("failed to close tipset indexer cleanly", "error", err)
-		}
-	}()
 
 	if err := chain.NewWalker(tsIndexer, r.opener, r.schema.Params.From, r.schema.Params.To).Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 		return err
