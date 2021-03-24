@@ -6,6 +6,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/blockstore"
 	builtininit "github.com/filecoin-project/lotus/chain/actors/builtin/init"
 	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/state"
@@ -330,11 +331,25 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 	return emsgs, nil
 }
 
+var _ blockstore.Blockstore = (*apiBlockstore)(nil)
+
 type apiBlockstore struct {
 	api interface {
 		ChainReadObj(context.Context, cid.Cid) ([]byte, error)
 		ChainHasObj(context.Context, cid.Cid) (bool, error)
 	}
+}
+
+func (a *apiBlockstore) View(c cid.Cid, callback func([]byte) error) error {
+	obj, err := a.api.ChainReadObj(context.Background(), c)
+	if err != nil {
+		return err
+	}
+	return callback(obj)
+}
+
+func (a *apiBlockstore) DeleteMany(cids []cid.Cid) error {
+	return xerrors.Errorf("DeleteMany not supported by apiBlockstore")
 }
 
 func (a *apiBlockstore) Get(c cid.Cid) (blocks.Block, error) {

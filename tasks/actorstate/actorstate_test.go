@@ -46,7 +46,7 @@ type MockAPI struct {
 }
 
 func NewMockAPI(test testing.TB) *MockAPI {
-	bs := bstore.NewTemporarySync()
+	bs := bstore.NewMemorySync()
 	return &MockAPI{
 		t:       test,
 		bs:      bs,

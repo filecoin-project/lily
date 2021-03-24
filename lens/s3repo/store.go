@@ -17,6 +17,8 @@ import (
 
 var log = logging.Logger("sql")
 
+var _ blockstore.Blockstore = (*S3Blockstore)(nil)
+
 type S3Blockstore struct {
 	prefix string
 	client http.Client
@@ -58,6 +60,14 @@ func (sbs *S3Blockstore) Get(c cid.Cid) (blocks.Block, error) {
 		return nil, err
 	}
 	return blocks.NewBlockWithCid(buf, c)
+}
+
+func (sbs *S3Blockstore) View(cid cid.Cid, callback func([]byte) error) error {
+	blk, err := sbs.Get(cid)
+	if err != nil {
+		return err
+	}
+	return callback(blk.RawData())
 }
 
 func (sbs *S3Blockstore) GetSize(c cid.Cid) (size int, err error) {
@@ -114,5 +124,9 @@ func (sbs *S3Blockstore) PutMany(blks []blocks.Block) error {
 }
 
 func (sbs *S3Blockstore) DeleteBlock(cid.Cid) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (sbs *S3Blockstore) DeleteMany(cid []cid.Cid) error {
 	return fmt.Errorf("not implemented")
 }

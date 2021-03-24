@@ -30,7 +30,6 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	dstore "github.com/ipfs/go-datastore"
-	cbor "github.com/ipfs/go-ipld-cbor"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	"golang.org/x/xerrors"
 
@@ -82,8 +81,9 @@ func NewAPIOpener(ctx context.Context, bs blockstore.Blockstore, head HeadMthd, 
 	sm := stmgr.NewStateManager(cs)
 
 	rapi.cs = cs
+	rapi.ExposedBlockstore = bs
 	rapi.FullNodeAPI.ChainAPI.Chain = cs
-	rapi.FullNodeAPI.ChainAPI.ChainModuleAPI = &full.ChainModule{Chain: cs}
+	rapi.FullNodeAPI.ChainAPI.ChainModuleAPI = &full.ChainModule{Chain: cs, ExposedBlockstore: bs}
 	rapi.FullNodeAPI.StateAPI.Chain = cs
 	rapi.FullNodeAPI.StateAPI.StateManager = sm
 	rapi.FullNodeAPI.StateAPI.StateModuleAPI = &full.StateModule{Chain: cs, StateManager: sm}
@@ -118,7 +118,7 @@ type LensAPI struct {
 
 // TODO: Remove. See https://github.com/filecoin-project/sentinel-visor/issues/196
 func (ra *LensAPI) StateGetActor(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
-	return lens.OptimizedStateGetActorWithFallback(ctx, ra.cs.Store(ctx), ra.FullNodeAPI.ChainAPI, ra.FullNodeAPI.StateAPI, actor, tsk)
+	return lens.OptimizedStateGetActorWithFallback(ctx, ra.cs.ActorStore(ctx), ra.FullNodeAPI.ChainAPI, ra.FullNodeAPI.StateAPI, actor, tsk)
 }
 
 func (ra *LensAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
@@ -126,11 +126,7 @@ func (ra *LensAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *ty
 }
 
 func (ra *LensAPI) Store() adt.Store {
-	bs := ra.FullNodeAPI.ChainAPI.Chain.Blockstore()
-	bufferedStore := blockstore.NewBuffered(bs)
-	cs := cbor.NewCborStore(bufferedStore)
-	adtStore := adt.WrapStore(ra.Context, cs)
-	return adtStore
+	return ra.FullNodeAPI.ChainAPI.Chain.ActorStore(ra.Context)
 }
 
 func (ra *LensAPI) ClientStartDeal(ctx context.Context, params *api.StartDealParams) (*cid.Cid, error) {
@@ -241,12 +237,12 @@ func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts,
 		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", ts.Key(), pts.Key())
 	}
 
-	stateTree, err := state.LoadStateTree(cs.Store(ctx), ts.ParentState())
+	stateTree, err := state.LoadStateTree(cs.ActorStore(ctx), ts.ParentState())
 	if err != nil {
 		return nil, xerrors.Errorf("load state tree: %w", err)
 	}
 
-	parentStateTree, err := state.LoadStateTree(cs.Store(ctx), pts.ParentState())
+	parentStateTree, err := state.LoadStateTree(cs.ActorStore(ctx), pts.ParentState())
 	if err != nil {
 		return nil, xerrors.Errorf("load state tree: %w", err)
 	}
@@ -256,7 +252,7 @@ func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts,
 		return nil, xerrors.Errorf("getting init actor: %w", err)
 	}
 
-	initActorState, err := builtininit.Load(cs.Store(ctx), initActor)
+	initActorState, err := builtininit.Load(cs.ActorStore(ctx), initActor)
 	if err != nil {
 		return nil, xerrors.Errorf("loading init actor state: %w", err)
 	}
@@ -357,7 +353,7 @@ func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts,
 	}
 
 	// Retrieve receipts using a block from the child tipset
-	rs, err := adt.AsArray(cs.Store(ctx), ts.Blocks()[0].ParentMessageReceipts)
+	rs, err := adt.AsArray(cs.ActorStore(ctx), ts.Blocks()[0].ParentMessageReceipts)
 	if err != nil {
 		return nil, xerrors.Errorf("amt load: %w", err)
 	}
@@ -371,7 +367,7 @@ func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts,
 	vmi, err := vm.NewVM(ctx, &vm.VMOpts{
 		StateBase: pts.ParentState(),
 		Epoch:     pts.Height(),
-		Bstore:    cs.Blockstore(),
+		Bstore:    cs.StateBlockstore(),
 	})
 	if err != nil {
 		return nil, xerrors.Errorf("creating temporary vm: %w", err)

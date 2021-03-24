@@ -10,7 +10,6 @@ import (
 	"github.com/filecoin-project/go-multistore"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
-	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -25,7 +24,6 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/runtime/proof"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
-	cbor "github.com/ipfs/go-ipld-cbor"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/urfave/cli/v2"
 
@@ -72,7 +70,7 @@ func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 		lr.Close() // nolint: errcheck
 	}
 
-	bs, err := lr.Blockstore(c.Context, repo.BlockstoreChain)
+	bs, err := lr.Blockstore(c.Context, repo.UniversalBlockstore)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -89,8 +87,9 @@ func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 
 	sm := stmgr.NewStateManager(cs)
 
+	rapi.ExposedBlockstore = bs
 	rapi.FullNodeAPI.ChainAPI.Chain = cs
-	rapi.FullNodeAPI.ChainAPI.ChainModuleAPI = &full.ChainModule{Chain: cs}
+	rapi.FullNodeAPI.ChainAPI.ChainModuleAPI = &full.ChainModule{Chain: cs, ExposedBlockstore: bs}
 	rapi.FullNodeAPI.StateAPI.Chain = cs
 	rapi.FullNodeAPI.StateAPI.StateManager = sm
 	rapi.FullNodeAPI.StateAPI.StateModuleAPI = &full.StateModule{Chain: cs, StateManager: sm}
@@ -115,16 +114,12 @@ func (ra *RepoAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *ty
 }
 
 func (ra *RepoAPI) Store() adt.Store {
-	bs := ra.FullNodeAPI.ChainAPI.Chain.Blockstore()
-	cachedStore := blockstore.NewBuffered(bs)
-	cs := cbor.NewCborStore(cachedStore)
-	adtStore := adt.WrapStore(ra.Context, cs)
-	return adtStore
+	return ra.FullNodeAPI.ChainAPI.Chain.ActorStore(ra.Context)
 }
 
 // TODO: Remove. See https://github.com/filecoin-project/sentinel-visor/issues/196
 func (ra *RepoAPI) StateGetActor(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
-	return lens.OptimizedStateGetActorWithFallback(ctx, ra.ChainAPI.Chain.Store(ctx), ra.ChainAPI, ra.StateAPI, actor, tsk)
+	return lens.OptimizedStateGetActorWithFallback(ctx, ra.ChainAPI.Chain.ActorStore(ctx), ra.ChainAPI, ra.StateAPI, actor, tsk)
 }
 
 func (ra *RepoAPI) ClientStartDeal(ctx context.Context, params *api.StartDealParams) (*cid.Cid, error) {

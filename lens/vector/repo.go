@@ -68,7 +68,7 @@ func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 		lr.Close() // nolint: errcheck
 	}
 
-	bs, err := lr.Blockstore(c.Context, repo.BlockstoreChain)
+	bs, err := lr.Blockstore(c.Context, repo.UniversalBlockstore)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -88,8 +88,9 @@ func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 
 	sm := stmgr.NewStateManager(cs)
 
+	capi.ExposedBlockstore = bs
 	capi.FullNodeAPI.ChainAPI.Chain = cs
-	capi.FullNodeAPI.ChainAPI.ChainModuleAPI = &full.ChainModule{Chain: cs}
+	capi.FullNodeAPI.ChainAPI.ChainModuleAPI = &full.ChainModule{Chain: cs, ExposedBlockstore: bs}
 	capi.FullNodeAPI.StateAPI.Chain = cs
 	capi.FullNodeAPI.StateAPI.StateManager = sm
 	capi.FullNodeAPI.StateAPI.StateModuleAPI = &full.StateModule{Chain: cs, StateManager: sm}
@@ -150,7 +151,7 @@ func (c *CaptureAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *
 }
 
 func (c *CaptureAPI) StateGetActor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error) {
-	act, err := lens.OptimizedStateGetActorWithFallback(ctx, c.ChainAPI.Chain.Store(ctx), c.ChainAPI, c.StateAPI, addr, tsk)
+	act, err := lens.OptimizedStateGetActorWithFallback(ctx, c.ChainAPI.Chain.ActorStore(ctx), c.ChainAPI, c.StateAPI, addr, tsk)
 	if err != nil {
 		return nil, err
 	}
