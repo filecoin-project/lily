@@ -162,6 +162,7 @@ jobs:
     steps:
       - install-deps
       - prepare
+      - run: make deps
       - run:
           command: make -j3 support/tools/bin/golangci-lint
       - run:
