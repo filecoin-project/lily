@@ -10,9 +10,9 @@ import (
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/go-state-types/crypto"
 	"github.com/filecoin-project/lotus/api"
+	bstore "github.com/filecoin-project/lotus/blockstore"
 	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
-	bstore "github.com/filecoin-project/lotus/lib/blockstore"
 	sa0account "github.com/filecoin-project/specs-actors/actors/builtin/account"
 	sa0init "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	samarket "github.com/filecoin-project/specs-actors/actors/builtin/market"
@@ -46,7 +46,7 @@ type MockAPI struct {
 }
 
 func NewMockAPI(test testing.TB) *MockAPI {
-	bs := bstore.NewTemporarySync()
+	bs := bstore.NewMemorySync()
 	return &MockAPI{
 		t:       test,
 		bs:      bs,
