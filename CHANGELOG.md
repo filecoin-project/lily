@@ -5,6 +5,29 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.5.5"></a>
+## [v0.5.5] - 2021-03-25
+
+### Fix
+ - only close TIpSetIndexer in walk and watch
+ - embed genesis block in executable
+ - ignore false positive gosec failure in wait package
+ - close TipSetObs in walker and watcher
+
+### Feat
+ - add benchmarking of vectors
+ - record tipset cache metrics during watch
+ - Support current sqlotus schema
+ - sqlotus dag prefetch option
+
+### Chore
+ - update for Lotus 1.5.3
+ - increase linter timout in ci
+ - remove lint github action
+ - fix the linter
+
+
+
 <a name="v0.5.4"></a>
 ## [v0.5.4] - 2021-03-09
 
