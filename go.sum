@@ -321,6 +321,8 @@ github.com/filecoin-project/specs-actors/v3 v3.0.3 h1:bq9B1Jnq+Z0A+Yj3KnYhN3kcTp
 github.com/filecoin-project/specs-actors/v3 v3.0.3/go.mod h1:oMcmEed6B7H/wHabM3RQphTIhq0ibAKsbpYs+bQ/uxQ=
 github.com/filecoin-project/specs-storage v0.1.1-0.20201105051918-5188d9774506 h1:Ur/l2+6qN+lQiqjozWWc5p9UDaAMDZKTlDS98oRnlIw=
 github.com/filecoin-project/specs-storage v0.1.1-0.20201105051918-5188d9774506/go.mod h1:nJRRM7Aa9XVvygr3W9k6xGF46RWzr2zxF/iGoAIfA/g=
+github.com/filecoin-project/statediff v0.0.23-0.20210325142844-f4ed79079579 h1:OT0dxEo0cDfzs8QRH+ft0akCSgUjYPdYxMjcWldCnjc=
+github.com/filecoin-project/statediff v0.0.23-0.20210325142844-f4ed79079579/go.mod h1:Ic4g5jsP7t0cBYWaM+5/M/JzFyV52xPXfGQubAz6Pw8=
 github.com/filecoin-project/test-vectors/schema v0.0.5/go.mod h1:iQ9QXLpYWL3m7warwvK1JC/pTri8mnfEmKygNDqqY6E=
 github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568/go.mod h1:xEzjJPgXI435gkrCt3MPfRiAkVrwSbHsst4LCFVfpJc=
 github.com/flynn/noise v0.0.0-20180327030543-2492fe189ae6 h1:u/UEqS66A5ckRmS4yNpjmVH56sVtS/RfclBAYocb4as=
@@ -531,8 +533,6 @@ github.com/huin/goupnp v0.0.0-20180415215157-1395d1447324/go.mod h1:MZ2ZmwcBpvOo
 github.com/huin/goupnp v1.0.0 h1:wg75sLpL6DZqwHQN6E1Cfk6mtfzS45z8OV+ic+DtHRo=
 github.com/huin/goupnp v1.0.0/go.mod h1:n9v9KO1tAxYH82qOn+UTIFQDmx5n1Zxd/ClZDMX7Bnc=
 github.com/huin/goutil v0.0.0-20170803182201-1ca381bf3150/go.mod h1:PpLOETDnJ0o3iZrZfqZzyLl6l7F3c6L1oWn7OICBi6o=
-github.com/iand/statediff v0.0.23-0.20210324172629-d54151645002 h1:YRrRhNDlAmYjZuGjb24totBoWiZ03MAstamNI1G34ls=
-github.com/iand/statediff v0.0.23-0.20210324172629-d54151645002/go.mod h1:Ic4g5jsP7t0cBYWaM+5/M/JzFyV52xPXfGQubAz6Pw8=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
