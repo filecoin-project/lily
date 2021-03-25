@@ -25,6 +25,7 @@ type Job interface {
 }
 
 type JobConfig struct {
+	lk sync.Mutex
 	// ID of the task
 	id JobID
 
@@ -105,8 +106,10 @@ func NewSchedulerDaemon(mctx helpers.MetricsCtx, lc fx.Lifecycle) *Scheduler {
 
 type Scheduler struct {
 	jobs   map[JobID]*JobConfig
-	jobID  JobID
 	jobsMu sync.Mutex
+
+	jobID   JobID
+	jobIDMu sync.Mutex
 
 	jobDelay time.Duration
 
@@ -121,13 +124,14 @@ type Scheduler struct {
 	workerJobsRunning int
 }
 
-func (s *Scheduler) Submit(tc *JobConfig) JobID {
-	s.jobsMu.Lock()
-	s.jobID++
-	tc.id = s.jobID
-	s.jobsMu.Unlock()
+func (s *Scheduler) Submit(jc *JobConfig) JobID {
+	s.jobIDMu.Lock()
+	defer s.jobIDMu.Unlock()
 
-	s.jobQueue <- tc
+	s.jobID++
+	jc.id = s.jobID
+	s.jobQueue <- jc
+
 	return s.jobID
 }
 
@@ -159,11 +163,12 @@ func (s *Scheduler) Run(ctx context.Context) error {
 			return ctx.Err()
 		case newTask := <-s.jobQueue:
 			s.jobsMu.Lock()
-			s.jobs[newTask.id] = newTask
-			s.jobsMu.Unlock()
 
+			s.jobs[newTask.id] = newTask
 			newTask.log = log.With("id", newTask.id, "name", newTask.Name)
 			newTask.log.Infow("new job received")
+
+			s.jobsMu.Unlock()
 
 			go s.execute(newTask, s.workerJobComplete)
 		case <-s.scheduledJobComplete:
@@ -184,15 +189,17 @@ func (s *Scheduler) Run(ctx context.Context) error {
 func (s *Scheduler) StartJob(id JobID) error {
 	s.jobsMu.Lock()
 	defer s.jobsMu.Unlock()
-
 	job, ok := s.jobs[id]
 	if !ok {
 		return xerrors.Errorf("starting worker ID: %d not found", id)
 	}
 
+	job.lk.Lock()
 	if job.running {
 		return xerrors.Errorf("starting worker ID: %d already running", id)
 	}
+	job.lk.Unlock()
+
 	job.log.Info("starting job")
 	go s.execute(job, s.workerJobComplete)
 	return nil
@@ -232,11 +239,13 @@ type JobID int
 func (s *Scheduler) Jobs() []JobResult {
 	s.jobsMu.Lock()
 	defer s.jobsMu.Unlock()
+
 	if len(s.jobs) == 0 {
 		return nil
 	}
 	var out []JobResult
 	for _, j := range s.jobs {
+		j.lk.Lock()
 		out = append(out, JobResult{
 			ID:                  j.id,
 			Running:             j.running,
@@ -245,38 +254,45 @@ func (s *Scheduler) Jobs() []JobResult {
 			RestartOnCompletion: j.RestartOnCompletion,
 			RestartDelay:        j.RestartDelay,
 		})
+		j.lk.Unlock()
 	}
 	return out
 }
 
-func (s *Scheduler) execute(tc *JobConfig, complete chan struct{}) {
+func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 	ctx, cancel := context.WithCancel(s.context)
-	tc.cancel = cancel
-	tc.running = true
+
+	jc.lk.Lock()
+	jc.cancel = cancel
+	jc.running = true
+	jc.lk.Unlock()
 
 	// Report job is complete when this goroutine exits
 	defer func() {
 		complete <- struct{}{}
-		tc.running = false
-		tc.cancel()
-		tc.log.Info("job execution ended")
+
+		jc.lk.Lock()
+		jc.running = false
+		jc.cancel()
+		jc.lk.Unlock()
+
+		jc.log.Info("job execution ended")
 	}()
 
 	// Attempt to get the job lock if specified
-	// TODO: can this be removed? I don't think we use it, maybe we will later?
-	if tc.Locker != nil {
-		if err := tc.Locker.Lock(ctx); err != nil {
+	if jc.Locker != nil {
+		if err := jc.Locker.Lock(ctx); err != nil {
 			if errors.Is(err, storage.ErrLockNotAcquired) {
-				tc.log.Infow("job not started: lock not acquired")
+				jc.log.Infow("job not started: lock not acquired")
 				return
 			}
-			tc.log.Errorw("job not started: lock not acquired", "error", err.Error())
+			jc.log.Errorw("job not started: lock not acquired", "error", err.Error())
 			return
 		}
 		defer func() {
-			if err := tc.Locker.Unlock(ctx); err != nil {
+			if err := jc.Locker.Unlock(ctx); err != nil {
 				if !errors.Is(err, context.Canceled) {
-					tc.log.Errorw("failed to unlock job", "error", err.Error())
+					jc.log.Errorw("failed to unlock job", "error", err.Error())
 				}
 			}
 		}()
@@ -294,31 +310,31 @@ func (s *Scheduler) execute(tc *JobConfig, complete chan struct{}) {
 		}
 
 		if doneFirstRun {
-			tc.log.Infow("restarting job", "delay", tc.RestartDelay)
-			if tc.RestartDelay > 0 {
-				time.Sleep(tc.RestartDelay)
+			jc.log.Infow("restarting job", "delay", jc.RestartDelay)
+			if jc.RestartDelay > 0 {
+				time.Sleep(jc.RestartDelay)
 			}
 		} else {
-			tc.log.Info("running job")
+			jc.log.Info("running job")
 			doneFirstRun = true
 		}
 
-		err := tc.Job.Run(ctx)
+		err := jc.Job.Run(ctx)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				break
 			}
-			tc.log.Errorw("job exited with failure", "error", err.Error())
+			jc.log.Errorw("job exited with failure", "error", err.Error())
 			// TODO here is where we can add the error to some kind of job status struct
 
-			if !tc.RestartOnFailure {
+			if !jc.RestartOnFailure {
 				// Exit the job
 				break
 			}
 		} else {
-			tc.log.Info("job exited cleanly")
+			jc.log.Info("job exited cleanly")
 
-			if !tc.RestartOnCompletion {
+			if !jc.RestartOnCompletion {
 				// Exit the job
 				break
 			}
