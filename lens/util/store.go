@@ -4,15 +4,13 @@ import (
 	"context"
 	"sync/atomic"
 
-	"github.com/filecoin-project/lotus/lib/blockstore"
+	"github.com/filecoin-project/lotus/blockstore"
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
-	ds "github.com/ipfs/go-datastore"
 )
 
 func NewCachingStore(backing blockstore.Blockstore) *ProxyingBlockstore {
-	cache := ds.NewMapDatastore()
-	bs := blockstore.NewBlockstore(cache)
+	bs := blockstore.NewMemorySync()
 
 	return &ProxyingBlockstore{
 		cache: bs,
@@ -24,6 +22,17 @@ type ProxyingBlockstore struct {
 	cache blockstore.Blockstore
 	store blockstore.Blockstore
 	gets  int64 // updated atomically
+}
+
+func (pb *ProxyingBlockstore) View(key cid.Cid, callback func([]byte) error) error {
+	if err := pb.cache.View(key, callback); err == nil {
+		return nil
+	}
+	return pb.store.View(key, callback)
+}
+
+func (pb *ProxyingBlockstore) DeleteMany(keys []cid.Cid) error {
+	return pb.cache.DeleteMany(keys)
 }
 
 func (pb *ProxyingBlockstore) Get(c cid.Cid) (blocks.Block, error) {

@@ -35,7 +35,6 @@ func (c *Watcher) Run(ctx context.Context) error {
 			log.Errorw("watcher failed to close TipSetObserver", "error", err)
 		}
 	}()
-
 	for {
 		select {
 		case <-ctx.Done():
