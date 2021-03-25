@@ -84,20 +84,17 @@ func watch(cctx *cli.Context) error {
 
 	notifier := NewLotusChainNotifier(lensOpener)
 
-	scheduler := schedule.NewScheduler(cctx.Duration("task-delay"))
-
+	// TODO scheduler does not respect the ordering of these jobs, make it respect jobID when starting.
 	// Subscribe to chain head events to be passed to the watcher
-	scheduler.Add(schedule.TaskConfig{
+	scheduler := schedule.NewScheduler(cctx.Duration("task-delay"), &schedule.JobConfig{
 		Name:                "ChainHeadNotifier",
-		Task:                notifier,
+		Job:                 notifier,
 		RestartOnFailure:    true,
 		RestartOnCompletion: true, // we always want the notifier to be running
 		RestartDelay:        time.Minute,
-	})
-
-	scheduler.Add(schedule.TaskConfig{
+	}, &schedule.JobConfig{
 		Name: "Watcher",
-		Task: chain.NewWatcher(tsIndexer, notifier, cctx.Int("indexhead-confidence")),
+		Job:  chain.NewWatcher(tsIndexer, notifier, cctx.Int("indexhead-confidence")),
 		// TODO: add locker
 		// Locker:              NewGlobalSingleton(ChainHeadIndexerLockID, rctx.db), // only want one forward indexer anywhere to be running
 		RestartOnFailure:    true,

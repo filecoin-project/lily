@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/go-jsonrpc/auth"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/schedule"
 )
 
 type LilyAPI interface {
@@ -14,15 +15,38 @@ type LilyAPI interface {
 
 	AuthVerify(ctx context.Context, token string) ([]auth.Permission, error)
 
-	LilyWatchStart(ctx context.Context, cfg *LilyWatchConfig) error
+	LilyWatch(ctx context.Context, cfg *LilyWatchConfig) (schedule.JobID, error)
+	LilyWalk(ctx context.Context, cfg *LilyWalkConfig) (schedule.JobID, error)
+
+	LilyJobStart(ctx context.Context, ID schedule.JobID) error
+	LilyJobStop(ctx context.Context, ID schedule.JobID) error
+	LilyJobList(ctx context.Context) ([]schedule.JobResult, error)
 }
 
 type LilyWatchConfig struct {
-	Name       string
-	Tasks      []string
-	Window     time.Duration
-	Confidence int
-	Database   *LilyDatabaseConfig
+	Name                string
+	Tasks               []string
+	Window              time.Duration
+	Confidence          int
+	RestartOnFailure    bool
+	RestartOnCompletion bool
+	RestartDelay        time.Duration
+
+	Database *LilyDatabaseConfig
+}
+
+type LilyWalkConfig struct {
+	From                int64
+	To                  int64
+	Name                string
+	Tasks               []string
+	Window              time.Duration
+	Confidence          int
+	RestartOnFailure    bool
+	RestartOnCompletion bool
+	RestartDelay        time.Duration
+
+	Database *LilyDatabaseConfig
 }
 
 type LilyDatabaseConfig struct {

@@ -23,6 +23,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/commands/util"
 	"github.com/filecoin-project/sentinel-visor/lens/lily"
 	"github.com/filecoin-project/sentinel-visor/lens/lily/modules"
+	"github.com/filecoin-project/sentinel-visor/schedule"
 )
 
 var log = logging.Logger("lily-cli")
@@ -139,6 +140,7 @@ var LilyDaemon = &cli.Command{
 			// Start Sentinel Dep injection
 			LilyNodeAPIOption(&api),
 			node.Override(new(*events.Events), modules.NewEvents),
+			node.Override(new(*schedule.Scheduler), schedule.NewSchedulerDaemon),
 			// End Injection
 
 			node.Override(new(dtypes.Bootstrapper), isBootstrapper),

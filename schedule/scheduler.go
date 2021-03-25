@@ -3,9 +3,13 @@ package schedule
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
+	"github.com/filecoin-project/lotus/node/modules/helpers"
 	logging "github.com/ipfs/go-log/v2"
+	"go.uber.org/fx"
+	"go.uber.org/zap"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/storage"
@@ -14,159 +18,325 @@ import (
 
 var log = logging.Logger("schedule")
 
-type Task interface {
+type Job interface {
 	// Run starts running the task and blocks until the context is done or
 	// an error occurs.
 	Run(context.Context) error
 }
 
-type TaskConfig struct {
-	// Name is a human readable name for the task for use in logging
+type JobConfig struct {
+	lk sync.Mutex
+	// ID of the task
+	id JobID
+
+	// to cancel the task
+	cancel context.CancelFunc
+
+	// running is true if the job is executing, false otherwise.
+	running bool
+
+	log *zap.SugaredLogger
+
+	// Name is a human readable name for the job for use in logging
 	Name string
 
-	// Task is the task that will be executed.
-	Task Task
+	// Job is the job that will be executed.
+	Job Job
 
-	// Locker is an optional lock that must be taken before the task can execute.
+	// Locker is an optional lock that must be taken before the job can execute.
 	Locker Locker
 
-	// RestartOnFailure controls whether the task should be restarted if it stops with an error.
+	// RestartOnFailure controls whether the job should be restarted if it stops with an error.
 	RestartOnFailure bool
 
-	// RestartOnCompletion controls whether the task should be restarted if it stops without an error.
+	// RestartOnCompletion controls whether the job should be restarted if it stops without an error.
 	RestartOnCompletion bool
 
-	// RestartDelay is the amount of time to wait before restarting a stopped task
+	// RestartDelay is the amount of time to wait before restarting a stopped job
 	RestartDelay time.Duration
 }
 
-// Locker represents a general lock that a task may need to take before operating.
+// Locker represents a general lock that a job may need to take before operating.
 type Locker interface {
 	Lock(context.Context) error
 	Unlock(context.Context) error
 }
 
-func NewScheduler(taskDelay time.Duration) *Scheduler {
+func NewScheduler(jobDelay time.Duration, scheduledJobs ...*JobConfig) *Scheduler {
 	// Enforce a minimum delay
-	if taskDelay == 0 {
-		taskDelay = 100 * time.Millisecond
+	if jobDelay == 0 {
+		jobDelay = 100 * time.Millisecond
 	}
-	return &Scheduler{
-		taskDelay: taskDelay,
+	s := &Scheduler{
+		jobID:    0,
+		jobDelay: jobDelay,
+		jobQueue: make(chan *JobConfig),
+		jobs:     make(map[JobID]*JobConfig),
+
+		scheduledJobComplete: make(chan struct{}, len(scheduledJobs)),
+		scheduledJobsRunning: len(scheduledJobs),
+
+		workerJobComplete: make(chan struct{}),
+		workerJobsRunning: 0,
 	}
+
+	// scheduled jobs added here will be started when Scheduler.Run is called.
+	for _, st := range scheduledJobs {
+		s.jobID++
+		st.id = s.jobID
+		st.log = log.With("id", st.id, "name", st.Name)
+		s.jobs[s.jobID] = st
+	}
+	return s
+}
+
+func NewSchedulerDaemon(mctx helpers.MetricsCtx, lc fx.Lifecycle) *Scheduler {
+	s := NewScheduler(0)
+	go func() {
+		if err := s.Run(mctx); err != nil {
+			if err != context.Canceled {
+				log.Errorw("Scheduler Stopped", "error", err)
+			}
+			log.Infow("Scheduler Stopper", "error", err)
+		}
+	}()
+
+	return s
 }
 
 type Scheduler struct {
-	tasks     []TaskConfig
-	taskDelay time.Duration
+	jobs   map[JobID]*JobConfig
+	jobsMu sync.Mutex
+
+	jobID   JobID
+	jobIDMu sync.Mutex
+
+	jobDelay time.Duration
+
+	context context.Context
+
+	jobQueue chan *JobConfig
+
+	scheduledJobComplete chan struct{}
+	scheduledJobsRunning int
+
+	workerJobComplete chan struct{}
+	workerJobsRunning int
 }
 
-// Add add a task config to the scheduler. This must not be called after Run.
-func (s *Scheduler) Add(tc TaskConfig) {
-	s.tasks = append(s.tasks, tc)
+func (s *Scheduler) Submit(jc *JobConfig) JobID {
+	s.jobIDMu.Lock()
+	defer s.jobIDMu.Unlock()
+
+	s.jobID++
+	jc.id = s.jobID
+	s.jobQueue <- jc
+
+	return s.jobID
 }
 
-// Run starts running the scheduler and blocks until the context is done or
-// all tasks have run to completion.
+// Run starts running the scheduler and blocks until the context is done.
 func (s *Scheduler) Run(ctx context.Context) error {
-	if len(s.tasks) == 0 {
-		return xerrors.Errorf("no tasks to run")
-	}
+	log.Info("Starting Scheduler")
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	// used as context for jobs submitted, ensure they are canceled when context is canceled.
+	s.context = ctx
 
-	taskComplete := make(chan struct{}, len(s.tasks))
-	tasksRunning := len(s.tasks)
-
-	for _, tc := range s.tasks {
-		go func(tc TaskConfig) {
-			// Report task is complete when this goroutine exits
-			defer func() {
-				taskComplete <- struct{}{}
-			}()
-
-			// Attempt to get the task lock if specified
-			if tc.Locker != nil {
-				if err := tc.Locker.Lock(ctx); err != nil {
-					if errors.Is(err, storage.ErrLockNotAcquired) {
-						log.Infow("task not started: lock not acquired", "task", tc.Name)
-						return
-					}
-					log.Errorw("task not started: lock not acquired", "task", tc.Name, "error", err.Error())
-					return
-				}
-				defer func() {
-					if err := tc.Locker.Unlock(ctx); err != nil {
-						if !errors.Is(err, context.Canceled) {
-							log.Errorw("failed to unlock task", "task", tc.Name, "error", err.Error())
-						}
-					}
-				}()
-			}
-
-			// Keep this task running forever
-			doneFirstRun := false
-			for {
-
-				// Is the context done?
-				select {
-				case <-ctx.Done():
-					return
-				default:
-				}
-
-				if doneFirstRun {
-					log.Infow("restarting task", "task", tc.Name, "delay", tc.RestartDelay)
-					if tc.RestartDelay > 0 {
-						time.Sleep(tc.RestartDelay)
-					}
-				} else {
-					log.Infow("running task", "task", tc.Name)
-					doneFirstRun = true
-				}
-
-				err := tc.Task.Run(ctx)
-				if err != nil {
-					if errors.Is(err, context.Canceled) {
-						break
-					}
-					log.Errorw("task exited with failure", "task", tc.Name, "error", err.Error())
-
-					if !tc.RestartOnFailure {
-						// Exit the task
-						break
-					}
-				} else {
-					log.Infow("task exited cleanly", "task", tc.Name)
-
-					if !tc.RestartOnCompletion {
-						// Exit the task
-						break
-					}
-				}
-			}
-		}(tc)
+	// we don't lock here since jobs can only be written to in the for loop following this.
+	for _, tc := range s.jobs {
+		go s.execute(tc, s.scheduledJobComplete)
 
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 		}
-		// A little jitter between tasks to reduce thundering herd effects on api
-		wait.SleepWithJitter(s.taskDelay, 2)
+		// A little jitter between scheduledTasks to reduce thundering herd effects on api.
+		wait.SleepWithJitter(s.jobDelay, 2)
 	}
 
-	// Wait until the context is done or all tasks have been completed
+	// Wait until the context is done and handle new jobs as they are submitted.
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-taskComplete:
-			// A task has completed
-			tasksRunning--
-			if tasksRunning == 0 {
-				// All tasks have completed successfully.
-				return nil
+		case newTask := <-s.jobQueue:
+			s.jobsMu.Lock()
+
+			s.jobs[newTask.id] = newTask
+			newTask.log = log.With("id", newTask.id, "name", newTask.Name)
+			newTask.log.Infow("new job received")
+
+			s.jobsMu.Unlock()
+
+			go s.execute(newTask, s.workerJobComplete)
+		case <-s.scheduledJobComplete:
+			// A job has completed
+			s.scheduledJobsRunning--
+			if s.scheduledJobsRunning == 0 {
+				log.Info("no scheduled jobs running")
+			}
+		case <-s.workerJobComplete:
+			s.workerJobsRunning--
+			if s.workerJobsRunning == 0 {
+				log.Info("no worker jobs running")
+			}
+		}
+	}
+}
+
+func (s *Scheduler) StartJob(id JobID) error {
+	s.jobsMu.Lock()
+	defer s.jobsMu.Unlock()
+	job, ok := s.jobs[id]
+	if !ok {
+		return xerrors.Errorf("starting worker ID: %d not found", id)
+	}
+
+	job.lk.Lock()
+	if job.running {
+		return xerrors.Errorf("starting worker ID: %d already running", id)
+	}
+	job.lk.Unlock()
+
+	job.log.Info("starting job")
+	go s.execute(job, s.workerJobComplete)
+	return nil
+}
+
+func (s *Scheduler) StopJob(id JobID) error {
+	s.jobsMu.Lock()
+	defer s.jobsMu.Unlock()
+
+	job, ok := s.jobs[id]
+	if !ok {
+		return xerrors.Errorf("starting worker ID: %d not found", id)
+	}
+
+	if !job.running {
+		return xerrors.Errorf("starting worker ID: %d already running", id)
+	}
+
+	job.log.Info("stopping job")
+	job.cancel()
+	return nil
+}
+
+type JobResult struct {
+	ID                  JobID
+	Running             bool
+	Name                string
+	RestartOnFailure    bool
+	RestartOnCompletion bool
+	RestartDelay        time.Duration
+}
+
+var InvalidJobID = JobID(0)
+
+type JobID int
+
+func (s *Scheduler) Jobs() []JobResult {
+	s.jobsMu.Lock()
+	defer s.jobsMu.Unlock()
+
+	if len(s.jobs) == 0 {
+		return nil
+	}
+	var out []JobResult
+	for _, j := range s.jobs {
+		j.lk.Lock()
+		out = append(out, JobResult{
+			ID:                  j.id,
+			Running:             j.running,
+			Name:                j.Name,
+			RestartOnFailure:    j.RestartOnFailure,
+			RestartOnCompletion: j.RestartOnCompletion,
+			RestartDelay:        j.RestartDelay,
+		})
+		j.lk.Unlock()
+	}
+	return out
+}
+
+func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
+	ctx, cancel := context.WithCancel(s.context)
+
+	jc.lk.Lock()
+	jc.cancel = cancel
+	jc.running = true
+	jc.lk.Unlock()
+
+	// Report job is complete when this goroutine exits
+	defer func() {
+		complete <- struct{}{}
+
+		jc.lk.Lock()
+		jc.running = false
+		jc.cancel()
+		jc.lk.Unlock()
+
+		jc.log.Info("job execution ended")
+	}()
+
+	// Attempt to get the job lock if specified
+	if jc.Locker != nil {
+		if err := jc.Locker.Lock(ctx); err != nil {
+			if errors.Is(err, storage.ErrLockNotAcquired) {
+				jc.log.Infow("job not started: lock not acquired")
+				return
+			}
+			jc.log.Errorw("job not started: lock not acquired", "error", err.Error())
+			return
+		}
+		defer func() {
+			if err := jc.Locker.Unlock(ctx); err != nil {
+				if !errors.Is(err, context.Canceled) {
+					jc.log.Errorw("failed to unlock job", "error", err.Error())
+				}
+			}
+		}()
+	}
+
+	// Keep this job running forever
+	doneFirstRun := false
+	for {
+
+		// Is the context done?
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		if doneFirstRun {
+			jc.log.Infow("restarting job", "delay", jc.RestartDelay)
+			if jc.RestartDelay > 0 {
+				time.Sleep(jc.RestartDelay)
+			}
+		} else {
+			jc.log.Info("running job")
+			doneFirstRun = true
+		}
+
+		err := jc.Job.Run(ctx)
+		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				break
+			}
+			jc.log.Errorw("job exited with failure", "error", err.Error())
+			// TODO here is where we can add the error to some kind of job status struct
+
+			if !jc.RestartOnFailure {
+				// Exit the job
+				break
+			}
+		} else {
+			jc.log.Info("job exited cleanly")
+
+			if !jc.RestartOnCompletion {
+				// Exit the job
+				break
 			}
 		}
 	}
