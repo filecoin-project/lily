@@ -16,11 +16,10 @@ import (
 )
 
 type walkOps struct {
-	confidence int
-	from       int64
-	to         int64
-	tasks      string
-	window     time.Duration
+	from   int64
+	to     int64
+	tasks  string
+	window time.Duration
 }
 
 var walkFlags walkOps
