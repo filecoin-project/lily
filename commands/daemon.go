@@ -1,4 +1,4 @@
-package lily
+package commands
 
 import (
 	"context"
@@ -14,7 +14,6 @@ import (
 	lotusmodules "github.com/filecoin-project/lotus/node/modules"
 	"github.com/filecoin-project/lotus/node/modules/dtypes"
 	"github.com/filecoin-project/lotus/node/repo"
-	logging "github.com/ipfs/go-log/v2"
 	"github.com/mitchellh/go-homedir"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/urfave/cli/v2"
@@ -26,12 +25,10 @@ import (
 	"github.com/filecoin-project/sentinel-visor/schedule"
 )
 
-var log = logging.Logger("lily-cli")
-
 type daemonOpts struct {
 	api            string
 	repo           string
-	bootstrap      bool
+	bootstrap      bool // TODO: is this necessary - do we want to run visor in this mode?
 	config         string
 	importsnapshot string
 	genesis        string
@@ -39,45 +36,48 @@ type daemonOpts struct {
 
 var daemonFlags daemonOpts
 
-var LilyDaemon = &cli.Command{
+var DaemonCmd = &cli.Command{
 	Name:  "daemon",
-	Usage: "Start a lily daemon process",
+	Usage: "Start a visor daemon process.",
 	After: destroy,
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:        "api",
-			EnvVars:     []string{"SENTINEL_LILY_API"},
+			Name: "api",
+			// TODO: usage description
+			EnvVars:     []string{"VISOR_API"},
 			Value:       "1234",
 			Destination: &daemonFlags.api,
 		},
 		&cli.StringFlag{
 			Name:        "repo",
-			EnvVars:     []string{"SENTINEL_LILY_REPO"},
+			Usage:       "Specify path where visor should store chain state.",
+			EnvVars:     []string{"VISOR_REPO"},
 			Value:       "~/.lotus",
 			Destination: &daemonFlags.repo,
 		},
 		&cli.BoolFlag{
-			Name:        "bootstrap",
-			EnvVars:     []string{"SENTINEL_LILY_BOOTSTRAP"},
+			Name: "bootstrap",
+			// TODO: usage description
+			EnvVars:     []string{"VISOR_BOOTSTRAP"},
 			Value:       true,
 			Destination: &daemonFlags.bootstrap,
 		},
 		&cli.StringFlag{
 			Name:        "config",
-			Usage:       "specify path of config file to use",
-			EnvVars:     []string{"SENTINEL_LILY_CONFIG"},
+			Usage:       "Specify path of config file to use.",
+			EnvVars:     []string{"VISOR_CONFIG"},
 			Destination: &daemonFlags.config,
 		},
 		&cli.StringFlag{
 			Name:        "import-snapshot",
-			Usage:       "import chain state from a given chain export file or url",
-			EnvVars:     []string{"SENTINEL_LILY_SNAPSHOT"},
+			Usage:       "Import chain state from a given chain export file or url.",
+			EnvVars:     []string{"VISOR_SNAPSHOT"},
 			Destination: &daemonFlags.importsnapshot,
 		},
 		&cli.StringFlag{
 			Name:        "genesis",
-			Usage:       "genesis file to use for first node run",
-			EnvVars:     []string{"SENTINEL_LILY_GENESIS"},
+			Usage:       "Genesis file to use for first node run.",
+			EnvVars:     []string{"VISOR_GENESIS"},
 			Destination: &daemonFlags.genesis,
 		},
 	},

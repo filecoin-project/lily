@@ -1,4 +1,4 @@
-package lily
+package commands
 
 import (
 	"encoding/json"
@@ -11,13 +11,13 @@ import (
 	"github.com/filecoin-project/sentinel-visor/schedule"
 )
 
-var LilyJobCmd = &cli.Command{
+var JobCmd = &cli.Command{
 	Name:  "job",
-	Usage: "manage jobs running in lily",
+	Usage: "Manage jobs being run by the daemon.",
 	Subcommands: []*cli.Command{
-		LilyJobStartCmd,
-		LilyJobStopCmd,
-		LilyJobListCmd,
+		JobStartCmd,
+		JobStopCmd,
+		JobListCmd,
 	},
 }
 
@@ -27,7 +27,7 @@ type jobControlOpts struct {
 
 var jobControlFlag jobControlOpts
 
-var LilyJobStartCmd = &cli.Command{
+var JobStartCmd = &cli.Command{
 	Name:   "start",
 	Usage:  "start a job.",
 	Before: initialize,
@@ -47,7 +47,7 @@ var LilyJobStartCmd = &cli.Command{
 	},
 }
 
-var LilyJobStopCmd = &cli.Command{
+var JobStopCmd = &cli.Command{
 	Name:   "stop",
 	Usage:  "stop a job.",
 	Before: initialize,
@@ -67,7 +67,7 @@ var LilyJobStopCmd = &cli.Command{
 	},
 }
 
-var LilyJobListCmd = &cli.Command{
+var JobListCmd = &cli.Command{
 	Name:   "list",
 	Usage:  "list all jobs and their status",
 	Before: initialize,

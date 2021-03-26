@@ -1,4 +1,4 @@
-package lily
+package commands
 
 import (
 	"context"
@@ -15,8 +15,10 @@ import (
 
 // lilyAPI is a JSON-RPC client targeting a lily node. It's initialized in a
 // cli.BeforeFunc.
-var lilyAPI lily.LilyAPI
-var Closer jsonrpc.ClientCloser
+var (
+	lilyAPI lily.LilyAPI
+	Closer  jsonrpc.ClientCloser
+)
 
 func initialize(c *cli.Context) error {
 	var err error
@@ -32,17 +34,6 @@ func destroy(c *cli.Context) error {
 		Closer()
 	}
 	return nil
-}
-
-var LilyCmd = &cli.Command{
-	Name:  "lily",
-	Usage: "interact with the lily daemon",
-	Subcommands: []*cli.Command{
-		LilyDaemon,
-		LilyWatchCmd,
-		LilyWalkCmd,
-		LilyJobCmd,
-	},
 }
 
 func GetSentinelNodeAPI(ctx *cli.Context) (lily.LilyAPI, jsonrpc.ClientCloser, error) {
