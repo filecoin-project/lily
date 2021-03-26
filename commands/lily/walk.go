@@ -16,11 +16,10 @@ import (
 )
 
 type walkOps struct {
-	confidence int
-	from       int64
-	to         int64
-	tasks      string
-	window     time.Duration
+	from   int64
+	to     int64
+	tasks  string
+	window time.Duration
 }
 
 var walkFlags walkOps
@@ -31,13 +30,6 @@ var LilyWalkCmd = &cli.Command{
 	Before: initialize,
 	After:  destroy,
 	Flags: []cli.Flag{
-		&cli.IntFlag{
-			Name:        "indexhead-confidence",
-			Usage:       "Sets the size of the cache used to hold tipsets for possible reversion before being committed to the database",
-			Value:       2,
-			EnvVars:     []string{"SENTINEL_LILY_WALK_CONFIDENCE"},
-			Destination: &walkFlags.confidence,
-		},
 		&cli.StringFlag{
 			Name:        "tasks",
 			Usage:       "Comma separated list of tasks to run. Each task is reported separately in the database.",
@@ -48,7 +40,7 @@ var LilyWalkCmd = &cli.Command{
 		&cli.DurationFlag{
 			Name:        "window",
 			Usage:       "Duration after which any indexing work not completed will be marked incomplete",
-			Value:       builtin.EpochDurationSeconds * time.Second,
+			Value:       builtin.EpochDurationSeconds * time.Second * 10, // walks don't need to complete within a single epoch
 			EnvVars:     []string{"SENTINEL_LILY_WALK_WINDOW"},
 			Destination: &walkFlags.window,
 		},
@@ -74,7 +66,6 @@ var LilyWalkCmd = &cli.Command{
 			Name:                "lily",
 			Tasks:               strings.Split(walkFlags.tasks, ","),
 			Window:              walkFlags.window,
-			Confidence:          walkFlags.confidence,
 			From:                walkFlags.from,
 			To:                  walkFlags.to,
 			RestartDelay:        0,
