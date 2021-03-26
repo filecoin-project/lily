@@ -25,8 +25,8 @@ import (
 	"github.com/ipld/go-car"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/lotus/lib/blockstore"
 
 	"github.com/filecoin-project/sentinel-visor/chain"
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -63,7 +63,7 @@ func NewRunner(ctx context.Context, vectorPath string, cacheHint int) (*Runner, 
 		return nil, err
 	}
 	// need to go from bytes representing a car file to a blockstore, then to a Lotus API.
-	bs := blockstore.Blockstore(blockstore.NewTemporary())
+	bs := blockstore.Blockstore(blockstore.NewMemorySync())
 
 	// Read the base64-encoded CAR from the vector, and inflate the gzip.
 	buf := bytes.NewReader(vs.CAR)

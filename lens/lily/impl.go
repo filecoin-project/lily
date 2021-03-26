@@ -5,15 +5,14 @@ import (
 	"errors"
 	"sync"
 
+	"go.uber.org/fx"
+	"golang.org/x/xerrors"
+
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/lotus/lib/bufbstore"
 	"github.com/filecoin-project/lotus/node/impl/common"
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
-	cbor "github.com/ipfs/go-ipld-cbor"
-	"go.uber.org/fx"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/chain"
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -133,11 +132,7 @@ func (m *LilyNodeAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 }
 
 func (m *LilyNodeAPI) Store() adt.Store {
-	bs := m.ChainAPI.Chain.Blockstore()
-	cachedStore := bufbstore.NewBufferedBstore(bs)
-	cs := cbor.NewCborStore(cachedStore)
-	adtStore := adt.WrapStore(context.TODO(), cs)
-	return adtStore
+	return m.ChainAPI.Chain.ActorStore(context.TODO())
 }
 
 func SetupDatabase(ctx context.Context, cfg *LilyDatabaseConfig) (*storage.Database, error) {
