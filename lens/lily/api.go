@@ -41,7 +41,6 @@ type LilyWalkConfig struct {
 	Name                string
 	Tasks               []string
 	Window              time.Duration
-	Confidence          int
 	RestartOnFailure    bool
 	RestartOnCompletion bool
 	RestartDelay        time.Duration
