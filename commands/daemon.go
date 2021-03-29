@@ -99,6 +99,7 @@ var DaemonCmd = &cli.Command{
 		}
 
 		if daemonFlags.config != "" {
+			initConfig(daemonFlags.config)
 			r.SetConfigPath(daemonFlags.config)
 		}
 
