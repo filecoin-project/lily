@@ -383,6 +383,26 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 		}
 		sectorModel = append(sectorModel, sm)
 	}
+
+	// do the same for extended sectors, since they have a new deadline
+	for _, extended := range sectorChanges.Extended {
+		sm := &minermodel.MinerSectorInfo{
+			Height:                int64(ec.CurrTs.Height()),
+			MinerID:               a.Address.String(),
+			SectorID:              uint64(extended.To.SectorNumber),
+			StateRoot:             a.ParentStateRoot.String(),
+			SealedCID:             extended.To.SealedCID.String(),
+			ActivationEpoch:       int64(extended.To.Activation),
+			ExpirationEpoch:       int64(extended.To.Expiration),
+			DealWeight:            extended.To.DealWeight.String(),
+			VerifiedDealWeight:    extended.To.VerifiedDealWeight.String(),
+			InitialPledge:         extended.To.InitialPledge.String(),
+			ExpectedDayReward:     extended.To.ExpectedDayReward.String(),
+			ExpectedStoragePledge: extended.To.ExpectedStoragePledge.String(),
+		}
+		sectorModel = append(sectorModel, sm)
+	}
+
 	return preCommitModel, sectorModel, sectorDealsModel, sectorEventModel, nil
 }
 
