@@ -27,8 +27,9 @@ type LilyNodeAPI struct {
 	full.ChainAPI
 	full.StateAPI
 	common.CommonAPI
-	Events    *events.Events
-	Scheduler *schedule.Scheduler
+	Events         *events.Events
+	Scheduler      *schedule.Scheduler
+	StorageCatalog *storage.Catalog
 }
 
 func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedule.JobID, error) {
@@ -36,13 +37,13 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedu
 	ctx := context.Background()
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	db, err := SetupDatabase(ctx, cfg.Database)
+	strg, err := m.StorageCatalog.Open(ctx, cfg.Storage)
 	if err != nil {
 		return schedule.InvalidJobID, err
 	}
 
-	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the db.
-	indexer, err := chain.NewTipSetIndexer(m, db, cfg.Window, cfg.Name, cfg.Tasks)
+	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+	indexer, err := chain.NewTipSetIndexer(m, strg, cfg.Window, cfg.Name, cfg.Tasks)
 	if err != nil {
 		return schedule.InvalidJobID, err
 	}

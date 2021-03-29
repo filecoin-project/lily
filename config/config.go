@@ -1,4 +1,4 @@
-package commands
+package config
 
 import (
 	"os"
@@ -88,7 +88,7 @@ func defaultConf() Conf {
 	}
 }
 
-func initConfig(path string) error {
+func EnsureExists(path string) error {
 	_, err := os.Stat(path)
 	if err == nil {
 		return nil

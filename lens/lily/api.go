@@ -31,6 +31,7 @@ type LilyWatchConfig struct {
 	RestartOnFailure    bool
 	RestartOnCompletion bool
 	RestartDelay        time.Duration
+	Storage             string // name of storage system to use, may be empty
 
 	Database *LilyDatabaseConfig
 }
@@ -44,6 +45,7 @@ type LilyWalkConfig struct {
 	RestartOnFailure    bool
 	RestartOnCompletion bool
 	RestartDelay        time.Duration
+	Storage             string // name of storage system to use, may be empty
 
 	Database *LilyDatabaseConfig
 }

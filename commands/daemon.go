@@ -20,9 +20,11 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/commands/util"
+	"github.com/filecoin-project/sentinel-visor/config"
 	"github.com/filecoin-project/sentinel-visor/lens/lily"
 	"github.com/filecoin-project/sentinel-visor/lens/lily/modules"
 	"github.com/filecoin-project/sentinel-visor/schedule"
+	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
 type daemonOpts struct {
@@ -99,7 +101,7 @@ var DaemonCmd = &cli.Command{
 		}
 
 		if daemonFlags.config != "" {
-			initConfig(daemonFlags.config)
+			config.EnsureExists(daemonFlags.config)
 			r.SetConfigPath(daemonFlags.config)
 		}
 
@@ -142,6 +144,7 @@ var DaemonCmd = &cli.Command{
 			LilyNodeAPIOption(&api),
 			node.Override(new(*events.Events), modules.NewEvents),
 			node.Override(new(*schedule.Scheduler), schedule.NewSchedulerDaemon),
+			node.Override(new(*storage.Catalog), storage.CatalogConstructor(cfg.Storage)),
 			// End Injection
 
 			node.Override(new(dtypes.Bootstrapper), isBootstrapper),
