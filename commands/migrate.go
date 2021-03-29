@@ -6,7 +6,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-var Migrate = &cli.Command{
+var MigrateCmd = &cli.Command{
 	Name:  "migrate",
 	Usage: "Reports and verifies the current database schema version and latest available for migration. Use --to or --latest to perform a schema migration.",
 	Flags: []cli.Flag{

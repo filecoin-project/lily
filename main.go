@@ -12,7 +12,6 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/sentinel-visor/commands"
-	"github.com/filecoin-project/sentinel-visor/commands/lily"
 	"github.com/filecoin-project/sentinel-visor/version"
 )
 
@@ -188,11 +187,13 @@ func main() {
 			},
 		},
 		Commands: []*cli.Command{
-			commands.Migrate,
-			commands.Vector,
-			commands.Walk,
-			commands.Watch,
-			lily.LilyCmd,
+			commands.DaemonCmd,
+			commands.JobCmd,
+			commands.MigrateCmd,
+			commands.RunCmd,
+			commands.VectorCmd,
+			commands.WatchCmd,
+			commands.WalkCmd,
 		},
 	}
 	app.Setup()

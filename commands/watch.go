@@ -3,11 +3,14 @@ package commands
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
 	store "github.com/filecoin-project/lotus/chain/store"
+	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/filecoin-project/sentinel-visor/schedule"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/urfave/cli/v2"
@@ -16,12 +19,77 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/chain"
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/lens/lily"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
-var Watch = &cli.Command{
+type watchOps struct {
+	confidence int
+	tasks      string
+	window     time.Duration
+}
+
+var watchFlags watchOps
+
+var WatchCmd = &cli.Command{
+	Name:   "watch",
+	Usage:  "Start a daemon job to watch the head of the filecoin blockchain.",
+	Before: initialize,
+	After:  destroy,
+	Flags: []cli.Flag{
+		&cli.IntFlag{
+			Name:        "indexhead-confidence",
+			Usage:       "Sets the size of the cache used to hold tipsets for possible reversion before being committed to the database",
+			Value:       2,
+			Destination: &watchFlags.confidence,
+		},
+		&cli.StringFlag{
+			Name:        "tasks",
+			Usage:       "Comma separated list of tasks to run. Each task is reported separately in the database.",
+			Value:       strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorStatesRawTask}, ","),
+			Destination: &watchFlags.tasks,
+		},
+		&cli.DurationFlag{
+			Name:        "window",
+			Usage:       "Duration after which any indexing work not completed will be marked incomplete",
+			Value:       builtin.EpochDurationSeconds * time.Second,
+			Destination: &watchFlags.window,
+		},
+	},
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+
+		cfg := &lily.LilyWatchConfig{
+			Name:                "lily",
+			Tasks:               strings.Split(watchFlags.tasks, ","),
+			Window:              watchFlags.window,
+			Confidence:          watchFlags.confidence,
+			RestartDelay:        0,
+			RestartOnCompletion: false,
+			RestartOnFailure:    false,
+			Database: &lily.LilyDatabaseConfig{
+				URL:                  VisorCmdFlags.DB,
+				Name:                 VisorCmdFlags.Name,
+				PoolSize:             VisorCmdFlags.DBPoolSize,
+				AllowUpsert:          VisorCmdFlags.DBAllowUpsert,
+				AllowSchemaMigration: VisorCmdFlags.DBAllowMigrations,
+			},
+		}
+
+		watchID, err := lilyAPI.LilyWatch(ctx, cfg)
+		if err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(os.Stdout, "Created Watch Job: %d", watchID); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
+var RunWatchCmd = &cli.Command{
 	Name:  "watch",
 	Usage: "Watch the head of the filecoin blockchain and process blocks as they arrive.",
 	Flags: []cli.Flag{
@@ -38,10 +106,10 @@ var Watch = &cli.Command{
 			EnvVars: []string{"VISOR_WATCH_TASKS"},
 		},
 	},
-	Action: watch,
+	Action: runWatch,
 }
 
-func watch(cctx *cli.Context) error {
+func runWatch(cctx *cli.Context) error {
 	tasks := strings.Split(cctx.String("tasks"), ",")
 
 	if err := setupLogging(cctx); err != nil {
