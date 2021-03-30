@@ -77,13 +77,6 @@ var WatchCmd = &cli.Command{
 			RestartOnCompletion: false,
 			RestartOnFailure:    false,
 			Storage:             watchFlags.storage,
-			Database: &lily.LilyDatabaseConfig{
-				URL:                  VisorCmdFlags.DB,
-				Name:                 VisorCmdFlags.Name,
-				PoolSize:             VisorCmdFlags.DBPoolSize,
-				AllowUpsert:          VisorCmdFlags.DBAllowUpsert,
-				AllowSchemaMigration: VisorCmdFlags.DBAllowMigrations,
-			},
 		}
 
 		watchID, err := lilyAPI.LilyWatch(ctx, cfg)

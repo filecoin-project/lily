@@ -5,6 +5,7 @@ go 1.15
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
+	github.com/BurntSushi/toml v0.3.1
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/filecoin-project/go-address v0.0.5

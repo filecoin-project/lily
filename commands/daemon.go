@@ -142,9 +142,10 @@ var DaemonCmd = &cli.Command{
 		stop, err := node.New(ctx,
 			// Start Sentinel Dep injection
 			LilyNodeAPIOption(&api),
+			node.Override(new(*config.Conf), modules.LoadConf(daemonFlags.config)),
 			node.Override(new(*events.Events), modules.NewEvents),
 			node.Override(new(*schedule.Scheduler), schedule.NewSchedulerDaemon),
-			node.Override(new(*storage.Catalog), storage.CatalogConstructor(cfg.Storage)),
+			node.Override(new(*storage.Catalog), modules.NewStorageCatalog),
 			// End Injection
 
 			node.Override(new(dtypes.Bootstrapper), isBootstrapper),

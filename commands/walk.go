@@ -80,13 +80,6 @@ var WalkCmd = &cli.Command{
 			RestartOnCompletion: false,
 			RestartOnFailure:    false,
 			Storage:             walkFlags.storage,
-			Database: &lily.LilyDatabaseConfig{
-				URL:                  VisorCmdFlags.DB,
-				Name:                 VisorCmdFlags.Name,
-				PoolSize:             VisorCmdFlags.DBPoolSize,
-				AllowUpsert:          VisorCmdFlags.DBAllowUpsert,
-				AllowSchemaMigration: VisorCmdFlags.DBAllowMigrations,
-			},
 		}
 
 		watchID, err := lilyAPI.LilyWalk(ctx, cfg)

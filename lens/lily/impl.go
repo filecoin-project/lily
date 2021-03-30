@@ -2,11 +2,9 @@ package lily
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	"go.uber.org/fx"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -37,7 +35,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedu
 	ctx := context.Background()
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	strg, err := m.StorageCatalog.Open(ctx, cfg.Storage)
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage)
 	if err != nil {
 		return schedule.InvalidJobID, err
 	}
@@ -84,13 +82,13 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (schedule
 	ctx := context.Background()
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	db, err := SetupDatabase(ctx, cfg.Database)
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage)
 	if err != nil {
 		return schedule.InvalidJobID, err
 	}
 
-	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the db.
-	indexer, err := chain.NewTipSetIndexer(m, db, cfg.Window, cfg.Name, cfg.Tasks)
+	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+	indexer, err := chain.NewTipSetIndexer(m, strg, cfg.Window, cfg.Name, cfg.Tasks)
 	if err != nil {
 		return schedule.InvalidJobID, err
 	}
@@ -134,41 +132,6 @@ func (m *LilyNodeAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 
 func (m *LilyNodeAPI) Store() adt.Store {
 	return m.ChainAPI.Chain.ActorStore(context.TODO())
-}
-
-func SetupDatabase(ctx context.Context, cfg *LilyDatabaseConfig) (*storage.Database, error) {
-	db, err := storage.NewDatabase(ctx, cfg.URL, cfg.PoolSize, cfg.Name, cfg.AllowUpsert)
-	if err != nil {
-		return nil, xerrors.Errorf("new database: %w", err)
-	}
-
-	if err := db.Connect(ctx); err != nil {
-		if !errors.Is(err, storage.ErrSchemaTooOld) || !cfg.AllowSchemaMigration {
-			return nil, xerrors.Errorf("connect database: %w", err)
-		}
-
-		log.Infof("connect database: %v", err.Error())
-
-		// Schema is out of data and we're allowed to do schema migrations
-		log.Info("Migrating schema to latest version")
-		err := db.MigrateSchema(ctx)
-		if err != nil {
-			return nil, xerrors.Errorf("migrate schema: %w", err)
-		}
-
-		// Try to connect again
-		if err := db.Connect(ctx); err != nil {
-			return nil, xerrors.Errorf("connect database: %w", err)
-		}
-	}
-
-	// Make sure the schema is a compatible with what this version of Visor requires
-	if err := db.VerifyCurrentSchema(ctx); err != nil {
-		db.Close(ctx) // nolint: errcheck
-		return nil, xerrors.Errorf("verify schema: %w", err)
-	}
-
-	return db, nil
 }
 
 var _ LilyAPI = &LilyNodeAPI{}

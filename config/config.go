@@ -1,9 +1,11 @@
 package config
 
 import (
+	"io"
 	"os"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/filecoin-project/lotus/node/config"
 	"golang.org/x/xerrors"
 )
@@ -24,9 +26,9 @@ type StorageConf struct {
 
 type PgStorageConf struct {
 	URL             string
+	ApplicationName string
 	PoolSize        int
 	AllowUpsert     bool
-	AllowMigrations bool
 }
 
 type FileStorageConf struct {
@@ -34,8 +36,8 @@ type FileStorageConf struct {
 	Path   string
 }
 
-func defaultConf() Conf {
-	return Conf{
+func DefaultConf() *Conf {
+	return &Conf{
 		Common: config.Common{
 			API: config.API{
 				ListenAddress: "/ip4/127.0.0.1/tcp/1234/http",
@@ -67,14 +69,14 @@ func defaultConf() Conf {
 				"Database1": {
 					URL:             "postgres://postgres:password@localhost:5432/postgres",
 					PoolSize:        20,
+					ApplicationName: "visor",
 					AllowUpsert:     false,
-					AllowMigrations: false,
 				},
 				"Database2": {
 					URL:             "postgres://postgres:password@localhost:5432/postgres",
 					PoolSize:        10,
+					ApplicationName: "visor",
 					AllowUpsert:     false,
-					AllowMigrations: false,
 				},
 			},
 
@@ -101,7 +103,7 @@ func EnsureExists(path string) error {
 		return err
 	}
 
-	comm, err := config.ConfigComment(defaultConf())
+	comm, err := config.ConfigComment(DefaultConf())
 	if err != nil {
 		return xerrors.Errorf("comment: %w", err)
 	}
@@ -114,4 +116,29 @@ func EnsureExists(path string) error {
 		return xerrors.Errorf("close config: %w", err)
 	}
 	return nil
+}
+
+// FromFile loads config from a specified file. If file does not exist or is empty defaults are assumed.
+func FromFile(path string) (*Conf, error) {
+	file, err := os.Open(path)
+	switch {
+	case os.IsNotExist(err):
+		return DefaultConf(), nil
+	case err != nil:
+		return nil, err
+	}
+
+	defer file.Close() //nolint:errcheck // The file is RO
+	return FromReader(file, DefaultConf())
+}
+
+// FromReader loads config from a reader instance.
+func FromReader(reader io.Reader, def *Conf) (*Conf, error) {
+	cfg := *def
+	_, err := toml.DecodeReader(reader, &cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }
