@@ -101,7 +101,9 @@ var DaemonCmd = &cli.Command{
 		}
 
 		if daemonFlags.config != "" {
-			config.EnsureExists(daemonFlags.config)
+			if err := config.EnsureExists(daemonFlags.config); err != nil {
+				return xerrors.Errorf("ensuring config is present at %q: %w", daemonFlags.config, err)
+			}
 			r.SetConfigPath(daemonFlags.config)
 		}
 
