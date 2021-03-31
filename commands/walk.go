@@ -21,10 +21,11 @@ import (
 )
 
 type walkOps struct {
-	from   int64
-	to     int64
-	tasks  string
-	window time.Duration
+	from    int64
+	to      int64
+	tasks   string
+	window  time.Duration
+	storage string
 }
 
 var walkFlags walkOps
@@ -59,6 +60,12 @@ var WalkCmd = &cli.Command{
 			DefaultText: "MaxInt64",
 			Destination: &walkFlags.to,
 		},
+		&cli.StringFlag{
+			Name:        "storage",
+			Usage:       "Name of storage that results will be written to.",
+			Value:       "",
+			Destination: &walkFlags.storage,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
@@ -72,13 +79,7 @@ var WalkCmd = &cli.Command{
 			RestartDelay:        0,
 			RestartOnCompletion: false,
 			RestartOnFailure:    false,
-			Database: &lily.LilyDatabaseConfig{
-				URL:                  VisorCmdFlags.DB,
-				Name:                 VisorCmdFlags.Name,
-				PoolSize:             VisorCmdFlags.DBPoolSize,
-				AllowUpsert:          VisorCmdFlags.DBAllowUpsert,
-				AllowSchemaMigration: VisorCmdFlags.DBAllowMigrations,
-			},
+			Storage:             walkFlags.storage,
 		}
 
 		watchID, err := lilyAPI.LilyWalk(ctx, cfg)

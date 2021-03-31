@@ -29,6 +29,7 @@ type watchOps struct {
 	confidence int
 	tasks      string
 	window     time.Duration
+	storage    string
 }
 
 var watchFlags watchOps
@@ -57,6 +58,12 @@ var WatchCmd = &cli.Command{
 			Value:       builtin.EpochDurationSeconds * time.Second,
 			Destination: &watchFlags.window,
 		},
+		&cli.StringFlag{
+			Name:        "storage",
+			Usage:       "Name of storage that results will be written to.",
+			Value:       "",
+			Destination: &walkFlags.storage,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
@@ -69,13 +76,7 @@ var WatchCmd = &cli.Command{
 			RestartDelay:        0,
 			RestartOnCompletion: false,
 			RestartOnFailure:    false,
-			Database: &lily.LilyDatabaseConfig{
-				URL:                  VisorCmdFlags.DB,
-				Name:                 VisorCmdFlags.Name,
-				PoolSize:             VisorCmdFlags.DBPoolSize,
-				AllowUpsert:          VisorCmdFlags.DBAllowUpsert,
-				AllowSchemaMigration: VisorCmdFlags.DBAllowMigrations,
-			},
+			Storage:             watchFlags.storage,
 		}
 
 		watchID, err := lilyAPI.LilyWatch(ctx, cfg)
