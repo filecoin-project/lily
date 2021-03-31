@@ -109,6 +109,7 @@ func EnsureExists(path string) error {
 	}
 	_, err = c.Write(comm)
 	if err != nil {
+		_ = c.Close() // ignore error since we are recovering from a write error anyway
 		return xerrors.Errorf("write config: %w", err)
 	}
 
