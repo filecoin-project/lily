@@ -41,7 +41,6 @@ var daemonFlags daemonOpts
 var DaemonCmd = &cli.Command{
 	Name:  "daemon",
 	Usage: "Start a visor daemon process.",
-	After: destroy,
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name: "api",

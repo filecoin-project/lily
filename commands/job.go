@@ -22,16 +22,15 @@ var JobCmd = &cli.Command{
 }
 
 type jobControlOpts struct {
-	ID int
+	ID      int
+	apiAddr string
 }
 
 var jobControlFlag jobControlOpts
 
 var JobStartCmd = &cli.Command{
-	Name:   "start",
-	Usage:  "start a job.",
-	Before: initialize,
-	After:  destroy,
+	Name:  "start",
+	Usage: "start a job.",
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:        "ID",
@@ -39,19 +38,29 @@ var JobStartCmd = &cli.Command{
 			Required:    true,
 			Destination: &jobControlFlag.ID,
 		},
+		&cli.StringFlag{
+			Name:        "api",
+			Usage:       "Address of visor api in multiaddr format.",
+			EnvVars:     []string{"VISOR_API"},
+			Value:       "1234",
+			Destination: &jobControlFlag.apiAddr,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
+		api, closer, err := GetAPI(ctx, jobControlFlag.apiAddr)
+		if err != nil {
+			return err
+		}
+		defer closer()
 
-		return lilyAPI.LilyJobStart(ctx, schedule.JobID(jobControlFlag.ID))
+		return api.LilyJobStart(ctx, schedule.JobID(jobControlFlag.ID))
 	},
 }
 
 var JobStopCmd = &cli.Command{
-	Name:   "stop",
-	Usage:  "stop a job.",
-	Before: initialize,
-	After:  destroy,
+	Name:  "stop",
+	Usage: "stop a job.",
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:        "ID",
@@ -59,23 +68,47 @@ var JobStopCmd = &cli.Command{
 			Required:    true,
 			Destination: &jobControlFlag.ID,
 		},
+		&cli.StringFlag{
+			Name:        "api",
+			Usage:       "Address of visor api in multiaddr format.",
+			EnvVars:     []string{"VISOR_API"},
+			Value:       "1234",
+			Destination: &jobControlFlag.apiAddr,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
+		api, closer, err := GetAPI(ctx, jobControlFlag.apiAddr)
+		if err != nil {
+			return err
+		}
+		defer closer()
 
-		return lilyAPI.LilyJobStop(ctx, schedule.JobID(jobControlFlag.ID))
+		return api.LilyJobStop(ctx, schedule.JobID(jobControlFlag.ID))
 	},
 }
 
 var JobListCmd = &cli.Command{
-	Name:   "list",
-	Usage:  "list all jobs and their status",
-	Before: initialize,
-	After:  destroy,
+	Name:  "list",
+	Usage: "list all jobs and their status",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:        "api",
+			Usage:       "Address of visor api in multiaddr format.",
+			EnvVars:     []string{"VISOR_API"},
+			Value:       "1234",
+			Destination: &jobControlFlag.apiAddr,
+		},
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
+		api, closer, err := GetAPI(ctx, jobControlFlag.apiAddr)
+		if err != nil {
+			return err
+		}
+		defer closer()
 
-		jobs, err := lilyAPI.LilyJobList(ctx)
+		jobs, err := api.LilyJobList(ctx)
 		if err != nil {
 			return err
 		}

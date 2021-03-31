@@ -3,46 +3,28 @@ package commands
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/filecoin-project/go-jsonrpc"
-	lotuscli "github.com/filecoin-project/lotus/cli"
+	cliutil "github.com/filecoin-project/lotus/cli/util"
 	"github.com/filecoin-project/lotus/node"
 	"github.com/filecoin-project/lotus/node/repo"
-	"github.com/urfave/cli/v2"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens/lily"
 )
 
-// lilyAPI is a JSON-RPC client targeting a lily node. It's initialized in a
-// cli.BeforeFunc.
-var (
-	lilyAPI lily.LilyAPI
-	Closer  jsonrpc.ClientCloser
-)
+func GetAPI(ctx context.Context, addrStr string) (lily.LilyAPI, jsonrpc.ClientCloser, error) {
+	addrStr = strings.TrimSpace(addrStr)
 
-func initialize(c *cli.Context) error {
-	var err error
-	lilyAPI, Closer, err = GetSentinelNodeAPI(c)
+	ainfo := cliutil.APIInfo{Addr: addrStr}
+
+	addr, err := ainfo.DialArgs()
 	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func destroy(c *cli.Context) error {
-	if Closer != nil {
-		Closer()
-	}
-	return nil
-}
-
-func GetSentinelNodeAPI(ctx *cli.Context) (lily.LilyAPI, jsonrpc.ClientCloser, error) {
-	addr, headers, err := lotuscli.GetRawAPI(ctx, repo.FullNode)
-	if err != nil {
-		return nil, nil, err
+		return nil, nil, xerrors.Errorf("could not get DialArgs: %w", err)
 	}
 
-	return NewSentinelNodeRPC(ctx.Context, addr, headers)
+	return NewSentinelNodeRPC(ctx, addr, ainfo.AuthHeader())
 }
 
 func NewSentinelNodeRPC(ctx context.Context, addr string, requestHeader http.Header) (lily.LilyAPI, jsonrpc.ClientCloser, error) {
