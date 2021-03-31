@@ -67,7 +67,7 @@ var WatchCmd = &cli.Command{
 			Name:        "api",
 			Usage:       "Address of visor api in multiaddr format.",
 			EnvVars:     []string{"VISOR_API"},
-			Value:       "1234",
+			Value:       "/ip4/127.0.0.1/tcp/1234",
 			Destination: &watchFlags.apiAddr,
 		},
 	},
