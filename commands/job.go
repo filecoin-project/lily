@@ -22,8 +22,9 @@ var JobCmd = &cli.Command{
 }
 
 type jobControlOpts struct {
-	ID      int
-	apiAddr string
+	ID       int
+	apiAddr  string
+	apiToken string
 }
 
 var jobControlFlag jobControlOpts
@@ -45,10 +46,17 @@ var JobStartCmd = &cli.Command{
 			Value:       "/ip4/127.0.0.1/tcp/1234",
 			Destination: &jobControlFlag.apiAddr,
 		},
+		&cli.StringFlag{
+			Name:        "api-token",
+			Usage:       "Authentication token for visor api.",
+			EnvVars:     []string{"VISOR_API_TOKEN"},
+			Value:       "",
+			Destination: &jobControlFlag.apiToken,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		api, closer, err := GetAPI(ctx, jobControlFlag.apiAddr)
+		api, closer, err := GetAPI(ctx, jobControlFlag.apiAddr, jobControlFlag.apiToken)
 		if err != nil {
 			return err
 		}
@@ -75,10 +83,17 @@ var JobStopCmd = &cli.Command{
 			Value:       "/ip4/127.0.0.1/tcp/1234",
 			Destination: &jobControlFlag.apiAddr,
 		},
+		&cli.StringFlag{
+			Name:        "api-token",
+			Usage:       "Authentication token for visor api.",
+			EnvVars:     []string{"VISOR_API_TOKEN"},
+			Value:       "",
+			Destination: &jobControlFlag.apiToken,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		api, closer, err := GetAPI(ctx, jobControlFlag.apiAddr)
+		api, closer, err := GetAPI(ctx, jobControlFlag.apiAddr, jobControlFlag.apiToken)
 		if err != nil {
 			return err
 		}
@@ -99,10 +114,17 @@ var JobListCmd = &cli.Command{
 			Value:       "/ip4/127.0.0.1/tcp/1234",
 			Destination: &jobControlFlag.apiAddr,
 		},
+		&cli.StringFlag{
+			Name:        "api-token",
+			Usage:       "Authentication token for visor api.",
+			EnvVars:     []string{"VISOR_API_TOKEN"},
+			Value:       "",
+			Destination: &jobControlFlag.apiToken,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		api, closer, err := GetAPI(ctx, jobControlFlag.apiAddr)
+		api, closer, err := GetAPI(ctx, jobControlFlag.apiAddr, jobControlFlag.apiToken)
 		if err != nil {
 			return err
 		}

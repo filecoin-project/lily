@@ -21,12 +21,13 @@ import (
 )
 
 type walkOps struct {
-	from    int64
-	to      int64
-	tasks   string
-	window  time.Duration
-	storage string
-	apiAddr string
+	from     int64
+	to       int64
+	tasks    string
+	window   time.Duration
+	storage  string
+	apiAddr  string
+	apiToken string
 }
 
 var walkFlags walkOps
@@ -72,6 +73,13 @@ var WalkCmd = &cli.Command{
 			Value:       "/ip4/127.0.0.1/tcp/1234",
 			Destination: &walkFlags.apiAddr,
 		},
+		&cli.StringFlag{
+			Name:        "api-token",
+			Usage:       "Authentication token for visor api.",
+			EnvVars:     []string{"VISOR_API_TOKEN"},
+			Value:       "",
+			Destination: &walkFlags.apiToken,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
@@ -88,7 +96,7 @@ var WalkCmd = &cli.Command{
 			Storage:             walkFlags.storage,
 		}
 
-		api, closer, err := GetAPI(ctx, walkFlags.apiAddr)
+		api, closer, err := GetAPI(ctx, walkFlags.apiAddr, walkFlags.apiToken)
 		if err != nil {
 			return err
 		}

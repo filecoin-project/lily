@@ -31,6 +31,7 @@ type watchOps struct {
 	window     time.Duration
 	storage    string
 	apiAddr    string
+	apiToken   string
 }
 
 var watchFlags watchOps
@@ -70,6 +71,13 @@ var WatchCmd = &cli.Command{
 			Value:       "/ip4/127.0.0.1/tcp/1234",
 			Destination: &watchFlags.apiAddr,
 		},
+		&cli.StringFlag{
+			Name:        "api-token",
+			Usage:       "Authentication token for visor api.",
+			EnvVars:     []string{"VISOR_API_TOKEN"},
+			Value:       "",
+			Destination: &watchFlags.apiToken,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
@@ -85,7 +93,7 @@ var WatchCmd = &cli.Command{
 			Storage:             watchFlags.storage,
 		}
 
-		api, closer, err := GetAPI(ctx, watchFlags.apiAddr)
+		api, closer, err := GetAPI(ctx, watchFlags.apiAddr, watchFlags.apiToken)
 		if err != nil {
 			return err
 		}

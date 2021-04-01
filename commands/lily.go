@@ -14,10 +14,10 @@ import (
 	"github.com/filecoin-project/sentinel-visor/lens/lily"
 )
 
-func GetAPI(ctx context.Context, addrStr string) (lily.LilyAPI, jsonrpc.ClientCloser, error) {
+func GetAPI(ctx context.Context, addrStr string, token string) (lily.LilyAPI, jsonrpc.ClientCloser, error) {
 	addrStr = strings.TrimSpace(addrStr)
 
-	ainfo := cliutil.APIInfo{Addr: addrStr}
+	ainfo := cliutil.APIInfo{Addr: addrStr, Token: []byte(token)}
 
 	addr, err := ainfo.DialArgs()
 	if err != nil {
