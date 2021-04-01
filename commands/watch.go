@@ -30,15 +30,15 @@ type watchOps struct {
 	tasks      string
 	window     time.Duration
 	storage    string
+	apiAddr    string
+	apiToken   string
 }
 
 var watchFlags watchOps
 
 var WatchCmd = &cli.Command{
-	Name:   "watch",
-	Usage:  "Start a daemon job to watch the head of the filecoin blockchain.",
-	Before: initialize,
-	After:  destroy,
+	Name:  "watch",
+	Usage: "Start a daemon job to watch the head of the filecoin blockchain.",
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:        "indexhead-confidence",
@@ -62,7 +62,21 @@ var WatchCmd = &cli.Command{
 			Name:        "storage",
 			Usage:       "Name of storage that results will be written to.",
 			Value:       "",
-			Destination: &walkFlags.storage,
+			Destination: &watchFlags.storage,
+		},
+		&cli.StringFlag{
+			Name:        "api",
+			Usage:       "Address of visor api in multiaddr format.",
+			EnvVars:     []string{"VISOR_API"},
+			Value:       "/ip4/127.0.0.1/tcp/1234",
+			Destination: &watchFlags.apiAddr,
+		},
+		&cli.StringFlag{
+			Name:        "api-token",
+			Usage:       "Authentication token for visor api.",
+			EnvVars:     []string{"VISOR_API_TOKEN"},
+			Value:       "",
+			Destination: &watchFlags.apiToken,
 		},
 	},
 	Action: func(cctx *cli.Context) error {
@@ -79,7 +93,13 @@ var WatchCmd = &cli.Command{
 			Storage:             watchFlags.storage,
 		}
 
-		watchID, err := lilyAPI.LilyWatch(ctx, cfg)
+		api, closer, err := GetAPI(ctx, watchFlags.apiAddr, watchFlags.apiToken)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		watchID, err := api.LilyWatch(ctx, cfg)
 		if err != nil {
 			return err
 		}

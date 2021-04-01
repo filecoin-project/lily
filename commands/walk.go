@@ -21,20 +21,20 @@ import (
 )
 
 type walkOps struct {
-	from    int64
-	to      int64
-	tasks   string
-	window  time.Duration
-	storage string
+	from     int64
+	to       int64
+	tasks    string
+	window   time.Duration
+	storage  string
+	apiAddr  string
+	apiToken string
 }
 
 var walkFlags walkOps
 
 var WalkCmd = &cli.Command{
-	Name:   "walk",
-	Usage:  "Start a daemon job to walk a range of the filecoin blockchain.",
-	Before: initialize,
-	After:  destroy,
+	Name:  "walk",
+	Usage: "Start a daemon job to walk a range of the filecoin blockchain.",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:        "tasks",
@@ -66,6 +66,20 @@ var WalkCmd = &cli.Command{
 			Value:       "",
 			Destination: &walkFlags.storage,
 		},
+		&cli.StringFlag{
+			Name:        "api",
+			Usage:       "Address of visor api in multiaddr format.",
+			EnvVars:     []string{"VISOR_API"},
+			Value:       "/ip4/127.0.0.1/tcp/1234",
+			Destination: &walkFlags.apiAddr,
+		},
+		&cli.StringFlag{
+			Name:        "api-token",
+			Usage:       "Authentication token for visor api.",
+			EnvVars:     []string{"VISOR_API_TOKEN"},
+			Value:       "",
+			Destination: &walkFlags.apiToken,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
@@ -82,7 +96,13 @@ var WalkCmd = &cli.Command{
 			Storage:             walkFlags.storage,
 		}
 
-		watchID, err := lilyAPI.LilyWalk(ctx, cfg)
+		api, closer, err := GetAPI(ctx, walkFlags.apiAddr, walkFlags.apiToken)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		watchID, err := api.LilyWalk(ctx, cfg)
 		if err != nil {
 			return err
 		}
