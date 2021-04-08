@@ -95,7 +95,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 
 		if res.Error != nil {
 			lla.Errorw("actor returned with error", "error", res.Error.Error())
-			report.ErrorsDetected = append(errorsDetected, &ActorStateError{
+			errorsDetected = append(errorsDetected, &ActorStateError{
 				Code:    res.Code.String(),
 				Name:    ActorNameByCode(res.Code),
 				Head:    res.Head.String(),
