@@ -472,6 +472,7 @@ func (t *TipSetIndexer) Close() error {
 		// wait for the persistence to finish, which is when the channel can be sent on
 		log.Debug("waiting for persistence to complete")
 		t.persistSlot <- struct{}{}
+		log.Debug("persistence completed")
 	}
 
 	// When we reach here there will always be a single token in the channel (our probe) which needs to be drained so
