@@ -51,7 +51,7 @@ type TipSetIndexer struct {
 	messageProcessors map[string]MessageProcessor
 	actorProcessors   map[string]ActorProcessor
 	name              string
-	persistSlot       chan struct{}
+	persistSlot       chan struct{} // filled with a token when a gorroutine is persisting data
 	lastTipSet        *types.TipSet
 	node              lens.API
 	opener            lens.APIOpener
@@ -331,7 +331,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	case t.persistSlot <- struct{}{}:
-		// Slot is free so we can continue
+		// Slot was free so we can continue. Slot is now taken.
 	}
 
 	// Persist all results
@@ -459,8 +459,25 @@ func (t *TipSetIndexer) closeProcessors() error {
 }
 
 func (t *TipSetIndexer) Close() error {
-	// ensure there are no persist go routines left running
-	t.persistSlot <- struct{}{}
+	log.Debug("closing tipset indexer")
+
+	// We need to ensure that any persistence goroutine has completed. Since the channel has capacity 1 we can detect
+	// when the persistence goroutine is running by attempting to send a probe value on the channel. When the channel
+	// contains a token then we are still persisting and we should wait for that to be done.
+	select {
+	case t.persistSlot <- struct{}{}:
+		// no token was in channel so there was no persistence goroutine running
+	default:
+		// channel contained a token so persistence goroutine is running
+		// wait for the persistence to finish, which is when the channel can be sent on
+		log.Debug("waiting for persistence to complete")
+		t.persistSlot <- struct{}{}
+		log.Debug("persistence completed")
+	}
+
+	// When we reach here there will always be a single token in the channel (our probe) which needs to be drained so
+	// the channel is empty for reuse.
+	<-t.persistSlot
 
 	return t.closeProcessors()
 }
