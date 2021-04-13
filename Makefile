@@ -64,9 +64,13 @@ all: build
 .PHONY: build
 build: deps visor
 
+# dummy file that marks the last time modules were updated
+build/.update-modules:
+	git submodule update --init --recursive
+	touch $@
 
 .PHONY: deps
-deps: $(BUILD_DEPS)
+deps: build/.update-modules
 	cd ./vector; ./fetch_vectors.sh
 
 # test starts dependencies and runs all tests
@@ -110,12 +114,10 @@ docker-image:
 .PHONY: clean
 clean:
 	rm -rf $(CLEAN) $(BINS)
-.PHONY: clean
-
-vector-clean:
 	rm ./vector/data/*json
 .PHONY: vector-clean
 
+.PHONY: dist-clean
 dist-clean:
 	git clean -xdff
 	git submodule deinit --all -f

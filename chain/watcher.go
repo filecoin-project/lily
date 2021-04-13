@@ -27,14 +27,9 @@ type Watcher struct {
 	cache      *TipSetCache // caches tipsets for possible reversion
 }
 
-// Run starts listening to chain head notifications and blocks until the context is done or
+// Run starts following the chain head and blocks until the context is done or
 // an error occurs.
 func (c *Watcher) Run(ctx context.Context) error {
-	defer func() {
-		if err := c.obs.Close(); err != nil {
-			log.Errorw("watcher failed to close TipSetObserver", "error", err)
-		}
-	}()
 	for {
 		select {
 		case <-ctx.Done():
