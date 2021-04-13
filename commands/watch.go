@@ -126,6 +126,12 @@ var RunWatchCmd = &cli.Command{
 			Value:   strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorStatesRawTask}, ","),
 			EnvVars: []string{"VISOR_WATCH_TASKS"},
 		},
+		&cli.DurationFlag{
+			Name:   "window",
+			Usage:  "Time window in which data extraction must be completed.",
+			Value:  builtin.EpochDurationSeconds * time.Second,
+			Hidden: true,
+		},
 	},
 	Action: runWatch,
 }
@@ -166,7 +172,7 @@ func runWatch(cctx *cli.Context) error {
 		storage = db
 	}
 
-	tsIndexer, err := chain.NewTipSetIndexer(lensOpener, storage, builtin.EpochDurationSeconds*time.Second, cctx.String("name"), tasks)
+	tsIndexer, err := chain.NewTipSetIndexer(lensOpener, storage, cctx.Duration("window"), cctx.String("name"), tasks)
 	if err != nil {
 		return xerrors.Errorf("setup indexer: %w", err)
 	}

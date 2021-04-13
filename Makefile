@@ -40,7 +40,7 @@ BUILD_DEPS+=ffi-version-check
 .PHONY: ffi-version-check
 
 
-$(MODULES): build/.update-modules ;
+$(MODULES): $(BUILD_DEPS) ;
 # dummy file that marks the last time modules were updated
 build/.update-modules:
 	git submodule update --init --recursive
@@ -63,7 +63,6 @@ all: build
 
 .PHONY: build
 build: deps visor
-
 
 .PHONY: deps
 deps: $(BUILD_DEPS)
@@ -110,12 +109,10 @@ docker-image:
 .PHONY: clean
 clean:
 	rm -rf $(CLEAN) $(BINS)
-.PHONY: clean
-
-vector-clean:
 	rm ./vector/data/*json
 .PHONY: vector-clean
 
+.PHONY: dist-clean
 dist-clean:
 	git clean -xdff
 	git submodule deinit --all -f
