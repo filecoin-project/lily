@@ -65,7 +65,7 @@ all: build
 build: deps visor
 
 .PHONY: deps
-deps: build/.update-modules
+deps: $(BUILD_DEPS)
 	cd ./vector; ./fetch_vectors.sh
 
 # test starts dependencies and runs all tests
