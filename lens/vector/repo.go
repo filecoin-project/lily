@@ -15,7 +15,6 @@ import (
 	"github.com/ipfs/go-merkledag"
 	car "github.com/ipld/go-car"
 
-	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/stmgr"
@@ -148,15 +147,6 @@ func (c *CaptureAPI) Store() adt.Store {
 
 func (c *CaptureAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
 	return util.GetExecutedMessagesForTipset(ctx, c.FullNodeAPI.ChainAPI.Chain, ts, pts)
-}
-
-func (c *CaptureAPI) StateGetActor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error) {
-	act, err := lens.OptimizedStateGetActorWithFallback(ctx, c.ChainAPI.Chain.ActorStore(ctx), c.ChainAPI, c.StateAPI, addr, tsk)
-	if err != nil {
-		return nil, err
-	}
-	// c.tbs.Record(act.Head)
-	return act, nil
 }
 
 // From https://github.com/ribasushi/ltsh/blob/5b0211033020570217b0ae37b50ee304566ac218/cmd/lotus-shed/deallifecycles.go#L41-L171
