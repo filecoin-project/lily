@@ -116,31 +116,36 @@ var WalkCmd = &cli.Command{
 var RunWalkCmd = &cli.Command{
 	Name:  "walk",
 	Usage: "Walk a range of the filecoin blockchain and process blocks as they are discovered.",
-	Flags: []cli.Flag{
-		&cli.Int64Flag{
-			Name:    "from",
-			Usage:   "Limit actor and message processing to tipsets at or above `HEIGHT`",
-			EnvVars: []string{"VISOR_HEIGHT_FROM"},
+	Flags: flagSet(
+		dbConnectFlags,
+		dbBehaviourFlags,
+		runLensFlags,
+		[]cli.Flag{
+			&cli.Int64Flag{
+				Name:    "from",
+				Usage:   "Limit actor and message processing to tipsets at or above `HEIGHT`",
+				EnvVars: []string{"VISOR_HEIGHT_FROM"},
+			},
+			&cli.Int64Flag{
+				Name:        "to",
+				Usage:       "Limit actor and message processing to tipsets at or below `HEIGHT`",
+				Value:       estimateCurrentEpoch(),
+				DefaultText: "MaxInt64",
+				EnvVars:     []string{"VISOR_HEIGHT_TO"},
+			},
+			&cli.StringFlag{
+				Name:    "tasks",
+				Usage:   "Comma separated list of tasks to run. Each task is reported separately in the database.",
+				Value:   strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorStatesRawTask}, ","),
+				EnvVars: []string{"VISOR_WALK_TASKS"},
+			},
+			&cli.StringFlag{
+				Name:   "csv",
+				Usage:  "Path to write csv files.",
+				Hidden: true,
+			},
 		},
-		&cli.Int64Flag{
-			Name:        "to",
-			Usage:       "Limit actor and message processing to tipsets at or below `HEIGHT`",
-			Value:       estimateCurrentEpoch(),
-			DefaultText: "MaxInt64",
-			EnvVars:     []string{"VISOR_HEIGHT_TO"},
-		},
-		&cli.StringFlag{
-			Name:    "tasks",
-			Usage:   "Comma separated list of tasks to run. Each task is reported separately in the database.",
-			Value:   strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorStatesRawTask}, ","),
-			EnvVars: []string{"VISOR_WALK_TASKS"},
-		},
-		&cli.StringFlag{
-			Name:   "csv",
-			Usage:  "Path to write csv files.",
-			Hidden: true,
-		},
-	},
+	),
 	Action: func(cctx *cli.Context) error {
 		// Validate flags
 		heightFrom := cctx.Int64("from")

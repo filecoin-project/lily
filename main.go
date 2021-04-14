@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -37,67 +36,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	defaultName := "visor_" + version.String()
-	hostname, err := os.Hostname()
-	if err == nil {
-		defaultName = fmt.Sprintf("%s_%s_%d", defaultName, hostname, os.Getpid())
-	}
-
 	app := &cli.App{
 		Name:    "visor",
 		Usage:   "Filecoin Chain Monitoring Utility",
 		Version: version.String(),
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "lens",
-				EnvVars:     []string{"VISOR_LENS"},
-				Value:       "lotus",
-				Destination: &commands.VisorCmdFlags.Lens,
-			},
-			&cli.StringFlag{
-				Name:        "repo",
-				EnvVars:     []string{"LOTUS_PATH"},
-				Value:       "~/.lotus", // TODO: Consider XDG_DATA_HOME
-				Destination: &commands.VisorCmdFlags.Repo,
-			},
-			&cli.BoolFlag{
-				Name:        "repo-read-only",
-				EnvVars:     []string{"VISOR_REPO_READ_ONLY"},
-				Value:       true,
-				Usage:       "Open the repo in read only mode",
-				Destination: &commands.VisorCmdFlags.RepoRO,
-			},
-			&cli.StringFlag{
-				Name:        "api",
-				EnvVars:     []string{"FULLNODE_API_INFO"},
-				Value:       "",
-				Destination: &commands.VisorCmdFlags.Api,
-			},
-			&cli.StringFlag{
-				Name:        "db",
-				EnvVars:     []string{"LOTUS_DB"},
-				Value:       "",
-				Usage:       "A connection string for the postgres database, for example postgres://postgres:password@localhost:5432/postgres",
-				Destination: &commands.VisorCmdFlags.DB,
-			},
-			&cli.IntFlag{
-				Name:        "db-pool-size",
-				EnvVars:     []string{"LOTUS_DB_POOL_SIZE"},
-				Value:       75,
-				Destination: &commands.VisorCmdFlags.DBPoolSize,
-			},
-			&cli.BoolFlag{
-				Name:        "db-allow-upsert",
-				EnvVars:     []string{"LOTUS_DB_ALLOW_UPSERT"},
-				Value:       false,
-				Destination: &commands.VisorCmdFlags.DBAllowUpsert,
-			},
-			&cli.IntFlag{
-				Name:        "lens-cache-hint",
-				EnvVars:     []string{"VISOR_LENS_CACHE_HINT"},
-				Value:       1024 * 1024,
-				Destination: &commands.VisorCmdFlags.LensCacheHint,
-			},
 			&cli.StringFlag{
 				Name:        "log-level",
 				EnvVars:     []string{"GOLOG_LOG_LEVEL"},
@@ -111,13 +54,6 @@ func main() {
 				Value:       "",
 				Usage:       "A comma delimited list of named loggers and log levels formatted as name:level, for example 'logger1:debug,logger2:info'",
 				Destination: &commands.VisorCmdFlags.LogLevelNamed,
-			},
-			&cli.StringFlag{
-				Name:        "name",
-				EnvVars:     []string{"VISOR_NAME"},
-				Value:       defaultName,
-				Usage:       "A name that helps to identify this instance of visor.",
-				Destination: &commands.VisorCmdFlags.Name,
 			},
 			&cli.BoolFlag{
 				Name:        "tracing",
@@ -155,35 +91,11 @@ func main() {
 				Value:       0.0001,
 				Destination: &commands.VisorCmdFlags.JaegerSamplerParam,
 			},
-			&cli.BoolFlag{
-				Name:        "allow-schema-migration",
-				EnvVars:     []string{"VISOR_ALLOW_SCHEMA_MIGRATION"},
-				Value:       false,
-				Destination: &commands.VisorCmdFlags.DBAllowMigrations,
-			},
 			&cli.StringFlag{
 				Name:        "prometheus-port",
 				EnvVars:     []string{"VISOR_PROMETHEUS_PORT"},
 				Value:       ":9991",
 				Destination: &commands.VisorCmdFlags.PrometheusPort,
-			},
-			&cli.StringFlag{
-				Name:    "lens-postgres-namespace",
-				EnvVars: []string{"VISOR_POSTGRES_NAMESPACE"},
-				Value:   "main", // we need *some* namespace specified, otherwise GetFilTipSetHead() can't work
-				Usage:   "Namespace consulted for current chain head and recency records",
-			},
-			&cli.BoolFlag{
-				Name:    "lens-postgres-preload-recents",
-				EnvVars: []string{"VISOR_POSTGRES_PRELOAD_RECENTS"},
-				Value:   false,
-				Usage:   "List recent reads within selected namespace, and preload as much as possible into the LRU",
-			},
-			&cli.IntFlag{
-				Name:    "lens-postgres-get-prefetch-depth",
-				EnvVars: []string{"VISOR_POSTGRES_GET_PREFETCH_DEPTH"},
-				Value:   0,
-				Usage:   "Prefetch that many additional DAG layers of descendents when Get()ing a block",
 			},
 		},
 		Commands: []*cli.Command{

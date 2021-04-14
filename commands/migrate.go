@@ -9,18 +9,21 @@ import (
 var MigrateCmd = &cli.Command{
 	Name:  "migrate",
 	Usage: "Reports and verifies the current database schema version and latest available for migration. Use --to or --latest to perform a schema migration.",
-	Flags: []cli.Flag{
-		&cli.IntFlag{
-			Name:  "to",
-			Usage: "Migrate the schema to the `VERSION`.",
-			Value: 0,
+	Flags: flagSet(
+		dbConnectFlags,
+		[]cli.Flag{
+			&cli.IntFlag{
+				Name:  "to",
+				Usage: "Migrate the schema to the `VERSION`.",
+				Value: 0,
+			},
+			&cli.BoolFlag{
+				Name:  "latest",
+				Value: false,
+				Usage: "Migrate the schema to the latest version.",
+			},
 		},
-		&cli.BoolFlag{
-			Name:  "latest",
-			Value: false,
-			Usage: "Migrate the schema to the latest version.",
-		},
-	},
+	),
 	Action: func(cctx *cli.Context) error {
 		if err := setupLogging(cctx); err != nil {
 			return xerrors.Errorf("setup logging: %w", err)

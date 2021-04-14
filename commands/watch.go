@@ -113,26 +113,31 @@ var WatchCmd = &cli.Command{
 var RunWatchCmd = &cli.Command{
 	Name:  "watch",
 	Usage: "Watch the head of the filecoin blockchain and process blocks as they arrive.",
-	Flags: []cli.Flag{
-		&cli.IntFlag{
-			Name:    "indexhead-confidence",
-			Usage:   "Sets the size of the cache used to hold tipsets for possible reversion before being committed to the database",
-			Value:   2,
-			EnvVars: []string{"VISOR_INDEXHEAD_CONFIDENCE"},
+	Flags: flagSet(
+		dbConnectFlags,
+		dbBehaviourFlags,
+		runLensFlags,
+		[]cli.Flag{
+			&cli.IntFlag{
+				Name:    "indexhead-confidence",
+				Usage:   "Sets the size of the cache used to hold tipsets for possible reversion before being committed to the database",
+				Value:   2,
+				EnvVars: []string{"VISOR_INDEXHEAD_CONFIDENCE"},
+			},
+			&cli.StringFlag{
+				Name:    "tasks",
+				Usage:   "Comma separated list of tasks to run. Each task is reported separately in the database.",
+				Value:   strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorStatesRawTask}, ","),
+				EnvVars: []string{"VISOR_WATCH_TASKS"},
+			},
+			&cli.DurationFlag{
+				Name:   "window",
+				Usage:  "Time window in which data extraction must be completed.",
+				Value:  builtin.EpochDurationSeconds * time.Second,
+				Hidden: true,
+			},
 		},
-		&cli.StringFlag{
-			Name:    "tasks",
-			Usage:   "Comma separated list of tasks to run. Each task is reported separately in the database.",
-			Value:   strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorStatesRawTask}, ","),
-			EnvVars: []string{"VISOR_WATCH_TASKS"},
-		},
-		&cli.DurationFlag{
-			Name:   "window",
-			Usage:  "Time window in which data extraction must be completed.",
-			Value:  builtin.EpochDurationSeconds * time.Second,
-			Hidden: true,
-		},
-	},
+	),
 	Action: runWatch,
 }
 
