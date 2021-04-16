@@ -7,7 +7,7 @@ import (
 )
 
 func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
-	bs, err := NewBlockStore(c.String("repo"))
+	bs, err := NewBlockStore(c.String("lens-repo"))
 	if err != nil {
 		return nil, nil, err
 	}
