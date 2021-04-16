@@ -79,8 +79,8 @@ type PowerStateExtractionContext struct {
 	CurrTs    *types.TipSet
 }
 
-func (p *PowerStateExtractionContext) NoPreviousState() bool {
-	return p.CurrTs.Height() == 0 || p.PrevState == p.CurrState
+func (p *PowerStateExtractionContext) HasPreviousState() bool {
+	return !(p.CurrTs.Height() == 0 || p.PrevState == p.CurrState)
 }
 
 func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
@@ -149,7 +149,7 @@ func ExtractChainPower(ec *PowerStateExtractionContext) (*powermodel.ChainPower,
 
 func ExtractClaimedPower(ec *PowerStateExtractionContext) (powermodel.PowerActorClaimList, error) {
 	claimModel := powermodel.PowerActorClaimList{}
-	if ec.NoPreviousState() {
+	if !ec.HasPreviousState() {
 		if err := ec.CurrState.ForEachClaim(func(miner address.Address, claim power.Claim) error {
 			claimModel = append(claimModel, &powermodel.PowerActorClaim{
 				Height:          int64(ec.CurrTs.Height()),

@@ -45,7 +45,7 @@ func (m MultiSigActorExtractor) Extract(ctx context.Context, a ActorInfo, node A
 
 func ExtractMultisigTransactions(a ActorInfo, ec *MsigExtractionContext) (multisigmodel.MultisigTransactionList, error) {
 	var out multisigmodel.MultisigTransactionList
-	if ec.NoPreviousState() {
+	if !ec.HasPreviousState() {
 		if err := ec.CurrState.ForEachPendingTxn(func(id int64, txn multisig.Transaction) error {
 			// the ordering of this list must always be preserved as the 0th entry is the proposer.
 			approved := make([]string, len(txn.Approved))
@@ -122,8 +122,8 @@ type MsigExtractionContext struct {
 	CurrTs    *types.TipSet
 }
 
-func (m *MsigExtractionContext) NoPreviousState() bool {
-	return m.CurrTs.Height() == 0 || m.CurrState == m.PrevState
+func (m *MsigExtractionContext) HasPreviousState() bool {
+	return !(m.CurrTs.Height() == 0 || m.CurrState == m.PrevState)
 }
 
 func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorStateAPI) (*MsigExtractionContext, error) {
