@@ -150,19 +150,17 @@ func setupLogging(cctx *cli.Context) error {
 	}
 
 	llnamed := cctx.String("log-level-named")
-	if llnamed == "" {
-		return nil
-	}
+	if llnamed != "" {
+		for _, llname := range strings.Split(llnamed, ",") {
+			parts := strings.Split(llname, ":")
+			if len(parts) != 2 {
+				return xerrors.Errorf("invalid named log level format: %q", llname)
+			}
+			if err := logging.SetLogLevel(parts[0], parts[1]); err != nil {
+				return xerrors.Errorf("set named log level %q to %q: %w", parts[0], parts[1], err)
+			}
 
-	for _, llname := range strings.Split(llnamed, ",") {
-		parts := strings.Split(llname, ":")
-		if len(parts) != 2 {
-			return xerrors.Errorf("invalid named log level format: %q", llname)
 		}
-		if err := logging.SetLogLevel(parts[0], parts[1]); err != nil {
-			return xerrors.Errorf("set named log level %q to %q: %w", parts[0], parts[1], err)
-		}
-
 	}
 
 	log.Infof("Visor version:%s", version.String())

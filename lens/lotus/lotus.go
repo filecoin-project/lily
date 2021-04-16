@@ -66,7 +66,7 @@ func NewAPIOpener(cctx *cli.Context, cacheSize int) (*APIOpener, lens.APICloser,
 		rawaddr = ma.String()
 		rawtoken = string(token)
 	} else {
-		return nil, nil, xerrors.Errorf("cannot connect to lotus api: missing --api or --repo flags")
+		return nil, nil, xerrors.Errorf("cannot connect to lotus api: missing --lens-lotus-api or --lens-repo flags")
 	}
 
 	parsedAddr, err := ma.NewMultiaddr(rawaddr)
