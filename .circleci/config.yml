@@ -102,7 +102,7 @@ jobs:
       - prepare
       - go/mod-tidy-check
   test:
-    resource_class: medium+
+    resource_class: large
     docker:
       - image: cimg/go:1.15.2
       - image: timescale/timescaledb:1.7.4-pg12
