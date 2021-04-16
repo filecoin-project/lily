@@ -12,7 +12,7 @@ import (
 var defaultName = "visor"
 
 func init() {
-	defaultName := "visor_" + version.String()
+	defaultName = "visor_" + version.String()
 	hostname, err := os.Hostname()
 	if err == nil {
 		defaultName = fmt.Sprintf("%s_%s_%d", defaultName, hostname, os.Getpid())
