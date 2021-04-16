@@ -116,11 +116,6 @@ type LensAPI struct {
 	cs        *store.ChainStore
 }
 
-// TODO: Remove. See https://github.com/filecoin-project/sentinel-visor/issues/196
-func (ra *LensAPI) StateGetActor(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
-	return lens.OptimizedStateGetActorWithFallback(ctx, ra.cs.ActorStore(ctx), ra.FullNodeAPI.ChainAPI, ra.FullNodeAPI.StateAPI, actor, tsk)
-}
-
 func (ra *LensAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
 	return GetExecutedMessagesForTipset(ctx, ra.cs, ts, pts)
 }

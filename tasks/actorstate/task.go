@@ -147,10 +147,10 @@ func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pt
 	info := ActorInfo{
 		Actor:           act,
 		Address:         addr,
-		ParentStateRoot: pts.ParentState(),
+		ParentStateRoot: ts.ParentState(),
 		Epoch:           ts.Height(),
-		TipSet:          pts.Key(),
-		ParentTipSet:    pts.Parents(),
+		TipSet:          ts.Key(),
+		ParentTipSet:    ts.Parents(),
 	}
 
 	extracter, ok := t.extracterMap.GetExtractor(act.Code)

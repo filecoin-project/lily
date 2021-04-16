@@ -117,11 +117,6 @@ func (ra *RepoAPI) Store() adt.Store {
 	return ra.FullNodeAPI.ChainAPI.Chain.ActorStore(ra.Context)
 }
 
-// TODO: Remove. See https://github.com/filecoin-project/sentinel-visor/issues/196
-func (ra *RepoAPI) StateGetActor(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
-	return lens.OptimizedStateGetActorWithFallback(ctx, ra.ChainAPI.Chain.ActorStore(ctx), ra.ChainAPI, ra.StateAPI, actor, tsk)
-}
-
 func (ra *RepoAPI) ClientStartDeal(ctx context.Context, params *api.StartDealParams) (*cid.Cid, error) {
 	return nil, fmt.Errorf("unsupported")
 }

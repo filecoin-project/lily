@@ -111,6 +111,17 @@ func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 	if a.Epoch != 0 {
 		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet)
 		if err != nil {
+			// if the actor exists in the current state and not in the parent state then the
+			// actor was created in the current state.
+			if err == types.ErrActorNotFound {
+				return &MinerStateExtractionContext{
+					PrevState: prevState,
+					PrevTs:    prevTipset,
+					CurrActor: curActor,
+					CurrState: curState,
+					CurrTs:    curTipset,
+				}, nil
+			}
 			return nil, xerrors.Errorf("loading previous miner %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet, a.Epoch, err)
 		}
 
@@ -143,13 +154,13 @@ type MinerStateExtractionContext struct {
 	CurrTs    *types.TipSet
 }
 
-func (m *MinerStateExtractionContext) IsGenesis() bool {
-	return m.CurrTs.Height() == 0
+func (m *MinerStateExtractionContext) HasPreviousState() bool {
+	return !(m.CurrTs.Height() == 0 || m.PrevState == m.CurrState)
 }
 
 func ExtractMinerInfo(a ActorInfo, ec *MinerStateExtractionContext) (*minermodel.MinerInfo, error) {
-	if ec.IsGenesis() {
-		// genesis state special case.
+	if !ec.HasPreviousState() {
+		// means this miner was created in this tipset or genesis special case
 	} else if changed, err := ec.CurrState.MinerInfoChanged(ec.PrevState); err != nil {
 		return nil, err
 	} else if !changed {
@@ -207,7 +218,7 @@ func ExtractMinerLockedFunds(a ActorInfo, ec *MinerStateExtractionContext) (*min
 	if err != nil {
 		return nil, xerrors.Errorf("loading current miner locked funds: %w", err)
 	}
-	if !ec.IsGenesis() {
+	if ec.HasPreviousState() {
 		prevLocked, err := ec.PrevState.LockedFunds()
 		if err != nil {
 			return nil, xerrors.Errorf("loading previous miner locked funds: %w", err)
@@ -234,7 +245,7 @@ func ExtractMinerFeeDebt(a ActorInfo, ec *MinerStateExtractionContext) (*minermo
 		return nil, xerrors.Errorf("loading current miner fee debt: %w", err)
 	}
 
-	if !ec.IsGenesis() {
+	if ec.HasPreviousState() {
 		prevDebt, err := ec.PrevState.FeeDebt()
 		if err != nil {
 			return nil, xerrors.Errorf("loading previous miner fee debt: %w", err)
@@ -259,7 +270,7 @@ func ExtractMinerCurrentDeadlineInfo(a ActorInfo, ec *MinerStateExtractionContex
 		return nil, err
 	}
 
-	if !ec.IsGenesis() {
+	if ec.HasPreviousState() {
 		prevDeadlineInfo, err := ec.PrevState.DeadlineInfo(ec.CurrTs.Height())
 		if err != nil {
 			return nil, err
@@ -293,7 +304,7 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 	sectorChanges.Extended = []miner.SectorExtensions{}
 
 	sectorDealsModel := minermodel.MinerSectorDealList{}
-	if ec.IsGenesis() {
+	if !ec.HasPreviousState() {
 		msectors, err := ec.CurrState.LoadSectors(nil)
 		if err != nil {
 			return nil, nil, nil, nil, err
@@ -388,7 +399,7 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 
 func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtractionContext, node ActorStateAPI) (minermodel.MinerSectorPostList, error) {
 	// short circuit genesis state, no PoSt messages in genesis blocks.
-	if ec.IsGenesis() {
+	if !ec.HasPreviousState() {
 		return nil, nil
 	}
 	addr := actor.Address.String()
@@ -627,7 +638,7 @@ func extractMinerPartitionsDiff(ctx context.Context, ec *MinerStateExtractionCon
 	defer span.End()
 
 	// short circuit genesis state.
-	if ec.IsGenesis() {
+	if !ec.HasPreviousState() {
 		return nil, nil
 	}
 
