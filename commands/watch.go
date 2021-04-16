@@ -32,6 +32,7 @@ type watchOps struct {
 	storage    string
 	apiAddr    string
 	apiToken   string
+	name       string
 }
 
 var watchFlags watchOps
@@ -78,12 +79,23 @@ var WatchCmd = &cli.Command{
 			Value:       "",
 			Destination: &watchFlags.apiToken,
 		},
+		&cli.StringFlag{
+			Name:        "name",
+			Usage:       "Name of job for easy identification later.",
+			Value:       "",
+			Destination: &watchFlags.name,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
+		watchName := fmt.Sprintf("watch_%d", time.Now().Unix())
+		if watchFlags.name != "" {
+			watchName = watchFlags.name
+		}
+
 		cfg := &lily.LilyWatchConfig{
-			Name:                "lily",
+			Name:                watchName,
 			Tasks:               strings.Split(watchFlags.tasks, ","),
 			Window:              watchFlags.window,
 			Confidence:          watchFlags.confidence,
