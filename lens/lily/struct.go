@@ -24,15 +24,15 @@ type LilyAPIStruct struct {
 	full.StateAPI
 
 	Internal struct {
-		Store                        func() adt.Store                                                                     `perm:"admin"`
+		Store                        func() adt.Store                                                                     `perm:"read"`
 		GetExecutedMessagesForTipset func(context.Context, *types.TipSet, *types.TipSet) ([]*lens.ExecutedMessage, error) `perm:"read"`
 
-		LilyWatch func(context.Context, *LilyWatchConfig) (schedule.JobID, error) `perm:"admin"`
-		LilyWalk  func(context.Context, *LilyWalkConfig) (schedule.JobID, error)  `perm:"admin"`
+		LilyWatch func(context.Context, *LilyWatchConfig) (schedule.JobID, error) `perm:"read"`
+		LilyWalk  func(context.Context, *LilyWalkConfig) (schedule.JobID, error)  `perm:"read"`
 
-		LilyJobStart func(ctx context.Context, ID schedule.JobID) error      `perm:"admin"`
-		LilyJobStop  func(ctx context.Context, ID schedule.JobID) error      `perm:"admin"`
-		LilyJobList  func(ctx context.Context) ([]schedule.JobResult, error) `perm:"admin"`
+		LilyJobStart func(ctx context.Context, ID schedule.JobID) error      `perm:"read"`
+		LilyJobStop  func(ctx context.Context, ID schedule.JobID) error      `perm:"read"`
+		LilyJobList  func(ctx context.Context) ([]schedule.JobResult, error) `perm:"read"`
 	}
 }
 

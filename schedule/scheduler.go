@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/filecoin-project/lotus/node/modules/helpers"
+	"github.com/filecoin-project/sentinel-visor/chain"
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -34,6 +35,9 @@ type JobConfig struct {
 
 	// running is true if the job is executing, false otherwise.
 	running bool
+
+	// errorMsg will contain a (helpful) string iff a jobs execution has halted due to an error.
+	errorMsg string
 
 	log *zap.SugaredLogger
 
@@ -195,6 +199,8 @@ func (s *Scheduler) StartJob(id JobID) error {
 	}
 
 	job.lk.Lock()
+	// clear any error messages if we are starting the job
+	job.errorMsg = ""
 	if job.running {
 		return xerrors.Errorf("starting worker ID: %d already running", id)
 	}
@@ -224,12 +230,18 @@ func (s *Scheduler) StopJob(id JobID) error {
 }
 
 type JobResult struct {
-	ID                  JobID
-	Running             bool
-	Name                string
+	ID    JobID
+	Name  string
+	Type  string
+	Error string
+
+	Running bool
+
 	RestartOnFailure    bool
 	RestartOnCompletion bool
 	RestartDelay        time.Duration
+
+	Params map[string]interface{}
 }
 
 var InvalidJobID = JobID(0)
@@ -246,13 +258,17 @@ func (s *Scheduler) Jobs() []JobResult {
 	var out []JobResult
 	for _, j := range s.jobs {
 		j.lk.Lock()
+		jobType, jobParams := jobDetails(j)
 		out = append(out, JobResult{
 			ID:                  j.id,
-			Running:             j.running,
 			Name:                j.Name,
+			Type:                jobType,
+			Error:               j.errorMsg,
+			Running:             j.running,
 			RestartOnFailure:    j.RestartOnFailure,
 			RestartOnCompletion: j.RestartOnCompletion,
 			RestartDelay:        j.RestartDelay,
+			Params:              jobParams,
 		})
 		j.lk.Unlock()
 	}
@@ -282,6 +298,7 @@ func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 	// Attempt to get the job lock if specified
 	if jc.Locker != nil {
 		if err := jc.Locker.Lock(ctx); err != nil {
+			jc.errorMsg = err.Error()
 			if errors.Is(err, storage.ErrLockNotAcquired) {
 				jc.log.Infow("job not started: lock not acquired")
 				return
@@ -292,6 +309,7 @@ func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 		defer func() {
 			if err := jc.Locker.Unlock(ctx); err != nil {
 				if !errors.Is(err, context.Canceled) {
+					jc.errorMsg = err.Error()
 					jc.log.Errorw("failed to unlock job", "error", err.Error())
 				}
 			}
@@ -325,7 +343,7 @@ func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 				break
 			}
 			jc.log.Errorw("job exited with failure", "error", err.Error())
-			// TODO here is where we can add the error to some kind of job status struct
+			jc.errorMsg = err.Error()
 
 			if !jc.RestartOnFailure {
 				// Exit the job
@@ -339,5 +357,17 @@ func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 				break
 			}
 		}
+	}
+}
+
+func jobDetails(j *JobConfig) (string, map[string]interface{}) {
+	switch job := j.Job.(type) {
+	case *chain.Walker:
+		job.Params()
+		return "walker", job.Params()
+	case *chain.Watcher:
+		return "watcher", job.Params()
+	default:
+		return "unknown", nil
 	}
 }
