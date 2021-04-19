@@ -28,6 +28,7 @@ type walkOps struct {
 	storage  string
 	apiAddr  string
 	apiToken string
+	name     string
 }
 
 var walkFlags walkOps
@@ -80,12 +81,23 @@ var WalkCmd = &cli.Command{
 			Value:       "",
 			Destination: &walkFlags.apiToken,
 		},
+		&cli.StringFlag{
+			Name:        "name",
+			Usage:       "Name of job for easy identification later.",
+			Value:       "",
+			Destination: &walkFlags.name,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
+		walkName := fmt.Sprintf("walk_%d", time.Now().Unix())
+		if walkFlags.name != "" {
+			walkName = walkFlags.name
+		}
+
 		cfg := &lily.LilyWalkConfig{
-			Name:                "lily",
+			Name:                walkName,
 			Tasks:               strings.Split(walkFlags.tasks, ","),
 			Window:              walkFlags.window,
 			From:                walkFlags.from,
