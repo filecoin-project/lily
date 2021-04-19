@@ -49,6 +49,15 @@ func NewPowerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 	if a.Epoch != 0 {
 		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet)
 		if err != nil {
+			// if the actor exists in the current state and not in the parent state then the
+			// actor was created in the current state.
+			if err == types.ErrActorNotFound {
+				return &PowerStateExtractionContext{
+					PrevState: prevState,
+					CurrState: curState,
+					CurrTs:    curTipset,
+				}, nil
+			}
 			return nil, xerrors.Errorf("loading previous power actor at tipset %s epoch %d: %w", a.ParentTipSet, a.Epoch, err)
 		}
 
@@ -70,8 +79,8 @@ type PowerStateExtractionContext struct {
 	CurrTs    *types.TipSet
 }
 
-func (p *PowerStateExtractionContext) IsGenesis() bool {
-	return p.CurrTs.Height() == 0
+func (p *PowerStateExtractionContext) HasPreviousState() bool {
+	return !(p.CurrTs.Height() == 0 || p.PrevState == p.CurrState)
 }
 
 func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
@@ -140,7 +149,7 @@ func ExtractChainPower(ec *PowerStateExtractionContext) (*powermodel.ChainPower,
 
 func ExtractClaimedPower(ec *PowerStateExtractionContext) (powermodel.PowerActorClaimList, error) {
 	claimModel := powermodel.PowerActorClaimList{}
-	if ec.IsGenesis() {
+	if !ec.HasPreviousState() {
 		if err := ec.CurrState.ForEachClaim(func(miner address.Address, claim power.Claim) error {
 			claimModel = append(claimModel, &powermodel.PowerActorClaim{
 				Height:          int64(ec.CurrTs.Height()),

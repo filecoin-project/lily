@@ -45,7 +45,7 @@ func (m MultiSigActorExtractor) Extract(ctx context.Context, a ActorInfo, node A
 
 func ExtractMultisigTransactions(a ActorInfo, ec *MsigExtractionContext) (multisigmodel.MultisigTransactionList, error) {
 	var out multisigmodel.MultisigTransactionList
-	if ec.IsGenesis() {
+	if !ec.HasPreviousState() {
 		if err := ec.CurrState.ForEachPendingTxn(func(id int64, txn multisig.Transaction) error {
 			// the ordering of this list must always be preserved as the 0th entry is the proposer.
 			approved := make([]string, len(txn.Approved))
@@ -122,8 +122,8 @@ type MsigExtractionContext struct {
 	CurrTs    *types.TipSet
 }
 
-func (m *MsigExtractionContext) IsGenesis() bool {
-	return m.CurrTs.Height() == 0
+func (m *MsigExtractionContext) HasPreviousState() bool {
+	return !(m.CurrTs.Height() == 0 || m.CurrState == m.PrevState)
 }
 
 func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorStateAPI) (*MsigExtractionContext, error) {
@@ -141,6 +141,16 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 	if a.Epoch != 0 {
 		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet)
 		if err != nil {
+			// if the actor exists in the current state and not in the parent state then the
+			// actor was created in the current state.
+			if err == types.ErrActorNotFound {
+				return &MsigExtractionContext{
+					PrevState: prevState,
+					CurrActor: &a.Actor,
+					CurrState: curState,
+					CurrTs:    curTipset,
+				}, nil
+			}
 			return nil, xerrors.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet, a.Epoch, err)
 		}
 

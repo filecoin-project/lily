@@ -14,6 +14,7 @@ BINS:=
 
 GOFLAGS:=
 
+<<<<<<< HEAD
 .PHONY: all
 all: build
 
@@ -48,6 +49,8 @@ build/.update-modules:
 
 CLEAN+=build/.update-modules
 
+=======
+>>>>>>> master
 # tools
 toolspath:=support/tools
 
@@ -121,7 +124,10 @@ dist-clean:
 test-coverage:
 	VISOR_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test -coverprofile=coverage.out ./...
 
+<<<<<<< HEAD
 # tools
+=======
+>>>>>>> master
 
 $(toolspath)/bin/golangci-lint: $(toolspath)/go.mod
 	@mkdir -p $(dir $@)
