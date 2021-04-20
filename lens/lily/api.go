@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-jsonrpc/auth"
-
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/schedule"
 )

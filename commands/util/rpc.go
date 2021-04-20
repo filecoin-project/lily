@@ -44,6 +44,8 @@ var DefaultPerms = []auth.Permission{PermRead}
 func MetricsSentinelAPI(a lily.LilyAPI) lily.LilyAPI {
 	var out lily.LilyAPIStruct
 	proxy(a, &out.Internal)
+	proxy(a, &out.CommonStruct.Internal)
+	proxy(a, &out.FullNodeStruct.Internal)
 	return &out
 }
 
@@ -72,6 +74,8 @@ func proxy(in interface{}, out interface{}) {
 func PermissionedSentinelAPI(a lily.LilyAPI) lily.LilyAPI {
 	var out lily.LilyAPIStruct
 	auth.PermissionedProxy(AllPermissions, DefaultPerms, a, &out.Internal)
+	auth.PermissionedProxy(AllPermissions, DefaultPerms, a, &out.CommonStruct.Internal)
+	auth.PermissionedProxy(AllPermissions, DefaultPerms, a, &out.FullNodeStruct.Internal)
 	return &out
 }
 
