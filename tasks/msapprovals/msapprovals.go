@@ -11,6 +11,7 @@ import (
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
+	sa4builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	multisig3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/multisig"
 	"github.com/ipfs/go-cid"
 	"golang.org/x/xerrors"
@@ -186,7 +187,7 @@ func (p *Task) Close() error {
 }
 
 func isMultisigActor(code cid.Cid) bool {
-	return code == sa0builtin.MultisigActorCodeID || code == sa2builtin.MultisigActorCodeID || code == sa3builtin.MultisigActorCodeID
+	return code == sa0builtin.MultisigActorCodeID || code == sa2builtin.MultisigActorCodeID || code == sa3builtin.MultisigActorCodeID || code == sa4builtin.MultisigActorCodeID
 }
 
 type MultisigError struct {

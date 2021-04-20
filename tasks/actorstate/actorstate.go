@@ -14,6 +14,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
+	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 
@@ -82,5 +83,8 @@ func ActorNameByCode(code cid.Cid) string {
 	if name := builtin2.ActorNameByCode(code); name != "<unknown>" {
 		return name
 	}
-	return builtin3.ActorNameByCode(code)
+	if name := builtin3.ActorNameByCode(code); name != "<unknown>" {
+		return name
+	}
+	return builtin4.ActorNameByCode(code)
 }
