@@ -140,9 +140,7 @@ func (aw *APIWrapper) StateGetActor(ctx context.Context, actor address.Address, 
 	stop := metrics.Timer(ctx, metrics.LensRequestDuration)
 	defer stop()
 
-	// return aw.FullNode.StateGetActor(ctx, actor, tsk)
-	// TODO idk how to get a store.ChainStore here
-	return lens.OptimizedStateGetActorWithFallback(ctx, aw.Store(), aw.FullNode, aw.FullNode, actor, tsk)
+	return aw.FullNode.StateGetActor(ctx, actor, tsk)
 }
 
 func (aw *APIWrapper) StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error) {

@@ -20,6 +20,7 @@ import (
 	modelchain "github.com/filecoin-project/sentinel-visor/model/chain"
 	"github.com/filecoin-project/sentinel-visor/model/derived"
 	"github.com/filecoin-project/sentinel-visor/model/messages"
+	"github.com/filecoin-project/sentinel-visor/model/msapprovals"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ipld/go-car"
@@ -581,5 +582,20 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			actType = append(actType, act)
 		}
 		return cmp.Diff(actType, expType, cmpopts.IgnoreUnexported(modelchain.ChainEconomics{})), nil
+	case "multisig_approvals":
+		var expType msapprovals.MultisigApprovalList
+		if err := json.Unmarshal(expected, &expType); err != nil {
+			return "", err
+		}
+
+		var actType msapprovals.MultisigApprovalList
+		for _, raw := range actual {
+			act, ok := raw.(*msapprovals.MultisigApproval)
+			if !ok {
+				panic("developer error")
+			}
+			actType = append(actType, act)
+		}
+		return cmp.Diff(actType, expType, cmpopts.IgnoreUnexported(msapprovals.MultisigApproval{})), nil
 	}
 }

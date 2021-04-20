@@ -3,11 +3,12 @@ package actorstate
 import (
 	"context"
 
+	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
 	market "github.com/filecoin-project/lotus/chain/actors/builtin/market"
-	"github.com/filecoin-project/lotus/chain/events/state"
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
@@ -28,6 +29,62 @@ func init() {
 	Register(sa3builtin.StorageMarketActorCodeID, StorageMarketExtractor{})
 }
 
+type MarketStateExtractionContext struct {
+	PrevState market.State
+	PrevTs    *types.TipSet
+
+	CurrActor *types.Actor
+	CurrState market.State
+	CurrTs    *types.TipSet
+}
+
+func NewMarketStateExtractionContext(ctx context.Context, a ActorInfo, node ActorStateAPI) (*MarketStateExtractionContext, error) {
+	curActor, err := node.StateGetActor(ctx, a.Address, a.TipSet)
+	if err != nil {
+		return nil, xerrors.Errorf("loading current market actor: %w", err)
+	}
+
+	curTipset, err := node.ChainGetTipSet(ctx, a.TipSet)
+	if err != nil {
+		return nil, xerrors.Errorf("loading current tipset: %w", err)
+	}
+
+	curState, err := market.Load(node.Store(), curActor)
+	if err != nil {
+		return nil, xerrors.Errorf("loading current market state: %w", err)
+	}
+
+	prevTipset := curTipset
+	prevState := curState
+	if a.Epoch != 0 {
+		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet)
+		if err != nil {
+			return nil, xerrors.Errorf("loading previous market actor state at tipset %s epoch %d: %w", a.ParentTipSet, a.Epoch, err)
+		}
+
+		prevState, err = market.Load(node.Store(), prevActor)
+		if err != nil {
+			return nil, xerrors.Errorf("loading previous market actor state: %w", err)
+		}
+
+		prevTipset, err = node.ChainGetTipSet(ctx, a.ParentTipSet)
+		if err != nil {
+			return nil, xerrors.Errorf("loading previous tipset: %w", err)
+		}
+	}
+	return &MarketStateExtractionContext{
+		PrevState: prevState,
+		PrevTs:    prevTipset,
+		CurrActor: curActor,
+		CurrState: curState,
+		CurrTs:    curTipset,
+	}, nil
+}
+
+func (m *MarketStateExtractionContext) IsGenesis() bool {
+	return m.CurrTs.Height() == 0
+}
+
 func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "StorageMarketExtractor")
 	defer span.End()
@@ -35,78 +92,87 @@ func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node A
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
 
-	pred := state.NewStatePredicates(node)
-	stateDiff := pred.OnStorageMarketActorChanged(StorageMarketChangesPred(pred))
-	changed, val, err := stateDiff(ctx, a.ParentTipSet, a.TipSet)
+	ec, err := NewMarketStateExtractionContext(ctx, a, node)
 	if err != nil {
 		return nil, err
 	}
+
+	dealStateModel, err := ExtractMarketDealStates(ctx, ec)
+	if err != nil {
+		return nil, xerrors.Errorf("extracting market deal state changes: %w", err)
+	}
+
+	dealProposalModel, err := ExtractMarketDealProposals(ctx, ec)
+	if err != nil {
+		return nil, xerrors.Errorf("extracting market proposal changes: %w", err)
+	}
+
+	return &marketmodel.MarketTaskResult{
+		Proposals: dealProposalModel,
+		States:    dealStateModel,
+	}, nil
+}
+
+func ExtractMarketDealProposals(ctx context.Context, ec *MarketStateExtractionContext) (marketmodel.MarketDealProposals, error) {
+	currDealProposals, err := ec.CurrState.Proposals()
+	if err != nil {
+		return nil, xerrors.Errorf("loading current market deal proposals: %w:", err)
+	}
+
+	if ec.IsGenesis() {
+		var out marketmodel.MarketDealProposals
+		if err := currDealProposals.ForEach(func(id abi.DealID, dp market.DealProposal) error {
+			out = append(out, &marketmodel.MarketDealProposal{
+				Height:               int64(ec.CurrTs.Height()),
+				DealID:               uint64(id),
+				StateRoot:            ec.CurrTs.ParentState().String(),
+				PaddedPieceSize:      uint64(dp.PieceSize),
+				UnpaddedPieceSize:    uint64(dp.PieceSize.Unpadded()),
+				StartEpoch:           int64(dp.StartEpoch),
+				EndEpoch:             int64(dp.EndEpoch),
+				ClientID:             dp.Client.String(),
+				ProviderID:           dp.Provider.String(),
+				ClientCollateral:     dp.ClientCollateral.String(),
+				ProviderCollateral:   dp.ProviderCollateral.String(),
+				StoragePricePerEpoch: dp.StoragePricePerEpoch.String(),
+				PieceCID:             dp.PieceCID.String(),
+				IsVerified:           dp.VerifiedDeal,
+				Label:                dp.Label,
+			})
+			return nil
+		}); err != nil {
+			return nil, xerrors.Errorf("walking current deal states: %w", err)
+		}
+		return out, nil
+
+	}
+
+	changed, err := ec.CurrState.ProposalsChanged(ec.PrevState)
+	if err != nil {
+		return nil, xerrors.Errorf("checking for deal proposal changes: %w", err)
+	}
+
 	if !changed {
-		return nil, xerrors.Errorf("no state change detected")
+		return nil, nil
 	}
 
-	mchanges, ok := val.(*MarketChanges)
-	if !ok {
-		return nil, xerrors.Errorf("Unknown type returned by market changes predicate: %T", val)
+	// since the market actor is a builtin actor we can always find its previous state after the genesis block.
+	prevDealProposals, err := ec.PrevState.Proposals()
+	if err != nil {
+		return nil, xerrors.Errorf("loading previous market deal states: %w", err)
 	}
 
-	res := &marketmodel.MarketTaskResult{}
-
-	if mchanges.ProposalChanges != nil {
-		proposals, err := m.MarketDealProposalChanges(ctx, a, mchanges.ProposalChanges)
-		if err != nil {
-			return nil, err
-		}
-		res.Proposals = proposals
+	changes, err := market.DiffDealProposals(prevDealProposals, currDealProposals)
+	if err != nil {
+		return nil, xerrors.Errorf("diffing deal states: %w", err)
 	}
 
-	if mchanges.DealChanges != nil {
-		states, err := m.MarketDealStateChanges(ctx, a, mchanges.DealChanges)
-		if err != nil {
-			return nil, err
-		}
-		res.States = states
-	}
-
-	return res, nil
-}
-
-func (m StorageMarketExtractor) MarketDealStateChanges(ctx context.Context, a ActorInfo, changes *market.DealStateChanges) (marketmodel.MarketDealStates, error) {
-	out := make(marketmodel.MarketDealStates, len(changes.Added)+len(changes.Modified))
-	idx := 0
-	for _, add := range changes.Added {
-		out[idx] = &marketmodel.MarketDealState{
-			Height:           int64(a.Epoch),
-			DealID:           uint64(add.ID),
-			StateRoot:        a.ParentStateRoot.String(),
-			SectorStartEpoch: int64(add.Deal.SectorStartEpoch),
-			LastUpdateEpoch:  int64(add.Deal.LastUpdatedEpoch),
-			SlashEpoch:       int64(add.Deal.SlashEpoch),
-		}
-		idx++
-	}
-	for _, mod := range changes.Modified {
-		out[idx] = &marketmodel.MarketDealState{
-			Height:           int64(a.Epoch),
-			DealID:           uint64(mod.ID),
-			SectorStartEpoch: int64(mod.To.SectorStartEpoch),
-			LastUpdateEpoch:  int64(mod.To.LastUpdatedEpoch),
-			SlashEpoch:       int64(mod.To.SlashEpoch),
-			StateRoot:        a.ParentStateRoot.String(),
-		}
-		idx++
-	}
-	return out, nil
-}
-
-func (m StorageMarketExtractor) MarketDealProposalChanges(ctx context.Context, a ActorInfo, changes *market.DealProposalChanges) (marketmodel.MarketDealProposals, error) {
 	out := make(marketmodel.MarketDealProposals, len(changes.Added))
-
 	for idx, add := range changes.Added {
 		out[idx] = &marketmodel.MarketDealProposal{
-			Height:               int64(a.Epoch),
+			Height:               int64(ec.CurrTs.Height()),
 			DealID:               uint64(add.ID),
-			StateRoot:            a.ParentStateRoot.String(),
+			StateRoot:            ec.CurrTs.ParentState().String(),
 			PaddedPieceSize:      uint64(add.Proposal.PieceSize),
 			UnpaddedPieceSize:    uint64(add.Proposal.PieceSize.Unpadded()),
 			StartEpoch:           int64(add.Proposal.StartEpoch),
@@ -124,49 +190,74 @@ func (m StorageMarketExtractor) MarketDealProposalChanges(ctx context.Context, a
 	return out, nil
 }
 
-type MarketChanges struct {
-	DealChanges     *market.DealStateChanges
-	ProposalChanges *market.DealProposalChanges
-}
-
-// StorageMarketChangesPred returns a DiffStorageMarketStateFunc that extracts deal state and deal proposal changes from
-// a single state change.
-func StorageMarketChangesPred(pred *state.StatePredicates) state.DiffStorageMarketStateFunc {
-	return func(ctx context.Context, oldState market.State, newState market.State) (changed bool, user state.UserData, err error) {
-		changes := &MarketChanges{}
-
-		dealsPred := pred.OnDealStateChanged(pred.OnDealStateAmtChanged())
-		dealsChanged, dealUserData, err := dealsPred(ctx, oldState, newState)
-		if err != nil {
-			return false, nil, nil
-		}
-		if dealsChanged {
-			dealChanges, ok := dealUserData.(*market.DealStateChanges)
-			if !ok {
-				// indicates a developer error or breaking change in lotus
-				return false, nil, xerrors.Errorf("Unknown type returned by Deal State AMT predicate: %T", dealUserData)
-			}
-			changes.DealChanges = dealChanges
-		}
-
-		proposalsPred := pred.OnDealProposalChanged(pred.OnDealProposalAmtChanged())
-		proposalsChanged, proposalsUserData, err := proposalsPred(ctx, oldState, newState)
-		if err != nil {
-			return false, nil, nil
-		}
-		if proposalsChanged {
-			proposalChanges, ok := proposalsUserData.(*market.DealProposalChanges)
-			if !ok {
-				// indicates a developer error or breaking change in lotus
-				return false, nil, xerrors.Errorf("Unknown type returned by Deal Proposal AMT predicate: %T", dealUserData)
-			}
-			changes.ProposalChanges = proposalChanges
-		}
-
-		if !dealsChanged && !proposalsChanged {
-			return false, nil, nil
-		}
-
-		return true, state.UserData(changes), nil
+func ExtractMarketDealStates(ctx context.Context, ec *MarketStateExtractionContext) (marketmodel.MarketDealStates, error) {
+	currDealStates, err := ec.CurrState.States()
+	if err != nil {
+		return nil, xerrors.Errorf("loading current market deal states: %w", err)
 	}
+
+	if ec.IsGenesis() {
+		var out marketmodel.MarketDealStates
+		if err := currDealStates.ForEach(func(id abi.DealID, ds market.DealState) error {
+			out = append(out, &marketmodel.MarketDealState{
+				Height:           int64(ec.CurrTs.Height()),
+				DealID:           uint64(id),
+				SectorStartEpoch: int64(ds.SectorStartEpoch),
+				LastUpdateEpoch:  int64(ds.LastUpdatedEpoch),
+				SlashEpoch:       int64(ds.SlashEpoch),
+				StateRoot:        ec.CurrTs.ParentState().String(),
+			})
+			return nil
+		}); err != nil {
+			return nil, xerrors.Errorf("walking current deal states: %w", err)
+		}
+		return out, nil
+	}
+
+	changed, err := ec.CurrState.StatesChanged(ec.PrevState)
+	if err != nil {
+		return nil, xerrors.Errorf("checking for deal state changes: %w", err)
+	}
+
+	if !changed {
+		return nil, nil
+	}
+
+	// since the market actor is a builtin actor we can always find its previous state after the genesis block.
+	prevDealStates, err := ec.PrevState.States()
+	if err != nil {
+		return nil, xerrors.Errorf("loading previous market deal states: %w", err)
+	}
+
+	changes, err := market.DiffDealStates(prevDealStates, currDealStates)
+	if err != nil {
+		return nil, xerrors.Errorf("diffing deal states: %w", err)
+	}
+
+	out := make(marketmodel.MarketDealStates, len(changes.Added)+len(changes.Modified))
+	idx := 0
+	for _, add := range changes.Added {
+		out[idx] = &marketmodel.MarketDealState{
+			Height:           int64(ec.CurrTs.Height()),
+			DealID:           uint64(add.ID),
+			SectorStartEpoch: int64(add.Deal.SectorStartEpoch),
+			LastUpdateEpoch:  int64(add.Deal.LastUpdatedEpoch),
+			SlashEpoch:       int64(add.Deal.SlashEpoch),
+			StateRoot:        ec.CurrTs.ParentState().String(),
+		}
+		idx++
+	}
+	for _, mod := range changes.Modified {
+		out[idx] = &marketmodel.MarketDealState{
+			Height:           int64(ec.CurrTs.Height()),
+			DealID:           uint64(mod.ID),
+			SectorStartEpoch: int64(mod.To.SectorStartEpoch),
+			LastUpdateEpoch:  int64(mod.To.LastUpdatedEpoch),
+			SlashEpoch:       int64(mod.To.SlashEpoch),
+			StateRoot:        ec.CurrTs.ParentState().String(),
+		}
+		idx++
+	}
+	return out, nil
+
 }
