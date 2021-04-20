@@ -44,6 +44,9 @@ type JobConfig struct {
 	// Name is a human readable name for the job for use in logging
 	Name string
 
+	// Tasks is a list of tasks the job performs
+	Tasks []string
+
 	// Job is the job that will be executed.
 	Job Job
 
@@ -234,6 +237,7 @@ type JobResult struct {
 	Name  string
 	Type  string
 	Error string
+	Tasks []string
 
 	Running bool
 
@@ -262,6 +266,7 @@ func (s *Scheduler) Jobs() []JobResult {
 		out = append(out, JobResult{
 			ID:                  j.id,
 			Name:                j.Name,
+			Tasks:               j.Tasks,
 			Type:                jobType,
 			Error:               j.errorMsg,
 			Running:             j.running,

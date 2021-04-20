@@ -68,6 +68,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedu
 
 	id := m.Scheduler.Submit(&schedule.JobConfig{
 		Name:                cfg.Name,
+		Tasks:               cfg.Tasks,
 		Job:                 chain.NewWatcher(indexer, obs, cfg.Confidence),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
@@ -95,6 +96,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (schedule
 
 	id := m.Scheduler.Submit(&schedule.JobConfig{
 		Name:                cfg.Name,
+		Tasks:               cfg.Tasks,
 		Job:                 chain.NewWalker(indexer, m, cfg.From, cfg.To),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
