@@ -5,6 +5,60 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+
+<a name="v0.6.0"></a>
+## [v0.6.0] - 2021-04-20
+
+### BREAKING CHANGE
+
+This changes the cli interface to make `walk` and `watch` subcommands of a new `run` command. Command line options
+that are specific to `walk` and `watch` must now be specified after the subcommand.
+
+Where before a walk would be started like this:
+
+```sh
+$ visor --db=foo --lens=lotus walk --from=1000 --to=1001
+```
+
+it must now be started like this:
+
+```sh
+$ visor run walk --db=foo --lens=lotus --from=1000 --to=1001
+```
+
+And for `watch`, before:
+
+```sh
+$ visor --db=foo --lens=lotus watch --headindexer-confidence=100
+```
+
+after:
+
+```sh
+$ visor run watch --db=foo --lens=lotus --headindexer-confidence=100
+```
+
+The `migrate` command now also expects options to be specified after the command:
+
+```sh
+$ visor migrate --db=foo --latest
+```
+
+
+In addition: 
+
+ - the `--api` option has been renamed to `--lens-lotus-api` since it is used by the lotus lens to specify the api that visor will connect to. This reduces confusion from the `daemon` command's `--api` option which specifies the api address of visor's daemon.
+ - the `--repo` option has been renamed to `--lens-repo` since it is used by various lenses to specify the location of the data file or directory that visor will read from. This distinguishes it from the `daemon` command's `--repo` option which specifies the path where the visor daemon should write its data.
+
+
+
+### Feat
+ - Add a new long running daemon mode for visor
+ - Add new daemon command
+ - Add new job command
+ - Add new run command and move watch and walk to be subcommands of run
+ - Reorganise CLI options to be associated with relevant command or subcommand
+
 <a name="v0.5.7"></a>
 ## [v0.5.7] - 2021-04-09
 
