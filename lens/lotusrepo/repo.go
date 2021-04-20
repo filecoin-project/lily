@@ -43,7 +43,7 @@ func NewAPIOpener(c *cli.Context) (*APIOpener, lens.APICloser, error) {
 		return nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
 	}
 
-	r, err := repo.NewFS(c.String("repo"))
+	r, err := repo.NewFS(c.String("lens-repo"))
 	if err != nil {
 		return nil, nil, err
 	}

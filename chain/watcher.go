@@ -3,22 +3,16 @@ package chain
 import (
 	"context"
 
-	lotus_api "github.com/filecoin-project/lotus/api"
-	store "github.com/filecoin-project/lotus/chain/store"
-	"go.opencensus.io/stats"
-	"go.opentelemetry.io/otel/api/global"
+	"github.com/filecoin-project/lotus/chain/types"
 	"golang.org/x/xerrors"
-
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
 // NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held
 // in a cache awaiting possible reversion. Tipsets will be written to the database when they are evicted from
 // the cache due to incoming later tipsets.
-func NewWatcher(obs TipSetObserver, opener lens.APIOpener, confidence int) *Watcher {
+func NewWatcher(obs TipSetObserver, hn HeadNotifier, confidence int) *Watcher {
 	return &Watcher{
-		opener:     opener,
+		notifier:   hn,
 		obs:        obs,
 		confidence: confidence,
 		cache:      NewTipSetCache(confidence),
@@ -27,86 +21,67 @@ func NewWatcher(obs TipSetObserver, opener lens.APIOpener, confidence int) *Watc
 
 // Watcher is a task that indexes blocks by following the chain head.
 type Watcher struct {
-	opener     lens.APIOpener
+	notifier   HeadNotifier
 	obs        TipSetObserver
 	confidence int          // size of tipset cache
 	cache      *TipSetCache // caches tipsets for possible reversion
 }
 
+func (c *Watcher) Params() map[string]interface{} {
+	out := make(map[string]interface{})
+	out["confidence"] = c.confidence
+	return out
+}
+
 // Run starts following the chain head and blocks until the context is done or
 // an error occurs.
 func (c *Watcher) Run(ctx context.Context) error {
-	node, closer, err := c.opener.Open(ctx)
-	if err != nil {
-		return xerrors.Errorf("open lens: %w", err)
-	}
-
-	defer func() {
-		closer()
-		if err := c.obs.Close(); err != nil {
-			log.Errorw("watcher failed to close TipSetObserver", "error", err)
-		}
-	}()
-
-	hc, err := node.ChainNotify(ctx)
-	if err != nil {
-		return xerrors.Errorf("chain notify: %w", err)
-	}
-
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
-		case headEvents, ok := <-hc:
+			return ctx.Err()
+		case he, ok := <-c.notifier.HeadEvents():
 			if !ok {
-				log.Warn("ChainNotify channel closed, stopping Indexer")
-				return nil
+				return c.notifier.Err()
 			}
-			if err := c.index(ctx, headEvents); err != nil {
+			if err := c.index(ctx, he); err != nil {
 				return xerrors.Errorf("index: %w", err)
 			}
 		}
 	}
 }
 
-func (c *Watcher) index(ctx context.Context, headEvents []*lotus_api.HeadChange) error {
-	ctx, span := global.Tracer("").Start(ctx, "Watcher.index")
-	defer span.End()
+func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {
+	switch he.Type {
+	case HeadEventCurrent:
+		err := c.cache.SetCurrent(he.TipSet)
+		if err != nil {
+			log.Errorw("tipset cache set current", "error", err.Error())
+		}
 
-	for _, ch := range headEvents {
-		stats.Record(ctx, metrics.WatchHeight.M(int64(ch.Val.Height())))
+		// If we have a zero confidence window then we need to notify every tipset we see
+		if c.confidence == 0 {
+			if err := c.obs.TipSet(ctx, he.TipSet); err != nil {
+				return xerrors.Errorf("notify tipset: %w", err)
+			}
+		}
+	case HeadEventApply:
+		tail, err := c.cache.Add(he.TipSet)
+		if err != nil {
+			log.Errorw("tipset cache add", "error", err.Error())
+		}
 
-		switch ch.Type {
-		case store.HCCurrent:
-			err := c.cache.SetCurrent(ch.Val)
-			if err != nil {
-				log.Errorw("tipset cache set current", "error", err.Error())
+		// Send the tipset that fell out of the confidence window to the observer
+		if tail != nil {
+			if err := c.obs.TipSet(ctx, tail); err != nil {
+				return xerrors.Errorf("notify tipset: %w", err)
 			}
+		}
 
-			// If we have a zero confidence window then we need to notify every tipset we see
-			if c.confidence == 0 {
-				if err := c.obs.TipSet(ctx, ch.Val); err != nil {
-					return xerrors.Errorf("notify tipset: %w", err)
-				}
-			}
-		case store.HCApply:
-			tail, err := c.cache.Add(ch.Val)
-			if err != nil {
-				log.Errorw("tipset cache add", "error", err.Error())
-			}
-
-			// Send the tipset that fell out of the confidence window to the observer
-			if tail != nil {
-				if err := c.obs.TipSet(ctx, tail); err != nil {
-					return xerrors.Errorf("notify tipset: %w", err)
-				}
-			}
-
-		case store.HCRevert:
-			err := c.cache.Revert(ch.Val)
-			if err != nil {
-				log.Errorw("tipset cache revert", "error", err.Error())
-			}
+	case HeadEventRevert:
+		err := c.cache.Revert(he.TipSet)
+		if err != nil {
+			log.Errorw("tipset cache revert", "error", err.Error())
 		}
 	}
 
@@ -114,3 +89,33 @@ func (c *Watcher) index(ctx context.Context, headEvents []*lotus_api.HeadChange)
 
 	return nil
 }
+
+// A HeadNotifier reports tipset events that occur at the head of the chain
+type HeadNotifier interface {
+	// HeadEvents returns a channel that receives head events. It may be closed
+	// by the sender of the events, in which case Err will return a non-nil error
+	// explaining why. HeadEvents may return nil if this implementation will never
+	// notify any events.
+	HeadEvents() <-chan *HeadEvent
+
+	// Err returns the reason for the closing of the HeadEvents channel.
+	Err() error
+}
+
+// A HeadEvent is a notification of a change at the head of the chain
+type HeadEvent struct {
+	Type   string
+	TipSet *types.TipSet
+}
+
+// Constants for HeadEvent types
+const (
+	// HeadEventRevert indicates that the event signals a reversion of a tipset from the chain
+	HeadEventRevert = "revert"
+
+	// HeadEventRevert indicates that the event signals the application of a tipset to the chain
+	HeadEventApply = "apply"
+
+	// HeadEventRevert indicates that the event signals the current known head tipset
+	HeadEventCurrent = "current"
+)

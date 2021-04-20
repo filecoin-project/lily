@@ -105,6 +105,8 @@ func NewDatabase(ctx context.Context, url string, poolSize int, name string, ups
 	}, nil
 }
 
+var _ Connector = (*Database)(nil)
+
 type Database struct {
 	DB     *pg.DB
 	opt    *pg.Options
@@ -161,6 +163,18 @@ func connect(ctx context.Context, opt *pg.Options) (*pg.DB, error) {
 	}
 
 	return db, nil
+}
+
+func (d *Database) IsConnected(ctx context.Context) bool {
+	if d.DB == nil {
+		return false
+	}
+
+	if err := d.DB.Ping(ctx); err != nil {
+		return false
+	}
+
+	return true
 }
 
 func (d *Database) Close(ctx context.Context) error {

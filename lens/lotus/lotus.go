@@ -32,8 +32,8 @@ func NewAPIOpener(cctx *cli.Context, cacheSize int) (*APIOpener, lens.APICloser,
 
 	var rawaddr, rawtoken string
 
-	if cctx.IsSet("api") {
-		tokenMaddr := cctx.String("api")
+	if cctx.IsSet("lens-lotus-api") {
+		tokenMaddr := cctx.String("lens-lotus-api")
 		toks := strings.Split(tokenMaddr, ":")
 		if len(toks) != 2 {
 			return nil, nil, fmt.Errorf("invalid api tokens, expected <token>:<maddr>, got: %s", tokenMaddr)
@@ -41,8 +41,8 @@ func NewAPIOpener(cctx *cli.Context, cacheSize int) (*APIOpener, lens.APICloser,
 
 		rawtoken = toks[0]
 		rawaddr = toks[1]
-	} else if cctx.IsSet("repo") {
-		repoPath := cctx.String("repo")
+	} else if cctx.IsSet("lens-repo") {
+		repoPath := cctx.String("lens-repo")
 		p, err := homedir.Expand(repoPath)
 		if err != nil {
 			return nil, nil, xerrors.Errorf("expand home dir (%s): %w", repoPath, err)
@@ -66,7 +66,7 @@ func NewAPIOpener(cctx *cli.Context, cacheSize int) (*APIOpener, lens.APICloser,
 		rawaddr = ma.String()
 		rawtoken = string(token)
 	} else {
-		return nil, nil, xerrors.Errorf("cannot connect to lotus api: missing --api or --repo flags")
+		return nil, nil, xerrors.Errorf("cannot connect to lotus api: missing --lens-lotus-api or --lens-repo flags")
 	}
 
 	parsedAddr, err := ma.NewMultiaddr(rawaddr)

@@ -30,6 +30,8 @@ commands:
           condition: << parameters.linux >>
           steps:
             - run: sudo apt-get update
+            - run: sudo apt-get install -y ocl-icd-opencl-dev libhwloc-dev
+            - run: sudo apt-get install -y pkg-config jq
       - run: git submodule sync
       - run: sudo apt-get install gcc libc-dev
       - run: git submodule update --init
@@ -110,13 +112,13 @@ jobs:
           POSTGRES_PASSWORD: password
     steps:
       - checkout
+      - prepare
       - run: # dep for DB wait script
           name: install dockerize
           command: wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && sudo tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
           environment:
             DOCKERIZE_VERSION: v0.3.0
       - run: sudo apt-get update
-      - run: sudo apt-get install -y pkg-config jq
       - run: make deps
       - run: make build
       - run:
@@ -161,6 +163,7 @@ jobs:
     steps:
       - install-deps
       - prepare
+      - run: make deps
       - run:
           command: make -j3 support/tools/bin/golangci-lint
       - run:

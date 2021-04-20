@@ -1,0 +1,67 @@
+package lily
+
+import (
+	"context"
+
+	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/node/impl/common"
+	"github.com/filecoin-project/lotus/node/impl/full"
+	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	logging "github.com/ipfs/go-log/v2"
+
+	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/schedule"
+)
+
+var log = logging.Logger("lily-api")
+
+type LilyAPIStruct struct {
+	// authentication
+	common.CommonAPI
+	// chain notifications and inspection
+	full.ChainAPI
+	// actor state extraction
+	full.StateAPI
+
+	Internal struct {
+		Store                        func() adt.Store                                                                     `perm:"read"`
+		GetExecutedMessagesForTipset func(context.Context, *types.TipSet, *types.TipSet) ([]*lens.ExecutedMessage, error) `perm:"read"`
+
+		LilyWatch func(context.Context, *LilyWatchConfig) (schedule.JobID, error) `perm:"read"`
+		LilyWalk  func(context.Context, *LilyWalkConfig) (schedule.JobID, error)  `perm:"read"`
+
+		LilyJobStart func(ctx context.Context, ID schedule.JobID) error      `perm:"read"`
+		LilyJobStop  func(ctx context.Context, ID schedule.JobID) error      `perm:"read"`
+		LilyJobList  func(ctx context.Context) ([]schedule.JobResult, error) `perm:"read"`
+	}
+}
+
+func (s *LilyAPIStruct) Store() adt.Store {
+	return s.Internal.Store()
+}
+
+func (s *LilyAPIStruct) LilyWatch(ctx context.Context, cfg *LilyWatchConfig) (schedule.JobID, error) {
+	return s.Internal.LilyWatch(ctx, cfg)
+}
+
+func (s *LilyAPIStruct) LilyWalk(ctx context.Context, cfg *LilyWalkConfig) (schedule.JobID, error) {
+	return s.Internal.LilyWalk(ctx, cfg)
+}
+
+func (s *LilyAPIStruct) LilyJobStart(ctx context.Context, ID schedule.JobID) error {
+	return s.Internal.LilyJobStart(ctx, ID)
+}
+
+func (s *LilyAPIStruct) LilyJobStop(ctx context.Context, ID schedule.JobID) error {
+	return s.Internal.LilyJobStop(ctx, ID)
+}
+
+func (s *LilyAPIStruct) LilyJobList(ctx context.Context) ([]schedule.JobResult, error) {
+	return s.Internal.LilyJobList(ctx)
+}
+
+func (s *LilyAPIStruct) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
+	return s.Internal.GetExecutedMessagesForTipset(ctx, ts, pts)
+}
+
+var _ LilyAPI = &LilyAPIStruct{}

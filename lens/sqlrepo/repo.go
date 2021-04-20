@@ -18,7 +18,7 @@ import (
 
 func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 	pgbsCfg := pgchainbs.PgBlockstoreConfig{
-		PgxConnectString:          c.String("repo"),
+		PgxConnectString:          c.String("lens-repo"),
 		InstanceNamespace:         c.String("lens-postgres-namespace"),
 		CachePreloadRecentBlocks:  c.Bool("lens-postgres-preload-recents"),
 		PrefetchDagLayersOnDbRead: int32(c.Int("lens-postgres-get-prefetch-depth")),
@@ -37,7 +37,6 @@ func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 	}
 
 	var getHeadWithOffset util.HeadMthd = func(ctx context.Context, lookback int) (*types.TipSetKey, error) {
-
 		tsd, err := pgbs.GetFilTipSetHead(ctx)
 		if err != nil {
 			return nil, err

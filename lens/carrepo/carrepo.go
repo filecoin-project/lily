@@ -21,7 +21,7 @@ func NewAPIOpener(c *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 		return nil, nil, fmt.Errorf("setting file descriptor limit: %s", err)
 	}
 
-	db, err := carbs.Load(c.String("repo"), false)
+	db, err := carbs.Load(c.String("lens-repo"), false)
 	if err != nil {
 		return nil, nil, err
 	}
