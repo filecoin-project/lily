@@ -230,29 +230,19 @@ type LotusChainNotifier struct {
 	opener lens.APIOpener
 
 	mu     sync.Mutex            // protects following fields
-	events chan *chain.HeadEvent // created lazily, closed by first cancel call
-	err    error                 // set to non-nil by the first cancel call
+	events chan *chain.HeadEvent // initialised in NewLotusChainNotifier and never mutated but may be closed
+	err    error                 // set to non-nil by the first cancel call. If non-nil then events channel has been closed.
 }
 
 func NewLotusChainNotifier(opener lens.APIOpener) *LotusChainNotifier {
 	return &LotusChainNotifier{
 		opener: opener,
+		events: make(chan *chain.HeadEvent),
 	}
-}
-
-func (c *LotusChainNotifier) eventsCh() chan *chain.HeadEvent {
-	// caller must hold mu
-	if c.events == nil {
-		c.events = make(chan *chain.HeadEvent)
-	}
-	return c.events
 }
 
 func (c *LotusChainNotifier) HeadEvents() <-chan *chain.HeadEvent {
-	c.mu.Lock()
-	ev := c.eventsCh()
-	c.mu.Unlock()
-	return ev
+	return c.events
 }
 
 func (c *LotusChainNotifier) Err() error {
@@ -268,11 +258,10 @@ func (c *LotusChainNotifier) Cancel(err error) {
 		c.mu.Unlock()
 		return
 	}
-	c.err = err
-
-	// ensure channel is closed even if it was never previously initialised
-	if c.events == nil {
-		c.events = make(chan *chain.HeadEvent)
+	if err != nil {
+		c.err = err
+	} else {
+		c.err = fmt.Errorf("canceled")
 	}
 	close(c.events)
 	c.mu.Unlock()
@@ -317,7 +306,12 @@ func (c *LotusChainNotifier) Run(ctx context.Context) error {
 					he.Type = chain.HeadEventRevert
 				}
 
-				c.events <- he
+				// Must take the lock here to test if events channel has been closed by a call to cancel
+				c.mu.Lock()
+				if c.err == nil {
+					c.events <- he
+				}
+				c.mu.Unlock()
 			}
 
 		}
