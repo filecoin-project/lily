@@ -91,6 +91,12 @@ var WatchCmd = &cli.Command{
 			Value:  builtin.EpochDurationSeconds * time.Second,
 			Hidden: true,
 		},
+		&cli.DurationFlag{
+			Name:   "window",
+			Usage:  "Time window in which data extraction must be completed.",
+			Value:  builtin.EpochDurationSeconds * time.Second,
+			Hidden: true,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
