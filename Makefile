@@ -51,7 +51,6 @@ CLEAN+=build/.update-modules
 # tools
 toolspath:=support/tools
 
-
 ldflags=-X=github.com/filecoin-project/sentinel-visor/version.GitVersion=$(GITVERSION)
 ifneq ($(strip $(LDFLAGS)),)
 	ldflags+=-extldflags=$(LDFLAGS)
@@ -66,7 +65,15 @@ build: deps visor
 
 .PHONY: deps
 deps: $(BUILD_DEPS)
+
+.PHONY: vector-setup
+vector-setup: ./vector/data/.complete
+
+./vector/data/.complete:
 	cd ./vector; ./fetch_vectors.sh
+	touch $@
+CLEAN+=./vector/data/.complete
+CLEAN+=./vector/data/*.json
 
 # test starts dependencies and runs all tests
 .PHONY: test
@@ -86,7 +93,7 @@ testfull: build
 	docker-compose up -d
 	sleep 2
 	./visor migrate --latest
-	TZ= PGSSLMODE=disable go test ./... -v || echo ""
+	-TZ= PGSSLMODE=disable go test ./... -v
 	docker-compose down
 
 # testshort runs tests that don't require external dependencies such as postgres or redis
@@ -109,8 +116,6 @@ docker-image:
 .PHONY: clean
 clean:
 	rm -rf $(CLEAN) $(BINS)
-	rm ./vector/data/*json
-.PHONY: vector-clean
 
 .PHONY: dist-clean
 dist-clean:
