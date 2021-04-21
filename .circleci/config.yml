@@ -182,10 +182,10 @@ jobs:
           version: "18.09.3"
       - run:
           name: Build Production Docker image
-          command: docker build -t ${CIRCLE_TAG} -f Dockerfile .
+          command: docker build -t ${IMAGE_NAME} -f Dockerfile .
       - run:
           name: Build Dev Semver Docker image
-          command: docker build -t ${CIRCLE_TAG}-dev -f Dockerfile.dev .
+          command: docker build -t ${IMAGE_NAME}-dev -f Dockerfile.dev .
 
 workflows:
   version: 2
