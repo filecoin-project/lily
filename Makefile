@@ -85,7 +85,7 @@ testfull: build
 	docker-compose up -d
 	sleep 2
 	./visor migrate --latest
-	TZ= PGSSLMODE=disable go test ./... -v || echo ""
+	-TZ= PGSSLMODE=disable go test ./... -v
 	docker-compose down
 
 # testshort runs tests that don't require external dependencies such as postgres or redis
