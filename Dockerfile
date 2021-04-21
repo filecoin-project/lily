@@ -3,7 +3,8 @@ FROM golang:1.15.2 as builder
 ENV GOROOT=/usr/local/go
 
 # Install deps for filecoin-project/filecoin-ffi
-RUN apt-get update && apt-get install -y jq mesa-opencl-icd ocl-icd-opencl-dev hwloc libhwloc-dev
+RUN apt-get update
+RUN apt-get install -y jq mesa-opencl-icd ocl-icd-opencl-dev hwloc libhwloc-dev
 
 WORKDIR /go/src/github.com/filecoin-project/sentinel-visor
 COPY . /go/src/github.com/filecoin-project/sentinel-visor

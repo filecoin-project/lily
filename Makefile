@@ -51,7 +51,6 @@ CLEAN+=build/.update-modules
 # tools
 toolspath:=support/tools
 
-
 ldflags=-X=github.com/filecoin-project/sentinel-visor/version.GitVersion=$(GITVERSION)
 ifneq ($(strip $(LDFLAGS)),)
 	ldflags+=-extldflags=$(LDFLAGS)

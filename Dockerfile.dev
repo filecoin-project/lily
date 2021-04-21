@@ -2,7 +2,7 @@ FROM golang:1.15.2
 
 # Install deps for filecoin-project/filecoin-ffi
 RUN apt-get update
-RUN apt-get install -y jq mesa-opencl-icd ocl-icd-opencl-dev
+RUN apt-get install -y jq mesa-opencl-icd ocl-icd-opencl-dev hwloc libhwloc-dev
 
 RUN go get github.com/go-delve/delve/cmd/dlv
 
