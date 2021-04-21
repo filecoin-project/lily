@@ -232,10 +232,11 @@ type TypedActorExtractorMap struct {
 	CodeV1 cid.Cid
 	CodeV2 cid.Cid
 	CodeV3 cid.Cid
+	CodeV4 cid.Cid
 }
 
 func (t *TypedActorExtractorMap) Allow(code cid.Cid) bool {
-	return code == t.CodeV1 || code == t.CodeV2 || code == t.CodeV3
+	return code == t.CodeV1 || code == t.CodeV2 || code == t.CodeV3 || code == t.CodeV4
 }
 
 func (t *TypedActorExtractorMap) GetExtractor(code cid.Cid) (ActorStateExtractor, bool) {
