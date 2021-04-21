@@ -173,6 +173,19 @@ jobs:
               --timeout 5m --concurrency << parameters.concurrency >> ./...
   lint-all:
     <<: *lint
+  test-docker:
+    executor: dockerizer
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: "18.09.3"
+      - run:
+          name: Build Production Docker image
+          command: docker build -t ${CIRCLE_TAG} -f Dockerfile .
+      - run:
+          name: Build Dev Semver Docker image
+          command: docker build -t ${CIRCLE_TAG}-dev -f Dockerfile.dev .
 
 workflows:
   version: 2
@@ -182,6 +195,7 @@ workflows:
       - mod-tidy-check
       - lint-all
       - test
+      - test-docker
   build-docker-images:
     # `build-push-*` runs on master or main branches and tags that look like semver
     # see: https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
