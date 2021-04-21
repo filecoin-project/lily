@@ -196,6 +196,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 func (s *Scheduler) StartJob(id JobID) error {
 	s.jobsMu.Lock()
 	defer s.jobsMu.Unlock()
+
 	job, ok := s.jobs[id]
 	if !ok {
 		return xerrors.Errorf("starting worker ID: %d not found", id)
@@ -205,6 +206,7 @@ func (s *Scheduler) StartJob(id JobID) error {
 	// clear any error messages if we are starting the job
 	job.errorMsg = ""
 	if job.running {
+		job.lk.Unlock()
 		return xerrors.Errorf("starting worker ID: %d already running", id)
 	}
 	job.lk.Unlock()
@@ -223,8 +225,11 @@ func (s *Scheduler) StopJob(id JobID) error {
 		return xerrors.Errorf("starting worker ID: %d not found", id)
 	}
 
+	job.lk.Lock()
+	defer job.lk.Unlock()
+
 	if !job.running {
-		return xerrors.Errorf("starting worker ID: %d already running", id)
+		return xerrors.Errorf("starting worker ID: %d already stopped", id)
 	}
 
 	job.log.Info("stopping job")
