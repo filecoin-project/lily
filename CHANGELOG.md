@@ -6,6 +6,17 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
 
+<a name="v0.6.1"></a>
+## [v0.6.1] - 2021-04-21
+
+### Feat
+ - Upgrade actor support to version 4
+
+### Chore
+ - Fix dev docker image
+ - Add circleci check for docker builds
+
+
 <a name="v0.6.0"></a>
 ## [v0.6.0] - 2021-04-20
 
