@@ -56,8 +56,7 @@ func TestInitExtractorV0(t *testing.T) {
 			Epoch:           0, // genesis
 			Actor:           types.Actor{Code: sa0builtin.InitActorCodeID, Head: stateCid},
 			Address:         init_.Address,
-			ParentTipSet:    stateTs.Parents(),
-			TipSet:          stateTs.Key(),
+			TipSet:          stateTs,
 			ParentStateRoot: stateTs.ParentState(),
 		}
 
@@ -108,8 +107,8 @@ func TestInitExtractorV0(t *testing.T) {
 			Epoch:           1,
 			Actor:           types.Actor{Code: sa0builtin.InitActorCodeID, Head: stateCid},
 			Address:         init_.Address,
-			ParentTipSet:    baseTs.Key(),
-			TipSet:          stateTs.Key(),
+			ParentTipSet:    baseTs,
+			TipSet:          stateTs,
 			ParentStateRoot: baseStateCid,
 		}
 
@@ -162,8 +161,7 @@ func TestInitExtractorV2(t *testing.T) {
 			Epoch:           0, // genesis
 			Actor:           types.Actor{Code: sa2builtin.InitActorCodeID, Head: stateCid},
 			Address:         init_.Address,
-			ParentTipSet:    stateTs.Parents(),
-			TipSet:          stateTs.Key(),
+			TipSet:          stateTs,
 			ParentStateRoot: stateTs.ParentState(),
 		}
 
@@ -214,8 +212,8 @@ func TestInitExtractorV2(t *testing.T) {
 			Epoch:           1,
 			Actor:           types.Actor{Code: sa2builtin.InitActorCodeID, Head: stateCid},
 			Address:         init_.Address,
-			ParentTipSet:    baseTs.Key(),
-			TipSet:          stateTs.Key(),
+			ParentTipSet:    baseTs,
+			TipSet:          stateTs,
 			ParentStateRoot: baseStateCid,
 		}
 
@@ -268,8 +266,7 @@ func TestInitExtractorV3(t *testing.T) {
 			Epoch:           0, // genesis
 			Actor:           types.Actor{Code: sa3builtin.InitActorCodeID, Head: stateCid},
 			Address:         init_.Address,
-			ParentTipSet:    stateTs.Parents(),
-			TipSet:          stateTs.Key(),
+			TipSet:          stateTs,
 			ParentStateRoot: stateTs.ParentState(),
 		}
 
@@ -320,8 +317,8 @@ func TestInitExtractorV3(t *testing.T) {
 			Epoch:           1,
 			Actor:           types.Actor{Code: sa3builtin.InitActorCodeID, Head: stateCid},
 			Address:         init_.Address,
-			ParentTipSet:    baseTs.Key(),
-			TipSet:          stateTs.Key(),
+			ParentTipSet:    baseTs,
+			TipSet:          stateTs,
 			ParentStateRoot: baseStateCid,
 		}
 
@@ -374,8 +371,7 @@ func TestInitExtractorV4(t *testing.T) {
 			Epoch:           0, // genesis
 			Actor:           types.Actor{Code: sa4builtin.InitActorCodeID, Head: stateCid},
 			Address:         init_.Address,
-			ParentTipSet:    stateTs.Parents(),
-			TipSet:          stateTs.Key(),
+			TipSet:          stateTs,
 			ParentStateRoot: stateTs.ParentState(),
 		}
 
@@ -426,8 +422,8 @@ func TestInitExtractorV4(t *testing.T) {
 			Epoch:           1,
 			Actor:           types.Actor{Code: sa4builtin.InitActorCodeID, Head: stateCid},
 			Address:         init_.Address,
-			ParentTipSet:    baseTs.Key(),
-			TipSet:          stateTs.Key(),
+			ParentTipSet:    baseTs,
+			TipSet:          stateTs,
 			ParentStateRoot: baseStateCid,
 		}
 

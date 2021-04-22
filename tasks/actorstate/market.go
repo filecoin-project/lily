@@ -41,27 +41,19 @@ type MarketStateExtractionContext struct {
 }
 
 func NewMarketStateExtractionContext(ctx context.Context, a ActorInfo, node ActorStateAPI) (*MarketStateExtractionContext, error) {
-	curActor, err := node.StateGetActor(ctx, a.Address, a.TipSet)
-	if err != nil {
-		return nil, xerrors.Errorf("loading current market actor: %w", err)
-	}
-
-	curTipset, err := node.ChainGetTipSet(ctx, a.TipSet)
-	if err != nil {
-		return nil, xerrors.Errorf("loading current tipset: %w", err)
-	}
-
-	curState, err := market.Load(node.Store(), curActor)
+	curState, err := market.Load(node.Store(), &a.Actor)
 	if err != nil {
 		return nil, xerrors.Errorf("loading current market state: %w", err)
 	}
 
-	prevTipset := curTipset
+	prevTipset := a.TipSet
 	prevState := curState
 	if a.Epoch != 0 {
-		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet)
+		prevTipset = a.ParentTipSet
+
+		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
 		if err != nil {
-			return nil, xerrors.Errorf("loading previous market actor state at tipset %s epoch %d: %w", a.ParentTipSet, a.Epoch, err)
+			return nil, xerrors.Errorf("loading previous market actor state at tipset %s epoch %d: %w", a.ParentTipSet.Key(), a.Epoch, err)
 		}
 
 		prevState, err = market.Load(node.Store(), prevActor)
@@ -69,17 +61,13 @@ func NewMarketStateExtractionContext(ctx context.Context, a ActorInfo, node Acto
 			return nil, xerrors.Errorf("loading previous market actor state: %w", err)
 		}
 
-		prevTipset, err = node.ChainGetTipSet(ctx, a.ParentTipSet)
-		if err != nil {
-			return nil, xerrors.Errorf("loading previous tipset: %w", err)
-		}
 	}
 	return &MarketStateExtractionContext{
 		PrevState: prevState,
 		PrevTs:    prevTipset,
-		CurrActor: curActor,
+		CurrActor: &a.Actor,
 		CurrState: curState,
-		CurrTs:    curTipset,
+		CurrTs:    a.TipSet,
 	}, nil
 }
 

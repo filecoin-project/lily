@@ -68,10 +68,6 @@ func (m *MockAPI) Store() adt.Store {
 	return m.store
 }
 
-func (m *MockAPI) ChainHasObj(ctx context.Context, c cid.Cid) (bool, error) {
-	return m.bs.Has(c)
-}
-
 func (m *MockAPI) ChainReadObj(ctx context.Context, c cid.Cid) ([]byte, error) {
 	blk, err := m.bs.Get(c)
 	if err != nil {
@@ -83,10 +79,6 @@ func (m *MockAPI) ChainReadObj(ctx context.Context, c cid.Cid) ([]byte, error) {
 
 func (m *MockAPI) ChainGetParentMessages(ctx context.Context, msg cid.Cid) ([]api.Message, error) {
 	return []api.Message{}, nil
-}
-
-func (m *MockAPI) ChainGetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error) {
-	return m.tipsets[tsk], nil
 }
 
 func (m *MockAPI) StateReadState(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*api.ActorState, error) {

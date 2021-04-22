@@ -52,7 +52,7 @@ func TestRewardExtractV0(t *testing.T) {
 	info := actorstate.ActorInfo{
 		Actor:   types.Actor{Code: sa0builtin.RewardActorCodeID, Head: stateCid},
 		Address: power.Address,
-		TipSet:  stateTs.Key(),
+		TipSet:  stateTs,
 	}
 
 	ex := actorstate.RewardExtractor{}
@@ -101,7 +101,7 @@ func TestRewardExtractV2(t *testing.T) {
 	info := actorstate.ActorInfo{
 		Actor:   types.Actor{Code: sa2builtin.RewardActorCodeID, Head: stateCid},
 		Address: power.Address,
-		TipSet:  stateTs.Key(),
+		TipSet:  stateTs,
 	}
 
 	ex := actorstate.RewardExtractor{}
@@ -150,7 +150,7 @@ func TestRewardExtractV3(t *testing.T) {
 	info := actorstate.ActorInfo{
 		Actor:   types.Actor{Code: sa3builtin.RewardActorCodeID, Head: stateCid},
 		Address: power.Address,
-		TipSet:  stateTs.Key(),
+		TipSet:  stateTs,
 	}
 
 	ex := actorstate.RewardExtractor{}
@@ -199,7 +199,7 @@ func TestRewardExtractV4(t *testing.T) {
 	info := actorstate.ActorInfo{
 		Actor:   types.Actor{Code: sa4builtin.RewardActorCodeID, Head: stateCid},
 		Address: power.Address,
-		TipSet:  stateTs.Key(),
+		TipSet:  stateTs,
 	}
 
 	ex := actorstate.RewardExtractor{}

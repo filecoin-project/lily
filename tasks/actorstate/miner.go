@@ -93,25 +93,17 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node Ac
 }
 
 func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node ActorStateAPI) (*MinerStateExtractionContext, error) {
-	curActor, err := node.StateGetActor(ctx, a.Address, a.TipSet)
-	if err != nil {
-		return nil, xerrors.Errorf("loading current miner actor: %w", err)
-	}
-
-	curTipset, err := node.ChainGetTipSet(ctx, a.TipSet)
-	if err != nil {
-		return nil, xerrors.Errorf("loading current tipset: %w", err)
-	}
-
-	curState, err := miner.Load(node.Store(), curActor)
+	curState, err := miner.Load(node.Store(), &a.Actor)
 	if err != nil {
 		return nil, xerrors.Errorf("loading current miner state: %w", err)
 	}
 
-	prevTipset := curTipset
+	prevTipset := a.TipSet
 	prevState := curState
 	if a.Epoch != 0 {
-		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet)
+		prevTipset = a.ParentTipSet
+
+		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
 		if err != nil {
 			// if the actor exists in the current state and not in the parent state then the
 			// actor was created in the current state.
@@ -119,31 +111,26 @@ func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 				return &MinerStateExtractionContext{
 					PrevState: prevState,
 					PrevTs:    prevTipset,
-					CurrActor: curActor,
+					CurrActor: &a.Actor,
 					CurrState: curState,
-					CurrTs:    curTipset,
+					CurrTs:    a.TipSet,
 				}, nil
 			}
-			return nil, xerrors.Errorf("loading previous miner %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet, a.Epoch, err)
+			return nil, xerrors.Errorf("loading previous miner %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet.Key(), a.Epoch, err)
 		}
 
 		prevState, err = miner.Load(node.Store(), prevActor)
 		if err != nil {
 			return nil, xerrors.Errorf("loading previous miner actor state: %w", err)
 		}
-
-		prevTipset, err = node.ChainGetTipSet(ctx, a.ParentTipSet)
-		if err != nil {
-			return nil, xerrors.Errorf("loading previous tipset: %w", err)
-		}
 	}
 
 	return &MinerStateExtractionContext{
 		PrevState: prevState,
 		PrevTs:    prevTipset,
-		CurrActor: curActor,
+		CurrActor: &a.Actor,
 		CurrState: curState,
-		CurrTs:    curTipset,
+		CurrTs:    a.TipSet,
 	}, nil
 }
 
@@ -454,7 +441,7 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 
 	processPostMsg := func(msg *types.Message) error {
 		sectors := make([]uint64, 0)
-		rcpt, err := node.StateGetReceipt(ctx, msg.Cid(), actor.TipSet)
+		rcpt, err := node.StateGetReceipt(ctx, msg.Cid(), actor.TipSet.Key())
 		if err != nil {
 			return err
 		}
@@ -528,7 +515,10 @@ func extractMinerSectorEvents(ctx context.Context, node ActorStateAPI, a ActorIn
 	// if there were changes made to the miners partition lists
 	if ps != nil {
 		// build an index of removed sector expiration's for comparison below.
-		removedSectors, err := node.StateMinerSectors(ctx, a.Address, &ps.Removed, a.TipSet)
+
+		// TODO(refactor): StateMinerSectors loads the actor and then calls miner.Load which we already have available in ec (MinerStateExtractionContext)
+		// Should be able to replace with ec.CurrState.LoadSectors(&ps.Removed)
+		removedSectors, err := node.StateMinerSectors(ctx, a.Address, &ps.Removed, a.TipSet.Key())
 		if err != nil {
 			return nil, xerrors.Errorf("fetching miners removed sectors: %w", err)
 		}

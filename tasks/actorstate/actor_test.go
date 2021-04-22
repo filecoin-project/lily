@@ -44,8 +44,7 @@ func TestActorExtractor(t *testing.T) {
 		Address:         expectedAddress,
 		ParentStateRoot: tipset.ParentState(),
 		Epoch:           expectedHieght,
-		TipSet:          tipset.Key(),
-		ParentTipSet:    tipset.Parents(),
+		TipSet:          tipset,
 	}
 
 	ex := actorstate.ActorExtractor{}

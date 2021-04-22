@@ -61,7 +61,7 @@ func TestPowerExtractV0(t *testing.T) {
 		info := actorstate.ActorInfo{
 			Actor:           types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: stateCid},
 			Address:         power.Address,
-			TipSet:          stateTs.Key(),
+			TipSet:          stateTs,
 			ParentStateRoot: stateTs.ParentState(),
 		}
 
@@ -115,8 +115,8 @@ func TestPowerExtractV0(t *testing.T) {
 			Epoch:           1,
 			Actor:           types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: newStateCid},
 			Address:         power.Address,
-			ParentTipSet:    oldStateTs.Key(),
-			TipSet:          newStateTs.Key(),
+			ParentTipSet:    oldStateTs,
+			TipSet:          newStateTs,
 			ParentStateRoot: newStateTs.ParentState(),
 		}
 
@@ -164,7 +164,7 @@ func TestPowerExtractV2(t *testing.T) {
 		info := actorstate.ActorInfo{
 			Actor:           types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: stateCid},
 			Address:         power.Address,
-			TipSet:          stateTs.Key(),
+			TipSet:          stateTs,
 			ParentStateRoot: stateTs.ParentState(),
 		}
 
@@ -219,8 +219,8 @@ func TestPowerExtractV2(t *testing.T) {
 			Epoch:           1,
 			Actor:           types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: newStateCid},
 			Address:         power.Address,
-			ParentTipSet:    oldStateTs.Key(),
-			TipSet:          newStateTs.Key(),
+			ParentTipSet:    oldStateTs,
+			TipSet:          newStateTs,
 			ParentStateRoot: newStateTs.ParentState(),
 		}
 
@@ -268,7 +268,7 @@ func TestPowerExtractV3(t *testing.T) {
 		info := actorstate.ActorInfo{
 			Actor:           types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: stateCid},
 			Address:         power.Address,
-			TipSet:          stateTs.Key(),
+			TipSet:          stateTs,
 			ParentStateRoot: stateTs.ParentState(),
 		}
 
@@ -323,8 +323,8 @@ func TestPowerExtractV3(t *testing.T) {
 			Epoch:           1,
 			Actor:           types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: newStateCid},
 			Address:         power.Address,
-			ParentTipSet:    oldStateTs.Key(),
-			TipSet:          newStateTs.Key(),
+			ParentTipSet:    oldStateTs,
+			TipSet:          newStateTs,
 			ParentStateRoot: newStateTs.ParentState(),
 		}
 
@@ -372,7 +372,7 @@ func TestPowerExtractV4(t *testing.T) {
 		info := actorstate.ActorInfo{
 			Actor:           types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: stateCid},
 			Address:         power.Address,
-			TipSet:          stateTs.Key(),
+			TipSet:          stateTs,
 			ParentStateRoot: stateTs.ParentState(),
 		}
 
@@ -427,8 +427,8 @@ func TestPowerExtractV4(t *testing.T) {
 			Epoch:           1,
 			Actor:           types.Actor{Code: sa4builtin.StoragePowerActorCodeID, Head: newStateCid},
 			Address:         power.Address,
-			ParentTipSet:    oldStateTs.Key(),
-			TipSet:          newStateTs.Key(),
+			ParentTipSet:    oldStateTs,
+			TipSet:          newStateTs,
 			ParentStateRoot: newStateTs.ParentState(),
 		}
 

@@ -34,12 +34,7 @@ func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node ActorState
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
 
-	rewardActor, err := node.StateGetActor(ctx, reward.Address, a.TipSet)
-	if err != nil {
-		return nil, err
-	}
-
-	rstate, err := reward.Load(node.Store(), rewardActor)
+	rstate, err := reward.Load(node.Store(), &a.Actor)
 	if err != nil {
 		return nil, err
 	}

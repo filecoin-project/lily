@@ -23,7 +23,7 @@ func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateA
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
 
-	ast, err := node.StateReadState(ctx, a.Address, a.TipSet)
+	ast, err := node.StateReadState(ctx, a.Address, a.TipSet.Key())
 	if err != nil {
 		return nil, err
 	}

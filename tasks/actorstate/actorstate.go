@@ -28,20 +28,25 @@ type ActorInfo struct {
 	Address         address.Address
 	ParentStateRoot cid.Cid
 	Epoch           abi.ChainEpoch
-	TipSet          types.TipSetKey
-	ParentTipSet    types.TipSetKey
+	TipSet          *types.TipSet
+	ParentTipSet    *types.TipSet
 }
 
 // ActorStateAPI is the minimal subset of lens.API that is needed for actor state extraction
 type ActorStateAPI interface {
-	ChainGetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error)
 	ChainGetParentMessages(ctx context.Context, msg cid.Cid) ([]api.Message, error)
 	StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error)
-	ChainHasObj(ctx context.Context, obj cid.Cid) (bool, error)
-	ChainReadObj(ctx context.Context, obj cid.Cid) ([]byte, error)
+
+	// TODO(optimize): StateGetActor is just a wrapper around StateManager.LoadActor with a lookup of the tipset which we already have
 	StateGetActor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error)
+
+	// TODO(optimize): StateMinerPower is just a wrapper for stmgr.GetPowerRaw which loads the power actor as we do in StoragePowerExtractor
 	StateMinerPower(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.MinerPower, error)
+
+	// TODO(optimize): StateReadState looks up the tipset and actor that we already have available
 	StateReadState(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.ActorState, error)
+
+	// TODO(remove): StateMinerSectors loads the actor and then calls miner.Load which StorageMinerExtractor already has available
 	StateMinerSectors(ctx context.Context, addr address.Address, bf *bitfield.BitField, tsk types.TipSetKey) ([]*miner.SectorOnChainInfo, error)
 	Store() adt.Store
 }
