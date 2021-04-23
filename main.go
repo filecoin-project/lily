@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/filecoin-project/lotus/node/repo"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
@@ -106,6 +107,17 @@ func main() {
 			commands.VectorCmd,
 			commands.WatchCmd,
 			commands.WalkCmd,
+			// lotus commands
+			lotuscli.AuthCmd,
+			lotuscli.ChainCmd,
+			lotuscli.LogCmd,
+			lotuscli.MpoolCmd,
+			lotuscli.NetCmd,
+			lotuscli.PprofCmd,
+			lotuscli.StateCmd,
+			lotuscli.SyncCmd,
+			lotuscli.VersionCmd,
+			lotuscli.WaitApiCmd,
 		},
 	}
 	app.Setup()
