@@ -9,6 +9,7 @@ require (
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/filecoin-project/go-address v0.0.5
+	github.com/filecoin-project/go-amt-ipld/v3 v3.0.0
 	github.com/filecoin-project/go-bitfield v0.2.4
 	github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210322074331-9f608df7cbf3
 	github.com/filecoin-project/go-fil-markets v1.2.5
@@ -16,11 +17,11 @@ require (
 	github.com/filecoin-project/go-multistore v0.0.3
 	github.com/filecoin-project/go-paramfetch v0.0.2-0.20200701152213-3e0f0afdc261
 	github.com/filecoin-project/go-state-types v0.1.0
-	github.com/filecoin-project/lotus v1.6.1-0.20210413121043-9e600eac7e8e
+	github.com/filecoin-project/lotus v1.6.1-0.20210423013352-6d0d3be96b3a
 	github.com/filecoin-project/specs-actors v0.9.13
 	github.com/filecoin-project/specs-actors/v2 v2.3.5-0.20210114162132-5b58b773f4fb
-	github.com/filecoin-project/specs-actors/v3 v3.1.0
-	github.com/filecoin-project/specs-actors/v4 v4.0.0-20210416122111-a0f750e10747
+	github.com/filecoin-project/specs-actors/v3 v3.1.1-0.20210423003723-f3a5e214e736
+	github.com/filecoin-project/specs-actors/v4 v4.0.0-20210423013114-ac575d7d5b89
 	github.com/filecoin-project/statediff v0.0.23-0.20210325142844-f4ed79079579
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.3.1

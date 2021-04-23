@@ -67,7 +67,7 @@ func DefaultConf() *Conf {
 		Storage: StorageConf{
 			Postgresql: map[string]PgStorageConf{
 				"Database1": {
-					URL:             "postgres://postgres:password@localhost:5432/postgres",
+					URL:             "postgres://postgres:password@localhost:5432/postgres?sslmode=disable",
 					PoolSize:        20,
 					ApplicationName: "visor",
 					AllowUpsert:     false,
