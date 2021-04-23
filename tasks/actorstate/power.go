@@ -32,24 +32,14 @@ func init() {
 }
 
 func NewPowerStateExtractionContext(ctx context.Context, a ActorInfo, node ActorStateAPI) (*PowerStateExtractionContext, error) {
-	curActor, err := node.StateGetActor(ctx, a.Address, a.TipSet)
-	if err != nil {
-		return nil, xerrors.Errorf("loading current power actor: %w", err)
-	}
-
-	curTipset, err := node.ChainGetTipSet(ctx, a.TipSet)
-	if err != nil {
-		return nil, xerrors.Errorf("loading current tipset: %w", err)
-	}
-
-	curState, err := power.Load(node.Store(), curActor)
+	curState, err := power.Load(node.Store(), &a.Actor)
 	if err != nil {
 		return nil, xerrors.Errorf("loading current power state: %w", err)
 	}
 
 	prevState := curState
 	if a.Epoch != 0 {
-		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet)
+		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
 		if err != nil {
 			// if the actor exists in the current state and not in the parent state then the
 			// actor was created in the current state.
@@ -57,10 +47,10 @@ func NewPowerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 				return &PowerStateExtractionContext{
 					PrevState: prevState,
 					CurrState: curState,
-					CurrTs:    curTipset,
+					CurrTs:    a.TipSet,
 				}, nil
 			}
-			return nil, xerrors.Errorf("loading previous power actor at tipset %s epoch %d: %w", a.ParentTipSet, a.Epoch, err)
+			return nil, xerrors.Errorf("loading previous power actor at tipset %s epoch %d: %w", a.ParentTipSet.Key(), a.Epoch, err)
 		}
 
 		prevState, err = power.Load(node.Store(), prevActor)
@@ -71,7 +61,7 @@ func NewPowerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 	return &PowerStateExtractionContext{
 		PrevState: prevState,
 		CurrState: curState,
-		CurrTs:    curTipset,
+		CurrTs:    a.TipSet,
 	}, nil
 }
 

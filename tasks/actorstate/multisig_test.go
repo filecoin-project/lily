@@ -87,8 +87,8 @@ func TestMultisigExtractorV0(t *testing.T) {
 			Actor:        types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: txStateCid},
 			Epoch:        1, // not genesis
 			Address:      multiSigAddress,
-			TipSet:       txStateTs.Key(),
-			ParentTipSet: emptyTxStateTs.Key(),
+			TipSet:       txStateTs,
+			ParentTipSet: emptyTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -173,8 +173,8 @@ func TestMultisigExtractorV0(t *testing.T) {
 			Actor:        types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: secondTxStateCid},
 			Epoch:        1, // not genesis
 			Address:      multiSigAddress,
-			TipSet:       secondTxStateTs.Key(),
-			ParentTipSet: singleTxStateTs.Key(),
+			TipSet:       secondTxStateTs,
+			ParentTipSet: singleTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -233,7 +233,7 @@ func TestMultisigExtractorV0(t *testing.T) {
 			Actor:   types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: singleTxStateCid},
 			Epoch:   0, // genesis
 			Address: multiSigAddress,
-			TipSet:  genesisTs.Key(),
+			TipSet:  genesisTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -315,8 +315,8 @@ func TestMultisigExtractorV2(t *testing.T) {
 			Actor:        types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: txStateCid},
 			Epoch:        1, // not genesis
 			Address:      multiSigAddress,
-			TipSet:       txStateTs.Key(),
-			ParentTipSet: emptyTxStateTs.Key(),
+			TipSet:       txStateTs,
+			ParentTipSet: emptyTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -401,8 +401,8 @@ func TestMultisigExtractorV2(t *testing.T) {
 			Actor:        types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: secondTxStateCid},
 			Epoch:        1, // not genesis
 			Address:      multiSigAddress,
-			TipSet:       secondTxStateTs.Key(),
-			ParentTipSet: singleTxStateTs.Key(),
+			TipSet:       secondTxStateTs,
+			ParentTipSet: singleTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -461,7 +461,7 @@ func TestMultisigExtractorV2(t *testing.T) {
 			Actor:   types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: singleTxStateCid},
 			Epoch:   0, // genesis
 			Address: multiSigAddress,
-			TipSet:  genesisTs.Key(),
+			TipSet:  genesisTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -546,8 +546,8 @@ func TestMultisigExtractorV3(t *testing.T) {
 			Actor:        types.Actor{Code: sa3builtin.MultisigActorCodeID, Head: txStateCid},
 			Epoch:        1, // not genesis
 			Address:      multiSigAddress,
-			TipSet:       txStateTs.Key(),
-			ParentTipSet: emptyTxStateTs.Key(),
+			TipSet:       txStateTs,
+			ParentTipSet: emptyTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -632,8 +632,8 @@ func TestMultisigExtractorV3(t *testing.T) {
 			Actor:        types.Actor{Code: sa3builtin.MultisigActorCodeID, Head: secondTxStateCid},
 			Epoch:        1, // not genesis
 			Address:      multiSigAddress,
-			TipSet:       secondTxStateTs.Key(),
-			ParentTipSet: singleTxStateTs.Key(),
+			TipSet:       secondTxStateTs,
+			ParentTipSet: singleTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -692,7 +692,7 @@ func TestMultisigExtractorV3(t *testing.T) {
 			Actor:   types.Actor{Code: sa3builtin.MultisigActorCodeID, Head: singleTxStateCid},
 			Epoch:   0, // genesis
 			Address: multiSigAddress,
-			TipSet:  genesisTs.Key(),
+			TipSet:  genesisTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -777,8 +777,8 @@ func TestMultisigExtractorV4(t *testing.T) {
 			Actor:        types.Actor{Code: sa4builtin.MultisigActorCodeID, Head: txStateCid},
 			Epoch:        1, // not genesis
 			Address:      multiSigAddress,
-			TipSet:       txStateTs.Key(),
-			ParentTipSet: emptyTxStateTs.Key(),
+			TipSet:       txStateTs,
+			ParentTipSet: emptyTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -863,8 +863,8 @@ func TestMultisigExtractorV4(t *testing.T) {
 			Actor:        types.Actor{Code: sa4builtin.MultisigActorCodeID, Head: secondTxStateCid},
 			Epoch:        1, // not genesis
 			Address:      multiSigAddress,
-			TipSet:       secondTxStateTs.Key(),
-			ParentTipSet: singleTxStateTs.Key(),
+			TipSet:       secondTxStateTs,
+			ParentTipSet: singleTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -923,7 +923,7 @@ func TestMultisigExtractorV4(t *testing.T) {
 			Actor:   types.Actor{Code: sa4builtin.MultisigActorCodeID, Head: singleTxStateCid},
 			Epoch:   0, // genesis
 			Address: multiSigAddress,
-			TipSet:  genesisTs.Key(),
+			TipSet:  genesisTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}

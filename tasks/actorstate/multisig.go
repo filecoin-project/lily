@@ -129,11 +129,6 @@ func (m *MsigExtractionContext) HasPreviousState() bool {
 }
 
 func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorStateAPI) (*MsigExtractionContext, error) {
-	curTipset, err := node.ChainGetTipSet(ctx, a.TipSet)
-	if err != nil {
-		return nil, xerrors.Errorf("loading current tipset %s: %w", a.TipSet.String(), err)
-	}
-
 	curState, err := multisig.Load(node.Store(), &a.Actor)
 	if err != nil {
 		return nil, xerrors.Errorf("loading current multisig state at head %s: %w", a.Actor.Head, err)
@@ -141,7 +136,7 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 
 	prevState := curState
 	if a.Epoch != 0 {
-		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet)
+		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
 		if err != nil {
 			// if the actor exists in the current state and not in the parent state then the
 			// actor was created in the current state.
@@ -150,10 +145,10 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 					PrevState: prevState,
 					CurrActor: &a.Actor,
 					CurrState: curState,
-					CurrTs:    curTipset,
+					CurrTs:    a.TipSet,
 				}, nil
 			}
-			return nil, xerrors.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet, a.Epoch, err)
+			return nil, xerrors.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet.Key(), a.Epoch, err)
 		}
 
 		prevState, err = multisig.Load(node.Store(), prevActor)
@@ -166,6 +161,6 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 		PrevState: prevState,
 		CurrActor: &a.Actor,
 		CurrState: curState,
-		CurrTs:    curTipset,
+		CurrTs:    a.TipSet,
 	}, nil
 }

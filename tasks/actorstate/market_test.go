@@ -131,7 +131,7 @@ func TestMarketPredicates(t *testing.T) {
 
 	newStateCid := mapi.mustCreateMarketState(ctx, newDeals, newProps, newBalances)
 
-	minerAddr := tutils.NewIDAddr(t, 00)
+	minerAddr := tutils.NewIDAddr(t, 0o0)
 
 	oldStateTs := mapi.fakeTipset(minerAddr, 1)
 	mapi.setActor(oldStateTs.Key(), market.Address, &types.Actor{Code: sabuiltin.StorageMarketActorCodeID, Head: oldStateCid})
@@ -141,8 +141,8 @@ func TestMarketPredicates(t *testing.T) {
 	info := actorstate.ActorInfo{
 		Actor:        types.Actor{Code: sabuiltin.StorageMarketActorCodeID, Head: newStateCid},
 		Address:      market.Address,
-		TipSet:       newStateTs.Key(),
-		ParentTipSet: oldStateTs.Key(),
+		TipSet:       newStateTs,
+		ParentTipSet: oldStateTs,
 		Epoch:        1, // must be greater than zero else this has special handling for genesis block.
 	}
 

@@ -149,8 +149,8 @@ func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pt
 		Address:         addr,
 		ParentStateRoot: ts.ParentState(),
 		Epoch:           ts.Height(),
-		TipSet:          ts.Key(),
-		ParentTipSet:    ts.Parents(),
+		TipSet:          ts,
+		ParentTipSet:    pts,
 	}
 
 	extracter, ok := t.extracterMap.GetExtractor(act.Code)

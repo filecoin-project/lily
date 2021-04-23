@@ -74,8 +74,7 @@ func (p *GenesisProcessor) ProcessGenesis(ctx context.Context, gen *types.TipSet
 				Address:         addr,
 				ParentStateRoot: gen.ParentState(),
 				Epoch:           gen.Height(),
-				TipSet:          gen.Key(),
-				ParentTipSet:    gen.Parents(),
+				TipSet:          gen,
 			}, p.node)
 			if err != nil {
 				return xerrors.Errorf("power actor state: %w", err)
@@ -96,8 +95,7 @@ func (p *GenesisProcessor) ProcessGenesis(ctx context.Context, gen *types.TipSet
 				Address:         addr,
 				ParentStateRoot: gen.ParentState(),
 				Epoch:           gen.Height(),
-				TipSet:          gen.Key(),
-				ParentTipSet:    gen.Parents(),
+				TipSet:          gen,
 			}, p.node)
 			if err != nil {
 				return xerrors.Errorf("storage miner actor state: %w", err)
@@ -113,8 +111,7 @@ func (p *GenesisProcessor) ProcessGenesis(ctx context.Context, gen *types.TipSet
 				Address:         addr,
 				ParentStateRoot: gen.ParentState(),
 				Epoch:           gen.Height(),
-				TipSet:          gen.Key(),
-				ParentTipSet:    gen.Parents(),
+				TipSet:          gen,
 			}, p.node)
 			if err != nil {
 				return xerrors.Errorf("multisig actor state: %w", err)
