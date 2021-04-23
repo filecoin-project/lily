@@ -7,9 +7,10 @@ require (
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/BurntSushi/toml v0.3.1
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
+	github.com/evanw/esbuild v0.8.54 // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/filecoin-project/go-address v0.0.5
-	github.com/filecoin-project/go-amt-ipld/v3 v3.0.0
+	github.com/filecoin-project/go-amt-ipld/v3 v3.0.0-20210422152703-204509574c19
 	github.com/filecoin-project/go-bitfield v0.2.4
 	github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210322074331-9f608df7cbf3
 	github.com/filecoin-project/go-fil-markets v1.2.5
@@ -22,7 +23,7 @@ require (
 	github.com/filecoin-project/specs-actors/v2 v2.3.5-0.20210114162132-5b58b773f4fb
 	github.com/filecoin-project/specs-actors/v3 v3.1.1-0.20210423003723-f3a5e214e736
 	github.com/filecoin-project/specs-actors/v4 v4.0.0-20210423013114-ac575d7d5b89
-	github.com/filecoin-project/statediff v0.0.23-0.20210325142844-f4ed79079579
+	github.com/filecoin-project/statediff v0.0.15
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.3.1
 	github.com/go-pg/pgext v0.1.4
@@ -39,7 +40,9 @@ require (
 	github.com/ipfs/go-log/v2 v2.1.2
 	github.com/ipfs/go-merkledag v0.3.2
 	github.com/ipld/go-car v0.1.1-0.20201119040415-11b6074b6d4d
+	github.com/ipld/go-ipld-graphql v0.0.0-20210225034639-cece726cd342 // indirect
 	github.com/ipld/go-ipld-prime v0.7.0
+	github.com/klauspost/compress v1.11.9 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.9.0
 	github.com/libp2p/go-libp2p-core v0.7.0
