@@ -128,8 +128,8 @@ func (m *LilyNodeAPI) Open(_ context.Context) (lens.API, lens.APICloser, error) 
 	return m, func() {}, nil
 }
 
-func (m *LilyNodeAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
-	return util.GetExecutedMessagesForTipset(ctx, m.ChainAPI.Chain, ts, pts)
+func (m *LilyNodeAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, []*lens.BlockMessages, error) {
+	return util.GetExecutedAndBlockMessagesForTipset(ctx, m.ChainAPI.Chain, ts, pts)
 }
 
 func (m *LilyNodeAPI) Store() adt.Store {

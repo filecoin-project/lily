@@ -40,7 +40,7 @@ func NewTask(opener lens.APIOpener) *Task {
 	}
 }
 
-func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage, _ []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error) {
 	// We use p.node continually through this method so take a broad lock
 	p.nodeMu.Lock()
 	defer p.nodeMu.Unlock()

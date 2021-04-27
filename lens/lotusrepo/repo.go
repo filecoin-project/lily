@@ -109,8 +109,8 @@ type RepoAPI struct {
 	cacheSize int
 }
 
-func (ra *RepoAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
-	return util.GetExecutedMessagesForTipset(ctx, ra.FullNodeAPI.ChainAPI.Chain, ts, pts)
+func (ra *RepoAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, []*lens.BlockMessages, error) {
+	return util.GetExecutedAndBlockMessagesForTipset(ctx, ra.FullNodeAPI.ChainAPI.Chain, ts, pts)
 }
 
 func (ra *RepoAPI) Store() adt.Store {

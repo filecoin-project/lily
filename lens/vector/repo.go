@@ -145,8 +145,8 @@ func (c *CaptureAPI) Store() adt.Store {
 	return adtStore
 }
 
-func (c *CaptureAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
-	return util.GetExecutedMessagesForTipset(ctx, c.FullNodeAPI.ChainAPI.Chain, ts, pts)
+func (c *CaptureAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, []*lens.BlockMessages, error) {
+	return util.GetExecutedAndBlockMessagesForTipset(ctx, c.FullNodeAPI.ChainAPI.Chain, ts, pts)
 }
 
 // From https://github.com/ribasushi/ltsh/blob/5b0211033020570217b0ae37b50ee304566ac218/cmd/lotus-shed/deallifecycles.go#L41-L171
