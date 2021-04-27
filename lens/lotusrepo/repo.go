@@ -197,6 +197,19 @@ func (ra *RepoAPI) ClientRetrieveTryRestartInsufficientFunds(ctx context.Context
 	return fmt.Errorf("unsupported")
 }
 
+func (ra *RepoAPI) StateGetReceipt(ctx context.Context, msg cid.Cid, from types.TipSetKey) (*types.MessageReceipt, error) {
+	ml, err := ra.StateSearchMsg(ctx, from, msg, api.LookbackNoLimit, true)
+	if err != nil {
+		return nil, err
+	}
+
+	if ml == nil {
+		return nil, nil
+	}
+
+	return &ml.Receipt, nil
+}
+
 // From https://github.com/ribasushi/ltsh/blob/5b0211033020570217b0ae37b50ee304566ac218/cmd/lotus-shed/deallifecycles.go#L41-L171
 type fakeVerifier struct{}
 

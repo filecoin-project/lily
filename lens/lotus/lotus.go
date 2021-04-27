@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/filecoin-project/lotus/api/client"
+	"github.com/filecoin-project/lotus/api/v0api"
 	"github.com/filecoin-project/lotus/node/repo"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/mitchellh/go-homedir"
@@ -89,10 +90,12 @@ func NewAPIOpener(cctx *cli.Context, cacheSize int) (*APIOpener, lens.APICloser,
 }
 
 func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) {
-	api, closer, err := client.NewFullNodeRPC(ctx, o.addr, o.headers)
+	apiv1, closer, err := client.NewFullNodeRPCV1(ctx, o.addr, o.headers)
 	if err != nil {
 		return nil, nil, xerrors.Errorf("new full node rpc: %w", err)
 	}
+
+	api := &v0api.WrapperV1Full{FullNode: apiv1}
 
 	cacheStore, err := NewCacheCtxStore(ctx, api, o.cache)
 	if err != nil {

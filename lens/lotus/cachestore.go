@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/api/v0api"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/ipfs/go-cid"
@@ -18,10 +18,10 @@ import (
 type CacheCtxStore struct {
 	cache *lru.ARCCache
 	ctx   context.Context
-	api   api.FullNode
+	api   v0api.FullNode
 }
 
-func NewCacheCtxStore(ctx context.Context, api api.FullNode, cache *lru.ARCCache) (*CacheCtxStore, error) {
+func NewCacheCtxStore(ctx context.Context, api v0api.FullNode, cache *lru.ARCCache) (*CacheCtxStore, error) {
 	return &CacheCtxStore{
 		cache: cache,
 		ctx:   ctx,

@@ -6,6 +6,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/api/v0api"
 	"github.com/filecoin-project/lotus/blockstore"
 	builtininit "github.com/filecoin-project/lotus/chain/actors/builtin/init"
 	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
@@ -23,7 +24,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
-func NewAPIWrapper(node api.FullNode, store adt.Store) *APIWrapper {
+func NewAPIWrapper(node v0api.FullNode, store adt.Store) *APIWrapper {
 	return &APIWrapper{
 		FullNode: node,
 		store:    store,
@@ -33,7 +34,7 @@ func NewAPIWrapper(node api.FullNode, store adt.Store) *APIWrapper {
 var _ lens.API = &APIWrapper{}
 
 type APIWrapper struct {
-	api.FullNode
+	v0api.FullNode
 	store adt.Store
 }
 
