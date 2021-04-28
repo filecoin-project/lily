@@ -275,6 +275,7 @@ func (c *LotusChainNotifier) Run(ctx context.Context) error {
 		return xerrors.Errorf("open lens: %w", err)
 	}
 	defer closer()
+	log.Debugw("lens opened")
 
 	hc, err := node.ChainNotify(ctx)
 	if err != nil {
