@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/filecoin-project/lotus/api"
 	apitest "github.com/filecoin-project/lotus/api/test"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
@@ -67,4 +68,17 @@ func (aw *APIWrapper) Put(ctx context.Context, v interface{}) (cid.Cid, error) {
 
 func (aw *APIWrapper) Context() context.Context {
 	return aw.ctx
+}
+
+func (aw *APIWrapper) StateGetReceipt(ctx context.Context, msg cid.Cid, from types.TipSetKey) (*types.MessageReceipt, error) {
+	ml, err := aw.StateSearchMsg(ctx, from, msg, api.LookbackNoLimit, true)
+	if err != nil {
+		return nil, err
+	}
+
+	if ml == nil {
+		return nil, nil
+	}
+
+	return &ml.Receipt, nil
 }

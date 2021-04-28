@@ -3,7 +3,7 @@ package lily
 import (
 	"context"
 
-	"github.com/filecoin-project/lotus/api/apistruct"
+	"github.com/filecoin-project/lotus/api/v0api"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	logging "github.com/ipfs/go-log/v2"
@@ -16,11 +16,11 @@ var log = logging.Logger("lily-api")
 
 type LilyAPIStruct struct {
 	// authentication
-	apistruct.CommonStruct
+	v0api.CommonStruct
 
 	// chain notifications and inspection
 	// actor state extraction
-	apistruct.FullNodeStruct
+	v0api.FullNodeStruct
 
 	Internal struct {
 		Store                        func() adt.Store                                                                     `perm:"read"`

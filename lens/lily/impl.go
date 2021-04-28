@@ -4,13 +4,14 @@ import (
 	"context"
 	"sync"
 
-	"go.uber.org/fx"
-
+	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/node/impl/common"
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	"github.com/ipfs/go-cid"
+	"go.uber.org/fx"
 
 	"github.com/filecoin-project/sentinel-visor/chain"
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -134,6 +135,19 @@ func (m *LilyNodeAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 
 func (m *LilyNodeAPI) Store() adt.Store {
 	return m.ChainAPI.Chain.ActorStore(context.TODO())
+}
+
+func (m *LilyNodeAPI) StateGetReceipt(ctx context.Context, msg cid.Cid, from types.TipSetKey) (*types.MessageReceipt, error) {
+	ml, err := m.StateSearchMsg(ctx, from, msg, api.LookbackNoLimit, true)
+	if err != nil {
+		return nil, err
+	}
+
+	if ml == nil {
+		return nil, nil
+	}
+
+	return &ml.Receipt, nil
 }
 
 var _ LilyAPI = &LilyNodeAPI{}

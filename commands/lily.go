@@ -19,7 +19,7 @@ func GetAPI(ctx context.Context, addrStr string, token string) (lily.LilyAPI, js
 
 	ainfo := cliutil.APIInfo{Addr: addrStr, Token: []byte(token)}
 
-	addr, err := ainfo.DialArgs()
+	addr, err := ainfo.DialArgs("v0")
 	if err != nil {
 		return nil, nil, xerrors.Errorf("could not get DialArgs: %w", err)
 	}
