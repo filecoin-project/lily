@@ -120,6 +120,7 @@ jobs:
             DOCKERIZE_VERSION: v0.3.0
       - run: sudo apt-get update
       - run: make deps
+      - run: make vector-setup
       - run: make build
       - run:
           name: waiting for db
