@@ -282,7 +282,12 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 	// Wait for all tasks to complete
 	for inFlight > 0 {
-		res := <-results
+		var res *TaskResult
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case res = <-results:
+		}
 		inFlight--
 
 		llt := ll.With("task", res.Task)

@@ -21,7 +21,9 @@ var log = logging.Logger("schedule")
 
 type Job interface {
 	// Run starts running the task and blocks until the context is done or
-	// an error occurs.
+	// an error occurs. Run may be called again after an error or timeout to
+	// retry the job so implemententions must ensure that Run resets any
+	// necessary state.
 	Run(context.Context) error
 }
 

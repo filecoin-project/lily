@@ -99,6 +99,9 @@ func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) 
 
 	cacheStore, err := NewCacheCtxStore(ctx, api, o.cache)
 	if err != nil {
+		if closer != nil {
+			closer()
+		}
 		return nil, nil, xerrors.Errorf("new cache store: %w", err)
 	}
 

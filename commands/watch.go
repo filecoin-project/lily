@@ -275,6 +275,7 @@ func (c *LotusChainNotifier) Run(ctx context.Context) error {
 		return xerrors.Errorf("open lens: %w", err)
 	}
 	defer closer()
+	log.Debugw("lens opened")
 
 	hc, err := node.ChainNotify(ctx)
 	if err != nil {
@@ -284,12 +285,10 @@ func (c *LotusChainNotifier) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			c.Cancel(ctx.Err())
-			return nil
+			return ctx.Err()
 		case headEvents, ok := <-hc:
 			if !ok {
-				c.Cancel(xerrors.Errorf("ChainNotify channel closed"))
-				return nil
+				return xerrors.Errorf("ChainNotify channel closed")
 			}
 
 			for _, ch := range headEvents {
