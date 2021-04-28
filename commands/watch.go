@@ -242,10 +242,7 @@ func NewLotusChainNotifier(opener lens.APIOpener) *LotusChainNotifier {
 }
 
 func (c *LotusChainNotifier) HeadEvents() <-chan *chain.HeadEvent {
-	c.mu.Lock()
-	events := c.events
-	c.mu.Unlock()
-	return events
+	return c.events
 }
 
 func (c *LotusChainNotifier) Err() error {
