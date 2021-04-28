@@ -270,25 +270,9 @@ func (c *LotusChainNotifier) Cancel(err error) {
 	c.mu.Unlock()
 }
 
-func (c *LotusChainNotifier) reset() {
-	c.mu.Lock()
-	if c.err == nil {
-		// close the existing channel to signal waiters that they can stop
-		// if c.err is non-nil then the channel is already closed
-		close(c.events)
-	}
-
-	// reset the error and event channel
-	c.err = nil
-	c.events = make(chan *chain.HeadEvent)
-	c.mu.Unlock()
-}
-
 // Run subscribes to ChainNotify and blocks until the context is done or
 // an error occurs.
 func (c *LotusChainNotifier) Run(ctx context.Context) error {
-	c.reset()
-
 	node, closer, err := c.opener.Open(ctx)
 	if err != nil {
 		return xerrors.Errorf("open lens: %w", err)
@@ -304,12 +288,10 @@ func (c *LotusChainNotifier) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			c.Cancel(ctx.Err())
-			return nil
+			return ctx.Err()
 		case headEvents, ok := <-hc:
 			if !ok {
-				c.Cancel(xerrors.Errorf("ChainNotify channel closed"))
-				return nil
+				return xerrors.Errorf("ChainNotify channel closed")
 			}
 
 			for _, ch := range headEvents {
