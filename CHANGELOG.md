@@ -6,6 +6,23 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
 
+<a name="v0.6.2"></a>
+## [v0.6.2] - 2021-04-28
+
+### Fix
+ - improve reliability of reconnecting to lotus after disconnect
+
+### Feat
+ - Upgrade lotus dependency to v1.8.0
+ - Import more lotus commands
+
+### Perf
+ - Remove redundant tipset lookups
+
+### Chore
+ - Download vectors before running tests in CI
+
+
 <a name="v0.6.1"></a>
 ## [v0.6.1] - 2021-04-21
 
