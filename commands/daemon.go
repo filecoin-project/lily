@@ -28,12 +28,11 @@ import (
 )
 
 type daemonOpts struct {
-	api            string
-	repo           string
-	bootstrap      bool // TODO: is this necessary - do we want to run visor in this mode?
-	config         string
-	importsnapshot string
-	genesis        string
+	api       string
+	repo      string
+	bootstrap bool // TODO: is this necessary - do we want to run visor in this mode?
+	config    string
+	genesis   string
 }
 
 var daemonFlags daemonOpts
@@ -68,12 +67,6 @@ var DaemonCmd = &cli.Command{
 			Usage:       "Specify path of config file to use.",
 			EnvVars:     []string{"VISOR_CONFIG"},
 			Destination: &daemonFlags.config,
-		},
-		&cli.StringFlag{
-			Name:        "import-snapshot",
-			Usage:       "Import chain state from a given chain export file or url.",
-			EnvVars:     []string{"VISOR_SNAPSHOT"},
-			Destination: &daemonFlags.importsnapshot,
 		},
 		&cli.StringFlag{
 			Name:        "genesis",
@@ -123,12 +116,6 @@ var DaemonCmd = &cli.Command{
 			}
 		} else {
 			genBytes = lotusbuild.MaybeGenesis()
-		}
-
-		if daemonFlags.importsnapshot != "" {
-			if err := util.ImportChain(ctx, r, daemonFlags.importsnapshot, true); err != nil {
-				return err
-			}
 		}
 
 		genesis := node.Options()
