@@ -9,7 +9,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/libp2p/go-libp2p-core/peer"
 
-	// "github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/schedule"
 )
 
@@ -32,7 +31,6 @@ type LilyAPI interface {
 
 	// ID returns peerID of libp2p node backing this API
 	ID(context.Context) (peer.ID, error) //perm:read
-
 }
 
 type LilyWatchConfig struct {
