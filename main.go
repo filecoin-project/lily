@@ -105,9 +105,11 @@ func main() {
 			commands.JobCmd,
 			commands.MigrateCmd,
 			commands.RunCmd,
+			commands.SyncCmd,
 			commands.VectorCmd,
 			commands.WatchCmd,
 			commands.WalkCmd,
+
 			// lotus commands
 			lotuscli.AuthCmd,
 			lotuscli.ChainCmd,
@@ -116,7 +118,6 @@ func main() {
 			lotuscli.NetCmd,
 			lotuscli.PprofCmd,
 			lotuscli.StateCmd,
-			lotuscli.SyncCmd,
 			lotuscli.VersionCmd,
 			lotuscli.WaitApiCmd,
 		},

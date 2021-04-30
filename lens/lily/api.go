@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-jsonrpc/auth"
+	"github.com/filecoin-project/lotus/api"
+
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/schedule"
 )
@@ -20,6 +22,10 @@ type LilyAPI interface {
 	LilyJobStart(ctx context.Context, ID schedule.JobID) error
 	LilyJobStop(ctx context.Context, ID schedule.JobID) error
 	LilyJobList(ctx context.Context) ([]schedule.JobResult, error)
+
+	// SyncState returns the current status of the lotus sync system.
+	SyncState(context.Context) (*api.SyncState, error) //perm:read
+
 }
 
 type LilyWatchConfig struct {
