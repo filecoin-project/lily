@@ -101,6 +101,7 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			commands.DaemonCmd,
+			commands.InitCmd,
 			commands.JobCmd,
 			commands.MigrateCmd,
 			commands.RunCmd,
