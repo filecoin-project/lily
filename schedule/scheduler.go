@@ -87,6 +87,8 @@ func NewScheduler(jobDelay time.Duration, scheduledJobs ...*JobConfig) *Schedule
 
 		workerJobComplete: make(chan struct{}),
 		workerJobsRunning: 0,
+
+		daemonMode: false,
 	}
 
 	// scheduled jobs added here will be started when Scheduler.Run is called.
@@ -101,6 +103,7 @@ func NewScheduler(jobDelay time.Duration, scheduledJobs ...*JobConfig) *Schedule
 
 func NewSchedulerDaemon(mctx helpers.MetricsCtx, lc fx.Lifecycle) *Scheduler {
 	s := NewScheduler(0)
+	s.daemonMode = true
 	go func() {
 		if err := s.Run(mctx); err != nil {
 			if err != context.Canceled {
@@ -131,6 +134,10 @@ type Scheduler struct {
 
 	workerJobComplete chan struct{}
 	workerJobsRunning int
+
+	// if daemonMode is set to true the scheduler will continue to run until its context is canceled.
+	// else the scheduler will exit when all scheduled jobs are complete.
+	daemonMode bool
 }
 
 func (s *Scheduler) Submit(jc *JobConfig) JobID {
@@ -185,6 +192,9 @@ func (s *Scheduler) Run(ctx context.Context) error {
 			s.scheduledJobsRunning--
 			if s.scheduledJobsRunning == 0 {
 				log.Info("no scheduled jobs running")
+			}
+			if !s.daemonMode {
+				return nil
 			}
 		case <-s.workerJobComplete:
 			s.workerJobsRunning--
