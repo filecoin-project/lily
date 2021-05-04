@@ -192,9 +192,10 @@ func (s *Scheduler) Run(ctx context.Context) error {
 			s.scheduledJobsRunning--
 			if s.scheduledJobsRunning == 0 {
 				log.Info("no scheduled jobs running")
-			}
-			if !s.daemonMode {
-				return nil
+				if !s.daemonMode {
+					log.Info("all scheduled jobs complete, scheduler exiting")
+					return nil
+				}
 			}
 		case <-s.workerJobComplete:
 			s.workerJobsRunning--
