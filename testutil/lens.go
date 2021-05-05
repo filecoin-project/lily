@@ -39,8 +39,8 @@ func (aw *APIWrapper) Store() adt.Store {
 	return aw
 }
 
-func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
-	return nil, xerrors.Errorf("GetExecutedMessagesForTipset is not implemented")
+func (aw *APIWrapper) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, []*lens.BlockMessages, error) {
+	return nil, nil, xerrors.Errorf("GetExecutedAndBlockMessagesForTipset is not implemented")
 }
 
 func (aw *APIWrapper) Get(ctx context.Context, c cid.Cid, out interface{}) error {

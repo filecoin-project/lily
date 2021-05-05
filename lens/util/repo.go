@@ -116,8 +116,8 @@ type LensAPI struct {
 	cs        *store.ChainStore
 }
 
-func (ra *LensAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
-	return GetExecutedMessagesForTipset(ctx, ra.cs, ts, pts)
+func (ra *LensAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, []*lens.BlockMessages, error) {
+	return GetExecutedAndBlockMessagesForTipset(ctx, ra.cs, ts, pts)
 }
 
 func (ra *LensAPI) Store() adt.Store {
@@ -239,30 +239,31 @@ func (m fakeVerifier) GenerateWinningPoStSectorChallenge(ctx context.Context, pr
 }
 
 // GetMessagesForTipset returns a list of messages sent as part of pts (parent) with receipts found in ts (child).
-// No attempt at deduplication of messages is made.
-func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
+// No attempt at deduplication of messages is made. A list of blocks with their corresponding messages is also returned - it contains all messages
+// in the block regardless if they were applied during the state change.
+func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, []*lens.BlockMessages, error) {
 	if !types.CidArrsEqual(ts.Parents().Cids(), pts.Cids()) {
-		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", ts.Key(), pts.Key())
+		return nil, nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", ts.Key(), pts.Key())
 	}
 
 	stateTree, err := state.LoadStateTree(cs.ActorStore(ctx), ts.ParentState())
 	if err != nil {
-		return nil, xerrors.Errorf("load state tree: %w", err)
+		return nil, nil, xerrors.Errorf("load state tree: %w", err)
 	}
 
 	parentStateTree, err := state.LoadStateTree(cs.ActorStore(ctx), pts.ParentState())
 	if err != nil {
-		return nil, xerrors.Errorf("load state tree: %w", err)
+		return nil, nil, xerrors.Errorf("load state tree: %w", err)
 	}
 
 	initActor, err := stateTree.GetActor(builtininit.Address)
 	if err != nil {
-		return nil, xerrors.Errorf("getting init actor: %w", err)
+		return nil, nil, xerrors.Errorf("getting init actor: %w", err)
 	}
 
 	initActorState, err := builtininit.Load(cs.ActorStore(ctx), initActor)
 	if err != nil {
-		return nil, xerrors.Errorf("loading init actor state: %w", err)
+		return nil, nil, xerrors.Errorf("loading init actor state: %w", err)
 	}
 
 	// Build a lookup of actor codes
@@ -271,7 +272,7 @@ func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts,
 		actorCodes[a] = act.Code
 		return nil
 	}); err != nil {
-		return nil, xerrors.Errorf("iterate actors: %w", err)
+		return nil, nil, xerrors.Errorf("iterate actors: %w", err)
 	}
 
 	getActorCode := func(a address.Address) cid.Cid {
@@ -293,7 +294,7 @@ func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts,
 	for blockIdx, bh := range pts.Blocks() {
 		blscids, secpkcids, err := cs.ReadMsgMetaCids(bh.Messages)
 		if err != nil {
-			return nil, xerrors.Errorf("read messages for block: %w", err)
+			return nil, nil, xerrors.Errorf("read messages for block: %w", err)
 		}
 
 		for _, c := range blscids {
@@ -308,13 +309,13 @@ func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts,
 
 	bmsgs, err := cs.BlockMsgsForTipset(pts)
 	if err != nil {
-		return nil, xerrors.Errorf("block messages for tipset: %w", err)
+		return nil, nil, xerrors.Errorf("block messages for tipset: %w", err)
 	}
 
 	pblocks := pts.Blocks()
 	if len(bmsgs) != len(pblocks) {
 		// logic error somewhere
-		return nil, xerrors.Errorf("mismatching number of blocks returned from block messages, got %d wanted %d", len(bmsgs), len(pblocks))
+		return nil, nil, xerrors.Errorf("mismatching number of blocks returned from block messages, got %d wanted %d", len(bmsgs), len(pblocks))
 	}
 
 	count := 0
@@ -363,12 +364,12 @@ func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts,
 	// Retrieve receipts using a block from the child tipset
 	rs, err := adt.AsArray(cs.ActorStore(ctx), ts.Blocks()[0].ParentMessageReceipts)
 	if err != nil {
-		return nil, xerrors.Errorf("amt load: %w", err)
+		return nil, nil, xerrors.Errorf("amt load: %w", err)
 	}
 
 	if rs.Length() != uint64(len(emsgs)) {
 		// logic error somewhere
-		return nil, xerrors.Errorf("mismatching number of receipts: got %d wanted %d", rs.Length(), len(emsgs))
+		return nil, nil, xerrors.Errorf("mismatching number of receipts: got %d wanted %d", rs.Length(), len(emsgs))
 	}
 
 	// Create a skeleton vm just for calling ShouldBurn
@@ -378,27 +379,39 @@ func GetExecutedMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts,
 		Bstore:    cs.StateBlockstore(),
 	})
 	if err != nil {
-		return nil, xerrors.Errorf("creating temporary vm: %w", err)
+		return nil, nil, xerrors.Errorf("creating temporary vm: %w", err)
 	}
 
 	// Receipts are in same order as BlockMsgsForTipset
 	for _, em := range emsgs {
 		var r types.MessageReceipt
 		if found, err := rs.Get(em.Index, &r); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else if !found {
-			return nil, xerrors.Errorf("failed to find receipt %d", em.Index)
+			return nil, nil, xerrors.Errorf("failed to find receipt %d", em.Index)
 		}
 		em.Receipt = &r
 
 		burn, err := vmi.ShouldBurn(parentStateTree, em.Message, em.Receipt.ExitCode)
 		if err != nil {
-			return nil, xerrors.Errorf("deciding whether should burn failed: %w", err)
+			return nil, nil, xerrors.Errorf("deciding whether should burn failed: %w", err)
 		}
 
 		em.GasOutputs = vm.ComputeGasOutputs(em.Receipt.GasUsed, em.Message.GasLimit, em.BlockHeader.ParentBaseFee, em.Message.GasFeeCap, em.Message.GasPremium, burn)
 
 	}
+	blkMsgs := make([]*lens.BlockMessages, len(ts.Blocks()))
+	for idx, blk := range ts.Blocks() {
+		msgs, smsgs, err := cs.MessagesForBlock(blk)
+		if err != nil {
+			return nil, nil, err
+		}
+		blkMsgs[idx] = &lens.BlockMessages{
+			Block:        blk,
+			BlsMessages:  msgs,
+			SecpMessages: smsgs,
+		}
+	}
 
-	return emsgs, nil
+	return emsgs, blkMsgs, nil
 }

@@ -200,35 +200,36 @@ func (aw *APIWrapper) StateVMCirculatingSupplyInternal(ctx context.Context, tsk 
 	return aw.FullNode.StateVMCirculatingSupplyInternal(ctx, tsk)
 }
 
-// GetExecutedMessagesForTipset returns a list of messages sent as part of pts (parent) with receipts found in ts (child).
-// No attempt at deduplication of messages is made.
-func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.API, "GetExecutedMessagesForTipset"))
+// GetExecutedAndBlockMessagesForTipset returns a list of messages sent as part of pts (parent) with receipts found in ts (child).
+// No attempt at deduplication of messages is made. A list of blocks with their corresponding messages is also returned - it contains all messages
+// in the block regardless if they were applied during the state change.
+func (aw *APIWrapper) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, []*lens.BlockMessages, error) {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.API, "GetExecutedAndBlockMessagesForTipset"))
 	stop := metrics.Timer(ctx, metrics.LensRequestDuration)
 	defer stop()
 
 	if !types.CidArrsEqual(ts.Parents().Cids(), pts.Cids()) {
-		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", ts.Key(), pts.Key())
+		return nil, nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", ts.Key(), pts.Key())
 	}
 
 	stateTree, err := state.LoadStateTree(aw.Store(), ts.ParentState())
 	if err != nil {
-		return nil, xerrors.Errorf("load state tree: %w", err)
+		return nil, nil, xerrors.Errorf("load state tree: %w", err)
 	}
 
 	parentStateTree, err := state.LoadStateTree(aw.Store(), pts.ParentState())
 	if err != nil {
-		return nil, xerrors.Errorf("load parent state tree: %w", err)
+		return nil, nil, xerrors.Errorf("load parent state tree: %w", err)
 	}
 
 	initActor, err := stateTree.GetActor(builtininit.Address)
 	if err != nil {
-		return nil, xerrors.Errorf("getting init actor: %w", err)
+		return nil, nil, xerrors.Errorf("getting init actor: %w", err)
 	}
 
 	initActorState, err := builtininit.Load(aw.Store(), initActor)
 	if err != nil {
-		return nil, xerrors.Errorf("loading init actor state: %w", err)
+		return nil, nil, xerrors.Errorf("loading init actor state: %w", err)
 	}
 
 	// Build a lookup of actor codes
@@ -237,7 +238,7 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 		actorCodes[a] = act.Code
 		return nil
 	}); err != nil {
-		return nil, xerrors.Errorf("iterate actors: %w", err)
+		return nil, nil, xerrors.Errorf("iterate actors: %w", err)
 	}
 
 	getActorCode := func(a address.Address) cid.Cid {
@@ -266,7 +267,7 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 	for _, blkCid := range pts.Cids() {
 		blkMsgs, err := aw.ChainGetBlockMessages(ctx, blkCid)
 		if err != nil {
-			return nil, xerrors.Errorf("get block messages: %w", err)
+			return nil, nil, xerrors.Errorf("get block messages: %w", err)
 		}
 
 		for _, mcid := range blkMsgs.Cids {
@@ -277,18 +278,18 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 	// Get messages that were processed in the parent tipset
 	msgs, err := aw.ChainGetParentMessages(ctx, ts.Cids()[0])
 	if err != nil {
-		return nil, xerrors.Errorf("get parent messages: %w", err)
+		return nil, nil, xerrors.Errorf("get parent messages: %w", err)
 	}
 
 	// Get receipts for parent messages
 	rcpts, err := aw.ChainGetParentReceipts(ctx, ts.Cids()[0])
 	if err != nil {
-		return nil, xerrors.Errorf("get parent receipts: %w", err)
+		return nil, nil, xerrors.Errorf("get parent receipts: %w", err)
 	}
 
 	if len(rcpts) != len(msgs) {
 		// logic error somewhere
-		return nil, xerrors.Errorf("mismatching number of receipts: got %d wanted %d", len(rcpts), len(msgs))
+		return nil, nil, xerrors.Errorf("mismatching number of receipts: got %d wanted %d", len(rcpts), len(msgs))
 	}
 
 	// Start building a list of completed message with receipt
@@ -301,7 +302,7 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 		Bstore:    &apiBlockstore{api: aw.FullNode}, // sadly vm wraps this to turn it back into an adt.Store
 	})
 	if err != nil {
-		return nil, xerrors.Errorf("creating temporary vm: %w", err)
+		return nil, nil, xerrors.Errorf("creating temporary vm: %w", err)
 	}
 
 	for index, m := range msgs {
@@ -320,14 +321,28 @@ func (aw *APIWrapper) GetExecutedMessagesForTipset(ctx context.Context, ts, pts 
 
 		burn, err := vmi.ShouldBurn(parentStateTree, m.Message, rcpts[index].ExitCode)
 		if err != nil {
-			return nil, xerrors.Errorf("deciding whether should burn failed: %w", err)
+			return nil, nil, xerrors.Errorf("deciding whether should burn failed: %w", err)
 		}
 
 		em.GasOutputs = vm.ComputeGasOutputs(em.Receipt.GasUsed, em.Message.GasLimit, em.BlockHeader.ParentBaseFee, em.Message.GasFeeCap, em.Message.GasPremium, burn)
 		emsgs = append(emsgs, em)
 	}
 
-	return emsgs, nil
+	blkMsgs := make([]*lens.BlockMessages, len(ts.Blocks()))
+	for idx, blk := range ts.Blocks() {
+		msgs, err := aw.ChainGetBlockMessages(ctx, blk.Cid())
+		if err != nil {
+			return nil, nil, err
+		}
+
+		blkMsgs[idx] = &lens.BlockMessages{
+			Block:        blk,
+			BlsMessages:  msgs.BlsMessages,
+			SecpMessages: msgs.SecpkMessages,
+		}
+	}
+
+	return emsgs, blkMsgs, nil
 }
 
 var _ blockstore.Blockstore = (*apiBlockstore)(nil)

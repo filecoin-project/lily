@@ -21,7 +21,7 @@ type API interface {
 	ChainAPI
 	StateAPI
 
-	GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*ExecutedMessage, error)
+	GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*ExecutedMessage, []*BlockMessages, error)
 }
 
 type StoreAPI interface {
@@ -78,4 +78,10 @@ type ExecutedMessage struct {
 	FromActorCode cid.Cid   // code of the actor the message is from
 	ToActorCode   cid.Cid   // code of the actor the message is to
 	GasOutputs    vm.GasOutputs
+}
+
+type BlockMessages struct {
+	Block        *types.BlockHeader     // block messages appeared in
+	BlsMessages  []*types.Message       // BLS messages in block `Block`
+	SecpMessages []*types.SignedMessage // SECP messages in block `Block`
 }

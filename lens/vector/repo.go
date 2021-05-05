@@ -146,8 +146,8 @@ func (c *CaptureAPI) Store() adt.Store {
 	return adtStore
 }
 
-func (c *CaptureAPI) GetExecutedMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, error) {
-	return util.GetExecutedMessagesForTipset(ctx, c.FullNodeAPI.ChainAPI.Chain, ts, pts)
+func (c *CaptureAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, []*lens.BlockMessages, error) {
+	return util.GetExecutedAndBlockMessagesForTipset(ctx, c.FullNodeAPI.ChainAPI.Chain, ts, pts)
 }
 
 func (c *CaptureAPI) StateGetReceipt(ctx context.Context, msg cid.Cid, from types.TipSetKey) (*types.MessageReceipt, error) {

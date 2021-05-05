@@ -216,12 +216,12 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 			// If we have message processors then extract the messages and receipts
 			if len(t.messageProcessors) > 0 {
-				emsgs, err := t.node.GetExecutedMessagesForTipset(ctx, child, parent)
+				emsgs, blkMsgs, err := t.node.GetExecutedAndBlockMessagesForTipset(ctx, child, parent)
 				if err == nil {
 					// Start all the message processors
 					for name, p := range t.messageProcessors {
 						inFlight++
-						go t.runMessageProcessor(tctx, p, name, child, parent, emsgs, results)
+						go t.runMessageProcessor(tctx, p, name, child, parent, emsgs, blkMsgs, results)
 					}
 				} else {
 					ll.Errorw("failed to extract messages", "error", err)
@@ -400,13 +400,13 @@ func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, nam
 	}
 }
 
-func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProcessor, name string, ts, pts *types.TipSet, emsgs []*lens.ExecutedMessage, results chan *TaskResult) {
+func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProcessor, name string, ts, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages, results chan *TaskResult) {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
 
-	data, report, err := p.ProcessMessages(ctx, ts, pts, emsgs)
+	data, report, err := p.ProcessMessages(ctx, ts, pts, emsgs, blkMsgs)
 	if err != nil {
 		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
@@ -514,7 +514,7 @@ type MessageProcessor interface {
 	// ProcessMessages processes messages contained within a tipset. If error is non-nil then the processor encountered a fatal error.
 	// pts is the tipset containing the messages, ts is the tipset containing the receipts
 	// Any data returned must be accompanied by a processing report.
-	ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error)
+	ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error)
 	Close() error
 }
 

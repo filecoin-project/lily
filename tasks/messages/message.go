@@ -34,7 +34,7 @@ func NewTask() *Task {
 	return &Task{}
 }
 
-func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error) {
 	report := &visormodel.ProcessingReport{
 		Height:    int64(pts.Height()),
 		StateRoot: pts.ParentState().String(),
@@ -43,18 +43,107 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 	var (
 		messageResults       = make(messagemodel.Messages, 0, len(emsgs))
 		receiptResults       = make(messagemodel.Receipts, 0, len(emsgs))
-		blockMessageResults  = make(messagemodel.BlockMessages, 0, len(emsgs))
 		parsedMessageResults = make(messagemodel.ParsedMessages, 0, len(emsgs))
 		gasOutputsResults    = make(derivedmodel.GasOutputsList, 0, len(emsgs))
 		errorsDetected       = make([]*MessageError, 0, len(emsgs))
 	)
 
 	var (
-		seen = make(map[cid.Cid]bool, len(emsgs))
-
+		exeMsgSeen        = make(map[cid.Cid]bool, len(emsgs))
+		blkMsgSeen        = make(map[cid.Cid]bool)
 		totalGasLimit     int64
 		totalUniqGasLimit int64
 	)
+
+	// Record which blocks had which messages, regardless of duplicates
+	var blockMessageResults = messagemodel.BlockMessages{}
+	for _, bm := range blkMsgs {
+		// Stop processing if we have been told to cancel
+		select {
+		case <-ctx.Done():
+			return nil, nil, xerrors.Errorf("context done: %w", ctx.Err())
+		default:
+		}
+
+		blk := bm.Block
+		for _, msg := range bm.SecpMessages {
+			blockMessageResults = append(blockMessageResults, &messagemodel.BlockMessage{
+				Height:  int64(ts.Height()),
+				Block:   blk.Cid().String(),
+				Message: msg.Cid().String(),
+			})
+
+			if blkMsgSeen[msg.Cid()] {
+				continue
+			}
+			blkMsgSeen[msg.Cid()] = true
+
+			var msgSize int
+			if b, err := msg.Message.Serialize(); err == nil {
+				msgSize = len(b)
+			} else {
+				errorsDetected = append(errorsDetected, &MessageError{
+					Cid:   msg.Cid(),
+					Error: xerrors.Errorf("failed to serialize message: %w", err).Error(),
+				})
+			}
+
+			// record all unique Secp messages
+			msg := &messagemodel.Message{
+				Height:     int64(ts.Height()),
+				Cid:        msg.Cid().String(),
+				From:       msg.Message.From.String(),
+				To:         msg.Message.To.String(),
+				Value:      msg.Message.Value.String(),
+				GasFeeCap:  msg.Message.GasFeeCap.String(),
+				GasPremium: msg.Message.GasPremium.String(),
+				GasLimit:   msg.Message.GasLimit,
+				SizeBytes:  msgSize,
+				Nonce:      msg.Message.Nonce,
+				Method:     uint64(msg.Message.Method),
+			}
+			messageResults = append(messageResults, msg)
+
+		}
+		for _, msg := range bm.BlsMessages {
+			blockMessageResults = append(blockMessageResults, &messagemodel.BlockMessage{
+				Height:  int64(ts.Height()),
+				Block:   blk.Cid().String(),
+				Message: msg.Cid().String(),
+			})
+
+			if blkMsgSeen[msg.Cid()] {
+				continue
+			}
+			blkMsgSeen[msg.Cid()] = true
+
+			var msgSize int
+			if b, err := msg.Serialize(); err == nil {
+				msgSize = len(b)
+			} else {
+				errorsDetected = append(errorsDetected, &MessageError{
+					Cid:   msg.Cid(),
+					Error: xerrors.Errorf("failed to serialize message: %w", err).Error(),
+				})
+			}
+
+			// record all unique bls messages
+			msg := &messagemodel.Message{
+				Height:     int64(ts.Height()),
+				Cid:        msg.Cid().String(),
+				From:       msg.From.String(),
+				To:         msg.To.String(),
+				Value:      msg.Value.String(),
+				GasFeeCap:  msg.GasFeeCap.String(),
+				GasPremium: msg.GasPremium.String(),
+				GasLimit:   msg.GasLimit,
+				SizeBytes:  msgSize,
+				Nonce:      msg.Nonce,
+				Method:     uint64(msg.Method),
+			}
+			messageResults = append(messageResults, msg)
+		}
+	}
 
 	for _, m := range emsgs {
 		// Stop processing if we have been told to cancel
@@ -64,20 +153,15 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		default:
 		}
 
-		// Record which blocks had which messages, regardless of duplicates
-		for _, blockCid := range m.Blocks {
-			blockMessageResults = append(blockMessageResults, &messagemodel.BlockMessage{
-				Height:  int64(m.Height),
-				Block:   blockCid.String(),
-				Message: m.Cid.String(),
-			})
+		// calculate total gas limit of executed messages regardless of duplicates.
+		for range m.Blocks {
 			totalGasLimit += m.Message.GasLimit
 		}
 
-		if seen[m.Cid] {
+		if exeMsgSeen[m.Cid] {
 			continue
 		}
-		seen[m.Cid] = true
+		exeMsgSeen[m.Cid] = true
 		totalUniqGasLimit += m.Message.GasLimit
 
 		var msgSize int
@@ -90,25 +174,9 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			})
 		}
 
-		// record all unique messages
-		msg := &messagemodel.Message{
-			Height:     int64(m.Height),
-			Cid:        m.Cid.String(),
-			From:       m.Message.From.String(),
-			To:         m.Message.To.String(),
-			Value:      m.Message.Value.String(),
-			GasFeeCap:  m.Message.GasFeeCap.String(),
-			GasPremium: m.Message.GasPremium.String(),
-			GasLimit:   m.Message.GasLimit,
-			SizeBytes:  msgSize,
-			Nonce:      m.Message.Nonce,
-			Method:     uint64(m.Message.Method),
-		}
-		messageResults = append(messageResults, msg)
-
 		rcpt := &messagemodel.Receipt{
 			Height:    int64(ts.Height()), // this is the child height
-			Message:   msg.Cid,
+			Message:   m.Cid.String(),
 			StateRoot: ts.ParentState().String(),
 			Idx:       int(m.Index),
 			ExitCode:  int64(m.Receipt.ExitCode),
@@ -117,16 +185,16 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		receiptResults = append(receiptResults, rcpt)
 
 		gasOutput := &derivedmodel.GasOutputs{
-			Height:             msg.Height,
-			Cid:                msg.Cid,
-			From:               msg.From,
-			To:                 msg.To,
-			Value:              msg.Value,
-			GasFeeCap:          msg.GasFeeCap,
-			GasPremium:         msg.GasPremium,
-			GasLimit:           msg.GasLimit,
-			Nonce:              msg.Nonce,
-			Method:             msg.Method,
+			Height:             int64(m.Height),
+			Cid:                m.Cid.String(),
+			From:               m.Message.From.String(),
+			To:                 m.Message.To.String(),
+			Value:              m.Message.Value.String(),
+			GasFeeCap:          m.Message.GasFeeCap.String(),
+			GasPremium:         m.Message.GasPremium.String(),
+			GasLimit:           m.Message.GasLimit,
+			Nonce:              m.Message.Nonce,
+			Method:             uint64(m.Message.Method),
 			StateRoot:          m.BlockHeader.ParentStateRoot.String(),
 			ExitCode:           rcpt.ExitCode,
 			GasUsed:            rcpt.GasUsed,
@@ -146,11 +214,11 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		method, params, err := p.parseMessageParams(m.Message, m.ToActorCode)
 		if err == nil {
 			pm := &messagemodel.ParsedMessage{
-				Height: msg.Height,
-				Cid:    msg.Cid,
-				From:   msg.From,
-				To:     msg.To,
-				Value:  msg.Value,
+				Height: int64(m.Height),
+				Cid:    m.Cid.String(),
+				From:   m.Message.From.String(),
+				To:     m.Message.To.String(),
+				Value:  m.Message.Value.String(),
 				Method: method,
 				Params: params,
 			}
