@@ -216,12 +216,12 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 			// If we have message processors then extract the messages and receipts
 			if len(t.messageProcessors) > 0 {
-				emsgs, blkMsgs, err := t.node.GetExecutedAndBlockMessagesForTipset(ctx, child, parent)
+				tsMsgs, err := t.node.GetExecutedAndBlockMessagesForTipset(ctx, child, parent)
 				if err == nil {
 					// Start all the message processors
 					for name, p := range t.messageProcessors {
 						inFlight++
-						go t.runMessageProcessor(tctx, p, name, child, parent, emsgs, blkMsgs, results)
+						go t.runMessageProcessor(tctx, p, name, child, parent, tsMsgs.Executed, tsMsgs.Block, results)
 					}
 				} else {
 					ll.Errorw("failed to extract messages", "error", err)

@@ -23,8 +23,8 @@ type LilyAPIStruct struct {
 	v0api.FullNodeStruct
 
 	Internal struct {
-		Store                                func() adt.Store                                                                                            `perm:"read"`
-		GetExecutedAndBlockMessagesForTipset func(context.Context, *types.TipSet, *types.TipSet) ([]*lens.ExecutedMessage, []*lens.BlockMessages, error) `perm:"read"`
+		Store                                func() adt.Store                                                                  `perm:"read"`
+		GetExecutedAndBlockMessagesForTipset func(context.Context, *types.TipSet, *types.TipSet) (*lens.TipSetMessages, error) `perm:"read"`
 
 		LilyWatch func(context.Context, *LilyWatchConfig) (schedule.JobID, error) `perm:"read"`
 		LilyWalk  func(context.Context, *LilyWalkConfig) (schedule.JobID, error)  `perm:"read"`
@@ -59,7 +59,7 @@ func (s *LilyAPIStruct) LilyJobList(ctx context.Context) ([]schedule.JobResult, 
 	return s.Internal.LilyJobList(ctx)
 }
 
-func (s *LilyAPIStruct) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, []*lens.BlockMessages, error) {
+func (s *LilyAPIStruct) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
 	return s.Internal.GetExecutedAndBlockMessagesForTipset(ctx, ts, pts)
 }
 

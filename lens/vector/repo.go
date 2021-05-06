@@ -146,7 +146,7 @@ func (c *CaptureAPI) Store() adt.Store {
 	return adtStore
 }
 
-func (c *CaptureAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*lens.ExecutedMessage, []*lens.BlockMessages, error) {
+func (c *CaptureAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
 	return util.GetExecutedAndBlockMessagesForTipset(ctx, c.FullNodeAPI.ChainAPI.Chain, ts, pts)
 }
 

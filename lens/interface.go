@@ -21,7 +21,7 @@ type API interface {
 	ChainAPI
 	StateAPI
 
-	GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) ([]*ExecutedMessage, []*BlockMessages, error)
+	GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*TipSetMessages, error)
 }
 
 type StoreAPI interface {
@@ -65,6 +65,11 @@ type APICloser func()
 
 type APIOpener interface {
 	Open(context.Context) (API, APICloser, error)
+}
+
+type TipSetMessages struct {
+	Executed []*ExecutedMessage
+	Block    []*BlockMessages
 }
 
 type ExecutedMessage struct {
