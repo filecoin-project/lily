@@ -24,7 +24,7 @@ var initFlags struct {
 
 var InitCmd = &cli.Command{
 	Name:  "init",
-	Usage: "Initialaise a visorrepository.",
+	Usage: "Initialise a visor repository.",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:        "repo",
