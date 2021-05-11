@@ -80,4 +80,12 @@ func (s *LilyAPIStruct) ID(ctx context.Context) (peer.ID, error) {
 	return s.Internal.ID(ctx)
 }
 
+func (s *LilyAPIStruct) SyncState(ctx context.Context) (*api.SyncState, error) {
+	return s.Internal.SyncState(ctx)
+}
+
+func (s *LilyAPIStruct) ChainHead(ctx context.Context) (*types.TipSet, error) {
+	return s.Internal.ChainHead(ctx)
+}
+
 var _ LilyAPI = &LilyAPIStruct{}
