@@ -8,6 +8,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	logging "github.com/ipfs/go-log/v2"
+	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/schedule"
@@ -15,8 +16,11 @@ import (
 
 var log = logging.Logger("lily-api")
 
+var _ LilyAPI = (*LilyAPIStruct)(nil)
+
 type LilyAPIStruct struct {
 	// authentication
+	// TODO: avoid importing CommonStruct, split out into separate visor structs
 	v0api.CommonStruct
 
 	Internal struct {
@@ -32,6 +36,7 @@ type LilyAPIStruct struct {
 
 		SyncState func(ctx context.Context) (*api.SyncState, error) `perm:"read"`
 		ChainHead func(context.Context) (*types.TipSet, error)      `perm:"read"`
+		ID        func(context.Context) (peer.ID, error)            `perm:"read"`
 	}
 }
 
@@ -69,6 +74,10 @@ func (s *LilyAPIStruct) SyncState(ctx context.Context) (*api.SyncState, error) {
 
 func (s *LilyAPIStruct) ChainHead(ctx context.Context) (*types.TipSet, error) {
 	return s.Internal.ChainHead(ctx)
+}
+
+func (s *LilyAPIStruct) ID(ctx context.Context) (peer.ID, error) {
+	return s.Internal.ID(ctx)
 }
 
 var _ LilyAPI = &LilyAPIStruct{}

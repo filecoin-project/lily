@@ -106,6 +106,7 @@ func main() {
 			commands.RunCmd,
 			commands.SyncCmd,
 			commands.VectorCmd,
+			commands.WaitApiCmd,
 			commands.WatchCmd,
 			commands.WalkCmd,
 		},
