@@ -3,6 +3,7 @@ package lily
 import (
 	"context"
 
+	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/api/v0api"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
@@ -18,10 +19,6 @@ type LilyAPIStruct struct {
 	// authentication
 	v0api.CommonStruct
 
-	// chain notifications and inspection
-	// actor state extraction
-	v0api.FullNodeStruct
-
 	Internal struct {
 		Store                                func() adt.Store                                                                  `perm:"read"`
 		GetExecutedAndBlockMessagesForTipset func(context.Context, *types.TipSet, *types.TipSet) (*lens.TipSetMessages, error) `perm:"read"`
@@ -32,6 +29,9 @@ type LilyAPIStruct struct {
 		LilyJobStart func(ctx context.Context, ID schedule.JobID) error      `perm:"read"`
 		LilyJobStop  func(ctx context.Context, ID schedule.JobID) error      `perm:"read"`
 		LilyJobList  func(ctx context.Context) ([]schedule.JobResult, error) `perm:"read"`
+
+		SyncState func(ctx context.Context) (*api.SyncState, error) `perm:"read"`
+		ChainHead func(context.Context) (*types.TipSet, error)      `perm:"read"`
 	}
 }
 
@@ -61,6 +61,14 @@ func (s *LilyAPIStruct) LilyJobList(ctx context.Context) ([]schedule.JobResult, 
 
 func (s *LilyAPIStruct) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
 	return s.Internal.GetExecutedAndBlockMessagesForTipset(ctx, ts, pts)
+}
+
+func (s *LilyAPIStruct) SyncState(ctx context.Context) (*api.SyncState, error) {
+	return s.Internal.SyncState(ctx)
+}
+
+func (s *LilyAPIStruct) ChainHead(ctx context.Context) (*types.TipSet, error) {
+	return s.Internal.ChainHead(ctx)
 }
 
 var _ LilyAPI = &LilyAPIStruct{}

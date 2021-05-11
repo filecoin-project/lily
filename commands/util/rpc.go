@@ -25,9 +25,11 @@ import (
 	"github.com/filecoin-project/sentinel-visor/lens/lily"
 )
 
-var log = logging.Logger("util")
-var Endpoint, _ = tag.NewKey("endpoint")
-var APIRequestDuration = stats.Float64("api/request_duration_ms", "Duration of API requests", stats.UnitMilliseconds)
+var (
+	log                = logging.Logger("util")
+	Endpoint, _        = tag.NewKey("endpoint")
+	APIRequestDuration = stats.Float64("api/request_duration_ms", "Duration of API requests", stats.UnitMilliseconds)
+)
 
 const (
 	// When changing these, update docs/API.md too
@@ -38,14 +40,16 @@ const (
 	PermAdmin auth.Permission = "admin" // Manage permissions
 )
 
-var AllPermissions = []auth.Permission{PermRead, PermWrite, PermSign, PermAdmin}
-var DefaultPerms = []auth.Permission{PermRead}
+var (
+	AllPermissions = []auth.Permission{PermRead, PermWrite, PermSign, PermAdmin}
+	DefaultPerms   = []auth.Permission{PermRead}
+)
 
 func MetricsSentinelAPI(a lily.LilyAPI) lily.LilyAPI {
 	var out lily.LilyAPIStruct
 	proxy(a, &out.Internal)
 	proxy(a, &out.CommonStruct.Internal)
-	proxy(a, &out.FullNodeStruct.Internal)
+	// proxy(a, &out.FullNodeStruct.Internal)
 	return &out
 }
 
@@ -75,7 +79,7 @@ func PermissionedSentinelAPI(a lily.LilyAPI) lily.LilyAPI {
 	var out lily.LilyAPIStruct
 	auth.PermissionedProxy(AllPermissions, DefaultPerms, a, &out.Internal)
 	auth.PermissionedProxy(AllPermissions, DefaultPerms, a, &out.CommonStruct.Internal)
-	auth.PermissionedProxy(AllPermissions, DefaultPerms, a, &out.FullNodeStruct.Internal)
+	// auth.PermissionedProxy(AllPermissions, DefaultPerms, a, &out.FullNodeStruct.Internal)
 	return &out
 }
 
