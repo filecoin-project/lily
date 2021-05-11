@@ -11,8 +11,8 @@ import (
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
-	sa4builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	multisig3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/multisig"
+	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	"github.com/ipfs/go-cid"
 	"golang.org/x/xerrors"
 
