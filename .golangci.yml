@@ -20,6 +20,7 @@ linters:
 issues:
   exclude:
     - "func name will be used as test\\.test.* by other packages, and that stutters; consider calling this"
+    - "type name will be used as .* by other packages, and that stutters; consider calling this"
     - "potential file inclusion via variable"
     - "should have( a package)? comment"
     - "error return value of `logging.setloglevel` is not checked"
