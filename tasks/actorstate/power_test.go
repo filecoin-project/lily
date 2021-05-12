@@ -26,6 +26,7 @@ import (
 	adt3 "github.com/filecoin-project/specs-actors/v3/actors/util/adt"
 	sa3smoothing "github.com/filecoin-project/specs-actors/v3/actors/util/smoothing"
 	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
+	sa4smoothing "github.com/filecoin-project/specs-actors/v4/actors/util/smoothing"
 
 	powermodel "github.com/filecoin-project/sentinel-visor/model/actors/power"
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
@@ -347,7 +348,7 @@ func TestPowerExtractV4(t *testing.T) {
 
 	mapi := NewMockAPI(t)
 
-	state := mapi.mustCreateEmptyPowerStateV3()
+	state := mapi.mustCreateEmptyPowerStateV4()
 	minerAddr := tutils.NewIDAddr(t, 1234)
 
 	t.Run("power state model", func(t *testing.T) {
@@ -359,7 +360,7 @@ func TestPowerExtractV4(t *testing.T) {
 		state.ThisEpochRawBytePower = abi.NewStoragePower(0)
 		state.ThisEpochQualityAdjPower = abi.NewStoragePower(0)
 		state.ThisEpochPledgeCollateral = abi.NewTokenAmount(0)
-		state.ThisEpochQAPowerSmoothed = sa3smoothing.NewEstimate(big.NewInt(800_000_000_000), big.NewInt(6_000_000_000))
+		state.ThisEpochQAPowerSmoothed = sa4smoothing.NewEstimate(big.NewInt(800_000_000_000), big.NewInt(6_000_000_000))
 		state.MinerCount = 0
 		state.MinerAboveMinPowerCount = 0
 
