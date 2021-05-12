@@ -21,110 +21,71 @@ var JobCmd = &cli.Command{
 	},
 }
 
-type jobControlOpts struct {
-	ID       int
-	apiAddr  string
-	apiToken string
+var jobControlFlags struct {
+	ID int
 }
-
-var jobControlFlag jobControlOpts
 
 var JobStartCmd = &cli.Command{
 	Name:  "start",
 	Usage: "start a job.",
-	Flags: []cli.Flag{
-		&cli.IntFlag{
-			Name:        "ID",
-			Usage:       "ID of job to start",
-			Required:    true,
-			Destination: &jobControlFlag.ID,
+	Flags: flagSet(
+		clientAPIFlagSet,
+		[]cli.Flag{
+			&cli.IntFlag{
+				Name:        "ID",
+				Usage:       "ID of job to start",
+				Required:    true,
+				Destination: &jobControlFlags.ID,
+			},
 		},
-		&cli.StringFlag{
-			Name:        "api",
-			Usage:       "Address of visor api in multiaddr format.",
-			EnvVars:     []string{"VISOR_API"},
-			Value:       "/ip4/127.0.0.1/tcp/1234",
-			Destination: &jobControlFlag.apiAddr,
-		},
-		&cli.StringFlag{
-			Name:        "api-token",
-			Usage:       "Authentication token for visor api.",
-			EnvVars:     []string{"VISOR_API_TOKEN"},
-			Value:       "",
-			Destination: &jobControlFlag.apiToken,
-		},
-	},
+	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		api, closer, err := GetAPI(ctx, jobControlFlag.apiAddr, jobControlFlag.apiToken)
+		api, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}
 		defer closer()
 
-		return api.LilyJobStart(ctx, schedule.JobID(jobControlFlag.ID))
+		return api.LilyJobStart(ctx, schedule.JobID(jobControlFlags.ID))
 	},
 }
 
 var JobStopCmd = &cli.Command{
 	Name:  "stop",
 	Usage: "stop a job.",
-	Flags: []cli.Flag{
-		&cli.IntFlag{
-			Name:        "ID",
-			Usage:       "ID of job to stop",
-			Required:    true,
-			Destination: &jobControlFlag.ID,
+	Flags: flagSet(
+		clientAPIFlagSet,
+		[]cli.Flag{
+			&cli.IntFlag{
+				Name:        "ID",
+				Usage:       "ID of job to stop",
+				Required:    true,
+				Destination: &jobControlFlags.ID,
+			},
 		},
-		&cli.StringFlag{
-			Name:        "api",
-			Usage:       "Address of visor api in multiaddr format.",
-			EnvVars:     []string{"VISOR_API"},
-			Value:       "/ip4/127.0.0.1/tcp/1234",
-			Destination: &jobControlFlag.apiAddr,
-		},
-		&cli.StringFlag{
-			Name:        "api-token",
-			Usage:       "Authentication token for visor api.",
-			EnvVars:     []string{"VISOR_API_TOKEN"},
-			Value:       "",
-			Destination: &jobControlFlag.apiToken,
-		},
-	},
+	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		api, closer, err := GetAPI(ctx, jobControlFlag.apiAddr, jobControlFlag.apiToken)
+		api, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}
 		defer closer()
 
-		return api.LilyJobStop(ctx, schedule.JobID(jobControlFlag.ID))
+		return api.LilyJobStop(ctx, schedule.JobID(jobControlFlags.ID))
 	},
 }
 
 var JobListCmd = &cli.Command{
 	Name:  "list",
 	Usage: "list all jobs and their status",
-	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:        "api",
-			Usage:       "Address of visor api in multiaddr format.",
-			EnvVars:     []string{"VISOR_API"},
-			Value:       "/ip4/127.0.0.1/tcp/1234",
-			Destination: &jobControlFlag.apiAddr,
-		},
-		&cli.StringFlag{
-			Name:        "api-token",
-			Usage:       "Authentication token for visor api.",
-			EnvVars:     []string{"VISOR_API_TOKEN"},
-			Value:       "",
-			Destination: &jobControlFlag.apiToken,
-		},
-	},
+	Flags: flagSet(
+		clientAPIFlagSet,
+	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		api, closer, err := GetAPI(ctx, jobControlFlag.apiAddr, jobControlFlag.apiToken)
+		api, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}

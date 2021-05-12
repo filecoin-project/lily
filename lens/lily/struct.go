@@ -3,10 +3,12 @@ package lily
 import (
 	"context"
 
+	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/api/v0api"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	logging "github.com/ipfs/go-log/v2"
+	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/schedule"
@@ -14,13 +16,12 @@ import (
 
 var log = logging.Logger("lily-api")
 
+var _ LilyAPI = (*LilyAPIStruct)(nil)
+
 type LilyAPIStruct struct {
 	// authentication
+	// TODO: avoid importing CommonStruct, split out into separate visor structs
 	v0api.CommonStruct
-
-	// chain notifications and inspection
-	// actor state extraction
-	v0api.FullNodeStruct
 
 	Internal struct {
 		Store                                func() adt.Store                                                                  `perm:"read"`
@@ -32,6 +33,10 @@ type LilyAPIStruct struct {
 		LilyJobStart func(ctx context.Context, ID schedule.JobID) error      `perm:"read"`
 		LilyJobStop  func(ctx context.Context, ID schedule.JobID) error      `perm:"read"`
 		LilyJobList  func(ctx context.Context) ([]schedule.JobResult, error) `perm:"read"`
+
+		SyncState func(ctx context.Context) (*api.SyncState, error) `perm:"read"`
+		ChainHead func(context.Context) (*types.TipSet, error)      `perm:"read"`
+		ID        func(context.Context) (peer.ID, error)            `perm:"read"`
 	}
 }
 
@@ -61,6 +66,18 @@ func (s *LilyAPIStruct) LilyJobList(ctx context.Context) ([]schedule.JobResult, 
 
 func (s *LilyAPIStruct) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
 	return s.Internal.GetExecutedAndBlockMessagesForTipset(ctx, ts, pts)
+}
+
+func (s *LilyAPIStruct) SyncState(ctx context.Context) (*api.SyncState, error) {
+	return s.Internal.SyncState(ctx)
+}
+
+func (s *LilyAPIStruct) ChainHead(ctx context.Context) (*types.TipSet, error) {
+	return s.Internal.ChainHead(ctx)
+}
+
+func (s *LilyAPIStruct) ID(ctx context.Context) (peer.ID, error) {
+	return s.Internal.ID(ctx)
 }
 
 var _ LilyAPI = &LilyAPIStruct{}

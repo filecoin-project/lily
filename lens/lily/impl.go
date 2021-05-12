@@ -25,6 +25,7 @@ type LilyNodeAPI struct {
 
 	full.ChainAPI
 	full.StateAPI
+	full.SyncAPI
 	common.CommonAPI
 	Events         *events.Events
 	Scheduler      *schedule.Scheduler
