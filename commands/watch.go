@@ -42,7 +42,7 @@ var WatchCmd = &cli.Command{
 	Usage: "Start a daemon job to watch the head of the filecoin blockchain.",
 	Flags: []cli.Flag{
 		&cli.IntFlag{
-			Name:        "indexhead-confidence",
+			Name:        "confidence",
 			Usage:       "Sets the size of the cache used to hold tipsets for possible reversion before being committed to the database",
 			Value:       2,
 			Destination: &watchFlags.confidence,
@@ -312,7 +312,6 @@ func (c *LotusChainNotifier) Run(ctx context.Context) error {
 				}
 				c.mu.Unlock()
 			}
-
 		}
 	}
 }
