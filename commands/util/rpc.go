@@ -79,7 +79,6 @@ func PermissionedSentinelAPI(a lily.LilyAPI) lily.LilyAPI {
 	var out lily.LilyAPIStruct
 	auth.PermissionedProxy(AllPermissions, DefaultPerms, a, &out.Internal)
 	auth.PermissionedProxy(AllPermissions, DefaultPerms, a, &out.CommonStruct.Internal)
-	// auth.PermissionedProxy(AllPermissions, DefaultPerms, a, &out.FullNodeStruct.Internal)
 	return &out
 }
 

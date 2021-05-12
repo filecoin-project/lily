@@ -59,7 +59,7 @@ var JobStopCmd = &cli.Command{
 		[]cli.Flag{
 			&cli.IntFlag{
 				Name:        "ID",
-				Usage:       "ID of job to start",
+				Usage:       "ID of job to stop",
 				Required:    true,
 				Destination: &jobControlFlags.ID,
 			},
