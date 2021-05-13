@@ -25,7 +25,8 @@ type StorageConf struct {
 }
 
 type PgStorageConf struct {
-	URL             string
+	URLEnv          string // name of an environment variable that contains the database URL
+	URL             string // URL used to connect to postgresql if URLEnv is not set
 	ApplicationName string
 	PoolSize        int
 	AllowUpsert     bool
@@ -67,11 +68,13 @@ func DefaultConf() *Conf {
 		Storage: StorageConf{
 			Postgresql: map[string]PgStorageConf{
 				"Database1": {
+					URLEnv:          "LOTUS_DB", // LOTUS_DB is a historical accident, but we keep it as the default for compatibility
 					URL:             "postgres://postgres:password@localhost:5432/postgres",
 					PoolSize:        20,
 					ApplicationName: "visor",
 					AllowUpsert:     false,
 				},
+				// this second database is only here to give an example to the user
 				"Database2": {
 					URL:             "postgres://postgres:password@localhost:5432/postgres",
 					PoolSize:        10,
