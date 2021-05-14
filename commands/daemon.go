@@ -83,7 +83,7 @@ var DaemonCmd = &cli.Command{
 			if err != nil {
 				log.Warnw("could not expand repo location", "error", err)
 			} else {
-				log.Infof("lotus repo: %s", dir)
+				log.Infof("visor repo: %s", dir)
 			}
 		}
 
@@ -93,6 +93,7 @@ var DaemonCmd = &cli.Command{
 		}
 
 		if daemonFlags.config != "" {
+			log.Infof("visor config: %s", daemonFlags.config)
 			if err := config.EnsureExists(daemonFlags.config); err != nil {
 				return xerrors.Errorf("ensuring config is present at %q: %w", daemonFlags.config, err)
 			}
