@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"contrib.go.opencensus.io/exporter/prometheus"
+	lotusmetrics "github.com/filecoin-project/lotus/metrics"
 	logging "github.com/ipfs/go-log/v2"
+	metricsprom "github.com/ipfs/go-metrics-prometheus"
 	_ "github.com/lib/pq"
 	prom "github.com/prometheus/client_golang/prometheus"
 	"github.com/urfave/cli/v2"
@@ -186,10 +188,22 @@ func setupMetrics(cctx *cli.Context) error {
 	view.RegisterExporter(pe)
 	view.SetReportingPeriod(2 * time.Second)
 
+	views := []*view.View{}
+	views = append(views, metrics.DefaultViews...)        // visor metrics
+	views = append(views, lotusmetrics.ChainNodeViews...) // lotus chain metrics
+
 	// register the metrics views of interest
-	if err := view.Register(metrics.DefaultViews...); err != nil {
+	if err := view.Register(views...); err != nil {
 		return err
 	}
+
+	// some libraries like ipfs/go-ds-measure and ipfs/go-ipfs-blockstore
+	// use ipfs/go-metrics-interface. This injects a Prometheus exporter
+	// for those. Metrics are exported to the default registry.
+	if err := metricsprom.Inject(); err != nil {
+		log.Warnf("unable to inject prometheus ipfs/go-metrics exporter; some metrics will be unavailable; err: %s", err)
+	}
+
 	go func() {
 		mux := http.NewServeMux()
 		zpages.Handle(mux, "/debug")

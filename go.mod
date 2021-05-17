@@ -37,6 +37,7 @@ require (
 	github.com/ipfs/go-ipld-format v0.2.0
 	github.com/ipfs/go-log/v2 v2.1.2
 	github.com/ipfs/go-merkledag v0.3.2
+	github.com/ipfs/go-metrics-prometheus v0.0.2
 	github.com/ipld/go-car v0.1.1-0.20201119040415-11b6074b6d4d
 	github.com/ipld/go-ipld-prime v0.7.0
 	github.com/kr/text v0.2.0 // indirect
