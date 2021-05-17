@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/filecoin-project/sentinel-visor/config"
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -24,7 +25,15 @@ func NewCatalog(cfg config.StorageConf) (*Catalog, error) {
 			return nil, fmt.Errorf("duplicate storage name: %q", name)
 		}
 
-		db, err := NewDatabase(context.TODO(), sc.URL, sc.PoolSize, sc.ApplicationName, sc.AllowUpsert)
+		// Find the url of the database, which is either indirectly specified using URLEnv or explicit via URL
+		var dburl string
+		if sc.URLEnv != "" {
+			dburl = os.Getenv(sc.URLEnv)
+		} else {
+			dburl = sc.URL
+		}
+
+		db, err := NewDatabase(context.TODO(), dburl, sc.PoolSize, sc.ApplicationName, sc.AllowUpsert)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create postgresql storage %q: %w", name, err)
 		}

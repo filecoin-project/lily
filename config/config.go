@@ -7,8 +7,11 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/filecoin-project/lotus/node/config"
+	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/xerrors"
 )
+
+var log = logging.Logger("config")
 
 // Conf defines the daemon config. It should be compatible with Lotus config.
 type Conf struct {
@@ -25,7 +28,8 @@ type StorageConf struct {
 }
 
 type PgStorageConf struct {
-	URL             string
+	URLEnv          string // name of an environment variable that contains the database URL
+	URL             string // URL used to connect to postgresql if URLEnv is not set
 	ApplicationName string
 	PoolSize        int
 	AllowUpsert     bool
@@ -64,30 +68,40 @@ func DefaultConf() *Conf {
 		Client: config.Client{
 			SimultaneousTransfers: config.DefaultSimultaneousTransfers,
 		},
-		Storage: StorageConf{
-			Postgresql: map[string]PgStorageConf{
-				"Database1": {
-					URL:             "postgres://postgres:password@localhost:5432/postgres",
-					PoolSize:        20,
-					ApplicationName: "visor",
-					AllowUpsert:     false,
-				},
-				"Database2": {
-					URL:             "postgres://postgres:password@localhost:5432/postgres",
-					PoolSize:        10,
-					ApplicationName: "visor",
-					AllowUpsert:     false,
-				},
-			},
+	}
+}
 
-			File: map[string]FileStorageConf{
-				"CSV": {
-					Format: "CSV",
-					Path:   "/tmp",
-				},
+// SampleConf is the example configuration that is written when visor is first started. All entries will be commented out.
+func SampleConf() *Conf {
+	def := DefaultConf()
+	cfg := *def
+	cfg.Storage = StorageConf{
+		Postgresql: map[string]PgStorageConf{
+			"Database1": {
+				URLEnv:          "LOTUS_DB", // LOTUS_DB is a historical accident, but we keep it as the default for compatibility
+				URL:             "postgres://postgres:password@localhost:5432/postgres",
+				PoolSize:        20,
+				ApplicationName: "visor",
+				AllowUpsert:     false,
+			},
+			// this second database is only here to give an example to the user
+			"Database2": {
+				URL:             "postgres://postgres:password@localhost:5432/postgres",
+				PoolSize:        10,
+				ApplicationName: "visor",
+				AllowUpsert:     false,
+			},
+		},
+
+		File: map[string]FileStorageConf{
+			"CSV": {
+				Format: "CSV",
+				Path:   "/tmp",
 			},
 		},
 	}
+
+	return &cfg
 }
 
 func EnsureExists(path string) error {
@@ -103,7 +117,7 @@ func EnsureExists(path string) error {
 		return err
 	}
 
-	comm, err := config.ConfigComment(DefaultConf())
+	comm, err := config.ConfigComment(SampleConf())
 	if err != nil {
 		return xerrors.Errorf("comment: %w", err)
 	}
@@ -121,9 +135,11 @@ func EnsureExists(path string) error {
 
 // FromFile loads config from a specified file. If file does not exist or is empty defaults are assumed.
 func FromFile(path string) (*Conf, error) {
+	log.Infof("reading config from %s", path)
 	file, err := os.Open(path)
 	switch {
 	case os.IsNotExist(err):
+		log.Warnf("config does not exist at %s, falling back to defaults", path)
 		return DefaultConf(), nil
 	case err != nil:
 		return nil, err
