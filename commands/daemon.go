@@ -77,6 +77,21 @@ var DaemonCmd = &cli.Command{
 	},
 	Action: func(c *cli.Context) error {
 		lotuslog.SetupLogLevels()
+
+		if err := setupLogging(c); err != nil {
+			return xerrors.Errorf("setup logging: %w", err)
+		}
+
+		if err := setupMetrics(c); err != nil {
+			return xerrors.Errorf("setup metrics: %w", err)
+		}
+
+		tcloser, err := setupTracing(c)
+		if err != nil {
+			return xerrors.Errorf("setup tracing: %w", err)
+		}
+		defer tcloser()
+
 		ctx := context.Background()
 		{
 			dir, err := homedir.Expand(daemonFlags.repo)
@@ -86,7 +101,6 @@ var DaemonCmd = &cli.Command{
 				log.Infof("visor repo: %s", dir)
 			}
 		}
-
 		r, err := repo.NewFS(daemonFlags.repo)
 		if err != nil {
 			return xerrors.Errorf("opening fs repo: %w", err)
