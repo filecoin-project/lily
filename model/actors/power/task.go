@@ -11,14 +11,14 @@ type PowerTaskResult struct {
 	ClaimStateModel PowerActorClaimList
 }
 
-func (p *PowerTaskResult) Persist(ctx context.Context, s model.StorageBatch) error {
+func (p *PowerTaskResult) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	if p.ChainPowerModel != nil {
-		if err := p.ChainPowerModel.Persist(ctx, s); err != nil {
+		if err := p.ChainPowerModel.Persist(ctx, s, version); err != nil {
 			return err
 		}
 	}
 	if p.ClaimStateModel != nil {
-		if err := p.ClaimStateModel.Persist(ctx, s); err != nil {
+		if err := p.ClaimStateModel.Persist(ctx, s, version); err != nil {
 			return err
 		}
 	}

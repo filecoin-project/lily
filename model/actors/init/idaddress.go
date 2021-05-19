@@ -18,7 +18,7 @@ type IdAddress struct {
 	StateRoot string `pg:",pk,notnull"`
 }
 
-func (ia *IdAddress) Persist(ctx context.Context, s model.StorageBatch) error {
+func (ia *IdAddress) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "id_addresses"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -28,7 +28,7 @@ func (ia *IdAddress) Persist(ctx context.Context, s model.StorageBatch) error {
 
 type IdAddressList []*IdAddress
 
-func (ias IdAddressList) Persist(ctx context.Context, s model.StorageBatch) error {
+func (ias IdAddressList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	ctx, span := global.Tracer("").Start(ctx, "IdAddressList.PersistWithTx", trace.WithAttributes(label.Int("count", len(ias))))
 	defer span.End()
 

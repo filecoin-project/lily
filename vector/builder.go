@@ -71,7 +71,7 @@ func NewBuilder(cctx *cli.Context) (*Builder, error) {
 		Tasks:         strings.Split(cctx.String("tasks"), ","),
 		AddressFilter: cctx.String("actor-address"),
 		Description:   cctx.String("vector-desc"),
-		storage:       storage.NewMemStorage(),
+		storage:       storage.NewMemStorageLatest(),
 		opener:        lensOpener,
 		closer:        lensCloser,
 	}, nil

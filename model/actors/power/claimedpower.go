@@ -18,7 +18,7 @@ type PowerActorClaim struct {
 	QualityAdjPower string `pg:",notnull"`
 }
 
-func (p *PowerActorClaim) Persist(ctx context.Context, s model.StorageBatch) error {
+func (p *PowerActorClaim) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	ctx, span := global.Tracer("").Start(ctx, "PowerActorClaim.Persist")
 	defer span.End()
 
@@ -31,7 +31,7 @@ func (p *PowerActorClaim) Persist(ctx context.Context, s model.StorageBatch) err
 
 type PowerActorClaimList []*PowerActorClaim
 
-func (pl PowerActorClaimList) Persist(ctx context.Context, s model.StorageBatch) error {
+func (pl PowerActorClaimList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	ctx, span := global.Tracer("").Start(ctx, "PowerActorClaimList.Persist")
 	defer span.End()
 

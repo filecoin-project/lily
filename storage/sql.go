@@ -108,13 +108,14 @@ func NewDatabase(ctx context.Context, url string, poolSize int, name string, ups
 var _ Connector = (*Database)(nil)
 
 type Database struct {
-	DB     *pg.DB
-	opt    *pg.Options
-	Clock  clock.Clock
-	Upsert bool
+	DB      *pg.DB
+	opt     *pg.Options
+	Clock   clock.Clock
+	Upsert  bool
+	version int // schema version identified in the database
 }
 
-// Connect opens a connection to the database and checks that the schema is compatible the the version required
+// Connect opens a connection to the database and checks that the schema is compatible with the version required
 // by this version of visor. ErrSchemaTooOld is returned if the database schema is older than the current schema,
 // ErrSchemaTooNew if it is newer.
 func (d *Database) Connect(ctx context.Context) error {
@@ -135,13 +136,14 @@ func (d *Database) Connect(ctx context.Context) error {
 		// porridge too hot
 		_ = db.Close() // nolint: errcheck
 		return ErrSchemaTooNew
-	case latestVersion > dbVersion:
+	case model.OldestSupportedSchemaVersion > dbVersion:
 		// porridge too cold
 		_ = db.Close() // nolint: errcheck
 		return ErrSchemaTooOld
 	default:
 		// just right
 		d.DB = db
+		d.version = dbVersion
 		return nil
 	}
 }
@@ -275,7 +277,7 @@ func stripQuotes(s types.Safe) string {
 	return strings.Trim(string(s), `"`)
 }
 
-// PersistBatch persists a batch of models in a single transaction
+// PersistBatch persists a batch of persistables in a single transaction
 func (d *Database) PersistBatch(ctx context.Context, ps ...model.Persistable) error {
 	return d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		txs := &TxStorage{
@@ -284,7 +286,7 @@ func (d *Database) PersistBatch(ctx context.Context, ps ...model.Persistable) er
 		}
 
 		for _, p := range ps {
-			if err := p.Persist(ctx, txs); err != nil {
+			if err := p.Persist(ctx, txs, d.version); err != nil {
 				return err
 			}
 		}

@@ -22,7 +22,7 @@ type ChainEconomics struct {
 	LockedFil       string   `pg:",notnull"`
 }
 
-func (c *ChainEconomics) Persist(ctx context.Context, s model.StorageBatch) error {
+func (c *ChainEconomics) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_economics"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -32,7 +32,7 @@ func (c *ChainEconomics) Persist(ctx context.Context, s model.StorageBatch) erro
 
 type ChainEconomicsList []*ChainEconomics
 
-func (l ChainEconomicsList) Persist(ctx context.Context, s model.StorageBatch) error {
+func (l ChainEconomicsList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	if len(l) == 0 {
 		return nil
 	}

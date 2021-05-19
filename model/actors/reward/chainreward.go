@@ -25,7 +25,7 @@ type ChainReward struct {
 	EffectiveNetworkTime int64  `pg:",use_zero"`
 }
 
-func (r *ChainReward) Persist(ctx context.Context, s model.StorageBatch) error {
+func (r *ChainReward) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	ctx, span := global.Tracer("").Start(ctx, "ChainReward.Persist")
 	defer span.End()
 

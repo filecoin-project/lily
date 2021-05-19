@@ -31,7 +31,7 @@ type ChainPower struct {
 	ParticipatingMinerCount uint64 `pg:",use_zero"`
 }
 
-func (cp *ChainPower) Persist(ctx context.Context, s model.StorageBatch) error {
+func (cp *ChainPower) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	ctx, span := global.Tracer("").Start(ctx, "ChainPower.PersistWithTx")
 	defer span.End()
 
@@ -47,7 +47,7 @@ type ChainPowerList []*ChainPower
 
 // PersistWithTx makes a batch insertion of the list using the given
 // transaction.
-func (cpl ChainPowerList) Persist(ctx context.Context, s model.StorageBatch) error {
+func (cpl ChainPowerList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	ctx, span := global.Tracer("").Start(ctx, "ChainPowerList.PersistWithTx", trace.WithAttributes(label.Int("count", len(cpl))))
 	defer span.End()
 

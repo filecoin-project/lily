@@ -2,9 +2,11 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -21,7 +23,7 @@ type TestModel struct {
 	Message string `pg:",pk,notnull"`
 }
 
-func (tm *TestModel) Persist(ctx context.Context, s model.StorageBatch) error {
+func (tm *TestModel) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	return s.PersistModel(ctx, tm)
 }
 
@@ -30,7 +32,7 @@ type TimeModel struct {
 	Processed time.Time `pg:",pk,notnull"`
 }
 
-func (tm *TimeModel) Persist(ctx context.Context, s model.StorageBatch) error {
+func (tm *TimeModel) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	return s.PersistModel(ctx, tm)
 }
 
@@ -39,7 +41,7 @@ type InterfaceModel struct {
 	Value  interface{}
 }
 
-func (im *InterfaceModel) Persist(ctx context.Context, s model.StorageBatch) error {
+func (im *InterfaceModel) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	return s.PersistModel(ctx, im)
 }
 
@@ -48,7 +50,7 @@ type InterfaceJSONModel struct {
 	Value  interface{} `pg:",type:jsonb"`
 }
 
-func (im *InterfaceJSONModel) Persist(ctx context.Context, s model.StorageBatch) error {
+func (im *InterfaceJSONModel) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	return s.PersistModel(ctx, im)
 }
 
@@ -57,7 +59,7 @@ type JSONModel struct {
 	Value  string `pg:",type:jsonb"` // this is a string that already contains json and should not be encoded again
 }
 
-func (tm *JSONModel) Persist(ctx context.Context, s model.StorageBatch) error {
+func (tm *JSONModel) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	return s.PersistModel(ctx, tm)
 }
 
@@ -66,7 +68,7 @@ type StringSliceModel struct {
 	Addresses []string // this will automatically be encoded as json
 }
 
-func (im *StringSliceModel) Persist(ctx context.Context, s model.StorageBatch) error {
+func (im *StringSliceModel) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	return s.PersistModel(ctx, im)
 }
 
@@ -82,7 +84,7 @@ func TestCSVTable(t *testing.T) {
 		Message: "msg1",
 	}
 
-	table := getCSVModelTable(tm)
+	table := getCSVModelTable(tm, 1)
 	require.NotNil(t, table.columns)
 	assert.ElementsMatch(t, table.columns, []string{"height", "block", "message"})
 
@@ -102,7 +104,7 @@ func TestCSVPersist(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir)
+	st, err := NewCSVStorage(dir, 1)
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -142,7 +144,7 @@ func TestCSVPersistMulti(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir)
+	st, err := NewCSVStorage(dir, 1)
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tms...)
@@ -171,7 +173,7 @@ type Composite struct {
 	Other *OtherTestModel
 }
 
-func (c *Composite) Persist(ctx context.Context, s model.StorageBatch) error {
+func (c *Composite) Persist(ctx context.Context, s model.StorageBatch, version int) error {
 	if err := s.PersistModel(ctx, c.Thing); err != nil {
 		return err
 	}
@@ -200,7 +202,7 @@ func TestCSVPersistComposite(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir)
+	st, err := NewCSVStorage(dir, 1)
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), comp)
@@ -235,7 +237,7 @@ func TestCSVPersistTime(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir)
+	st, err := NewCSVStorage(dir, 1)
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -260,7 +262,7 @@ func TestCSVPersistInterfaceNil(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir)
+	st, err := NewCSVStorage(dir, 1)
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -290,7 +292,7 @@ func TestCSVPersistInterfaceValue(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir)
+	st, err := NewCSVStorage(dir, 1)
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -315,7 +317,7 @@ func TestCSVPersistInterfaceNilJSON(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir)
+	st, err := NewCSVStorage(dir, 1)
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -340,7 +342,7 @@ func TestCSVPersistInterfaceValueJSON(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir)
+	st, err := NewCSVStorage(dir, 1)
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -365,7 +367,7 @@ func TestCSVPersistValueJSON(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir)
+	st, err := NewCSVStorage(dir, 1)
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -390,7 +392,7 @@ func TestCSVPersistValueStringSlice(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir)
+	st, err := NewCSVStorage(dir, 1)
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -402,4 +404,115 @@ func TestCSVPersistValueStringSlice(t *testing.T) {
 		"height,addresses\n"+
 			"42,"+`"[""f083047"",""f088207""]"`+"\n",
 		string(written))
+}
+
+type VersionedModelLatest struct {
+	tableName struct{} `pg:"versioned_model"` // nolint: structcheck,unused
+	Height    int64    `pg:",pk,notnull,use_zero"`
+	Block     string   `pg:",notnull"`
+	Message   string   `pg:",notnull"`
+}
+
+// VersionedModelV2 is an older version of VersionedModel that uses same table name but different structure
+type VersionedModelV2 struct {
+	tableName struct{} `pg:"versioned_model"` // nolint: structcheck,unused
+	Height    int64    `pg:",pk,notnull,use_zero"`
+	Block     string   `pg:",notnull"`
+}
+
+func (vm *VersionedModelLatest) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+	switch version {
+	case 3:
+		return s.PersistModel(ctx, vm)
+
+	case 2:
+		v1 := &VersionedModelV2{
+			Height: vm.Height,
+			Block:  vm.Block,
+		}
+		return s.PersistModel(ctx, v1)
+	case 1:
+		// Model did not exist in schema version 1, so don't attempt to persist
+		return nil
+	default:
+		return fmt.Errorf("Unsupported version: %d", version)
+	}
+}
+
+func TestCSVTableWithVersion(t *testing.T) {
+	vm := &VersionedModelLatest{
+		Height:  42,
+		Block:   "blocka",
+		Message: "msg1",
+	}
+
+	table := getCSVModelTable(vm, 3)
+	require.NotNil(t, table.columns)
+	assert.ElementsMatch(t, table.columns, []string{"height", "block", "message"})
+
+	require.NotNil(t, table.fields)
+	assert.ElementsMatch(t, table.fields, []string{"Height", "Block", "Message"})
+
+	vm1 := &VersionedModelV2{
+		Height: 42,
+		Block:  "blocka",
+	}
+
+	tablev1 := getCSVModelTable(vm1, 2)
+	require.NotNil(t, tablev1.columns)
+	assert.ElementsMatch(t, tablev1.columns, []string{"height", "block"})
+
+	require.NotNil(t, tablev1.fields)
+	assert.ElementsMatch(t, tablev1.fields, []string{"Height", "Block"})
+}
+
+func TestCSVPersistWithVersion(t *testing.T) {
+	vm := &VersionedModelLatest{
+		Height:  42,
+		Block:   "blocka",
+		Message: "msg1",
+	}
+
+	// Persist latest version
+	t.Run("latest", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", strings.ReplaceAll(t.Name(), "/", "_"))
+		require.NoError(t, err)
+
+		defer os.RemoveAll(dir) // nolint: errcheck
+
+		st, err := NewCSVStorage(dir, 3)
+		require.NoError(t, err)
+
+		err = st.PersistBatch(context.Background(), vm)
+		require.NoError(t, err)
+
+		written, err := ioutil.ReadFile(filepath.Join(dir, "versioned_model.csv"))
+		require.NoError(t, err)
+		assert.EqualValues(t,
+			"height,block,message\n"+
+				"42,blocka,msg1\n",
+			string(written))
+	})
+
+	// Persist version 2 of same model
+	t.Run("v2", func(t *testing.T) {
+		// Latest version
+		dir, err := ioutil.TempDir("", strings.ReplaceAll(t.Name(), "/", "_"))
+		require.NoError(t, err)
+
+		defer os.RemoveAll(dir) // nolint: errcheck
+
+		st, err := NewCSVStorage(dir, 2)
+		require.NoError(t, err)
+
+		err = st.PersistBatch(context.Background(), vm)
+		require.NoError(t, err)
+
+		written, err := ioutil.ReadFile(filepath.Join(dir, "versioned_model.csv"))
+		require.NoError(t, err)
+		assert.EqualValues(t,
+			"height,block\n"+
+				"42,blocka\n",
+			string(written))
+	})
 }

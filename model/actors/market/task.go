@@ -11,11 +11,11 @@ type MarketTaskResult struct {
 	States    MarketDealStates
 }
 
-func (mtr *MarketTaskResult) Persist(ctx context.Context, s model.StorageBatch) error {
-	if err := mtr.Proposals.Persist(ctx, s); err != nil {
+func (mtr *MarketTaskResult) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+	if err := mtr.Proposals.Persist(ctx, s, version); err != nil {
 		return err
 	}
-	if err := mtr.States.Persist(ctx, s); err != nil {
+	if err := mtr.States.Persist(ctx, s, version); err != nil {
 		return err
 	}
 	return nil

@@ -115,7 +115,6 @@ func TestModelUpsert(t *testing.T) {
 	_, err = db.QueryOne(pg.Scan(&owner), `SELECT owner_id FROM miner_infos`)
 	require.NoError(t, err)
 	assert.Equal(t, "UPSERT", owner)
-
 }
 
 func TestLongNames(t *testing.T) {
@@ -172,4 +171,174 @@ func TestUpsertSQLGeneration(t *testing.T) {
 
 	assert.Equal(t, testModel.ExpectedConflictStatement(), conflict)
 	assert.Equal(t, testModel.ExpectedUpsertStatement(), upsert)
+}
+
+func TestDatabasePersistWithVersion(t *testing.T) {
+	if testing.Short() {
+		t.Skip("short testing requested")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, cleanup()) }()
+
+	vm := &VersionedModelLatest{
+		Height:  42,
+		Block:   "blocka",
+		Message: "msg1",
+	}
+
+	assertPersist := func(t *testing.T, version int, ddl string) {
+		t.Helper()
+		_, err = db.Exec(`DROP TABLE IF EXISTS versioned_model`)
+		require.NoError(t, err, "dropping versioned_model")
+
+		// create schema
+		_, err = db.Exec(ddl)
+		require.NoError(t, err, "creating versioned_model")
+
+		d := &Database{
+			DB:      db,
+			Clock:   testutil.NewMockClock(),
+			version: version,
+		}
+
+		err = d.PersistBatch(ctx, vm)
+		require.NoErrorf(t, err, "persisting versioned model: %v", err)
+
+		var count int
+		_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM versioned_model`)
+		require.NoError(t, err)
+		assert.Equal(t, 1, count)
+	}
+
+	// Persist latest version
+	t.Run("latest", func(t *testing.T) {
+		assertPersist(t, 3, `CREATE TABLE "versioned_model" (
+								"height" bigint NOT NULL,
+								"block" text NOT NULL,
+								"message" text NOT NULL,
+								PRIMARY KEY ("height")
+						    );`)
+	})
+
+	// Persist older version
+	t.Run("v1", func(t *testing.T) {
+		assertPersist(t, 2, `CREATE TABLE "versioned_model" (
+								"height" bigint NOT NULL,
+								"block" text NOT NULL,
+								PRIMARY KEY ("height")
+							);`)
+	})
+}
+
+func TestDatabaseUpsertWithVersion(t *testing.T) {
+	if testing.Short() {
+		t.Skip("short testing requested")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, cleanup()) }()
+
+	assertUpsert := func(t *testing.T, version int, ddl string) {
+		t.Helper()
+
+		vm := &VersionedModelLatest{
+			Height:  42,
+			Block:   "blocka",
+			Message: "msg1",
+		}
+
+		_, err = db.Exec(`DROP TABLE IF EXISTS versioned_model`)
+		require.NoError(t, err, "dropping versioned_model")
+
+		// create schema
+		_, err = db.Exec(ddl)
+		require.NoError(t, err, "creating versioned_model")
+
+		d := &Database{
+			DB:      db,
+			Clock:   testutil.NewMockClock(),
+			Upsert:  true,
+			version: version,
+		}
+
+		err = d.PersistBatch(ctx, vm)
+		require.NoErrorf(t, err, "persisting versioned model: %v", err)
+
+		var count int
+		_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM versioned_model`)
+		require.NoError(t, err)
+		assert.Equal(t, 1, count)
+
+		_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM versioned_model WHERE block='blocka'`)
+		require.NoError(t, err)
+		assert.Equal(t, 1, count)
+
+		vm.Block = "blockb"
+		err = d.PersistBatch(ctx, vm)
+		require.NoErrorf(t, err, "upserting versioned model: %v", err)
+
+		_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM versioned_model`)
+		require.NoError(t, err)
+		assert.Equal(t, 1, count)
+
+		_, err = db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM versioned_model WHERE block='blockb'`)
+		require.NoError(t, err)
+		assert.Equal(t, 1, count)
+	}
+
+	// Persist latest version
+	t.Run("latest", func(t *testing.T) {
+		assertUpsert(t, 3, `CREATE TABLE "versioned_model" (
+								"height" bigint NOT NULL,
+								"block" text NOT NULL,
+								"message" text NOT NULL,
+								PRIMARY KEY ("height")
+						    );`)
+	})
+
+	// Persist older version
+	t.Run("v1", func(t *testing.T) {
+		assertUpsert(t, 2, `CREATE TABLE "versioned_model" (
+								"height" bigint NOT NULL,
+								"block" text NOT NULL,
+								PRIMARY KEY ("height")
+							);`)
+	})
+}
+
+func TestDatabasePersistWithUnsupportedVersion(t *testing.T) {
+	if testing.Short() {
+		t.Skip("short testing requested")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, cleanup()) }()
+
+	vm := &VersionedModelLatest{
+		Height:  42,
+		Block:   "blocka",
+		Message: "msg1",
+	}
+
+	d := &Database{
+		DB:      db,
+		Clock:   testutil.NewMockClock(),
+		version: 1, // model did not exist in this version
+	}
+
+	err = d.PersistBatch(ctx, vm)
+	require.NoErrorf(t, err, "persisting versioned model: %v", err)
 }

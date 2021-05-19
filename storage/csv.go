@@ -24,10 +24,17 @@ var ErrMarshalUnsupportedType = errors.New("cannot marshal unsupported type")
 var (
 	// Cache of model schemas for csv storage
 	csvModelTablesMu sync.Mutex
-	csvModelTables   = map[string]table{}
+	csvModelTables   = map[nameWithVersion]table{}
 )
 
-func getCSVModelTable(v interface{}) table {
+type nameWithVersion struct {
+	name    string
+	version int
+}
+
+// Note that we need the schema version here since models may declare a table name that is the same across
+// all versions of the schema. We use the schema version to qualify the table definition that we cache.
+func getCSVModelTable(v interface{}, version int) table {
 	q := orm.NewQuery(nil, v)
 	tm := q.TableModel()
 	m := tm.Table()
@@ -36,7 +43,12 @@ func getCSVModelTable(v interface{}) table {
 	csvModelTablesMu.Lock()
 	defer csvModelTablesMu.Unlock()
 
-	t, ok := csvModelTables[name]
+	nv := nameWithVersion{
+		name:    name,
+		version: version,
+	}
+
+	t, ok := csvModelTables[nv]
 	if ok {
 		return t
 	}
@@ -47,21 +59,27 @@ func getCSVModelTable(v interface{}) table {
 		t.fields = append(t.fields, fld.GoName)
 		t.types = append(t.types, fld.SQLType)
 	}
-	csvModelTables[name] = t
+	csvModelTables[nv] = t
 
 	return t
 }
 
-func getCSVModelTableByName(name string) (table, bool) {
+func getCSVModelTableByName(name string, version int) (table, bool) {
 	csvModelTablesMu.Lock()
 	defer csvModelTablesMu.Unlock()
 
-	t, ok := csvModelTables[name]
+	nv := nameWithVersion{
+		name:    name,
+		version: version,
+	}
+
+	t, ok := csvModelTables[nv]
 	return t, ok
 }
 
 type CSVStorage struct {
-	path string
+	path    string
+	version int // schema version
 }
 
 // A table is a list of columns and corresponding field names in the Go struct
@@ -72,21 +90,27 @@ type table struct {
 	types   []string
 }
 
-func NewCSVStorage(path string) (*CSVStorage, error) {
+func NewCSVStorage(path string, version int) (*CSVStorage, error) {
 	return &CSVStorage{
-		path: path,
+		path:    path,
+		version: version,
 	}, nil
+}
+
+func NewCSVStorageLatest(path string) (*CSVStorage, error) {
+	return NewCSVStorage(path, getLatestSchemaVersion())
 }
 
 // PersistBatch persists a batch of models to CSV, creating new files if they don't already exist otherwise appending
 // to existing ones.
 func (c *CSVStorage) PersistBatch(ctx context.Context, ps ...model.Persistable) error {
 	batch := &CSVBatch{
-		data: map[string][][]string{},
+		data:    map[string][][]string{},
+		version: c.version,
 	}
 
 	for _, p := range ps {
-		if err := p.Persist(ctx, batch); err != nil {
+		if err := p.Persist(ctx, batch, c.version); err != nil {
 			return err
 		}
 	}
@@ -95,7 +119,7 @@ func (c *CSVStorage) PersistBatch(ctx context.Context, ps ...model.Persistable) 
 		if len(rows) == 0 {
 			continue
 		}
-		t, ok := getCSVModelTableByName(name)
+		t, ok := getCSVModelTableByName(name, c.version)
 		if !ok {
 			log.Errorf("unknown table name: %s", name)
 			continue
@@ -145,7 +169,8 @@ func (c *CSVStorage) PersistBatch(ctx context.Context, ps ...model.Persistable) 
 }
 
 type CSVBatch struct {
-	data map[string][][]string
+	data    map[string][][]string
+	version int // schema version used when persisting the batch
 }
 
 func (c *CSVBatch) PersistModel(ctx context.Context, m interface{}) error {
@@ -168,7 +193,7 @@ func (c *CSVBatch) PersistModel(ctx context.Context, m interface{}) error {
 		return nil
 	case reflect.Struct:
 		// Get the table for this type
-		t := getCSVModelTable(m)
+		t := getCSVModelTable(m, c.version)
 
 		// Build the row
 		row := make([]string, len(t.fields))
