@@ -193,6 +193,7 @@ func ExtractMinerInfo(a ActorInfo, ec *MinerStateExtractionContext) (*minermodel
 		ConsensusFaultedElapsed: int64(newInfo.ConsensusFaultElapsed),
 		ControlAddresses:        newCtrlAddresses,
 		MultiAddresses:          newMultiAddrs,
+		SectorSize:              uint64(newInfo.SectorSize),
 	}
 
 	if newInfo.PeerId != nil {
