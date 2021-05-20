@@ -5,6 +5,16 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+
+<a name="v0.6.5"></a>
+## [v0.6.5] - 2021-05-20
+
+### Change
+ - fail parsed message task when an unknown method is encountered
+
+### Fix
+ - update statediff to v0.0.24 to properly support actor v4 message methods and parameters
+
 <a name="v0.6.4"></a>
 ## [v0.6.4] - 2021-05-19
 
