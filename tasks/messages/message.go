@@ -3,7 +3,6 @@ package messages
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"math"
 	"math/big"
 
@@ -56,7 +55,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 	)
 
 	// Record which blocks had which messages, regardless of duplicates
-	var blockMessageResults = messagemodel.BlockMessages{}
+	blockMessageResults := messagemodel.BlockMessages{}
 	for _, bm := range blkMsgs {
 		// Stop processing if we have been told to cancel
 		select {
@@ -290,7 +289,7 @@ func (p *Task) parseMessageParams(m *types.Message, destCode cid.Cid) (string, s
 		params, method, err = statediff.ParseParams(m.Params, int64(m.Method), actor)
 	}
 	if method == "Unknown" {
-		method = fmt.Sprintf("%s.%d", actor, m.Method)
+		return "", "", xerrors.Errorf("unknown method for actor type %s: %d", destCode.String(), int64(m.Method))
 	}
 	if err != nil {
 		log.Warnf("failed to parse parameters of message %s: %v", m.Cid, err)
