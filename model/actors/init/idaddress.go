@@ -13,6 +13,7 @@ import (
 )
 
 type IdAddress struct {
+	Height    int64  `pg:",pk,notnull,use_zero"`
 	ID        string `pg:",pk,notnull"`
 	Address   string `pg:",pk,notnull"`
 	StateRoot string `pg:",pk,notnull"`

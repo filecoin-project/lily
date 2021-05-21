@@ -13,7 +13,9 @@ import (
 )
 
 type ChainEconomics struct {
+	//lint:ignore U1000 structcheck, unused
 	tableName       struct{} `pg:"chain_economics"` // nolint: structcheck,unused
+	Height          int64    `pg:",pk,notnull,use_zero"`
 	ParentStateRoot string   `pg:",notnull"`
 	CirculatingFil  string   `pg:",notnull"`
 	VestedFil       string   `pg:",notnull"`

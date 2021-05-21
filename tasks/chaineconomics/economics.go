@@ -30,6 +30,7 @@ func ExtractChainEconomicsModel(ctx context.Context, node ChainEconomicsLens, ts
 	}
 
 	return &chainmodel.ChainEconomics{
+		Height:          int64(ts.Height()),
 		ParentStateRoot: ts.ParentState().String(),
 		VestedFil:       supply.FilVested.String(),
 		MinedFil:        supply.FilMined.String(),
