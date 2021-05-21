@@ -11,7 +11,7 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/schemas"
-	"github.com/filecoin-project/sentinel-visor/schemas/v0"
+	v0 "github.com/filecoin-project/sentinel-visor/schemas/v0"
 )
 
 // GetSchemaVersions returns the schema version in the database and the latest schema version defined by the available
