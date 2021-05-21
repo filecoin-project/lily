@@ -18,7 +18,7 @@ type MinerFeeDebt struct {
 	FeeDebt string `pg:",notnull"`
 }
 
-func (m *MinerFeeDebt) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (m *MinerFeeDebt) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerFeeDebt.Persist")
 	defer span.End()
 
@@ -31,7 +31,7 @@ func (m *MinerFeeDebt) Persist(ctx context.Context, s model.StorageBatch, versio
 
 type MinerFeeDebtList []*MinerFeeDebt
 
-func (ml MinerFeeDebtList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (ml MinerFeeDebtList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerFeeDebtList.Persist")
 	defer span.End()
 

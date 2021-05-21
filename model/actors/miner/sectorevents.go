@@ -39,7 +39,7 @@ type MinerSectorEvent struct {
 	Event string `pg:"type:miner_sector_event_type" pg:",pk,notnull"` // nolint: staticcheck
 }
 
-func (mse *MinerSectorEvent) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (mse *MinerSectorEvent) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_sector_events"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -49,7 +49,7 @@ func (mse *MinerSectorEvent) Persist(ctx context.Context, s model.StorageBatch, 
 
 type MinerSectorEventList []*MinerSectorEvent
 
-func (l MinerSectorEventList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (l MinerSectorEventList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerSectorEventList.Persist", trace.WithAttributes(label.Int("count", len(l))))
 	defer span.End()
 

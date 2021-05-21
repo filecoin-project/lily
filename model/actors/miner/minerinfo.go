@@ -28,7 +28,7 @@ type MinerInfo struct {
 	MultiAddresses   []string
 }
 
-func (m *MinerInfo) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (m *MinerInfo) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerInfoModel.Persist")
 	defer span.End()
 
@@ -41,7 +41,7 @@ func (m *MinerInfo) Persist(ctx context.Context, s model.StorageBatch, version i
 
 type MinerInfoList []*MinerInfo
 
-func (ml MinerInfoList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (ml MinerInfoList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerInfoList.Persist")
 	defer span.End()
 

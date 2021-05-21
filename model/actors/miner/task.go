@@ -23,7 +23,7 @@ type MinerTaskResult struct {
 	SectorDealsModel         MinerSectorDealList
 }
 
-func (res *MinerTaskResult) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (res *MinerTaskResult) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if res.PreCommitsModel != nil {
 		if err := res.PreCommitsModel.Persist(ctx, s, version); err != nil {
 			return err
@@ -74,7 +74,7 @@ func (res *MinerTaskResult) Persist(ctx context.Context, s model.StorageBatch, v
 
 type MinerTaskResultList []*MinerTaskResult
 
-func (ml MinerTaskResultList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (ml MinerTaskResultList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerTaskResultList.Persist", trace.WithAttributes(label.Int("count", len(ml))))
 	defer span.End()
 
@@ -100,7 +100,7 @@ type MinerTaskLists struct {
 }
 
 // Persist PersistModel with every field of MinerTasklists
-func (mtl *MinerTaskLists) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (mtl *MinerTaskLists) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if mtl.PreCommitsModel != nil {
 		if err := mtl.PreCommitsModel.Persist(ctx, s, version); err != nil {
 			return err

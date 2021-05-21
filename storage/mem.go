@@ -10,7 +10,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model"
 )
 
-func NewMemStorage(version int) *MemStorage {
+func NewMemStorage(version model.Version) *MemStorage {
 	return &MemStorage{
 		Data:    map[string][]interface{}{},
 		Version: version,
@@ -18,14 +18,14 @@ func NewMemStorage(version int) *MemStorage {
 }
 
 func NewMemStorageLatest() *MemStorage {
-	return NewMemStorage(getLatestSchemaVersion())
+	return NewMemStorage(LatestSchemaVersion())
 }
 
 type MemStorage struct {
 	// TODO parallel map?
 	Data    map[string][]interface{}
 	DataMu  sync.Mutex
-	Version int
+	Version model.Version
 }
 
 func (j *MemStorage) PersistModel(ctx context.Context, m interface{}) error {

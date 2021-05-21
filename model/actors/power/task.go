@@ -11,7 +11,7 @@ type PowerTaskResult struct {
 	ClaimStateModel PowerActorClaimList
 }
 
-func (p *PowerTaskResult) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (p *PowerTaskResult) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if p.ChainPowerModel != nil {
 		if err := p.ChainPowerModel.Persist(ctx, s, version); err != nil {
 			return err

@@ -27,13 +27,13 @@ type ProcessingStat struct {
 	Value int64 `pg:",use_zero,notnull"`
 }
 
-func (p *ProcessingStat) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (p *ProcessingStat) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	return s.PersistModel(ctx, p)
 }
 
 type ProcessingStatList []*ProcessingStat
 
-func (pl ProcessingStatList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (pl ProcessingStatList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(pl) == 0 {
 		return nil
 	}

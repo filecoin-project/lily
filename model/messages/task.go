@@ -14,7 +14,7 @@ type MessageTaskResult struct {
 	MessageGasEconomy *MessageGasEconomy
 }
 
-func (mtr *MessageTaskResult) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (mtr *MessageTaskResult) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if err := mtr.Messages.Persist(ctx, s, version); err != nil {
 		return err
 	}

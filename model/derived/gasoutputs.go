@@ -39,7 +39,7 @@ type GasOutputs struct {
 	GasBurned          int64    `pg:",use_zero,notnull"`
 }
 
-func (g *GasOutputs) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (g *GasOutputs) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "derived_gas_outputs"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -49,7 +49,7 @@ func (g *GasOutputs) Persist(ctx context.Context, s model.StorageBatch, version 
 
 type GasOutputsList []*GasOutputs
 
-func (l GasOutputsList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (l GasOutputsList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(l) == 0 {
 		return nil
 	}

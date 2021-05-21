@@ -19,7 +19,7 @@ type MinerSectorDeal struct {
 	DealID   uint64 `pg:",pk,use_zero"`
 }
 
-func (ds *MinerSectorDeal) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (ds *MinerSectorDeal) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_sector_deals"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -29,7 +29,7 @@ func (ds *MinerSectorDeal) Persist(ctx context.Context, s model.StorageBatch, ve
 
 type MinerSectorDealList []*MinerSectorDeal
 
-func (ml MinerSectorDealList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (ml MinerSectorDealList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerSectorDealList.Persist", trace.WithAttributes(label.Int("count", len(ml))))
 	defer span.End()
 

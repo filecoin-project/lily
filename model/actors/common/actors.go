@@ -22,7 +22,7 @@ type Actor struct {
 	Nonce     uint64 `pg:",use_zero"`
 }
 
-func (a *Actor) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (a *Actor) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "Actor.Persist")
 	defer span.End()
 
@@ -37,7 +37,7 @@ func (a *Actor) Persist(ctx context.Context, s model.StorageBatch, version int) 
 type ActorList []*Actor
 
 // Persist
-func (actors ActorList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (actors ActorList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "ActorList.Persist", trace.WithAttributes(label.Int("count", len(actors))))
 	defer span.End()
 
@@ -59,7 +59,7 @@ type ActorState struct {
 }
 
 // PersistWithTx inserts the batch using the given transaction.
-func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "ActorState.Persist")
 	defer span.End()
 
@@ -74,7 +74,7 @@ func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, version
 type ActorStateList []*ActorState
 
 // PersistWithTx inserts the batch using the given transaction.
-func (states ActorStateList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (states ActorStateList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "ActorStateList.Persist", trace.WithAttributes(label.Int("count", len(states))))
 	defer span.End()
 

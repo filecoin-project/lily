@@ -8,7 +8,7 @@ import (
 // OldestSupportedSchemaVersion is the oldest version of the schema that visor can convert its models to
 // Models can be persisted using any version between this and the latest version. Version 28 is the version
 // in which support for multiple schemas was introduced.
-const OldestSupportedSchemaVersion = 28
+var OldestSupportedSchemaVersion = Version{Major: 0, Patch: 28}
 
 // ErrUnsupportedSchemaVersion is returned when a Persistable model cannot be persisted in a particular
 // schema version.
@@ -30,7 +30,7 @@ type StorageBatch interface {
 // schema version. If the model does not exist in the schema version because it has been removed or was added in a later
 // version then Persist should be a no-op and return nil.
 type Persistable interface {
-	Persist(ctx context.Context, s StorageBatch, version int) error
+	Persist(ctx context.Context, s StorageBatch, version Version) error
 }
 
 // A PersistableList is a list of Persistables that should be persisted together
@@ -39,7 +39,7 @@ type PersistableList []Persistable
 // Ensure that a PersistableList can be used as a Persistable
 var _ Persistable = (PersistableList)(nil)
 
-func (pl PersistableList) Persist(ctx context.Context, s StorageBatch, version int) error {
+func (pl PersistableList) Persist(ctx context.Context, s StorageBatch, version Version) error {
 	if len(pl) == 0 {
 		return nil
 	}

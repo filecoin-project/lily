@@ -21,7 +21,7 @@ type ProcessGenesisSingletonResult struct {
 	powerResult     *power.PowerTaskResult
 }
 
-func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	// marshal miner actors
 	if err := r.minerResults.Persist(ctx, s, version); err != nil {
 		return xerrors.Errorf("persisting miner task result list: %w", err)
@@ -99,7 +99,7 @@ type GenesisMarketTaskResult struct {
 	ProposalModels market.MarketDealProposals
 }
 
-func (g *GenesisMarketTaskResult) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (g *GenesisMarketTaskResult) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if g.DealModels != nil {
 		if err := g.DealModels.Persist(ctx, s, version); err != nil {
 			return err
@@ -117,7 +117,7 @@ type GenesisInitActorTaskResult struct {
 	AddressMap init_.IdAddressList
 }
 
-func (g *GenesisInitActorTaskResult) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (g *GenesisInitActorTaskResult) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if g.AddressMap != nil {
 		return g.AddressMap.Persist(ctx, s, version)
 	}

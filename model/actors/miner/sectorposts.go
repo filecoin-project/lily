@@ -22,7 +22,7 @@ type MinerSectorPost struct {
 
 type MinerSectorPostList []*MinerSectorPost
 
-func (msp *MinerSectorPost) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (msp *MinerSectorPost) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_sector_posts"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -30,7 +30,7 @@ func (msp *MinerSectorPost) Persist(ctx context.Context, s model.StorageBatch, v
 	return s.PersistModel(ctx, msp)
 }
 
-func (ml MinerSectorPostList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (ml MinerSectorPostList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerSectorPostList.Persist", trace.WithAttributes(label.Int("count", len(ml))))
 	defer span.End()
 	if len(ml) == 0 {

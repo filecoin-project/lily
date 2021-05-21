@@ -69,7 +69,7 @@ type ProcessingTipSet struct {
 	EconomicsErrorsDetected string
 }
 
-func (p *ProcessingTipSet) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (p *ProcessingTipSet) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	return s.PersistModel(ctx, p)
 }
 
@@ -79,7 +79,7 @@ func (p *ProcessingTipSet) TipSetKey() (types.TipSetKey, error) {
 
 type ProcessingTipSetList []*ProcessingTipSet
 
-func (pl ProcessingTipSetList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (pl ProcessingTipSetList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(pl) == 0 {
 		return nil
 	}
@@ -136,7 +136,7 @@ type ProcessingActor struct {
 	ErrorsDetected string
 }
 
-func (p *ProcessingActor) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (p *ProcessingActor) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	return s.PersistModel(ctx, p)
 }
 
@@ -150,7 +150,7 @@ func (p *ProcessingActor) ParentTipSetKey() (types.TipSetKey, error) {
 
 type ProcessingActorList []*ProcessingActor
 
-func (pl ProcessingActorList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (pl ProcessingActorList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(pl) == 0 {
 		return nil
 	}
@@ -190,13 +190,13 @@ type ProcessingMessage struct {
 	GasOutputsErrorsDetected string
 }
 
-func (p *ProcessingMessage) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (p *ProcessingMessage) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	return s.PersistModel(ctx, p)
 }
 
 type ProcessingMessageList []*ProcessingMessage
 
-func (pl ProcessingMessageList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (pl ProcessingMessageList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(pl) == 0 {
 		return nil
 	}

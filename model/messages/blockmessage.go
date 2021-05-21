@@ -18,7 +18,7 @@ type BlockMessage struct {
 	Message string `pg:",pk,notnull"`
 }
 
-func (bm *BlockMessage) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (bm *BlockMessage) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "block_messages"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -28,7 +28,7 @@ func (bm *BlockMessage) Persist(ctx context.Context, s model.StorageBatch, versi
 
 type BlockMessages []*BlockMessage
 
-func (bms BlockMessages) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (bms BlockMessages) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(bms) == 0 {
 		return nil
 	}

@@ -31,7 +31,7 @@ type MinerSectorInfo struct {
 	ExpectedStoragePledge string `pg:",notnull"`
 }
 
-func (msi *MinerSectorInfo) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (msi *MinerSectorInfo) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_sector_infos"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -41,7 +41,7 @@ func (msi *MinerSectorInfo) Persist(ctx context.Context, s model.StorageBatch, v
 
 type MinerSectorInfoList []*MinerSectorInfo
 
-func (ml MinerSectorInfoList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (ml MinerSectorInfoList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerSectorInfoList.Persist", trace.WithAttributes(label.Int("count", len(ml))))
 	defer span.End()
 

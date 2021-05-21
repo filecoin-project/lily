@@ -112,7 +112,7 @@ type Database struct {
 	opt     *pg.Options
 	Clock   clock.Clock
 	Upsert  bool
-	version int // schema version identified in the database
+	version model.Version // schema version identified in the database
 }
 
 // Connect opens a connection to the database and checks that the schema is compatible with the version required
@@ -132,11 +132,11 @@ func (d *Database) Connect(ctx context.Context) error {
 	}
 
 	switch {
-	case latestVersion < dbVersion:
+	case latestVersion.Before(dbVersion):
 		// porridge too hot
 		_ = db.Close() // nolint: errcheck
 		return ErrSchemaTooNew
-	case model.OldestSupportedSchemaVersion > dbVersion:
+	case dbVersion.Before(model.OldestSupportedSchemaVersion):
 		// porridge too cold
 		_ = db.Close() // nolint: errcheck
 		return ErrSchemaTooOld

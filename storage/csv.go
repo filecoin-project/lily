@@ -29,12 +29,12 @@ var (
 
 type nameWithVersion struct {
 	name    string
-	version int
+	version model.Version
 }
 
 // Note that we need the schema version here since models may declare a table name that is the same across
 // all versions of the schema. We use the schema version to qualify the table definition that we cache.
-func getCSVModelTable(v interface{}, version int) table {
+func getCSVModelTable(v interface{}, version model.Version) table {
 	q := orm.NewQuery(nil, v)
 	tm := q.TableModel()
 	m := tm.Table()
@@ -64,7 +64,7 @@ func getCSVModelTable(v interface{}, version int) table {
 	return t
 }
 
-func getCSVModelTableByName(name string, version int) (table, bool) {
+func getCSVModelTableByName(name string, version model.Version) (table, bool) {
 	csvModelTablesMu.Lock()
 	defer csvModelTablesMu.Unlock()
 
@@ -79,7 +79,7 @@ func getCSVModelTableByName(name string, version int) (table, bool) {
 
 type CSVStorage struct {
 	path    string
-	version int // schema version
+	version model.Version // schema version
 }
 
 // A table is a list of columns and corresponding field names in the Go struct
@@ -90,7 +90,7 @@ type table struct {
 	types   []string
 }
 
-func NewCSVStorage(path string, version int) (*CSVStorage, error) {
+func NewCSVStorage(path string, version model.Version) (*CSVStorage, error) {
 	return &CSVStorage{
 		path:    path,
 		version: version,
@@ -98,7 +98,7 @@ func NewCSVStorage(path string, version int) (*CSVStorage, error) {
 }
 
 func NewCSVStorageLatest(path string) (*CSVStorage, error) {
-	return NewCSVStorage(path, getLatestSchemaVersion())
+	return NewCSVStorage(path, LatestSchemaVersion())
 }
 
 // PersistBatch persists a batch of models to CSV, creating new files if they don't already exist otherwise appending
@@ -170,7 +170,7 @@ func (c *CSVStorage) PersistBatch(ctx context.Context, ps ...model.Persistable) 
 
 type CSVBatch struct {
 	data    map[string][][]string
-	version int // schema version used when persisting the batch
+	version model.Version // schema version used when persisting the batch
 }
 
 func (c *CSVBatch) PersistModel(ctx context.Context, m interface{}) error {

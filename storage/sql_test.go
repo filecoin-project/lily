@@ -14,13 +14,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/sentinel-visor/model"
 	_ "github.com/filecoin-project/sentinel-visor/storage/migrations"
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 
 func TestConsistentSchemaMigrationSequence(t *testing.T) {
-	latestVersion := getLatestSchemaVersion()
-	err := checkMigrationSequence(context.Background(), 1, latestVersion)
+	latestVersion := LatestSchemaVersion()
+
+	coll, err := collectionForVersion(latestVersion)
+	require.NoError(t, err)
+
+	err = checkMigrationSequence(context.Background(), coll, 1, latestVersion.Patch)
 	require.NoError(t, err)
 }
 
@@ -191,7 +196,7 @@ func TestDatabasePersistWithVersion(t *testing.T) {
 		Message: "msg1",
 	}
 
-	assertPersist := func(t *testing.T, version int, ddl string) {
+	assertPersist := func(t *testing.T, version model.Version, ddl string) {
 		t.Helper()
 		_, err = db.Exec(`DROP TABLE IF EXISTS versioned_model`)
 		require.NoError(t, err, "dropping versioned_model")
@@ -217,7 +222,7 @@ func TestDatabasePersistWithVersion(t *testing.T) {
 
 	// Persist latest version
 	t.Run("latest", func(t *testing.T) {
-		assertPersist(t, 3, `CREATE TABLE "versioned_model" (
+		assertPersist(t, model.Version{Major: 3}, `CREATE TABLE "versioned_model" (
 								"height" bigint NOT NULL,
 								"block" text NOT NULL,
 								"message" text NOT NULL,
@@ -227,7 +232,7 @@ func TestDatabasePersistWithVersion(t *testing.T) {
 
 	// Persist older version
 	t.Run("v1", func(t *testing.T) {
-		assertPersist(t, 2, `CREATE TABLE "versioned_model" (
+		assertPersist(t, model.Version{Major: 2}, `CREATE TABLE "versioned_model" (
 								"height" bigint NOT NULL,
 								"block" text NOT NULL,
 								PRIMARY KEY ("height")
@@ -247,7 +252,7 @@ func TestDatabaseUpsertWithVersion(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { require.NoError(t, cleanup()) }()
 
-	assertUpsert := func(t *testing.T, version int, ddl string) {
+	assertUpsert := func(t *testing.T, version model.Version, ddl string) {
 		t.Helper()
 
 		vm := &VersionedModelLatest{
@@ -297,7 +302,7 @@ func TestDatabaseUpsertWithVersion(t *testing.T) {
 
 	// Persist latest version
 	t.Run("latest", func(t *testing.T) {
-		assertUpsert(t, 3, `CREATE TABLE "versioned_model" (
+		assertUpsert(t, model.Version{Major: 3}, `CREATE TABLE "versioned_model" (
 								"height" bigint NOT NULL,
 								"block" text NOT NULL,
 								"message" text NOT NULL,
@@ -307,7 +312,7 @@ func TestDatabaseUpsertWithVersion(t *testing.T) {
 
 	// Persist older version
 	t.Run("v1", func(t *testing.T) {
-		assertUpsert(t, 2, `CREATE TABLE "versioned_model" (
+		assertUpsert(t, model.Version{Major: 2}, `CREATE TABLE "versioned_model" (
 								"height" bigint NOT NULL,
 								"block" text NOT NULL,
 								PRIMARY KEY ("height")
@@ -336,7 +341,7 @@ func TestDatabasePersistWithUnsupportedVersion(t *testing.T) {
 	d := &Database{
 		DB:      db,
 		Clock:   testutil.NewMockClock(),
-		version: 1, // model did not exist in this version
+		version: model.Version{Major: 1}, // model did not exist in this version
 	}
 
 	err = d.PersistBatch(ctx, vm)

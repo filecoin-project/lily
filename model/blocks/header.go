@@ -40,7 +40,7 @@ func NewBlockHeader(bh *types.BlockHeader) *BlockHeader {
 	}
 }
 
-func (bh *BlockHeader) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (bh *BlockHeader) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "block_headers"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -50,7 +50,7 @@ func (bh *BlockHeader) Persist(ctx context.Context, s model.StorageBatch, versio
 
 type BlockHeaders []*BlockHeader
 
-func (bhl BlockHeaders) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (bhl BlockHeaders) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(bhl) == 0 {
 		return nil
 	}

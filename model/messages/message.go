@@ -28,7 +28,7 @@ type Message struct {
 	Method    uint64 `pg:",use_zero"`
 }
 
-func (m *Message) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (m *Message) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "messages"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -38,7 +38,7 @@ func (m *Message) Persist(ctx context.Context, s model.StorageBatch, version int
 
 type Messages []*Message
 
-func (ms Messages) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (ms Messages) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(ms) == 0 {
 		return nil
 	}

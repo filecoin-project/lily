@@ -22,7 +22,7 @@ type MarketDealState struct {
 	StateRoot string `pg:",notnull"`
 }
 
-func (ds *MarketDealState) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (ds *MarketDealState) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "market_deal_states"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -32,7 +32,7 @@ func (ds *MarketDealState) Persist(ctx context.Context, s model.StorageBatch, ve
 
 type MarketDealStates []*MarketDealState
 
-func (dss MarketDealStates) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (dss MarketDealStates) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "MarketDealStates.PersistWithTx", trace.WithAttributes(label.Int("count", len(dss))))
 	defer span.End()
 

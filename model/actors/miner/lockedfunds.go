@@ -20,7 +20,7 @@ type MinerLockedFund struct {
 	PreCommitDeposits string `pg:",notnull"`
 }
 
-func (m *MinerLockedFund) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (m *MinerLockedFund) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerLockedFund.Persist")
 	defer span.End()
 
@@ -33,7 +33,7 @@ func (m *MinerLockedFund) Persist(ctx context.Context, s model.StorageBatch, ver
 
 type MinerLockedFundsList []*MinerLockedFund
 
-func (ml MinerLockedFundsList) Persist(ctx context.Context, s model.StorageBatch, version int) error {
+func (ml MinerLockedFundsList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerLockedFundsList.Persist")
 	defer span.End()
 
