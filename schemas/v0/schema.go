@@ -23,3 +23,8 @@ func batch(sqls ...string) func(db migrations.DB) error {
 		return nil
 	}
 }
+
+// Base is the initial schema for this major version. Patches are applied on top of this base.
+var Base = `
+	CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
+`

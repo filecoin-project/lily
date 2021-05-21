@@ -143,12 +143,17 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) er
 		return xerrors.Errorf("acquiring schema lock: %w", err)
 	}
 
-	// CREATE EXTENSION cannot run inside a transaction (as part of
-	// migration), so we run it explicitally here and only when setting
-	// things up for the first time (#179).
-	if (dbVersion == model.Version{Major: 0, Patch: 0}) {
-		if _, err := db.Exec(`CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public`); err != nil {
-			return xerrors.Errorf("creating timescaledb extension: %w", err)
+	// Check if we need to create the base schema
+	if dbVersion.Patch == 0 {
+		log.Infof("creating base schema for major version %d", dbVersion.Major)
+
+		base, err := baseForVersion(dbVersion)
+		if err != nil {
+			return xerrors.Errorf("no base schema defined for version %s", dbVersion)
+		}
+
+		if _, err := db.Exec(base); err != nil {
+			return xerrors.Errorf("creating base schema: %w", err)
 		}
 	}
 
@@ -217,5 +222,14 @@ func collectionForVersion(version model.Version) (*migrations.Collection, error)
 		return v0.Patches, nil
 	default:
 		return nil, xerrors.Errorf("unsupported major version: %d", version.Major)
+	}
+}
+
+func baseForVersion(version model.Version) (string, error) {
+	switch version.Major {
+	case 0:
+		return v0.Base, nil
+	default:
+		return "", xerrors.Errorf("unsupported major version: %d", version.Major)
 	}
 }
