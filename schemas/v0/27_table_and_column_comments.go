@@ -76,7 +76,7 @@ func init() {
 
 	COMMENT ON TABLE derived_gas_outputs IS 'Derived gas costs resulting from execution of a message in the VM.';
 	COMMENT ON COLUMN derived_gas_outputs.actor_name IS 'Human readable identifier for the type of the actor.';
-	COMMENT ON COLUMN derived_gas_outputs.base_fee_burn IS 'The amount of FIL (in attoFIL) to burn as a result of the base fee. It is parent_base_fee (or gas_fee_cap if smaller) multiplied by gas_used. Note: successfull window PoSt messages are not charged this burn.';
+	COMMENT ON COLUMN derived_gas_outputs.base_fee_burn IS 'The amount of FIL (in attoFIL) to burn as a result of the base fee. It is parent_base_fee (or gas_fee_cap if smaller) multiplied by gas_used. Note: successful window PoSt messages are not charged this burn.';
 	COMMENT ON COLUMN derived_gas_outputs.cid IS 'CID of the message.';
 	COMMENT ON COLUMN derived_gas_outputs.exit_code IS 'The exit code that was returned as a result of executing the message. Exit code 0 indicates success. Codes 0-15 are reserved for use by the runtime. Codes 16-31 are common codes shared by different actors. Codes 32+ are actor specific.';
 	COMMENT ON COLUMN derived_gas_outputs.from IS 'Address of actor that sent the message.';
@@ -260,7 +260,7 @@ func init() {
 	COMMENT ON COLUMN parsed_messages.from IS 'Address of the actor that sent the message.';
 	COMMENT ON COLUMN parsed_messages.height IS 'Epoch this message was executed at.';
 	COMMENT ON COLUMN parsed_messages.method IS 'The name of the method that was invoked on the recipient actor.';
-	COMMENT ON COLUMN parsed_messages.params IS 'Method paramaters parsed and serialized as a JSON object.';
+	COMMENT ON COLUMN parsed_messages.params IS 'Method parameters parsed and serialized as a JSON object.';
 	COMMENT ON COLUMN parsed_messages.to IS 'Address of the actor that received the message.';
 	COMMENT ON COLUMN parsed_messages.value IS 'Amount of FIL (in attoFIL) transferred by this message.';
 
