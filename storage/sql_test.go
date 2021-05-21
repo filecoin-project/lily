@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/sentinel-visor/model"
-	_ "github.com/filecoin-project/sentinel-visor/storage/migrations"
+	_ "github.com/filecoin-project/sentinel-visor/schemas/v0"
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 

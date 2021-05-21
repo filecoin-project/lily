@@ -2,14 +2,16 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
-	_ "github.com/filecoin-project/sentinel-visor/storage/migrations"
 	"github.com/go-pg/migrations/v8"
 	"github.com/go-pg/pg/v10"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/sentinel-visor/schemas"
+	"github.com/filecoin-project/sentinel-visor/schemas/v0"
 )
 
 // GetSchemaVersions returns the schema version in the database and the latest schema version defined by the available
@@ -71,8 +73,17 @@ func getSchemaVersions(ctx context.Context, db *pg.DB) (model.Version, model.Ver
 // LatestSchemaVersion returns the most recent version of the model schema. It is based on the highest migration version
 // in the highest major schema version
 func LatestSchemaVersion() model.Version {
-	// TODO: detect major version
-	return model.Version{Major: 0, Patch: getHighestMigration(migrations.DefaultCollection)}
+	version := model.Version{
+		Major: schemas.LatestMajor,
+	}
+
+	coll, err := collectionForVersion(version)
+	if err != nil {
+		panic(fmt.Sprintf("inconsistent schema versions: no patches found for major version %d", version.Major))
+	}
+
+	version.Patch = getHighestMigration(coll)
+	return version
 }
 
 func getHighestMigration(coll *migrations.Collection) int {
@@ -153,7 +164,7 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) er
 	if dbVersion.Patch > target.Patch {
 		for dbVersion.Patch > target.Patch {
 			log.Warnf("running destructive schema migration from patch %d to patch %d", dbVersion.Patch, dbVersion.Patch-1)
-			_, newDBPatch, err := migrations.Run(db, "down")
+			_, newDBPatch, err := coll.Run(db, "down")
 			if err != nil {
 				return xerrors.Errorf("run migration: %w", err)
 			}
@@ -165,7 +176,7 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) er
 
 	// Need to advance schema version
 	log.Infof("running schema migration from version %s to version %s", dbVersion, target)
-	_, newDBPatch, err := migrations.Run(db, "up", strconv.Itoa(target.Patch))
+	_, newDBPatch, err := coll.Run(db, "up", strconv.Itoa(target.Patch))
 	if err != nil {
 		return xerrors.Errorf("run migration: %w", err)
 	}
@@ -201,9 +212,10 @@ func checkMigrationSequence(ctx context.Context, coll *migrations.Collection, fr
 }
 
 func collectionForVersion(version model.Version) (*migrations.Collection, error) {
-	if version.Major != 0 {
-		panic("unsupported major version")
+	switch version.Major {
+	case 0:
+		return v0.Patches, nil
+	default:
+		return nil, xerrors.Errorf("unsupported major version: %d", version.Major)
 	}
-	// TODO: detect major version
-	return migrations.DefaultCollection, nil
 }
