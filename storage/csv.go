@@ -24,10 +24,10 @@ var ErrMarshalUnsupportedType = errors.New("cannot marshal unsupported type")
 var (
 	// Cache of model schemas for csv storage
 	csvModelTablesMu sync.Mutex
-	csvModelTables   = map[nameWithVersion]table{}
+	csvModelTables   = map[tableWithVersion]table{}
 )
 
-type nameWithVersion struct {
+type tableWithVersion struct {
 	name    string
 	version model.Version
 }
@@ -43,7 +43,7 @@ func getCSVModelTable(v interface{}, version model.Version) table {
 	csvModelTablesMu.Lock()
 	defer csvModelTablesMu.Unlock()
 
-	nv := nameWithVersion{
+	nv := tableWithVersion{
 		name:    name,
 		version: version,
 	}
@@ -68,7 +68,7 @@ func getCSVModelTableByName(name string, version model.Version) (table, bool) {
 	csvModelTablesMu.Lock()
 	defer csvModelTablesMu.Unlock()
 
-	nv := nameWithVersion{
+	nv := tableWithVersion{
 		name:    name,
 		version: version,
 	}
