@@ -131,7 +131,7 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) er
 
 	coll, err := collectionForVersion(target)
 	if err != nil {
-		return xerrors.Errorf("no schema definition corresponds to version %s", target)
+		return xerrors.Errorf("no schema definition corresponds to version %s: %w", target, err)
 	}
 
 	if err := checkMigrationSequence(ctx, coll, dbVersion.Patch, target.Patch); err != nil {
@@ -149,7 +149,7 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) er
 
 		base, err := baseForVersion(dbVersion)
 		if err != nil {
-			return xerrors.Errorf("no base schema defined for version %s", dbVersion)
+			return xerrors.Errorf("no base schema defined for version %s: %w", dbVersion, err)
 		}
 
 		if _, err := db.Exec(base); err != nil {
