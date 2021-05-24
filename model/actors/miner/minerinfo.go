@@ -26,6 +26,8 @@ type MinerInfo struct {
 	PeerID           string
 	ControlAddresses []string
 	MultiAddresses   []string
+
+	SectorSize uint64 `pg:",notnull,use_zero"`
 }
 
 func (m *MinerInfo) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
