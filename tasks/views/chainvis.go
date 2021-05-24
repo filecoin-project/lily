@@ -43,7 +43,7 @@ func (r *ChainVisRefresher) Run(ctx context.Context) error {
 
 func (r *ChainVisRefresher) refreshView(ctx context.Context) (bool, error) {
 	for _, v := range chainVisViews {
-		_, err := r.db.DB.ExecContext(ctx, fmt.Sprintf("REFRESH MATERIALIZED VIEW %s;", v))
+		_, err := r.db.ExecContext(ctx, fmt.Sprintf("REFRESH MATERIALIZED VIEW %s;", v))
 		if err != nil {
 			return true, xerrors.Errorf("refresh %s: %w", v, err)
 		}

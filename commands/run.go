@@ -46,6 +46,12 @@ var dbConnectFlags = []cli.Flag{
 		Value:   defaultName,
 		Usage:   "A name that helps to identify this instance of visor.",
 	},
+	&cli.StringFlag{
+		Name:    "schema",
+		EnvVars: []string{"VISOR_SCHEMA"},
+		Value:   "public",
+		Usage:   "The name of the postgresql schema that holds the objects used by this instance of visor.",
+	},
 }
 
 var dbBehaviourFlags = []cli.Flag{

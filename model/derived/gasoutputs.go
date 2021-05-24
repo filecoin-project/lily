@@ -7,12 +7,41 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type GasOutputs struct {
+	tableName          struct{} `pg:"derived_gas_outputs"` //nolint: structcheck,unused
+	Height             int64    `pg:",pk,use_zero,notnull"`
+	Cid                string   `pg:",pk,notnull"`
+	StateRoot          string   `pg:",pk,notnull"`
+	From               string   `pg:",notnull"`
+	To                 string   `pg:",notnull"`
+	Value              string   `pg:"type:numeric,notnull"`
+	GasFeeCap          string   `pg:"type:numeric,notnull"`
+	GasPremium         string   `pg:"type:numeric,notnull"`
+	GasLimit           int64    `pg:",use_zero,notnull"`
+	SizeBytes          int      `pg:",use_zero,notnull"`
+	Nonce              uint64   `pg:",use_zero,notnull"`
+	Method             uint64   `pg:",use_zero,notnull"`
+	ActorName          string   `pg:",notnull"`
+	ActorFamily        string   `pg:",notnull"`
+	ExitCode           int64    `pg:",use_zero,notnull"`
+	GasUsed            int64    `pg:",use_zero,notnull"`
+	ParentBaseFee      string   `pg:"type:numeric,notnull"`
+	BaseFeeBurn        string   `pg:"type:numeric,notnull"`
+	OverEstimationBurn string   `pg:"type:numeric,notnull"`
+	MinerPenalty       string   `pg:"type:numeric,notnull"`
+	MinerTip           string   `pg:"type:numeric,notnull"`
+	Refund             string   `pg:"type:numeric,notnull"`
+	GasRefund          int64    `pg:",use_zero,notnull"`
+	GasBurned          int64    `pg:",use_zero,notnull"`
+}
+
+type GasOutputsV0 struct {
 	tableName          struct{} `pg:"derived_gas_outputs"` //nolint: structcheck,unused
 	Height             int64    `pg:",pk,use_zero,notnull"`
 	Cid                string   `pg:",pk,notnull"`
@@ -39,12 +68,56 @@ type GasOutputs struct {
 	GasBurned          int64    `pg:",use_zero,notnull"`
 }
 
+func (g *GasOutputs) AsVersion(version model.Version) (interface{}, bool) {
+	switch version.Major {
+	case 0:
+		if g == nil {
+			return (*GasOutputsV0)(nil), true
+		}
+
+		return &GasOutputsV0{
+			Height:             g.Height,
+			Cid:                g.Cid,
+			StateRoot:          g.StateRoot,
+			From:               g.From,
+			To:                 g.To,
+			Value:              g.Value,
+			GasFeeCap:          g.GasFeeCap,
+			GasPremium:         g.GasPremium,
+			GasLimit:           g.GasLimit,
+			SizeBytes:          g.SizeBytes,
+			Nonce:              g.Nonce,
+			Method:             g.Method,
+			ActorName:          g.ActorName,
+			ExitCode:           g.ExitCode,
+			GasUsed:            g.GasUsed,
+			ParentBaseFee:      g.ParentBaseFee,
+			BaseFeeBurn:        g.BaseFeeBurn,
+			OverEstimationBurn: g.OverEstimationBurn,
+			MinerPenalty:       g.MinerPenalty,
+			MinerTip:           g.MinerTip,
+			Refund:             g.Refund,
+			GasRefund:          g.GasRefund,
+			GasBurned:          g.GasBurned,
+		}, true
+	case 1:
+		return g, true
+	default:
+		return nil, false
+	}
+}
+
 func (g *GasOutputs) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "derived_gas_outputs"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
-	return s.PersistModel(ctx, g)
+	vg, ok := g.AsVersion(version)
+	if !ok {
+		return xerrors.Errorf("GasOutputs not supported for schema version %s", version)
+	}
+
+	return s.PersistModel(ctx, vg)
 }
 
 type GasOutputsList []*GasOutputs
@@ -59,6 +132,16 @@ func (l GasOutputsList) Persist(ctx context.Context, s model.StorageBatch, versi
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "derived_gas_outputs"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
+
+	if version.Major != 1 {
+		// Support older versions, but in a non-optimal way
+		for _, m := range l {
+			if err := m.Persist(ctx, s, version); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 
 	return s.PersistModel(ctx, l)
 }

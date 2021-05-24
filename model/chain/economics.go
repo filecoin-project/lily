@@ -7,12 +7,25 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type ChainEconomics struct {
+	tableName           struct{} `pg:"chain_economics"` //nolint: structcheck,unused
+	Height              int64    `pg:",pk,notnull,use_zero"`
+	ParentStateRoot     string   `pg:",notnull"`
+	CirculatingFil      string   `pg:"type:numeric,notnull"`
+	VestedFil           string   `pg:"type:numeric,notnull"`
+	MinedFil            string   `pg:"type:numeric,notnull"`
+	BurntFil            string   `pg:"type:numeric,notnull"`
+	LockedFil           string   `pg:"type:numeric,notnull"`
+	FilReserveDisbursed string   `pg:"type:numeric,notnull"`
+}
+
+type ChainEconomicsV0 struct {
 	tableName       struct{} `pg:"chain_economics"` // nolint: structcheck,unused
 	ParentStateRoot string   `pg:",notnull"`
 	CirculatingFil  string   `pg:",notnull"`
@@ -22,12 +35,39 @@ type ChainEconomics struct {
 	LockedFil       string   `pg:",notnull"`
 }
 
+func (c *ChainEconomics) AsVersion(version model.Version) (interface{}, bool) {
+	switch version.Major {
+	case 0:
+		if c == nil {
+			return (*ChainEconomicsV0)(nil), true
+		}
+
+		return &ChainEconomicsV0{
+			ParentStateRoot: c.ParentStateRoot,
+			CirculatingFil:  c.CirculatingFil,
+			VestedFil:       c.VestedFil,
+			MinedFil:        c.MinedFil,
+			BurntFil:        c.BurntFil,
+			LockedFil:       c.LockedFil,
+		}, true
+	case 1:
+		return c, true
+	default:
+		return nil, false
+	}
+}
+
 func (c *ChainEconomics) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_economics"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
-	return s.PersistModel(ctx, c)
+	m, ok := c.AsVersion(version)
+	if !ok {
+		return xerrors.Errorf("ChainEconomics not supported for schema version %s", version)
+	}
+
+	return s.PersistModel(ctx, m)
 }
 
 type ChainEconomicsList []*ChainEconomics
@@ -42,6 +82,16 @@ func (l ChainEconomicsList) Persist(ctx context.Context, s model.StorageBatch, v
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_economics"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
+
+	if version.Major != 1 {
+		// Support older versions, but in a non-optimal way
+		for _, m := range l {
+			if err := m.Persist(ctx, s, version); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 
 	return s.PersistModel(ctx, l)
 }

@@ -25,7 +25,7 @@ func TestConsistentSchemaMigrationSequence(t *testing.T) {
 	coll, err := collectionForVersion(latestVersion)
 	require.NoError(t, err)
 
-	err = checkMigrationSequence(context.Background(), coll, 1, latestVersion.Patch)
+	err = checkMigrationSequence(context.Background(), coll, 0, latestVersion.Patch)
 	require.NoError(t, err)
 }
 
@@ -45,7 +45,7 @@ func TestSchemaIsCurrent(t *testing.T) {
 		model := m
 		t.Run(fmt.Sprintf("%T", model), func(t *testing.T) {
 			q := db.Model(model)
-			err := verifyModel(ctx, db, q.TableModel().Table())
+			err := verifyModel(ctx, db, "public", q.TableModel().Table())
 			if err != nil {
 				t.Errorf("%v", err)
 				ctq := orm.NewCreateTableQuery(q, &orm.CreateTableOptions{IfNotExists: true})
@@ -72,7 +72,7 @@ func TestModelUpsert(t *testing.T) {
 
 	// database disallowing upserting
 	d := &Database{
-		DB:     db,
+		db:     db,
 		Clock:  testutil.NewMockClock(),
 		Upsert: false,
 	}
@@ -124,11 +124,11 @@ func TestModelUpsert(t *testing.T) {
 
 func TestLongNames(t *testing.T) {
 	justLongEnough := strings.Repeat("x", MaxPostgresNameLength)
-	_, err := NewDatabase(context.Background(), "postgres://example.com/fakedb", 1, justLongEnough, false)
+	_, err := NewDatabase(context.Background(), "postgres://example.com/fakedb", 1, justLongEnough, "public", false)
 	require.NoError(t, err)
 
 	tooLong := strings.Repeat("x", MaxPostgresNameLength+1)
-	_, err = NewDatabase(context.Background(), "postgres://example.com/fakedb", 1, tooLong, false)
+	_, err = NewDatabase(context.Background(), "postgres://example.com/fakedb", 1, tooLong, "public", false)
 	require.Error(t, err)
 }
 
@@ -206,7 +206,7 @@ func TestDatabasePersistWithVersion(t *testing.T) {
 		require.NoError(t, err, "creating versioned_model")
 
 		d := &Database{
-			DB:      db,
+			db:      db,
 			Clock:   testutil.NewMockClock(),
 			version: version,
 		}
@@ -269,7 +269,7 @@ func TestDatabaseUpsertWithVersion(t *testing.T) {
 		require.NoError(t, err, "creating versioned_model")
 
 		d := &Database{
-			DB:      db,
+			db:      db,
 			Clock:   testutil.NewMockClock(),
 			Upsert:  true,
 			version: version,
@@ -339,7 +339,7 @@ func TestDatabasePersistWithUnsupportedVersion(t *testing.T) {
 	}
 
 	d := &Database{
-		DB:      db,
+		db:      db,
 		Clock:   testutil.NewMockClock(),
 		version: model.Version{Major: 1}, // model did not exist in this version
 	}

@@ -2,6 +2,7 @@ package actorstate
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/filecoin-project/go-address"
@@ -45,7 +46,7 @@ type ActorStateAPI interface {
 	StateReadState(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.ActorState, error)
 
 	// TODO(remove): StateMinerSectors loads the actor and then calls miner.Load which StorageMinerExtractor already has available
-	//StateMinerSectors(ctx context.Context, addr address.Address, bf *bitfield.BitField, tsk types.TipSetKey) ([]*miner.SectorOnChainInfo, error)
+	// StateMinerSectors(ctx context.Context, addr address.Address, bf *bitfield.BitField, tsk types.TipSetKey) ([]*miner.SectorOnChainInfo, error)
 	Store() adt.Store
 }
 
@@ -90,4 +91,20 @@ func ActorNameByCode(code cid.Cid) string {
 		return name
 	}
 	return builtin4.ActorNameByCode(code)
+}
+
+func ActorFamily(name string) string {
+	if name == "<unknown>" {
+		return "<unknown>"
+	}
+
+	if !strings.HasPrefix(name, "fil/") {
+		return "<unknown>"
+	}
+	idx := strings.LastIndex(name, "/")
+	if idx == -1 {
+		return "<unknown>"
+	}
+
+	return name[idx+1:]
 }

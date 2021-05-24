@@ -191,6 +191,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 		receiptResults = append(receiptResults, rcpt)
 
+		actorName := actorstate.ActorNameByCode(m.ToActorCode)
 		gasOutput := &derivedmodel.GasOutputs{
 			Height:             int64(m.Height),
 			Cid:                m.Cid.String(),
@@ -214,7 +215,8 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			Refund:             m.GasOutputs.Refund.String(),
 			GasRefund:          m.GasOutputs.GasRefund,
 			GasBurned:          m.GasOutputs.GasBurned,
-			ActorName:          actorstate.ActorNameByCode(m.ToActorCode),
+			ActorName:          actorName,
+			ActorFamily:        actorstate.ActorFamily(actorName),
 		}
 		gasOutputsResults = append(gasOutputsResults, gasOutput)
 

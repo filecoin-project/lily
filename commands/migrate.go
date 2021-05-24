@@ -33,7 +33,7 @@ var MigrateCmd = &cli.Command{
 
 		ctx := cctx.Context
 
-		db, err := storage.NewDatabase(ctx, cctx.String("db"), cctx.Int("db-pool-size"), cctx.String("name"), false)
+		db, err := storage.NewDatabase(ctx, cctx.String("db"), cctx.Int("db-pool-size"), cctx.String("name"), cctx.String("schema"), false)
 		if err != nil {
 			return xerrors.Errorf("connect database: %w", err)
 		}
@@ -62,6 +62,7 @@ var MigrateCmd = &cli.Command{
 			return xerrors.Errorf("verify schema: %w", err)
 		}
 
+		log.Infof("database schema is supported by this version of visor")
 		return nil
 	},
 }

@@ -7,15 +7,43 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 type IdAddress struct {
+	Height    int64  `pg:",pk,notnull,use_zero"`
 	ID        string `pg:",pk,notnull"`
 	Address   string `pg:",pk,notnull"`
 	StateRoot string `pg:",pk,notnull"`
+}
+
+type IdAddressV0 struct {
+	tableName struct{} `pg:"id_addresses"` // nolint: structcheck,unused
+	ID        string   `pg:",pk,notnull"`
+	Address   string   `pg:",pk,notnull"`
+	StateRoot string   `pg:",pk,notnull"`
+}
+
+func (ia *IdAddress) AsVersion(version model.Version) (interface{}, bool) {
+	switch version.Major {
+	case 0:
+		if ia == nil {
+			return (*IdAddressV0)(nil), true
+		}
+
+		return &IdAddressV0{
+			ID:        ia.ID,
+			Address:   ia.Address,
+			StateRoot: ia.StateRoot,
+		}, true
+	case 1:
+		return ia, true
+	default:
+		return nil, false
+	}
 }
 
 func (ia *IdAddress) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
@@ -23,7 +51,12 @@ func (ia *IdAddress) Persist(ctx context.Context, s model.StorageBatch, version 
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
-	return s.PersistModel(ctx, ia)
+	m, ok := ia.AsVersion(version)
+	if !ok {
+		return xerrors.Errorf("IdAddress not supported for schema version %s", version)
+	}
+
+	return s.PersistModel(ctx, m)
 }
 
 type IdAddressList []*IdAddress
@@ -36,10 +69,15 @@ func (ias IdAddressList) Persist(ctx context.Context, s model.StorageBatch, vers
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
-	for _, ia := range ias {
-		if err := s.PersistModel(ctx, ia); err != nil {
-			return err
+	if version.Major != 1 {
+		// Support older versions, but in a non-optimal way
+		for _, m := range ias {
+			if err := m.Persist(ctx, s, version); err != nil {
+				return err
+			}
 		}
+		return nil
 	}
-	return nil
+
+	return s.PersistModel(ctx, ias)
 }
