@@ -22,7 +22,7 @@ type MultisigTransaction struct {
 	Approved []string `pg:",notnull"`
 }
 
-func (m *MultisigTransaction) Persist(ctx context.Context, s model.StorageBatch) error {
+func (m *MultisigTransaction) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "multisig_transactions"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -32,7 +32,7 @@ func (m *MultisigTransaction) Persist(ctx context.Context, s model.StorageBatch)
 
 type MultisigTransactionList []*MultisigTransaction
 
-func (ml MultisigTransactionList) Persist(ctx context.Context, s model.StorageBatch) error {
+func (ml MultisigTransactionList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "multisig_transactions"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()

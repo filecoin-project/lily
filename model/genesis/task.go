@@ -21,35 +21,35 @@ type ProcessGenesisSingletonResult struct {
 	powerResult     *power.PowerTaskResult
 }
 
-func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, s model.StorageBatch) error {
+func (r *ProcessGenesisSingletonResult) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	// marshal miner actors
-	if err := r.minerResults.Persist(ctx, s); err != nil {
+	if err := r.minerResults.Persist(ctx, s, version); err != nil {
 		return xerrors.Errorf("persisting miner task result list: %w", err)
 	}
 	// marshal market actor
 	if r.marketResult != nil {
-		if err := r.marketResult.DealModels.Persist(ctx, s); err != nil {
+		if err := r.marketResult.DealModels.Persist(ctx, s, version); err != nil {
 			return err
 		}
-		if err := r.marketResult.ProposalModels.Persist(ctx, s); err != nil {
+		if err := r.marketResult.ProposalModels.Persist(ctx, s, version); err != nil {
 			return err
 		}
 	}
 	// marshal init actor
 	if r.initActorResult != nil {
-		if err := r.initActorResult.AddressMap.Persist(ctx, s); err != nil {
+		if err := r.initActorResult.AddressMap.Persist(ctx, s, version); err != nil {
 			return err
 		}
 	}
 	// marshal power actor
 	if r.powerResult != nil {
-		if err := r.powerResult.Persist(ctx, s); err != nil {
+		if err := r.powerResult.Persist(ctx, s, version); err != nil {
 			return err
 		}
 	}
 	// marshal multisig actor
 	if r.msigResults != nil {
-		if err := r.msigResults.Persist(ctx, s); err != nil {
+		if err := r.msigResults.Persist(ctx, s, version); err != nil {
 			return err
 		}
 	}
@@ -99,14 +99,14 @@ type GenesisMarketTaskResult struct {
 	ProposalModels market.MarketDealProposals
 }
 
-func (g *GenesisMarketTaskResult) Persist(ctx context.Context, s model.StorageBatch) error {
+func (g *GenesisMarketTaskResult) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if g.DealModels != nil {
-		if err := g.DealModels.Persist(ctx, s); err != nil {
+		if err := g.DealModels.Persist(ctx, s, version); err != nil {
 			return err
 		}
 	}
 	if g.ProposalModels != nil {
-		if err := g.ProposalModels.Persist(ctx, s); err != nil {
+		if err := g.ProposalModels.Persist(ctx, s, version); err != nil {
 			return err
 		}
 	}
@@ -117,9 +117,9 @@ type GenesisInitActorTaskResult struct {
 	AddressMap init_.IdAddressList
 }
 
-func (g *GenesisInitActorTaskResult) Persist(ctx context.Context, s model.StorageBatch) error {
+func (g *GenesisInitActorTaskResult) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if g.AddressMap != nil {
-		return g.AddressMap.Persist(ctx, s)
+		return g.AddressMap.Persist(ctx, s, version)
 	}
 	return nil
 }

@@ -33,7 +33,7 @@ type MinerPreCommitInfo struct {
 	ReplaceSectorNumber    uint64 `pg:",use_zero"`
 }
 
-func (mpi *MinerPreCommitInfo) Persist(ctx context.Context, s model.StorageBatch) error {
+func (mpi *MinerPreCommitInfo) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_pre_commit_infos"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -43,7 +43,7 @@ func (mpi *MinerPreCommitInfo) Persist(ctx context.Context, s model.StorageBatch
 
 type MinerPreCommitInfoList []*MinerPreCommitInfo
 
-func (ml MinerPreCommitInfoList) Persist(ctx context.Context, s model.StorageBatch) error {
+func (ml MinerPreCommitInfoList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "MinerPreCommitInfoList.Persist", trace.WithAttributes(label.Int("count", len(ml))))
 	defer span.End()
 

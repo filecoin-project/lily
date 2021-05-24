@@ -23,7 +23,7 @@ type ParsedMessage struct {
 	Params string `pg:",type:jsonb,notnull"`
 }
 
-func (pm *ParsedMessage) Persist(ctx context.Context, s model.StorageBatch) error {
+func (pm *ParsedMessage) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "parsed_messages"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -33,7 +33,7 @@ func (pm *ParsedMessage) Persist(ctx context.Context, s model.StorageBatch) erro
 
 type ParsedMessages []*ParsedMessage
 
-func (pms ParsedMessages) Persist(ctx context.Context, s model.StorageBatch) error {
+func (pms ParsedMessages) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(pms) == 0 {
 		return nil
 	}

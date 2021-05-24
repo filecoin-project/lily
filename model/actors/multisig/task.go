@@ -10,18 +10,18 @@ type MultisigTaskResult struct {
 	TransactionModel MultisigTransactionList
 }
 
-func (mtr *MultisigTaskResult) Persist(ctx context.Context, s model.StorageBatch) error {
+func (mtr *MultisigTaskResult) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(mtr.TransactionModel) > 0 {
-		return mtr.TransactionModel.Persist(ctx, s)
+		return mtr.TransactionModel.Persist(ctx, s, version)
 	}
 	return nil
 }
 
 type MultisigTaskResultList []*MultisigTaskResult
 
-func (ml MultisigTaskResultList) Persist(ctx context.Context, s model.StorageBatch) error {
+func (ml MultisigTaskResultList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	for _, res := range ml {
-		if err := res.Persist(ctx, s); err != nil {
+		if err := res.Persist(ctx, s, version); err != nil {
 			return err
 		}
 	}

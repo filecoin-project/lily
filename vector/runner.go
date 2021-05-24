@@ -95,7 +95,7 @@ func NewRunner(ctx context.Context, vectorPath string, cacheHint int) (*Runner, 
 
 	return &Runner{
 		schema:  vs,
-		storage: storage.NewMemStorage(),
+		storage: storage.NewMemStorageLatest(),
 		bs:      cacheDB,
 		opener:  opener,
 		closer:  closer,
@@ -148,7 +148,7 @@ func (r *Runner) Validate(ctx context.Context) error {
 }
 
 func (r *Runner) Reset() {
-	r.storage = storage.NewMemStorage()
+	r.storage = storage.NewMemStorageLatest()
 	r.bs.ResetMetrics()
 }
 

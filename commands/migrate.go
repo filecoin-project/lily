@@ -1,9 +1,11 @@
 package commands
 
 import (
-	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
 var MigrateCmd = &cli.Command{
@@ -12,10 +14,10 @@ var MigrateCmd = &cli.Command{
 	Flags: flagSet(
 		dbConnectFlags,
 		[]cli.Flag{
-			&cli.IntFlag{
+			&cli.StringFlag{
 				Name:  "to",
 				Usage: "Migrate the schema to the `VERSION`.",
-				Value: 0,
+				Value: "",
 			},
 			&cli.BoolFlag{
 				Name:  "latest",
@@ -37,7 +39,12 @@ var MigrateCmd = &cli.Command{
 		}
 
 		if cctx.IsSet("to") {
-			return db.MigrateSchemaTo(ctx, cctx.Int("to"))
+			targetVersion, err := model.ParseVersion(cctx.String("to"))
+			if err != nil {
+				return xerrors.Errorf("invalid schema version: %w", err)
+			}
+
+			return db.MigrateSchemaTo(ctx, targetVersion)
 		}
 
 		if cctx.Bool("latest") {
@@ -49,7 +56,7 @@ var MigrateCmd = &cli.Command{
 			return xerrors.Errorf("get schema versions: %w", err)
 		}
 
-		log.Infof("current database schema is version %d, latest is %d", dbVersion, latestVersion)
+		log.Infof("current database schema is version %s, latest is %s", dbVersion, latestVersion)
 
 		if err := db.VerifyCurrentSchema(ctx); err != nil {
 			return xerrors.Errorf("verify schema: %w", err)

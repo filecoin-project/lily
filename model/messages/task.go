@@ -14,20 +14,20 @@ type MessageTaskResult struct {
 	MessageGasEconomy *MessageGasEconomy
 }
 
-func (mtr *MessageTaskResult) Persist(ctx context.Context, s model.StorageBatch) error {
-	if err := mtr.Messages.Persist(ctx, s); err != nil {
+func (mtr *MessageTaskResult) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+	if err := mtr.Messages.Persist(ctx, s, version); err != nil {
 		return err
 	}
-	if err := mtr.BlockMessages.Persist(ctx, s); err != nil {
+	if err := mtr.BlockMessages.Persist(ctx, s, version); err != nil {
 		return err
 	}
-	if err := mtr.Receipts.Persist(ctx, s); err != nil {
+	if err := mtr.Receipts.Persist(ctx, s, version); err != nil {
 		return err
 	}
-	if err := mtr.MessageGasEconomy.Persist(ctx, s); err != nil {
+	if err := mtr.MessageGasEconomy.Persist(ctx, s, version); err != nil {
 		return err
 	}
-	if err := mtr.ParsedMessages.Persist(ctx, s); err != nil {
+	if err := mtr.ParsedMessages.Persist(ctx, s, version); err != nil {
 		return err
 	}
 

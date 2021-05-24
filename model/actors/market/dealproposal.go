@@ -34,7 +34,7 @@ type MarketDealProposal struct {
 	Label      string
 }
 
-func (dp *MarketDealProposal) Persist(ctx context.Context, s model.StorageBatch) error {
+func (dp *MarketDealProposal) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "market_deal_proposals"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -44,7 +44,7 @@ func (dp *MarketDealProposal) Persist(ctx context.Context, s model.StorageBatch)
 
 type MarketDealProposals []*MarketDealProposal
 
-func (dps MarketDealProposals) Persist(ctx context.Context, s model.StorageBatch) error {
+func (dps MarketDealProposals) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "MarketDealProposals.Persist", trace.WithAttributes(label.Int("count", len(dps))))
 	defer span.End()
 

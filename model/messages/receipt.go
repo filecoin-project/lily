@@ -22,7 +22,7 @@ type Receipt struct {
 	GasUsed  int64 `pg:",use_zero"`
 }
 
-func (r *Receipt) Persist(ctx context.Context, s model.StorageBatch) error {
+func (r *Receipt) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "receipts"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -32,7 +32,7 @@ func (r *Receipt) Persist(ctx context.Context, s model.StorageBatch) error {
 
 type Receipts []*Receipt
 
-func (rs Receipts) Persist(ctx context.Context, s model.StorageBatch) error {
+func (rs Receipts) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(rs) == 0 {
 		return nil
 	}

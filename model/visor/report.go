@@ -39,7 +39,7 @@ type ProcessingReport struct {
 	ErrorsDetected    interface{} `pg:",type:jsonb"`
 }
 
-func (p *ProcessingReport) Persist(ctx context.Context, s model.StorageBatch) error {
+func (p *ProcessingReport) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "visor_processing_reports"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -49,7 +49,7 @@ func (p *ProcessingReport) Persist(ctx context.Context, s model.StorageBatch) er
 
 type ProcessingReportList []*ProcessingReport
 
-func (pl ProcessingReportList) Persist(ctx context.Context, s model.StorageBatch) error {
+func (pl ProcessingReportList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(pl) == 0 {
 		return nil
 	}

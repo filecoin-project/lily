@@ -26,7 +26,7 @@ type MultisigApproval struct {
 	Value          string   `pg:"type:numeric,notnull"` // amount of funds moved in transaction
 }
 
-func (ma *MultisigApproval) Persist(ctx context.Context, s model.StorageBatch) error {
+func (ma *MultisigApproval) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "multisig_approvals"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -36,7 +36,7 @@ func (ma *MultisigApproval) Persist(ctx context.Context, s model.StorageBatch) e
 
 type MultisigApprovalList []*MultisigApproval
 
-func (mal MultisigApprovalList) Persist(ctx context.Context, s model.StorageBatch) error {
+func (mal MultisigApprovalList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(mal) == 0 {
 		return nil
 	}

@@ -25,7 +25,7 @@ type MessageGasEconomy struct {
 	GasWasteRatio    float64 `pg:",use_zero"`
 }
 
-func (g *MessageGasEconomy) Persist(ctx context.Context, s model.StorageBatch) error {
+func (g *MessageGasEconomy) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "message_gas_economy"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()

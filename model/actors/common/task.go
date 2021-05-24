@@ -11,11 +11,11 @@ type ActorTaskResult struct {
 	State *ActorState
 }
 
-func (a *ActorTaskResult) Persist(ctx context.Context, s model.StorageBatch) error {
-	if err := a.Actor.Persist(ctx, s); err != nil {
+func (a *ActorTaskResult) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+	if err := a.Actor.Persist(ctx, s, version); err != nil {
 		return err
 	}
-	if err := a.State.Persist(ctx, s); err != nil {
+	if err := a.State.Persist(ctx, s, version); err != nil {
 		return err
 	}
 	return nil
