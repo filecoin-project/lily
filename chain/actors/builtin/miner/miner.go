@@ -91,6 +91,8 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 type State interface {
 	cbor.Marshaler
 
+	Code() cid.Cid
+
 	// Total available balance to spend.
 	AvailableBalance(abi.TokenAmount) (abi.TokenAmount, error)
 	// Funds that will vest by the given epoch.
