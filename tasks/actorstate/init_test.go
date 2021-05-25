@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	init_ "github.com/filecoin-project/lotus/chain/actors/builtin/init"
 	"github.com/filecoin-project/lotus/chain/types"
+	init_ "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa0init "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	tutils "github.com/filecoin-project/specs-actors/support/testing"

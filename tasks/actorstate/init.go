@@ -5,7 +5,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
-	init_ "github.com/filecoin-project/lotus/chain/actors/builtin/init"
+	init_ "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
 	"golang.org/x/xerrors"
 
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"

@@ -141,3 +141,9 @@ $(toolspath)/bin/rice: $(toolspath)/go.mod
 .PHONY: lint
 lint: $(toolspath)/bin/golangci-lint
 	$(toolspath)/bin/golangci-lint run ./...
+
+.PHONY: actors-gen
+actors-gen:
+	go run ./chain/actors/agen
+	go fmt ./...
+

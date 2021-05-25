@@ -4,15 +4,13 @@ import (
 	"context"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/api/v0api"
 	"github.com/filecoin-project/lotus/blockstore"
-	builtininit "github.com/filecoin-project/lotus/chain/actors/builtin/init"
-	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
+	builtininit "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
@@ -169,15 +167,6 @@ func (aw *APIWrapper) StateMinerPower(ctx context.Context, addr address.Address,
 	stop := metrics.Timer(ctx, metrics.LensRequestDuration)
 	defer stop()
 	return aw.FullNode.StateMinerPower(ctx, addr, tsk)
-}
-
-func (aw *APIWrapper) StateMinerSectors(ctx context.Context, addr address.Address, filter *bitfield.BitField, tsk types.TipSetKey) ([]*miner.SectorOnChainInfo, error) {
-	ctx, span := global.Tracer("").Start(ctx, "Lotus.StateMinerSectors")
-	defer span.End()
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.API, "StateMinerSectors"))
-	stop := metrics.Timer(ctx, metrics.LensRequestDuration)
-	defer stop()
-	return aw.FullNode.StateMinerSectors(ctx, addr, filter, tsk)
 }
 
 func (aw *APIWrapper) StateReadState(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*api.ActorState, error) {

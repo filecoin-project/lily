@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/filecoin-project/lotus/chain/actors/builtin"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
 	"github.com/raulk/clock"
 
 	"github.com/filecoin-project/go-state-types/abi"

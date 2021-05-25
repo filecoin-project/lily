@@ -3,7 +3,7 @@ package commands
 import (
 	"time"
 
-	"github.com/filecoin-project/lotus/chain/actors/builtin"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
 	"github.com/urfave/cli/v2"
 )
 
