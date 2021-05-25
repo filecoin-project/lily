@@ -525,6 +525,12 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
+		sort.Slice(actType, func(i, j int) bool {
+			return actType[i].MinerID < actType[j].MinerID
+		})
+		sort.Slice(expType, func(i, j int) bool {
+			return expType[i].MinerID < expType[j].MinerID
+		})
 		return cmp.Diff(actType, expType), nil
 	case "chain_rewards":
 		var expType []*reward.ChainReward

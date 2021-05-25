@@ -5,6 +5,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/specs-actors/v3/actors/util/adt"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
@@ -48,6 +49,7 @@ func NewPowerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 					PrevState: prevState,
 					CurrState: curState,
 					CurrTs:    a.TipSet,
+					Store:     node.Store(),
 				}, nil
 			}
 			return nil, xerrors.Errorf("loading previous power actor at tipset %s epoch %d: %w", a.ParentTipSet.Key(), a.Epoch, err)
@@ -62,6 +64,7 @@ func NewPowerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 		PrevState: prevState,
 		CurrState: curState,
 		CurrTs:    a.TipSet,
+		Store:     node.Store(),
 	}, nil
 }
 
@@ -69,6 +72,8 @@ type PowerStateExtractionContext struct {
 	PrevState power.State
 	CurrState power.State
 	CurrTs    *types.TipSet
+
+	Store adt.Store
 }
 
 func (p *PowerStateExtractionContext) HasPreviousState() bool {
@@ -92,7 +97,7 @@ func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, node Acto
 		return nil, err
 	}
 
-	claimedPowerModel, err := ExtractClaimedPower(ec)
+	claimedPowerModel, err := ExtractClaimedPower(ctx, ec)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +144,7 @@ func ExtractChainPower(ec *PowerStateExtractionContext) (*powermodel.ChainPower,
 	}, nil
 }
 
-func ExtractClaimedPower(ec *PowerStateExtractionContext) (powermodel.PowerActorClaimList, error) {
+func ExtractClaimedPower(ctx context.Context, ec *PowerStateExtractionContext) (powermodel.PowerActorClaimList, error) {
 	claimModel := powermodel.PowerActorClaimList{}
 	if !ec.HasPreviousState() {
 		if err := ec.CurrState.ForEachClaim(func(miner address.Address, claim power.Claim) error {
@@ -157,7 +162,7 @@ func ExtractClaimedPower(ec *PowerStateExtractionContext) (powermodel.PowerActor
 		return claimModel, nil
 	}
 	// normal case.
-	claimChanges, err := power.DiffClaims(ec.PrevState, ec.CurrState)
+	claimChanges, err := power.DiffClaims(ctx, ec.Store, ec.PrevState, ec.CurrState)
 	if err != nil {
 		return nil, err
 	}
