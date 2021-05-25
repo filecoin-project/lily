@@ -3,9 +3,8 @@ package power
 import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/adt/diff"
 	cbg "github.com/whyrusleeping/cbor-gen"
-
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 )
 
 type ClaimChanges struct {
@@ -38,7 +37,7 @@ func DiffClaims(pre, cur State) (*ClaimChanges, error) {
 		return nil, err
 	}
 
-	if err := adt.DiffAdtMap(prec, curc, &claimDiffer{results, pre, cur}); err != nil {
+	if err := diff.GenericMap(prec, curc, &claimDiffer{results, pre, cur}); err != nil {
 		return nil, err
 	}
 

@@ -2,7 +2,7 @@ package miner
 
 import (
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/adt/diff"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
@@ -19,7 +19,7 @@ func DiffPreCommits(pre, cur State) (*PreCommitChanges, error) {
 		return nil, err
 	}
 
-	err = adt.DiffAdtMap(prep, curp, &preCommitDiffer{results, pre, cur})
+	err = diff.GenericMap(prep, curp, &preCommitDiffer{results, pre, cur})
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func DiffSectors(pre, cur State) (*SectorChanges, error) {
 		return nil, err
 	}
 
-	err = adt.DiffAdtArray(pres, curs, &sectorDiffer{results, pre, cur})
+	err = diff.GenericArray(pres, curs, &sectorDiffer{results, pre, cur})
 	if err != nil {
 		return nil, err
 	}

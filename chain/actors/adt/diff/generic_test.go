@@ -1,10 +1,11 @@
-package adt
+package diff
 
 import (
 	"bytes"
 	"context"
 	"testing"
 
+	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -44,7 +45,7 @@ func TestDiffAdtArray(t *testing.T) {
 
 	changes := new(TestDiffArray)
 
-	assert.NoError(t, DiffAdtArray(arrA, arrB, changes))
+	assert.NoError(t, GenericArray(arrA, arrB, changes))
 	assert.NotNil(t, changes)
 
 	assert.Equal(t, 2, len(changes.Added))
@@ -98,7 +99,7 @@ func TestDiffAdtMap(t *testing.T) {
 
 	changes := new(TestDiffMap)
 
-	assert.NoError(t, DiffAdtMap(mapA, mapB, changes))
+	assert.NoError(t, GenericMap(mapA, mapB, changes))
 	assert.NotNil(t, changes)
 
 	assert.Equal(t, 2, len(changes.Added))
@@ -293,9 +294,9 @@ func (t *TestDiffArray) Remove(key uint64, val *typegen.Deferred) error {
 	return nil
 }
 
-func newContextStore() Store {
+func newContextStore() adt.Store {
 	ctx := context.Background()
 	bs := bstore.NewMemorySync()
 	store := cbornode.NewCborStore(bs)
-	return WrapStore(ctx, store)
+	return adt.WrapStore(ctx, store)
 }

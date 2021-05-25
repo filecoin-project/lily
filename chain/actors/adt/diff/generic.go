@@ -1,9 +1,10 @@
-package adt
+package diff
 
 import (
 	"bytes"
 
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 	typegen "github.com/whyrusleeping/cbor-gen"
 )
 
@@ -21,12 +22,12 @@ type AdtArrayDiff interface {
 // TODO Performance can be improved by diffing the underlying IPLD graph, e.g. https://github.com/ipfs/go-merkledag/blob/749fd8717d46b4f34c9ce08253070079c89bc56d/dagutils/diff.go#L104
 // CBOR Marshaling will likely be the largest performance bottleneck here.
 
-// DiffAdtArray accepts two *adt.Array's and an AdtArrayDiff implementation. It does the following:
+// GenericArray accepts two *adt.Array's and an AdtArrayDiff implementation. It does the following:
 // - All values that exist in preArr and not in curArr are passed to AdtArrayDiff.Remove()
 // - All values that exist in curArr nnd not in prevArr are passed to adtArrayDiff.Add()
 // - All values that exist in preArr and in curArr are passed to AdtArrayDiff.Modify()
 //  - It is the responsibility of AdtArrayDiff.Modify() to determine if the values it was passed have been modified.
-func DiffAdtArray(preArr, curArr Array, out AdtArrayDiff) error {
+func GenericArray(preArr, curArr adt.Array, out AdtArrayDiff) error {
 	notNew := make(map[int64]struct{}, curArr.Length())
 	prevVal := new(typegen.Deferred)
 	if err := preArr.ForEach(prevVal, func(i int64) error {
@@ -79,7 +80,7 @@ type AdtMapDiff interface {
 	Remove(key string, val *typegen.Deferred) error
 }
 
-func DiffAdtMap(preMap, curMap Map, out AdtMapDiff) error {
+func GenericMap(preMap, curMap adt.Map, out AdtMapDiff) error {
 	notNew := make(map[string]struct{})
 	prevVal := new(typegen.Deferred)
 	if err := preMap.ForEach(prevVal, func(key string) error {

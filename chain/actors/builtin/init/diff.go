@@ -5,9 +5,8 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/adt/diff"
 	typegen "github.com/whyrusleeping/cbor-gen"
-
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 )
 
 func DiffAddressMap(pre, cur State) (*AddressMapChanges, error) {
@@ -37,7 +36,7 @@ func DiffAddressMap(pre, cur State) (*AddressMapChanges, error) {
 		return results, nil
 	}
 
-	err = adt.DiffAdtMap(prem, curm, &addressMapDiffer{results, pre, cur})
+	err = diff.GenericMap(prem, curm, &addressMapDiffer{results, pre, cur})
 	if err != nil {
 		return nil, err
 	}
