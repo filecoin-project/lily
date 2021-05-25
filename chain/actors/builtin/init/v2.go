@@ -12,6 +12,8 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 
+	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
+
 	init2 "github.com/filecoin-project/specs-actors/v2/actors/builtin/init"
 	adt2 "github.com/filecoin-project/specs-actors/v2/actors/util/adt"
 )
@@ -30,6 +32,10 @@ func load2(store adt.Store, root cid.Cid) (State, error) {
 type state2 struct {
 	init2.State
 	store adt.Store
+}
+
+func (s *state2) Code() cid.Cid {
+	return builtin2.InitActorCodeID
 }
 
 func (s *state2) ResolveAddress(address address.Address) (address.Address, bool, error) {
