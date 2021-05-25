@@ -5,6 +5,7 @@ import (
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
@@ -38,6 +39,8 @@ type MarketStateExtractionContext struct {
 	CurrActor *types.Actor
 	CurrState market.State
 	CurrTs    *types.TipSet
+
+	Store adt.Store
 }
 
 func NewMarketStateExtractionContext(ctx context.Context, a ActorInfo, node ActorStateAPI) (*MarketStateExtractionContext, error) {
@@ -68,6 +71,7 @@ func NewMarketStateExtractionContext(ctx context.Context, a ActorInfo, node Acto
 		CurrActor: &a.Actor,
 		CurrState: curState,
 		CurrTs:    a.TipSet,
+		Store:     node.Store(),
 	}, nil
 }
 
@@ -146,13 +150,7 @@ func ExtractMarketDealProposals(ctx context.Context, ec *MarketStateExtractionCo
 		return nil, nil
 	}
 
-	// since the market actor is a builtin actor we can always find its previous state after the genesis block.
-	prevDealProposals, err := ec.PrevState.Proposals()
-	if err != nil {
-		return nil, xerrors.Errorf("loading previous market deal states: %w", err)
-	}
-
-	changes, err := market.DiffDealProposals(prevDealProposals, currDealProposals)
+	changes, err := market.DiffDealProposals(ctx, ec.Store, ec.PrevState, ec.CurrState)
 	if err != nil {
 		return nil, xerrors.Errorf("diffing deal states: %w", err)
 	}
@@ -213,13 +211,7 @@ func ExtractMarketDealStates(ctx context.Context, ec *MarketStateExtractionConte
 		return nil, nil
 	}
 
-	// since the market actor is a builtin actor we can always find its previous state after the genesis block.
-	prevDealStates, err := ec.PrevState.States()
-	if err != nil {
-		return nil, xerrors.Errorf("loading previous market deal states: %w", err)
-	}
-
-	changes, err := market.DiffDealStates(prevDealStates, currDealStates)
+	changes, err := market.DiffDealStates(ctx, ec.Store, ec.PrevState, ec.CurrState)
 	if err != nil {
 		return nil, xerrors.Errorf("diffing deal states: %w", err)
 	}
