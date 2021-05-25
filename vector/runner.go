@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 
@@ -566,6 +567,12 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
+		sort.Slice(actType, func(i, j int) bool {
+			return actType[i].ID < actType[j].ID
+		})
+		sort.Slice(expType, func(i, j int) bool {
+			return expType[i].ID < expType[j].ID
+		})
 		return cmp.Diff(actType, expType), nil
 	case "chain_economics":
 		var expType modelchain.ChainEconomicsList

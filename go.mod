@@ -46,6 +46,7 @@ require (
 	github.com/lib/pq v1.9.0
 	github.com/libp2p/go-libp2p-core v0.8.5
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
+	github.com/minio/sha256-simd v1.0.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/multiformats/go-multihash v0.0.15

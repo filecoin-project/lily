@@ -69,7 +69,7 @@ func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAP
 		return nil, xerrors.Errorf("loading current init actor state: %w", err)
 	}
 
-	addressChanges, err := init_.DiffAddressMap(prevState, curState)
+	addressChanges, err := init_.DiffAddressMap(ctx, node.Store(), prevState, curState)
 	if err != nil {
 		return nil, xerrors.Errorf("diffing init actor state: %w", err)
 	}
