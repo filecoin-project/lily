@@ -11,8 +11,8 @@ import (
 
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
-	miner "github.com/filecoin-project/lotus/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
+	miner "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/miner"
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
@@ -517,9 +517,7 @@ func extractMinerSectorEvents(ctx context.Context, node ActorStateAPI, a ActorIn
 	if ps != nil {
 		// build an index of removed sector expiration's for comparison below.
 
-		// TODO(refactor): StateMinerSectors loads the actor and then calls miner.Load which we already have available in ec (MinerStateExtractionContext)
-		// Should be able to replace with ec.CurrState.LoadSectors(&ps.Removed)
-		removedSectors, err := node.StateMinerSectors(ctx, a.Address, &ps.Removed, a.TipSet.Key())
+		removedSectors, err := ec.CurrState.LoadSectors(&ps.Removed)
 		if err != nil {
 			return nil, xerrors.Errorf("fetching miners removed sectors: %w", err)
 		}

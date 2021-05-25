@@ -11,8 +11,8 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 
-	"github.com/filecoin-project/lotus/chain/actors/builtin/power"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/power"
 
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	power0 "github.com/filecoin-project/specs-actors/actors/builtin/power"

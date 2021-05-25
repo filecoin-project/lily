@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
-	market "github.com/filecoin-project/lotus/chain/actors/builtin/market"
+	market "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/market"
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"

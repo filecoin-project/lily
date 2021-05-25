@@ -6,8 +6,8 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
-	init_ "github.com/filecoin-project/lotus/chain/actors/builtin/init"
 	"github.com/filecoin-project/lotus/chain/types"
+	init_ "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
