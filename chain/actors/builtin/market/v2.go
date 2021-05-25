@@ -13,6 +13,7 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 
+	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	market2 "github.com/filecoin-project/specs-actors/v2/actors/builtin/market"
 	adt2 "github.com/filecoin-project/specs-actors/v2/actors/util/adt"
 )
@@ -31,6 +32,10 @@ func load2(store adt.Store, root cid.Cid) (State, error) {
 type state2 struct {
 	market2.State
 	store adt.Store
+}
+
+func (s *state2) Code() cid.Cid {
+	return builtin2.StorageMarketActorCodeID
 }
 
 func (s *state2) TotalLocked() (abi.TokenAmount, error) {
