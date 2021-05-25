@@ -357,6 +357,12 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
+		sort.Slice(actType, func(i, j int) bool {
+			return actType[i].SectorID < actType[j].SectorID
+		})
+		sort.Slice(expType, func(i, j int) bool {
+			return expType[i].SectorID < expType[j].SectorID
+		})
 		return cmp.Diff(actType, expType), nil
 	case "miner_sector_events":
 		var expType miner.MinerSectorEventList
@@ -372,6 +378,12 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
+		sort.Slice(actType, func(i, j int) bool {
+			return actType[i].SectorID < actType[j].SectorID
+		})
+		sort.Slice(expType, func(i, j int) bool {
+			return expType[i].SectorID < expType[j].SectorID
+		})
 		return cmp.Diff(actType, expType), nil
 	case "miner_sector_infos":
 		var expType miner.MinerSectorInfoList
@@ -387,6 +399,12 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
+		sort.Slice(actType, func(i, j int) bool {
+			return actType[i].SectorID < actType[j].SectorID
+		})
+		sort.Slice(expType, func(i, j int) bool {
+			return expType[i].SectorID < expType[j].SectorID
+		})
 		return cmp.Diff(actType, expType), nil
 	case "miner_infos":
 		var expType miner.MinerInfoList
