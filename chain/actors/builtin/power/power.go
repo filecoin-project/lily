@@ -71,6 +71,8 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 type State interface {
 	cbor.Marshaler
 
+	Code() cid.Cid
+
 	TotalLocked() (abi.TokenAmount, error)
 	TotalPower() (Claim, error)
 	TotalCommitted() (Claim, error)

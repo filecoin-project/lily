@@ -13,7 +13,6 @@ import (
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
 
 	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
-
 	power4 "github.com/filecoin-project/specs-actors/v4/actors/builtin/power"
 	adt4 "github.com/filecoin-project/specs-actors/v4/actors/util/adt"
 )
@@ -32,6 +31,10 @@ func load4(store adt.Store, root cid.Cid) (State, error) {
 type state4 struct {
 	power4.State
 	store adt.Store
+}
+
+func (s *state4) Code() cid.Cid {
+	return builtin4.StoragePowerActorCodeID
 }
 
 func (s *state4) TotalLocked() (abi.TokenAmount, error) {
