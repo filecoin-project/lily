@@ -13,6 +13,8 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -152,6 +154,12 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 
 // TipSet is called when a new tipset has been discovered
 func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
+	ctx, span := global.Tracer("").Start(ctx, "Indexer.TipSet")
+	if span.IsRecording() {
+		span.SetAttributes(label.String("tipset", ts.String()), label.Int64("height", int64(ts.Height())))
+	}
+	defer span.End()
+
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Name, t.name))
 
 	var cancel func()

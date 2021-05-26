@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/filecoin-project/lotus/chain/types"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/label"
 
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
@@ -18,6 +20,12 @@ func NewTask() *Task {
 }
 
 func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+	ctx, span := global.Tracer("").Start(ctx, "ProcessBlocks")
+	if span.IsRecording() {
+		span.SetAttributes(label.String("tipset", ts.String()), label.Int64("height", int64(ts.Height())))
+	}
+	defer span.End()
+
 	var pl model.PersistableList
 	for _, bh := range ts.Blocks() {
 		select {

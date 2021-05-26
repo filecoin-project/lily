@@ -35,7 +35,7 @@ func TestEconomicsModelExtraction(t *testing.T) {
 	}
 
 	mockedLens := new(MockedChainEconomicsLens)
-	mockedLens.On("StateVMCirculatingSupplyInternal", ctx, expectedTs.Key()).Return(expectedCircSupply, nil)
+	mockedLens.On("StateVMCirculatingSupplyInternal", mock.Anything, expectedTs.Key()).Return(expectedCircSupply, nil)
 
 	em, err := ExtractChainEconomicsModel(ctx, mockedLens, expectedTs)
 	assert.NoError(t, err)

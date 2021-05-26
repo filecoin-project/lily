@@ -3,17 +3,23 @@ package miner
 import (
 	"context"
 
+	cbg "github.com/whyrusleeping/cbor-gen"
+	"go.opentelemetry.io/otel/api/global"
+
 	"github.com/filecoin-project/go-amt-ipld/v3"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt/diff"
+
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
-	cbg "github.com/whyrusleeping/cbor-gen"
+
+	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/adt/diff"
 )
 
 func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreCommitChanges, error) {
+	ctx, span := global.Tracer("").Start(ctx, "DiffPreCommits")
+	defer span.End()
 	prep, err := pre.precommits()
 	if err != nil {
 		return nil, err
@@ -35,11 +41,17 @@ func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreC
 
 	diffContainer := NewPreCommitDiffContainer(pre, cur)
 	if mapRequiresLegacyDiffing(pre, cur, preOpts, curOpts) {
+		if span.IsRecording() {
+			span.SetAttribute("diff", "legacy")
+		}
 		err = diff.CompareMap(prep, curp, diffContainer)
 		if err != nil {
 			return nil, err
 		}
 		return diffContainer.Results, nil
+	}
+	if span.IsRecording() {
+		span.SetAttribute("diff", "fast")
 	}
 
 	changes, err := diff.Hamt(ctx, prep, curp, store, store, hamt.UseHashFunction(hamt.HashFunc(preOpts.HashFunc)), hamt.UseTreeBitWidth(preOpts.Bitwidth))
@@ -110,6 +122,8 @@ func (m *preCommitDiffContainer) Remove(key string, val *cbg.Deferred) error {
 }
 
 func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorChanges, error) {
+	ctx, span := global.Tracer("").Start(ctx, "DiffSectors")
+	defer span.End()
 	pres, err := pre.sectors()
 	if err != nil {
 		return nil, err
@@ -124,6 +138,9 @@ func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorC
 	curBw := cur.SectorsAmtBitwidth()
 	diffContainer := NewSectorDiffContainer(pre, cur)
 	if arrayRequiresLegacyDiffing(pre, cur, preBw, curBw) {
+		if span.IsRecording() {
+			span.SetAttribute("diff", "legacy")
+		}
 		err = diff.CompareArray(pres, curs, diffContainer)
 		if err != nil {
 			return nil, err
@@ -133,6 +150,9 @@ func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorC
 	changes, err := diff.Amt(ctx, pres, curs, store, store, amt.UseTreeBitWidth(uint(preBw)))
 	if err != nil {
 		return nil, err
+	}
+	if span.IsRecording() {
+		span.SetAttribute("diff", "fast")
 	}
 
 	for _, change := range changes {

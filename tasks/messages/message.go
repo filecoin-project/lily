@@ -14,6 +14,8 @@ import (
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/ipld/go-ipld-prime"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -34,6 +36,12 @@ func NewTask() *Task {
 }
 
 func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error) {
+	ctx, span := global.Tracer("").Start(ctx, "ProcessMessages")
+	if span.IsRecording() {
+		span.SetAttributes(label.String("tipset", ts.String()), label.Int64("height", int64(ts.Height())))
+	}
+	defer span.End()
+
 	report := &visormodel.ProcessingReport{
 		Height:    int64(pts.Height()),
 		StateRoot: pts.ParentState().String(),
