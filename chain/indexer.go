@@ -1,15 +1,20 @@
 package chain
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"sync"
 	"time"
 
+	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/lotus/chain/types"
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
+	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -253,7 +258,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 			// If we have actor processors then find actors that have changed state
 			if len(t.actorProcessors) > 0 {
-				changes, err := t.node.StateChangedActors(tctx, parent.ParentState(), child.ParentState())
+				changes, err := t.stateChangedActors(tctx, parent.ParentState(), child.ParentState())
 				if err == nil {
 					if t.addressFilter != nil {
 						for addr := range changes {
@@ -406,6 +411,81 @@ func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, nam
 		Report: report,
 		Data:   data,
 	}
+}
+
+// stateChangedActors is an optimized version of the lotus API method StateChangedActors. This method takes advantage of the efficient hamt/v3 diffing logic
+// and applies it to versions of state tress supporting it. These include Version 2 and 3 of the lotus state tree implementation.
+// stateChangedActors will fall back to the lotus API method when the optimized diffing cannot be applied.
+func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid) (map[string]types.Actor, error) {
+	ctx, span := global.Tracer("").Start(ctx, "StateChangedActors")
+	if span.IsRecording() {
+		span.SetAttributes(label.String("old", old.String()), label.String("new", new.String()))
+	}
+	defer span.End()
+
+	var (
+		buf = bytes.NewReader(nil)
+		out = map[string]types.Actor{}
+	)
+
+	oldRoot, oldVersion, err := getStateTreeMapCIDAndVersion(ctx, t.node.Store(), old)
+	if err != nil {
+		return nil, err
+	}
+	newRoot, newVersion, err := getStateTreeMapCIDAndVersion(ctx, t.node.Store(), new)
+	if err != nil {
+		return nil, err
+	}
+
+	if newVersion == oldVersion && (newVersion == types.StateTreeVersion2 || newVersion == types.StateTreeVersion3) {
+		if span.IsRecording() {
+			span.SetAttribute("diff", "fast")
+		}
+		changes, err := hamt.Diff(ctx, t.node.Store(), t.node.Store(), oldRoot, newRoot, hamt.UseTreeBitWidth(5), hamt.UseHashFunction(func(input []byte) []byte {
+			res := sha256.Sum256(input)
+			return res[:]
+		}))
+		if err != nil {
+			log.Errorw("failed to diff state tree efficiently, falling back to slow method", "error", err)
+		} else {
+			if span.IsRecording() {
+				span.SetAttribute("diff", "fast")
+			}
+			for _, change := range changes {
+				addr, err := address.NewFromBytes([]byte(change.Key))
+				if err != nil {
+					return nil, xerrors.Errorf("address in state tree was not valid: %w", err)
+				}
+				var act types.Actor
+				switch change.Type {
+				case hamt.Add:
+					buf.Reset(change.After.Raw)
+					err = act.UnmarshalCBOR(buf)
+					buf.Reset(nil)
+					if err != nil {
+						return nil, err
+					}
+				case hamt.Remove:
+					buf.Reset(change.Before.Raw)
+					err = act.UnmarshalCBOR(buf)
+					buf.Reset(nil)
+					if err != nil {
+						return nil, err
+					}
+				case hamt.Modify:
+					buf.Reset(change.After.Raw)
+					err = act.UnmarshalCBOR(buf)
+					buf.Reset(nil)
+					if err != nil {
+						return nil, err
+					}
+				}
+				out[addr.String()] = act
+			}
+			return out, nil
+		}
+	}
+	return t.node.StateChangedActors(ctx, old, new)
 }
 
 func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProcessor, name string, ts, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages, results chan *TaskResult) {
