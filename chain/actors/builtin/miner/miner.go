@@ -120,6 +120,8 @@ type State interface {
 	DeadlineInfo(epoch abi.ChainEpoch) (*dline.Info, error)
 	DeadlineCronActive() (bool, error)
 
+	SectorsAmtBitwidth() int
+
 	// Diff helpers. Used by Diff* functions internally.
 	sectors() (adt.Array, error)
 	decodeSectorOnChainInfo(*cbg.Deferred) (SectorOnChainInfo, error)

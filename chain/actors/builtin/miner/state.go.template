@@ -53,6 +53,10 @@ func (s *state{{.v}}) Code() cid.Cid {
     return builtin{{.v}}.StorageMinerActorCodeID
 }
 
+func (s *state{{.v}}) SectorsAmtBitwidth() int {
+    return {{if (ge .v 3)}}miner{{.v}}.SectorsAmtBitwidth{{else}}3{{end}}
+}
+
 func (s *state{{.v}}) AvailableBalance(bal abi.TokenAmount) (available abi.TokenAmount, err error) {
 	defer func() {
 		if r := recover(); r != nil {

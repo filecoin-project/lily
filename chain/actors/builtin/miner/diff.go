@@ -10,13 +10,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt/diff"
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
-	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
-	miner3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/miner"
-	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
-	miner4 "github.com/filecoin-project/specs-actors/v4/actors/builtin/miner"
-	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
-	"golang.org/x/xerrors"
 )
 
 func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreCommitChanges, error) {
@@ -126,23 +120,17 @@ func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorC
 		return nil, err
 	}
 
-	preOpts, err := SectorsAmtBitwidth(pre.Code())
-	if err != nil {
-		return nil, err
-	}
-	curOpts, err := SectorsAmtBitwidth(cur.Code())
-	if err != nil {
-		return nil, err
-	}
+	preBw := pre.SectorsAmtBitwidth()
+	curBw := cur.SectorsAmtBitwidth()
 	diffContainer := NewSectorDiffContainer(pre, cur)
-	if arrayRequiresLegacyDiffing(pre, cur, preOpts, curOpts) {
+	if arrayRequiresLegacyDiffing(pre, cur, preBw, curBw) {
 		err = diff.CompareArray(pres, curs, diffContainer)
 		if err != nil {
 			return nil, err
 		}
 		return diffContainer.Results, nil
 	}
-	changes, err := diff.Amt(ctx, pres, curs, store, store, amt.UseTreeBitWidth(uint(preOpts)))
+	changes, err := diff.Amt(ctx, pres, curs, store, store, amt.UseTreeBitWidth(uint(preBw)))
 	if err != nil {
 		return nil, err
 	}
@@ -216,22 +204,6 @@ func (m *sectorDiffContainer) Remove(key uint64, val *cbg.Deferred) error {
 	}
 	m.Results.Removed = append(m.Results.Removed, si)
 	return nil
-}
-
-func SectorsAmtBitwidth(c cid.Cid) (int, error) {
-	switch c {
-	case builtin0.StorageMinerActorCodeID:
-		// https://github.com/filecoin-project/go-amt-ipld/blob/v2.1.0/amt.go#L21
-		return 3, nil
-	case builtin2.StorageMinerActorCodeID:
-		// https://github.com/filecoin-project/go-amt-ipld/blob/v2.1.0/amt.go#L21
-		return 3, nil
-	case builtin3.StorageMinerActorCodeID:
-		return miner3.SectorsAmtBitwidth, nil
-	case builtin4.StorageMinerActorCodeID:
-		return miner4.SectorsAmtBitwidth, nil
-	}
-	return -1, xerrors.Errorf("unknown actor code: %s", c)
 }
 
 func arrayRequiresLegacyDiffing(pre, cur State, pOpts, cOpts int) bool {
