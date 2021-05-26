@@ -214,3 +214,11 @@ func (s *dealProposals2) array() adt.Array {
 func fromV2DealProposal(v2 market2.DealProposal) DealProposal {
 	return (DealProposal)(v2)
 }
+
+func (s *state2) DealProposalsAmtBitwidth() int {
+	return 3
+}
+
+func (s *state2) DealStatesAmtBitwidth() int {
+	return 3
+}

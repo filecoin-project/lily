@@ -85,6 +85,9 @@ type State interface {
 		minerAddr address.Address, deals []abi.DealID, currEpoch, sectorExpiry abi.ChainEpoch,
 	) (weight, verifiedWeight abi.DealWeight, err error)
 	NextID() (abi.DealID, error)
+
+	DealProposalsAmtBitwidth() int
+	DealStatesAmtBitwidth() int
 }
 
 type BalanceTable interface {

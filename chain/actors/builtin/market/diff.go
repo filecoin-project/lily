@@ -4,20 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	cbg "github.com/whyrusleeping/cbor-gen"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-amt-ipld/v3"
 	"github.com/filecoin-project/go-state-types/abi"
 
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
-	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
-	market3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/market"
-	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
-	market4 "github.com/filecoin-project/specs-actors/v4/actors/builtin/market"
 
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt/diff"
@@ -26,14 +20,8 @@ import (
 var log = logging.Logger("actor/marker")
 
 func DiffDealProposals(ctx context.Context, store adt.Store, pre, cur State) (*DealProposalChanges, error) {
-	preOpts, err := ProposalsAmtBitwidth(pre.Code())
-	if err != nil {
-		return nil, err
-	}
-	curOpts, err := ProposalsAmtBitwidth(cur.Code())
-	if err != nil {
-		return nil, err
-	}
+	preOpts := pre.DealProposalsAmtBitwidth()
+	curOpts := cur.DealProposalsAmtBitwidth()
 	preP, err := pre.Proposals()
 	if err != nil {
 		return nil, err
@@ -114,14 +102,8 @@ func (d *marketProposalsDiffContainer) Remove(key uint64, val *cbg.Deferred) err
 }
 
 func DiffDealStates(ctx context.Context, store adt.Store, pre, cur State) (*DealStateChanges, error) {
-	preOpts, err := StatesAmtBitwidth(pre.Code())
-	if err != nil {
-		return nil, err
-	}
-	curOpts, err := StatesAmtBitwidth(cur.Code())
-	if err != nil {
-		return nil, err
-	}
+	preOpts := pre.DealStatesAmtBitwidth()
+	curOpts := cur.DealStatesAmtBitwidth()
 	preS, err := pre.States()
 	if err != nil {
 		return nil, err
@@ -230,36 +212,4 @@ func (d *marketStatesDiffContainer) Remove(key uint64, val *cbg.Deferred) error 
 	}
 	d.Results.Removed = append(d.Results.Removed, DealIDState{abi.DealID(key), *ds})
 	return nil
-}
-
-func ProposalsAmtBitwidth(c cid.Cid) (int, error) {
-	switch c {
-	case builtin0.StorageMarketActorCodeID:
-		// https://github.com/filecoin-project/go-amt-ipld/blob/v2.1.0/amt.go#L21
-		return 3, nil
-	case builtin2.StorageMarketActorCodeID:
-		// https://github.com/filecoin-project/go-amt-ipld/blob/v2.1.0/amt.go#L21
-		return 3, nil
-	case builtin3.StorageMarketActorCodeID:
-		return market3.ProposalsAmtBitwidth, nil
-	case builtin4.StorageMarketActorCodeID:
-		return market4.ProposalsAmtBitwidth, nil
-	}
-	return -1, xerrors.Errorf("unknown actor code: %s", c)
-}
-
-func StatesAmtBitwidth(c cid.Cid) (int, error) {
-	switch c {
-	case builtin0.StorageMarketActorCodeID:
-		// https://github.com/filecoin-project/go-amt-ipld/blob/v2.1.0/amt.go#L21
-		return 3, nil
-	case builtin2.StorageMarketActorCodeID:
-		// https://github.com/filecoin-project/go-amt-ipld/blob/v2.1.0/amt.go#L21
-		return 3, nil
-	case builtin3.StorageMarketActorCodeID:
-		return market3.StatesAmtBitwidth, nil
-	case builtin4.StorageMarketActorCodeID:
-		return market4.StatesAmtBitwidth, nil
-	}
-	return -1, xerrors.Errorf("unknown actor code: %s", c)
 }
