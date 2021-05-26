@@ -10,6 +10,8 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	"go.opencensus.io/tag"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -37,6 +39,11 @@ func NewTask(opener lens.APIOpener, extracterMap ActorExtractorMap) *Task {
 }
 
 func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates map[string]types.Actor) (model.Persistable, *visormodel.ProcessingReport, error) {
+	ctx, span := global.Tracer("").Start(ctx, "ProcessActors")
+	if span.IsRecording() {
+		span.SetAttributes(label.String("tipset", ts.String()), label.String("parent_tipset", pts.String()), label.Int64("height", int64(ts.Height())))
+	}
+	defer span.End()
 	// t.node is used only by goroutines started by this method
 	t.nodeMu.Lock()
 	if t.node == nil {

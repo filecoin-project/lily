@@ -14,6 +14,8 @@ import (
 	multisig3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/multisig"
 	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	"github.com/ipfs/go-cid"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -41,6 +43,12 @@ func NewTask(opener lens.APIOpener) *Task {
 }
 
 func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage, _ []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error) {
+	ctx, span := global.Tracer("").Start(ctx, "ProcessMultisigApprovals")
+	if span.IsRecording() {
+		span.SetAttributes(label.String("tipset", ts.String()), label.Int64("height", int64(ts.Height())))
+	}
+	defer span.End()
+
 	// We use p.node continually through this method so take a broad lock
 	p.nodeMu.Lock()
 	defer p.nodeMu.Unlock()

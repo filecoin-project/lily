@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	maddr "github.com/multiformats/go-multiaddr"
 	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-bitfield"
@@ -36,8 +37,10 @@ func init() {
 }
 
 func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
-	// TODO all processing below can, and probably should, be done in parallel.
 	ctx, span := global.Tracer("").Start(ctx, "StorageMinerExtractor")
+	if span.IsRecording() {
+		span.SetAttributes(label.String("actor", a.Address.String()))
+	}
 	defer span.End()
 
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
@@ -48,22 +51,22 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node Ac
 		return nil, xerrors.Errorf("creating miner state extraction context: %w", err)
 	}
 
-	minerInfoModel, err := ExtractMinerInfo(a, ec)
+	minerInfoModel, err := ExtractMinerInfo(ctx, a, ec)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner info: %w", err)
 	}
 
-	lockedFundsModel, err := ExtractMinerLockedFunds(a, ec)
+	lockedFundsModel, err := ExtractMinerLockedFunds(ctx, a, ec)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner locked funds: %w", err)
 	}
 
-	feeDebtModel, err := ExtractMinerFeeDebt(a, ec)
+	feeDebtModel, err := ExtractMinerFeeDebt(ctx, a, ec)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner fee debt: %w", err)
 	}
 
-	currDeadlineModel, err := ExtractMinerCurrentDeadlineInfo(a, ec)
+	currDeadlineModel, err := ExtractMinerCurrentDeadlineInfo(ctx, a, ec)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner current deadline info: %w", err)
 	}
@@ -93,6 +96,9 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node Ac
 }
 
 func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node ActorStateAPI) (*MinerStateExtractionContext, error) {
+	ctx, span := global.Tracer("").Start(ctx, "NewMinerExtractionContext")
+	defer span.End()
+
 	curState, err := miner.Load(node.Store(), &a.Actor)
 	if err != nil {
 		return nil, xerrors.Errorf("loading current miner state: %w", err)
@@ -147,7 +153,9 @@ func (m *MinerStateExtractionContext) HasPreviousState() bool {
 	return !(m.CurrTs.Height() == 0 || m.PrevState == m.CurrState)
 }
 
-func ExtractMinerInfo(a ActorInfo, ec *MinerStateExtractionContext) (*minermodel.MinerInfo, error) {
+func ExtractMinerInfo(ctx context.Context, a ActorInfo, ec *MinerStateExtractionContext) (*minermodel.MinerInfo, error) {
+	_, span := global.Tracer("").Start(ctx, "ExtractMinerInfo")
+	defer span.End()
 	if !ec.HasPreviousState() {
 		// means this miner was created in this tipset or genesis special case
 	} else if changed, err := ec.CurrState.MinerInfoChanged(ec.PrevState); err != nil {
@@ -203,7 +211,9 @@ func ExtractMinerInfo(a ActorInfo, ec *MinerStateExtractionContext) (*minermodel
 	return mi, nil
 }
 
-func ExtractMinerLockedFunds(a ActorInfo, ec *MinerStateExtractionContext) (*minermodel.MinerLockedFund, error) {
+func ExtractMinerLockedFunds(ctx context.Context, a ActorInfo, ec *MinerStateExtractionContext) (*minermodel.MinerLockedFund, error) {
+	_, span := global.Tracer("").Start(ctx, "ExtractMinerLockedFunds")
+	defer span.End()
 	currLocked, err := ec.CurrState.LockedFunds()
 	if err != nil {
 		return nil, xerrors.Errorf("loading current miner locked funds: %w", err)
@@ -229,7 +239,9 @@ func ExtractMinerLockedFunds(a ActorInfo, ec *MinerStateExtractionContext) (*min
 	}, nil
 }
 
-func ExtractMinerFeeDebt(a ActorInfo, ec *MinerStateExtractionContext) (*minermodel.MinerFeeDebt, error) {
+func ExtractMinerFeeDebt(ctx context.Context, a ActorInfo, ec *MinerStateExtractionContext) (*minermodel.MinerFeeDebt, error) {
+	_, span := global.Tracer("").Start(ctx, "ExtractMinerFeeDebt")
+	defer span.End()
 	currDebt, err := ec.CurrState.FeeDebt()
 	if err != nil {
 		return nil, xerrors.Errorf("loading current miner fee debt: %w", err)
@@ -254,7 +266,9 @@ func ExtractMinerFeeDebt(a ActorInfo, ec *MinerStateExtractionContext) (*minermo
 	}, nil
 }
 
-func ExtractMinerCurrentDeadlineInfo(a ActorInfo, ec *MinerStateExtractionContext) (*minermodel.MinerCurrentDeadlineInfo, error) {
+func ExtractMinerCurrentDeadlineInfo(ctx context.Context, a ActorInfo, ec *MinerStateExtractionContext) (*minermodel.MinerCurrentDeadlineInfo, error) {
+	_, span := global.Tracer("").Start(ctx, "ExtractMinerDeadlineInfo")
+	defer span.End()
 	currDeadlineInfo, err := ec.CurrState.DeadlineInfo(ec.CurrTs.Height())
 	if err != nil {
 		return nil, err
@@ -284,6 +298,8 @@ func ExtractMinerCurrentDeadlineInfo(a ActorInfo, ec *MinerStateExtractionContex
 }
 
 func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext, a ActorInfo, node ActorStateAPI) (minermodel.MinerPreCommitInfoList, minermodel.MinerSectorInfoList, minermodel.MinerSectorDealList, minermodel.MinerSectorEventList, error) {
+	ctx, span := global.Tracer("").Start(ctx, "ExtractMinerSectorData")
+	defer span.End()
 	preCommitChanges := new(miner.PreCommitChanges)
 	preCommitChanges.Added = []miner.SectorPreCommitOnChainInfo{}
 	preCommitChanges.Removed = []miner.SectorPreCommitOnChainInfo{}
@@ -408,6 +424,8 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 }
 
 func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtractionContext, node ActorStateAPI) (minermodel.MinerSectorPostList, error) {
+	ctx, span := global.Tracer("").Start(ctx, "ExtractMinerPoSts")
+	defer span.End()
 	// short circuit genesis state, no PoSt messages in genesis blocks.
 	if !ec.HasPreviousState() {
 		return nil, nil
@@ -502,7 +520,7 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 }
 
 func extractMinerSectorEvents(ctx context.Context, node ActorStateAPI, a ActorInfo, ec *MinerStateExtractionContext, sc *miner.SectorChanges, pc *miner.PreCommitChanges) (minermodel.MinerSectorEventList, error) {
-	ctx, span := global.Tracer("").Start(ctx, "StorageMinerExtractor.extractMinerSectorEvents")
+	ctx, span := global.Tracer("").Start(ctx, "extractMinerSectorEvents")
 	defer span.End()
 
 	ps, err := extractMinerPartitionsDiff(ctx, ec)
@@ -645,7 +663,7 @@ type PartitionStatus struct {
 }
 
 func extractMinerPartitionsDiff(ctx context.Context, ec *MinerStateExtractionContext) (*PartitionStatus, error) {
-	_, span := global.Tracer("").Start(ctx, "StorageMinerExtractor.minerPartitionDiff") // nolint: ineffassign,staticcheck
+	_, span := global.Tracer("").Start(ctx, "extractMinerPartitionDiff") // nolint: ineffassign,staticcheck
 	defer span.End()
 
 	// short circuit genesis state.
