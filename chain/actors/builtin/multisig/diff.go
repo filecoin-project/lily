@@ -51,7 +51,7 @@ func DiffPendingTransactions(ctx context.Context, store adt.Store, pre, cur Stat
 	}
 	diffContainer := NewTransactionDiffContainer(pre, cur)
 	if requiresLegacyDiffing(pre, cur, preOpts, curOpts) {
-		if err := diff.GenericMap(pret, curt, diffContainer); err != nil {
+		if err := diff.CompareMap(pret, curt, diffContainer); err != nil {
 			return nil, err
 		}
 		return diffContainer.Results, nil

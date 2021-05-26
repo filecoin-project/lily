@@ -54,7 +54,7 @@ func DiffClaims(ctx context.Context, store adt.Store, pre, cur State) (*ClaimCha
 	diffContainer := NewClaimDiffContainer(pre, cur)
 
 	if requiresLegacyDiffing(pre, cur, preOpts, curOpts) {
-		if err := diff.GenericMap(prec, curc, diffContainer); err != nil {
+		if err := diff.CompareMap(prec, curc, diffContainer); err != nil {
 			return nil, err
 		}
 		return diffContainer.Results, nil

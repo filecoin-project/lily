@@ -41,7 +41,7 @@ func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreC
 
 	diffContainer := NewPreCommitDiffContainer(pre, cur)
 	if mapRequiresLegacyDiffing(pre, cur, preOpts, curOpts) {
-		err = diff.GenericMap(prep, curp, diffContainer)
+		err = diff.CompareMap(prep, curp, diffContainer)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +136,7 @@ func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorC
 	}
 	diffContainer := NewSectorDiffContainer(pre, cur)
 	if arrayRequiresLegacyDiffing(pre, cur, preOpts, curOpts) {
-		err = diff.GenericArray(pres, curs, diffContainer)
+		err = diff.CompareArray(pres, curs, diffContainer)
 		if err != nil {
 			return nil, err
 		}

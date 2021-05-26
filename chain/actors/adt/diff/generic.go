@@ -8,26 +8,24 @@ import (
 	typegen "github.com/whyrusleeping/cbor-gen"
 )
 
-// AdtArrayDiff generalizes adt.Array diffing by accepting a Deferred type that can unmarshalled to its corresponding struct
+// ArrayDiffer generalizes adt.Array diffing by accepting a Deferred type that can unmarshalled to its corresponding struct
 // in an interface implantation.
 // Add should be called when a new k,v is added to the array
 // Modify should be called when a value is modified in the array
 // Remove should be called when a value is removed from the array
-type AdtArrayDiff interface {
+type ArrayDiffer interface {
 	Add(key uint64, val *typegen.Deferred) error
 	Modify(key uint64, from, to *typegen.Deferred) error
 	Remove(key uint64, val *typegen.Deferred) error
 }
 
-// TODO Performance can be improved by diffing the underlying IPLD graph, e.g. https://github.com/ipfs/go-merkledag/blob/749fd8717d46b4f34c9ce08253070079c89bc56d/dagutils/diff.go#L104
-// CBOR Marshaling will likely be the largest performance bottleneck here.
-
-// GenericArray accepts two *adt.Array's and an AdtArrayDiff implementation. It does the following:
-// - All values that exist in preArr and not in curArr are passed to AdtArrayDiff.Remove()
-// - All values that exist in curArr nnd not in prevArr are passed to adtArrayDiff.Add()
-// - All values that exist in preArr and in curArr are passed to AdtArrayDiff.Modify()
-//  - It is the responsibility of AdtArrayDiff.Modify() to determine if the values it was passed have been modified.
-func GenericArray(preArr, curArr adt.Array, out AdtArrayDiff) error {
+// CompareArray accepts two *adt.Array's and an ArrayDiffer implementation. It does the following:
+// - All values that exist in preArr and not in curArr are passed to ArrayDiffer.Remove()
+// - All values that exist in curArr nnd not in prevArr are passed to ArrayDiffer.Add()
+// - All values that exist in preArr and in curArr are passed to ArrayDiffer.Modify()
+//   - It is the responsibility of ArrayDiffer.Modify() to determine if the values it was passed have been modified.
+// If `preArr` and `curArr` are both backed by /v3/AMTs with the same bitwidth use the more efficient Amt method.
+func CompareArray(preArr, curArr adt.Array, out ArrayDiffer) error {
 	notNew := make(map[int64]struct{}, curArr.Length())
 	prevVal := new(typegen.Deferred)
 	if err := preArr.ForEach(prevVal, func(i int64) error {
@@ -64,23 +62,26 @@ func GenericArray(preArr, curArr adt.Array, out AdtArrayDiff) error {
 	})
 }
 
-// TODO Performance can be improved by diffing the underlying IPLD graph, e.g. https://github.com/ipfs/go-merkledag/blob/749fd8717d46b4f34c9ce08253070079c89bc56d/dagutils/diff.go#L104
-// CBOR Marshaling will likely be the largest performance bottleneck here.
-
-// AdtMapDiff generalizes adt.Map diffing by accepting a Deferred type that can unmarshalled to its corresponding struct
+// MapDiffer generalizes adt.Map diffing by accepting a Deferred type that can unmarshalled to its corresponding struct
 // in an interface implantation.
 // AsKey should return the Keyer implementation specific to the map
 // Add should be called when a new k,v is added to the map
 // Modify should be called when a value is modified in the map
 // Remove should be called when a value is removed from the map
-type AdtMapDiff interface {
+type MapDiffer interface {
 	AsKey(key string) (abi.Keyer, error)
 	Add(key string, val *typegen.Deferred) error
 	Modify(key string, from, to *typegen.Deferred) error
 	Remove(key string, val *typegen.Deferred) error
 }
 
-func GenericMap(preMap, curMap adt.Map, out AdtMapDiff) error {
+// CompareMap accepts two *adt.Map's and an MapDiffer implementation. It does the following:
+// - All values that exist in preMap and not in curMap are passed to MapDiffer.Remove()
+// - All values that exist in curMap nnd not in prevArr are passed to MapDiffer.Add()
+// - All values that exist in preMap and in curMap are passed to MapDiffer.Modify()
+//   - It is the responsibility of ArrayDiffer.Modify() to determine if the values it was passed have been modified.
+// If `preMap` and `curMap` are both backed by /v3/HAMTs with the same bitwidth and hash function use the more efficient Hamt method.
+func CompareMap(preMap, curMap adt.Map, out MapDiffer) error {
 	notNew := make(map[string]struct{})
 	prevVal := new(typegen.Deferred)
 	if err := preMap.ForEach(prevVal, func(key string) error {

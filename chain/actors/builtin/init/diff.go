@@ -47,7 +47,7 @@ func DiffAddressMap(ctx context.Context, store adt.Store, pre, cur State) (*Addr
 	mapDiffer := NewAddressMapDiffer(pre, cur)
 	if requiresLegacyDiffing(pre, cur, preOpts, curOpts) {
 		log.Warnw("actor HAMT opts differ, running slower generic map diff", "preCID", pre.Code(), "curCID", cur.Code())
-		if err := diff.GenericMap(prem, curm, mapDiffer); err != nil {
+		if err := diff.CompareMap(prem, curm, mapDiffer); err != nil {
 			return nil, err
 		}
 		return mapDiffer.Results, nil

@@ -8,6 +8,7 @@ import (
 	adt2 "github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 )
 
+// Amt returns a set of changes that transform `preArr` into `curArr`. opts are applied to both `preArr` and `curArr`.
 func Amt(ctx context.Context, preArr, curArr adt2.Array, preStore, curStore adt.Store, amtOpts ...amt.Option) ([]*amt.Change, error) {
 	preRoot, err := preArr.Root()
 	if err != nil {

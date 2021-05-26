@@ -45,7 +45,7 @@ func TestDiffAdtArray(t *testing.T) {
 
 	changes := new(TestDiffArray)
 
-	assert.NoError(t, GenericArray(arrA, arrB, changes))
+	assert.NoError(t, CompareArray(arrA, arrB, changes))
 	assert.NotNil(t, changes)
 
 	assert.Equal(t, 2, len(changes.Added))
@@ -99,7 +99,7 @@ func TestDiffAdtMap(t *testing.T) {
 
 	changes := new(TestDiffMap)
 
-	assert.NoError(t, GenericMap(mapA, mapB, changes))
+	assert.NoError(t, CompareMap(mapA, mapB, changes))
 	assert.NotNil(t, changes)
 
 	assert.Equal(t, 2, len(changes.Added))
@@ -135,7 +135,7 @@ type TestDiffMap struct {
 	Removed  []adtMapDiffResult
 }
 
-var _ AdtMapDiff = &TestDiffMap{}
+var _ MapDiffer = &TestDiffMap{}
 
 func (t *TestDiffMap) AsKey(key string) (abi.Keyer, error) {
 	k, err := abi.ParseUIntKey(key)
@@ -233,7 +233,7 @@ type TestDiffArray struct {
 	Removed  []adtArrayDiffResult
 }
 
-var _ AdtArrayDiff = &TestDiffArray{}
+var _ ArrayDiffer = &TestDiffArray{}
 
 type TestAdtArrayDiffModified struct {
 	From adtArrayDiffResult
