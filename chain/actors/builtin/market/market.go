@@ -72,6 +72,7 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 type State interface {
 	cbor.Marshaler
+	Code() cid.Cid
 	BalancesChanged(State) (bool, error)
 	EscrowTable() (BalanceTable, error)
 	LockedTable() (BalanceTable, error)
@@ -84,6 +85,9 @@ type State interface {
 		minerAddr address.Address, deals []abi.DealID, currEpoch, sectorExpiry abi.ChainEpoch,
 	) (weight, verifiedWeight abi.DealWeight, err error)
 	NextID() (abi.DealID, error)
+
+	DealProposalsAmtBitwidth() int
+	DealStatesAmtBitwidth() int
 }
 
 type BalanceTable interface {

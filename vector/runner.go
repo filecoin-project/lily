@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 
@@ -356,6 +357,12 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
+		sort.Slice(actType, func(i, j int) bool {
+			return actType[i].SectorID < actType[j].SectorID
+		})
+		sort.Slice(expType, func(i, j int) bool {
+			return expType[i].SectorID < expType[j].SectorID
+		})
 		return cmp.Diff(actType, expType), nil
 	case "miner_sector_events":
 		var expType miner.MinerSectorEventList
@@ -371,6 +378,12 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
+		sort.Slice(actType, func(i, j int) bool {
+			return actType[i].SectorID < actType[j].SectorID
+		})
+		sort.Slice(expType, func(i, j int) bool {
+			return expType[i].SectorID < expType[j].SectorID
+		})
 		return cmp.Diff(actType, expType), nil
 	case "miner_sector_infos":
 		var expType miner.MinerSectorInfoList
@@ -386,6 +399,12 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
+		sort.Slice(actType, func(i, j int) bool {
+			return actType[i].SectorID < actType[j].SectorID
+		})
+		sort.Slice(expType, func(i, j int) bool {
+			return expType[i].SectorID < expType[j].SectorID
+		})
 		return cmp.Diff(actType, expType), nil
 	case "miner_infos":
 		var expType miner.MinerInfoList
@@ -506,6 +525,12 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
+		sort.Slice(actType, func(i, j int) bool {
+			return actType[i].MinerID < actType[j].MinerID
+		})
+		sort.Slice(expType, func(i, j int) bool {
+			return expType[i].MinerID < expType[j].MinerID
+		})
 		return cmp.Diff(actType, expType), nil
 	case "chain_rewards":
 		var expType []*reward.ChainReward
@@ -566,6 +591,12 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 			}
 			actType = append(actType, act)
 		}
+		sort.Slice(actType, func(i, j int) bool {
+			return actType[i].ID < actType[j].ID
+		})
+		sort.Slice(expType, func(i, j int) bool {
+			return expType[i].ID < expType[j].ID
+		})
 		return cmp.Diff(actType, expType), nil
 	case "chain_economics":
 		var expType modelchain.ChainEconomicsList

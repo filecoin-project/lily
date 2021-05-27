@@ -314,12 +314,12 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 		}
 	} else { // not genesis state, need to diff with previous state to compute changes.
 		var err error
-		preCommitChanges, err = miner.DiffPreCommits(ec.PrevState, ec.CurrState)
+		preCommitChanges, err = miner.DiffPreCommits(ctx, node.Store(), ec.PrevState, ec.CurrState)
 		if err != nil {
 			return nil, nil, nil, nil, xerrors.Errorf("diffing miner precommits: %w", err)
 		}
 
-		sectorChanges, err = miner.DiffSectors(ec.PrevState, ec.CurrState)
+		sectorChanges, err = miner.DiffSectors(ctx, node.Store(), ec.PrevState, ec.CurrState)
 		if err != nil {
 			return nil, nil, nil, nil, xerrors.Errorf("diffing miner sectors: %w", err)
 		}

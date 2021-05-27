@@ -16,7 +16,6 @@ import (
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 
 	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
-
 	msig4 "github.com/filecoin-project/specs-actors/v4/actors/builtin/multisig"
 )
 
@@ -34,6 +33,10 @@ func load4(store adt.Store, root cid.Cid) (State, error) {
 type state4 struct {
 	msig4.State
 	store adt.Store
+}
+
+func (s *state4) Code() cid.Cid {
+	return builtin4.MultisigActorCodeID
 }
 
 func (s *state4) LockedBalance(currEpoch abi.ChainEpoch) (abi.TokenAmount, error) {

@@ -45,6 +45,8 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 type State interface {
 	cbor.Marshaler
 
+    Code() cid.Cid
+
 	LockedBalance(epoch abi.ChainEpoch) (abi.TokenAmount, error)
 	StartEpoch() (abi.ChainEpoch, error)
 	UnlockDuration() (abi.ChainEpoch, error)

@@ -34,6 +34,10 @@ type state3 struct {
 	store adt.Store
 }
 
+func (s *state3) Code() cid.Cid {
+	return builtin3.InitActorCodeID
+}
+
 func (s *state3) ResolveAddress(address address.Address) (address.Address, bool, error) {
 	return s.State.ResolveAddress(s.store, address)
 }

@@ -70,6 +70,8 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 type State interface {
 	cbor.Marshaler
 
+	Code() cid.Cid
+
 	ResolveAddress(address address.Address) (address.Address, bool, error)
 	MapAddressToNewID(address address.Address) (address.Address, error)
 	NetworkName() (dtypes.NetworkName, error)

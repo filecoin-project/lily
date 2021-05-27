@@ -9,9 +9,11 @@ require (
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/filecoin-project/go-address v0.0.5
+	github.com/filecoin-project/go-amt-ipld/v3 v3.1.0
 	github.com/filecoin-project/go-bitfield v0.2.4
 	github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210421230102-321bccf8b648
 	github.com/filecoin-project/go-fil-markets v1.2.5
+	github.com/filecoin-project/go-hamt-ipld/v3 v3.1.0
 	github.com/filecoin-project/go-jsonrpc v0.1.4-0.20210217175800-45ea43ac2bec
 	github.com/filecoin-project/go-multistore v0.0.3
 	github.com/filecoin-project/go-paramfetch v0.0.2-0.20200701152213-3e0f0afdc261
@@ -44,6 +46,7 @@ require (
 	github.com/lib/pq v1.9.0
 	github.com/libp2p/go-libp2p-core v0.8.5
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
+	github.com/minio/sha256-simd v1.0.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/multiformats/go-multihash v0.0.15

@@ -2,15 +2,38 @@ package init
 
 import (
 	"bytes"
+	"context"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/go-state-types/abi"
-	typegen "github.com/whyrusleeping/cbor-gen"
-
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/adt/diff"
+	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
+	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
+	logging "github.com/ipfs/go-log/v2"
+	typegen "github.com/whyrusleeping/cbor-gen"
 )
 
-func DiffAddressMap(pre, cur State) (*AddressMapChanges, error) {
+var log = logging.Logger("actor/init")
+
+type AddressMapChanges struct {
+	Added    []AddressPair
+	Modified []AddressChange
+	Removed  []AddressPair
+}
+
+func DiffAddressMap(ctx context.Context, store adt.Store, pre, cur State) (*AddressMapChanges, error) {
+	preOpts, err := adt.MapOptsForActorCode(pre.Code())
+	if err != nil {
+		return nil, err
+	}
+
+	curOpts, err := adt.MapOptsForActorCode(cur.Code())
+	if err != nil {
+		return nil, err
+	}
+
 	prem, err := pre.addressMap()
 	if err != nil {
 		return nil, err
@@ -21,39 +44,69 @@ func DiffAddressMap(pre, cur State) (*AddressMapChanges, error) {
 		return nil, err
 	}
 
-	preRoot, err := prem.Root()
+	mapDiffer := NewAddressMapDiffer(pre, cur)
+	if requiresLegacyDiffing(pre, cur, preOpts, curOpts) {
+		log.Warnw("actor HAMT opts differ, running slower generic map diff", "preCID", pre.Code(), "curCID", cur.Code())
+		if err := diff.CompareMap(prem, curm, mapDiffer); err != nil {
+			return nil, err
+		}
+		return mapDiffer.Results, nil
+	}
+
+	changes, err := diff.Hamt(ctx, prem, curm, store, store, hamt.UseTreeBitWidth(preOpts.Bitwidth), hamt.UseHashFunction(hamt.HashFunc(preOpts.HashFunc)))
 	if err != nil {
 		return nil, err
 	}
 
-	curRoot, err := curm.Root()
-	if err != nil {
-		return nil, err
+	for _, change := range changes {
+		switch change.Type {
+		case hamt.Add:
+			if err := mapDiffer.Add(change.Key, change.After); err != nil {
+				return nil, err
+			}
+		case hamt.Remove:
+			if err := mapDiffer.Remove(change.Key, change.Before); err != nil {
+				return nil, err
+			}
+		case hamt.Modify:
+			if err := mapDiffer.Modify(change.Key, change.Before, change.After); err != nil {
+				return nil, err
+			}
+		}
 	}
 
+	return mapDiffer.Results, nil
+}
+
+func requiresLegacyDiffing(pre, cur State, pOpts, cOpts *adt.MapOpts) bool {
+	// hamt/v3 cannot read hamt/v2 nodes. Their Pointers struct has changed cbor marshalers.
+	if pre.Code() == builtin0.InitActorCodeID {
+		return true
+	}
+	if pre.Code() == builtin2.InitActorCodeID {
+		return true
+	}
+	if cur.Code() == builtin0.InitActorCodeID {
+		return true
+	}
+	if cur.Code() == builtin2.InitActorCodeID {
+		return true
+	}
+	// bitwidth or hashfunction differences mean legacy diffing.
+	if !pOpts.Equal(cOpts) {
+		return true
+	}
+	return false
+}
+
+func NewAddressMapDiffer(pre, cur State) *addressMapDiffer {
 	results := new(AddressMapChanges)
-	// no change.
-	if curRoot.Equals(preRoot) {
-		return results, nil
-	}
-
-	err = adt.DiffAdtMap(prem, curm, &addressMapDiffer{results, pre, cur})
-	if err != nil {
-		return nil, err
-	}
-
-	return results, nil
+	return &addressMapDiffer{results, pre, cur}
 }
 
 type addressMapDiffer struct {
 	Results    *AddressMapChanges
 	pre, adter State
-}
-
-type AddressMapChanges struct {
-	Added    []AddressPair
-	Modified []AddressChange
-	Removed  []AddressPair
 }
 
 func (i *addressMapDiffer) AsKey(key string) (abi.Keyer, error) {
@@ -84,14 +137,14 @@ func (i *addressMapDiffer) Add(key string, val *typegen.Deferred) error {
 	return nil
 }
 
-func (i *addressMapDiffer) Modify(key string, from, to *typegen.Deferred) error {
+func (i *addressMapDiffer) Modify(key string, before, after *typegen.Deferred) error {
 	pkAddr, err := address.NewFromBytes([]byte(key))
 	if err != nil {
 		return err
 	}
 
 	fromID := new(typegen.CborInt)
-	if err := fromID.UnmarshalCBOR(bytes.NewReader(from.Raw)); err != nil {
+	if err := fromID.UnmarshalCBOR(bytes.NewReader(before.Raw)); err != nil {
 		return err
 	}
 	fromIDAddr, err := address.NewIDAddress(uint64(*fromID))
@@ -100,7 +153,7 @@ func (i *addressMapDiffer) Modify(key string, from, to *typegen.Deferred) error 
 	}
 
 	toID := new(typegen.CborInt)
-	if err := toID.UnmarshalCBOR(bytes.NewReader(to.Raw)); err != nil {
+	if err := toID.UnmarshalCBOR(bytes.NewReader(after.Raw)); err != nil {
 		return err
 	}
 	toIDAddr, err := address.NewIDAddress(uint64(*toID))

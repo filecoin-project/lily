@@ -12,9 +12,7 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 
-{{if (ge .v 3)}}
 	builtin{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin"
-{{end}}
 
 	init{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin/init"
 	adt{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/util/adt"
@@ -34,6 +32,10 @@ func load{{.v}}(store adt.Store, root cid.Cid) (State, error) {
 type state{{.v}} struct {
 	init{{.v}}.State
 	store adt.Store
+}
+
+func (s *state{{.v}}) Code() cid.Cid {
+    return builtin{{.v}}.InitActorCodeID
 }
 
 func (s *state{{.v}}) ResolveAddress(address address.Address) (address.Address, bool, error) {

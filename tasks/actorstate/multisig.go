@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/multisig"
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
@@ -38,14 +39,14 @@ func (m MultiSigActorExtractor) Extract(ctx context.Context, a ActorInfo, node A
 		return nil, err
 	}
 
-	transactionModels, err := ExtractMultisigTransactions(a, ec)
+	transactionModels, err := ExtractMultisigTransactions(ctx, a, ec)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting multisig actor %s with head %s transactions: %w", a.Address, a.Actor.Head, err)
 	}
 	return &multisigmodel.MultisigTaskResult{TransactionModel: transactionModels}, nil
 }
 
-func ExtractMultisigTransactions(a ActorInfo, ec *MsigExtractionContext) (multisigmodel.MultisigTransactionList, error) {
+func ExtractMultisigTransactions(ctx context.Context, a ActorInfo, ec *MsigExtractionContext) (multisigmodel.MultisigTransactionList, error) {
 	var out multisigmodel.MultisigTransactionList
 	if !ec.HasPreviousState() {
 		if err := ec.CurrState.ForEachPendingTxn(func(id int64, txn multisig.Transaction) error {
@@ -72,7 +73,7 @@ func ExtractMultisigTransactions(a ActorInfo, ec *MsigExtractionContext) (multis
 		return out, nil
 	}
 
-	changes, err := multisig.DiffPendingTransactions(ec.PrevState, ec.CurrState)
+	changes, err := multisig.DiffPendingTransactions(ctx, ec.Store, ec.PrevState, ec.CurrState)
 	if err != nil {
 		return nil, xerrors.Errorf("diffing pending transactions: %w", err)
 	}
@@ -122,6 +123,8 @@ type MsigExtractionContext struct {
 	CurrActor *types.Actor
 	CurrState multisig.State
 	CurrTs    *types.TipSet
+
+	Store adt.Store
 }
 
 func (m *MsigExtractionContext) HasPreviousState() bool {
@@ -146,6 +149,7 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 					CurrActor: &a.Actor,
 					CurrState: curState,
 					CurrTs:    a.TipSet,
+					Store:     node.Store(),
 				}, nil
 			}
 			return nil, xerrors.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet.Key(), a.Epoch, err)
@@ -162,5 +166,6 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 		CurrActor: &a.Actor,
 		CurrState: curState,
 		CurrTs:    a.TipSet,
+		Store:     node.Store(),
 	}, nil
 }

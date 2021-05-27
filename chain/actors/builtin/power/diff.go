@@ -1,11 +1,16 @@
 package power
 
 import (
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/abi"
-	cbg "github.com/whyrusleeping/cbor-gen"
+	"context"
 
+	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-hamt-ipld/v3"
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/adt/diff"
+	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
+	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
+	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 type ClaimChanges struct {
@@ -25,9 +30,7 @@ type ClaimInfo struct {
 	Claim Claim
 }
 
-func DiffClaims(pre, cur State) (*ClaimChanges, error) {
-	results := new(ClaimChanges)
-
+func DiffClaims(ctx context.Context, store adt.Store, pre, cur State) (*ClaimChanges, error) {
 	prec, err := pre.claims()
 	if err != nil {
 		return nil, err
@@ -38,19 +41,64 @@ func DiffClaims(pre, cur State) (*ClaimChanges, error) {
 		return nil, err
 	}
 
-	if err := adt.DiffAdtMap(prec, curc, &claimDiffer{results, pre, cur}); err != nil {
+	preOpts, err := adt.MapOptsForActorCode(pre.Code())
+	if err != nil {
 		return nil, err
 	}
 
-	return results, nil
+	curOpts, err := adt.MapOptsForActorCode(cur.Code())
+	if err != nil {
+		return nil, err
+	}
+
+	diffContainer := NewClaimDiffContainer(pre, cur)
+
+	if requiresLegacyDiffing(pre, cur, preOpts, curOpts) {
+		if err := diff.CompareMap(prec, curc, diffContainer); err != nil {
+			return nil, err
+		}
+		return diffContainer.Results, nil
+	}
+
+	changes, err := diff.Hamt(ctx, prec, curc, store, store, hamt.UseTreeBitWidth(preOpts.Bitwidth), hamt.UseHashFunction(hamt.HashFunc(preOpts.HashFunc)))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, change := range changes {
+		switch change.Type {
+		case hamt.Add:
+			if err := diffContainer.Add(change.Key, change.After); err != nil {
+				return nil, err
+			}
+		case hamt.Remove:
+			if err := diffContainer.Remove(change.Key, change.Before); err != nil {
+				return nil, err
+			}
+		case hamt.Modify:
+			if err := diffContainer.Modify(change.Key, change.Before, change.After); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return diffContainer.Results, nil
 }
 
-type claimDiffer struct {
+func NewClaimDiffContainer(pre, cur State) *claimDiffContainer {
+	return &claimDiffContainer{
+		Results: new(ClaimChanges),
+		pre:     pre,
+		after:   cur,
+	}
+}
+
+type claimDiffContainer struct {
 	Results    *ClaimChanges
 	pre, after State
 }
 
-func (c *claimDiffer) AsKey(key string) (abi.Keyer, error) {
+func (c *claimDiffContainer) AsKey(key string) (abi.Keyer, error) {
 	addr, err := address.NewFromBytes([]byte(key))
 	if err != nil {
 		return nil, err
@@ -58,7 +106,7 @@ func (c *claimDiffer) AsKey(key string) (abi.Keyer, error) {
 	return abi.AddrKey(addr), nil
 }
 
-func (c *claimDiffer) Add(key string, val *cbg.Deferred) error {
+func (c *claimDiffContainer) Add(key string, val *cbg.Deferred) error {
 	ci, err := c.after.decodeClaim(val)
 	if err != nil {
 		return err
@@ -74,7 +122,7 @@ func (c *claimDiffer) Add(key string, val *cbg.Deferred) error {
 	return nil
 }
 
-func (c *claimDiffer) Modify(key string, from, to *cbg.Deferred) error {
+func (c *claimDiffContainer) Modify(key string, from, to *cbg.Deferred) error {
 	ciFrom, err := c.pre.decodeClaim(from)
 	if err != nil {
 		return err
@@ -100,7 +148,7 @@ func (c *claimDiffer) Modify(key string, from, to *cbg.Deferred) error {
 	return nil
 }
 
-func (c *claimDiffer) Remove(key string, val *cbg.Deferred) error {
+func (c *claimDiffContainer) Remove(key string, val *cbg.Deferred) error {
 	ci, err := c.after.decodeClaim(val)
 	if err != nil {
 		return err
@@ -114,4 +162,25 @@ func (c *claimDiffer) Remove(key string, val *cbg.Deferred) error {
 		Claim: ci,
 	})
 	return nil
+}
+
+func requiresLegacyDiffing(pre, cur State, pOpts, cOpts *adt.MapOpts) bool {
+	// hamt/v3 cannot read hamt/v2 nodes. Their Pointers struct has changed cbor marshalers.
+	if pre.Code() == builtin0.StoragePowerActorCodeID {
+		return true
+	}
+	if pre.Code() == builtin2.StoragePowerActorCodeID {
+		return true
+	}
+	if cur.Code() == builtin0.StoragePowerActorCodeID {
+		return true
+	}
+	if cur.Code() == builtin2.StoragePowerActorCodeID {
+		return true
+	}
+	// bitwidth or hashfunction differences mean legacy diffing.
+	if !pOpts.Equal(cOpts) {
+		return true
+	}
+	return false
 }

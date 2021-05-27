@@ -91,6 +91,8 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 type State interface {
 	cbor.Marshaler
 
+	Code() cid.Cid
+
 	// Total available balance to spend.
 	AvailableBalance(abi.TokenAmount) (abi.TokenAmount, error)
 	// Funds that will vest by the given epoch.
@@ -117,6 +119,8 @@ type State interface {
 
 	DeadlineInfo(epoch abi.ChainEpoch) (*dline.Info, error)
 	DeadlineCronActive() (bool, error)
+
+	SectorsAmtBitwidth() int
 
 	// Diff helpers. Used by Diff* functions internally.
 	sectors() (adt.Array, error)

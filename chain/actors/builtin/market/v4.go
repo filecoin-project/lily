@@ -13,6 +13,7 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 
+	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	market4 "github.com/filecoin-project/specs-actors/v4/actors/builtin/market"
 	adt4 "github.com/filecoin-project/specs-actors/v4/actors/util/adt"
 )
@@ -31,6 +32,10 @@ func load4(store adt.Store, root cid.Cid) (State, error) {
 type state4 struct {
 	market4.State
 	store adt.Store
+}
+
+func (s *state4) Code() cid.Cid {
+	return builtin4.StorageMarketActorCodeID
 }
 
 func (s *state4) TotalLocked() (abi.TokenAmount, error) {
@@ -208,4 +213,12 @@ func (s *dealProposals4) array() adt.Array {
 
 func fromV4DealProposal(v4 market4.DealProposal) DealProposal {
 	return (DealProposal)(v4)
+}
+
+func (s *state4) DealProposalsAmtBitwidth() int {
+	return market4.ProposalsAmtBitwidth
+}
+
+func (s *state4) DealStatesAmtBitwidth() int {
+	return market4.StatesAmtBitwidth
 }

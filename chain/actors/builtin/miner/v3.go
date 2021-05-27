@@ -17,7 +17,6 @@ import (
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 
 	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
-
 	miner3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/miner"
 	adt3 "github.com/filecoin-project/specs-actors/v3/actors/util/adt"
 )
@@ -46,6 +45,14 @@ type deadline3 struct {
 type partition3 struct {
 	miner3.Partition
 	store adt.Store
+}
+
+func (s *state3) Code() cid.Cid {
+	return builtin3.StorageMinerActorCodeID
+}
+
+func (s *state3) SectorsAmtBitwidth() int {
+	return miner3.SectorsAmtBitwidth
 }
 
 func (s *state3) AvailableBalance(bal abi.TokenAmount) (available abi.TokenAmount, err error) {
