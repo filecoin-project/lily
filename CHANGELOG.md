@@ -6,6 +6,22 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
 
+<a name="v0.6.6"></a>
+## [v0.6.6] - 2021-05-28
+
+### Fix
+ - Track miner sector size
+
+### Feat
+ - Introduce major schema versioning
+ - Upgrade HAMT and AMT diffing to more efficient implementation when able to
+ - Implement optimized state tree diffing
+
+### Chore
+ - Add actor-shim code generation
+ - Add more tracing calls to critial path
+
+
 <a name="v0.6.5"></a>
 ## [v0.6.5] - 2021-05-20
 
