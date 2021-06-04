@@ -23,7 +23,7 @@ require (
 	github.com/filecoin-project/specs-actors/v2 v2.3.5-0.20210114162132-5b58b773f4fb
 	github.com/filecoin-project/specs-actors/v3 v3.1.0
 	github.com/filecoin-project/specs-actors/v4 v4.0.0
-	github.com/filecoin-project/statediff v0.0.24
+	github.com/filecoin-project/statediff v0.0.25-0.20210604145704-951a452b5239
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.3.1
 	github.com/go-pg/pgext v0.1.4
@@ -82,6 +82,3 @@ replace (
 // Supports go-ipld-prime v7
 // TODO: remove once https://github.com/filecoin-project/go-hamt-ipld/pull/70 is merged to github.com/filecoin-project/go-hamt-ipld
 replace github.com/filecoin-project/go-hamt-ipld/v2 => github.com/willscott/go-hamt-ipld/v2 v2.0.1-0.20210225034344-6d6dfa9b3960
-
-// Temporary until fix is merged (branch v4miner)
-replace github.com/filecoin-project/statediff => github.com/iand/statediff v0.0.23-0.20210604114225-7cdd41be80cd
