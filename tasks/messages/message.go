@@ -272,6 +272,11 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 }
 
 func (p *Task) parseMessageParams(m *types.Message, destCode cid.Cid) (string, string, error) {
+	// Method is optional, zero means a plain value transfer
+	if m.Method == 0 {
+		return "Send", "", nil
+	}
+
 	actor, ok := statediff.LotusActorCodes[destCode.String()]
 	if !ok {
 		actor = statediff.LotusTypeUnknown
