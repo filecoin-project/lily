@@ -82,3 +82,6 @@ replace (
 // Supports go-ipld-prime v7
 // TODO: remove once https://github.com/filecoin-project/go-hamt-ipld/pull/70 is merged to github.com/filecoin-project/go-hamt-ipld
 replace github.com/filecoin-project/go-hamt-ipld/v2 => github.com/willscott/go-hamt-ipld/v2 v2.0.1-0.20210225034344-6d6dfa9b3960
+
+// Temporary until fix is merged (branch v4miner)
+replace github.com/filecoin-project/statediff => github.com/iand/statediff v0.0.23-0.20210604114225-7cdd41be80cd
