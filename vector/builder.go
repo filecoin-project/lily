@@ -23,7 +23,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/version"
 )
 
-var log = logging.Logger("vector")
+var log = logging.Logger("visor/vector")
 
 type BuilderSchema struct {
 	Meta   Metadata           `json:"metadata"`

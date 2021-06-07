@@ -13,11 +13,9 @@ type NullStorage struct {
 }
 
 func (*NullStorage) PersistBatch(ctx context.Context, p ...model.Persistable) error {
-	log.Debugw("Not persisting data")
 	return nil
 }
 
 func (*NullStorage) PersistModel(ctx context.Context, m interface{}) error {
-	log.Debugw("Not persisting data")
 	return nil
 }

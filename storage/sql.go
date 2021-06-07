@@ -69,7 +69,7 @@ var models = []interface{}{
 	(*msapprovals.MultisigApproval)(nil),
 }
 
-var log = logging.Logger("storage")
+var log = logging.Logger("visor/storage")
 
 // Advisory locks
 var (

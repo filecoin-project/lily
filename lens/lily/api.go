@@ -33,6 +33,9 @@ type LilyAPI interface {
 	// ID returns peerID of libp2p node backing this API
 	ID(context.Context) (peer.ID, error) //perm:read
 
+	// LogList returns a list of loggers
+	LogList(context.Context) ([]string, error)         //perm:write
+	LogSetLevel(context.Context, string, string) error //perm:write
 }
 
 type LilyWatchConfig struct {

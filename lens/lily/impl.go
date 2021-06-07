@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
 
 	"github.com/filecoin-project/sentinel-visor/chain"
@@ -149,6 +150,14 @@ func (m *LilyNodeAPI) StateGetReceipt(ctx context.Context, msg cid.Cid, from typ
 	}
 
 	return &ml.Receipt, nil
+}
+
+func (m *LilyNodeAPI) LogList(ctx context.Context) ([]string, error) {
+	return logging.GetSubsystems(), nil
+}
+
+func (m *LilyNodeAPI) LogSetLevel(ctx context.Context, subsystem, level string) error {
+	return logging.SetLogLevel(subsystem, level)
 }
 
 var _ LilyAPI = &LilyNodeAPI{}

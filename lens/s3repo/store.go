@@ -15,7 +15,7 @@ import (
 	"github.com/ipfs/go-cid"
 )
 
-var log = logging.Logger("sql")
+var log = logging.Logger("visor/lens/sql")
 
 var _ blockstore.Blockstore = (*S3Blockstore)(nil)
 

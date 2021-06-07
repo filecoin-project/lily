@@ -14,7 +14,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/version"
 )
 
-var log = logging.Logger("visor")
+var log = logging.Logger("visor/main")
 
 func main() {
 	// Set up a context that is canceled when the command is interrupted
@@ -102,6 +102,7 @@ func main() {
 			commands.DaemonCmd,
 			commands.InitCmd,
 			commands.JobCmd,
+			commands.LogCmd,
 			commands.MigrateCmd,
 			commands.RunCmd,
 			commands.SyncCmd,

@@ -13,7 +13,7 @@ import (
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 )
 
-var log = logging.Logger("chaineconomics")
+var log = logging.Logger("visor/task/chaineconomics")
 
 type Task struct {
 	nodeMu sync.Mutex // guards mutations to node, opener and closer
