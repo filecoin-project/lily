@@ -19,7 +19,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model"
 )
 
-var log = logging.Logger("actorstate")
+var log = logging.Logger("visor/task/actorstate")
 
 type ActorInfo struct {
 	Actor           types.Actor

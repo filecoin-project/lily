@@ -17,7 +17,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/wait"
 )
 
-var log = logging.Logger("schedule")
+var log = logging.Logger("visor/schedule")
 
 type Job interface {
 	// Run starts running the task and blocks until the context is done or

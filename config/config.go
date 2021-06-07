@@ -11,7 +11,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-var log = logging.Logger("config")
+var log = logging.Logger("visor/config")
 
 // Conf defines the daemon config. It should be compatible with Lotus config.
 type Conf struct {

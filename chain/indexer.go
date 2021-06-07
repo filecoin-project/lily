@@ -47,7 +47,7 @@ const (
 	MultisigApprovalsTask   = "msapprovals"         // task that extracts multisig actor approvals
 )
 
-var log = logging.Logger("chain")
+var log = logging.Logger("visor/chain")
 
 var _ TipSetObserver = (*TipSetIndexer)(nil)
 

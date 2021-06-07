@@ -14,7 +14,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/schedule"
 )
 
-var log = logging.Logger("lily-api")
+var log = logging.Logger("visor/lens/lily")
 
 var _ LilyAPI = (*LilyAPIStruct)(nil)
 
@@ -37,6 +37,9 @@ type LilyAPIStruct struct {
 		SyncState func(ctx context.Context) (*api.SyncState, error) `perm:"read"`
 		ChainHead func(context.Context) (*types.TipSet, error)      `perm:"read"`
 		ID        func(context.Context) (peer.ID, error)            `perm:"read"`
+
+		LogList     func(context.Context) ([]string, error)     `perm:"read"`
+		LogSetLevel func(context.Context, string, string) error `perm:"read"`
 	}
 }
 
@@ -78,6 +81,14 @@ func (s *LilyAPIStruct) ChainHead(ctx context.Context) (*types.TipSet, error) {
 
 func (s *LilyAPIStruct) ID(ctx context.Context) (peer.ID, error) {
 	return s.Internal.ID(ctx)
+}
+
+func (s *LilyAPIStruct) LogList(ctx context.Context) ([]string, error) {
+	return s.Internal.LogList(ctx)
+}
+
+func (s *LilyAPIStruct) LogSetLevel(ctx context.Context, subsystem, level string) error {
+	return s.Internal.LogSetLevel(ctx, subsystem, level)
 }
 
 var _ LilyAPI = &LilyAPIStruct{}

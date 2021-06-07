@@ -26,7 +26,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 )
 
-var log = logging.Logger("messages")
+var log = logging.Logger("visor/task/messages")
 
 type Task struct {
 }

@@ -17,7 +17,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt/diff"
 )
 
-var log = logging.Logger("actor/marker")
+var log = logging.Logger("visor/actors/market")
 
 func DiffDealProposals(ctx context.Context, store adt.Store, pre, cur State) (*DealProposalChanges, error) {
 	preOpts := pre.DealProposalsAmtBitwidth()

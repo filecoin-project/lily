@@ -34,7 +34,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/version"
 )
 
-var log = logging.Logger("visor")
+var log = logging.Logger("visor/commands")
 
 func setupDatabase(cctx *cli.Context) (*storage.Database, error) {
 	ctx := cctx.Context
@@ -142,13 +142,10 @@ func jaegerConfigFromCliContext(cctx *cli.Context) (*jaegerConfig, error) {
 }
 
 func setupLogging(cctx *cli.Context) error {
+	//logging.SetAllLoggers(logging.LevelError)
 	ll := cctx.String("log-level")
-	if err := logging.SetLogLevel("*", ll); err != nil {
+	if err := logging.SetLogLevelRegex("visor/*", ll); err != nil {
 		return xerrors.Errorf("set log level: %w", err)
-	}
-
-	if err := logging.SetLogLevel("rpc", "error"); err != nil {
-		return xerrors.Errorf("set rpc log level: %w", err)
 	}
 
 	llnamed := cctx.String("log-level-named")
