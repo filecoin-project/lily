@@ -101,7 +101,7 @@ var WatchCmd = &cli.Command{
 			Confidence:          watchFlags.confidence,
 			RestartDelay:        0,
 			RestartOnCompletion: false,
-			RestartOnFailure:    false,
+			RestartOnFailure:    true,
 			Storage:             watchFlags.storage,
 		}
 
