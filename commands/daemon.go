@@ -94,24 +94,29 @@ var DaemonCmd = &cli.Command{
 		defer tcloser()
 
 		ctx := context.Background()
-		{
-			dir, err := homedir.Expand(daemonFlags.repo)
-			if err != nil {
-				log.Warnw("could not expand repo location", "error", err)
-			} else {
-				log.Infof("visor repo: %s", dir)
-			}
+		repoDir, err := homedir.Expand(daemonFlags.repo)
+		if err != nil {
+			log.Warnw("could not expand repo location", "error", err)
+		} else {
+			log.Infof("visor repo: %s", repoDir)
 		}
+
 		r, err := repo.NewFS(daemonFlags.repo)
 		if err != nil {
 			return xerrors.Errorf("opening fs repo: %w", err)
 		}
 
 		if daemonFlags.config == "" {
-			daemonFlags.config = filepath.Join(daemonFlags.repo, "config.toml")
+			daemonFlags.config = filepath.Join(repoDir, "config.toml")
+		} else {
+			daemonFlags.config, err = homedir.Expand(daemonFlags.config)
+			if err != nil {
+				log.Warnw("could not expand repo location", "error", err)
+			} else {
+				log.Infof("visor config: %s", repoDir)
+			}
 		}
 
-		log.Infof("visor config: %s", daemonFlags.config)
 		if err := config.EnsureExists(daemonFlags.config); err != nil {
 			return xerrors.Errorf("ensuring config is present at %q: %w", daemonFlags.config, err)
 		}
