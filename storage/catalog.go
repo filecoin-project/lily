@@ -24,6 +24,7 @@ func NewCatalog(cfg config.StorageConf) (*Catalog, error) {
 		if _, exists := c.storages[name]; exists {
 			return nil, fmt.Errorf("duplicate storage name: %q", name)
 		}
+		log.Debugw("registering storage", "name", name, "type", "postgresql")
 
 		// Find the url of the database, which is either indirectly specified using URLEnv or explicit via URL
 		var dburl string
@@ -48,6 +49,8 @@ func NewCatalog(cfg config.StorageConf) (*Catalog, error) {
 
 		switch sc.Format {
 		case "CSV":
+			log.Debugw("registering storage", "name", name, "type", "csv")
+
 			db, err := NewCSVStorageLatest(sc.Path)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create postgresql storage %q: %w", name, err)

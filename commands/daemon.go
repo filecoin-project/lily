@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"io/ioutil"
+	"path/filepath"
 
 	paramfetch "github.com/filecoin-project/go-paramfetch"
 	lotusbuild "github.com/filecoin-project/lotus/build"
@@ -106,13 +107,15 @@ var DaemonCmd = &cli.Command{
 			return xerrors.Errorf("opening fs repo: %w", err)
 		}
 
-		if daemonFlags.config != "" {
-			log.Infof("visor config: %s", daemonFlags.config)
-			if err := config.EnsureExists(daemonFlags.config); err != nil {
-				return xerrors.Errorf("ensuring config is present at %q: %w", daemonFlags.config, err)
-			}
-			r.SetConfigPath(daemonFlags.config)
+		if daemonFlags.config == "" {
+			daemonFlags.config = filepath.Join(daemonFlags.repo, "config.toml")
 		}
+
+		log.Infof("visor config: %s", daemonFlags.config)
+		if err := config.EnsureExists(daemonFlags.config); err != nil {
+			return xerrors.Errorf("ensuring config is present at %q: %w", daemonFlags.config, err)
+		}
+		r.SetConfigPath(daemonFlags.config)
 
 		err = r.Init(repo.FullNode)
 		if err != nil && err != repo.ErrRepoExists {
