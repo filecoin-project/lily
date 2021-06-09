@@ -287,8 +287,8 @@ github.com/filecoin-project/go-bitfield v0.2.0/go.mod h1:CNl9WG8hgR5mttCnUErjcQj
 github.com/filecoin-project/go-bitfield v0.2.3/go.mod h1:CNl9WG8hgR5mttCnUErjcQjGvuiZjRqK9rHVBsQF4oM=
 github.com/filecoin-project/go-bitfield v0.2.4 h1:uZ7MeE+XfM5lqrHJZ93OnhQKc/rveW8p9au0C68JPgk=
 github.com/filecoin-project/go-bitfield v0.2.4/go.mod h1:CNl9WG8hgR5mttCnUErjcQjGvuiZjRqK9rHVBsQF4oM=
-github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210421230102-321bccf8b648 h1:7mZ6riCPYQbt7hRqkgUoqiBlOWdCHcNYbg7ld3mfUxY=
-github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210421230102-321bccf8b648/go.mod h1:+9NU3Wng6nqpYx61ItNXvsDPEU4JvDckZaIhl0kmcYM=
+github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210609215026-5cb3c10d68ad h1:3nNKT4o9w5PyCWR7N7PMXFx+3LoIgwl1eBz9sQt7PT0=
+github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210609215026-5cb3c10d68ad/go.mod h1:G7LS/Jm7CrO2sJhIYvr/9tXFC7r/IpnAjoP9TMam7os=
 github.com/filecoin-project/go-cbor-util v0.0.0-20191219014500-08c40a1e63a2 h1:av5fw6wmm58FYMgJeoB/lK9XXrgdugYiTqkdxjTy9k8=
 github.com/filecoin-project/go-cbor-util v0.0.0-20191219014500-08c40a1e63a2/go.mod h1:pqTiPHobNkOVM5thSRsHYjyQfq7O5QSCMhvuu9JoDlg=
 github.com/filecoin-project/go-commp-utils v0.0.0-20201119054358-b88f7a96a434/go.mod h1:6s95K91mCyHY51RPWECZieD3SGWTqIFLf1mPOes9l5U=
@@ -1690,8 +1690,8 @@ github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6Kllzaw
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasttemplate v1.0.1 h1:tY9CJiPnMXf1ERmG2EyK7gNUd+c6RKGD0IfU8WdUSz8=
 github.com/valyala/fasttemplate v1.0.1/go.mod h1:UQGH1tvbgY+Nz5t2n7tXsz52dQxojPUpymEIMZ47gx8=
-github.com/valyala/gozstd v1.9.0 h1:Mse1yBM5ZQpigO4KW1bVK8p8VSRYttRF+pV0QsMWZ1Y=
-github.com/valyala/gozstd v1.9.0/go.mod h1:y5Ew47GLlP37EkTB+B4s7r6A5rdaeB7ftbl9zoYiIPQ=
+github.com/valyala/gozstd v1.11.0 h1:VV6qQFt+4sBBj9OJ7eKVvsFAMy59Urcs9Lgd+o5FOw0=
+github.com/valyala/gozstd v1.11.0/go.mod h1:y5Ew47GLlP37EkTB+B4s7r6A5rdaeB7ftbl9zoYiIPQ=
 github.com/viant/assertly v0.4.8/go.mod h1:aGifi++jvCrUaklKEKT0BU95igDNaqkvz+49uaYMPRU=
 github.com/viant/toolbox v0.24.0/go.mod h1:OxMCG57V0PXuIP2HNQrtJf2CjqdmbrOx5EkMILuUhzM=
 github.com/vmihailenco/bufpool v0.1.11 h1:gOq2WmBrq0i2yW5QJ16ykccQ4wH9UyEsgLm6czKAd94=
