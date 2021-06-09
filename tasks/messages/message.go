@@ -276,30 +276,11 @@ func (p *Task) parseMessageParams(m *types.Message, destCode cid.Cid) (string, s
 		return "Send", "", nil
 	}
 
-	actor, ok := LotusActorCodes[destCode]
-	if !ok {
-		actor = LotusTypeUnknown
-	}
 	var params ipld.Node
 	var method string
 	var err error
 
-	// TODO: the following closure is in place to handle the potential for panic
-	// in ipld-prime. Can be removed once fixed upstream.
-	// tracking issue: https://github.com/ipld/go-ipld-prime/issues/97
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				err = xerrors.Errorf("recovered panic: %v", r)
-			}
-		}()
-		params, method, err = ParseParams(m.Params, int64(m.Method), actor)
-	}()
-	if err != nil && actor != LotusTypeUnknown {
-		// fall back to generic cbor->json conversion.
-		actor = LotusTypeUnknown
-		params, method, err = ParseParams(m.Params, int64(m.Method), actor)
-	}
+	params, method, err = ParseParams(m.Params, int64(m.Method), destCode)
 	if method == "Unknown" {
 		return "", "", xerrors.Errorf("unknown method for actor type %s: %d", destCode.String(), int64(m.Method))
 	}
