@@ -15,7 +15,25 @@ $ cd sentinel-visor
 $ make deps
 ```
 
-Build the `sentinel-visor` binary to the root of the project directory:
+Build the `visor` binary to the root of the project directory:
+
+```console
+$ make build
+```
+
+#### Building on M1-based Macs
+
+Because of the novel architecture of the M1-based Mac computers, some specific environment variables must be set before creating the visor executable.
+
+Create necessary environment variable to allow Visor to run on ARM architecture:
+```console
+export GOARCH=arm64
+export CGO_ENABLED=1
+export LIBRARY_PATH=/opt/homebrew/lib
+export FFI_BUILD_FROM_SOURCE=1
+
+```
+Now, build the `visor` binary to the root of the project directory:
 
 ```console
 $ make build

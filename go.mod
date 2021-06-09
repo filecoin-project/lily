@@ -10,7 +10,7 @@ require (
 	github.com/filecoin-project/go-address v0.0.5
 	github.com/filecoin-project/go-amt-ipld/v3 v3.1.0
 	github.com/filecoin-project/go-bitfield v0.2.4
-	github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210421230102-321bccf8b648
+	github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210609215026-5cb3c10d68ad
 	github.com/filecoin-project/go-fil-markets v1.4.0
 	github.com/filecoin-project/go-hamt-ipld/v3 v3.1.0
 	github.com/filecoin-project/go-jsonrpc v0.1.4-0.20210217175800-45ea43ac2bec
