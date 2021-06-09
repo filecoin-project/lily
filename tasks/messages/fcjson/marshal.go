@@ -2,7 +2,6 @@ package fcjson
 
 import (
 	"bytes"
-	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
@@ -32,7 +31,6 @@ type Loader func(cid.Cid, ipld.Path) ipld.Node
 // DagMarshaler acts like traversal.Progress, but with emission of a token stream
 // over the depth-first-search traversal.
 type DagMarshaler struct {
-	ctx context.Context
 	Loader
 	Path ipld.Path
 }
@@ -208,7 +206,9 @@ func (d *DagMarshaler) MarshalRecursive(n ipld.Node, sink shared.TokenSink) erro
 				return err
 			}
 			buf := bytes.NewBuffer([]byte{})
-			b.MarshalCBOR(buf)
+			if err = b.MarshalCBOR(buf); err != nil {
+				return err
+			}
 			tk.Str = hex.EncodeToString(buf.Bytes())
 			if _, err = sink.Step(&tk); err != nil {
 				return err
