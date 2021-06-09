@@ -27,7 +27,6 @@ import (
 	carapi "github.com/filecoin-project/sentinel-visor/lens/carrepo"
 	vapi "github.com/filecoin-project/sentinel-visor/lens/lotus"
 	repoapi "github.com/filecoin-project/sentinel-visor/lens/lotusrepo"
-	s3api "github.com/filecoin-project/sentinel-visor/lens/s3repo"
 	sqlapi "github.com/filecoin-project/sentinel-visor/lens/sqlrepo"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/storage"
@@ -82,8 +81,6 @@ func setupLens(cctx *cli.Context) (lens.APIOpener, lens.APICloser, error) {
 		return carapi.NewAPIOpener(cctx)
 	case "sql":
 		return sqlapi.NewAPIOpener(cctx)
-	case "s3":
-		return s3api.NewAPIOpener(cctx)
 	default:
 		return nil, nil, xerrors.Errorf("unsupported lens type: %s", cctx.String("lens"))
 	}
@@ -142,7 +139,7 @@ func jaegerConfigFromCliContext(cctx *cli.Context) (*jaegerConfig, error) {
 }
 
 func setupLogging(cctx *cli.Context) error {
-	//logging.SetAllLoggers(logging.LevelError)
+	// logging.SetAllLoggers(logging.LevelError)
 	ll := cctx.String("log-level")
 	if err := logging.SetLogLevelRegex("visor/*", ll); err != nil {
 		return xerrors.Errorf("set log level: %w", err)
