@@ -9,8 +9,6 @@ import (
 	"github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/statediff"
-	"github.com/filecoin-project/statediff/codec/fcjson"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/ipld/go-ipld-prime"
@@ -24,6 +22,7 @@ import (
 	messagemodel "github.com/filecoin-project/sentinel-visor/model/messages"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
+	"github.com/filecoin-project/sentinel-visor/tasks/messages/fcjson"
 )
 
 var log = logging.Logger("visor/task/messages")
@@ -277,9 +276,9 @@ func (p *Task) parseMessageParams(m *types.Message, destCode cid.Cid) (string, s
 		return "Send", "", nil
 	}
 
-	actor, ok := statediff.LotusActorCodes[destCode.String()]
+	actor, ok := LotusActorCodes[destCode]
 	if !ok {
-		actor = statediff.LotusTypeUnknown
+		actor = LotusTypeUnknown
 	}
 	var params ipld.Node
 	var method string
@@ -294,12 +293,12 @@ func (p *Task) parseMessageParams(m *types.Message, destCode cid.Cid) (string, s
 				err = xerrors.Errorf("recovered panic: %v", r)
 			}
 		}()
-		params, method, err = statediff.ParseParams(m.Params, int64(m.Method), actor)
+		params, method, err = ParseParams(m.Params, int64(m.Method), actor)
 	}()
-	if err != nil && actor != statediff.LotusTypeUnknown {
+	if err != nil && actor != LotusTypeUnknown {
 		// fall back to generic cbor->json conversion.
-		actor = statediff.LotusTypeUnknown
-		params, method, err = statediff.ParseParams(m.Params, int64(m.Method), actor)
+		actor = LotusTypeUnknown
+		params, method, err = ParseParams(m.Params, int64(m.Method), actor)
 	}
 	if method == "Unknown" {
 		return "", "", xerrors.Errorf("unknown method for actor type %s: %d", destCode.String(), int64(m.Method))
