@@ -34,7 +34,7 @@ func NewCatalog(cfg config.StorageConf) (*Catalog, error) {
 			dburl = sc.URL
 		}
 
-		db, err := NewDatabase(context.TODO(), dburl, sc.PoolSize, sc.ApplicationName, sc.AllowUpsert)
+		db, err := NewDatabase(context.TODO(), dburl, sc.PoolSize, sc.ApplicationName, sc.SchemaName, sc.AllowUpsert)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create postgresql storage %q: %w", name, err)
 		}

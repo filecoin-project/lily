@@ -84,7 +84,7 @@ var (
 
 const MaxPostgresNameLength = 64
 
-func NewDatabase(ctx context.Context, url string, poolSize int, name string, upsert bool) (*Database, error) {
+func NewDatabase(ctx context.Context, url string, poolSize int, name string, schemaName string, upsert bool) (*Database, error) {
 	if len(name) > MaxPostgresNameLength {
 		return nil, ErrNameTooLong
 	}
@@ -98,21 +98,58 @@ func NewDatabase(ctx context.Context, url string, poolSize int, name string, ups
 		opt.ApplicationName = name
 	}
 
+	onConnect := func(ctx context.Context, conn *pg.Conn) error {
+		_, err := conn.Exec("set search_path=?", schemaName)
+		if err != nil {
+			log.Errorf("failed to set postgresql search_path: %v", err)
+		}
+		return nil
+	}
+
+	if opt.OnConnect == nil {
+		opt.OnConnect = onConnect
+	} else {
+		// Chain functions
+		prevOnConnect := opt.OnConnect
+		opt.OnConnect = func(ctx context.Context, conn *pg.Conn) error {
+			if err := prevOnConnect(ctx, conn); err != nil {
+				return err
+			}
+			return onConnect(ctx, conn)
+		}
+	}
+
 	return &Database{
-		opt:    opt,
-		Clock:  clock.New(),
-		Upsert: upsert,
+		opt:        opt,
+		schemaName: schemaName,
+		Clock:      clock.New(),
+		Upsert:     upsert,
+	}, nil
+}
+
+func NewDatabaseFromDB(ctx context.Context, db *pg.DB, schemaName string) (*Database, error) {
+	dbVersion, err := validateDatabaseSchemaVersion(ctx, db, schemaName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Database{
+		db:      db,
+		opt:     new(pg.Options),
+		Clock:   clock.New(),
+		version: dbVersion,
 	}, nil
 }
 
 var _ Connector = (*Database)(nil)
 
 type Database struct {
-	DB      *pg.DB
-	opt     *pg.Options
-	Clock   clock.Clock
-	Upsert  bool
-	version model.Version // schema version identified in the database
+	db         *pg.DB
+	opt        *pg.Options
+	schemaName string
+	Clock      clock.Clock
+	Upsert     bool
+	version    model.Version // schema version identified in the database
 }
 
 // Connect opens a connection to the database and checks that the schema is compatible with the version required
@@ -124,28 +161,16 @@ func (d *Database) Connect(ctx context.Context) error {
 		return xerrors.Errorf("connect: %w", err)
 	}
 
-	// Check if the version of the schema is compatible
-	dbVersion, latestVersion, err := getSchemaVersions(ctx, db)
+	dbVersion, err := validateDatabaseSchemaVersion(ctx, db, d.schemaName)
 	if err != nil {
 		_ = db.Close() // nolint: errcheck
-		return xerrors.Errorf("get schema versions: %w", err)
+		return err
 	}
 
-	switch {
-	case latestVersion.Before(dbVersion):
-		// porridge too hot
-		_ = db.Close() // nolint: errcheck
-		return ErrSchemaTooNew
-	case dbVersion.Before(model.OldestSupportedSchemaVersion):
-		// porridge too cold
-		_ = db.Close() // nolint: errcheck
-		return ErrSchemaTooOld
-	default:
-		// just right
-		d.DB = db
-		d.version = dbVersion
-		return nil
-	}
+	d.db = db
+	d.version = dbVersion
+
+	return nil
 }
 
 func connect(ctx context.Context, opt *pg.Options) (*pg.DB, error) {
@@ -168,11 +193,11 @@ func connect(ctx context.Context, opt *pg.Options) (*pg.DB, error) {
 }
 
 func (d *Database) IsConnected(ctx context.Context) bool {
-	if d.DB == nil {
+	if d.db == nil {
 		return false
 	}
 
-	if err := d.DB.Ping(ctx); err != nil {
+	if err := d.db.Ping(ctx); err != nil {
 		return false
 	}
 
@@ -181,12 +206,12 @@ func (d *Database) IsConnected(ctx context.Context) bool {
 
 func (d *Database) Close(ctx context.Context) error {
 	// Advisory locks are automatically closed at end of session but its still good practice to close explicitly
-	if err := SchemaLock.UnlockShared(ctx, d.DB); err != nil && !errors.Is(err, context.Canceled) {
+	if err := SchemaLock.UnlockShared(ctx, d.db); err != nil && !errors.Is(err, context.Canceled) {
 		log.Errorf("failed to release schema lock: %v", err)
 	}
 
-	err := d.DB.Close()
-	d.DB = nil
+	err := d.db.Close()
+	d.db = nil
 	return err
 }
 
@@ -194,8 +219,8 @@ func (d *Database) Close(ctx context.Context) error {
 // and returns an error if they are incompatible
 func (d *Database) VerifyCurrentSchema(ctx context.Context) error {
 	// If we're already connected then use that connection
-	if d.DB != nil {
-		return verifyCurrentSchema(ctx, d.DB)
+	if d.db != nil {
+		return verifyCurrentSchema(ctx, d.db, d.schemaName)
 	}
 
 	// Temporarily connect
@@ -204,16 +229,37 @@ func (d *Database) VerifyCurrentSchema(ctx context.Context) error {
 		return xerrors.Errorf("connect: %w", err)
 	}
 	defer db.Close() // nolint: errcheck
-	return verifyCurrentSchema(ctx, db)
+	return verifyCurrentSchema(ctx, db, "public")
 }
 
-func verifyCurrentSchema(ctx context.Context, db *pg.DB) error {
+func verifyCurrentSchema(ctx context.Context, db *pg.DB, schemaName string) error {
+	type versionable interface {
+		AsVersion(model.Version) (interface{}, bool)
+	}
+
+	version, initialized, err := getDatabaseSchemaVersion(ctx, db, schemaName)
+	if err != nil {
+		return xerrors.Errorf("get schema version: %w", err)
+	}
+
+	if !initialized {
+		return xerrors.Errorf("schema not installed in database")
+	}
+
 	valid := true
 	for _, model := range models {
+		if vm, ok := model.(versionable); ok {
+			m, ok := vm.AsVersion(version)
+			if !ok {
+				return xerrors.Errorf("model %T does not support version %s", model, version)
+			}
+			model = m
+		}
+
 		q := db.Model(model)
 		tm := q.TableModel()
 		m := tm.Table()
-		err := verifyModel(ctx, db, m)
+		err := verifyModel(ctx, db, schemaName, m)
 		if err != nil {
 			valid = false
 			log.Errorf("verify schema: %v", err)
@@ -226,11 +272,10 @@ func verifyCurrentSchema(ctx context.Context, db *pg.DB) error {
 	return nil
 }
 
-func verifyModel(ctx context.Context, db *pg.DB, m *orm.Table) error {
+func verifyModel(ctx context.Context, db *pg.DB, schemaName string, m *orm.Table) error {
 	tableName := stripQuotes(m.SQLNameForSelects)
 
-	var exists bool
-	_, err := db.QueryOneContext(ctx, pg.Scan(&exists), `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name=?)`, tableName)
+	exists, err := tableExists(ctx, db, schemaName, tableName)
 	if err != nil {
 		return xerrors.Errorf("querying table: %v", err)
 	}
@@ -240,7 +285,7 @@ func verifyModel(ctx context.Context, db *pg.DB, m *orm.Table) error {
 
 	for _, fld := range m.Fields {
 		var datatype string
-		_, err := db.QueryOne(pg.Scan(&datatype), `SELECT data_type FROM information_schema.columns WHERE table_schema='public' AND table_name=? AND column_name=?`, tableName, fld.SQLName)
+		_, err := db.QueryOne(pg.Scan(&datatype), `SELECT data_type FROM information_schema.columns WHERE table_schema=? AND table_name=? AND column_name=?`, schemaName, tableName, fld.SQLName)
 		if err != nil {
 			if errors.Is(err, pg.ErrNoRows) {
 				return xerrors.Errorf("required column %s.%s not found", tableName, fld.SQLName)
@@ -248,7 +293,7 @@ func verifyModel(ctx context.Context, db *pg.DB, m *orm.Table) error {
 			return xerrors.Errorf("querying field: %v %T", err, err)
 		}
 		if datatype == "USER-DEFINED" {
-			_, err := db.QueryOne(pg.Scan(&datatype), `SELECT udt_name FROM information_schema.columns WHERE table_schema='public' AND table_name=? AND column_name=?`, tableName, fld.SQLName)
+			_, err := db.QueryOne(pg.Scan(&datatype), `SELECT udt_name FROM information_schema.columns WHERE table_schema=? AND table_name=? AND column_name=?`, schemaName, tableName, fld.SQLName)
 			if err != nil {
 				if errors.Is(err, pg.ErrNoRows) {
 					return xerrors.Errorf("required column %s.%s not found", tableName, fld.SQLName)
@@ -273,13 +318,23 @@ func verifyModel(ctx context.Context, db *pg.DB, m *orm.Table) error {
 	return nil
 }
 
+func tableExists(ctx context.Context, db *pg.DB, schemaName string, tableName string) (bool, error) {
+	var exists bool
+	_, err := db.QueryOneContext(ctx, pg.Scan(&exists), `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema=? AND table_name=?)`, schemaName, tableName)
+	if err != nil {
+		return false, xerrors.Errorf("querying table: %v", err)
+	}
+
+	return exists, nil
+}
+
 func stripQuotes(s types.Safe) string {
 	return strings.Trim(string(s), `"`)
 }
 
 // PersistBatch persists a batch of persistables in a single transaction
 func (d *Database) PersistBatch(ctx context.Context, ps ...model.Persistable) error {
-	return d.DB.RunInTransaction(ctx, func(tx *pg.Tx) error {
+	return d.db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		txs := &TxStorage{
 			tx:     tx,
 			upsert: d.Upsert,
@@ -293,6 +348,10 @@ func (d *Database) PersistBatch(ctx context.Context, ps ...model.Persistable) er
 
 		return nil
 	})
+}
+
+func (d *Database) ExecContext(c context.Context, query interface{}, params ...interface{}) (pg.Result, error) {
+	return d.db.ExecContext(c, query, params...)
 }
 
 type TxStorage struct {

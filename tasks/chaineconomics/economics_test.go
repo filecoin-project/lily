@@ -27,11 +27,12 @@ func TestEconomicsModelExtraction(t *testing.T) {
 
 	expectedTs := testutil.FakeTipset(t)
 	expectedCircSupply := api.CirculatingSupply{
-		FilVested:      abi.NewTokenAmount(1),
-		FilMined:       abi.NewTokenAmount(2),
-		FilBurnt:       abi.NewTokenAmount(3),
-		FilLocked:      abi.NewTokenAmount(4),
-		FilCirculating: abi.NewTokenAmount(5),
+		FilVested:           abi.NewTokenAmount(1),
+		FilMined:            abi.NewTokenAmount(2),
+		FilBurnt:            abi.NewTokenAmount(3),
+		FilLocked:           abi.NewTokenAmount(4),
+		FilCirculating:      abi.NewTokenAmount(5),
+		FilReserveDisbursed: abi.NewTokenAmount(6),
 	}
 
 	mockedLens := new(MockedChainEconomicsLens)
@@ -45,4 +46,5 @@ func TestEconomicsModelExtraction(t *testing.T) {
 	assert.EqualValues(t, expectedCircSupply.FilVested.String(), em.VestedFil)
 	assert.EqualValues(t, expectedCircSupply.FilLocked.String(), em.LockedFil)
 	assert.EqualValues(t, expectedCircSupply.FilCirculating.String(), em.CirculatingFil)
+	assert.EqualValues(t, expectedCircSupply.FilReserveDisbursed.String(), em.FilReserveDisbursed)
 }

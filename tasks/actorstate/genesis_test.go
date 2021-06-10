@@ -61,7 +61,9 @@ func TestGenesisProcessor(t *testing.T) {
 	apitest.MineUntilBlock(ctx, t, nodes[0], sn[0], nil)
 
 	t.Logf("initializing genesis processor")
-	d := &storage.Database{DB: db}
+	d, err := storage.NewDatabaseFromDB(ctx, db, "public")
+	require.NoError(t, err, "new database")
+
 	p := NewGenesisProcessor(d, openedAPI)
 
 	t.Logf("processing")

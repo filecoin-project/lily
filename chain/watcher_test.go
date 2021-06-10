@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
-	"github.com/raulk/clock"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
@@ -65,11 +64,8 @@ func TestWatcher(t *testing.T) {
 
 	apitest.MineUntilBlock(ctx, t, node, sn[0], nil)
 
-	strg := &storage.Database{
-		DB:     db,
-		Clock:  clock.NewMock(),
-		Upsert: false,
-	}
+	strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
+	require.NoError(t, err, "NewDatabaseFromDB")
 
 	tsIndexer, err := NewTipSetIndexer(opener, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
 	require.NoError(t, err, "NewTipSetIndexer")

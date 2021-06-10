@@ -44,6 +44,7 @@ func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAP
 				return err
 			}
 			out = append(out, &initmodel.IdAddress{
+				Height:    int64(a.Epoch),
 				ID:        idAddr.String(),
 				Address:   addr.String(),
 				StateRoot: a.ParentStateRoot.String(),

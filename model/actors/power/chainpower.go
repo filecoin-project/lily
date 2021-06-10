@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -15,6 +16,26 @@ import (
 type ChainPower struct {
 	Height    int64  `pg:",pk,notnull,use_zero"`
 	StateRoot string `pg:",pk"`
+
+	TotalRawBytesPower string `pg:"type:numeric,notnull"`
+	TotalQABytesPower  string `pg:"type:numeric,notnull"`
+
+	TotalRawBytesCommitted string `pg:"type:numeric,notnull"`
+	TotalQABytesCommitted  string `pg:"type:numeric,notnull"`
+
+	TotalPledgeCollateral string `pg:"type:numeric,notnull"`
+
+	QASmoothedPositionEstimate string `pg:"type:numeric,notnull"`
+	QASmoothedVelocityEstimate string `pg:"type:numeric,notnull"`
+
+	MinerCount              uint64 `pg:",use_zero"`
+	ParticipatingMinerCount uint64 `pg:",use_zero"`
+}
+
+type ChainPowerV0 struct {
+	tableName struct{} `pg:"chain_powers"` // nolint: structcheck,unused
+	Height    int64    `pg:",pk,notnull,use_zero"`
+	StateRoot string   `pg:",pk"`
 
 	TotalRawBytesPower string `pg:",notnull"`
 	TotalQABytesPower  string `pg:",notnull"`
@@ -31,6 +52,33 @@ type ChainPower struct {
 	ParticipatingMinerCount uint64 `pg:",use_zero"`
 }
 
+func (cp *ChainPower) AsVersion(version model.Version) (interface{}, bool) {
+	switch version.Major {
+	case 0:
+		if cp == nil {
+			return (*ChainPowerV0)(nil), true
+		}
+
+		return &ChainPowerV0{
+			Height:                     cp.Height,
+			StateRoot:                  cp.StateRoot,
+			TotalRawBytesPower:         cp.TotalRawBytesPower,
+			TotalQABytesPower:          cp.TotalQABytesPower,
+			TotalRawBytesCommitted:     cp.TotalRawBytesCommitted,
+			TotalQABytesCommitted:      cp.TotalQABytesCommitted,
+			TotalPledgeCollateral:      cp.TotalPledgeCollateral,
+			QASmoothedPositionEstimate: cp.QASmoothedPositionEstimate,
+			QASmoothedVelocityEstimate: cp.QASmoothedVelocityEstimate,
+			MinerCount:                 cp.MinerCount,
+			ParticipatingMinerCount:    cp.ParticipatingMinerCount,
+		}, true
+	case 1:
+		return cp, true
+	default:
+		return nil, false
+	}
+}
+
 func (cp *ChainPower) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "ChainPower.PersistWithTx")
 	defer span.End()
@@ -39,7 +87,12 @@ func (cp *ChainPower) Persist(ctx context.Context, s model.StorageBatch, version
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
-	return s.PersistModel(ctx, cp)
+	vcp, ok := cp.AsVersion(version)
+	if !ok {
+		return xerrors.Errorf("ChainPower not supported for schema version %s", version)
+	}
+
+	return s.PersistModel(ctx, vcp)
 }
 
 // ChainPowerList is a slice of ChainPowers for batch insertion.
@@ -58,5 +111,16 @@ func (cpl ChainPowerList) Persist(ctx context.Context, s model.StorageBatch, ver
 	if len(cpl) == 0 {
 		return nil
 	}
+
+	if version.Major != 1 {
+		// Support older versions, but in a non-optimal way
+		for _, m := range cpl {
+			if err := m.Persist(ctx, s, version); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
 	return s.PersistModel(ctx, cpl)
 }

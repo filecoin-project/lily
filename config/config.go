@@ -31,6 +31,7 @@ type PgStorageConf struct {
 	URLEnv          string // name of an environment variable that contains the database URL
 	URL             string // URL used to connect to postgresql if URLEnv is not set
 	ApplicationName string
+	SchemaName      string
 	PoolSize        int
 	AllowUpsert     bool
 }
@@ -83,6 +84,7 @@ func SampleConf() *Conf {
 				PoolSize:        20,
 				ApplicationName: "visor",
 				AllowUpsert:     false,
+				SchemaName:      "public",
 			},
 			// this second database is only here to give an example to the user
 			"Database2": {
@@ -90,6 +92,7 @@ func SampleConf() *Conf {
 				PoolSize:        10,
 				ApplicationName: "visor",
 				AllowUpsert:     false,
+				SchemaName:      "public",
 			},
 		},
 

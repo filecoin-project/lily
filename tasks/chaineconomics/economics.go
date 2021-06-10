@@ -38,11 +38,13 @@ func ExtractChainEconomicsModel(ctx context.Context, node ChainEconomicsLens, ts
 	}
 
 	return &chainmodel.ChainEconomics{
-		ParentStateRoot: ts.ParentState().String(),
-		VestedFil:       supply.FilVested.String(),
-		MinedFil:        supply.FilMined.String(),
-		BurntFil:        supply.FilBurnt.String(),
-		LockedFil:       supply.FilLocked.String(),
-		CirculatingFil:  supply.FilCirculating.String(),
+		Height:              int64(ts.Height()),
+		ParentStateRoot:     ts.ParentState().String(),
+		VestedFil:           supply.FilVested.String(),
+		MinedFil:            supply.FilMined.String(),
+		BurntFil:            supply.FilBurnt.String(),
+		LockedFil:           supply.FilLocked.String(),
+		CirculatingFil:      supply.FilCirculating.String(),
+		FilReserveDisbursed: supply.FilReserveDisbursed.String(),
 	}, nil
 }

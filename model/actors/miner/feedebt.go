@@ -5,6 +5,7 @@ import (
 
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -15,7 +16,36 @@ type MinerFeeDebt struct {
 	MinerID   string `pg:",pk,notnull"`
 	StateRoot string `pg:",pk,notnull"`
 
+	FeeDebt string `pg:"type:numeric,notnull"`
+}
+
+type MinerFeeDebtV0 struct {
+	tableName struct{} `pg:"miner_fee_debts"` // nolint: structcheck,unused
+	Height    int64    `pg:",pk,notnull,use_zero"`
+	MinerID   string   `pg:",pk,notnull"`
+	StateRoot string   `pg:",pk,notnull"`
+
 	FeeDebt string `pg:",notnull"`
+}
+
+func (m *MinerFeeDebt) AsVersion(version model.Version) (interface{}, bool) {
+	switch version.Major {
+	case 0:
+		if m == nil {
+			return (*MinerFeeDebtV0)(nil), true
+		}
+
+		return &MinerFeeDebtV0{
+			Height:    m.Height,
+			MinerID:   m.MinerID,
+			StateRoot: m.StateRoot,
+			FeeDebt:   m.FeeDebt,
+		}, true
+	case 1:
+		return m, true
+	default:
+		return nil, false
+	}
 }
 
 func (m *MinerFeeDebt) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
@@ -26,7 +56,12 @@ func (m *MinerFeeDebt) Persist(ctx context.Context, s model.StorageBatch, versio
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
-	return s.PersistModel(ctx, m)
+	vm, ok := m.AsVersion(version)
+	if !ok {
+		return xerrors.Errorf("MinerFeeDebt not supported for schema version %s", version)
+	}
+
+	return s.PersistModel(ctx, vm)
 }
 
 type MinerFeeDebtList []*MinerFeeDebt
@@ -42,5 +77,16 @@ func (ml MinerFeeDebtList) Persist(ctx context.Context, s model.StorageBatch, ve
 	if len(ml) == 0 {
 		return nil
 	}
+
+	if version.Major != 1 {
+		// Support older versions, but in a non-optimal way
+		for _, m := range ml {
+			if err := m.Persist(ctx, s, version); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
 	return s.PersistModel(ctx, ml)
 }

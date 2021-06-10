@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
-	"github.com/raulk/clock"
 
 	apitest "github.com/filecoin-project/lotus/api/test"
 	nodetest "github.com/filecoin-project/lotus/node/test"
@@ -55,11 +54,8 @@ func TestWalker(t *testing.T) {
 	cids := bhs.Cids()
 	rounds := bhs.Rounds()
 
-	strg := &storage.Database{
-		DB:     db,
-		Clock:  clock.NewMock(),
-		Upsert: false,
-	}
+	strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
+	require.NoError(t, err, "NewDatabaseFromDB")
 
 	tsIndexer, err := NewTipSetIndexer(opener, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
 	require.NoError(t, err, "NewTipSetIndexer")
