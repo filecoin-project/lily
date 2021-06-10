@@ -23,7 +23,6 @@ require (
 	github.com/filecoin-project/specs-actors/v2 v2.3.5-0.20210114162132-5b58b773f4fb
 	github.com/filecoin-project/specs-actors/v3 v3.1.0
 	github.com/filecoin-project/specs-actors/v4 v4.0.0
-	github.com/filecoin-project/statediff v0.0.25-0.20210604145704-951a452b5239
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.3.1
 	github.com/go-pg/pgext v0.1.4
@@ -52,6 +51,7 @@ require (
 	github.com/multiformats/go-multihash v0.0.15
 	github.com/onsi/ginkgo v1.14.2 // indirect
 	github.com/onsi/gomega v1.10.4 // indirect
+	github.com/polydawn/refmt v0.0.0-20190809202753-05966cbd336a
 	github.com/prometheus/client_golang v1.6.0
 	github.com/raulk/clock v1.1.0
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
@@ -78,7 +78,3 @@ replace (
 	github.com/filecoin-project/filecoin-ffi => ./extern/filecoin-ffi
 	github.com/supranational/blst => ./extern/fil-blst/blst
 )
-
-// Supports go-ipld-prime v7
-// TODO: remove once https://github.com/filecoin-project/go-hamt-ipld/pull/70 is merged to github.com/filecoin-project/go-hamt-ipld
-replace github.com/filecoin-project/go-hamt-ipld/v2 => github.com/willscott/go-hamt-ipld/v2 v2.0.1-0.20210225034344-6d6dfa9b3960

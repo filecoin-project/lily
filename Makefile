@@ -137,6 +137,10 @@ $(toolspath)/bin/rice: $(toolspath)/go.mod
 	@mkdir -p $(dir $@)
 	(cd $(toolspath); go build -tags tools -o $(@:$(toolspath)/%=%) github.com/GeertJohan/go.rice/rice)
 
+$(toolspath)/bin/gen: $(toolspath)/go.mod
+	@mkdir -p $(dir $@)
+	(cd $(toolspath); go build -tags tools -o $(@:$(toolspath)/%=%) github.com/filecoin-project/statediff/types/gen)
+
 
 .PHONY: lint
 lint: $(toolspath)/bin/golangci-lint
@@ -147,3 +151,7 @@ actors-gen:
 	go run ./chain/actors/agen
 	go fmt ./...
 
+
+.PHONY: types-gen
+types-gen: $(toolspath)/bin/gen
+	$(toolspath)/bin/gen ./tasks/messages/types
