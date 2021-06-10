@@ -6,12 +6,12 @@ orbs:
 executors:
   dockerizer:
     docker:
-      - image: cimg/go:1.15.2
+      - image: cimg/go:1.16.5
     environment:
       IMAGE_NAME: filecoin/sentinel-visor
   golang:
     docker:
-      - image: circleci/golang:1.15
+      - image: circleci/golang:1.16.5
 
 commands:
   install-deps:
@@ -106,7 +106,7 @@ jobs:
   test:
     resource_class: large
     docker:
-      - image: cimg/go:1.15.2
+      - image: cimg/go:1.16.5
       - image: timescale/timescaledb:1.7.4-pg12
         environment:
           POSTGRES_PASSWORD: password

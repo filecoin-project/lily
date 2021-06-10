@@ -1,5 +1,5 @@
 # Builder
-FROM golang:1.15.2 as builder
+FROM golang:1.16.5 as builder
 ENV GOROOT=/usr/local/go
 
 # Install deps for filecoin-project/filecoin-ffi

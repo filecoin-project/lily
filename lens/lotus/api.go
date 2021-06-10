@@ -19,6 +19,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/lens/util"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
@@ -286,9 +287,10 @@ func (aw *APIWrapper) GetExecutedAndBlockMessagesForTipset(ctx context.Context, 
 
 	// Create a skeleton vm just for calling ShouldBurn
 	vmi, err := vm.NewVM(ctx, &vm.VMOpts{
-		StateBase: pts.ParentState(),
-		Epoch:     pts.Height(),
-		Bstore:    &apiBlockstore{api: aw.FullNode}, // sadly vm wraps this to turn it back into an adt.Store
+		StateBase:   pts.ParentState(),
+		Epoch:       pts.Height(),
+		Bstore:      &apiBlockstore{api: aw.FullNode}, // sadly vm wraps this to turn it back into an adt.Store
+		NtwkVersion: util.DefaultNetwork.Version,
 	})
 	if err != nil {
 		return nil, xerrors.Errorf("creating temporary vm: %w", err)
@@ -308,7 +310,7 @@ func (aw *APIWrapper) GetExecutedAndBlockMessagesForTipset(ctx context.Context, 
 			ToActorCode:   getActorCode(m.Message.To),
 		}
 
-		burn, err := vmi.ShouldBurn(parentStateTree, m.Message, rcpts[index].ExitCode)
+		burn, err := vmi.ShouldBurn(ctx, parentStateTree, m.Message, rcpts[index].ExitCode)
 		if err != nil {
 			return nil, xerrors.Errorf("deciding whether should burn failed: %w", err)
 		}

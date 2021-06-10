@@ -127,7 +127,7 @@ var DaemonCmd = &cli.Command{
 			return xerrors.Errorf("repo init error: %w", err)
 		}
 
-		if err := paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), 0); err != nil {
+		if err := paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), lotusbuild.SrsJSON(), 0); err != nil {
 			return xerrors.Errorf("fetching proof parameters: %w", err)
 		}
 

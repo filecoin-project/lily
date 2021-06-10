@@ -28,6 +28,7 @@ import (
 	builtininit "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
 	"github.com/filecoin-project/specs-actors/actors/runtime/proof"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	proof5 "github.com/filecoin-project/specs-actors/v5/actors/runtime/proof"
 	"github.com/ipfs/go-cid"
 	dstore "github.com/ipfs/go-datastore"
 	peer "github.com/libp2p/go-libp2p-core/peer"
@@ -61,7 +62,7 @@ func NewAPIOpener(ctx context.Context, bs blockstore.Blockstore, head HeadMthd, 
 		return nil, nil, err
 	}
 
-	cs := store.NewChainStore(bs, bs, mds, vm.Syscalls(&fakeVerifier{}), journal.NilJournal())
+	cs := store.NewChainStore(bs, bs, mds, vm.Syscalls(&FakeVerifier{}), journal.NilJournal())
 
 	const safetyLookBack = 5
 
@@ -218,24 +219,28 @@ func (ra *LensAPI) StateGetReceipt(ctx context.Context, msg cid.Cid, from types.
 }
 
 // From https://github.com/ribasushi/ltsh/blob/5b0211033020570217b0ae37b50ee304566ac218/cmd/lotus-shed/deallifecycles.go#L41-L171
-type fakeVerifier struct{}
+type FakeVerifier struct{}
 
-var _ ffiwrapper.Verifier = (*fakeVerifier)(nil)
+var _ ffiwrapper.Verifier = (*FakeVerifier)(nil)
 
-func (m fakeVerifier) VerifySeal(svi proof.SealVerifyInfo) (bool, error) {
+func (m FakeVerifier) VerifySeal(svi proof.SealVerifyInfo) (bool, error) {
 	return true, nil
 }
 
-func (m fakeVerifier) VerifyWinningPoSt(ctx context.Context, info proof.WinningPoStVerifyInfo) (bool, error) {
+func (m FakeVerifier) VerifyWinningPoSt(ctx context.Context, info proof.WinningPoStVerifyInfo) (bool, error) {
 	return true, nil
 }
 
-func (m fakeVerifier) VerifyWindowPoSt(ctx context.Context, info proof.WindowPoStVerifyInfo) (bool, error) {
+func (m FakeVerifier) VerifyWindowPoSt(ctx context.Context, info proof.WindowPoStVerifyInfo) (bool, error) {
 	return true, nil
 }
 
-func (m fakeVerifier) GenerateWinningPoStSectorChallenge(ctx context.Context, proof abi.RegisteredPoStProof, id abi.ActorID, randomness abi.PoStRandomness, u uint64) ([]uint64, error) {
+func (m FakeVerifier) GenerateWinningPoStSectorChallenge(ctx context.Context, proof abi.RegisteredPoStProof, id abi.ActorID, randomness abi.PoStRandomness, u uint64) ([]uint64, error) {
 	panic("GenerateWinningPoStSectorChallenge not supported")
+}
+
+func (m FakeVerifier) VerifyAggregateSeals(aggregate proof5.AggregateSealVerifyProofAndInfos) (bool, error) {
+	return true, nil
 }
 
 // GetMessagesForTipset returns a list of messages sent as part of pts (parent) with receipts found in ts (child).
@@ -374,9 +379,10 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 
 	// Create a skeleton vm just for calling ShouldBurn
 	vmi, err := vm.NewVM(ctx, &vm.VMOpts{
-		StateBase: pts.ParentState(),
-		Epoch:     pts.Height(),
-		Bstore:    cs.StateBlockstore(),
+		StateBase:   pts.ParentState(),
+		Epoch:       pts.Height(),
+		Bstore:      cs.StateBlockstore(),
+		NtwkVersion: DefaultNetwork.Version,
 	})
 	if err != nil {
 		return nil, xerrors.Errorf("creating temporary vm: %w", err)
@@ -392,7 +398,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		}
 		em.Receipt = &r
 
-		burn, err := vmi.ShouldBurn(parentStateTree, em.Message, em.Receipt.ExitCode)
+		burn, err := vmi.ShouldBurn(ctx, parentStateTree, em.Message, em.Receipt.ExitCode)
 		if err != nil {
 			return nil, xerrors.Errorf("deciding whether should burn failed: %w", err)
 		}
