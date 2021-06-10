@@ -5,6 +5,23 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.6.7"></a>
+## [v0.6.7] - 2021-06-10
+
+### Fix
+ - Restart watcher on failure in daemon mode
+ - Update statediff to include v4 miners
+ - Parse plain value transfer messages
+ - Fall back to using config in repo directory if unspecified
+ - Expand the config path when starting daemon 
+
+### Feat
+ - Add logging command and sane default log levels
+
+### Chore
+ - Remove s3 lens
+ - Remove dependency on statediff
+ - Update to use latest version of Lotus
 
 <a name="v0.6.6"></a>
 ## [v0.6.6] - 2021-05-28
