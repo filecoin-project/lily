@@ -102,10 +102,9 @@ testshort:
 	go test -short ./... -v
 
 .PHONY: visor
-visor: $(toolspath)/bin/rice
+visor:
 	rm -f visor
 	go build $(GOFLAGS) -o visor -mod=readonly .
-	$(toolspath)/bin/rice append --exec visor -i github.com/filecoin-project/lotus/build
 BINS+=visor
 
 .PHONY: docker-image
@@ -131,11 +130,6 @@ test-coverage:
 $(toolspath)/bin/golangci-lint: $(toolspath)/go.mod
 	@mkdir -p $(dir $@)
 	(cd $(toolspath); go build -tags tools -o $(@:$(toolspath)/%=%) github.com/golangci/golangci-lint/cmd/golangci-lint)
-
-
-$(toolspath)/bin/rice: $(toolspath)/go.mod
-	@mkdir -p $(dir $@)
-	(cd $(toolspath); go build -tags tools -o $(@:$(toolspath)/%=%) github.com/GeertJohan/go.rice/rice)
 
 $(toolspath)/bin/gen: $(toolspath)/go.mod
 	@mkdir -p $(dir $@)

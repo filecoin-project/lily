@@ -1,4 +1,4 @@
-FROM golang:1.15.2
+FROM golang:1.16.5
 
 # Install deps for filecoin-project/filecoin-ffi
 RUN apt-get update && apt-get install -y jq mesa-opencl-icd ocl-icd-opencl-dev hwloc libhwloc-dev
