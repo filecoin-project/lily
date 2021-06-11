@@ -69,9 +69,11 @@ func main() {
 		})
 	}
 
+	cli.AppHelpTemplate = commands.AppHelpTemplate
+
 	app := &cli.App{
 		Name:    "visor",
-		Usage:   "Filecoin Chain Monitoring Utility",
+		Usage:   "a tool for capturing on-chain state from the filecoin network",
 		Version: fmt.Sprintf("VisorVersion: \t%s\n   NewestNetworkVersion: \t%d\n   GenesisFile: \t%s\n   DevNet: \t%t\n   UserVersion: \t%s\n   UpgradeSchedule: \n%s", version.String(), build.NewestNetworkVersion, build.GenesisFile, build.Devnet, build.UserVersion(), up.String()),
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -131,7 +133,10 @@ func main() {
 				Destination: &commands.VisorCmdFlags.PrometheusPort,
 			},
 		},
+		HideHelp: true,
+		Metadata: commands.Metadata(),
 		Commands: []*cli.Command{
+			commands.HelpCmd,
 			commands.DaemonCmd,
 			commands.InitCmd,
 			commands.JobCmd,
