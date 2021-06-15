@@ -150,3 +150,20 @@ actors-gen:
 types-gen: $(toolspath)/bin/gen
 	$(toolspath)/bin/gen ./tasks/messages/types
 	go fmt ./tasks/messages/types/...
+
+# dev-nets
+2k: GOFLAGS+=-tags=2k
+2k: build
+
+calibnet: GOFLAGS+=-tags=calibnet
+calibnet: build
+
+nerpanet: GOFLAGS+=-tags=nerpanet
+nerpanet: build
+
+butterflynet: GOFLAGS+=-tags=butterflynet
+butterflynet: build
+
+interopnet: GOFLAGS+=-tags=interopnet
+interopnet: build
+>>>>>>> build(devnet): support building visor for devnets
