@@ -9,6 +9,7 @@ import (
 	states2 "github.com/filecoin-project/specs-actors/v2/actors/states"
 	states3 "github.com/filecoin-project/specs-actors/v3/actors/states"
 	states4 "github.com/filecoin-project/specs-actors/v4/actors/states"
+	states5 "github.com/filecoin-project/specs-actors/v5/actors/states"
 	"github.com/ipfs/go-cid"
 	"golang.org/x/xerrors"
 )
@@ -48,6 +49,12 @@ func getStateTreeMapCIDAndVersion(ctx context.Context, store adt.Store, c cid.Ci
 	case types.StateTreeVersion3:
 		var tree *states4.Tree
 		tree, err = states4.LoadTree(store, root.Actors)
+		if tree != nil {
+			treeMap = tree.Map
+		}
+	case types.StateTreeVersion4:
+		var tree *states5.Tree
+		tree, err = states5.LoadTree(store, root.Actors)
 		if tree != nil {
 			treeMap = tree.Map
 		}

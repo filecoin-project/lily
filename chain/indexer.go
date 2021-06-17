@@ -10,6 +10,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/sentinel-visor/lens/lotus"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
@@ -409,7 +410,9 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 		return nil, err
 	}
 
-	if newVersion == oldVersion && (newVersion == types.StateTreeVersion2 || newVersion == types.StateTreeVersion3) {
+	// efficient HAMT diffing does not work over the API lens
+	_, isLotusAPILens := t.node.(*lotus.APIWrapper)
+	if !isLotusAPILens && newVersion == oldVersion && (newVersion != types.StateTreeVersion0 && newVersion != types.StateTreeVersion1) {
 		if span.IsRecording() {
 			span.SetAttribute("diff", "fast")
 		}
