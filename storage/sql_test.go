@@ -19,6 +19,8 @@ import (
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 
+const defaultDatabaseWaitTime = time.Second * 20
+
 func TestConsistentSchemaMigrationSequence(t *testing.T) {
 	latestVersion := LatestSchemaVersion()
 
@@ -34,7 +36,7 @@ func TestSchemaIsCurrent(t *testing.T) {
 		t.Skip("short testing requested")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultDatabaseWaitTime)
 	defer cancel()
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
@@ -60,7 +62,7 @@ func TestModelUpsert(t *testing.T) {
 		t.Skip("short testing requested")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultDatabaseWaitTime)
 	defer cancel()
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
@@ -183,7 +185,7 @@ func TestDatabasePersistWithVersion(t *testing.T) {
 		t.Skip("short testing requested")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultDatabaseWaitTime)
 	defer cancel()
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
@@ -245,7 +247,7 @@ func TestDatabaseUpsertWithVersion(t *testing.T) {
 		t.Skip("short testing requested")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultDatabaseWaitTime)
 	defer cancel()
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
@@ -325,7 +327,7 @@ func TestDatabasePersistWithUnsupportedVersion(t *testing.T) {
 		t.Skip("short testing requested")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultDatabaseWaitTime)
 	defer cancel()
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
