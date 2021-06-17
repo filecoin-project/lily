@@ -150,6 +150,8 @@ func TestMethodTableCoverage(t *testing.T) {
 	}
 
 	for code, table := range messageParamTable {
+		code := code
+		table := table
 		name := builtin.ActorNameByCode(code)
 		t.Run(name, func(t *testing.T) {
 			if len(table) == 0 {
