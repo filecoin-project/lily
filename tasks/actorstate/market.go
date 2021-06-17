@@ -10,10 +10,6 @@ import (
 	"golang.org/x/xerrors"
 
 	market "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/market"
-	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
-	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
-	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
-	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -26,10 +22,9 @@ import (
 type StorageMarketExtractor struct{}
 
 func init() {
-	Register(sa0builtin.StorageMarketActorCodeID, StorageMarketExtractor{})
-	Register(sa2builtin.StorageMarketActorCodeID, StorageMarketExtractor{})
-	Register(sa3builtin.StorageMarketActorCodeID, StorageMarketExtractor{})
-	Register(sa4builtin.StorageMarketActorCodeID, StorageMarketExtractor{})
+	for _, c := range market.AllCodes() {
+		Register(c, StorageMarketExtractor{})
+	}
 }
 
 type MarketStateExtractionContext struct {

@@ -17,7 +17,7 @@ import (
 	paych0 "github.com/filecoin-project/specs-actors/actors/builtin/paych"
 {{range .versions}}
 	builtin{{.}} "github.com/filecoin-project/specs-actors{{import .}}actors/builtin"
-{{end}}
+{{- end}}
 
 	"github.com/filecoin-project/lotus/chain/types"
 
@@ -91,6 +91,13 @@ func DecodeSignedVoucher(s string) (*SignedVoucher, error) {
 }
 
 var Methods = builtin{{.latestVersion}}.MethodsPaych
+
+func AllCodes() []cid.Cid {
+	return []cid.Cid{ {{range .versions}}
+        builtin{{.}}.PaymentChannelActorCodeID,
+    {{- end}}
+    }
+}
 
 func Message(version actors.Version, from address.Address) MessageBuilder {
 	switch version {

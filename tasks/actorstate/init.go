@@ -5,14 +5,9 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
-	init_ "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
 	"golang.org/x/xerrors"
 
-	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
-	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
-	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
-	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
-
+	init_ "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
 	"github.com/filecoin-project/sentinel-visor/model"
 	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
 )
@@ -23,10 +18,9 @@ import (
 type InitExtractor struct{}
 
 func init() {
-	Register(sa0builtin.InitActorCodeID, InitExtractor{})
-	Register(sa2builtin.InitActorCodeID, InitExtractor{})
-	Register(sa3builtin.InitActorCodeID, InitExtractor{})
-	Register(sa4builtin.InitActorCodeID, InitExtractor{})
+	for _, c := range init_.AllCodes() {
+		Register(c, InitExtractor{})
+	}
 }
 
 func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {

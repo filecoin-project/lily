@@ -79,6 +79,8 @@ type typeSlab struct {
 	Link__LotusActorV3Head__Repr _Link__LotusActorV3Head__ReprPrototype
 	Link__LotusActorV4Head       _Link__LotusActorV4Head__Prototype
 	Link__LotusActorV4Head__Repr _Link__LotusActorV4Head__ReprPrototype
+	Link__LotusActorV5Head       _Link__LotusActorV5Head__Prototype
+	Link__LotusActorV5Head__Repr _Link__LotusActorV5Head__ReprPrototype
 	Link__LotusActors       _Link__LotusActors__Prototype
 	Link__LotusActors__Repr _Link__LotusActors__ReprPrototype
 	Link__LotusMessage       _Link__LotusMessage__Prototype
@@ -113,6 +115,8 @@ type typeSlab struct {
 	Link__MarketV3RawDealProposal__Repr _Link__MarketV3RawDealProposal__ReprPrototype
 	Link__MarketV3State       _Link__MarketV3State__Prototype
 	Link__MarketV3State__Repr _Link__MarketV3State__ReprPrototype
+	Link__MarketV5State       _Link__MarketV5State__Prototype
+	Link__MarketV5State__Repr _Link__MarketV5State__ReprPrototype
 	Link__MinerV0Deadline       _Link__MinerV0Deadline__Prototype
 	Link__MinerV0Deadline__Repr _Link__MinerV0Deadline__ReprPrototype
 	Link__MinerV0Deadlines       _Link__MinerV0Deadlines__Prototype
@@ -159,6 +163,8 @@ type typeSlab struct {
 	Link__MinerV3State__Repr _Link__MinerV3State__ReprPrototype
 	Link__MinerV4State       _Link__MinerV4State__Prototype
 	Link__MinerV4State__Repr _Link__MinerV4State__ReprPrototype
+	Link__MinerV5State       _Link__MinerV5State__Prototype
+	Link__MinerV5State__Repr _Link__MinerV5State__ReprPrototype
 	Link__MultimapDealID       _Link__MultimapDealID__Prototype
 	Link__MultimapDealID__Repr _Link__MultimapDealID__ReprPrototype
 	Link__MultisigV0State       _Link__MultisigV0State__Prototype
@@ -235,6 +241,8 @@ type typeSlab struct {
 	List__MinerTerminationDecl__Repr _List__MinerTerminationDecl__ReprPrototype
 	List__MinerV0DeadlineLink       _List__MinerV0DeadlineLink__Prototype
 	List__MinerV0DeadlineLink__Repr _List__MinerV0DeadlineLink__ReprPrototype
+	List__MinerV0SectorPreCommitInfo       _List__MinerV0SectorPreCommitInfo__Prototype
+	List__MinerV0SectorPreCommitInfo__Repr _List__MinerV0SectorPreCommitInfo__ReprPrototype
 	List__MinerV0VestingFund       _List__MinerV0VestingFund__Prototype
 	List__MinerV0VestingFund__Repr _List__MinerV0VestingFund__ReprPrototype
 	List__MinerV2DeadlineLink       _List__MinerV2DeadlineLink__Prototype
@@ -245,6 +253,8 @@ type typeSlab struct {
 	List__Multiaddrs__Repr _List__Multiaddrs__ReprPrototype
 	List__PoStProof       _List__PoStProof__Prototype
 	List__PoStProof__Repr _List__PoStProof__ReprPrototype
+	List__SectorDataSpec       _List__SectorDataSpec__Prototype
+	List__SectorDataSpec__Repr _List__SectorDataSpec__ReprPrototype
 	List__SectorNumber       _List__SectorNumber__Prototype
 	List__SectorNumber__Repr _List__SectorNumber__ReprPrototype
 	LotusActorV2Head       _LotusActorV2Head__Prototype
@@ -253,6 +263,8 @@ type typeSlab struct {
 	LotusActorV3Head__Repr _LotusActorV3Head__ReprPrototype
 	LotusActorV4Head       _LotusActorV4Head__Prototype
 	LotusActorV4Head__Repr _LotusActorV4Head__ReprPrototype
+	LotusActorV5Head       _LotusActorV5Head__Prototype
+	LotusActorV5Head__Repr _LotusActorV5Head__ReprPrototype
 	LotusActors       _LotusActors__Prototype
 	LotusActors__Repr _LotusActors__ReprPrototype
 	LotusBeaconEntry       _LotusBeaconEntry__Prototype
@@ -367,6 +379,8 @@ type typeSlab struct {
 	MarketV2State__Repr _MarketV2State__ReprPrototype
 	MarketV3State       _MarketV3State__Prototype
 	MarketV3State__Repr _MarketV3State__ReprPrototype
+	MarketV5State       _MarketV5State__Prototype
+	MarketV5State__Repr _MarketV5State__ReprPrototype
 	Merge       _Merge__Prototype
 	Merge__Repr _Merge__ReprPrototype
 	MessageParamsInitExecParams       _MessageParamsInitExecParams__Prototype
@@ -379,6 +393,8 @@ type typeSlab struct {
 	MessageParamsMarketPublishDeals__Repr _MessageParamsMarketPublishDeals__ReprPrototype
 	MessageParamsMarketTerminateDeals       _MessageParamsMarketTerminateDeals__Prototype
 	MessageParamsMarketTerminateDeals__Repr _MessageParamsMarketTerminateDeals__ReprPrototype
+	MessageParamsMarketV5ComputeCommitment       _MessageParamsMarketV5ComputeCommitment__Prototype
+	MessageParamsMarketV5ComputeCommitment__Repr _MessageParamsMarketV5ComputeCommitment__ReprPrototype
 	MessageParamsMarketVerifyDeals       _MessageParamsMarketVerifyDeals__Prototype
 	MessageParamsMarketVerifyDeals__Repr _MessageParamsMarketVerifyDeals__ReprPrototype
 	MessageParamsMarketWithdrawBalance       _MessageParamsMarketWithdrawBalance__Prototype
@@ -405,8 +421,14 @@ type typeSlab struct {
 	MessageParamsMinerDeclareFaultsRecovered__Repr _MessageParamsMinerDeclareFaultsRecovered__ReprPrototype
 	MessageParamsMinerDeferredCron       _MessageParamsMinerDeferredCron__Prototype
 	MessageParamsMinerDeferredCron__Repr _MessageParamsMinerDeferredCron__ReprPrototype
+	MessageParamsMinerDisputeWindowedPoSt       _MessageParamsMinerDisputeWindowedPoSt__Prototype
+	MessageParamsMinerDisputeWindowedPoSt__Repr _MessageParamsMinerDisputeWindowedPoSt__ReprPrototype
 	MessageParamsMinerExtendSectorExpiration       _MessageParamsMinerExtendSectorExpiration__Prototype
 	MessageParamsMinerExtendSectorExpiration__Repr _MessageParamsMinerExtendSectorExpiration__ReprPrototype
+	MessageParamsMinerPreCommitSectorBatch       _MessageParamsMinerPreCommitSectorBatch__Prototype
+	MessageParamsMinerPreCommitSectorBatch__Repr _MessageParamsMinerPreCommitSectorBatch__ReprPrototype
+	MessageParamsMinerProveCommitAggregate       _MessageParamsMinerProveCommitAggregate__Prototype
+	MessageParamsMinerProveCommitAggregate__Repr _MessageParamsMinerProveCommitAggregate__ReprPrototype
 	MessageParamsMinerProveCommitSector       _MessageParamsMinerProveCommitSector__Prototype
 	MessageParamsMinerProveCommitSector__Repr _MessageParamsMinerProveCommitSector__ReprPrototype
 	MessageParamsMinerReportFault       _MessageParamsMinerReportFault__Prototype
@@ -509,6 +531,8 @@ type typeSlab struct {
 	MinerV3State__Repr _MinerV3State__ReprPrototype
 	MinerV4State       _MinerV4State__Prototype
 	MinerV4State__Repr _MinerV4State__ReprPrototype
+	MinerV5State       _MinerV5State__Prototype
+	MinerV5State__Repr _MinerV5State__ReprPrototype
 	ModVerifyParams       _ModVerifyParams__Prototype
 	ModVerifyParams__Repr _ModVerifyParams__ReprPrototype
 	Multiaddr       _Multiaddr__Prototype
@@ -557,6 +581,8 @@ type typeSlab struct {
 	RewardV2State__Repr _RewardV2State__ReprPrototype
 	SealVerifyInfo       _SealVerifyInfo__Prototype
 	SealVerifyInfo__Repr _SealVerifyInfo__ReprPrototype
+	SectorDataSpec       _SectorDataSpec__Prototype
+	SectorDataSpec__Repr _SectorDataSpec__ReprPrototype
 	SectorNumber       _SectorNumber__Prototype
 	SectorNumber__Repr _SectorNumber__ReprPrototype
 	SectorSize       _SectorSize__Prototype
@@ -730,6 +756,10 @@ type _Link__LotusActorV3Head struct{ x ipld.Link }
 type Link__LotusActorV4Head = *_Link__LotusActorV4Head
 type _Link__LotusActorV4Head struct{ x ipld.Link }
 
+// Link__LotusActorV5Head matches the IPLD Schema type "Link__LotusActorV5Head".  It has link kind.
+type Link__LotusActorV5Head = *_Link__LotusActorV5Head
+type _Link__LotusActorV5Head struct{ x ipld.Link }
+
 // Link__LotusActors matches the IPLD Schema type "Link__LotusActors".  It has link kind.
 type Link__LotusActors = *_Link__LotusActors
 type _Link__LotusActors struct{ x ipld.Link }
@@ -797,6 +827,10 @@ type _Link__MarketV3RawDealProposal struct{ x ipld.Link }
 // Link__MarketV3State matches the IPLD Schema type "Link__MarketV3State".  It has link kind.
 type Link__MarketV3State = *_Link__MarketV3State
 type _Link__MarketV3State struct{ x ipld.Link }
+
+// Link__MarketV5State matches the IPLD Schema type "Link__MarketV5State".  It has link kind.
+type Link__MarketV5State = *_Link__MarketV5State
+type _Link__MarketV5State struct{ x ipld.Link }
 
 // Link__MinerV0Deadline matches the IPLD Schema type "Link__MinerV0Deadline".  It has link kind.
 type Link__MinerV0Deadline = *_Link__MinerV0Deadline
@@ -889,6 +923,10 @@ type _Link__MinerV3State struct{ x ipld.Link }
 // Link__MinerV4State matches the IPLD Schema type "Link__MinerV4State".  It has link kind.
 type Link__MinerV4State = *_Link__MinerV4State
 type _Link__MinerV4State struct{ x ipld.Link }
+
+// Link__MinerV5State matches the IPLD Schema type "Link__MinerV5State".  It has link kind.
+type Link__MinerV5State = *_Link__MinerV5State
+type _Link__MinerV5State struct{ x ipld.Link }
 
 // Link__MultimapDealID matches the IPLD Schema type "Link__MultimapDealID".  It has link kind.
 type Link__MultimapDealID = *_Link__MultimapDealID
@@ -1070,6 +1108,12 @@ type _List__MinerV0DeadlineLink struct {
 	x []_Link__MinerV0Deadline__Maybe
 }
 
+// List__MinerV0SectorPreCommitInfo matches the IPLD Schema type "List__MinerV0SectorPreCommitInfo".  It has list kind.
+type List__MinerV0SectorPreCommitInfo = *_List__MinerV0SectorPreCommitInfo
+type _List__MinerV0SectorPreCommitInfo struct {
+	x []_MinerV0SectorPreCommitInfo
+}
+
 // List__MinerV0VestingFund matches the IPLD Schema type "List__MinerV0VestingFund".  It has list kind.
 type List__MinerV0VestingFund = *_List__MinerV0VestingFund
 type _List__MinerV0VestingFund struct {
@@ -1098,6 +1142,12 @@ type _List__Multiaddrs struct {
 type List__PoStProof = *_List__PoStProof
 type _List__PoStProof struct {
 	x []_PoStProof
+}
+
+// List__SectorDataSpec matches the IPLD Schema type "List__SectorDataSpec".  It has list kind.
+type List__SectorDataSpec = *_List__SectorDataSpec
+type _List__SectorDataSpec struct {
+	x []_SectorDataSpec
 }
 
 // List__SectorNumber matches the IPLD Schema type "List__SectorNumber".  It has list kind.
@@ -1247,11 +1297,68 @@ func (_PowerV0State) _LotusActorV4Head__member() {}
 func (_RewardV0State) _LotusActorV4Head__member() {}
 func (_VerifregV0State) _LotusActorV4Head__member() {}
 
+// LotusActorV5Head matches the IPLD Schema type "LotusActorV5Head".  It has Union type-kind, and may be interrogated like map kind.
+type LotusActorV5Head = *_LotusActorV5Head
+type _LotusActorV5Head struct {
+	tag uint
+	x1 _MinerV5State
+	x2 _MarketV5State
+	x3 _MinerV4State
+	x4 _MarketV3State
+	x5 _MinerV3State
+	x6 _PowerV3State
+	x7 _InitV3State
+	x8 _VerifregV3State
+	x9 _PaychV3State
+	x10 _MultisigV3State
+	x11 _MarketV2State
+	x12 _MinerV2State
+	x13 _PowerV2State
+	x14 _RewardV2State
+	x15 _AccountV0State
+	x16 _CronV0State
+	x17 _InitV0State
+	x18 _MarketV0State
+	x19 _MinerV0State
+	x20 _MultisigV0State
+	x21 _PaychV0State
+	x22 _PowerV0State
+	x23 _RewardV0State
+	x24 _VerifregV0State
+}
+type _LotusActorV5Head__iface interface {
+	_LotusActorV5Head__member()
+}
+func (_MinerV5State) _LotusActorV5Head__member() {}
+func (_MarketV5State) _LotusActorV5Head__member() {}
+func (_MinerV4State) _LotusActorV5Head__member() {}
+func (_MarketV3State) _LotusActorV5Head__member() {}
+func (_MinerV3State) _LotusActorV5Head__member() {}
+func (_PowerV3State) _LotusActorV5Head__member() {}
+func (_InitV3State) _LotusActorV5Head__member() {}
+func (_VerifregV3State) _LotusActorV5Head__member() {}
+func (_PaychV3State) _LotusActorV5Head__member() {}
+func (_MultisigV3State) _LotusActorV5Head__member() {}
+func (_MarketV2State) _LotusActorV5Head__member() {}
+func (_MinerV2State) _LotusActorV5Head__member() {}
+func (_PowerV2State) _LotusActorV5Head__member() {}
+func (_RewardV2State) _LotusActorV5Head__member() {}
+func (_AccountV0State) _LotusActorV5Head__member() {}
+func (_CronV0State) _LotusActorV5Head__member() {}
+func (_InitV0State) _LotusActorV5Head__member() {}
+func (_MarketV0State) _LotusActorV5Head__member() {}
+func (_MinerV0State) _LotusActorV5Head__member() {}
+func (_MultisigV0State) _LotusActorV5Head__member() {}
+func (_PaychV0State) _LotusActorV5Head__member() {}
+func (_PowerV0State) _LotusActorV5Head__member() {}
+func (_RewardV0State) _LotusActorV5Head__member() {}
+func (_VerifregV0State) _LotusActorV5Head__member() {}
+
 // LotusActors matches the IPLD Schema type "LotusActors".  It has Struct type-kind, and may be interrogated like map kind.
 type LotusActors = *_LotusActors
 type _LotusActors struct {
 	Code _Link
-	Head _Link__LotusActorV4Head
+	Head _Link__LotusActorV5Head
 	Nonce _Int
 	Balance _BigInt
 }
@@ -1964,6 +2071,22 @@ type _MarketV3State struct {
 	TotalClientStorageFee _BigInt
 }
 
+// MarketV5State matches the IPLD Schema type "MarketV5State".  It has Struct type-kind, and may be interrogated like map kind.
+type MarketV5State = *_MarketV5State
+type _MarketV5State struct {
+	Proposals _Link__MarketV3RawDealProposal
+	States _Link__MarketV3DealState
+	PendingProposals _Link__MarketV3DealProposal
+	EscrowTable _Link__V3BalanceTable
+	LockedTable _Link__V3BalanceTable
+	NextID _DealID
+	DealOpsByEpoch _Link__MarketV3MultimapDealID
+	LastCron _ChainEpoch
+	TotalClientLockedCollateral _BigInt
+	TotalProviderLockedCollateral _BigInt
+	TotalClientStorageFee _BigInt
+}
+
 // Merge matches the IPLD Schema type "Merge".  It has Struct type-kind, and may be interrogated like map kind.
 type Merge = *_Merge
 type _Merge struct {
@@ -2003,6 +2126,12 @@ type MessageParamsMarketTerminateDeals = *_MessageParamsMarketTerminateDeals
 type _MessageParamsMarketTerminateDeals struct {
 	Epoch _ChainEpoch
 	DealIDs _List__DealID
+}
+
+// MessageParamsMarketV5ComputeCommitment matches the IPLD Schema type "MessageParamsMarketV5ComputeCommitment".  It has Struct type-kind, and may be interrogated like map kind.
+type MessageParamsMarketV5ComputeCommitment = *_MessageParamsMarketV5ComputeCommitment
+type _MessageParamsMarketV5ComputeCommitment struct {
+	Inputs _List__SectorDataSpec
 }
 
 // MessageParamsMarketVerifyDeals matches the IPLD Schema type "MessageParamsMarketVerifyDeals".  It has Struct type-kind, and may be interrogated like map kind.
@@ -2087,10 +2216,30 @@ type _MessageParamsMinerDeferredCron struct {
 	EventType _Int
 }
 
+// MessageParamsMinerDisputeWindowedPoSt matches the IPLD Schema type "MessageParamsMinerDisputeWindowedPoSt".  It has Struct type-kind, and may be interrogated like map kind.
+type MessageParamsMinerDisputeWindowedPoSt = *_MessageParamsMinerDisputeWindowedPoSt
+type _MessageParamsMinerDisputeWindowedPoSt struct {
+	Deadline _Int
+	PoStIndex _Int
+}
+
 // MessageParamsMinerExtendSectorExpiration matches the IPLD Schema type "MessageParamsMinerExtendSectorExpiration".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMinerExtendSectorExpiration = *_MessageParamsMinerExtendSectorExpiration
 type _MessageParamsMinerExtendSectorExpiration struct {
 	Extension _List__MinerExpirationExtend
+}
+
+// MessageParamsMinerPreCommitSectorBatch matches the IPLD Schema type "MessageParamsMinerPreCommitSectorBatch".  It has Struct type-kind, and may be interrogated like map kind.
+type MessageParamsMinerPreCommitSectorBatch = *_MessageParamsMinerPreCommitSectorBatch
+type _MessageParamsMinerPreCommitSectorBatch struct {
+	Sectors _List__MinerV0SectorPreCommitInfo
+}
+
+// MessageParamsMinerProveCommitAggregate matches the IPLD Schema type "MessageParamsMinerProveCommitAggregate".  It has Struct type-kind, and may be interrogated like map kind.
+type MessageParamsMinerProveCommitAggregate = *_MessageParamsMinerProveCommitAggregate
+type _MessageParamsMinerProveCommitAggregate struct {
+	SectorNumbers _BitField
+	AggregateProof _Bytes
 }
 
 // MessageParamsMinerProveCommitSector matches the IPLD Schema type "MessageParamsMinerProveCommitSector".  It has Struct type-kind, and may be interrogated like map kind.
@@ -2597,6 +2746,26 @@ type _MinerV4State struct {
 	DeadlineCronActive _Bool
 }
 
+// MinerV5State matches the IPLD Schema type "MinerV5State".  It has Struct type-kind, and may be interrogated like map kind.
+type MinerV5State = *_MinerV5State
+type _MinerV5State struct {
+	Info _Link__MinerV2Info
+	PreCommitDeposits _BigInt
+	LockedFunds _BigInt
+	VestingFunds _Link__MinerV0VestingFunds
+	FeeDebt _BigInt
+	InitialPledge _BigInt
+	PreCommittedSectors _Link__MinerV3SectorPreCommits
+	PreCommittedSectorsCleanUp _Link
+	AllocatedSectors _Link__BitField
+	Sectors _Link__MinerV3SectorInfo
+	ProvingPeriodStart _ChainEpoch
+	CurrentDeadline _Int
+	Deadlines _Link__MinerV3Deadlines
+	EarlyTerminations _BitField
+	DeadlineCronActive _Bool
+}
+
 // ModVerifyParams matches the IPLD Schema type "ModVerifyParams".  It has Struct type-kind, and may be interrogated like map kind.
 type ModVerifyParams = *_ModVerifyParams
 type _ModVerifyParams struct {
@@ -2840,6 +3009,13 @@ type _SealVerifyInfo struct {
 	Proof _Bytes
 	SealedCID _Link
 	UnsealedCID _Link
+}
+
+// SectorDataSpec matches the IPLD Schema type "SectorDataSpec".  It has Struct type-kind, and may be interrogated like map kind.
+type SectorDataSpec = *_SectorDataSpec
+type _SectorDataSpec struct {
+	DealIDs _List__DealID
+	SectorType _RegisteredSealProof
 }
 
 // SectorNumber matches the IPLD Schema type "SectorNumber".  It has int kind.

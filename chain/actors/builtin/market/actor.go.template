@@ -14,7 +14,7 @@ import (
 	market0 "github.com/filecoin-project/specs-actors/actors/builtin/market"
 {{range .versions}}
 	builtin{{.}} "github.com/filecoin-project/specs-actors{{import .}}actors/builtin"
-{{end}}
+{{- end}}
 
 	"github.com/filecoin-project/lotus/chain/types"
 
@@ -33,6 +33,13 @@ var (
 	Address = builtin{{.latestVersion}}.StorageMarketActorAddr
 	Methods = builtin{{.latestVersion}}.MethodsMarket
 )
+
+func AllCodes() []cid.Cid {
+	return []cid.Cid{ {{range .versions}}
+        builtin{{.}}.StorageMarketActorCodeID,
+    {{- end}}
+    }
+}
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
 	switch act.Code {

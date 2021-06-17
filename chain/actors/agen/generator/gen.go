@@ -11,15 +11,16 @@ import (
 	"golang.org/x/xerrors"
 )
 
-var latestVersion = 4
+var latestVersion = 5
 
-var versions = []int{0, 2, 3, latestVersion}
+var versions = []int{0, 2, 3, 4, latestVersion}
 
 var versionImports = map[int]string{
 	0:             "/",
 	2:             "/v2/",
 	3:             "/v3/",
-	latestVersion: "/v4/",
+	4:             "/v4/",
+	latestVersion: "/v5/",
 }
 
 var actors = map[string][]int{
@@ -83,7 +84,7 @@ func generateAdapters() error {
 				return err
 			}
 
-			if err := ioutil.WriteFile(filepath.Join(actDir, fmt.Sprintf("%s.go", act)), b.Bytes(), 0666); err != nil {
+			if err := ioutil.WriteFile(filepath.Join(actDir, fmt.Sprintf("%s.go", act)), b.Bytes(), 0o666); err != nil {
 				return err
 			}
 		}
@@ -116,7 +117,7 @@ func generateState(actDir string) error {
 			return err
 		}
 
-		if err := ioutil.WriteFile(filepath.Join(actDir, fmt.Sprintf("v%d.go", version)), b.Bytes(), 0666); err != nil {
+		if err := ioutil.WriteFile(filepath.Join(actDir, fmt.Sprintf("v%d.go", version)), b.Bytes(), 0o666); err != nil {
 			return err
 		}
 	}
@@ -147,7 +148,7 @@ func generateMessages(actDir string) error {
 			return err
 		}
 
-		if err := ioutil.WriteFile(filepath.Join(actDir, fmt.Sprintf("message%d.go", version)), b.Bytes(), 0666); err != nil {
+		if err := ioutil.WriteFile(filepath.Join(actDir, fmt.Sprintf("message%d.go", version)), b.Bytes(), 0o666); err != nil {
 			return err
 		}
 	}
@@ -179,7 +180,7 @@ func generatePolicy() error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(policyPath, b.Bytes(), 0666); err != nil {
+	if err := ioutil.WriteFile(policyPath, b.Bytes(), 0o666); err != nil {
 		return err
 	}
 
@@ -210,7 +211,7 @@ func generateBuiltin() error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(builtinPath, b.Bytes(), 0666); err != nil {
+	if err := ioutil.WriteFile(builtinPath, b.Bytes(), 0o666); err != nil {
 		return err
 	}
 

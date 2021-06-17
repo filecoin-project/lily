@@ -10,10 +10,6 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/lotus/chain/types"
-	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
-	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
-	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
-	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
@@ -22,6 +18,12 @@ import (
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
+	init_ "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/market"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/miner"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/multisig"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/power"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/reward"
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -102,47 +104,17 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 		case ActorStatesRawTask:
 			tsi.actorProcessors[ActorStatesRawTask] = actorstate.NewTask(o, &actorstate.RawActorExtractorMap{})
 		case ActorStatesPowerTask:
-			tsi.actorProcessors[ActorStatesPowerTask] = actorstate.NewTask(o, &actorstate.TypedActorExtractorMap{
-				CodeV1: sa0builtin.StoragePowerActorCodeID,
-				CodeV2: sa2builtin.StoragePowerActorCodeID,
-				CodeV3: sa3builtin.StoragePowerActorCodeID,
-				CodeV4: sa4builtin.StoragePowerActorCodeID,
-			})
+			tsi.actorProcessors[ActorStatesPowerTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(power.AllCodes()))
 		case ActorStatesRewardTask:
-			tsi.actorProcessors[ActorStatesRewardTask] = actorstate.NewTask(o, &actorstate.TypedActorExtractorMap{
-				CodeV1: sa0builtin.RewardActorCodeID,
-				CodeV2: sa2builtin.RewardActorCodeID,
-				CodeV3: sa3builtin.RewardActorCodeID,
-				CodeV4: sa4builtin.RewardActorCodeID,
-			})
+			tsi.actorProcessors[ActorStatesRewardTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(reward.AllCodes()))
 		case ActorStatesMinerTask:
-			tsi.actorProcessors[ActorStatesMinerTask] = actorstate.NewTask(o, &actorstate.TypedActorExtractorMap{
-				CodeV1: sa0builtin.StorageMinerActorCodeID,
-				CodeV2: sa2builtin.StorageMinerActorCodeID,
-				CodeV3: sa3builtin.StorageMinerActorCodeID,
-				CodeV4: sa4builtin.StorageMinerActorCodeID,
-			})
+			tsi.actorProcessors[ActorStatesMinerTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(miner.AllCodes()))
 		case ActorStatesInitTask:
-			tsi.actorProcessors[ActorStatesInitTask] = actorstate.NewTask(o, &actorstate.TypedActorExtractorMap{
-				CodeV1: sa0builtin.InitActorCodeID,
-				CodeV2: sa2builtin.InitActorCodeID,
-				CodeV3: sa3builtin.InitActorCodeID,
-				CodeV4: sa4builtin.InitActorCodeID,
-			})
+			tsi.actorProcessors[ActorStatesInitTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(init_.AllCodes()))
 		case ActorStatesMarketTask:
-			tsi.actorProcessors[ActorStatesMarketTask] = actorstate.NewTask(o, &actorstate.TypedActorExtractorMap{
-				CodeV1: sa0builtin.StorageMarketActorCodeID,
-				CodeV2: sa2builtin.StorageMarketActorCodeID,
-				CodeV3: sa3builtin.StorageMarketActorCodeID,
-				CodeV4: sa4builtin.StorageMarketActorCodeID,
-			})
+			tsi.actorProcessors[ActorStatesMarketTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(market.AllCodes()))
 		case ActorStatesMultisigTask:
-			tsi.actorProcessors[ActorStatesMultisigTask] = actorstate.NewTask(o, &actorstate.TypedActorExtractorMap{
-				CodeV1: sa0builtin.MultisigActorCodeID,
-				CodeV2: sa2builtin.MultisigActorCodeID,
-				CodeV3: sa3builtin.MultisigActorCodeID,
-				CodeV4: sa4builtin.MultisigActorCodeID,
-			})
+			tsi.actorProcessors[ActorStatesMultisigTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(multisig.AllCodes()))
 		case MultisigApprovalsTask:
 			tsi.messageProcessors[MultisigApprovalsTask] = msapprovals.NewTask(o)
 		default:

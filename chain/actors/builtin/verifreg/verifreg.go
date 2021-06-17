@@ -11,12 +11,10 @@ import (
 	"github.com/filecoin-project/go-state-types/cbor"
 
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
-
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
-
 	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
-
 	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
+	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
 
 	"github.com/filecoin-project/lotus/chain/types"
 
@@ -42,12 +40,26 @@ func init() {
 		return load4(store, root)
 	})
 
+	builtin.RegisterActorState(builtin5.VerifiedRegistryActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
+		return load5(store, root)
+	})
+
 }
 
 var (
-	Address = builtin4.VerifiedRegistryActorAddr
-	Methods = builtin4.MethodsVerifiedRegistry
+	Address = builtin5.VerifiedRegistryActorAddr
+	Methods = builtin5.MethodsVerifiedRegistry
 )
+
+func AllCodes() []cid.Cid {
+	return []cid.Cid{
+		builtin0.VerifiedRegistryActorCodeID,
+		builtin2.VerifiedRegistryActorCodeID,
+		builtin3.VerifiedRegistryActorCodeID,
+		builtin4.VerifiedRegistryActorCodeID,
+		builtin5.VerifiedRegistryActorCodeID,
+	}
+}
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
 	switch act.Code {
@@ -63,6 +75,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 	case builtin4.VerifiedRegistryActorCodeID:
 		return load4(store, act.Head)
+
+	case builtin5.VerifiedRegistryActorCodeID:
+		return load5(store, act.Head)
 
 	}
 	return nil, xerrors.Errorf("unknown actor code %s", act.Code)

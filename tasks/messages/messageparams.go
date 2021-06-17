@@ -8,6 +8,7 @@ import (
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
+	sa5builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	"github.com/ipfs/go-cid"
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/codec/dagcbor"
@@ -36,6 +37,18 @@ var marketTable = methodtable{
 	9: methodMeta{"CronTick", types.Type.Any__Repr},
 }
 
+// marketV5Table is needed since param type of ComputeDataCommitment has changed in v5 actors
+var marketV5Table = methodtable{
+	2: methodMeta{"AddBalance", types.Type.Address__Repr},
+	3: methodMeta{"WithdrawBalance", types.Type.MessageParamsMarketWithdrawBalance__Repr},
+	4: methodMeta{"PublishStorageDeals", types.Type.MessageParamsMarketPublishDeals__Repr},
+	5: methodMeta{"VerifyDealsForActivation", types.Type.MessageParamsMarketVerifyDeals__Repr},
+	6: methodMeta{"ActivateDeals", types.Type.MessageParamsMarketActivateDeals__Repr},
+	7: methodMeta{"OnMinerSectorsTerminate", types.Type.MessageParamsMarketTerminateDeals__Repr},
+	8: methodMeta{"ComputeDataCommitment", types.Type.MessageParamsMarketV5ComputeCommitment__Repr},
+	9: methodMeta{"CronTick", types.Type.Any__Repr},
+}
+
 var minerTable = methodtable{
 	1:  methodMeta{"Constructor", types.Type.MessageParamsMinerConstructor__Repr},
 	2:  methodMeta{"ControlAddresses", types.Type.Any__Repr},
@@ -60,6 +73,13 @@ var minerTable = methodtable{
 	21: methodMeta{"ConfirmUpdateWorkerKey", types.Type.Any__Repr},
 	22: methodMeta{"RepayDebt", types.Type.Any__Repr},
 	23: methodMeta{"ChangeOwnerAddress", types.Type.Address__Repr},
+
+	// 24 added in v4 actors
+	24: methodMeta{"DisputeWindowedPoSt", types.Type.MessageParamsMinerDisputeWindowedPoSt__Repr},
+
+	// 25 and 26 added in v5 actors
+	25: methodMeta{"PreCommitSectorBatch", types.Type.MessageParamsMinerPreCommitSectorBatch__Repr},
+	26: methodMeta{"ProveCommitAggregate", types.Type.MessageParamsMinerProveCommitAggregate__Repr},
 }
 
 var multisigTable = methodtable{
@@ -189,6 +209,19 @@ var messageParamTable = map[cid.Cid]methodtable{
 	sa4builtin.StoragePowerActorCodeID:     powerTable,
 	sa4builtin.SystemActorCodeID:           {},
 	sa4builtin.VerifiedRegistryActorCodeID: verifregTable,
+
+	// v5
+	sa5builtin.AccountActorCodeID:          {},
+	sa5builtin.CronActorCodeID:             {},
+	sa5builtin.InitActorCodeID:             initTable,
+	sa5builtin.MultisigActorCodeID:         multisigTable,
+	sa5builtin.PaymentChannelActorCodeID:   paychTable,
+	sa5builtin.RewardActorCodeID:           rewardTable,
+	sa5builtin.StorageMarketActorCodeID:    marketV5Table,
+	sa5builtin.StorageMinerActorCodeID:     minerTable,
+	sa5builtin.StoragePowerActorCodeID:     powerTable,
+	sa5builtin.SystemActorCodeID:           {},
+	sa5builtin.VerifiedRegistryActorCodeID: verifregTable,
 }
 
 func ParseParams(params []byte, method int64, destType cid.Cid) (ipld.Node, string, error) {
