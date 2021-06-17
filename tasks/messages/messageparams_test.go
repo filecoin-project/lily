@@ -9,7 +9,7 @@ import (
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
-	sa5builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
+	sa5builtin "github.com/filecoin-project/specs-actors/v5/actors/builtin"
 
 	sa0account "github.com/filecoin-project/specs-actors/actors/builtin/account"
 	sa0cron "github.com/filecoin-project/specs-actors/actors/builtin/cron"

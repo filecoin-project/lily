@@ -149,3 +149,4 @@ actors-gen:
 .PHONY: types-gen
 types-gen: $(toolspath)/bin/gen
 	$(toolspath)/bin/gen ./tasks/messages/types
+	go fmt ./tasks/messages/types/...
