@@ -14,10 +14,6 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
 	miner "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/miner"
-	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
-	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
-	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
-	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -30,10 +26,9 @@ import (
 type StorageMinerExtractor struct{}
 
 func init() {
-	Register(sa0builtin.StorageMinerActorCodeID, StorageMinerExtractor{})
-	Register(sa2builtin.StorageMinerActorCodeID, StorageMinerExtractor{})
-	Register(sa3builtin.StorageMinerActorCodeID, StorageMinerExtractor{})
-	Register(sa4builtin.StorageMinerActorCodeID, StorageMinerExtractor{})
+	for _, c := range miner.AllCodes() {
+		Register(c, StorageMinerExtractor{})
+	}
 }
 
 func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {

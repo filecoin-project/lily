@@ -5,6 +5,7 @@ package types
 import (
 	ipld "github.com/ipld/go-ipld-prime"
 )
+
 var _ ipld.Node = nil // suppress errors when this dependency is not referenced
 // Type is a struct embeding a NodePrototype/Type for every Node implementation in this package.
 // One of its major uses is to start the construction of a value.
@@ -19,562 +20,588 @@ var _ ipld.Node = nil // suppress errors when this dependency is not referenced
 var Type typeSlab
 
 type typeSlab struct {
-	AccountV0State       _AccountV0State__Prototype
-	AccountV0State__Repr _AccountV0State__ReprPrototype
-	ActorID       _ActorID__Prototype
-	ActorID__Repr _ActorID__ReprPrototype
-	Address       _Address__Prototype
-	Address__Repr _Address__ReprPrototype
-	Any       _Any__Prototype
-	Any__Repr _Any__ReprPrototype
-	ApplyRewardParams       _ApplyRewardParams__Prototype
-	ApplyRewardParams__Repr _ApplyRewardParams__ReprPrototype
-	BigInt       _BigInt__Prototype
-	BigInt__Repr _BigInt__ReprPrototype
-	BitField       _BitField__Prototype
-	BitField__Repr _BitField__ReprPrototype
-	Bool       _Bool__Prototype
-	Bool__Repr _Bool__ReprPrototype
-	Bytes       _Bytes__Prototype
-	Bytes__Repr _Bytes__ReprPrototype
-	ChainEpoch       _ChainEpoch__Prototype
-	ChainEpoch__Repr _ChainEpoch__ReprPrototype
-	CidString       _CidString__Prototype
-	CidString__Repr _CidString__ReprPrototype
-	CronV0Entry       _CronV0Entry__Prototype
-	CronV0Entry__Repr _CronV0Entry__ReprPrototype
-	CronV0State       _CronV0State__Prototype
-	CronV0State__Repr _CronV0State__ReprPrototype
-	DealID       _DealID__Prototype
-	DealID__Repr _DealID__ReprPrototype
-	Float       _Float__Prototype
-	Float__Repr _Float__ReprPrototype
-	InitV0State       _InitV0State__Prototype
-	InitV0State__Repr _InitV0State__ReprPrototype
-	InitV3State       _InitV3State__Prototype
-	InitV3State__Repr _InitV3State__ReprPrototype
-	Int       _Int__Prototype
-	Int__Repr _Int__ReprPrototype
-	Link       _Link__Prototype
-	Link__Repr _Link__ReprPrototype
-	Link__AccountV0State       _Link__AccountV0State__Prototype
-	Link__AccountV0State__Repr _Link__AccountV0State__ReprPrototype
-	Link__BalanceTable       _Link__BalanceTable__Prototype
-	Link__BalanceTable__Repr _Link__BalanceTable__ReprPrototype
-	Link__BitField       _Link__BitField__Prototype
-	Link__BitField__Repr _Link__BitField__ReprPrototype
-	Link__CronV0State       _Link__CronV0State__Prototype
-	Link__CronV0State__Repr _Link__CronV0State__ReprPrototype
-	Link__DataCap       _Link__DataCap__Prototype
-	Link__DataCap__Repr _Link__DataCap__ReprPrototype
-	Link__InitV0State       _Link__InitV0State__Prototype
-	Link__InitV0State__Repr _Link__InitV0State__ReprPrototype
-	Link__InitV3State       _Link__InitV3State__Prototype
-	Link__InitV3State__Repr _Link__InitV3State__ReprPrototype
-	Link__ListLotusMessage       _Link__ListLotusMessage__Prototype
-	Link__ListLotusMessage__Repr _Link__ListLotusMessage__ReprPrototype
-	Link__LotusActorV2Head       _Link__LotusActorV2Head__Prototype
-	Link__LotusActorV2Head__Repr _Link__LotusActorV2Head__ReprPrototype
-	Link__LotusActorV3Head       _Link__LotusActorV3Head__Prototype
-	Link__LotusActorV3Head__Repr _Link__LotusActorV3Head__ReprPrototype
-	Link__LotusActorV4Head       _Link__LotusActorV4Head__Prototype
-	Link__LotusActorV4Head__Repr _Link__LotusActorV4Head__ReprPrototype
-	Link__LotusActors       _Link__LotusActors__Prototype
-	Link__LotusActors__Repr _Link__LotusActors__ReprPrototype
-	Link__LotusMessage       _Link__LotusMessage__Prototype
-	Link__LotusMessage__Repr _Link__LotusMessage__ReprPrototype
-	Link__LotusMsgMeta       _Link__LotusMsgMeta__Prototype
-	Link__LotusMsgMeta__Repr _Link__LotusMsgMeta__ReprPrototype
-	Link__LotusStateRoot       _Link__LotusStateRoot__Prototype
-	Link__LotusStateRoot__Repr _Link__LotusStateRoot__ReprPrototype
-	Link__MapActorID       _Link__MapActorID__Prototype
-	Link__MapActorID__Repr _Link__MapActorID__ReprPrototype
-	Link__MarketV0DealProposal       _Link__MarketV0DealProposal__Prototype
-	Link__MarketV0DealProposal__Repr _Link__MarketV0DealProposal__ReprPrototype
-	Link__MarketV0DealState       _Link__MarketV0DealState__Prototype
-	Link__MarketV0DealState__Repr _Link__MarketV0DealState__ReprPrototype
-	Link__MarketV0RawDealProposal       _Link__MarketV0RawDealProposal__Prototype
-	Link__MarketV0RawDealProposal__Repr _Link__MarketV0RawDealProposal__ReprPrototype
-	Link__MarketV0State       _Link__MarketV0State__Prototype
-	Link__MarketV0State__Repr _Link__MarketV0State__ReprPrototype
-	Link__MarketV2DealProposal       _Link__MarketV2DealProposal__Prototype
-	Link__MarketV2DealProposal__Repr _Link__MarketV2DealProposal__ReprPrototype
-	Link__MarketV2RawDealProposal       _Link__MarketV2RawDealProposal__Prototype
-	Link__MarketV2RawDealProposal__Repr _Link__MarketV2RawDealProposal__ReprPrototype
-	Link__MarketV2State       _Link__MarketV2State__Prototype
-	Link__MarketV2State__Repr _Link__MarketV2State__ReprPrototype
-	Link__MarketV3DealProposal       _Link__MarketV3DealProposal__Prototype
-	Link__MarketV3DealProposal__Repr _Link__MarketV3DealProposal__ReprPrototype
-	Link__MarketV3DealState       _Link__MarketV3DealState__Prototype
-	Link__MarketV3DealState__Repr _Link__MarketV3DealState__ReprPrototype
-	Link__MarketV3MultimapDealID       _Link__MarketV3MultimapDealID__Prototype
-	Link__MarketV3MultimapDealID__Repr _Link__MarketV3MultimapDealID__ReprPrototype
-	Link__MarketV3RawDealProposal       _Link__MarketV3RawDealProposal__Prototype
-	Link__MarketV3RawDealProposal__Repr _Link__MarketV3RawDealProposal__ReprPrototype
-	Link__MarketV3State       _Link__MarketV3State__Prototype
-	Link__MarketV3State__Repr _Link__MarketV3State__ReprPrototype
-	Link__MinerV0Deadline       _Link__MinerV0Deadline__Prototype
-	Link__MinerV0Deadline__Repr _Link__MinerV0Deadline__ReprPrototype
-	Link__MinerV0Deadlines       _Link__MinerV0Deadlines__Prototype
-	Link__MinerV0Deadlines__Repr _Link__MinerV0Deadlines__ReprPrototype
-	Link__MinerV0ExpirationSet       _Link__MinerV0ExpirationSet__Prototype
-	Link__MinerV0ExpirationSet__Repr _Link__MinerV0ExpirationSet__ReprPrototype
-	Link__MinerV0Info       _Link__MinerV0Info__Prototype
-	Link__MinerV0Info__Repr _Link__MinerV0Info__ReprPrototype
-	Link__MinerV0Partition       _Link__MinerV0Partition__Prototype
-	Link__MinerV0Partition__Repr _Link__MinerV0Partition__ReprPrototype
-	Link__MinerV0SectorInfo       _Link__MinerV0SectorInfo__Prototype
-	Link__MinerV0SectorInfo__Repr _Link__MinerV0SectorInfo__ReprPrototype
-	Link__MinerV0SectorPreCommits       _Link__MinerV0SectorPreCommits__Prototype
-	Link__MinerV0SectorPreCommits__Repr _Link__MinerV0SectorPreCommits__ReprPrototype
-	Link__MinerV0State       _Link__MinerV0State__Prototype
-	Link__MinerV0State__Repr _Link__MinerV0State__ReprPrototype
-	Link__MinerV0VestingFunds       _Link__MinerV0VestingFunds__Prototype
-	Link__MinerV0VestingFunds__Repr _Link__MinerV0VestingFunds__ReprPrototype
-	Link__MinerV2Deadline       _Link__MinerV2Deadline__Prototype
-	Link__MinerV2Deadline__Repr _Link__MinerV2Deadline__ReprPrototype
-	Link__MinerV2Deadlines       _Link__MinerV2Deadlines__Prototype
-	Link__MinerV2Deadlines__Repr _Link__MinerV2Deadlines__ReprPrototype
-	Link__MinerV2Info       _Link__MinerV2Info__Prototype
-	Link__MinerV2Info__Repr _Link__MinerV2Info__ReprPrototype
-	Link__MinerV2Partition       _Link__MinerV2Partition__Prototype
-	Link__MinerV2Partition__Repr _Link__MinerV2Partition__ReprPrototype
-	Link__MinerV2SectorInfo       _Link__MinerV2SectorInfo__Prototype
-	Link__MinerV2SectorInfo__Repr _Link__MinerV2SectorInfo__ReprPrototype
-	Link__MinerV2State       _Link__MinerV2State__Prototype
-	Link__MinerV2State__Repr _Link__MinerV2State__ReprPrototype
-	Link__MinerV3Deadline       _Link__MinerV3Deadline__Prototype
-	Link__MinerV3Deadline__Repr _Link__MinerV3Deadline__ReprPrototype
-	Link__MinerV3Deadlines       _Link__MinerV3Deadlines__Prototype
-	Link__MinerV3Deadlines__Repr _Link__MinerV3Deadlines__ReprPrototype
-	Link__MinerV3ExpirationSet       _Link__MinerV3ExpirationSet__Prototype
-	Link__MinerV3ExpirationSet__Repr _Link__MinerV3ExpirationSet__ReprPrototype
-	Link__MinerV3Partition       _Link__MinerV3Partition__Prototype
-	Link__MinerV3Partition__Repr _Link__MinerV3Partition__ReprPrototype
-	Link__MinerV3SectorInfo       _Link__MinerV3SectorInfo__Prototype
-	Link__MinerV3SectorInfo__Repr _Link__MinerV3SectorInfo__ReprPrototype
-	Link__MinerV3SectorPreCommits       _Link__MinerV3SectorPreCommits__Prototype
-	Link__MinerV3SectorPreCommits__Repr _Link__MinerV3SectorPreCommits__ReprPrototype
-	Link__MinerV3State       _Link__MinerV3State__Prototype
-	Link__MinerV3State__Repr _Link__MinerV3State__ReprPrototype
-	Link__MinerV4State       _Link__MinerV4State__Prototype
-	Link__MinerV4State__Repr _Link__MinerV4State__ReprPrototype
-	Link__MultimapDealID       _Link__MultimapDealID__Prototype
-	Link__MultimapDealID__Repr _Link__MultimapDealID__ReprPrototype
-	Link__MultisigV0State       _Link__MultisigV0State__Prototype
-	Link__MultisigV0State__Repr _Link__MultisigV0State__ReprPrototype
-	Link__MultisigV0Transaction       _Link__MultisigV0Transaction__Prototype
-	Link__MultisigV0Transaction__Repr _Link__MultisigV0Transaction__ReprPrototype
-	Link__MultisigV3State       _Link__MultisigV3State__Prototype
-	Link__MultisigV3State__Repr _Link__MultisigV3State__ReprPrototype
-	Link__MultisigV3Transaction       _Link__MultisigV3Transaction__Prototype
-	Link__MultisigV3Transaction__Repr _Link__MultisigV3Transaction__ReprPrototype
-	Link__PaychV0LaneState       _Link__PaychV0LaneState__Prototype
-	Link__PaychV0LaneState__Repr _Link__PaychV0LaneState__ReprPrototype
-	Link__PaychV0State       _Link__PaychV0State__Prototype
-	Link__PaychV0State__Repr _Link__PaychV0State__ReprPrototype
-	Link__PaychV3LaneState       _Link__PaychV3LaneState__Prototype
-	Link__PaychV3LaneState__Repr _Link__PaychV3LaneState__ReprPrototype
-	Link__PaychV3State       _Link__PaychV3State__Prototype
-	Link__PaychV3State__Repr _Link__PaychV3State__ReprPrototype
-	Link__PowerV0Claim       _Link__PowerV0Claim__Prototype
-	Link__PowerV0Claim__Repr _Link__PowerV0Claim__ReprPrototype
-	Link__PowerV0CronEvent       _Link__PowerV0CronEvent__Prototype
-	Link__PowerV0CronEvent__Repr _Link__PowerV0CronEvent__ReprPrototype
-	Link__PowerV0State       _Link__PowerV0State__Prototype
-	Link__PowerV0State__Repr _Link__PowerV0State__ReprPrototype
-	Link__PowerV2Claim       _Link__PowerV2Claim__Prototype
-	Link__PowerV2Claim__Repr _Link__PowerV2Claim__ReprPrototype
-	Link__PowerV2State       _Link__PowerV2State__Prototype
-	Link__PowerV2State__Repr _Link__PowerV2State__ReprPrototype
-	Link__PowerV3Claim       _Link__PowerV3Claim__Prototype
-	Link__PowerV3Claim__Repr _Link__PowerV3Claim__ReprPrototype
-	Link__PowerV3CronEvent       _Link__PowerV3CronEvent__Prototype
-	Link__PowerV3CronEvent__Repr _Link__PowerV3CronEvent__ReprPrototype
-	Link__PowerV3State       _Link__PowerV3State__Prototype
-	Link__PowerV3State__Repr _Link__PowerV3State__ReprPrototype
-	Link__RewardV0State       _Link__RewardV0State__Prototype
-	Link__RewardV0State__Repr _Link__RewardV0State__ReprPrototype
-	Link__RewardV2State       _Link__RewardV2State__Prototype
-	Link__RewardV2State__Repr _Link__RewardV2State__ReprPrototype
-	Link__V3BalanceTable       _Link__V3BalanceTable__Prototype
-	Link__V3BalanceTable__Repr _Link__V3BalanceTable__ReprPrototype
-	Link__V3DataCap       _Link__V3DataCap__Prototype
-	Link__V3DataCap__Repr _Link__V3DataCap__ReprPrototype
-	Link__V3MapActorID       _Link__V3MapActorID__Prototype
-	Link__V3MapActorID__Repr _Link__V3MapActorID__ReprPrototype
-	Link__VerifregV0State       _Link__VerifregV0State__Prototype
-	Link__VerifregV0State__Repr _Link__VerifregV0State__ReprPrototype
-	Link__VerifregV3State       _Link__VerifregV3State__Prototype
-	Link__VerifregV3State__Repr _Link__VerifregV3State__ReprPrototype
-	List       _List__Prototype
-	List__Repr _List__ReprPrototype
-	List__Address       _List__Address__Prototype
-	List__Address__Repr _List__Address__ReprPrototype
-	List__ClientDealProposal       _List__ClientDealProposal__Prototype
-	List__ClientDealProposal__Repr _List__ClientDealProposal__ReprPrototype
-	List__CronV0Entry       _List__CronV0Entry__Prototype
-	List__CronV0Entry__Repr _List__CronV0Entry__ReprPrototype
-	List__DealID       _List__DealID__Prototype
-	List__DealID__Repr _List__DealID__ReprPrototype
-	List__Link       _List__Link__Prototype
-	List__Link__Repr _List__Link__ReprPrototype
-	List__LinkLotusMessage       _List__LinkLotusMessage__Prototype
-	List__LinkLotusMessage__Repr _List__LinkLotusMessage__ReprPrototype
-	List__LotusBeaconEntry       _List__LotusBeaconEntry__Prototype
-	List__LotusBeaconEntry__Repr _List__LotusBeaconEntry__ReprPrototype
-	List__Merge       _List__Merge__Prototype
-	List__Merge__Repr _List__Merge__ReprPrototype
-	List__MinerExpirationExtend       _List__MinerExpirationExtend__Prototype
-	List__MinerExpirationExtend__Repr _List__MinerExpirationExtend__ReprPrototype
-	List__MinerPoStProof       _List__MinerPoStProof__Prototype
-	List__MinerPoStProof__Repr _List__MinerPoStProof__ReprPrototype
-	List__MinerPostPartition       _List__MinerPostPartition__Prototype
-	List__MinerPostPartition__Repr _List__MinerPostPartition__ReprPrototype
-	List__MinerTerminationDecl       _List__MinerTerminationDecl__Prototype
-	List__MinerTerminationDecl__Repr _List__MinerTerminationDecl__ReprPrototype
-	List__MinerV0DeadlineLink       _List__MinerV0DeadlineLink__Prototype
-	List__MinerV0DeadlineLink__Repr _List__MinerV0DeadlineLink__ReprPrototype
-	List__MinerV0VestingFund       _List__MinerV0VestingFund__Prototype
-	List__MinerV0VestingFund__Repr _List__MinerV0VestingFund__ReprPrototype
-	List__MinerV2DeadlineLink       _List__MinerV2DeadlineLink__Prototype
-	List__MinerV2DeadlineLink__Repr _List__MinerV2DeadlineLink__ReprPrototype
-	List__MinerV3DeadlineLink       _List__MinerV3DeadlineLink__Prototype
-	List__MinerV3DeadlineLink__Repr _List__MinerV3DeadlineLink__ReprPrototype
-	List__Multiaddrs       _List__Multiaddrs__Prototype
-	List__Multiaddrs__Repr _List__Multiaddrs__ReprPrototype
-	List__PoStProof       _List__PoStProof__Prototype
-	List__PoStProof__Repr _List__PoStProof__ReprPrototype
-	List__SectorNumber       _List__SectorNumber__Prototype
-	List__SectorNumber__Repr _List__SectorNumber__ReprPrototype
-	LotusActorV2Head       _LotusActorV2Head__Prototype
-	LotusActorV2Head__Repr _LotusActorV2Head__ReprPrototype
-	LotusActorV3Head       _LotusActorV3Head__Prototype
-	LotusActorV3Head__Repr _LotusActorV3Head__ReprPrototype
-	LotusActorV4Head       _LotusActorV4Head__Prototype
-	LotusActorV4Head__Repr _LotusActorV4Head__ReprPrototype
-	LotusActors       _LotusActors__Prototype
-	LotusActors__Repr _LotusActors__ReprPrototype
-	LotusBeaconEntry       _LotusBeaconEntry__Prototype
-	LotusBeaconEntry__Repr _LotusBeaconEntry__ReprPrototype
-	LotusBlockHeader       _LotusBlockHeader__Prototype
-	LotusBlockHeader__Repr _LotusBlockHeader__ReprPrototype
-	LotusElectionProof       _LotusElectionProof__Prototype
-	LotusElectionProof__Repr _LotusElectionProof__ReprPrototype
-	LotusMessage       _LotusMessage__Prototype
-	LotusMessage__Repr _LotusMessage__ReprPrototype
-	LotusMessageV2Params       _LotusMessageV2Params__Prototype
-	LotusMessageV2Params__Repr _LotusMessageV2Params__ReprPrototype
-	LotusMsgMeta       _LotusMsgMeta__Prototype
-	LotusMsgMeta__Repr _LotusMsgMeta__ReprPrototype
-	LotusSignedMessage       _LotusSignedMessage__Prototype
-	LotusSignedMessage__Repr _LotusSignedMessage__ReprPrototype
-	LotusStateRoot       _LotusStateRoot__Prototype
-	LotusStateRoot__Repr _LotusStateRoot__ReprPrototype
-	LotusTicket       _LotusTicket__Prototype
-	LotusTicket__Repr _LotusTicket__ReprPrototype
-	Map       _Map__Prototype
-	Map__Repr _Map__ReprPrototype
-	MapV3__BitField       _MapV3__BitField__Prototype
-	MapV3__BitField__Repr _MapV3__BitField__ReprPrototype
-	MapV3__List__DealID       _MapV3__List__DealID__Prototype
-	MapV3__List__DealID__Repr _MapV3__List__DealID__ReprPrototype
-	Map__ActorID       _Map__ActorID__Prototype
-	Map__ActorID__Repr _Map__ActorID__ReprPrototype
-	Map__BalanceTable       _Map__BalanceTable__Prototype
-	Map__BalanceTable__Repr _Map__BalanceTable__ReprPrototype
-	Map__BitField       _Map__BitField__Prototype
-	Map__BitField__Repr _Map__BitField__ReprPrototype
-	Map__DataCap       _Map__DataCap__Prototype
-	Map__DataCap__Repr _Map__DataCap__ReprPrototype
-	Map__List__DealID       _Map__List__DealID__Prototype
-	Map__List__DealID__Repr _Map__List__DealID__ReprPrototype
-	Map__LotusActors       _Map__LotusActors__Prototype
-	Map__LotusActors__Repr _Map__LotusActors__ReprPrototype
-	Map__MarketV0DealProposal       _Map__MarketV0DealProposal__Prototype
-	Map__MarketV0DealProposal__Repr _Map__MarketV0DealProposal__ReprPrototype
-	Map__MarketV0DealState       _Map__MarketV0DealState__Prototype
-	Map__MarketV0DealState__Repr _Map__MarketV0DealState__ReprPrototype
-	Map__MarketV0RawDealProposal       _Map__MarketV0RawDealProposal__Prototype
-	Map__MarketV0RawDealProposal__Repr _Map__MarketV0RawDealProposal__ReprPrototype
-	Map__MarketV2DealProposal       _Map__MarketV2DealProposal__Prototype
-	Map__MarketV2DealProposal__Repr _Map__MarketV2DealProposal__ReprPrototype
-	Map__MarketV2RawDealProposal       _Map__MarketV2RawDealProposal__Prototype
-	Map__MarketV2RawDealProposal__Repr _Map__MarketV2RawDealProposal__ReprPrototype
-	Map__MarketV3DealProposal       _Map__MarketV3DealProposal__Prototype
-	Map__MarketV3DealProposal__Repr _Map__MarketV3DealProposal__ReprPrototype
-	Map__MarketV3DealState       _Map__MarketV3DealState__Prototype
-	Map__MarketV3DealState__Repr _Map__MarketV3DealState__ReprPrototype
-	Map__MarketV3RawDealProposal       _Map__MarketV3RawDealProposal__Prototype
-	Map__MarketV3RawDealProposal__Repr _Map__MarketV3RawDealProposal__ReprPrototype
-	Map__MinerV0ExpirationSet       _Map__MinerV0ExpirationSet__Prototype
-	Map__MinerV0ExpirationSet__Repr _Map__MinerV0ExpirationSet__ReprPrototype
-	Map__MinerV0Partition       _Map__MinerV0Partition__Prototype
-	Map__MinerV0Partition__Repr _Map__MinerV0Partition__ReprPrototype
-	Map__MinerV2Partition       _Map__MinerV2Partition__Prototype
-	Map__MinerV2Partition__Repr _Map__MinerV2Partition__ReprPrototype
-	Map__MinerV3ExpirationSet       _Map__MinerV3ExpirationSet__Prototype
-	Map__MinerV3ExpirationSet__Repr _Map__MinerV3ExpirationSet__ReprPrototype
-	Map__MinerV3Partition       _Map__MinerV3Partition__Prototype
-	Map__MinerV3Partition__Repr _Map__MinerV3Partition__ReprPrototype
-	Map__MultisigV0Transaction       _Map__MultisigV0Transaction__Prototype
-	Map__MultisigV0Transaction__Repr _Map__MultisigV0Transaction__ReprPrototype
-	Map__MultisigV3Transaction       _Map__MultisigV3Transaction__Prototype
-	Map__MultisigV3Transaction__Repr _Map__MultisigV3Transaction__ReprPrototype
-	Map__PaychV0LaneState       _Map__PaychV0LaneState__Prototype
-	Map__PaychV0LaneState__Repr _Map__PaychV0LaneState__ReprPrototype
-	Map__PaychV3LaneState       _Map__PaychV3LaneState__Prototype
-	Map__PaychV3LaneState__Repr _Map__PaychV3LaneState__ReprPrototype
-	Map__PowerV0Claim       _Map__PowerV0Claim__Prototype
-	Map__PowerV0Claim__Repr _Map__PowerV0Claim__ReprPrototype
-	Map__PowerV0CronEvent       _Map__PowerV0CronEvent__Prototype
-	Map__PowerV0CronEvent__Repr _Map__PowerV0CronEvent__ReprPrototype
-	Map__PowerV2Claim       _Map__PowerV2Claim__Prototype
-	Map__PowerV2Claim__Repr _Map__PowerV2Claim__ReprPrototype
-	Map__PowerV3Claim       _Map__PowerV3Claim__Prototype
-	Map__PowerV3Claim__Repr _Map__PowerV3Claim__ReprPrototype
-	Map__PowerV3CronEvent       _Map__PowerV3CronEvent__Prototype
-	Map__PowerV3CronEvent__Repr _Map__PowerV3CronEvent__ReprPrototype
-	Map__SectorOnChainInfo       _Map__SectorOnChainInfo__Prototype
-	Map__SectorOnChainInfo__Repr _Map__SectorOnChainInfo__ReprPrototype
-	Map__SectorPreCommitOnChainInfo       _Map__SectorPreCommitOnChainInfo__Prototype
-	Map__SectorPreCommitOnChainInfo__Repr _Map__SectorPreCommitOnChainInfo__ReprPrototype
-	Map__SectorV2OnChainInfo       _Map__SectorV2OnChainInfo__Prototype
-	Map__SectorV2OnChainInfo__Repr _Map__SectorV2OnChainInfo__ReprPrototype
-	Map__SectorV3OnChainInfo       _Map__SectorV3OnChainInfo__Prototype
-	Map__SectorV3OnChainInfo__Repr _Map__SectorV3OnChainInfo__ReprPrototype
-	Map__V3ActorID       _Map__V3ActorID__Prototype
-	Map__V3ActorID__Repr _Map__V3ActorID__ReprPrototype
-	Map__V3BalanceTable       _Map__V3BalanceTable__Prototype
-	Map__V3BalanceTable__Repr _Map__V3BalanceTable__ReprPrototype
-	Map__V3DataCap       _Map__V3DataCap__Prototype
-	Map__V3DataCap__Repr _Map__V3DataCap__ReprPrototype
-	Map__V3SectorPreCommitOnChainInfo       _Map__V3SectorPreCommitOnChainInfo__Prototype
-	Map__V3SectorPreCommitOnChainInfo__Repr _Map__V3SectorPreCommitOnChainInfo__ReprPrototype
-	Mapv3__LotusActors       _Mapv3__LotusActors__Prototype
-	Mapv3__LotusActors__Repr _Mapv3__LotusActors__ReprPrototype
-	MarketClientDealProposal       _MarketClientDealProposal__Prototype
-	MarketClientDealProposal__Repr _MarketClientDealProposal__ReprPrototype
-	MarketV0DealProposal       _MarketV0DealProposal__Prototype
-	MarketV0DealProposal__Repr _MarketV0DealProposal__ReprPrototype
-	MarketV0DealState       _MarketV0DealState__Prototype
-	MarketV0DealState__Repr _MarketV0DealState__ReprPrototype
-	MarketV0State       _MarketV0State__Prototype
-	MarketV0State__Repr _MarketV0State__ReprPrototype
-	MarketV2DealProposal       _MarketV2DealProposal__Prototype
-	MarketV2DealProposal__Repr _MarketV2DealProposal__ReprPrototype
-	MarketV2State       _MarketV2State__Prototype
-	MarketV2State__Repr _MarketV2State__ReprPrototype
-	MarketV3State       _MarketV3State__Prototype
-	MarketV3State__Repr _MarketV3State__ReprPrototype
-	Merge       _Merge__Prototype
-	Merge__Repr _Merge__ReprPrototype
-	MessageParamsInitExecParams       _MessageParamsInitExecParams__Prototype
-	MessageParamsInitExecParams__Repr _MessageParamsInitExecParams__ReprPrototype
-	MessageParamsMarketActivateDeals       _MessageParamsMarketActivateDeals__Prototype
-	MessageParamsMarketActivateDeals__Repr _MessageParamsMarketActivateDeals__ReprPrototype
-	MessageParamsMarketComputeCommitment       _MessageParamsMarketComputeCommitment__Prototype
-	MessageParamsMarketComputeCommitment__Repr _MessageParamsMarketComputeCommitment__ReprPrototype
-	MessageParamsMarketPublishDeals       _MessageParamsMarketPublishDeals__Prototype
-	MessageParamsMarketPublishDeals__Repr _MessageParamsMarketPublishDeals__ReprPrototype
-	MessageParamsMarketTerminateDeals       _MessageParamsMarketTerminateDeals__Prototype
-	MessageParamsMarketTerminateDeals__Repr _MessageParamsMarketTerminateDeals__ReprPrototype
-	MessageParamsMarketVerifyDeals       _MessageParamsMarketVerifyDeals__Prototype
-	MessageParamsMarketVerifyDeals__Repr _MessageParamsMarketVerifyDeals__ReprPrototype
-	MessageParamsMarketWithdrawBalance       _MessageParamsMarketWithdrawBalance__Prototype
-	MessageParamsMarketWithdrawBalance__Repr _MessageParamsMarketWithdrawBalance__ReprPrototype
-	MessageParamsMinerChangeAddress       _MessageParamsMinerChangeAddress__Prototype
-	MessageParamsMinerChangeAddress__Repr _MessageParamsMinerChangeAddress__ReprPrototype
-	MessageParamsMinerChangeMultiaddrs       _MessageParamsMinerChangeMultiaddrs__Prototype
-	MessageParamsMinerChangeMultiaddrs__Repr _MessageParamsMinerChangeMultiaddrs__ReprPrototype
-	MessageParamsMinerChangePeerID       _MessageParamsMinerChangePeerID__Prototype
-	MessageParamsMinerChangePeerID__Repr _MessageParamsMinerChangePeerID__ReprPrototype
-	MessageParamsMinerCheckSectorProven       _MessageParamsMinerCheckSectorProven__Prototype
-	MessageParamsMinerCheckSectorProven__Repr _MessageParamsMinerCheckSectorProven__ReprPrototype
-	MessageParamsMinerCompactPartitions       _MessageParamsMinerCompactPartitions__Prototype
-	MessageParamsMinerCompactPartitions__Repr _MessageParamsMinerCompactPartitions__ReprPrototype
-	MessageParamsMinerCompactSectorNumbers       _MessageParamsMinerCompactSectorNumbers__Prototype
-	MessageParamsMinerCompactSectorNumbers__Repr _MessageParamsMinerCompactSectorNumbers__ReprPrototype
-	MessageParamsMinerConfirmSectorProofs       _MessageParamsMinerConfirmSectorProofs__Prototype
-	MessageParamsMinerConfirmSectorProofs__Repr _MessageParamsMinerConfirmSectorProofs__ReprPrototype
-	MessageParamsMinerConstructor       _MessageParamsMinerConstructor__Prototype
-	MessageParamsMinerConstructor__Repr _MessageParamsMinerConstructor__ReprPrototype
-	MessageParamsMinerDeclareFaults       _MessageParamsMinerDeclareFaults__Prototype
-	MessageParamsMinerDeclareFaults__Repr _MessageParamsMinerDeclareFaults__ReprPrototype
+	AccountV0State                                 _AccountV0State__Prototype
+	AccountV0State__Repr                           _AccountV0State__ReprPrototype
+	ActorID                                        _ActorID__Prototype
+	ActorID__Repr                                  _ActorID__ReprPrototype
+	Address                                        _Address__Prototype
+	Address__Repr                                  _Address__ReprPrototype
+	Any                                            _Any__Prototype
+	Any__Repr                                      _Any__ReprPrototype
+	ApplyRewardParams                              _ApplyRewardParams__Prototype
+	ApplyRewardParams__Repr                        _ApplyRewardParams__ReprPrototype
+	BigInt                                         _BigInt__Prototype
+	BigInt__Repr                                   _BigInt__ReprPrototype
+	BitField                                       _BitField__Prototype
+	BitField__Repr                                 _BitField__ReprPrototype
+	Bool                                           _Bool__Prototype
+	Bool__Repr                                     _Bool__ReprPrototype
+	Bytes                                          _Bytes__Prototype
+	Bytes__Repr                                    _Bytes__ReprPrototype
+	ChainEpoch                                     _ChainEpoch__Prototype
+	ChainEpoch__Repr                               _ChainEpoch__ReprPrototype
+	CidString                                      _CidString__Prototype
+	CidString__Repr                                _CidString__ReprPrototype
+	CronV0Entry                                    _CronV0Entry__Prototype
+	CronV0Entry__Repr                              _CronV0Entry__ReprPrototype
+	CronV0State                                    _CronV0State__Prototype
+	CronV0State__Repr                              _CronV0State__ReprPrototype
+	DealID                                         _DealID__Prototype
+	DealID__Repr                                   _DealID__ReprPrototype
+	Float                                          _Float__Prototype
+	Float__Repr                                    _Float__ReprPrototype
+	InitV0State                                    _InitV0State__Prototype
+	InitV0State__Repr                              _InitV0State__ReprPrototype
+	InitV3State                                    _InitV3State__Prototype
+	InitV3State__Repr                              _InitV3State__ReprPrototype
+	Int                                            _Int__Prototype
+	Int__Repr                                      _Int__ReprPrototype
+	Link                                           _Link__Prototype
+	Link__Repr                                     _Link__ReprPrototype
+	Link__AccountV0State                           _Link__AccountV0State__Prototype
+	Link__AccountV0State__Repr                     _Link__AccountV0State__ReprPrototype
+	Link__BalanceTable                             _Link__BalanceTable__Prototype
+	Link__BalanceTable__Repr                       _Link__BalanceTable__ReprPrototype
+	Link__BitField                                 _Link__BitField__Prototype
+	Link__BitField__Repr                           _Link__BitField__ReprPrototype
+	Link__CronV0State                              _Link__CronV0State__Prototype
+	Link__CronV0State__Repr                        _Link__CronV0State__ReprPrototype
+	Link__DataCap                                  _Link__DataCap__Prototype
+	Link__DataCap__Repr                            _Link__DataCap__ReprPrototype
+	Link__InitV0State                              _Link__InitV0State__Prototype
+	Link__InitV0State__Repr                        _Link__InitV0State__ReprPrototype
+	Link__InitV3State                              _Link__InitV3State__Prototype
+	Link__InitV3State__Repr                        _Link__InitV3State__ReprPrototype
+	Link__ListLotusMessage                         _Link__ListLotusMessage__Prototype
+	Link__ListLotusMessage__Repr                   _Link__ListLotusMessage__ReprPrototype
+	Link__LotusActorV2Head                         _Link__LotusActorV2Head__Prototype
+	Link__LotusActorV2Head__Repr                   _Link__LotusActorV2Head__ReprPrototype
+	Link__LotusActorV3Head                         _Link__LotusActorV3Head__Prototype
+	Link__LotusActorV3Head__Repr                   _Link__LotusActorV3Head__ReprPrototype
+	Link__LotusActorV4Head                         _Link__LotusActorV4Head__Prototype
+	Link__LotusActorV4Head__Repr                   _Link__LotusActorV4Head__ReprPrototype
+	Link__LotusActorV5Head                         _Link__LotusActorV5Head__Prototype
+	Link__LotusActorV5Head__Repr                   _Link__LotusActorV5Head__ReprPrototype
+	Link__LotusActors                              _Link__LotusActors__Prototype
+	Link__LotusActors__Repr                        _Link__LotusActors__ReprPrototype
+	Link__LotusMessage                             _Link__LotusMessage__Prototype
+	Link__LotusMessage__Repr                       _Link__LotusMessage__ReprPrototype
+	Link__LotusMsgMeta                             _Link__LotusMsgMeta__Prototype
+	Link__LotusMsgMeta__Repr                       _Link__LotusMsgMeta__ReprPrototype
+	Link__LotusStateRoot                           _Link__LotusStateRoot__Prototype
+	Link__LotusStateRoot__Repr                     _Link__LotusStateRoot__ReprPrototype
+	Link__MapActorID                               _Link__MapActorID__Prototype
+	Link__MapActorID__Repr                         _Link__MapActorID__ReprPrototype
+	Link__MarketV0DealProposal                     _Link__MarketV0DealProposal__Prototype
+	Link__MarketV0DealProposal__Repr               _Link__MarketV0DealProposal__ReprPrototype
+	Link__MarketV0DealState                        _Link__MarketV0DealState__Prototype
+	Link__MarketV0DealState__Repr                  _Link__MarketV0DealState__ReprPrototype
+	Link__MarketV0RawDealProposal                  _Link__MarketV0RawDealProposal__Prototype
+	Link__MarketV0RawDealProposal__Repr            _Link__MarketV0RawDealProposal__ReprPrototype
+	Link__MarketV0State                            _Link__MarketV0State__Prototype
+	Link__MarketV0State__Repr                      _Link__MarketV0State__ReprPrototype
+	Link__MarketV2DealProposal                     _Link__MarketV2DealProposal__Prototype
+	Link__MarketV2DealProposal__Repr               _Link__MarketV2DealProposal__ReprPrototype
+	Link__MarketV2RawDealProposal                  _Link__MarketV2RawDealProposal__Prototype
+	Link__MarketV2RawDealProposal__Repr            _Link__MarketV2RawDealProposal__ReprPrototype
+	Link__MarketV2State                            _Link__MarketV2State__Prototype
+	Link__MarketV2State__Repr                      _Link__MarketV2State__ReprPrototype
+	Link__MarketV3DealProposal                     _Link__MarketV3DealProposal__Prototype
+	Link__MarketV3DealProposal__Repr               _Link__MarketV3DealProposal__ReprPrototype
+	Link__MarketV3DealState                        _Link__MarketV3DealState__Prototype
+	Link__MarketV3DealState__Repr                  _Link__MarketV3DealState__ReprPrototype
+	Link__MarketV3MultimapDealID                   _Link__MarketV3MultimapDealID__Prototype
+	Link__MarketV3MultimapDealID__Repr             _Link__MarketV3MultimapDealID__ReprPrototype
+	Link__MarketV3RawDealProposal                  _Link__MarketV3RawDealProposal__Prototype
+	Link__MarketV3RawDealProposal__Repr            _Link__MarketV3RawDealProposal__ReprPrototype
+	Link__MarketV3State                            _Link__MarketV3State__Prototype
+	Link__MarketV3State__Repr                      _Link__MarketV3State__ReprPrototype
+	Link__MarketV5State                            _Link__MarketV5State__Prototype
+	Link__MarketV5State__Repr                      _Link__MarketV5State__ReprPrototype
+	Link__MinerV0Deadline                          _Link__MinerV0Deadline__Prototype
+	Link__MinerV0Deadline__Repr                    _Link__MinerV0Deadline__ReprPrototype
+	Link__MinerV0Deadlines                         _Link__MinerV0Deadlines__Prototype
+	Link__MinerV0Deadlines__Repr                   _Link__MinerV0Deadlines__ReprPrototype
+	Link__MinerV0ExpirationSet                     _Link__MinerV0ExpirationSet__Prototype
+	Link__MinerV0ExpirationSet__Repr               _Link__MinerV0ExpirationSet__ReprPrototype
+	Link__MinerV0Info                              _Link__MinerV0Info__Prototype
+	Link__MinerV0Info__Repr                        _Link__MinerV0Info__ReprPrototype
+	Link__MinerV0Partition                         _Link__MinerV0Partition__Prototype
+	Link__MinerV0Partition__Repr                   _Link__MinerV0Partition__ReprPrototype
+	Link__MinerV0SectorInfo                        _Link__MinerV0SectorInfo__Prototype
+	Link__MinerV0SectorInfo__Repr                  _Link__MinerV0SectorInfo__ReprPrototype
+	Link__MinerV0SectorPreCommits                  _Link__MinerV0SectorPreCommits__Prototype
+	Link__MinerV0SectorPreCommits__Repr            _Link__MinerV0SectorPreCommits__ReprPrototype
+	Link__MinerV0State                             _Link__MinerV0State__Prototype
+	Link__MinerV0State__Repr                       _Link__MinerV0State__ReprPrototype
+	Link__MinerV0VestingFunds                      _Link__MinerV0VestingFunds__Prototype
+	Link__MinerV0VestingFunds__Repr                _Link__MinerV0VestingFunds__ReprPrototype
+	Link__MinerV2Deadline                          _Link__MinerV2Deadline__Prototype
+	Link__MinerV2Deadline__Repr                    _Link__MinerV2Deadline__ReprPrototype
+	Link__MinerV2Deadlines                         _Link__MinerV2Deadlines__Prototype
+	Link__MinerV2Deadlines__Repr                   _Link__MinerV2Deadlines__ReprPrototype
+	Link__MinerV2Info                              _Link__MinerV2Info__Prototype
+	Link__MinerV2Info__Repr                        _Link__MinerV2Info__ReprPrototype
+	Link__MinerV2Partition                         _Link__MinerV2Partition__Prototype
+	Link__MinerV2Partition__Repr                   _Link__MinerV2Partition__ReprPrototype
+	Link__MinerV2SectorInfo                        _Link__MinerV2SectorInfo__Prototype
+	Link__MinerV2SectorInfo__Repr                  _Link__MinerV2SectorInfo__ReprPrototype
+	Link__MinerV2State                             _Link__MinerV2State__Prototype
+	Link__MinerV2State__Repr                       _Link__MinerV2State__ReprPrototype
+	Link__MinerV3Deadline                          _Link__MinerV3Deadline__Prototype
+	Link__MinerV3Deadline__Repr                    _Link__MinerV3Deadline__ReprPrototype
+	Link__MinerV3Deadlines                         _Link__MinerV3Deadlines__Prototype
+	Link__MinerV3Deadlines__Repr                   _Link__MinerV3Deadlines__ReprPrototype
+	Link__MinerV3ExpirationSet                     _Link__MinerV3ExpirationSet__Prototype
+	Link__MinerV3ExpirationSet__Repr               _Link__MinerV3ExpirationSet__ReprPrototype
+	Link__MinerV3Partition                         _Link__MinerV3Partition__Prototype
+	Link__MinerV3Partition__Repr                   _Link__MinerV3Partition__ReprPrototype
+	Link__MinerV3SectorInfo                        _Link__MinerV3SectorInfo__Prototype
+	Link__MinerV3SectorInfo__Repr                  _Link__MinerV3SectorInfo__ReprPrototype
+	Link__MinerV3SectorPreCommits                  _Link__MinerV3SectorPreCommits__Prototype
+	Link__MinerV3SectorPreCommits__Repr            _Link__MinerV3SectorPreCommits__ReprPrototype
+	Link__MinerV3State                             _Link__MinerV3State__Prototype
+	Link__MinerV3State__Repr                       _Link__MinerV3State__ReprPrototype
+	Link__MinerV4State                             _Link__MinerV4State__Prototype
+	Link__MinerV4State__Repr                       _Link__MinerV4State__ReprPrototype
+	Link__MinerV5State                             _Link__MinerV5State__Prototype
+	Link__MinerV5State__Repr                       _Link__MinerV5State__ReprPrototype
+	Link__MultimapDealID                           _Link__MultimapDealID__Prototype
+	Link__MultimapDealID__Repr                     _Link__MultimapDealID__ReprPrototype
+	Link__MultisigV0State                          _Link__MultisigV0State__Prototype
+	Link__MultisigV0State__Repr                    _Link__MultisigV0State__ReprPrototype
+	Link__MultisigV0Transaction                    _Link__MultisigV0Transaction__Prototype
+	Link__MultisigV0Transaction__Repr              _Link__MultisigV0Transaction__ReprPrototype
+	Link__MultisigV3State                          _Link__MultisigV3State__Prototype
+	Link__MultisigV3State__Repr                    _Link__MultisigV3State__ReprPrototype
+	Link__MultisigV3Transaction                    _Link__MultisigV3Transaction__Prototype
+	Link__MultisigV3Transaction__Repr              _Link__MultisigV3Transaction__ReprPrototype
+	Link__PaychV0LaneState                         _Link__PaychV0LaneState__Prototype
+	Link__PaychV0LaneState__Repr                   _Link__PaychV0LaneState__ReprPrototype
+	Link__PaychV0State                             _Link__PaychV0State__Prototype
+	Link__PaychV0State__Repr                       _Link__PaychV0State__ReprPrototype
+	Link__PaychV3LaneState                         _Link__PaychV3LaneState__Prototype
+	Link__PaychV3LaneState__Repr                   _Link__PaychV3LaneState__ReprPrototype
+	Link__PaychV3State                             _Link__PaychV3State__Prototype
+	Link__PaychV3State__Repr                       _Link__PaychV3State__ReprPrototype
+	Link__PowerV0Claim                             _Link__PowerV0Claim__Prototype
+	Link__PowerV0Claim__Repr                       _Link__PowerV0Claim__ReprPrototype
+	Link__PowerV0CronEvent                         _Link__PowerV0CronEvent__Prototype
+	Link__PowerV0CronEvent__Repr                   _Link__PowerV0CronEvent__ReprPrototype
+	Link__PowerV0State                             _Link__PowerV0State__Prototype
+	Link__PowerV0State__Repr                       _Link__PowerV0State__ReprPrototype
+	Link__PowerV2Claim                             _Link__PowerV2Claim__Prototype
+	Link__PowerV2Claim__Repr                       _Link__PowerV2Claim__ReprPrototype
+	Link__PowerV2State                             _Link__PowerV2State__Prototype
+	Link__PowerV2State__Repr                       _Link__PowerV2State__ReprPrototype
+	Link__PowerV3Claim                             _Link__PowerV3Claim__Prototype
+	Link__PowerV3Claim__Repr                       _Link__PowerV3Claim__ReprPrototype
+	Link__PowerV3CronEvent                         _Link__PowerV3CronEvent__Prototype
+	Link__PowerV3CronEvent__Repr                   _Link__PowerV3CronEvent__ReprPrototype
+	Link__PowerV3State                             _Link__PowerV3State__Prototype
+	Link__PowerV3State__Repr                       _Link__PowerV3State__ReprPrototype
+	Link__RewardV0State                            _Link__RewardV0State__Prototype
+	Link__RewardV0State__Repr                      _Link__RewardV0State__ReprPrototype
+	Link__RewardV2State                            _Link__RewardV2State__Prototype
+	Link__RewardV2State__Repr                      _Link__RewardV2State__ReprPrototype
+	Link__V3BalanceTable                           _Link__V3BalanceTable__Prototype
+	Link__V3BalanceTable__Repr                     _Link__V3BalanceTable__ReprPrototype
+	Link__V3DataCap                                _Link__V3DataCap__Prototype
+	Link__V3DataCap__Repr                          _Link__V3DataCap__ReprPrototype
+	Link__V3MapActorID                             _Link__V3MapActorID__Prototype
+	Link__V3MapActorID__Repr                       _Link__V3MapActorID__ReprPrototype
+	Link__VerifregV0State                          _Link__VerifregV0State__Prototype
+	Link__VerifregV0State__Repr                    _Link__VerifregV0State__ReprPrototype
+	Link__VerifregV3State                          _Link__VerifregV3State__Prototype
+	Link__VerifregV3State__Repr                    _Link__VerifregV3State__ReprPrototype
+	List                                           _List__Prototype
+	List__Repr                                     _List__ReprPrototype
+	List__Address                                  _List__Address__Prototype
+	List__Address__Repr                            _List__Address__ReprPrototype
+	List__ClientDealProposal                       _List__ClientDealProposal__Prototype
+	List__ClientDealProposal__Repr                 _List__ClientDealProposal__ReprPrototype
+	List__CronV0Entry                              _List__CronV0Entry__Prototype
+	List__CronV0Entry__Repr                        _List__CronV0Entry__ReprPrototype
+	List__DealID                                   _List__DealID__Prototype
+	List__DealID__Repr                             _List__DealID__ReprPrototype
+	List__Link                                     _List__Link__Prototype
+	List__Link__Repr                               _List__Link__ReprPrototype
+	List__LinkLotusMessage                         _List__LinkLotusMessage__Prototype
+	List__LinkLotusMessage__Repr                   _List__LinkLotusMessage__ReprPrototype
+	List__LotusBeaconEntry                         _List__LotusBeaconEntry__Prototype
+	List__LotusBeaconEntry__Repr                   _List__LotusBeaconEntry__ReprPrototype
+	List__Merge                                    _List__Merge__Prototype
+	List__Merge__Repr                              _List__Merge__ReprPrototype
+	List__MinerExpirationExtend                    _List__MinerExpirationExtend__Prototype
+	List__MinerExpirationExtend__Repr              _List__MinerExpirationExtend__ReprPrototype
+	List__MinerPoStProof                           _List__MinerPoStProof__Prototype
+	List__MinerPoStProof__Repr                     _List__MinerPoStProof__ReprPrototype
+	List__MinerPostPartition                       _List__MinerPostPartition__Prototype
+	List__MinerPostPartition__Repr                 _List__MinerPostPartition__ReprPrototype
+	List__MinerTerminationDecl                     _List__MinerTerminationDecl__Prototype
+	List__MinerTerminationDecl__Repr               _List__MinerTerminationDecl__ReprPrototype
+	List__MinerV0DeadlineLink                      _List__MinerV0DeadlineLink__Prototype
+	List__MinerV0DeadlineLink__Repr                _List__MinerV0DeadlineLink__ReprPrototype
+	List__MinerV0SectorPreCommitInfo               _List__MinerV0SectorPreCommitInfo__Prototype
+	List__MinerV0SectorPreCommitInfo__Repr         _List__MinerV0SectorPreCommitInfo__ReprPrototype
+	List__MinerV0VestingFund                       _List__MinerV0VestingFund__Prototype
+	List__MinerV0VestingFund__Repr                 _List__MinerV0VestingFund__ReprPrototype
+	List__MinerV2DeadlineLink                      _List__MinerV2DeadlineLink__Prototype
+	List__MinerV2DeadlineLink__Repr                _List__MinerV2DeadlineLink__ReprPrototype
+	List__MinerV3DeadlineLink                      _List__MinerV3DeadlineLink__Prototype
+	List__MinerV3DeadlineLink__Repr                _List__MinerV3DeadlineLink__ReprPrototype
+	List__Multiaddrs                               _List__Multiaddrs__Prototype
+	List__Multiaddrs__Repr                         _List__Multiaddrs__ReprPrototype
+	List__PoStProof                                _List__PoStProof__Prototype
+	List__PoStProof__Repr                          _List__PoStProof__ReprPrototype
+	List__SectorDataSpec                           _List__SectorDataSpec__Prototype
+	List__SectorDataSpec__Repr                     _List__SectorDataSpec__ReprPrototype
+	List__SectorNumber                             _List__SectorNumber__Prototype
+	List__SectorNumber__Repr                       _List__SectorNumber__ReprPrototype
+	LotusActorV2Head                               _LotusActorV2Head__Prototype
+	LotusActorV2Head__Repr                         _LotusActorV2Head__ReprPrototype
+	LotusActorV3Head                               _LotusActorV3Head__Prototype
+	LotusActorV3Head__Repr                         _LotusActorV3Head__ReprPrototype
+	LotusActorV4Head                               _LotusActorV4Head__Prototype
+	LotusActorV4Head__Repr                         _LotusActorV4Head__ReprPrototype
+	LotusActorV5Head                               _LotusActorV5Head__Prototype
+	LotusActorV5Head__Repr                         _LotusActorV5Head__ReprPrototype
+	LotusActors                                    _LotusActors__Prototype
+	LotusActors__Repr                              _LotusActors__ReprPrototype
+	LotusBeaconEntry                               _LotusBeaconEntry__Prototype
+	LotusBeaconEntry__Repr                         _LotusBeaconEntry__ReprPrototype
+	LotusBlockHeader                               _LotusBlockHeader__Prototype
+	LotusBlockHeader__Repr                         _LotusBlockHeader__ReprPrototype
+	LotusElectionProof                             _LotusElectionProof__Prototype
+	LotusElectionProof__Repr                       _LotusElectionProof__ReprPrototype
+	LotusMessage                                   _LotusMessage__Prototype
+	LotusMessage__Repr                             _LotusMessage__ReprPrototype
+	LotusMessageV2Params                           _LotusMessageV2Params__Prototype
+	LotusMessageV2Params__Repr                     _LotusMessageV2Params__ReprPrototype
+	LotusMsgMeta                                   _LotusMsgMeta__Prototype
+	LotusMsgMeta__Repr                             _LotusMsgMeta__ReprPrototype
+	LotusSignedMessage                             _LotusSignedMessage__Prototype
+	LotusSignedMessage__Repr                       _LotusSignedMessage__ReprPrototype
+	LotusStateRoot                                 _LotusStateRoot__Prototype
+	LotusStateRoot__Repr                           _LotusStateRoot__ReprPrototype
+	LotusTicket                                    _LotusTicket__Prototype
+	LotusTicket__Repr                              _LotusTicket__ReprPrototype
+	Map                                            _Map__Prototype
+	Map__Repr                                      _Map__ReprPrototype
+	MapV3__BitField                                _MapV3__BitField__Prototype
+	MapV3__BitField__Repr                          _MapV3__BitField__ReprPrototype
+	MapV3__List__DealID                            _MapV3__List__DealID__Prototype
+	MapV3__List__DealID__Repr                      _MapV3__List__DealID__ReprPrototype
+	Map__ActorID                                   _Map__ActorID__Prototype
+	Map__ActorID__Repr                             _Map__ActorID__ReprPrototype
+	Map__BalanceTable                              _Map__BalanceTable__Prototype
+	Map__BalanceTable__Repr                        _Map__BalanceTable__ReprPrototype
+	Map__BitField                                  _Map__BitField__Prototype
+	Map__BitField__Repr                            _Map__BitField__ReprPrototype
+	Map__DataCap                                   _Map__DataCap__Prototype
+	Map__DataCap__Repr                             _Map__DataCap__ReprPrototype
+	Map__List__DealID                              _Map__List__DealID__Prototype
+	Map__List__DealID__Repr                        _Map__List__DealID__ReprPrototype
+	Map__LotusActors                               _Map__LotusActors__Prototype
+	Map__LotusActors__Repr                         _Map__LotusActors__ReprPrototype
+	Map__MarketV0DealProposal                      _Map__MarketV0DealProposal__Prototype
+	Map__MarketV0DealProposal__Repr                _Map__MarketV0DealProposal__ReprPrototype
+	Map__MarketV0DealState                         _Map__MarketV0DealState__Prototype
+	Map__MarketV0DealState__Repr                   _Map__MarketV0DealState__ReprPrototype
+	Map__MarketV0RawDealProposal                   _Map__MarketV0RawDealProposal__Prototype
+	Map__MarketV0RawDealProposal__Repr             _Map__MarketV0RawDealProposal__ReprPrototype
+	Map__MarketV2DealProposal                      _Map__MarketV2DealProposal__Prototype
+	Map__MarketV2DealProposal__Repr                _Map__MarketV2DealProposal__ReprPrototype
+	Map__MarketV2RawDealProposal                   _Map__MarketV2RawDealProposal__Prototype
+	Map__MarketV2RawDealProposal__Repr             _Map__MarketV2RawDealProposal__ReprPrototype
+	Map__MarketV3DealProposal                      _Map__MarketV3DealProposal__Prototype
+	Map__MarketV3DealProposal__Repr                _Map__MarketV3DealProposal__ReprPrototype
+	Map__MarketV3DealState                         _Map__MarketV3DealState__Prototype
+	Map__MarketV3DealState__Repr                   _Map__MarketV3DealState__ReprPrototype
+	Map__MarketV3RawDealProposal                   _Map__MarketV3RawDealProposal__Prototype
+	Map__MarketV3RawDealProposal__Repr             _Map__MarketV3RawDealProposal__ReprPrototype
+	Map__MinerV0ExpirationSet                      _Map__MinerV0ExpirationSet__Prototype
+	Map__MinerV0ExpirationSet__Repr                _Map__MinerV0ExpirationSet__ReprPrototype
+	Map__MinerV0Partition                          _Map__MinerV0Partition__Prototype
+	Map__MinerV0Partition__Repr                    _Map__MinerV0Partition__ReprPrototype
+	Map__MinerV2Partition                          _Map__MinerV2Partition__Prototype
+	Map__MinerV2Partition__Repr                    _Map__MinerV2Partition__ReprPrototype
+	Map__MinerV3ExpirationSet                      _Map__MinerV3ExpirationSet__Prototype
+	Map__MinerV3ExpirationSet__Repr                _Map__MinerV3ExpirationSet__ReprPrototype
+	Map__MinerV3Partition                          _Map__MinerV3Partition__Prototype
+	Map__MinerV3Partition__Repr                    _Map__MinerV3Partition__ReprPrototype
+	Map__MultisigV0Transaction                     _Map__MultisigV0Transaction__Prototype
+	Map__MultisigV0Transaction__Repr               _Map__MultisigV0Transaction__ReprPrototype
+	Map__MultisigV3Transaction                     _Map__MultisigV3Transaction__Prototype
+	Map__MultisigV3Transaction__Repr               _Map__MultisigV3Transaction__ReprPrototype
+	Map__PaychV0LaneState                          _Map__PaychV0LaneState__Prototype
+	Map__PaychV0LaneState__Repr                    _Map__PaychV0LaneState__ReprPrototype
+	Map__PaychV3LaneState                          _Map__PaychV3LaneState__Prototype
+	Map__PaychV3LaneState__Repr                    _Map__PaychV3LaneState__ReprPrototype
+	Map__PowerV0Claim                              _Map__PowerV0Claim__Prototype
+	Map__PowerV0Claim__Repr                        _Map__PowerV0Claim__ReprPrototype
+	Map__PowerV0CronEvent                          _Map__PowerV0CronEvent__Prototype
+	Map__PowerV0CronEvent__Repr                    _Map__PowerV0CronEvent__ReprPrototype
+	Map__PowerV2Claim                              _Map__PowerV2Claim__Prototype
+	Map__PowerV2Claim__Repr                        _Map__PowerV2Claim__ReprPrototype
+	Map__PowerV3Claim                              _Map__PowerV3Claim__Prototype
+	Map__PowerV3Claim__Repr                        _Map__PowerV3Claim__ReprPrototype
+	Map__PowerV3CronEvent                          _Map__PowerV3CronEvent__Prototype
+	Map__PowerV3CronEvent__Repr                    _Map__PowerV3CronEvent__ReprPrototype
+	Map__SectorOnChainInfo                         _Map__SectorOnChainInfo__Prototype
+	Map__SectorOnChainInfo__Repr                   _Map__SectorOnChainInfo__ReprPrototype
+	Map__SectorPreCommitOnChainInfo                _Map__SectorPreCommitOnChainInfo__Prototype
+	Map__SectorPreCommitOnChainInfo__Repr          _Map__SectorPreCommitOnChainInfo__ReprPrototype
+	Map__SectorV2OnChainInfo                       _Map__SectorV2OnChainInfo__Prototype
+	Map__SectorV2OnChainInfo__Repr                 _Map__SectorV2OnChainInfo__ReprPrototype
+	Map__SectorV3OnChainInfo                       _Map__SectorV3OnChainInfo__Prototype
+	Map__SectorV3OnChainInfo__Repr                 _Map__SectorV3OnChainInfo__ReprPrototype
+	Map__V3ActorID                                 _Map__V3ActorID__Prototype
+	Map__V3ActorID__Repr                           _Map__V3ActorID__ReprPrototype
+	Map__V3BalanceTable                            _Map__V3BalanceTable__Prototype
+	Map__V3BalanceTable__Repr                      _Map__V3BalanceTable__ReprPrototype
+	Map__V3DataCap                                 _Map__V3DataCap__Prototype
+	Map__V3DataCap__Repr                           _Map__V3DataCap__ReprPrototype
+	Map__V3SectorPreCommitOnChainInfo              _Map__V3SectorPreCommitOnChainInfo__Prototype
+	Map__V3SectorPreCommitOnChainInfo__Repr        _Map__V3SectorPreCommitOnChainInfo__ReprPrototype
+	Mapv3__LotusActors                             _Mapv3__LotusActors__Prototype
+	Mapv3__LotusActors__Repr                       _Mapv3__LotusActors__ReprPrototype
+	MarketClientDealProposal                       _MarketClientDealProposal__Prototype
+	MarketClientDealProposal__Repr                 _MarketClientDealProposal__ReprPrototype
+	MarketV0DealProposal                           _MarketV0DealProposal__Prototype
+	MarketV0DealProposal__Repr                     _MarketV0DealProposal__ReprPrototype
+	MarketV0DealState                              _MarketV0DealState__Prototype
+	MarketV0DealState__Repr                        _MarketV0DealState__ReprPrototype
+	MarketV0State                                  _MarketV0State__Prototype
+	MarketV0State__Repr                            _MarketV0State__ReprPrototype
+	MarketV2DealProposal                           _MarketV2DealProposal__Prototype
+	MarketV2DealProposal__Repr                     _MarketV2DealProposal__ReprPrototype
+	MarketV2State                                  _MarketV2State__Prototype
+	MarketV2State__Repr                            _MarketV2State__ReprPrototype
+	MarketV3State                                  _MarketV3State__Prototype
+	MarketV3State__Repr                            _MarketV3State__ReprPrototype
+	MarketV5State                                  _MarketV5State__Prototype
+	MarketV5State__Repr                            _MarketV5State__ReprPrototype
+	Merge                                          _Merge__Prototype
+	Merge__Repr                                    _Merge__ReprPrototype
+	MessageParamsInitExecParams                    _MessageParamsInitExecParams__Prototype
+	MessageParamsInitExecParams__Repr              _MessageParamsInitExecParams__ReprPrototype
+	MessageParamsMarketActivateDeals               _MessageParamsMarketActivateDeals__Prototype
+	MessageParamsMarketActivateDeals__Repr         _MessageParamsMarketActivateDeals__ReprPrototype
+	MessageParamsMarketComputeCommitment           _MessageParamsMarketComputeCommitment__Prototype
+	MessageParamsMarketComputeCommitment__Repr     _MessageParamsMarketComputeCommitment__ReprPrototype
+	MessageParamsMarketPublishDeals                _MessageParamsMarketPublishDeals__Prototype
+	MessageParamsMarketPublishDeals__Repr          _MessageParamsMarketPublishDeals__ReprPrototype
+	MessageParamsMarketTerminateDeals              _MessageParamsMarketTerminateDeals__Prototype
+	MessageParamsMarketTerminateDeals__Repr        _MessageParamsMarketTerminateDeals__ReprPrototype
+	MessageParamsMarketV5ComputeCommitment         _MessageParamsMarketV5ComputeCommitment__Prototype
+	MessageParamsMarketV5ComputeCommitment__Repr   _MessageParamsMarketV5ComputeCommitment__ReprPrototype
+	MessageParamsMarketVerifyDeals                 _MessageParamsMarketVerifyDeals__Prototype
+	MessageParamsMarketVerifyDeals__Repr           _MessageParamsMarketVerifyDeals__ReprPrototype
+	MessageParamsMarketWithdrawBalance             _MessageParamsMarketWithdrawBalance__Prototype
+	MessageParamsMarketWithdrawBalance__Repr       _MessageParamsMarketWithdrawBalance__ReprPrototype
+	MessageParamsMinerChangeAddress                _MessageParamsMinerChangeAddress__Prototype
+	MessageParamsMinerChangeAddress__Repr          _MessageParamsMinerChangeAddress__ReprPrototype
+	MessageParamsMinerChangeMultiaddrs             _MessageParamsMinerChangeMultiaddrs__Prototype
+	MessageParamsMinerChangeMultiaddrs__Repr       _MessageParamsMinerChangeMultiaddrs__ReprPrototype
+	MessageParamsMinerChangePeerID                 _MessageParamsMinerChangePeerID__Prototype
+	MessageParamsMinerChangePeerID__Repr           _MessageParamsMinerChangePeerID__ReprPrototype
+	MessageParamsMinerCheckSectorProven            _MessageParamsMinerCheckSectorProven__Prototype
+	MessageParamsMinerCheckSectorProven__Repr      _MessageParamsMinerCheckSectorProven__ReprPrototype
+	MessageParamsMinerCompactPartitions            _MessageParamsMinerCompactPartitions__Prototype
+	MessageParamsMinerCompactPartitions__Repr      _MessageParamsMinerCompactPartitions__ReprPrototype
+	MessageParamsMinerCompactSectorNumbers         _MessageParamsMinerCompactSectorNumbers__Prototype
+	MessageParamsMinerCompactSectorNumbers__Repr   _MessageParamsMinerCompactSectorNumbers__ReprPrototype
+	MessageParamsMinerConfirmSectorProofs          _MessageParamsMinerConfirmSectorProofs__Prototype
+	MessageParamsMinerConfirmSectorProofs__Repr    _MessageParamsMinerConfirmSectorProofs__ReprPrototype
+	MessageParamsMinerConstructor                  _MessageParamsMinerConstructor__Prototype
+	MessageParamsMinerConstructor__Repr            _MessageParamsMinerConstructor__ReprPrototype
+	MessageParamsMinerDeclareFaults                _MessageParamsMinerDeclareFaults__Prototype
+	MessageParamsMinerDeclareFaults__Repr          _MessageParamsMinerDeclareFaults__ReprPrototype
 	MessageParamsMinerDeclareFaultsRecovered       _MessageParamsMinerDeclareFaultsRecovered__Prototype
 	MessageParamsMinerDeclareFaultsRecovered__Repr _MessageParamsMinerDeclareFaultsRecovered__ReprPrototype
-	MessageParamsMinerDeferredCron       _MessageParamsMinerDeferredCron__Prototype
-	MessageParamsMinerDeferredCron__Repr _MessageParamsMinerDeferredCron__ReprPrototype
+	MessageParamsMinerDeferredCron                 _MessageParamsMinerDeferredCron__Prototype
+	MessageParamsMinerDeferredCron__Repr           _MessageParamsMinerDeferredCron__ReprPrototype
+	MessageParamsMinerDisputeWindowedPoSt          _MessageParamsMinerDisputeWindowedPoSt__Prototype
+	MessageParamsMinerDisputeWindowedPoSt__Repr    _MessageParamsMinerDisputeWindowedPoSt__ReprPrototype
 	MessageParamsMinerExtendSectorExpiration       _MessageParamsMinerExtendSectorExpiration__Prototype
 	MessageParamsMinerExtendSectorExpiration__Repr _MessageParamsMinerExtendSectorExpiration__ReprPrototype
-	MessageParamsMinerProveCommitSector       _MessageParamsMinerProveCommitSector__Prototype
-	MessageParamsMinerProveCommitSector__Repr _MessageParamsMinerProveCommitSector__ReprPrototype
-	MessageParamsMinerReportFault       _MessageParamsMinerReportFault__Prototype
-	MessageParamsMinerReportFault__Repr _MessageParamsMinerReportFault__ReprPrototype
-	MessageParamsMinerSubmitWindowedPoSt       _MessageParamsMinerSubmitWindowedPoSt__Prototype
-	MessageParamsMinerSubmitWindowedPoSt__Repr _MessageParamsMinerSubmitWindowedPoSt__ReprPrototype
-	MessageParamsMinerTerminateSectors       _MessageParamsMinerTerminateSectors__Prototype
-	MessageParamsMinerTerminateSectors__Repr _MessageParamsMinerTerminateSectors__ReprPrototype
-	MessageParamsMinerWithdrawBalance       _MessageParamsMinerWithdrawBalance__Prototype
-	MessageParamsMinerWithdrawBalance__Repr _MessageParamsMinerWithdrawBalance__ReprPrototype
-	MessageParamsMultisigAddSigner       _MessageParamsMultisigAddSigner__Prototype
-	MessageParamsMultisigAddSigner__Repr _MessageParamsMultisigAddSigner__ReprPrototype
-	MessageParamsMultisigChangeThreshold       _MessageParamsMultisigChangeThreshold__Prototype
-	MessageParamsMultisigChangeThreshold__Repr _MessageParamsMultisigChangeThreshold__ReprPrototype
-	MessageParamsMultisigConstructor       _MessageParamsMultisigConstructor__Prototype
-	MessageParamsMultisigConstructor__Repr _MessageParamsMultisigConstructor__ReprPrototype
-	MessageParamsMultisigLockBalance       _MessageParamsMultisigLockBalance__Prototype
-	MessageParamsMultisigLockBalance__Repr _MessageParamsMultisigLockBalance__ReprPrototype
-	MessageParamsMultisigPropose       _MessageParamsMultisigPropose__Prototype
-	MessageParamsMultisigPropose__Repr _MessageParamsMultisigPropose__ReprPrototype
-	MessageParamsMultisigRemoveSigner       _MessageParamsMultisigRemoveSigner__Prototype
-	MessageParamsMultisigRemoveSigner__Repr _MessageParamsMultisigRemoveSigner__ReprPrototype
-	MessageParamsMultisigSwapSigner       _MessageParamsMultisigSwapSigner__Prototype
-	MessageParamsMultisigSwapSigner__Repr _MessageParamsMultisigSwapSigner__ReprPrototype
-	MessageParamsMultisigTxnID       _MessageParamsMultisigTxnID__Prototype
-	MessageParamsMultisigTxnID__Repr _MessageParamsMultisigTxnID__ReprPrototype
-	MessageParamsPaychConstructor       _MessageParamsPaychConstructor__Prototype
-	MessageParamsPaychConstructor__Repr _MessageParamsPaychConstructor__ReprPrototype
-	MessageParamsPaychUpdateChannelState       _MessageParamsPaychUpdateChannelState__Prototype
-	MessageParamsPaychUpdateChannelState__Repr _MessageParamsPaychUpdateChannelState__ReprPrototype
-	MessageParamsPowerCreateMiner       _MessageParamsPowerCreateMiner__Prototype
-	MessageParamsPowerCreateMiner__Repr _MessageParamsPowerCreateMiner__ReprPrototype
-	MessageParamsPowerCurrentTotal       _MessageParamsPowerCurrentTotal__Prototype
-	MessageParamsPowerCurrentTotal__Repr _MessageParamsPowerCurrentTotal__ReprPrototype
-	MessageParamsPowerEnrollCron       _MessageParamsPowerEnrollCron__Prototype
-	MessageParamsPowerEnrollCron__Repr _MessageParamsPowerEnrollCron__ReprPrototype
-	MessageParamsPowerUpdateClaimed       _MessageParamsPowerUpdateClaimed__Prototype
-	MessageParamsPowerUpdateClaimed__Repr _MessageParamsPowerUpdateClaimed__ReprPrototype
-	MessageParamsRewardAwardBlock       _MessageParamsRewardAwardBlock__Prototype
-	MessageParamsRewardAwardBlock__Repr _MessageParamsRewardAwardBlock__ReprPrototype
-	MessageParamsVerifregAddVerifier       _MessageParamsVerifregAddVerifier__Prototype
-	MessageParamsVerifregAddVerifier__Repr _MessageParamsVerifregAddVerifier__ReprPrototype
-	MessageParamsVerifregUseBytes       _MessageParamsVerifregUseBytes__Prototype
-	MessageParamsVerifregUseBytes__Repr _MessageParamsVerifregUseBytes__ReprPrototype
-	MethodNum       _MethodNum__Prototype
-	MethodNum__Repr _MethodNum__ReprPrototype
-	MinerExpirationExtend       _MinerExpirationExtend__Prototype
-	MinerExpirationExtend__Repr _MinerExpirationExtend__ReprPrototype
-	MinerPostPartition       _MinerPostPartition__Prototype
-	MinerPostPartition__Repr _MinerPostPartition__ReprPrototype
-	MinerPostProof       _MinerPostProof__Prototype
-	MinerPostProof__Repr _MinerPostProof__ReprPrototype
-	MinerTerminationDecl       _MinerTerminationDecl__Prototype
-	MinerTerminationDecl__Repr _MinerTerminationDecl__ReprPrototype
-	MinerV0Deadline       _MinerV0Deadline__Prototype
-	MinerV0Deadline__Repr _MinerV0Deadline__ReprPrototype
-	MinerV0Deadlines       _MinerV0Deadlines__Prototype
-	MinerV0Deadlines__Repr _MinerV0Deadlines__ReprPrototype
-	MinerV0ExpirationSet       _MinerV0ExpirationSet__Prototype
-	MinerV0ExpirationSet__Repr _MinerV0ExpirationSet__ReprPrototype
-	MinerV0Info       _MinerV0Info__Prototype
-	MinerV0Info__Repr _MinerV0Info__ReprPrototype
-	MinerV0Partition       _MinerV0Partition__Prototype
-	MinerV0Partition__Repr _MinerV0Partition__ReprPrototype
-	MinerV0PowerPair       _MinerV0PowerPair__Prototype
-	MinerV0PowerPair__Repr _MinerV0PowerPair__ReprPrototype
-	MinerV0SectorOnChainInfo       _MinerV0SectorOnChainInfo__Prototype
-	MinerV0SectorOnChainInfo__Repr _MinerV0SectorOnChainInfo__ReprPrototype
-	MinerV0SectorPreCommitInfo       _MinerV0SectorPreCommitInfo__Prototype
-	MinerV0SectorPreCommitInfo__Repr _MinerV0SectorPreCommitInfo__ReprPrototype
-	MinerV0SectorPreCommitOnChainInfo       _MinerV0SectorPreCommitOnChainInfo__Prototype
-	MinerV0SectorPreCommitOnChainInfo__Repr _MinerV0SectorPreCommitOnChainInfo__ReprPrototype
-	MinerV0State       _MinerV0State__Prototype
-	MinerV0State__Repr _MinerV0State__ReprPrototype
-	MinerV0VestingFund       _MinerV0VestingFund__Prototype
-	MinerV0VestingFund__Repr _MinerV0VestingFund__ReprPrototype
-	MinerV0VestingFunds       _MinerV0VestingFunds__Prototype
-	MinerV0VestingFunds__Repr _MinerV0VestingFunds__ReprPrototype
-	MinerV0WorkerChangeKey       _MinerV0WorkerChangeKey__Prototype
-	MinerV0WorkerChangeKey__Repr _MinerV0WorkerChangeKey__ReprPrototype
-	MinerV2Deadline       _MinerV2Deadline__Prototype
-	MinerV2Deadline__Repr _MinerV2Deadline__ReprPrototype
-	MinerV2Deadlines       _MinerV2Deadlines__Prototype
-	MinerV2Deadlines__Repr _MinerV2Deadlines__ReprPrototype
-	MinerV2Info       _MinerV2Info__Prototype
-	MinerV2Info__Repr _MinerV2Info__ReprPrototype
-	MinerV2Partition       _MinerV2Partition__Prototype
-	MinerV2Partition__Repr _MinerV2Partition__ReprPrototype
-	MinerV2SectorOnChainInfo       _MinerV2SectorOnChainInfo__Prototype
-	MinerV2SectorOnChainInfo__Repr _MinerV2SectorOnChainInfo__ReprPrototype
-	MinerV2State       _MinerV2State__Prototype
-	MinerV2State__Repr _MinerV2State__ReprPrototype
-	MinerV3Deadline       _MinerV3Deadline__Prototype
-	MinerV3Deadline__Repr _MinerV3Deadline__ReprPrototype
-	MinerV3Deadlines       _MinerV3Deadlines__Prototype
-	MinerV3Deadlines__Repr _MinerV3Deadlines__ReprPrototype
-	MinerV3Partition       _MinerV3Partition__Prototype
-	MinerV3Partition__Repr _MinerV3Partition__ReprPrototype
-	MinerV3State       _MinerV3State__Prototype
-	MinerV3State__Repr _MinerV3State__ReprPrototype
-	MinerV4State       _MinerV4State__Prototype
-	MinerV4State__Repr _MinerV4State__ReprPrototype
-	ModVerifyParams       _ModVerifyParams__Prototype
-	ModVerifyParams__Repr _ModVerifyParams__ReprPrototype
-	Multiaddr       _Multiaddr__Prototype
-	Multiaddr__Repr _Multiaddr__ReprPrototype
-	Multimap__PowerV0CronEvent       _Multimap__PowerV0CronEvent__Prototype
-	Multimap__PowerV0CronEvent__Repr _Multimap__PowerV0CronEvent__ReprPrototype
-	Multimap__PowerV3CronEvent       _Multimap__PowerV3CronEvent__Prototype
-	Multimap__PowerV3CronEvent__Repr _Multimap__PowerV3CronEvent__ReprPrototype
-	MultisigV0State       _MultisigV0State__Prototype
-	MultisigV0State__Repr _MultisigV0State__ReprPrototype
-	MultisigV0Transaction       _MultisigV0Transaction__Prototype
-	MultisigV0Transaction__Repr _MultisigV0Transaction__ReprPrototype
-	MultisigV3State       _MultisigV3State__Prototype
-	MultisigV3State__Repr _MultisigV3State__ReprPrototype
-	PaddedPieceSize       _PaddedPieceSize__Prototype
-	PaddedPieceSize__Repr _PaddedPieceSize__ReprPrototype
-	PaychV0LaneState       _PaychV0LaneState__Prototype
-	PaychV0LaneState__Repr _PaychV0LaneState__ReprPrototype
-	PaychV0State       _PaychV0State__Prototype
-	PaychV0State__Repr _PaychV0State__ReprPrototype
-	PaychV3State       _PaychV3State__Prototype
-	PaychV3State__Repr _PaychV3State__ReprPrototype
-	PeerID       _PeerID__Prototype
-	PeerID__Repr _PeerID__ReprPrototype
-	PoStProof       _PoStProof__Prototype
-	PoStProof__Repr _PoStProof__ReprPrototype
-	PowerV0Claim       _PowerV0Claim__Prototype
-	PowerV0Claim__Repr _PowerV0Claim__ReprPrototype
-	PowerV0CronEvent       _PowerV0CronEvent__Prototype
-	PowerV0CronEvent__Repr _PowerV0CronEvent__ReprPrototype
-	PowerV0State       _PowerV0State__Prototype
-	PowerV0State__Repr _PowerV0State__ReprPrototype
-	PowerV2Claim       _PowerV2Claim__Prototype
-	PowerV2Claim__Repr _PowerV2Claim__ReprPrototype
-	PowerV2State       _PowerV2State__Prototype
-	PowerV2State__Repr _PowerV2State__ReprPrototype
-	PowerV3State       _PowerV3State__Prototype
-	PowerV3State__Repr _PowerV3State__ReprPrototype
-	RawAddress       _RawAddress__Prototype
-	RawAddress__Repr _RawAddress__ReprPrototype
-	RegisteredSealProof       _RegisteredSealProof__Prototype
-	RegisteredSealProof__Repr _RegisteredSealProof__ReprPrototype
-	RewardV0State       _RewardV0State__Prototype
-	RewardV0State__Repr _RewardV0State__ReprPrototype
-	RewardV2State       _RewardV2State__Prototype
-	RewardV2State__Repr _RewardV2State__ReprPrototype
-	SealVerifyInfo       _SealVerifyInfo__Prototype
-	SealVerifyInfo__Repr _SealVerifyInfo__ReprPrototype
-	SectorNumber       _SectorNumber__Prototype
-	SectorNumber__Repr _SectorNumber__ReprPrototype
-	SectorSize       _SectorSize__Prototype
-	SectorSize__Repr _SectorSize__ReprPrototype
-	Signature       _Signature__Prototype
-	Signature__Repr _Signature__ReprPrototype
-	SignedVoucher       _SignedVoucher__Prototype
-	SignedVoucher__Repr _SignedVoucher__ReprPrototype
-	String       _String__Prototype
-	String__Repr _String__ReprPrototype
-	UnpaddedPieceSize       _UnpaddedPieceSize__Prototype
-	UnpaddedPieceSize__Repr _UnpaddedPieceSize__ReprPrototype
-	V0FilterEstimate       _V0FilterEstimate__Prototype
-	V0FilterEstimate__Repr _V0FilterEstimate__ReprPrototype
-	VerifregV0State       _VerifregV0State__Prototype
-	VerifregV0State__Repr _VerifregV0State__ReprPrototype
-	VerifregV3State       _VerifregV3State__Prototype
-	VerifregV3State__Repr _VerifregV3State__ReprPrototype
+	MessageParamsMinerPreCommitSectorBatch         _MessageParamsMinerPreCommitSectorBatch__Prototype
+	MessageParamsMinerPreCommitSectorBatch__Repr   _MessageParamsMinerPreCommitSectorBatch__ReprPrototype
+	MessageParamsMinerProveCommitAggregate         _MessageParamsMinerProveCommitAggregate__Prototype
+	MessageParamsMinerProveCommitAggregate__Repr   _MessageParamsMinerProveCommitAggregate__ReprPrototype
+	MessageParamsMinerProveCommitSector            _MessageParamsMinerProveCommitSector__Prototype
+	MessageParamsMinerProveCommitSector__Repr      _MessageParamsMinerProveCommitSector__ReprPrototype
+	MessageParamsMinerReportFault                  _MessageParamsMinerReportFault__Prototype
+	MessageParamsMinerReportFault__Repr            _MessageParamsMinerReportFault__ReprPrototype
+	MessageParamsMinerSubmitWindowedPoSt           _MessageParamsMinerSubmitWindowedPoSt__Prototype
+	MessageParamsMinerSubmitWindowedPoSt__Repr     _MessageParamsMinerSubmitWindowedPoSt__ReprPrototype
+	MessageParamsMinerTerminateSectors             _MessageParamsMinerTerminateSectors__Prototype
+	MessageParamsMinerTerminateSectors__Repr       _MessageParamsMinerTerminateSectors__ReprPrototype
+	MessageParamsMinerWithdrawBalance              _MessageParamsMinerWithdrawBalance__Prototype
+	MessageParamsMinerWithdrawBalance__Repr        _MessageParamsMinerWithdrawBalance__ReprPrototype
+	MessageParamsMultisigAddSigner                 _MessageParamsMultisigAddSigner__Prototype
+	MessageParamsMultisigAddSigner__Repr           _MessageParamsMultisigAddSigner__ReprPrototype
+	MessageParamsMultisigChangeThreshold           _MessageParamsMultisigChangeThreshold__Prototype
+	MessageParamsMultisigChangeThreshold__Repr     _MessageParamsMultisigChangeThreshold__ReprPrototype
+	MessageParamsMultisigConstructor               _MessageParamsMultisigConstructor__Prototype
+	MessageParamsMultisigConstructor__Repr         _MessageParamsMultisigConstructor__ReprPrototype
+	MessageParamsMultisigLockBalance               _MessageParamsMultisigLockBalance__Prototype
+	MessageParamsMultisigLockBalance__Repr         _MessageParamsMultisigLockBalance__ReprPrototype
+	MessageParamsMultisigPropose                   _MessageParamsMultisigPropose__Prototype
+	MessageParamsMultisigPropose__Repr             _MessageParamsMultisigPropose__ReprPrototype
+	MessageParamsMultisigRemoveSigner              _MessageParamsMultisigRemoveSigner__Prototype
+	MessageParamsMultisigRemoveSigner__Repr        _MessageParamsMultisigRemoveSigner__ReprPrototype
+	MessageParamsMultisigSwapSigner                _MessageParamsMultisigSwapSigner__Prototype
+	MessageParamsMultisigSwapSigner__Repr          _MessageParamsMultisigSwapSigner__ReprPrototype
+	MessageParamsMultisigTxnID                     _MessageParamsMultisigTxnID__Prototype
+	MessageParamsMultisigTxnID__Repr               _MessageParamsMultisigTxnID__ReprPrototype
+	MessageParamsPaychConstructor                  _MessageParamsPaychConstructor__Prototype
+	MessageParamsPaychConstructor__Repr            _MessageParamsPaychConstructor__ReprPrototype
+	MessageParamsPaychUpdateChannelState           _MessageParamsPaychUpdateChannelState__Prototype
+	MessageParamsPaychUpdateChannelState__Repr     _MessageParamsPaychUpdateChannelState__ReprPrototype
+	MessageParamsPowerCreateMiner                  _MessageParamsPowerCreateMiner__Prototype
+	MessageParamsPowerCreateMiner__Repr            _MessageParamsPowerCreateMiner__ReprPrototype
+	MessageParamsPowerCurrentTotal                 _MessageParamsPowerCurrentTotal__Prototype
+	MessageParamsPowerCurrentTotal__Repr           _MessageParamsPowerCurrentTotal__ReprPrototype
+	MessageParamsPowerEnrollCron                   _MessageParamsPowerEnrollCron__Prototype
+	MessageParamsPowerEnrollCron__Repr             _MessageParamsPowerEnrollCron__ReprPrototype
+	MessageParamsPowerUpdateClaimed                _MessageParamsPowerUpdateClaimed__Prototype
+	MessageParamsPowerUpdateClaimed__Repr          _MessageParamsPowerUpdateClaimed__ReprPrototype
+	MessageParamsRewardAwardBlock                  _MessageParamsRewardAwardBlock__Prototype
+	MessageParamsRewardAwardBlock__Repr            _MessageParamsRewardAwardBlock__ReprPrototype
+	MessageParamsVerifregAddVerifier               _MessageParamsVerifregAddVerifier__Prototype
+	MessageParamsVerifregAddVerifier__Repr         _MessageParamsVerifregAddVerifier__ReprPrototype
+	MessageParamsVerifregUseBytes                  _MessageParamsVerifregUseBytes__Prototype
+	MessageParamsVerifregUseBytes__Repr            _MessageParamsVerifregUseBytes__ReprPrototype
+	MethodNum                                      _MethodNum__Prototype
+	MethodNum__Repr                                _MethodNum__ReprPrototype
+	MinerExpirationExtend                          _MinerExpirationExtend__Prototype
+	MinerExpirationExtend__Repr                    _MinerExpirationExtend__ReprPrototype
+	MinerPostPartition                             _MinerPostPartition__Prototype
+	MinerPostPartition__Repr                       _MinerPostPartition__ReprPrototype
+	MinerPostProof                                 _MinerPostProof__Prototype
+	MinerPostProof__Repr                           _MinerPostProof__ReprPrototype
+	MinerTerminationDecl                           _MinerTerminationDecl__Prototype
+	MinerTerminationDecl__Repr                     _MinerTerminationDecl__ReprPrototype
+	MinerV0Deadline                                _MinerV0Deadline__Prototype
+	MinerV0Deadline__Repr                          _MinerV0Deadline__ReprPrototype
+	MinerV0Deadlines                               _MinerV0Deadlines__Prototype
+	MinerV0Deadlines__Repr                         _MinerV0Deadlines__ReprPrototype
+	MinerV0ExpirationSet                           _MinerV0ExpirationSet__Prototype
+	MinerV0ExpirationSet__Repr                     _MinerV0ExpirationSet__ReprPrototype
+	MinerV0Info                                    _MinerV0Info__Prototype
+	MinerV0Info__Repr                              _MinerV0Info__ReprPrototype
+	MinerV0Partition                               _MinerV0Partition__Prototype
+	MinerV0Partition__Repr                         _MinerV0Partition__ReprPrototype
+	MinerV0PowerPair                               _MinerV0PowerPair__Prototype
+	MinerV0PowerPair__Repr                         _MinerV0PowerPair__ReprPrototype
+	MinerV0SectorOnChainInfo                       _MinerV0SectorOnChainInfo__Prototype
+	MinerV0SectorOnChainInfo__Repr                 _MinerV0SectorOnChainInfo__ReprPrototype
+	MinerV0SectorPreCommitInfo                     _MinerV0SectorPreCommitInfo__Prototype
+	MinerV0SectorPreCommitInfo__Repr               _MinerV0SectorPreCommitInfo__ReprPrototype
+	MinerV0SectorPreCommitOnChainInfo              _MinerV0SectorPreCommitOnChainInfo__Prototype
+	MinerV0SectorPreCommitOnChainInfo__Repr        _MinerV0SectorPreCommitOnChainInfo__ReprPrototype
+	MinerV0State                                   _MinerV0State__Prototype
+	MinerV0State__Repr                             _MinerV0State__ReprPrototype
+	MinerV0VestingFund                             _MinerV0VestingFund__Prototype
+	MinerV0VestingFund__Repr                       _MinerV0VestingFund__ReprPrototype
+	MinerV0VestingFunds                            _MinerV0VestingFunds__Prototype
+	MinerV0VestingFunds__Repr                      _MinerV0VestingFunds__ReprPrototype
+	MinerV0WorkerChangeKey                         _MinerV0WorkerChangeKey__Prototype
+	MinerV0WorkerChangeKey__Repr                   _MinerV0WorkerChangeKey__ReprPrototype
+	MinerV2Deadline                                _MinerV2Deadline__Prototype
+	MinerV2Deadline__Repr                          _MinerV2Deadline__ReprPrototype
+	MinerV2Deadlines                               _MinerV2Deadlines__Prototype
+	MinerV2Deadlines__Repr                         _MinerV2Deadlines__ReprPrototype
+	MinerV2Info                                    _MinerV2Info__Prototype
+	MinerV2Info__Repr                              _MinerV2Info__ReprPrototype
+	MinerV2Partition                               _MinerV2Partition__Prototype
+	MinerV2Partition__Repr                         _MinerV2Partition__ReprPrototype
+	MinerV2SectorOnChainInfo                       _MinerV2SectorOnChainInfo__Prototype
+	MinerV2SectorOnChainInfo__Repr                 _MinerV2SectorOnChainInfo__ReprPrototype
+	MinerV2State                                   _MinerV2State__Prototype
+	MinerV2State__Repr                             _MinerV2State__ReprPrototype
+	MinerV3Deadline                                _MinerV3Deadline__Prototype
+	MinerV3Deadline__Repr                          _MinerV3Deadline__ReprPrototype
+	MinerV3Deadlines                               _MinerV3Deadlines__Prototype
+	MinerV3Deadlines__Repr                         _MinerV3Deadlines__ReprPrototype
+	MinerV3Partition                               _MinerV3Partition__Prototype
+	MinerV3Partition__Repr                         _MinerV3Partition__ReprPrototype
+	MinerV3State                                   _MinerV3State__Prototype
+	MinerV3State__Repr                             _MinerV3State__ReprPrototype
+	MinerV4State                                   _MinerV4State__Prototype
+	MinerV4State__Repr                             _MinerV4State__ReprPrototype
+	MinerV5State                                   _MinerV5State__Prototype
+	MinerV5State__Repr                             _MinerV5State__ReprPrototype
+	ModVerifyParams                                _ModVerifyParams__Prototype
+	ModVerifyParams__Repr                          _ModVerifyParams__ReprPrototype
+	Multiaddr                                      _Multiaddr__Prototype
+	Multiaddr__Repr                                _Multiaddr__ReprPrototype
+	Multimap__PowerV0CronEvent                     _Multimap__PowerV0CronEvent__Prototype
+	Multimap__PowerV0CronEvent__Repr               _Multimap__PowerV0CronEvent__ReprPrototype
+	Multimap__PowerV3CronEvent                     _Multimap__PowerV3CronEvent__Prototype
+	Multimap__PowerV3CronEvent__Repr               _Multimap__PowerV3CronEvent__ReprPrototype
+	MultisigV0State                                _MultisigV0State__Prototype
+	MultisigV0State__Repr                          _MultisigV0State__ReprPrototype
+	MultisigV0Transaction                          _MultisigV0Transaction__Prototype
+	MultisigV0Transaction__Repr                    _MultisigV0Transaction__ReprPrototype
+	MultisigV3State                                _MultisigV3State__Prototype
+	MultisigV3State__Repr                          _MultisigV3State__ReprPrototype
+	PaddedPieceSize                                _PaddedPieceSize__Prototype
+	PaddedPieceSize__Repr                          _PaddedPieceSize__ReprPrototype
+	PaychV0LaneState                               _PaychV0LaneState__Prototype
+	PaychV0LaneState__Repr                         _PaychV0LaneState__ReprPrototype
+	PaychV0State                                   _PaychV0State__Prototype
+	PaychV0State__Repr                             _PaychV0State__ReprPrototype
+	PaychV3State                                   _PaychV3State__Prototype
+	PaychV3State__Repr                             _PaychV3State__ReprPrototype
+	PeerID                                         _PeerID__Prototype
+	PeerID__Repr                                   _PeerID__ReprPrototype
+	PoStProof                                      _PoStProof__Prototype
+	PoStProof__Repr                                _PoStProof__ReprPrototype
+	PowerV0Claim                                   _PowerV0Claim__Prototype
+	PowerV0Claim__Repr                             _PowerV0Claim__ReprPrototype
+	PowerV0CronEvent                               _PowerV0CronEvent__Prototype
+	PowerV0CronEvent__Repr                         _PowerV0CronEvent__ReprPrototype
+	PowerV0State                                   _PowerV0State__Prototype
+	PowerV0State__Repr                             _PowerV0State__ReprPrototype
+	PowerV2Claim                                   _PowerV2Claim__Prototype
+	PowerV2Claim__Repr                             _PowerV2Claim__ReprPrototype
+	PowerV2State                                   _PowerV2State__Prototype
+	PowerV2State__Repr                             _PowerV2State__ReprPrototype
+	PowerV3State                                   _PowerV3State__Prototype
+	PowerV3State__Repr                             _PowerV3State__ReprPrototype
+	RawAddress                                     _RawAddress__Prototype
+	RawAddress__Repr                               _RawAddress__ReprPrototype
+	RegisteredSealProof                            _RegisteredSealProof__Prototype
+	RegisteredSealProof__Repr                      _RegisteredSealProof__ReprPrototype
+	RewardV0State                                  _RewardV0State__Prototype
+	RewardV0State__Repr                            _RewardV0State__ReprPrototype
+	RewardV2State                                  _RewardV2State__Prototype
+	RewardV2State__Repr                            _RewardV2State__ReprPrototype
+	SealVerifyInfo                                 _SealVerifyInfo__Prototype
+	SealVerifyInfo__Repr                           _SealVerifyInfo__ReprPrototype
+	SectorDataSpec                                 _SectorDataSpec__Prototype
+	SectorDataSpec__Repr                           _SectorDataSpec__ReprPrototype
+	SectorNumber                                   _SectorNumber__Prototype
+	SectorNumber__Repr                             _SectorNumber__ReprPrototype
+	SectorSize                                     _SectorSize__Prototype
+	SectorSize__Repr                               _SectorSize__ReprPrototype
+	Signature                                      _Signature__Prototype
+	Signature__Repr                                _Signature__ReprPrototype
+	SignedVoucher                                  _SignedVoucher__Prototype
+	SignedVoucher__Repr                            _SignedVoucher__ReprPrototype
+	String                                         _String__Prototype
+	String__Repr                                   _String__ReprPrototype
+	UnpaddedPieceSize                              _UnpaddedPieceSize__Prototype
+	UnpaddedPieceSize__Repr                        _UnpaddedPieceSize__ReprPrototype
+	V0FilterEstimate                               _V0FilterEstimate__Prototype
+	V0FilterEstimate__Repr                         _V0FilterEstimate__ReprPrototype
+	VerifregV0State                                _VerifregV0State__Prototype
+	VerifregV0State__Repr                          _VerifregV0State__ReprPrototype
+	VerifregV3State                                _VerifregV3State__Prototype
+	VerifregV3State__Repr                          _VerifregV3State__ReprPrototype
 }
 
 // --- type definitions follow ---
@@ -601,19 +628,20 @@ type _Any struct {
 type _Any__iface interface {
 	_Any__member()
 }
-func (_Bool) _Any__member() {}
-func (_Int) _Any__member() {}
-func (_Float) _Any__member() {}
+
+func (_Bool) _Any__member()   {}
+func (_Int) _Any__member()    {}
+func (_Float) _Any__member()  {}
 func (_String) _Any__member() {}
-func (_Bytes) _Any__member() {}
-func (_Map) _Any__member() {}
-func (_List) _Any__member() {}
-func (_Link) _Any__member() {}
+func (_Bytes) _Any__member()  {}
+func (_Map) _Any__member()    {}
+func (_List) _Any__member()   {}
+func (_Link) _Any__member()   {}
 
 // ApplyRewardParams matches the IPLD Schema type "ApplyRewardParams".  It has Struct type-kind, and may be interrogated like map kind.
 type ApplyRewardParams = *_ApplyRewardParams
 type _ApplyRewardParams struct {
-	Reward _BigInt
+	Reward  _BigInt
 	Penalty _BigInt
 }
 
@@ -644,7 +672,7 @@ type _CidString struct{ x string }
 // CronV0Entry matches the IPLD Schema type "CronV0Entry".  It has Struct type-kind, and may be interrogated like map kind.
 type CronV0Entry = *_CronV0Entry
 type _CronV0Entry struct {
-	Receiver _Address
+	Receiver  _Address
 	MethodNum _MethodNum
 }
 
@@ -665,16 +693,16 @@ type _Float struct{ x float64 }
 // InitV0State matches the IPLD Schema type "InitV0State".  It has Struct type-kind, and may be interrogated like map kind.
 type InitV0State = *_InitV0State
 type _InitV0State struct {
-	AddressMap _Link__MapActorID
-	NextID _ActorID
+	AddressMap  _Link__MapActorID
+	NextID      _ActorID
 	NetworkName _String
 }
 
 // InitV3State matches the IPLD Schema type "InitV3State".  It has Struct type-kind, and may be interrogated like map kind.
 type InitV3State = *_InitV3State
 type _InitV3State struct {
-	AddressMap _Link__V3MapActorID
-	NextID _ActorID
+	AddressMap  _Link__V3MapActorID
+	NextID      _ActorID
 	NetworkName _String
 }
 
@@ -729,6 +757,10 @@ type _Link__LotusActorV3Head struct{ x ipld.Link }
 // Link__LotusActorV4Head matches the IPLD Schema type "Link__LotusActorV4Head".  It has link kind.
 type Link__LotusActorV4Head = *_Link__LotusActorV4Head
 type _Link__LotusActorV4Head struct{ x ipld.Link }
+
+// Link__LotusActorV5Head matches the IPLD Schema type "Link__LotusActorV5Head".  It has link kind.
+type Link__LotusActorV5Head = *_Link__LotusActorV5Head
+type _Link__LotusActorV5Head struct{ x ipld.Link }
 
 // Link__LotusActors matches the IPLD Schema type "Link__LotusActors".  It has link kind.
 type Link__LotusActors = *_Link__LotusActors
@@ -797,6 +829,10 @@ type _Link__MarketV3RawDealProposal struct{ x ipld.Link }
 // Link__MarketV3State matches the IPLD Schema type "Link__MarketV3State".  It has link kind.
 type Link__MarketV3State = *_Link__MarketV3State
 type _Link__MarketV3State struct{ x ipld.Link }
+
+// Link__MarketV5State matches the IPLD Schema type "Link__MarketV5State".  It has link kind.
+type Link__MarketV5State = *_Link__MarketV5State
+type _Link__MarketV5State struct{ x ipld.Link }
 
 // Link__MinerV0Deadline matches the IPLD Schema type "Link__MinerV0Deadline".  It has link kind.
 type Link__MinerV0Deadline = *_Link__MinerV0Deadline
@@ -889,6 +925,10 @@ type _Link__MinerV3State struct{ x ipld.Link }
 // Link__MinerV4State matches the IPLD Schema type "Link__MinerV4State".  It has link kind.
 type Link__MinerV4State = *_Link__MinerV4State
 type _Link__MinerV4State struct{ x ipld.Link }
+
+// Link__MinerV5State matches the IPLD Schema type "Link__MinerV5State".  It has link kind.
+type Link__MinerV5State = *_Link__MinerV5State
+type _Link__MinerV5State struct{ x ipld.Link }
 
 // Link__MultimapDealID matches the IPLD Schema type "Link__MultimapDealID".  It has link kind.
 type Link__MultimapDealID = *_Link__MultimapDealID
@@ -1070,6 +1110,12 @@ type _List__MinerV0DeadlineLink struct {
 	x []_Link__MinerV0Deadline__Maybe
 }
 
+// List__MinerV0SectorPreCommitInfo matches the IPLD Schema type "List__MinerV0SectorPreCommitInfo".  It has list kind.
+type List__MinerV0SectorPreCommitInfo = *_List__MinerV0SectorPreCommitInfo
+type _List__MinerV0SectorPreCommitInfo struct {
+	x []_MinerV0SectorPreCommitInfo
+}
+
 // List__MinerV0VestingFund matches the IPLD Schema type "List__MinerV0VestingFund".  It has list kind.
 type List__MinerV0VestingFund = *_List__MinerV0VestingFund
 type _List__MinerV0VestingFund struct {
@@ -1100,6 +1146,12 @@ type _List__PoStProof struct {
 	x []_PoStProof
 }
 
+// List__SectorDataSpec matches the IPLD Schema type "List__SectorDataSpec".  It has list kind.
+type List__SectorDataSpec = *_List__SectorDataSpec
+type _List__SectorDataSpec struct {
+	x []_SectorDataSpec
+}
+
 // List__SectorNumber matches the IPLD Schema type "List__SectorNumber".  It has list kind.
 type List__SectorNumber = *_List__SectorNumber
 type _List__SectorNumber struct {
@@ -1110,15 +1162,15 @@ type _List__SectorNumber struct {
 type LotusActorV2Head = *_LotusActorV2Head
 type _LotusActorV2Head struct {
 	tag uint
-	x1 _MarketV2State
-	x2 _MinerV2State
-	x3 _PowerV2State
-	x4 _RewardV2State
-	x5 _AccountV0State
-	x6 _CronV0State
-	x7 _InitV0State
-	x8 _MarketV0State
-	x9 _MinerV0State
+	x1  _MarketV2State
+	x2  _MinerV2State
+	x3  _PowerV2State
+	x4  _RewardV2State
+	x5  _AccountV0State
+	x6  _CronV0State
+	x7  _InitV0State
+	x8  _MarketV0State
+	x9  _MinerV0State
 	x10 _MultisigV0State
 	x11 _PaychV0State
 	x12 _PowerV0State
@@ -1128,34 +1180,35 @@ type _LotusActorV2Head struct {
 type _LotusActorV2Head__iface interface {
 	_LotusActorV2Head__member()
 }
-func (_MarketV2State) _LotusActorV2Head__member() {}
-func (_MinerV2State) _LotusActorV2Head__member() {}
-func (_PowerV2State) _LotusActorV2Head__member() {}
-func (_RewardV2State) _LotusActorV2Head__member() {}
-func (_AccountV0State) _LotusActorV2Head__member() {}
-func (_CronV0State) _LotusActorV2Head__member() {}
-func (_InitV0State) _LotusActorV2Head__member() {}
-func (_MarketV0State) _LotusActorV2Head__member() {}
-func (_MinerV0State) _LotusActorV2Head__member() {}
+
+func (_MarketV2State) _LotusActorV2Head__member()   {}
+func (_MinerV2State) _LotusActorV2Head__member()    {}
+func (_PowerV2State) _LotusActorV2Head__member()    {}
+func (_RewardV2State) _LotusActorV2Head__member()   {}
+func (_AccountV0State) _LotusActorV2Head__member()  {}
+func (_CronV0State) _LotusActorV2Head__member()     {}
+func (_InitV0State) _LotusActorV2Head__member()     {}
+func (_MarketV0State) _LotusActorV2Head__member()   {}
+func (_MinerV0State) _LotusActorV2Head__member()    {}
 func (_MultisigV0State) _LotusActorV2Head__member() {}
-func (_PaychV0State) _LotusActorV2Head__member() {}
-func (_PowerV0State) _LotusActorV2Head__member() {}
-func (_RewardV0State) _LotusActorV2Head__member() {}
+func (_PaychV0State) _LotusActorV2Head__member()    {}
+func (_PowerV0State) _LotusActorV2Head__member()    {}
+func (_RewardV0State) _LotusActorV2Head__member()   {}
 func (_VerifregV0State) _LotusActorV2Head__member() {}
 
 // LotusActorV3Head matches the IPLD Schema type "LotusActorV3Head".  It has Union type-kind, and may be interrogated like map kind.
 type LotusActorV3Head = *_LotusActorV3Head
 type _LotusActorV3Head struct {
 	tag uint
-	x1 _MarketV3State
-	x2 _MinerV3State
-	x3 _PowerV3State
-	x4 _InitV3State
-	x5 _VerifregV3State
-	x6 _PaychV3State
-	x7 _MultisigV3State
-	x8 _MarketV2State
-	x9 _MinerV2State
+	x1  _MarketV3State
+	x2  _MinerV3State
+	x3  _PowerV3State
+	x4  _InitV3State
+	x5  _VerifregV3State
+	x6  _PaychV3State
+	x7  _MultisigV3State
+	x8  _MarketV2State
+	x9  _MinerV2State
 	x10 _PowerV2State
 	x11 _RewardV2State
 	x12 _AccountV0State
@@ -1172,41 +1225,42 @@ type _LotusActorV3Head struct {
 type _LotusActorV3Head__iface interface {
 	_LotusActorV3Head__member()
 }
-func (_MarketV3State) _LotusActorV3Head__member() {}
-func (_MinerV3State) _LotusActorV3Head__member() {}
-func (_PowerV3State) _LotusActorV3Head__member() {}
-func (_InitV3State) _LotusActorV3Head__member() {}
+
+func (_MarketV3State) _LotusActorV3Head__member()   {}
+func (_MinerV3State) _LotusActorV3Head__member()    {}
+func (_PowerV3State) _LotusActorV3Head__member()    {}
+func (_InitV3State) _LotusActorV3Head__member()     {}
 func (_VerifregV3State) _LotusActorV3Head__member() {}
-func (_PaychV3State) _LotusActorV3Head__member() {}
+func (_PaychV3State) _LotusActorV3Head__member()    {}
 func (_MultisigV3State) _LotusActorV3Head__member() {}
-func (_MarketV2State) _LotusActorV3Head__member() {}
-func (_MinerV2State) _LotusActorV3Head__member() {}
-func (_PowerV2State) _LotusActorV3Head__member() {}
-func (_RewardV2State) _LotusActorV3Head__member() {}
-func (_AccountV0State) _LotusActorV3Head__member() {}
-func (_CronV0State) _LotusActorV3Head__member() {}
-func (_InitV0State) _LotusActorV3Head__member() {}
-func (_MarketV0State) _LotusActorV3Head__member() {}
-func (_MinerV0State) _LotusActorV3Head__member() {}
+func (_MarketV2State) _LotusActorV3Head__member()   {}
+func (_MinerV2State) _LotusActorV3Head__member()    {}
+func (_PowerV2State) _LotusActorV3Head__member()    {}
+func (_RewardV2State) _LotusActorV3Head__member()   {}
+func (_AccountV0State) _LotusActorV3Head__member()  {}
+func (_CronV0State) _LotusActorV3Head__member()     {}
+func (_InitV0State) _LotusActorV3Head__member()     {}
+func (_MarketV0State) _LotusActorV3Head__member()   {}
+func (_MinerV0State) _LotusActorV3Head__member()    {}
 func (_MultisigV0State) _LotusActorV3Head__member() {}
-func (_PaychV0State) _LotusActorV3Head__member() {}
-func (_PowerV0State) _LotusActorV3Head__member() {}
-func (_RewardV0State) _LotusActorV3Head__member() {}
+func (_PaychV0State) _LotusActorV3Head__member()    {}
+func (_PowerV0State) _LotusActorV3Head__member()    {}
+func (_RewardV0State) _LotusActorV3Head__member()   {}
 func (_VerifregV0State) _LotusActorV3Head__member() {}
 
 // LotusActorV4Head matches the IPLD Schema type "LotusActorV4Head".  It has Union type-kind, and may be interrogated like map kind.
 type LotusActorV4Head = *_LotusActorV4Head
 type _LotusActorV4Head struct {
 	tag uint
-	x1 _MinerV4State
-	x2 _MarketV3State
-	x3 _MinerV3State
-	x4 _PowerV3State
-	x5 _InitV3State
-	x6 _VerifregV3State
-	x7 _PaychV3State
-	x8 _MultisigV3State
-	x9 _MarketV2State
+	x1  _MinerV4State
+	x2  _MarketV3State
+	x3  _MinerV3State
+	x4  _PowerV3State
+	x5  _InitV3State
+	x6  _VerifregV3State
+	x7  _PaychV3State
+	x8  _MultisigV3State
+	x9  _MarketV2State
 	x10 _MinerV2State
 	x11 _PowerV2State
 	x12 _RewardV2State
@@ -1224,35 +1278,94 @@ type _LotusActorV4Head struct {
 type _LotusActorV4Head__iface interface {
 	_LotusActorV4Head__member()
 }
-func (_MinerV4State) _LotusActorV4Head__member() {}
-func (_MarketV3State) _LotusActorV4Head__member() {}
-func (_MinerV3State) _LotusActorV4Head__member() {}
-func (_PowerV3State) _LotusActorV4Head__member() {}
-func (_InitV3State) _LotusActorV4Head__member() {}
+
+func (_MinerV4State) _LotusActorV4Head__member()    {}
+func (_MarketV3State) _LotusActorV4Head__member()   {}
+func (_MinerV3State) _LotusActorV4Head__member()    {}
+func (_PowerV3State) _LotusActorV4Head__member()    {}
+func (_InitV3State) _LotusActorV4Head__member()     {}
 func (_VerifregV3State) _LotusActorV4Head__member() {}
-func (_PaychV3State) _LotusActorV4Head__member() {}
+func (_PaychV3State) _LotusActorV4Head__member()    {}
 func (_MultisigV3State) _LotusActorV4Head__member() {}
-func (_MarketV2State) _LotusActorV4Head__member() {}
-func (_MinerV2State) _LotusActorV4Head__member() {}
-func (_PowerV2State) _LotusActorV4Head__member() {}
-func (_RewardV2State) _LotusActorV4Head__member() {}
-func (_AccountV0State) _LotusActorV4Head__member() {}
-func (_CronV0State) _LotusActorV4Head__member() {}
-func (_InitV0State) _LotusActorV4Head__member() {}
-func (_MarketV0State) _LotusActorV4Head__member() {}
-func (_MinerV0State) _LotusActorV4Head__member() {}
+func (_MarketV2State) _LotusActorV4Head__member()   {}
+func (_MinerV2State) _LotusActorV4Head__member()    {}
+func (_PowerV2State) _LotusActorV4Head__member()    {}
+func (_RewardV2State) _LotusActorV4Head__member()   {}
+func (_AccountV0State) _LotusActorV4Head__member()  {}
+func (_CronV0State) _LotusActorV4Head__member()     {}
+func (_InitV0State) _LotusActorV4Head__member()     {}
+func (_MarketV0State) _LotusActorV4Head__member()   {}
+func (_MinerV0State) _LotusActorV4Head__member()    {}
 func (_MultisigV0State) _LotusActorV4Head__member() {}
-func (_PaychV0State) _LotusActorV4Head__member() {}
-func (_PowerV0State) _LotusActorV4Head__member() {}
-func (_RewardV0State) _LotusActorV4Head__member() {}
+func (_PaychV0State) _LotusActorV4Head__member()    {}
+func (_PowerV0State) _LotusActorV4Head__member()    {}
+func (_RewardV0State) _LotusActorV4Head__member()   {}
 func (_VerifregV0State) _LotusActorV4Head__member() {}
+
+// LotusActorV5Head matches the IPLD Schema type "LotusActorV5Head".  It has Union type-kind, and may be interrogated like map kind.
+type LotusActorV5Head = *_LotusActorV5Head
+type _LotusActorV5Head struct {
+	tag uint
+	x1  _MinerV5State
+	x2  _MarketV5State
+	x3  _MinerV4State
+	x4  _MarketV3State
+	x5  _MinerV3State
+	x6  _PowerV3State
+	x7  _InitV3State
+	x8  _VerifregV3State
+	x9  _PaychV3State
+	x10 _MultisigV3State
+	x11 _MarketV2State
+	x12 _MinerV2State
+	x13 _PowerV2State
+	x14 _RewardV2State
+	x15 _AccountV0State
+	x16 _CronV0State
+	x17 _InitV0State
+	x18 _MarketV0State
+	x19 _MinerV0State
+	x20 _MultisigV0State
+	x21 _PaychV0State
+	x22 _PowerV0State
+	x23 _RewardV0State
+	x24 _VerifregV0State
+}
+type _LotusActorV5Head__iface interface {
+	_LotusActorV5Head__member()
+}
+
+func (_MinerV5State) _LotusActorV5Head__member()    {}
+func (_MarketV5State) _LotusActorV5Head__member()   {}
+func (_MinerV4State) _LotusActorV5Head__member()    {}
+func (_MarketV3State) _LotusActorV5Head__member()   {}
+func (_MinerV3State) _LotusActorV5Head__member()    {}
+func (_PowerV3State) _LotusActorV5Head__member()    {}
+func (_InitV3State) _LotusActorV5Head__member()     {}
+func (_VerifregV3State) _LotusActorV5Head__member() {}
+func (_PaychV3State) _LotusActorV5Head__member()    {}
+func (_MultisigV3State) _LotusActorV5Head__member() {}
+func (_MarketV2State) _LotusActorV5Head__member()   {}
+func (_MinerV2State) _LotusActorV5Head__member()    {}
+func (_PowerV2State) _LotusActorV5Head__member()    {}
+func (_RewardV2State) _LotusActorV5Head__member()   {}
+func (_AccountV0State) _LotusActorV5Head__member()  {}
+func (_CronV0State) _LotusActorV5Head__member()     {}
+func (_InitV0State) _LotusActorV5Head__member()     {}
+func (_MarketV0State) _LotusActorV5Head__member()   {}
+func (_MinerV0State) _LotusActorV5Head__member()    {}
+func (_MultisigV0State) _LotusActorV5Head__member() {}
+func (_PaychV0State) _LotusActorV5Head__member()    {}
+func (_PowerV0State) _LotusActorV5Head__member()    {}
+func (_RewardV0State) _LotusActorV5Head__member()   {}
+func (_VerifregV0State) _LotusActorV5Head__member() {}
 
 // LotusActors matches the IPLD Schema type "LotusActors".  It has Struct type-kind, and may be interrogated like map kind.
 type LotusActors = *_LotusActors
 type _LotusActors struct {
-	Code _Link
-	Head _Link__LotusActorV4Head
-	Nonce _Int
+	Code    _Link
+	Head    _Link__LotusActorV5Head
+	Nonce   _Int
 	Balance _BigInt
 }
 
@@ -1260,28 +1373,28 @@ type _LotusActors struct {
 type LotusBeaconEntry = *_LotusBeaconEntry
 type _LotusBeaconEntry struct {
 	Round _Int
-	Data _Bytes
+	Data  _Bytes
 }
 
 // LotusBlockHeader matches the IPLD Schema type "LotusBlockHeader".  It has Struct type-kind, and may be interrogated like map kind.
 type LotusBlockHeader = *_LotusBlockHeader
 type _LotusBlockHeader struct {
-	Miner _Address
-	Ticket _LotusTicket__Maybe
-	ElectionProof _LotusElectionProof__Maybe
-	BeaconEntries _List__LotusBeaconEntry
-	WinPoStProof _List__PoStProof
-	Parents _List__Link
-	ParentWeight _BigInt
-	Height _ChainEpoch
-	ParentStateRoot _Link__LotusStateRoot
+	Miner                 _Address
+	Ticket                _LotusTicket__Maybe
+	ElectionProof         _LotusElectionProof__Maybe
+	BeaconEntries         _List__LotusBeaconEntry
+	WinPoStProof          _List__PoStProof
+	Parents               _List__Link
+	ParentWeight          _BigInt
+	Height                _ChainEpoch
+	ParentStateRoot       _Link__LotusStateRoot
 	ParentMessageReceipts _Link
-	Messages _Link__LotusMsgMeta
-	BLSAggregate _Signature__Maybe
-	Timestamp _Int
-	BlockSig _Signature__Maybe
-	ForkSignaling _Int
-	ParentBaseFee _BigInt
+	Messages              _Link__LotusMsgMeta
+	BLSAggregate          _Signature__Maybe
+	Timestamp             _Int
+	BlockSig              _Signature__Maybe
+	ForkSignaling         _Int
+	ParentBaseFee         _BigInt
 }
 
 // LotusElectionProof matches the IPLD Schema type "LotusElectionProof".  It has Struct type-kind, and may be interrogated like map kind.
@@ -1294,31 +1407,31 @@ type _LotusElectionProof struct {
 // LotusMessage matches the IPLD Schema type "LotusMessage".  It has Struct type-kind, and may be interrogated like map kind.
 type LotusMessage = *_LotusMessage
 type _LotusMessage struct {
-	Version _Int
-	To _Address
-	From _Address
-	Nonce _Int
-	Value _BigInt
-	GasLimit _Int
-	GasFeeCap _BigInt
+	Version    _Int
+	To         _Address
+	From       _Address
+	Nonce      _Int
+	Value      _BigInt
+	GasLimit   _Int
+	GasFeeCap  _BigInt
 	GasPremium _BigInt
-	Method _MethodNum
-	Params _Bytes
+	Method     _MethodNum
+	Params     _Bytes
 }
 
 // LotusMessageV2Params matches the IPLD Schema type "LotusMessageV2Params".  It has Union type-kind, and may be interrogated like map kind.
 type LotusMessageV2Params = *_LotusMessageV2Params
 type _LotusMessageV2Params struct {
 	tag uint
-	x1 _MessageParamsInitExecParams
-	x2 _MinerV0SectorPreCommitInfo
-	x3 _MessageParamsMarketWithdrawBalance
-	x4 _MessageParamsMarketPublishDeals
-	x5 _MessageParamsMarketVerifyDeals
-	x6 _MessageParamsMarketActivateDeals
-	x7 _MessageParamsMarketTerminateDeals
-	x8 _MessageParamsMarketComputeCommitment
-	x9 _MessageParamsMinerConstructor
+	x1  _MessageParamsInitExecParams
+	x2  _MinerV0SectorPreCommitInfo
+	x3  _MessageParamsMarketWithdrawBalance
+	x4  _MessageParamsMarketPublishDeals
+	x5  _MessageParamsMarketVerifyDeals
+	x6  _MessageParamsMarketActivateDeals
+	x7  _MessageParamsMarketTerminateDeals
+	x8  _MessageParamsMarketComputeCommitment
+	x9  _MessageParamsMinerConstructor
 	x10 _MessageParamsMinerChangeAddress
 	x11 _MessageParamsMinerChangeMultiaddrs
 	x12 _MessageParamsMinerChangePeerID
@@ -1357,61 +1470,62 @@ type _LotusMessageV2Params struct {
 type _LotusMessageV2Params__iface interface {
 	_LotusMessageV2Params__member()
 }
-func (_MessageParamsInitExecParams) _LotusMessageV2Params__member() {}
-func (_MinerV0SectorPreCommitInfo) _LotusMessageV2Params__member() {}
-func (_MessageParamsMarketWithdrawBalance) _LotusMessageV2Params__member() {}
-func (_MessageParamsMarketPublishDeals) _LotusMessageV2Params__member() {}
-func (_MessageParamsMarketVerifyDeals) _LotusMessageV2Params__member() {}
-func (_MessageParamsMarketActivateDeals) _LotusMessageV2Params__member() {}
-func (_MessageParamsMarketTerminateDeals) _LotusMessageV2Params__member() {}
-func (_MessageParamsMarketComputeCommitment) _LotusMessageV2Params__member() {}
-func (_MessageParamsMinerConstructor) _LotusMessageV2Params__member() {}
-func (_MessageParamsMinerChangeAddress) _LotusMessageV2Params__member() {}
-func (_MessageParamsMinerChangeMultiaddrs) _LotusMessageV2Params__member() {}
-func (_MessageParamsMinerChangePeerID) _LotusMessageV2Params__member() {}
-func (_MessageParamsMinerSubmitWindowedPoSt) _LotusMessageV2Params__member() {}
-func (_MessageParamsMinerProveCommitSector) _LotusMessageV2Params__member() {}
-func (_MessageParamsMinerCheckSectorProven) _LotusMessageV2Params__member() {}
-func (_MessageParamsMinerConfirmSectorProofs) _LotusMessageV2Params__member() {}
+
+func (_MessageParamsInitExecParams) _LotusMessageV2Params__member()              {}
+func (_MinerV0SectorPreCommitInfo) _LotusMessageV2Params__member()               {}
+func (_MessageParamsMarketWithdrawBalance) _LotusMessageV2Params__member()       {}
+func (_MessageParamsMarketPublishDeals) _LotusMessageV2Params__member()          {}
+func (_MessageParamsMarketVerifyDeals) _LotusMessageV2Params__member()           {}
+func (_MessageParamsMarketActivateDeals) _LotusMessageV2Params__member()         {}
+func (_MessageParamsMarketTerminateDeals) _LotusMessageV2Params__member()        {}
+func (_MessageParamsMarketComputeCommitment) _LotusMessageV2Params__member()     {}
+func (_MessageParamsMinerConstructor) _LotusMessageV2Params__member()            {}
+func (_MessageParamsMinerChangeAddress) _LotusMessageV2Params__member()          {}
+func (_MessageParamsMinerChangeMultiaddrs) _LotusMessageV2Params__member()       {}
+func (_MessageParamsMinerChangePeerID) _LotusMessageV2Params__member()           {}
+func (_MessageParamsMinerSubmitWindowedPoSt) _LotusMessageV2Params__member()     {}
+func (_MessageParamsMinerProveCommitSector) _LotusMessageV2Params__member()      {}
+func (_MessageParamsMinerCheckSectorProven) _LotusMessageV2Params__member()      {}
+func (_MessageParamsMinerConfirmSectorProofs) _LotusMessageV2Params__member()    {}
 func (_MessageParamsMinerExtendSectorExpiration) _LotusMessageV2Params__member() {}
-func (_MessageParamsMinerTerminateSectors) _LotusMessageV2Params__member() {}
-func (_MessageParamsMinerDeclareFaults) _LotusMessageV2Params__member() {}
+func (_MessageParamsMinerTerminateSectors) _LotusMessageV2Params__member()       {}
+func (_MessageParamsMinerDeclareFaults) _LotusMessageV2Params__member()          {}
 func (_MessageParamsMinerDeclareFaultsRecovered) _LotusMessageV2Params__member() {}
-func (_MessageParamsMinerCompactPartitions) _LotusMessageV2Params__member() {}
-func (_MessageParamsMinerCompactSectorNumbers) _LotusMessageV2Params__member() {}
-func (_ApplyRewardParams) _LotusMessageV2Params__member() {}
-func (_MessageParamsMinerReportFault) _LotusMessageV2Params__member() {}
-func (_MessageParamsMinerWithdrawBalance) _LotusMessageV2Params__member() {}
-func (_MessageParamsMinerDeferredCron) _LotusMessageV2Params__member() {}
-func (_MessageParamsMultisigConstructor) _LotusMessageV2Params__member() {}
-func (_MessageParamsMultisigPropose) _LotusMessageV2Params__member() {}
-func (_MessageParamsMultisigTxnID) _LotusMessageV2Params__member() {}
-func (_MessageParamsMultisigAddSigner) _LotusMessageV2Params__member() {}
-func (_MessageParamsMultisigRemoveSigner) _LotusMessageV2Params__member() {}
-func (_MessageParamsMultisigSwapSigner) _LotusMessageV2Params__member() {}
-func (_MessageParamsMultisigChangeThreshold) _LotusMessageV2Params__member() {}
-func (_MessageParamsMultisigLockBalance) _LotusMessageV2Params__member() {}
-func (_MessageParamsPaychConstructor) _LotusMessageV2Params__member() {}
-func (_MessageParamsPaychUpdateChannelState) _LotusMessageV2Params__member() {}
-func (_MessageParamsPowerCreateMiner) _LotusMessageV2Params__member() {}
-func (_MessageParamsPowerUpdateClaimed) _LotusMessageV2Params__member() {}
-func (_MessageParamsPowerEnrollCron) _LotusMessageV2Params__member() {}
-func (_MessageParamsPowerCurrentTotal) _LotusMessageV2Params__member() {}
-func (_MessageParamsRewardAwardBlock) _LotusMessageV2Params__member() {}
-func (_MessageParamsVerifregAddVerifier) _LotusMessageV2Params__member() {}
-func (_MessageParamsVerifregUseBytes) _LotusMessageV2Params__member() {}
+func (_MessageParamsMinerCompactPartitions) _LotusMessageV2Params__member()      {}
+func (_MessageParamsMinerCompactSectorNumbers) _LotusMessageV2Params__member()   {}
+func (_ApplyRewardParams) _LotusMessageV2Params__member()                        {}
+func (_MessageParamsMinerReportFault) _LotusMessageV2Params__member()            {}
+func (_MessageParamsMinerWithdrawBalance) _LotusMessageV2Params__member()        {}
+func (_MessageParamsMinerDeferredCron) _LotusMessageV2Params__member()           {}
+func (_MessageParamsMultisigConstructor) _LotusMessageV2Params__member()         {}
+func (_MessageParamsMultisigPropose) _LotusMessageV2Params__member()             {}
+func (_MessageParamsMultisigTxnID) _LotusMessageV2Params__member()               {}
+func (_MessageParamsMultisigAddSigner) _LotusMessageV2Params__member()           {}
+func (_MessageParamsMultisigRemoveSigner) _LotusMessageV2Params__member()        {}
+func (_MessageParamsMultisigSwapSigner) _LotusMessageV2Params__member()          {}
+func (_MessageParamsMultisigChangeThreshold) _LotusMessageV2Params__member()     {}
+func (_MessageParamsMultisigLockBalance) _LotusMessageV2Params__member()         {}
+func (_MessageParamsPaychConstructor) _LotusMessageV2Params__member()            {}
+func (_MessageParamsPaychUpdateChannelState) _LotusMessageV2Params__member()     {}
+func (_MessageParamsPowerCreateMiner) _LotusMessageV2Params__member()            {}
+func (_MessageParamsPowerUpdateClaimed) _LotusMessageV2Params__member()          {}
+func (_MessageParamsPowerEnrollCron) _LotusMessageV2Params__member()             {}
+func (_MessageParamsPowerCurrentTotal) _LotusMessageV2Params__member()           {}
+func (_MessageParamsRewardAwardBlock) _LotusMessageV2Params__member()            {}
+func (_MessageParamsVerifregAddVerifier) _LotusMessageV2Params__member()         {}
+func (_MessageParamsVerifregUseBytes) _LotusMessageV2Params__member()            {}
 
 // LotusMsgMeta matches the IPLD Schema type "LotusMsgMeta".  It has Struct type-kind, and may be interrogated like map kind.
 type LotusMsgMeta = *_LotusMsgMeta
 type _LotusMsgMeta struct {
-	BlsMessages _Link__ListLotusMessage
+	BlsMessages   _Link__ListLotusMessage
 	SecpkMessages _Link
 }
 
 // LotusSignedMessage matches the IPLD Schema type "LotusSignedMessage".  It has Struct type-kind, and may be interrogated like map kind.
 type LotusSignedMessage = *_LotusSignedMessage
 type _LotusSignedMessage struct {
-	Message _LotusMessage
+	Message   _LotusMessage
 	Signature _Signature
 }
 
@@ -1419,8 +1533,8 @@ type _LotusSignedMessage struct {
 type LotusStateRoot = *_LotusStateRoot
 type _LotusStateRoot struct {
 	Version _Int
-	Actors _Link__LotusActors
-	Info _Link
+	Actors  _Link__LotusActors
+	Info    _Link
 }
 
 // LotusTicket matches the IPLD Schema type "LotusTicket".  It has Struct type-kind, and may be interrogated like map kind.
@@ -1872,24 +1986,24 @@ type _Mapv3__LotusActors__entry struct {
 // MarketClientDealProposal matches the IPLD Schema type "MarketClientDealProposal".  It has Struct type-kind, and may be interrogated like map kind.
 type MarketClientDealProposal = *_MarketClientDealProposal
 type _MarketClientDealProposal struct {
-	Proposal _MarketV2DealProposal
+	Proposal        _MarketV2DealProposal
 	ClientSignature _Signature
 }
 
 // MarketV0DealProposal matches the IPLD Schema type "MarketV0DealProposal".  It has Struct type-kind, and may be interrogated like map kind.
 type MarketV0DealProposal = *_MarketV0DealProposal
 type _MarketV0DealProposal struct {
-	PieceCID _Link
-	PieceSize _PaddedPieceSize
-	VerifiedDeal _Bool
-	Client _Address
-	Provider _Address
-	Label _String
-	StartEpoch _ChainEpoch
-	EndEpoch _ChainEpoch
+	PieceCID             _Link
+	PieceSize            _PaddedPieceSize
+	VerifiedDeal         _Bool
+	Client               _Address
+	Provider             _Address
+	Label                _String
+	StartEpoch           _ChainEpoch
+	EndEpoch             _ChainEpoch
 	StoragePricePerEpoch _BigInt
-	ProviderCollateral _BigInt
-	ClientCollateral _BigInt
+	ProviderCollateral   _BigInt
+	ClientCollateral     _BigInt
 }
 
 // MarketV0DealState matches the IPLD Schema type "MarketV0DealState".  It has Struct type-kind, and may be interrogated like map kind.
@@ -1897,98 +2011,114 @@ type MarketV0DealState = *_MarketV0DealState
 type _MarketV0DealState struct {
 	SectorStartEpoch _ChainEpoch
 	LastUpdatedEpoch _ChainEpoch
-	SlashEpoch _ChainEpoch
+	SlashEpoch       _ChainEpoch
 }
 
 // MarketV0State matches the IPLD Schema type "MarketV0State".  It has Struct type-kind, and may be interrogated like map kind.
 type MarketV0State = *_MarketV0State
 type _MarketV0State struct {
-	Proposals _Link__MarketV0RawDealProposal
-	States _Link__MarketV0DealState
-	PendingProposals _Link__MarketV0DealProposal
-	EscrowTable _Link__BalanceTable
-	LockedTable _Link__BalanceTable
-	NextID _DealID
-	DealOpsByEpoch _Link__MultimapDealID
-	LastCron _ChainEpoch
-	TotalClientLockedCollateral _BigInt
+	Proposals                     _Link__MarketV0RawDealProposal
+	States                        _Link__MarketV0DealState
+	PendingProposals              _Link__MarketV0DealProposal
+	EscrowTable                   _Link__BalanceTable
+	LockedTable                   _Link__BalanceTable
+	NextID                        _DealID
+	DealOpsByEpoch                _Link__MultimapDealID
+	LastCron                      _ChainEpoch
+	TotalClientLockedCollateral   _BigInt
 	TotalProviderLockedCollateral _BigInt
-	TotalClientStorageFee _BigInt
+	TotalClientStorageFee         _BigInt
 }
 
 // MarketV2DealProposal matches the IPLD Schema type "MarketV2DealProposal".  It has Struct type-kind, and may be interrogated like map kind.
 type MarketV2DealProposal = *_MarketV2DealProposal
 type _MarketV2DealProposal struct {
-	PieceCID _Link
-	PieceSize _PaddedPieceSize
-	VerifiedDeal _Bool
-	Client _Address
-	Provider _Address
-	Label _String
-	StartEpoch _ChainEpoch
-	EndEpoch _ChainEpoch
+	PieceCID             _Link
+	PieceSize            _PaddedPieceSize
+	VerifiedDeal         _Bool
+	Client               _Address
+	Provider             _Address
+	Label                _String
+	StartEpoch           _ChainEpoch
+	EndEpoch             _ChainEpoch
 	StoragePricePerEpoch _BigInt
-	ProviderCollateral _BigInt
-	ClientCollateral _BigInt
+	ProviderCollateral   _BigInt
+	ClientCollateral     _BigInt
 }
 
 // MarketV2State matches the IPLD Schema type "MarketV2State".  It has Struct type-kind, and may be interrogated like map kind.
 type MarketV2State = *_MarketV2State
 type _MarketV2State struct {
-	Proposals _Link__MarketV2RawDealProposal
-	States _Link__MarketV0DealState
-	PendingProposals _Link__MarketV2DealProposal
-	EscrowTable _Link__BalanceTable
-	LockedTable _Link__BalanceTable
-	NextID _DealID
-	DealOpsByEpoch _Link__MultimapDealID
-	LastCron _ChainEpoch
-	TotalClientLockedCollateral _BigInt
+	Proposals                     _Link__MarketV2RawDealProposal
+	States                        _Link__MarketV0DealState
+	PendingProposals              _Link__MarketV2DealProposal
+	EscrowTable                   _Link__BalanceTable
+	LockedTable                   _Link__BalanceTable
+	NextID                        _DealID
+	DealOpsByEpoch                _Link__MultimapDealID
+	LastCron                      _ChainEpoch
+	TotalClientLockedCollateral   _BigInt
 	TotalProviderLockedCollateral _BigInt
-	TotalClientStorageFee _BigInt
+	TotalClientStorageFee         _BigInt
 }
 
 // MarketV3State matches the IPLD Schema type "MarketV3State".  It has Struct type-kind, and may be interrogated like map kind.
 type MarketV3State = *_MarketV3State
 type _MarketV3State struct {
-	Proposals _Link__MarketV3RawDealProposal
-	States _Link__MarketV3DealState
-	PendingProposals _Link__MarketV3DealProposal
-	EscrowTable _Link__V3BalanceTable
-	LockedTable _Link__V3BalanceTable
-	NextID _DealID
-	DealOpsByEpoch _Link__MarketV3MultimapDealID
-	LastCron _ChainEpoch
-	TotalClientLockedCollateral _BigInt
+	Proposals                     _Link__MarketV3RawDealProposal
+	States                        _Link__MarketV3DealState
+	PendingProposals              _Link__MarketV3DealProposal
+	EscrowTable                   _Link__V3BalanceTable
+	LockedTable                   _Link__V3BalanceTable
+	NextID                        _DealID
+	DealOpsByEpoch                _Link__MarketV3MultimapDealID
+	LastCron                      _ChainEpoch
+	TotalClientLockedCollateral   _BigInt
 	TotalProviderLockedCollateral _BigInt
-	TotalClientStorageFee _BigInt
+	TotalClientStorageFee         _BigInt
+}
+
+// MarketV5State matches the IPLD Schema type "MarketV5State".  It has Struct type-kind, and may be interrogated like map kind.
+type MarketV5State = *_MarketV5State
+type _MarketV5State struct {
+	Proposals                     _Link__MarketV3RawDealProposal
+	States                        _Link__MarketV3DealState
+	PendingProposals              _Link__MarketV3DealProposal
+	EscrowTable                   _Link__V3BalanceTable
+	LockedTable                   _Link__V3BalanceTable
+	NextID                        _DealID
+	DealOpsByEpoch                _Link__MarketV3MultimapDealID
+	LastCron                      _ChainEpoch
+	TotalClientLockedCollateral   _BigInt
+	TotalProviderLockedCollateral _BigInt
+	TotalClientStorageFee         _BigInt
 }
 
 // Merge matches the IPLD Schema type "Merge".  It has Struct type-kind, and may be interrogated like map kind.
 type Merge = *_Merge
 type _Merge struct {
-	Lane _Int
+	Lane  _Int
 	Nonce _Int
 }
 
 // MessageParamsInitExecParams matches the IPLD Schema type "MessageParamsInitExecParams".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsInitExecParams = *_MessageParamsInitExecParams
 type _MessageParamsInitExecParams struct {
-	CodeCID _Link
+	CodeCID           _Link
 	ConstructorParams _Bytes
 }
 
 // MessageParamsMarketActivateDeals matches the IPLD Schema type "MessageParamsMarketActivateDeals".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMarketActivateDeals = *_MessageParamsMarketActivateDeals
 type _MessageParamsMarketActivateDeals struct {
-	DealIDs _List__DealID
+	DealIDs      _List__DealID
 	SectorExpiry _ChainEpoch
 }
 
 // MessageParamsMarketComputeCommitment matches the IPLD Schema type "MessageParamsMarketComputeCommitment".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMarketComputeCommitment = *_MessageParamsMarketComputeCommitment
 type _MessageParamsMarketComputeCommitment struct {
-	DealIDs _List__DealID
+	DealIDs    _List__DealID
 	SectorType _RegisteredSealProof
 }
 
@@ -2001,29 +2131,35 @@ type _MessageParamsMarketPublishDeals struct {
 // MessageParamsMarketTerminateDeals matches the IPLD Schema type "MessageParamsMarketTerminateDeals".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMarketTerminateDeals = *_MessageParamsMarketTerminateDeals
 type _MessageParamsMarketTerminateDeals struct {
-	Epoch _ChainEpoch
+	Epoch   _ChainEpoch
 	DealIDs _List__DealID
+}
+
+// MessageParamsMarketV5ComputeCommitment matches the IPLD Schema type "MessageParamsMarketV5ComputeCommitment".  It has Struct type-kind, and may be interrogated like map kind.
+type MessageParamsMarketV5ComputeCommitment = *_MessageParamsMarketV5ComputeCommitment
+type _MessageParamsMarketV5ComputeCommitment struct {
+	Inputs _List__SectorDataSpec
 }
 
 // MessageParamsMarketVerifyDeals matches the IPLD Schema type "MessageParamsMarketVerifyDeals".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMarketVerifyDeals = *_MessageParamsMarketVerifyDeals
 type _MessageParamsMarketVerifyDeals struct {
-	DealIDs _List__DealID
+	DealIDs      _List__DealID
 	SectorExpiry _ChainEpoch
-	SectorStart _ChainEpoch
+	SectorStart  _ChainEpoch
 }
 
 // MessageParamsMarketWithdrawBalance matches the IPLD Schema type "MessageParamsMarketWithdrawBalance".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMarketWithdrawBalance = *_MessageParamsMarketWithdrawBalance
 type _MessageParamsMarketWithdrawBalance struct {
 	ProviderOrClientAmount _Address
-	Amount _BigInt
+	Amount                 _BigInt
 }
 
 // MessageParamsMinerChangeAddress matches the IPLD Schema type "MessageParamsMinerChangeAddress".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMinerChangeAddress = *_MessageParamsMinerChangeAddress
 type _MessageParamsMinerChangeAddress struct {
-	NewWorker _Address
+	NewWorker       _Address
 	NewControlAddrs _List__Address
 }
 
@@ -2048,7 +2184,7 @@ type _MessageParamsMinerCheckSectorProven struct {
 // MessageParamsMinerCompactPartitions matches the IPLD Schema type "MessageParamsMinerCompactPartitions".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMinerCompactPartitions = *_MessageParamsMinerCompactPartitions
 type _MessageParamsMinerCompactPartitions struct {
-	Deadline _Int
+	Deadline   _Int
 	Partitions _BitField
 }
 
@@ -2087,35 +2223,55 @@ type _MessageParamsMinerDeferredCron struct {
 	EventType _Int
 }
 
+// MessageParamsMinerDisputeWindowedPoSt matches the IPLD Schema type "MessageParamsMinerDisputeWindowedPoSt".  It has Struct type-kind, and may be interrogated like map kind.
+type MessageParamsMinerDisputeWindowedPoSt = *_MessageParamsMinerDisputeWindowedPoSt
+type _MessageParamsMinerDisputeWindowedPoSt struct {
+	Deadline  _Int
+	PoStIndex _Int
+}
+
 // MessageParamsMinerExtendSectorExpiration matches the IPLD Schema type "MessageParamsMinerExtendSectorExpiration".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMinerExtendSectorExpiration = *_MessageParamsMinerExtendSectorExpiration
 type _MessageParamsMinerExtendSectorExpiration struct {
 	Extension _List__MinerExpirationExtend
 }
 
+// MessageParamsMinerPreCommitSectorBatch matches the IPLD Schema type "MessageParamsMinerPreCommitSectorBatch".  It has Struct type-kind, and may be interrogated like map kind.
+type MessageParamsMinerPreCommitSectorBatch = *_MessageParamsMinerPreCommitSectorBatch
+type _MessageParamsMinerPreCommitSectorBatch struct {
+	Sectors _List__MinerV0SectorPreCommitInfo
+}
+
+// MessageParamsMinerProveCommitAggregate matches the IPLD Schema type "MessageParamsMinerProveCommitAggregate".  It has Struct type-kind, and may be interrogated like map kind.
+type MessageParamsMinerProveCommitAggregate = *_MessageParamsMinerProveCommitAggregate
+type _MessageParamsMinerProveCommitAggregate struct {
+	SectorNumbers  _BitField
+	AggregateProof _Bytes
+}
+
 // MessageParamsMinerProveCommitSector matches the IPLD Schema type "MessageParamsMinerProveCommitSector".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMinerProveCommitSector = *_MessageParamsMinerProveCommitSector
 type _MessageParamsMinerProveCommitSector struct {
 	SectorNumber _SectorNumber
-	Proof _Bytes
+	Proof        _Bytes
 }
 
 // MessageParamsMinerReportFault matches the IPLD Schema type "MessageParamsMinerReportFault".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMinerReportFault = *_MessageParamsMinerReportFault
 type _MessageParamsMinerReportFault struct {
-	BlockHeader1 _Bytes
-	BlockHeader2 _Bytes
+	BlockHeader1     _Bytes
+	BlockHeader2     _Bytes
 	BlockHeaderExtra _Bytes
 }
 
 // MessageParamsMinerSubmitWindowedPoSt matches the IPLD Schema type "MessageParamsMinerSubmitWindowedPoSt".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMinerSubmitWindowedPoSt = *_MessageParamsMinerSubmitWindowedPoSt
 type _MessageParamsMinerSubmitWindowedPoSt struct {
-	Deadline _Int
-	Partitions _List__MinerPostPartition
-	Proofs _List__MinerPoStProof
+	Deadline         _Int
+	Partitions       _List__MinerPostPartition
+	Proofs           _List__MinerPoStProof
 	ChainCommitEpoch _ChainEpoch
-	ChainCommitRand _Bytes
+	ChainCommitRand  _Bytes
 }
 
 // MessageParamsMinerTerminateSectors matches the IPLD Schema type "MessageParamsMinerTerminateSectors".  It has Struct type-kind, and may be interrogated like map kind.
@@ -2133,7 +2289,7 @@ type _MessageParamsMinerWithdrawBalance struct {
 // MessageParamsMultisigAddSigner matches the IPLD Schema type "MessageParamsMultisigAddSigner".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMultisigAddSigner = *_MessageParamsMultisigAddSigner
 type _MessageParamsMultisigAddSigner struct {
-	Signer _Address
+	Signer   _Address
 	Increase _Bool
 }
 
@@ -2146,25 +2302,25 @@ type _MessageParamsMultisigChangeThreshold struct {
 // MessageParamsMultisigConstructor matches the IPLD Schema type "MessageParamsMultisigConstructor".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMultisigConstructor = *_MessageParamsMultisigConstructor
 type _MessageParamsMultisigConstructor struct {
-	Signers _List__Address
+	Signers               _List__Address
 	NumApprovalsThreshold _Int
-	UnlockDuration _ChainEpoch
-	StartEpoch _ChainEpoch
+	UnlockDuration        _ChainEpoch
+	StartEpoch            _ChainEpoch
 }
 
 // MessageParamsMultisigLockBalance matches the IPLD Schema type "MessageParamsMultisigLockBalance".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMultisigLockBalance = *_MessageParamsMultisigLockBalance
 type _MessageParamsMultisigLockBalance struct {
-	StartEpoch _ChainEpoch
+	StartEpoch     _ChainEpoch
 	UnlockDuration _ChainEpoch
-	Amount _BigInt
+	Amount         _BigInt
 }
 
 // MessageParamsMultisigPropose matches the IPLD Schema type "MessageParamsMultisigPropose".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMultisigPropose = *_MessageParamsMultisigPropose
 type _MessageParamsMultisigPropose struct {
-	To _Address
-	Value _BigInt
+	To     _Address
+	Value  _BigInt
 	Method _MethodNum
 	Params _Bytes
 }
@@ -2172,7 +2328,7 @@ type _MessageParamsMultisigPropose struct {
 // MessageParamsMultisigRemoveSigner matches the IPLD Schema type "MessageParamsMultisigRemoveSigner".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMultisigRemoveSigner = *_MessageParamsMultisigRemoveSigner
 type _MessageParamsMultisigRemoveSigner struct {
-	Signer _Address
+	Signer   _Address
 	Decrease _Bool
 }
 
@@ -2180,13 +2336,13 @@ type _MessageParamsMultisigRemoveSigner struct {
 type MessageParamsMultisigSwapSigner = *_MessageParamsMultisigSwapSigner
 type _MessageParamsMultisigSwapSigner struct {
 	From _Address
-	To _Address
+	To   _Address
 }
 
 // MessageParamsMultisigTxnID matches the IPLD Schema type "MessageParamsMultisigTxnID".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsMultisigTxnID = *_MessageParamsMultisigTxnID
 type _MessageParamsMultisigTxnID struct {
-	ID _Int
+	ID          _Int
 	ProposeHash _Bytes
 }
 
@@ -2194,32 +2350,32 @@ type _MessageParamsMultisigTxnID struct {
 type MessageParamsPaychConstructor = *_MessageParamsPaychConstructor
 type _MessageParamsPaychConstructor struct {
 	From _Address
-	To _Address
+	To   _Address
 }
 
 // MessageParamsPaychUpdateChannelState matches the IPLD Schema type "MessageParamsPaychUpdateChannelState".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsPaychUpdateChannelState = *_MessageParamsPaychUpdateChannelState
 type _MessageParamsPaychUpdateChannelState struct {
-	Sv _SignedVoucher
+	Sv     _SignedVoucher
 	Secret _Bytes
 }
 
 // MessageParamsPowerCreateMiner matches the IPLD Schema type "MessageParamsPowerCreateMiner".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsPowerCreateMiner = *_MessageParamsPowerCreateMiner
 type _MessageParamsPowerCreateMiner struct {
-	Owner _Address
-	Worker _Address
+	Owner         _Address
+	Worker        _Address
 	SealProofType _Int
-	Peer _PeerID
-	Multiaddrs _List__Multiaddrs
+	Peer          _PeerID
+	Multiaddrs    _List__Multiaddrs
 }
 
 // MessageParamsPowerCurrentTotal matches the IPLD Schema type "MessageParamsPowerCurrentTotal".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsPowerCurrentTotal = *_MessageParamsPowerCurrentTotal
 type _MessageParamsPowerCurrentTotal struct {
-	RawBytePower _BigInt
-	QualityAdjPower _BigInt
-	PledgeCollateral _BigInt
+	RawBytePower            _BigInt
+	QualityAdjPower         _BigInt
+	PledgeCollateral        _BigInt
 	QualityAdjPowerSmoothed _V0FilterEstimate
 }
 
@@ -2227,36 +2383,36 @@ type _MessageParamsPowerCurrentTotal struct {
 type MessageParamsPowerEnrollCron = *_MessageParamsPowerEnrollCron
 type _MessageParamsPowerEnrollCron struct {
 	EventEpoch _ChainEpoch
-	Payload _Bytes
+	Payload    _Bytes
 }
 
 // MessageParamsPowerUpdateClaimed matches the IPLD Schema type "MessageParamsPowerUpdateClaimed".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsPowerUpdateClaimed = *_MessageParamsPowerUpdateClaimed
 type _MessageParamsPowerUpdateClaimed struct {
-	RawByteDelta _BigInt
+	RawByteDelta         _BigInt
 	QualityAdjustedDelta _BigInt
 }
 
 // MessageParamsRewardAwardBlock matches the IPLD Schema type "MessageParamsRewardAwardBlock".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsRewardAwardBlock = *_MessageParamsRewardAwardBlock
 type _MessageParamsRewardAwardBlock struct {
-	Miner _Address
-	Penalty _BigInt
+	Miner     _Address
+	Penalty   _BigInt
 	GasReward _BigInt
-	WinCount _Int
+	WinCount  _Int
 }
 
 // MessageParamsVerifregAddVerifier matches the IPLD Schema type "MessageParamsVerifregAddVerifier".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsVerifregAddVerifier = *_MessageParamsVerifregAddVerifier
 type _MessageParamsVerifregAddVerifier struct {
-	Address _Address
+	Address   _Address
 	Allowance _BigInt
 }
 
 // MessageParamsVerifregUseBytes matches the IPLD Schema type "MessageParamsVerifregUseBytes".  It has Struct type-kind, and may be interrogated like map kind.
 type MessageParamsVerifregUseBytes = *_MessageParamsVerifregUseBytes
 type _MessageParamsVerifregUseBytes struct {
-	Address _Address
+	Address  _Address
 	DealSize _BigInt
 }
 
@@ -2267,44 +2423,44 @@ type _MethodNum struct{ x int64 }
 // MinerExpirationExtend matches the IPLD Schema type "MinerExpirationExtend".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerExpirationExtend = *_MinerExpirationExtend
 type _MinerExpirationExtend struct {
-	Deadline _Int
-	Partition _Int
-	Sectors _BitField
+	Deadline      _Int
+	Partition     _Int
+	Sectors       _BitField
 	NewExpiration _ChainEpoch
 }
 
 // MinerPostPartition matches the IPLD Schema type "MinerPostPartition".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerPostPartition = *_MinerPostPartition
 type _MinerPostPartition struct {
-	Index _Int
+	Index   _Int
 	Skipped _BitField
 }
 
 // MinerPostProof matches the IPLD Schema type "MinerPostProof".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerPostProof = *_MinerPostProof
 type _MinerPostProof struct {
-	PoStProof _Int
+	PoStProof  _Int
 	ProofBytes _Bytes
 }
 
 // MinerTerminationDecl matches the IPLD Schema type "MinerTerminationDecl".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerTerminationDecl = *_MinerTerminationDecl
 type _MinerTerminationDecl struct {
-	Deadline _Int
+	Deadline  _Int
 	Partition _Int
-	Sectors _BitField
+	Sectors   _BitField
 }
 
 // MinerV0Deadline matches the IPLD Schema type "MinerV0Deadline".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV0Deadline = *_MinerV0Deadline
 type _MinerV0Deadline struct {
-	Partitions _Link__MinerV0Partition
-	ExpirationEpochs _Link
-	PostSubmissions _BitField
+	Partitions        _Link__MinerV0Partition
+	ExpirationEpochs  _Link
+	PostSubmissions   _BitField
 	EarlyTerminations _BitField
-	LiveSectors _Int
-	TotalSectors _Int
-	FaultyPower _MinerV0PowerPair
+	LiveSectors       _Int
+	TotalSectors      _Int
+	FaultyPower       _MinerV0PowerPair
 }
 
 // MinerV0Deadlines matches the IPLD Schema type "MinerV0Deadlines".  It has Struct type-kind, and may be interrogated like map kind.
@@ -2317,110 +2473,110 @@ type _MinerV0Deadlines struct {
 type MinerV0ExpirationSet = *_MinerV0ExpirationSet
 type _MinerV0ExpirationSet struct {
 	OnTimeSectors _BitField
-	EarlySectors _BitField
-	OnTimePledge _BigInt
-	ActivePower _MinerV0PowerPair
-	FaultyPower _MinerV0PowerPair
+	EarlySectors  _BitField
+	OnTimePledge  _BigInt
+	ActivePower   _MinerV0PowerPair
+	FaultyPower   _MinerV0PowerPair
 }
 
 // MinerV0Info matches the IPLD Schema type "MinerV0Info".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV0Info = *_MinerV0Info
 type _MinerV0Info struct {
-	Owner _Address
-	Worker _Address
-	ControlAddresses _List__Address__Maybe
-	PendingWorkerKey _MinerV0WorkerChangeKey__Maybe
-	PeerId _PeerID
-	Multiaddrs _List__Multiaddrs__Maybe
-	SealProofType _Int
-	SectorSize _SectorSize
+	Owner                      _Address
+	Worker                     _Address
+	ControlAddresses           _List__Address__Maybe
+	PendingWorkerKey           _MinerV0WorkerChangeKey__Maybe
+	PeerId                     _PeerID
+	Multiaddrs                 _List__Multiaddrs__Maybe
+	SealProofType              _Int
+	SectorSize                 _SectorSize
 	WindowPoStPartitionSectors _Int
 }
 
 // MinerV0Partition matches the IPLD Schema type "MinerV0Partition".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV0Partition = *_MinerV0Partition
 type _MinerV0Partition struct {
-	Sectors _BitField
-	Faults _BitField
-	Recoveries _BitField
-	Terminated _BitField
+	Sectors           _BitField
+	Faults            _BitField
+	Recoveries        _BitField
+	Terminated        _BitField
 	ExpirationsEpochs _Link__MinerV0ExpirationSet
-	EarlyTerminated _Link
-	LivePower _MinerV0PowerPair
-	FaultyPower _MinerV0PowerPair
-	RecoveringPower _MinerV0PowerPair
+	EarlyTerminated   _Link
+	LivePower         _MinerV0PowerPair
+	FaultyPower       _MinerV0PowerPair
+	RecoveringPower   _MinerV0PowerPair
 }
 
 // MinerV0PowerPair matches the IPLD Schema type "MinerV0PowerPair".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV0PowerPair = *_MinerV0PowerPair
 type _MinerV0PowerPair struct {
 	Raw _BigInt
-	QA _BigInt
+	QA  _BigInt
 }
 
 // MinerV0SectorOnChainInfo matches the IPLD Schema type "MinerV0SectorOnChainInfo".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV0SectorOnChainInfo = *_MinerV0SectorOnChainInfo
 type _MinerV0SectorOnChainInfo struct {
-	SectorNumber _SectorNumber
-	SealProof _Int
-	SealedCID _Link
-	DealIDs _List__DealID
-	Activation _ChainEpoch
-	Expiration _ChainEpoch
-	DealWeight _BigInt
-	VerifiedDealWeight _BigInt
-	InitialPledge _BigInt
-	ExpectedDayReward _BigInt
+	SectorNumber          _SectorNumber
+	SealProof             _Int
+	SealedCID             _Link
+	DealIDs               _List__DealID
+	Activation            _ChainEpoch
+	Expiration            _ChainEpoch
+	DealWeight            _BigInt
+	VerifiedDealWeight    _BigInt
+	InitialPledge         _BigInt
+	ExpectedDayReward     _BigInt
 	ExpectedStorageReward _BigInt
 }
 
 // MinerV0SectorPreCommitInfo matches the IPLD Schema type "MinerV0SectorPreCommitInfo".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV0SectorPreCommitInfo = *_MinerV0SectorPreCommitInfo
 type _MinerV0SectorPreCommitInfo struct {
-	SealProof _Int
-	SectorNumber _SectorNumber
-	SealedCID _Link
-	SealRandEpoch _ChainEpoch
-	DealIDs _List__DealID__Maybe
-	Expiration _ChainEpoch
-	ReplaceCapacity _Bool
-	ReplaceSectorDeadline _Int
+	SealProof              _Int
+	SectorNumber           _SectorNumber
+	SealedCID              _Link
+	SealRandEpoch          _ChainEpoch
+	DealIDs                _List__DealID__Maybe
+	Expiration             _ChainEpoch
+	ReplaceCapacity        _Bool
+	ReplaceSectorDeadline  _Int
 	ReplaceSectorPartition _Int
-	ReplaceSectorNumber _SectorNumber
+	ReplaceSectorNumber    _SectorNumber
 }
 
 // MinerV0SectorPreCommitOnChainInfo matches the IPLD Schema type "MinerV0SectorPreCommitOnChainInfo".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV0SectorPreCommitOnChainInfo = *_MinerV0SectorPreCommitOnChainInfo
 type _MinerV0SectorPreCommitOnChainInfo struct {
-	Info _MinerV0SectorPreCommitInfo
-	PreCommitDeposit _BigInt
-	PreCommitEpoch _ChainEpoch
-	DealWeight _BigInt
+	Info               _MinerV0SectorPreCommitInfo
+	PreCommitDeposit   _BigInt
+	PreCommitEpoch     _ChainEpoch
+	DealWeight         _BigInt
 	VerifiedDealWeight _BigInt
 }
 
 // MinerV0State matches the IPLD Schema type "MinerV0State".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV0State = *_MinerV0State
 type _MinerV0State struct {
-	Info _Link__MinerV0Info
-	PreCommitDeposits _BigInt
-	LockedFunds _BigInt
-	VestingFunds _Link__MinerV0VestingFunds
-	InitialPledgeRequirement _BigInt
-	PreCommittedSectors _Link__MinerV0SectorPreCommits
+	Info                      _Link__MinerV0Info
+	PreCommitDeposits         _BigInt
+	LockedFunds               _BigInt
+	VestingFunds              _Link__MinerV0VestingFunds
+	InitialPledgeRequirement  _BigInt
+	PreCommittedSectors       _Link__MinerV0SectorPreCommits
 	PreCommittedSectorsExpiry _Link
-	AllocatedSectors _Link__BitField
-	Sectors _Link__MinerV0SectorInfo
-	ProvingPeriodStart _ChainEpoch
-	CurrentDeadline _Int
-	Deadlines _Link__MinerV0Deadlines
-	EarlyTerminations _BitField
+	AllocatedSectors          _Link__BitField
+	Sectors                   _Link__MinerV0SectorInfo
+	ProvingPeriodStart        _ChainEpoch
+	CurrentDeadline           _Int
+	Deadlines                 _Link__MinerV0Deadlines
+	EarlyTerminations         _BitField
 }
 
 // MinerV0VestingFund matches the IPLD Schema type "MinerV0VestingFund".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV0VestingFund = *_MinerV0VestingFund
 type _MinerV0VestingFund struct {
-	Epoch _ChainEpoch
+	Epoch  _ChainEpoch
 	Amount _BigInt
 }
 
@@ -2433,20 +2589,20 @@ type _MinerV0VestingFunds struct {
 // MinerV0WorkerChangeKey matches the IPLD Schema type "MinerV0WorkerChangeKey".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV0WorkerChangeKey = *_MinerV0WorkerChangeKey
 type _MinerV0WorkerChangeKey struct {
-	NewWorker _Address
+	NewWorker   _Address
 	EffectiveAt _ChainEpoch
 }
 
 // MinerV2Deadline matches the IPLD Schema type "MinerV2Deadline".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV2Deadline = *_MinerV2Deadline
 type _MinerV2Deadline struct {
-	Partitions _Link__MinerV2Partition
-	ExpirationEpochs _Link
-	PostSubmissions _BitField
+	Partitions        _Link__MinerV2Partition
+	ExpirationEpochs  _Link
+	PostSubmissions   _BitField
 	EarlyTerminations _BitField
-	LiveSectors _Int
-	TotalSectors _Int
-	FaultyPower _MinerV0PowerPair
+	LiveSectors       _Int
+	TotalSectors      _Int
+	FaultyPower       _MinerV0PowerPair
 }
 
 // MinerV2Deadlines matches the IPLD Schema type "MinerV2Deadlines".  It has Struct type-kind, and may be interrogated like map kind.
@@ -2458,82 +2614,82 @@ type _MinerV2Deadlines struct {
 // MinerV2Info matches the IPLD Schema type "MinerV2Info".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV2Info = *_MinerV2Info
 type _MinerV2Info struct {
-	Owner _Address
-	Worker _Address
-	ControlAddresses _List__Address__Maybe
-	PendingWorkerKey _MinerV0WorkerChangeKey__Maybe
-	PeerId _PeerID
-	Multiaddrs _List__Multiaddrs__Maybe
-	SealProofType _Int
-	SectorSize _SectorSize
+	Owner                      _Address
+	Worker                     _Address
+	ControlAddresses           _List__Address__Maybe
+	PendingWorkerKey           _MinerV0WorkerChangeKey__Maybe
+	PeerId                     _PeerID
+	Multiaddrs                 _List__Multiaddrs__Maybe
+	SealProofType              _Int
+	SectorSize                 _SectorSize
 	WindowPoStPartitionSectors _Int
-	ConsensusFaultElapsed _ChainEpoch
-	PendingOwnerAddress _Address__Maybe
+	ConsensusFaultElapsed      _ChainEpoch
+	PendingOwnerAddress        _Address__Maybe
 }
 
 // MinerV2Partition matches the IPLD Schema type "MinerV2Partition".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV2Partition = *_MinerV2Partition
 type _MinerV2Partition struct {
-	Sectors _BitField
-	Unproven _BitField
-	Faults _BitField
-	Recoveries _BitField
-	Terminated _BitField
+	Sectors           _BitField
+	Unproven          _BitField
+	Faults            _BitField
+	Recoveries        _BitField
+	Terminated        _BitField
 	ExpirationsEpochs _Link__MinerV0ExpirationSet
-	EarlyTerminated _Link
-	LivePower _MinerV0PowerPair
-	UnprovenPower _MinerV0PowerPair
-	FaultyPower _MinerV0PowerPair
-	RecoveringPower _MinerV0PowerPair
+	EarlyTerminated   _Link
+	LivePower         _MinerV0PowerPair
+	UnprovenPower     _MinerV0PowerPair
+	FaultyPower       _MinerV0PowerPair
+	RecoveringPower   _MinerV0PowerPair
 }
 
 // MinerV2SectorOnChainInfo matches the IPLD Schema type "MinerV2SectorOnChainInfo".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV2SectorOnChainInfo = *_MinerV2SectorOnChainInfo
 type _MinerV2SectorOnChainInfo struct {
-	SectorNumber _SectorNumber
-	SealProof _Int
-	SealedCID _Link
-	DealIDs _List__DealID
-	Activation _ChainEpoch
-	Expiration _ChainEpoch
-	DealWeight _BigInt
-	VerifiedDealWeight _BigInt
-	InitialPledge _BigInt
-	ExpectedDayReward _BigInt
+	SectorNumber          _SectorNumber
+	SealProof             _Int
+	SealedCID             _Link
+	DealIDs               _List__DealID
+	Activation            _ChainEpoch
+	Expiration            _ChainEpoch
+	DealWeight            _BigInt
+	VerifiedDealWeight    _BigInt
+	InitialPledge         _BigInt
+	ExpectedDayReward     _BigInt
 	ExpectedStorageReward _BigInt
-	ReplacedSectorAge _ChainEpoch
-	ReplacedDayReward _BigInt
+	ReplacedSectorAge     _ChainEpoch
+	ReplacedDayReward     _BigInt
 }
 
 // MinerV2State matches the IPLD Schema type "MinerV2State".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV2State = *_MinerV2State
 type _MinerV2State struct {
-	Info _Link__MinerV2Info
-	PreCommitDeposits _BigInt
-	LockedFunds _BigInt
-	VestingFunds _Link__MinerV0VestingFunds
-	FeeDebt _BigInt
-	InitialPledge _BigInt
-	PreCommittedSectors _Link__MinerV0SectorPreCommits
+	Info                      _Link__MinerV2Info
+	PreCommitDeposits         _BigInt
+	LockedFunds               _BigInt
+	VestingFunds              _Link__MinerV0VestingFunds
+	FeeDebt                   _BigInt
+	InitialPledge             _BigInt
+	PreCommittedSectors       _Link__MinerV0SectorPreCommits
 	PreCommittedSectorsExpiry _Link
-	AllocatedSectors _Link__BitField
-	Sectors _Link__MinerV2SectorInfo
-	ProvingPeriodStart _ChainEpoch
-	CurrentDeadline _Int
-	Deadlines _Link__MinerV2Deadlines
-	EarlyTerminations _BitField
+	AllocatedSectors          _Link__BitField
+	Sectors                   _Link__MinerV2SectorInfo
+	ProvingPeriodStart        _ChainEpoch
+	CurrentDeadline           _Int
+	Deadlines                 _Link__MinerV2Deadlines
+	EarlyTerminations         _BitField
 }
 
 // MinerV3Deadline matches the IPLD Schema type "MinerV3Deadline".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV3Deadline = *_MinerV3Deadline
 type _MinerV3Deadline struct {
-	Partitions _Link__MinerV3Partition
-	ExpirationEpochs _Link
-	PostSubmissions _BitField
+	Partitions        _Link__MinerV3Partition
+	ExpirationEpochs  _Link
+	PostSubmissions   _BitField
 	EarlyTerminations _BitField
-	LiveSectors _Int
-	TotalSectors _Int
-	FaultyPower _MinerV0PowerPair
+	LiveSectors       _Int
+	TotalSectors      _Int
+	FaultyPower       _MinerV0PowerPair
 }
 
 // MinerV3Deadlines matches the IPLD Schema type "MinerV3Deadlines".  It has Struct type-kind, and may be interrogated like map kind.
@@ -2545,56 +2701,76 @@ type _MinerV3Deadlines struct {
 // MinerV3Partition matches the IPLD Schema type "MinerV3Partition".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV3Partition = *_MinerV3Partition
 type _MinerV3Partition struct {
-	Sectors _BitField
-	Unproven _BitField
-	Faults _BitField
-	Recoveries _BitField
-	Terminated _BitField
+	Sectors           _BitField
+	Unproven          _BitField
+	Faults            _BitField
+	Recoveries        _BitField
+	Terminated        _BitField
 	ExpirationsEpochs _Link__MinerV3ExpirationSet
-	EarlyTerminated _Link
-	LivePower _MinerV0PowerPair
-	UnprovenPower _MinerV0PowerPair
-	FaultyPower _MinerV0PowerPair
-	RecoveringPower _MinerV0PowerPair
+	EarlyTerminated   _Link
+	LivePower         _MinerV0PowerPair
+	UnprovenPower     _MinerV0PowerPair
+	FaultyPower       _MinerV0PowerPair
+	RecoveringPower   _MinerV0PowerPair
 }
 
 // MinerV3State matches the IPLD Schema type "MinerV3State".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV3State = *_MinerV3State
 type _MinerV3State struct {
-	Info _Link__MinerV2Info
-	PreCommitDeposits _BigInt
-	LockedFunds _BigInt
-	VestingFunds _Link__MinerV0VestingFunds
-	FeeDebt _BigInt
-	InitialPledge _BigInt
-	PreCommittedSectors _Link__MinerV3SectorPreCommits
+	Info                      _Link__MinerV2Info
+	PreCommitDeposits         _BigInt
+	LockedFunds               _BigInt
+	VestingFunds              _Link__MinerV0VestingFunds
+	FeeDebt                   _BigInt
+	InitialPledge             _BigInt
+	PreCommittedSectors       _Link__MinerV3SectorPreCommits
 	PreCommittedSectorsExpiry _Link
-	AllocatedSectors _Link__BitField
-	Sectors _Link__MinerV3SectorInfo
-	ProvingPeriodStart _ChainEpoch
-	CurrentDeadline _Int
-	Deadlines _Link__MinerV3Deadlines
-	EarlyTerminations _BitField
+	AllocatedSectors          _Link__BitField
+	Sectors                   _Link__MinerV3SectorInfo
+	ProvingPeriodStart        _ChainEpoch
+	CurrentDeadline           _Int
+	Deadlines                 _Link__MinerV3Deadlines
+	EarlyTerminations         _BitField
 }
 
 // MinerV4State matches the IPLD Schema type "MinerV4State".  It has Struct type-kind, and may be interrogated like map kind.
 type MinerV4State = *_MinerV4State
 type _MinerV4State struct {
-	Info _Link__MinerV2Info
-	PreCommitDeposits _BigInt
-	LockedFunds _BigInt
-	VestingFunds _Link__MinerV0VestingFunds
-	FeeDebt _BigInt
-	InitialPledge _BigInt
-	PreCommittedSectors _Link__MinerV3SectorPreCommits
+	Info                      _Link__MinerV2Info
+	PreCommitDeposits         _BigInt
+	LockedFunds               _BigInt
+	VestingFunds              _Link__MinerV0VestingFunds
+	FeeDebt                   _BigInt
+	InitialPledge             _BigInt
+	PreCommittedSectors       _Link__MinerV3SectorPreCommits
 	PreCommittedSectorsExpiry _Link
-	AllocatedSectors _Link__BitField
-	Sectors _Link__MinerV3SectorInfo
-	ProvingPeriodStart _ChainEpoch
-	CurrentDeadline _Int
-	Deadlines _Link__MinerV3Deadlines
-	EarlyTerminations _BitField
-	DeadlineCronActive _Bool
+	AllocatedSectors          _Link__BitField
+	Sectors                   _Link__MinerV3SectorInfo
+	ProvingPeriodStart        _ChainEpoch
+	CurrentDeadline           _Int
+	Deadlines                 _Link__MinerV3Deadlines
+	EarlyTerminations         _BitField
+	DeadlineCronActive        _Bool
+}
+
+// MinerV5State matches the IPLD Schema type "MinerV5State".  It has Struct type-kind, and may be interrogated like map kind.
+type MinerV5State = *_MinerV5State
+type _MinerV5State struct {
+	Info                       _Link__MinerV2Info
+	PreCommitDeposits          _BigInt
+	LockedFunds                _BigInt
+	VestingFunds               _Link__MinerV0VestingFunds
+	FeeDebt                    _BigInt
+	InitialPledge              _BigInt
+	PreCommittedSectors        _Link__MinerV3SectorPreCommits
+	PreCommittedSectorsCleanUp _Link
+	AllocatedSectors           _Link__BitField
+	Sectors                    _Link__MinerV3SectorInfo
+	ProvingPeriodStart         _ChainEpoch
+	CurrentDeadline            _Int
+	Deadlines                  _Link__MinerV3Deadlines
+	EarlyTerminations          _BitField
+	DeadlineCronActive         _Bool
 }
 
 // ModVerifyParams matches the IPLD Schema type "ModVerifyParams".  It has Struct type-kind, and may be interrogated like map kind.
@@ -2633,35 +2809,35 @@ type _Multimap__PowerV3CronEvent__entry struct {
 // MultisigV0State matches the IPLD Schema type "MultisigV0State".  It has Struct type-kind, and may be interrogated like map kind.
 type MultisigV0State = *_MultisigV0State
 type _MultisigV0State struct {
-	Signers _List__Address
+	Signers               _List__Address
 	NumApprovalsThreshold _Int
-	NextTxnID _Int
-	InitialBalance _BigInt
-	StartEpoch _ChainEpoch
-	UnlockDuration _ChainEpoch
-	PendingTxns _Link__MultisigV0Transaction
+	NextTxnID             _Int
+	InitialBalance        _BigInt
+	StartEpoch            _ChainEpoch
+	UnlockDuration        _ChainEpoch
+	PendingTxns           _Link__MultisigV0Transaction
 }
 
 // MultisigV0Transaction matches the IPLD Schema type "MultisigV0Transaction".  It has Struct type-kind, and may be interrogated like map kind.
 type MultisigV0Transaction = *_MultisigV0Transaction
 type _MultisigV0Transaction struct {
-	To _Address
-	Value _BigInt
-	Method _MethodNum
-	Params _Bytes
+	To       _Address
+	Value    _BigInt
+	Method   _MethodNum
+	Params   _Bytes
 	Approved _List__Address
 }
 
 // MultisigV3State matches the IPLD Schema type "MultisigV3State".  It has Struct type-kind, and may be interrogated like map kind.
 type MultisigV3State = *_MultisigV3State
 type _MultisigV3State struct {
-	Signers _List__Address
+	Signers               _List__Address
 	NumApprovalsThreshold _Int
-	NextTxnID _Int
-	InitialBalance _BigInt
-	StartEpoch _ChainEpoch
-	UnlockDuration _ChainEpoch
-	PendingTxns _Link__MultisigV3Transaction
+	NextTxnID             _Int
+	InitialBalance        _BigInt
+	StartEpoch            _ChainEpoch
+	UnlockDuration        _ChainEpoch
+	PendingTxns           _Link__MultisigV3Transaction
 }
 
 // PaddedPieceSize matches the IPLD Schema type "PaddedPieceSize".  It has int kind.
@@ -2672,29 +2848,29 @@ type _PaddedPieceSize struct{ x int64 }
 type PaychV0LaneState = *_PaychV0LaneState
 type _PaychV0LaneState struct {
 	Redeemed _BigInt
-	Nonce _Int
+	Nonce    _Int
 }
 
 // PaychV0State matches the IPLD Schema type "PaychV0State".  It has Struct type-kind, and may be interrogated like map kind.
 type PaychV0State = *_PaychV0State
 type _PaychV0State struct {
-	From _Address
-	To _Address
-	ToSend _BigInt
-	SettlingAt _ChainEpoch
+	From            _Address
+	To              _Address
+	ToSend          _BigInt
+	SettlingAt      _ChainEpoch
 	MinSettleHeight _ChainEpoch
-	LaneStates _Link__PaychV0LaneState
+	LaneStates      _Link__PaychV0LaneState
 }
 
 // PaychV3State matches the IPLD Schema type "PaychV3State".  It has Struct type-kind, and may be interrogated like map kind.
 type PaychV3State = *_PaychV3State
 type _PaychV3State struct {
-	From _Address
-	To _Address
-	ToSend _BigInt
-	SettlingAt _ChainEpoch
+	From            _Address
+	To              _Address
+	ToSend          _BigInt
+	SettlingAt      _ChainEpoch
 	MinSettleHeight _ChainEpoch
-	LaneStates _Link__PaychV3LaneState
+	LaneStates      _Link__PaychV3LaneState
 }
 
 // PeerID matches the IPLD Schema type "PeerID".  It has bytes kind.
@@ -2704,91 +2880,91 @@ type _PeerID struct{ x []byte }
 // PoStProof matches the IPLD Schema type "PoStProof".  It has Struct type-kind, and may be interrogated like map kind.
 type PoStProof = *_PoStProof
 type _PoStProof struct {
-	PoStProof _Int
+	PoStProof  _Int
 	ProofBytes _Bytes
 }
 
 // PowerV0Claim matches the IPLD Schema type "PowerV0Claim".  It has Struct type-kind, and may be interrogated like map kind.
 type PowerV0Claim = *_PowerV0Claim
 type _PowerV0Claim struct {
-	RawBytePower _BigInt
+	RawBytePower    _BigInt
 	QualityAdjPower _BigInt
 }
 
 // PowerV0CronEvent matches the IPLD Schema type "PowerV0CronEvent".  It has Struct type-kind, and may be interrogated like map kind.
 type PowerV0CronEvent = *_PowerV0CronEvent
 type _PowerV0CronEvent struct {
-	MinerAddr _Address
+	MinerAddr       _Address
 	CallbackPayload _Bytes
 }
 
 // PowerV0State matches the IPLD Schema type "PowerV0State".  It has Struct type-kind, and may be interrogated like map kind.
 type PowerV0State = *_PowerV0State
 type _PowerV0State struct {
-	TotalRawBytePower _BigInt
-	TotalBytesCommitted _BigInt
-	TotalQualityAdjPower _BigInt
-	TotalQABytesCommitted _BigInt
-	TotalPledgeCollateral _BigInt
-	ThisEpochRawBytePower _BigInt
-	ThisEpochQualityAdjPower _BigInt
+	TotalRawBytePower         _BigInt
+	TotalBytesCommitted       _BigInt
+	TotalQualityAdjPower      _BigInt
+	TotalQABytesCommitted     _BigInt
+	TotalPledgeCollateral     _BigInt
+	ThisEpochRawBytePower     _BigInt
+	ThisEpochQualityAdjPower  _BigInt
 	ThisEpochPledgeCollateral _BigInt
-	ThisEpochQAPowerSmoothed _V0FilterEstimate__Maybe
-	MinerCount _Int
-	MinerAboveMinPowerCount _Int
-	CronEventQueue _Link__PowerV0CronEvent
-	FirstCronEpoch _ChainEpoch
-	LastProcessedCronEpoch _ChainEpoch
-	Claims _Link__PowerV0Claim
-	ProofValidationBatch _Link__Maybe
+	ThisEpochQAPowerSmoothed  _V0FilterEstimate__Maybe
+	MinerCount                _Int
+	MinerAboveMinPowerCount   _Int
+	CronEventQueue            _Link__PowerV0CronEvent
+	FirstCronEpoch            _ChainEpoch
+	LastProcessedCronEpoch    _ChainEpoch
+	Claims                    _Link__PowerV0Claim
+	ProofValidationBatch      _Link__Maybe
 }
 
 // PowerV2Claim matches the IPLD Schema type "PowerV2Claim".  It has Struct type-kind, and may be interrogated like map kind.
 type PowerV2Claim = *_PowerV2Claim
 type _PowerV2Claim struct {
-	SealProofType _Int
-	RawBytePower _BigInt
+	SealProofType   _Int
+	RawBytePower    _BigInt
 	QualityAdjPower _BigInt
 }
 
 // PowerV2State matches the IPLD Schema type "PowerV2State".  It has Struct type-kind, and may be interrogated like map kind.
 type PowerV2State = *_PowerV2State
 type _PowerV2State struct {
-	TotalRawBytePower _BigInt
-	TotalBytesCommitted _BigInt
-	TotalQualityAdjPower _BigInt
-	TotalQABytesCommitted _BigInt
-	TotalPledgeCollateral _BigInt
-	ThisEpochRawBytePower _BigInt
-	ThisEpochQualityAdjPower _BigInt
+	TotalRawBytePower         _BigInt
+	TotalBytesCommitted       _BigInt
+	TotalQualityAdjPower      _BigInt
+	TotalQABytesCommitted     _BigInt
+	TotalPledgeCollateral     _BigInt
+	ThisEpochRawBytePower     _BigInt
+	ThisEpochQualityAdjPower  _BigInt
 	ThisEpochPledgeCollateral _BigInt
-	ThisEpochQAPowerSmoothed _V0FilterEstimate__Maybe
-	MinerCount _Int
-	MinerAboveMinPowerCount _Int
-	CronEventQueue _Link__PowerV0CronEvent
-	FirstCronEpoch _ChainEpoch
-	Claims _Link__PowerV2Claim
-	ProofValidationBatch _Link__Maybe
+	ThisEpochQAPowerSmoothed  _V0FilterEstimate__Maybe
+	MinerCount                _Int
+	MinerAboveMinPowerCount   _Int
+	CronEventQueue            _Link__PowerV0CronEvent
+	FirstCronEpoch            _ChainEpoch
+	Claims                    _Link__PowerV2Claim
+	ProofValidationBatch      _Link__Maybe
 }
 
 // PowerV3State matches the IPLD Schema type "PowerV3State".  It has Struct type-kind, and may be interrogated like map kind.
 type PowerV3State = *_PowerV3State
 type _PowerV3State struct {
-	TotalRawBytePower _BigInt
-	TotalBytesCommitted _BigInt
-	TotalQualityAdjPower _BigInt
-	TotalQABytesCommitted _BigInt
-	TotalPledgeCollateral _BigInt
-	ThisEpochRawBytePower _BigInt
-	ThisEpochQualityAdjPower _BigInt
+	TotalRawBytePower         _BigInt
+	TotalBytesCommitted       _BigInt
+	TotalQualityAdjPower      _BigInt
+	TotalQABytesCommitted     _BigInt
+	TotalPledgeCollateral     _BigInt
+	ThisEpochRawBytePower     _BigInt
+	ThisEpochQualityAdjPower  _BigInt
 	ThisEpochPledgeCollateral _BigInt
-	ThisEpochQAPowerSmoothed _V0FilterEstimate__Maybe
-	MinerCount _Int
-	MinerAboveMinPowerCount _Int
-	CronEventQueue _Link__PowerV3CronEvent
-	FirstCronEpoch _ChainEpoch
-	Claims _Link__PowerV3Claim
-	ProofValidationBatch _Link__Maybe
+	ThisEpochQAPowerSmoothed  _V0FilterEstimate__Maybe
+	MinerCount                _Int
+	MinerAboveMinPowerCount   _Int
+	CronEventQueue            _Link__PowerV3CronEvent
+	FirstCronEpoch            _ChainEpoch
+	Claims                    _Link__PowerV3Claim
+	ProofValidationBatch      _Link__Maybe
 }
 
 // RawAddress matches the IPLD Schema type "RawAddress".  It has string kind.
@@ -2802,44 +2978,51 @@ type _RegisteredSealProof struct{ x ipld.Link }
 // RewardV0State matches the IPLD Schema type "RewardV0State".  It has Struct type-kind, and may be interrogated like map kind.
 type RewardV0State = *_RewardV0State
 type _RewardV0State struct {
-	CumsumBaseline _BigInt
-	CumsumRealized _BigInt
-	EffectiveNetworkTime _ChainEpoch
-	EffectiveBaselinePower _BigInt
-	ThisEpochReward _BigInt
+	CumsumBaseline          _BigInt
+	CumsumRealized          _BigInt
+	EffectiveNetworkTime    _ChainEpoch
+	EffectiveBaselinePower  _BigInt
+	ThisEpochReward         _BigInt
 	ThisEpochRewardSmoothed _V0FilterEstimate__Maybe
-	ThisEpochBaselinePower _BigInt
-	Epoch _ChainEpoch
-	TotalMined _BigInt
+	ThisEpochBaselinePower  _BigInt
+	Epoch                   _ChainEpoch
+	TotalMined              _BigInt
 }
 
 // RewardV2State matches the IPLD Schema type "RewardV2State".  It has Struct type-kind, and may be interrogated like map kind.
 type RewardV2State = *_RewardV2State
 type _RewardV2State struct {
-	CumsumBaseline _BigInt
-	CumsumRealized _BigInt
-	EffectiveNetworkTime _ChainEpoch
-	EffectiveBaselinePower _BigInt
-	ThisEpochReward _BigInt
+	CumsumBaseline          _BigInt
+	CumsumRealized          _BigInt
+	EffectiveNetworkTime    _ChainEpoch
+	EffectiveBaselinePower  _BigInt
+	ThisEpochReward         _BigInt
 	ThisEpochRewardSmoothed _V0FilterEstimate
-	ThisEpochBaselinePower _BigInt
-	Epoch _ChainEpoch
+	ThisEpochBaselinePower  _BigInt
+	Epoch                   _ChainEpoch
 	TotalStoragePowerReward _BigInt
-	SimpleTotal _BigInt
-	BaselineTotal _BigInt
+	SimpleTotal             _BigInt
+	BaselineTotal           _BigInt
 }
 
 // SealVerifyInfo matches the IPLD Schema type "SealVerifyInfo".  It has Struct type-kind, and may be interrogated like map kind.
 type SealVerifyInfo = *_SealVerifyInfo
 type _SealVerifyInfo struct {
-	SealProof _RegisteredSealProof
-	SectorID _Int
-	DealIDs _List__DealID
-	Randomness _Bytes
+	SealProof             _RegisteredSealProof
+	SectorID              _Int
+	DealIDs               _List__DealID
+	Randomness            _Bytes
 	InteractiveRandomness _Bytes
-	Proof _Bytes
-	SealedCID _Link
-	UnsealedCID _Link
+	Proof                 _Bytes
+	SealedCID             _Link
+	UnsealedCID           _Link
+}
+
+// SectorDataSpec matches the IPLD Schema type "SectorDataSpec".  It has Struct type-kind, and may be interrogated like map kind.
+type SectorDataSpec = *_SectorDataSpec
+type _SectorDataSpec struct {
+	DealIDs    _List__DealID
+	SectorType _RegisteredSealProof
 }
 
 // SectorNumber matches the IPLD Schema type "SectorNumber".  It has int kind.
@@ -2857,17 +3040,17 @@ type _Signature struct{ x []byte }
 // SignedVoucher matches the IPLD Schema type "SignedVoucher".  It has Struct type-kind, and may be interrogated like map kind.
 type SignedVoucher = *_SignedVoucher
 type _SignedVoucher struct {
-	ChannelAddr _Address
-	TimeLockMin _ChainEpoch
-	TimeLockMax _ChainEpoch
-	SecretPreimage _Bytes__Maybe
-	Extra _ModVerifyParams__Maybe
-	Lane _Int
-	Nonce _Int
-	Amount _BigInt
+	ChannelAddr     _Address
+	TimeLockMin     _ChainEpoch
+	TimeLockMax     _ChainEpoch
+	SecretPreimage  _Bytes__Maybe
+	Extra           _ModVerifyParams__Maybe
+	Lane            _Int
+	Nonce           _Int
+	Amount          _BigInt
 	MinSettleHeight _ChainEpoch__Maybe
-	Merges _List__Merge__Maybe
-	Signature _Signature__Maybe
+	Merges          _List__Merge__Maybe
+	Signature       _Signature__Maybe
 }
 
 // String matches the IPLD Schema type "String".  It has string kind.
@@ -2888,16 +3071,15 @@ type _V0FilterEstimate struct {
 // VerifregV0State matches the IPLD Schema type "VerifregV0State".  It has Struct type-kind, and may be interrogated like map kind.
 type VerifregV0State = *_VerifregV0State
 type _VerifregV0State struct {
-	RootKey _Address
-	Verifiers _Link__DataCap
+	RootKey         _Address
+	Verifiers       _Link__DataCap
 	VerifiedClients _Link__DataCap
 }
 
 // VerifregV3State matches the IPLD Schema type "VerifregV3State".  It has Struct type-kind, and may be interrogated like map kind.
 type VerifregV3State = *_VerifregV3State
 type _VerifregV3State struct {
-	RootKey _Address
-	Verifiers _Link__V3DataCap
+	RootKey         _Address
+	Verifiers       _Link__V3DataCap
 	VerifiedClients _Link__V3DataCap
 }
-

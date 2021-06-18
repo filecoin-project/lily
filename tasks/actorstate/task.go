@@ -235,15 +235,21 @@ func (RawActorExtractorMap) GetExtractor(code cid.Cid) (ActorStateExtractor, boo
 
 // A TypedActorExtractorMap extracts a single type of actor using full parsing of actor state
 type TypedActorExtractorMap struct {
-	// Simplistic for now, will need to make into a slice when we have more actor versions
-	CodeV1 cid.Cid
-	CodeV2 cid.Cid
-	CodeV3 cid.Cid
-	CodeV4 cid.Cid
+	codes *cid.Set
+}
+
+func NewTypedActorExtractorMap(codes []cid.Cid) *TypedActorExtractorMap {
+	t := &TypedActorExtractorMap{
+		codes: cid.NewSet(),
+	}
+	for _, c := range codes {
+		t.codes.Add(c)
+	}
+	return t
 }
 
 func (t *TypedActorExtractorMap) Allow(code cid.Cid) bool {
-	return code == t.CodeV1 || code == t.CodeV2 || code == t.CodeV3 || code == t.CodeV4
+	return t.codes.Has(code)
 }
 
 func (t *TypedActorExtractorMap) GetExtractor(code cid.Cid) (ActorStateExtractor, bool) {

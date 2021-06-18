@@ -14,12 +14,10 @@ import (
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
 
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
-
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
-
 	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
-
 	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
+	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
 )
 
 func init() {
@@ -39,9 +37,23 @@ func init() {
 	builtin.RegisterActorState(builtin4.AccountActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
 		return load4(store, root)
 	})
+
+	builtin.RegisterActorState(builtin5.AccountActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
+		return load5(store, root)
+	})
 }
 
 var Methods = builtin4.MethodsAccount
+
+func AllCodes() []cid.Cid {
+	return []cid.Cid{
+		builtin0.AccountActorCodeID,
+		builtin2.AccountActorCodeID,
+		builtin3.AccountActorCodeID,
+		builtin4.AccountActorCodeID,
+		builtin5.AccountActorCodeID,
+	}
+}
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
 	switch act.Code {
@@ -57,6 +69,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 	case builtin4.AccountActorCodeID:
 		return load4(store, act.Head)
+
+	case builtin5.AccountActorCodeID:
+		return load5(store, act.Head)
 
 	}
 	return nil, xerrors.Errorf("unknown actor code %s", act.Code)

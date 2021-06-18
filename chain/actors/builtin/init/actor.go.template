@@ -16,7 +16,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
 {{range .versions}}
 	builtin{{.}} "github.com/filecoin-project/specs-actors{{import .}}actors/builtin"
-{{end}}
+{{- end}}
 )
 
 func init() {
@@ -30,6 +30,13 @@ var (
 	Address = builtin{{.latestVersion}}.InitActorAddr
 	Methods = builtin{{.latestVersion}}.MethodsInit
 )
+
+func AllCodes() []cid.Cid {
+	return []cid.Cid{ {{range .versions}}
+        builtin{{.}}.InitActorCodeID,
+    {{- end}}
+    }
+}
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
 	switch act.Code {

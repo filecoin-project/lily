@@ -16,7 +16,7 @@ import (
 	msig{{.latestVersion}} "github.com/filecoin-project/specs-actors/v4/actors/builtin/multisig"
 {{range .versions}}
 	builtin{{.}} "github.com/filecoin-project/specs-actors{{import .}}actors/builtin"
-{{end}}
+{{- end}}
 
 	"github.com/filecoin-project/lotus/chain/types"
 
@@ -64,6 +64,13 @@ type State interface {
 type Transaction = msig{{.latestVersion}}.Transaction
 
 var Methods = builtin{{.latestVersion}}.MethodsMultisig
+
+func AllCodes() []cid.Cid {
+	return []cid.Cid{ {{range .versions}}
+        builtin{{.}}.MultisigActorCodeID,
+    {{- end}}
+    }
+}
 
 func Message(version actors.Version, from address.Address) MessageBuilder {
 	switch version {
