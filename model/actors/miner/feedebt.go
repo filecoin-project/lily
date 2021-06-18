@@ -20,7 +20,8 @@ type MinerFeeDebt struct {
 }
 
 type MinerFeeDebtV0 struct {
-	tableName struct{} `pg:"miner_fee_debts"` // nolint: structcheck,unused
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"miner_fee_debts"`
 	Height    int64    `pg:",pk,notnull,use_zero"`
 	MinerID   string   `pg:",pk,notnull"`
 	StateRoot string   `pg:",pk,notnull"`

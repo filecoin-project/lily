@@ -137,7 +137,8 @@ func TestLongNames(t *testing.T) {
 // TestingUpsertStruct is only used for validating the GenerateUpsertStrings() method
 type TestingUpsertStruct struct {
 	// should be ignored by upsert generator
-	tableName struct{} `pg:"testing_upsert_struct"` // nolint: structcheck,unused
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"testing_upsert_struct"`
 	Ignored   string   `pg:"-"`
 
 	// should be a constrained field in the conflict statement

@@ -171,14 +171,14 @@ jobs:
       - run:
           name: gofmt
           command: |
-            out=$(gofmt -s -l .)
+            out=$(gofmt -l . | grep -v extern)
             if [[ -n "$out" ]]; then
               echo $out | awk '{print "::error file=" $0 ",line=0,col=0::File is not gofmt-ed."}'
               exit 1
             fi
       - run:
           name: go vet
-          command: go vet ./...
+          command: go vet $(go list ./... | grep -v /tasks/messages/types)
       - run:
           name: staticcheck
           command: |

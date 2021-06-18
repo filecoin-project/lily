@@ -33,7 +33,8 @@ type MinerSectorInfo struct {
 }
 
 type MinerSectorInfoV0 struct {
-	tableName struct{} `pg:"miner_sector_infos"` // nolint: structcheck,unused
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"miner_sector_infos"`
 	Height    int64    `pg:",pk,notnull,use_zero"`
 	MinerID   string   `pg:",pk,notnull"`
 	SectorID  uint64   `pg:",pk,use_zero"`

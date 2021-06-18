@@ -13,7 +13,8 @@ import (
 )
 
 type InternalMessage struct {
-	tableName     struct{} `pg:"internal_messages"` // nolint: structcheck,unused
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName     struct{} `pg:"internal_messages"`
 	Height        int64    `pg:",pk,notnull,use_zero"`
 	Cid           string   `pg:",pk,notnull"`
 	StateRoot     string   `pg:",notnull"`
@@ -53,7 +54,8 @@ func (l InternalMessageList) Persist(ctx context.Context, s model.StorageBatch, 
 }
 
 type InternalParsedMessage struct {
-	tableName struct{} `pg:"internal_parsed_messages"` // nolint: structcheck,unused
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"internal_parsed_messages"`
 	Height    int64    `pg:",pk,notnull,use_zero"`
 	Cid       string   `pg:",pk,notnull"`
 	From      string   `pg:",notnull"`

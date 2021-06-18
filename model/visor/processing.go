@@ -26,7 +26,8 @@ func NewProcessingTipSet(ts *types.TipSet) *ProcessingTipSet {
 }
 
 type ProcessingTipSet struct {
-	tableName struct{} `pg:"visor_processing_tipsets"` // nolint: structcheck,unused
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"visor_processing_tipsets"`
 
 	TipSet string `pg:",pk,notnull"`
 
@@ -110,7 +111,8 @@ func TipSetKeyFromString(s string) (types.TipSetKey, error) {
 }
 
 type ProcessingActor struct {
-	tableName struct{} `pg:"visor_processing_actors"` // nolint: structcheck,unused
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"visor_processing_actors"`
 
 	Head            string `pg:",pk,notnull"`
 	Code            string `pg:",pk,notnull"`
@@ -172,7 +174,8 @@ func NewProcessingMessage(m *types.Message, height int64) *ProcessingMessage {
 }
 
 type ProcessingMessage struct {
-	tableName struct{} `pg:"visor_processing_messages"` // nolint: structcheck,unused
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"visor_processing_messages"`
 
 	Cid    string `pg:",pk,notnull"`
 	Height int64  `pg:",use_zero"`
