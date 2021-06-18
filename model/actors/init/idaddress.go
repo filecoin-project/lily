@@ -21,7 +21,8 @@ type IdAddress struct {
 }
 
 type IdAddressV0 struct {
-	tableName struct{} `pg:"id_addresses"` // nolint: structcheck,unused
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"id_addresses"`
 	ID        string   `pg:",pk,notnull"`
 	Address   string   `pg:",pk,notnull"`
 	StateRoot string   `pg:",pk,notnull"`

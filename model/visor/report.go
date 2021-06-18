@@ -20,7 +20,8 @@ const (
 )
 
 type ProcessingReport struct {
-	tableName struct{} `pg:"visor_processing_reports"` // nolint: structcheck,unused
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"visor_processing_reports"`
 
 	Height    int64  `pg:",pk,use_zero"`
 	StateRoot string `pg:",pk,notnull"`

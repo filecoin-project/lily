@@ -33,7 +33,8 @@ type ChainPower struct {
 }
 
 type ChainPowerV0 struct {
-	tableName struct{} `pg:"chain_powers"` // nolint: structcheck,unused
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"chain_powers"`
 	Height    int64    `pg:",pk,notnull,use_zero"`
 	StateRoot string   `pg:",pk"`
 

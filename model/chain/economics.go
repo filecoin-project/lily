@@ -14,7 +14,8 @@ import (
 )
 
 type ChainEconomics struct {
-	tableName           struct{} `pg:"chain_economics"` //nolint: structcheck,unused
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName           struct{} `pg:"chain_economics"`
 	Height              int64    `pg:",pk,notnull,use_zero"`
 	ParentStateRoot     string   `pg:",notnull"`
 	CirculatingFil      string   `pg:"type:numeric,notnull"`
@@ -26,7 +27,8 @@ type ChainEconomics struct {
 }
 
 type ChainEconomicsV0 struct {
-	tableName       struct{} `pg:"chain_economics"` // nolint: structcheck,unused
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName       struct{} `pg:"chain_economics"`
 	ParentStateRoot string   `pg:",notnull"`
 	CirculatingFil  string   `pg:",notnull"`
 	VestedFil       string   `pg:",notnull"`

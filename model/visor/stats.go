@@ -12,7 +12,8 @@ import (
 )
 
 type ProcessingStat struct {
-	tableName struct{} `pg:"visor_processing_stats"` // nolint: structcheck,unused
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"visor_processing_stats"`
 
 	// RecordedAt is the time the measurement was recorded in the database
 	RecordedAt time.Time `pg:",pk,notnull"`
