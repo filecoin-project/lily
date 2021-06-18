@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"sort"
 
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
@@ -36,6 +37,8 @@ var LogList = &cli.Command{
 		if err != nil {
 			return err
 		}
+
+		sort.Strings(systems)
 
 		for _, system := range systems {
 			fmt.Println(system)
