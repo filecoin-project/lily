@@ -72,6 +72,7 @@ func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAP
 	out := make(initmodel.IdAddressList, 0, len(addressChanges.Added)+len(addressChanges.Modified))
 	for _, newAddr := range addressChanges.Added {
 		out = append(out, &initmodel.IdAddress{
+			Height:    int64(a.Epoch),
 			StateRoot: a.ParentStateRoot.String(),
 			ID:        newAddr.ID.String(),
 			Address:   newAddr.PK.String(),
@@ -79,6 +80,7 @@ func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAP
 	}
 	for _, modAddr := range addressChanges.Modified {
 		out = append(out, &initmodel.IdAddress{
+			Height:    int64(a.Epoch),
 			StateRoot: a.ParentStateRoot.String(),
 			ID:        modAddr.To.ID.String(),
 			Address:   modAddr.To.PK.String(),

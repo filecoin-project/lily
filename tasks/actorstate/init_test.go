@@ -123,8 +123,10 @@ func TestInitExtractorV0(t *testing.T) {
 		assert.Len(t, is, 2)
 		assert.EqualValues(t, idNewAddr.String(), is[0].ID)
 		assert.EqualValues(t, pkNewAddr.String(), is[0].Address)
+		assert.EqualValues(t, 1, is[0].Height)
 		assert.EqualValues(t, idAddrAfterMod.String(), is[1].ID)
 		assert.EqualValues(t, pkAddrToMod.String(), is[1].Address)
+		assert.EqualValues(t, 1, is[1].Height)
 	})
 }
 
@@ -228,8 +230,10 @@ func TestInitExtractorV2(t *testing.T) {
 		assert.Len(t, is, 2)
 		assert.EqualValues(t, idNewAddr.String(), is[0].ID)
 		assert.EqualValues(t, pkNewAddr.String(), is[0].Address)
+		assert.EqualValues(t, 1, is[0].Height)
 		assert.EqualValues(t, idAddrAfterMod.String(), is[1].ID)
 		assert.EqualValues(t, pkAddrToMod.String(), is[1].Address)
+		assert.EqualValues(t, 1, is[1].Height)
 	})
 }
 
@@ -333,8 +337,10 @@ func TestInitExtractorV3(t *testing.T) {
 		assert.Len(t, is, 2)
 		assert.EqualValues(t, idNewAddr.String(), is[0].ID)
 		assert.EqualValues(t, pkNewAddr.String(), is[0].Address)
+		assert.EqualValues(t, 1, is[0].Height)
 		assert.EqualValues(t, idAddrAfterMod.String(), is[1].ID)
 		assert.EqualValues(t, pkAddrToMod.String(), is[1].Address)
+		assert.EqualValues(t, 1, is[1].Height)
 	})
 }
 
@@ -438,7 +444,9 @@ func TestInitExtractorV4(t *testing.T) {
 		assert.Len(t, is, 2)
 		assert.EqualValues(t, idNewAddr.String(), is[0].ID)
 		assert.EqualValues(t, pkNewAddr.String(), is[0].Address)
+		assert.EqualValues(t, 1, is[0].Height)
 		assert.EqualValues(t, idAddrAfterMod.String(), is[1].ID)
 		assert.EqualValues(t, pkAddrToMod.String(), is[1].Address)
+		assert.EqualValues(t, 1, is[1].Height)
 	})
 }
