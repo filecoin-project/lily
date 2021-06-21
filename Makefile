@@ -166,4 +166,3 @@ butterflynet: build
 
 interopnet: GOFLAGS+=-tags=interopnet
 interopnet: build
->>>>>>> build(devnet): support building visor for devnets
