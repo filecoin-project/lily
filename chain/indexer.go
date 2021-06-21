@@ -305,8 +305,8 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		// Fill in some report metadata
 		res.Report.Reporter = t.name
 		res.Report.Task = res.Task
-		res.Report.StartedAt = start
-		res.Report.CompletedAt = time.Now()
+		res.Report.StartedAt = res.StartedAt
+		res.Report.CompletedAt = res.CompletedAt
 
 		if res.Report.ErrorsDetected != nil {
 			res.Report.Status = visormodel.ProcessingStatusError
@@ -377,20 +377,25 @@ func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, nam
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
+	start := time.Now()
 
 	data, report, err := p.ProcessTipSet(ctx, ts)
 	if err != nil {
 		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
-			Task:  name,
-			Error: err,
+			Task:        name,
+			Error:       err,
+			StartedAt:   start,
+			CompletedAt: time.Now(),
 		}
 		return
 	}
 	results <- &TaskResult{
-		Task:   name,
-		Report: report,
-		Data:   data,
+		Task:        name,
+		Report:      report,
+		Data:        data,
+		StartedAt:   start,
+		CompletedAt: time.Now(),
 	}
 }
 
@@ -502,20 +507,25 @@ func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProces
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
+	start := time.Now()
 
 	data, report, err := p.ProcessMessages(ctx, ts, pts, emsgs, blkMsgs)
 	if err != nil {
 		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
-			Task:  name,
-			Error: err,
+			Task:        name,
+			Error:       err,
+			StartedAt:   start,
+			CompletedAt: time.Now(),
 		}
 		return
 	}
 	results <- &TaskResult{
-		Task:   name,
-		Report: report,
-		Data:   data,
+		Task:        name,
+		Report:      report,
+		Data:        data,
+		StartedAt:   start,
+		CompletedAt: time.Now(),
 	}
 }
 
@@ -524,20 +534,25 @@ func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor,
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
+	start := time.Now()
 
 	data, report, err := p.ProcessActors(ctx, ts, pts, actors)
 	if err != nil {
 		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
-			Task:  name,
-			Error: err,
+			Task:        name,
+			Error:       err,
+			StartedAt:   start,
+			CompletedAt: time.Now(),
 		}
 		return
 	}
 	results <- &TaskResult{
-		Task:   name,
-		Report: report,
-		Data:   data,
+		Task:        name,
+		Report:      report,
+		Data:        data,
+		StartedAt:   start,
+		CompletedAt: time.Now(),
 	}
 }
 
@@ -594,10 +609,12 @@ func (t *TipSetIndexer) Close() error {
 // A TaskResult is either some data to persist or an error which indicates that the task did not complete. Partial
 // completions are possible provided the Data contains a persistable log of the results.
 type TaskResult struct {
-	Task   string
-	Error  error
-	Report *visormodel.ProcessingReport
-	Data   model.Persistable
+	Task        string
+	Error       error
+	Report      *visormodel.ProcessingReport
+	Data        model.Persistable
+	StartedAt   time.Time
+	CompletedAt time.Time
 }
 
 type TipSetProcessor interface {
