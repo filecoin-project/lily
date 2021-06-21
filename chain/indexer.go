@@ -357,6 +357,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		for task, p := range taskOutputs {
 			go func(task string, p model.Persistable) {
 				defer wg.Done()
+				start := time.Now()
 				ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, task))
 
 				if err := t.storage.PersistBatch(ctx, p); err != nil {
