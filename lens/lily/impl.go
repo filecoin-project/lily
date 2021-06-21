@@ -52,19 +52,20 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedu
 	}
 
 	// HeadNotifier bridges between the event system and the watcher
-	obs := &HeadNotifier{} // get the current head and set it on the tipset cache (mimic chain.watcher behaviour)
+	obs := &HeadNotifier{
+		bufferSize: 40,
+	}
 
+	// get the current head and set it on the tipset cache (mimic chain.watcher behaviour)
 	head, err := m.ChainModuleAPI.ChainHead(ctx)
 	if err != nil {
 		return schedule.InvalidJobID, err
 	}
 
-	// Need to set current tipset concurrently because it will block otherwise
-	go func() {
-		if err := obs.SetCurrent(ctx, head); err != nil {
-			log.Errorw("failed to set current head tipset", "error", err)
-		}
-	}()
+	// Won't block since we are using non-zero buffer size in head notifier
+	if err := obs.SetCurrent(ctx, head); err != nil {
+		log.Errorw("failed to set current head tipset", "error", err)
+	}
 
 	// Hook up the notifier to the event system
 	if err := m.Events.Observe(obs); err != nil {
@@ -171,12 +172,16 @@ type HeadNotifier struct {
 	mu     sync.Mutex            // protects following fields
 	events chan *chain.HeadEvent // created lazily, closed by first cancel call
 	err    error                 // set to non-nil by the first cancel call
+
+	// size of the buffer to maintain for events. Using a buffer reduces chance
+	// that the emitter of events will block when sending to this notifier.
+	bufferSize int
 }
 
 func (h *HeadNotifier) eventsCh() chan *chain.HeadEvent {
 	// caller must hold mu
 	if h.events == nil {
-		h.events = make(chan *chain.HeadEvent)
+		h.events = make(chan *chain.HeadEvent, h.bufferSize)
 	}
 	return h.events
 }
@@ -203,7 +208,7 @@ func (h *HeadNotifier) Cancel(err error) {
 	}
 	h.err = err
 	if h.events == nil {
-		h.events = make(chan *chain.HeadEvent)
+		h.events = make(chan *chain.HeadEvent, h.bufferSize)
 	}
 	close(h.events)
 	h.mu.Unlock()
@@ -218,6 +223,12 @@ func (h *HeadNotifier) SetCurrent(ctx context.Context, ts *types.TipSet) error {
 	}
 	ev := h.eventsCh()
 	h.mu.Unlock()
+
+	// This is imprecise since it's inherently racy but good enough to emit
+	// a warning that the event may block the sender
+	if len(ev) == cap(ev) {
+		log.Warnw("head notifier buffer at capacity", "queued", len(ev))
+	}
 
 	ev <- &chain.HeadEvent{
 		Type:   chain.HeadEventCurrent,
@@ -236,6 +247,12 @@ func (h *HeadNotifier) Apply(ctx context.Context, ts *types.TipSet) error {
 	ev := h.eventsCh()
 	h.mu.Unlock()
 
+	// This is imprecise since it's inherently racy but good enough to emit
+	// a warning that the event may block the sender
+	if len(ev) == cap(ev) {
+		log.Warnw("head notifier buffer at capacity", "queued", len(ev))
+	}
+
 	ev <- &chain.HeadEvent{
 		Type:   chain.HeadEventApply,
 		TipSet: ts,
@@ -252,6 +269,12 @@ func (h *HeadNotifier) Revert(ctx context.Context, ts *types.TipSet) error {
 	}
 	ev := h.eventsCh()
 	h.mu.Unlock()
+
+	// This is imprecise since it's inherently racy but good enough to emit
+	// a warning that the event may block the sender
+	if len(ev) == cap(ev) {
+		log.Warnw("head notifier buffer at capacity", "queued", len(ev))
+	}
 
 	ev <- &chain.HeadEvent{
 		Type:   chain.HeadEventRevert,
