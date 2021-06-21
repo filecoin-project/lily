@@ -10,10 +10,9 @@ import (
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
-	apitest "github.com/filecoin-project/lotus/api/test"
 	"github.com/filecoin-project/lotus/build"
 	types "github.com/filecoin-project/lotus/chain/types"
-	nodetest "github.com/filecoin-project/lotus/node/test"
+	itestkit "github.com/filecoin-project/lotus/itests/kit"
 	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	"github.com/filecoin-project/specs-actors/actors/builtin/power"
 	"github.com/filecoin-project/specs-actors/actors/builtin/verifreg"
@@ -57,12 +56,13 @@ func TestWatcher(t *testing.T) {
 	require.NoError(t, err, "truncating tables")
 
 	t.Logf("preparing chain")
-	nodes, sn := nodetest.RPCMockSbBuilder(t, apitest.OneFull, apitest.OneMiner)
+	nodes, sn := itestkit.RPCMockMinerBuilder(t, itestkit.OneFull, itestkit.OneMiner)
 
 	node := nodes[0]
 	opener := testutil.NewAPIOpener(node)
 
-	apitest.MineUntilBlock(ctx, t, node, sn[0], nil)
+	bm := itestkit.NewBlockMiner(t, sn[0])
+	bm.MineUntilBlock(ctx, node, nil)
 
 	strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 	require.NoError(t, err, "NewDatabaseFromDB")

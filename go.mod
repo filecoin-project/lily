@@ -11,18 +11,18 @@ require (
 	github.com/filecoin-project/go-amt-ipld/v3 v3.1.0
 	github.com/filecoin-project/go-bitfield v0.2.4
 	github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210609215026-5cb3c10d68ad
-	github.com/filecoin-project/go-fil-markets v1.4.0
+	github.com/filecoin-project/go-fil-markets v1.5.0
 	github.com/filecoin-project/go-hamt-ipld/v3 v3.1.0
 	github.com/filecoin-project/go-jsonrpc v0.1.4-0.20210217175800-45ea43ac2bec
 	github.com/filecoin-project/go-multistore v0.0.3
-	github.com/filecoin-project/go-paramfetch v0.0.2-0.20210330140417-936748d3f5ec
+	github.com/filecoin-project/go-paramfetch v0.0.2-0.20210614165157-25a6c7769498
 	github.com/filecoin-project/go-state-types v0.1.1-0.20210506134452-99b279731c48
-	github.com/filecoin-project/lotus v1.9.1-0.20210609101858-a0f1662a1b11
+	github.com/filecoin-project/lotus v1.10.0-rc6.0.20210621151951-fa2b247f755f
 	github.com/filecoin-project/specs-actors v0.9.14
 	github.com/filecoin-project/specs-actors/v2 v2.3.5
 	github.com/filecoin-project/specs-actors/v3 v3.1.1
 	github.com/filecoin-project/specs-actors/v4 v4.0.1
-	github.com/filecoin-project/specs-actors/v5 v5.0.0-20210602024058-0c296bb386bf
+	github.com/filecoin-project/specs-actors/v5 v5.0.0-20210609212542-73e0409ac77c
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.3.1
 	github.com/go-pg/pgext v0.1.4
