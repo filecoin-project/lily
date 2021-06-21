@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
+	"github.com/filecoin-project/lotus/build"
+	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/node/repo"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
@@ -15,6 +19,26 @@ import (
 )
 
 var log = logging.Logger("visor/main")
+
+type UpSchedule struct {
+	Height    int64
+	Network   uint
+	Expensive bool
+}
+
+func (u *UpSchedule) String() string {
+	return fmt.Sprintf("Height: %d, Network: %d, Expensive: %t", u.Height, u.Network, u.Expensive)
+}
+
+type UpScheduleList []*UpSchedule
+
+func (ul UpScheduleList) String() string {
+	var sb strings.Builder
+	for _, u := range ul {
+		sb.WriteString(fmt.Sprintln("\t\t" + u.String()))
+	}
+	return sb.String()
+}
 
 func main() {
 	// Set up a context that is canceled when the command is interrupted
@@ -36,10 +60,19 @@ func main() {
 		log.Fatal(err)
 	}
 
+	var up UpScheduleList
+	for _, u := range stmgr.DefaultUpgradeSchedule() {
+		up = append(up, &UpSchedule{
+			Height:    int64(u.Height),
+			Network:   uint(u.Network),
+			Expensive: false,
+		})
+	}
+
 	app := &cli.App{
 		Name:    "visor",
 		Usage:   "Filecoin Chain Monitoring Utility",
-		Version: version.String(),
+		Version: fmt.Sprintf("VisorVersion: \t%s\n   NewestNetworkVersion: \t%d\n   GenesisFile: \t%s\n   DevNet: \t%t\n   UserVersion: \t%s\n   UpgradeSchedule: \n%s", version.String(), build.NewestNetworkVersion, build.GenesisFile, build.Devnet, build.UserVersion(), up.String()),
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "log-level",
