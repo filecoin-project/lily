@@ -232,6 +232,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 			// If we have actor processors then find actors that have changed state
 			if len(t.actorProcessors) > 0 {
+				changesStart := time.Now()
 				var err error
 				var changes map[string]types.Actor
 				// special case, we want to extract all actor states from the genesis block.
@@ -241,6 +242,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 					changes, err = t.stateChangedActors(tctx, parent.ParentState(), child.ParentState())
 				}
 				if err == nil {
+					ll.Debugw("found actor state changes", "count", len(changes), "time", time.Since(changesStart))
 					if t.addressFilter != nil {
 						for addr := range changes {
 							if !t.addressFilter.Allow(addr) {
@@ -418,7 +420,6 @@ func (t *TipSetIndexer) getGenesisActors(ctx context.Context) (map[string]types.
 	if err := tree.ForEach(func(addr address.Address, act *types.Actor) error {
 		out[addr.String()] = *act
 		return nil
-
 	}); err != nil {
 		return nil, err
 	}
