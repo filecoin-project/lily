@@ -9,6 +9,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
+	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/sentinel-visor/lens/lotus"
 	"github.com/ipfs/go-cid"
@@ -231,7 +232,14 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 			// If we have actor processors then find actors that have changed state
 			if len(t.actorProcessors) > 0 {
-				changes, err := t.stateChangedActors(tctx, parent.ParentState(), child.ParentState())
+				var err error
+				var changes map[string]types.Actor
+				// special case, we want to extract all actor states from the genesis block.
+				if parent.Height() == 0 {
+					changes, err = t.getGenesisActors(ctx)
+				} else {
+					changes, err = t.stateChangedActors(tctx, parent.ParentState(), child.ParentState())
+				}
 				if err == nil {
 					if t.addressFilter != nil {
 						for addr := range changes {
@@ -384,6 +392,32 @@ func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, nam
 		Report: report,
 		Data:   data,
 	}
+}
+
+// getGenesisActors returns a map of all actors contained in the genesis block.
+func (t *TipSetIndexer) getGenesisActors(ctx context.Context) (map[string]types.Actor, error) {
+	out := map[string]types.Actor{}
+
+	genesis, err := t.node.ChainGetGenesis(ctx)
+	if err != nil {
+		return nil, err
+	}
+	root, _, err := getStateTreeMapCIDAndVersion(ctx, t.node.Store(), genesis.ParentState())
+	if err != nil {
+		return nil, err
+	}
+	tree, err := state.LoadStateTree(t.node.Store(), root)
+	if err != nil {
+		return nil, err
+	}
+	if err := tree.ForEach(func(addr address.Address, act *types.Actor) error {
+		out[addr.String()] = *act
+		return nil
+
+	}); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // stateChangedActors is an optimized version of the lotus API method StateChangedActors. This method takes advantage of the efficient hamt/v3 diffing logic

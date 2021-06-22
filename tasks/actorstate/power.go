@@ -34,7 +34,7 @@ func NewPowerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 	}
 
 	prevState := curState
-	if a.Epoch != 0 {
+	if a.Epoch != 1 {
 		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
 		if err != nil {
 			// if the actor exists in the current state and not in the parent state then the
@@ -72,7 +72,7 @@ type PowerStateExtractionContext struct {
 }
 
 func (p *PowerStateExtractionContext) HasPreviousState() bool {
-	return !(p.CurrTs.Height() == 0 || p.PrevState == p.CurrState)
+	return !(p.CurrTs.Height() == 1 || p.PrevState == p.CurrState)
 }
 
 func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {

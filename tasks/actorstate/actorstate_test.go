@@ -137,6 +137,7 @@ func (m *MockAPI) fakeTipset(minerAddr address.Address, timestamp uint64, opts .
 		Miner:                 minerAddr,
 		Height:                5,
 		ParentStateRoot:       testutil.RandomCid(),
+		Parents:               []cid.Cid{testutil.RandomCid()},
 		Messages:              testutil.RandomCid(),
 		ParentMessageReceipts: testutil.RandomCid(),
 		BlockSig:              &crypto.Signature{Type: crypto.SigTypeBLS},

@@ -123,7 +123,7 @@ type MsigExtractionContext struct {
 }
 
 func (m *MsigExtractionContext) HasPreviousState() bool {
-	return !(m.CurrTs.Height() == 0 || m.CurrState == m.PrevState)
+	return !(m.CurrTs.Height() == 1 || m.CurrState == m.PrevState)
 }
 
 func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorStateAPI) (*MsigExtractionContext, error) {
@@ -133,7 +133,7 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 	}
 
 	prevState := curState
-	if a.Epoch != 0 {
+	if a.Epoch != 1 {
 		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
 		if err != nil {
 			// if the actor exists in the current state and not in the parent state then the

@@ -101,7 +101,7 @@ func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 
 	prevTipset := a.TipSet
 	prevState := curState
-	if a.Epoch != 0 {
+	if a.Epoch != 1 {
 		prevTipset = a.ParentTipSet
 
 		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
@@ -145,7 +145,7 @@ type MinerStateExtractionContext struct {
 }
 
 func (m *MinerStateExtractionContext) HasPreviousState() bool {
-	return !(m.CurrTs.Height() == 0 || m.PrevState == m.CurrState)
+	return !(m.CurrTs.Height() == 1 || m.PrevState == m.CurrState)
 }
 
 func ExtractMinerInfo(ctx context.Context, a ActorInfo, ec *MinerStateExtractionContext) (*minermodel.MinerInfo, error) {
