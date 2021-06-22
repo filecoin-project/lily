@@ -9,7 +9,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/libp2p/go-libp2p-core/peer"
 
-	// "github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/schedule"
 )
 
@@ -30,12 +29,18 @@ type LilyAPI interface {
 
 	ChainHead(context.Context) (*types.TipSet, error) //perm:read
 
-	// ID returns peerID of libp2p node backing this API
-	ID(context.Context) (peer.ID, error) //perm:read
-
 	// LogList returns a list of loggers
 	LogList(context.Context) ([]string, error)         //perm:write
 	LogSetLevel(context.Context, string, string) error //perm:write
+
+	// ID returns peerID of libp2p node backing this API
+	ID(context.Context) (peer.ID, error) //perm:read
+	NetAutoNatStatus(ctx context.Context) (i api.NatInfo, err error)
+	NetPeers(context.Context) ([]peer.AddrInfo, error)
+	NetAddrsListen(context.Context) (peer.AddrInfo, error)
+	NetPubsubScores(context.Context) ([]api.PubsubScore, error)
+	NetAgentVersion(ctx context.Context, p peer.ID) (string, error)
+	NetPeerInfo(context.Context, peer.ID) (*api.ExtendedPeerInfo, error)
 }
 
 type LilyWatchConfig struct {

@@ -36,10 +36,17 @@ type LilyAPIStruct struct {
 
 		SyncState func(ctx context.Context) (*api.SyncState, error) `perm:"read"`
 		ChainHead func(context.Context) (*types.TipSet, error)      `perm:"read"`
-		ID        func(context.Context) (peer.ID, error)            `perm:"read"`
 
 		LogList     func(context.Context) ([]string, error)     `perm:"read"`
 		LogSetLevel func(context.Context, string, string) error `perm:"read"`
+
+		ID               func(context.Context) (peer.ID, error)                        `perm:"read"`
+		NetAutoNatStatus func(context.Context) (api.NatInfo, error)                    `perm:"read"`
+		NetPeers         func(context.Context) ([]peer.AddrInfo, error)                `perm:"read"`
+		NetAddrsListen   func(context.Context) (peer.AddrInfo, error)                  `perm:"read"`
+		NetPubsubScores  func(context.Context) ([]api.PubsubScore, error)              `perm:"read"`
+		NetAgentVersion  func(ctx context.Context, p peer.ID) (string, error)          `perm:"read"`
+		NetPeerInfo      func(context.Context, peer.ID) (*api.ExtendedPeerInfo, error) `perm:"read"`
 	}
 }
 
@@ -91,4 +98,26 @@ func (s *LilyAPIStruct) LogSetLevel(ctx context.Context, subsystem, level string
 	return s.Internal.LogSetLevel(ctx, subsystem, level)
 }
 
-var _ LilyAPI = &LilyAPIStruct{}
+func (s *LilyAPIStruct) NetAutoNatStatus(ctx context.Context) (api.NatInfo, error) {
+	return s.Internal.NetAutoNatStatus(ctx)
+}
+
+func (s *LilyAPIStruct) NetPeers(ctx context.Context) ([]peer.AddrInfo, error) {
+	return s.Internal.NetPeers(ctx)
+}
+
+func (s *LilyAPIStruct) NetAddrsListen(ctx context.Context) (peer.AddrInfo, error) {
+	return s.Internal.NetAddrsListen(ctx)
+}
+
+func (s *LilyAPIStruct) NetPubsubScores(ctx context.Context) ([]api.PubsubScore, error) {
+	return s.Internal.NetPubsubScores(ctx)
+}
+
+func (s *LilyAPIStruct) NetAgentVersion(ctx context.Context, p peer.ID) (string, error) {
+	return s.Internal.NetAgentVersion(ctx, p)
+}
+
+func (s *LilyAPIStruct) NetPeerInfo(ctx context.Context, p peer.ID) (*api.ExtendedPeerInfo, error) {
+	return s.Internal.NetPeerInfo(ctx, p)
+}
