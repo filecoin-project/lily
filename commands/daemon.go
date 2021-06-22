@@ -29,7 +29,6 @@ import (
 )
 
 type daemonOpts struct {
-	api       string
 	repo      string
 	bootstrap bool // TODO: is this necessary - do we want to run visor in this mode?
 	config    string
@@ -42,13 +41,7 @@ var DaemonCmd = &cli.Command{
 	Name:  "daemon",
 	Usage: "Start a visor daemon process.",
 	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name: "api",
-			// TODO: usage description
-			EnvVars:     []string{"VISOR_API"},
-			Value:       "1234",
-			Destination: &daemonFlags.api,
-		},
+		clientAPIFlag,
 		&cli.StringFlag{
 			Name:        "repo",
 			Usage:       "Specify path where visor should store chain state.",
