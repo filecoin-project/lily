@@ -8,7 +8,7 @@ require (
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/filecoin-project/go-address v0.0.5
-	github.com/filecoin-project/go-amt-ipld/v3 v3.1.0
+	github.com/filecoin-project/go-amt-ipld/v3 v3.1.1
 	github.com/filecoin-project/go-bitfield v0.2.4
 	github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210609215026-5cb3c10d68ad
 	github.com/filecoin-project/go-fil-markets v1.5.0
