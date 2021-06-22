@@ -2,18 +2,13 @@ package actorstate
 
 import (
 	"context"
-	"strings"
 	"sync"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
-	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
-	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
-	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 
@@ -76,35 +71,4 @@ func GetActorStateExtractor(code cid.Cid) (ActorStateExtractor, bool) {
 	defer extractorsMu.Unlock()
 	ase, ok := extractors[code]
 	return ase, ok
-}
-
-// ActorNameByCode returns the name of the actor code. Agnostic to the
-// version of specs-actors.
-func ActorNameByCode(code cid.Cid) string {
-	if name := builtin.ActorNameByCode(code); name != "<unknown>" {
-		return name
-	}
-	if name := builtin2.ActorNameByCode(code); name != "<unknown>" {
-		return name
-	}
-	if name := builtin3.ActorNameByCode(code); name != "<unknown>" {
-		return name
-	}
-	return builtin4.ActorNameByCode(code)
-}
-
-func ActorFamily(name string) string {
-	if name == "<unknown>" {
-		return "<unknown>"
-	}
-
-	if !strings.HasPrefix(name, "fil/") {
-		return "<unknown>"
-	}
-	idx := strings.LastIndex(name, "/")
-	if idx == -1 {
-		return "<unknown>"
-	}
-
-	return name[idx+1:]
 }

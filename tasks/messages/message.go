@@ -16,12 +16,12 @@ import (
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
 	derivedmodel "github.com/filecoin-project/sentinel-visor/model/derived"
 	messagemodel "github.com/filecoin-project/sentinel-visor/model/messages"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 	"github.com/filecoin-project/sentinel-visor/tasks/messages/fcjson"
 )
 
@@ -190,7 +190,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 		receiptResults = append(receiptResults, rcpt)
 
-		actorName := actorstate.ActorNameByCode(m.ToActorCode)
+		actorName := builtin.ActorNameByCode(m.ToActorCode)
 		gasOutput := &derivedmodel.GasOutputs{
 			Height:             int64(m.Height),
 			Cid:                m.Cid.String(),
@@ -215,7 +215,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			GasRefund:          m.GasOutputs.GasRefund,
 			GasBurned:          m.GasOutputs.GasBurned,
 			ActorName:          actorName,
-			ActorFamily:        actorstate.ActorFamily(actorName),
+			ActorFamily:        builtin.ActorFamily(actorName),
 		}
 		gasOutputsResults = append(gasOutputsResults, gasOutput)
 

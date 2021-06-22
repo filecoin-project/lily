@@ -2,6 +2,8 @@
 package builtin
 
 import (
+	"strings"
+
 	"github.com/filecoin-project/go-address"
 	"github.com/ipfs/go-cid"
 	"golang.org/x/xerrors"
@@ -131,6 +133,22 @@ func ActorNameByCode(c cid.Cid) string {
 	default:
 		return "<unknown>"
 	}
+}
+
+func ActorFamily(name string) string {
+	if name == "<unknown>" {
+		return "<unknown>"
+	}
+
+	if !strings.HasPrefix(name, "fil/") {
+		return "<unknown>"
+	}
+	idx := strings.LastIndex(name, "/")
+	if idx == -1 {
+		return "<unknown>"
+	}
+
+	return name[idx+1:]
 }
 
 func IsBuiltinActor(c cid.Cid) bool {
