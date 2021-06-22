@@ -104,15 +104,22 @@ func NewScheduler(jobDelay time.Duration, scheduledJobs ...*JobConfig) *Schedule
 func NewSchedulerDaemon(mctx helpers.MetricsCtx, lc fx.Lifecycle) *Scheduler {
 	s := NewScheduler(0)
 	s.daemonMode = true
+
+	ctx, cancel := context.WithCancel(mctx)
 	go func() {
-		if err := s.Run(mctx); err != nil {
+		if err := s.Run(ctx); err != nil {
 			if err != context.Canceled {
 				log.Errorw("Scheduler Stopped", "error", err)
 			}
 			log.Infow("Scheduler Stopper", "error", err)
 		}
 	}()
-
+	lc.Append(fx.Hook{
+		OnStop: func(_ context.Context) error {
+			cancel()
+			return nil
+		},
+	})
 	return s
 }
 
