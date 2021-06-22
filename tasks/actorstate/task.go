@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -98,13 +99,13 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	for inFlight > 0 {
 		res := <-results
 		inFlight--
-		lla := log.With("height", int64(ts.Height()), "actor", ActorNameByCode(res.Code), "address", res.Address)
+		lla := log.With("height", int64(ts.Height()), "actor", builtin.ActorNameByCode(res.Code), "address", res.Address)
 
 		if res.Error != nil {
 			lla.Errorw("actor returned with error", "error", res.Error.Error())
 			errorsDetected = append(errorsDetected, &ActorStateError{
 				Code:    res.Code.String(),
-				Name:    ActorNameByCode(res.Code),
+				Name:    builtin.ActorNameByCode(res.Code),
 				Head:    res.Head.String(),
 				Address: res.Address,
 				Error:   res.Error.Error(),
@@ -134,7 +135,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 }
 
 func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pts *types.TipSet, addrStr string, act types.Actor, results chan *ActorStateResult) {
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ActorCode, ActorNameByCode(act.Code)))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ActorCode, builtin.ActorNameByCode(act.Code)))
 
 	res := &ActorStateResult{
 		Code:    act.Code,

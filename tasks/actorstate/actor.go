@@ -6,6 +6,7 @@ import (
 
 	"go.opentelemetry.io/otel/api/global"
 
+	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	commonmodel "github.com/filecoin-project/sentinel-visor/model/actors/common"
@@ -38,7 +39,7 @@ func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateA
 			Height:    int64(a.Epoch),
 			ID:        a.Address.String(),
 			StateRoot: a.ParentStateRoot.String(),
-			Code:      ActorNameByCode(a.Actor.Code),
+			Code:      builtin.ActorNameByCode(a.Actor.Code),
 			Head:      a.Actor.Head.String(),
 			Balance:   a.Actor.Balance.String(),
 			Nonce:     a.Actor.Nonce,
