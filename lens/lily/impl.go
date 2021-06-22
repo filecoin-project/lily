@@ -162,6 +162,11 @@ func (m *LilyNodeAPI) LogSetLevel(ctx context.Context, subsystem, level string) 
 	return logging.SetLogLevel(subsystem, level)
 }
 
+func (m *LilyNodeAPI) Shutdown(ctx context.Context) error {
+	m.ShutdownChan <- struct{}{}
+	return nil
+}
+
 type HeadNotifier struct {
 	mu     sync.Mutex            // protects following fields
 	events chan *chain.HeadEvent // created lazily, closed by first cancel call

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/fx/fxtest"
 
 	"github.com/filecoin-project/sentinel-visor/schedule"
 )
@@ -69,13 +70,12 @@ func TestScheduler(t *testing.T) {
 		assert.True(t, jobs[0].Running)
 		assert.Equal(t, schedule.JobID(1), jobs[0].ID)
 		assert.Equal(t, jobs[0].Name, t.Name())
-
 	})
 
 	t.Run("Scheduler Daemon Submit and List Jobs", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		s := schedule.NewSchedulerDaemon(ctx, nil)
+		s := schedule.NewSchedulerDaemon(ctx, fxtest.NewLifecycle(t))
 
 		// should be no jobs on start
 		jobs := s.Jobs()
@@ -103,7 +103,7 @@ func TestScheduler(t *testing.T) {
 	t.Run("Scheduler Daemon start and stop job", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		s := schedule.NewSchedulerDaemon(ctx, nil)
+		s := schedule.NewSchedulerDaemon(ctx, fxtest.NewLifecycle(t))
 
 		// Stopping a job that Dne should fail with error
 		assert.Error(t, s.StopJob(schedule.InvalidJobID))
@@ -156,7 +156,7 @@ func TestScheduler(t *testing.T) {
 	t.Run("Job restarts on failure", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		s := schedule.NewSchedulerDaemon(ctx, nil)
+		s := schedule.NewSchedulerDaemon(ctx, fxtest.NewLifecycle(t))
 
 		tJob := newTestJob()
 		_ = s.Submit(&schedule.JobConfig{

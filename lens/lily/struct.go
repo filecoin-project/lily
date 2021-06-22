@@ -34,6 +34,8 @@ type LilyAPIStruct struct {
 		LilyJobStop  func(ctx context.Context, ID schedule.JobID) error      `perm:"read"`
 		LilyJobList  func(ctx context.Context) ([]schedule.JobResult, error) `perm:"read"`
 
+		Shutdown func(context.Context) error `perm:"read"`
+
 		SyncState func(ctx context.Context) (*api.SyncState, error) `perm:"read"`
 		ChainHead func(context.Context) (*types.TipSet, error)      `perm:"read"`
 
@@ -72,6 +74,10 @@ func (s *LilyAPIStruct) LilyJobStop(ctx context.Context, ID schedule.JobID) erro
 
 func (s *LilyAPIStruct) LilyJobList(ctx context.Context) ([]schedule.JobResult, error) {
 	return s.Internal.LilyJobList(ctx)
+}
+
+func (s *LilyAPIStruct) Shutdown(ctx context.Context) error {
+	return s.Internal.Shutdown(ctx)
 }
 
 func (s *LilyAPIStruct) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {

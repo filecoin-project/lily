@@ -13,7 +13,7 @@ import (
 )
 
 type LilyAPI interface {
-	// NOTE: when adding daemon methods here, don't forget to add to the implementation LilyAPIStruct too
+	// NOTE: when adding daemon methods here, don't forget to add to the implementation to LilyAPIStruct too
 
 	AuthVerify(ctx context.Context, token string) ([]auth.Permission, error)
 
@@ -28,6 +28,9 @@ type LilyAPI interface {
 	SyncState(context.Context) (*api.SyncState, error) //perm:read
 
 	ChainHead(context.Context) (*types.TipSet, error) //perm:read
+
+	// trigger graceful shutdown
+	Shutdown(context.Context) error
 
 	// LogList returns a list of loggers
 	LogList(context.Context) ([]string, error)         //perm:write

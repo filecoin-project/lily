@@ -26,7 +26,7 @@ var SyncCmd = &cli.Command{
 
 var SyncStatusCmd = &cli.Command{
 	Name:  "status",
-	Usage: "Report sync status",
+	Usage: "Report sync status of a running visor daemon",
 	Flags: flagSet(
 		clientAPIFlagSet,
 	),
