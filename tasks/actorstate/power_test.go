@@ -64,6 +64,7 @@ func TestPowerExtractV0(t *testing.T) {
 			Address:         power.Address,
 			TipSet:          stateTs,
 			ParentStateRoot: stateTs.ParentState(),
+			Epoch:           1,
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
@@ -167,6 +168,7 @@ func TestPowerExtractV2(t *testing.T) {
 			Address:         power.Address,
 			TipSet:          stateTs,
 			ParentStateRoot: stateTs.ParentState(),
+			Epoch:           1,
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
@@ -271,6 +273,7 @@ func TestPowerExtractV3(t *testing.T) {
 			Address:         power.Address,
 			TipSet:          stateTs,
 			ParentStateRoot: stateTs.ParentState(),
+			Epoch:           1,
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
@@ -375,6 +378,7 @@ func TestPowerExtractV4(t *testing.T) {
 			Address:         power.Address,
 			TipSet:          stateTs,
 			ParentStateRoot: stateTs.ParentState(),
+			Epoch:           1,
 		}
 
 		ex := actorstate.StoragePowerExtractor{}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"golang.org/x/xerrors"
 
 	init_ "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
@@ -25,13 +26,23 @@ func init() {
 
 func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	// genesis state.
-	if a.Epoch == 0 {
+	if a.Epoch == 1 {
 		initActorState, err := init_.Load(node.Store(), &a.Actor)
 		if err != nil {
 			return nil, err
 		}
 
 		out := initmodel.IdAddressList{}
+		for _, builtinAddress := range []address.Address{builtin.SystemActorAddr, builtin.InitActorAddr,
+			builtin.RewardActorAddr, builtin.CronActorAddr, builtin.StoragePowerActorAddr, builtin.StorageMarketActorAddr,
+			builtin.VerifiedRegistryActorAddr, builtin.BurntFundsActorAddr} {
+			out = append(out, &initmodel.IdAddress{
+				Height:    0,
+				ID:        builtinAddress.String(),
+				Address:   builtinAddress.String(),
+				StateRoot: a.ParentTipSet.ParentState().String(),
+			})
+		}
 		if err := initActorState.ForEachActor(func(id abi.ActorID, addr address.Address) error {
 			idAddr, err := address.NewIDAddress(uint64(id))
 			if err != nil {
