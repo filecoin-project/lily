@@ -21,6 +21,8 @@ import (
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
+var _ LilyAPI = (*LilyNodeAPI)(nil)
+
 type LilyNodeAPI struct {
 	fx.In
 
@@ -159,8 +161,6 @@ func (m *LilyNodeAPI) LogList(ctx context.Context) ([]string, error) {
 func (m *LilyNodeAPI) LogSetLevel(ctx context.Context, subsystem, level string) error {
 	return logging.SetLogLevel(subsystem, level)
 }
-
-var _ LilyAPI = &LilyNodeAPI{}
 
 type HeadNotifier struct {
 	mu     sync.Mutex            // protects following fields
