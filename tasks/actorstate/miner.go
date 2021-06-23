@@ -132,6 +132,7 @@ func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 		Address:   a.Address,
 		Store:     node.Store(),
 		API:       node,
+		cache:     NewDiffCache(),
 	}, nil
 }
 
@@ -147,6 +148,32 @@ type MinerStateExtractionContext struct {
 
 	Store adt.Store
 	API   ActorStateAPI
+
+	cache *diffCache
+}
+
+func NewDiffCache() *diffCache {
+	return &diffCache{cache: make(map[diffType]interface{})}
+}
+
+type diffCache struct {
+	cache map[diffType]interface{}
+}
+
+type diffType string
+
+const (
+	PreCommitDiff diffType = "PRECOMMIT"
+	SectorDiff    diffType = "SECTOR"
+)
+
+func (d *diffCache) Put(diff diffType, result interface{}) {
+	d.cache[diff] = result
+}
+
+func (d *diffCache) Get(diffType diffType) (interface{}, bool) {
+	result, found := d.cache[diffType]
+	return result, found
 }
 
 func (m *MinerStateExtractionContext) HasPreviousState() bool {
@@ -297,14 +324,48 @@ func ExtractMinerCurrentDeadlineInfo(ctx context.Context, ec *MinerStateExtracti
 	}, nil
 }
 
+func getPreCommitDiff(ctx context.Context, ec *MinerStateExtractionContext) (*miner.PreCommitChanges, error) {
+	preCommitChanges := new(miner.PreCommitChanges)
+	result, found := ec.cache.Get(PreCommitDiff)
+	if !found {
+		var err error
+		preCommitChanges, err = miner.DiffPreCommits(ctx, ec.Store, ec.PrevState, ec.CurrState)
+		if err != nil {
+			return nil, err
+		}
+		ec.cache.Put(PreCommitDiff, result)
+	} else {
+		preCommitChanges = result.(*miner.PreCommitChanges)
+	}
+	return preCommitChanges, nil
+}
+
+func getSectorDiff(ctx context.Context, ec *MinerStateExtractionContext) (*miner.SectorChanges, error) {
+	sectorChanges := new(miner.SectorChanges)
+	result, found := ec.cache.Get(SectorDiff)
+	if !found {
+		var err error
+		sectorChanges, err = miner.DiffSectors(ctx, ec.Store, ec.PrevState, ec.CurrState)
+		if err != nil {
+			return nil, err
+		}
+		ec.cache.Put(SectorDiff, result)
+	} else {
+		sectorChanges = result.(*miner.SectorChanges)
+	}
+	return sectorChanges, nil
+}
+
 func ExtractMinerPreCommitInfo(ctx context.Context, ec *MinerStateExtractionContext) (model.Persistable, error) {
 	if !ec.HasPreviousState() {
 		return nil, nil
 	}
-	preCommitChanges, err := miner.DiffPreCommits(ctx, ec.Store, ec.PrevState, ec.CurrState)
+
+	preCommitChanges, err := getPreCommitDiff(ctx, ec)
 	if err != nil {
 		return nil, err
 	}
+
 	preCommitModel := minermodel.MinerPreCommitInfoList{}
 	for _, added := range preCommitChanges.Added {
 		pcm := &minermodel.MinerPreCommitInfo{
@@ -344,7 +405,7 @@ func ExtractMinerSectorInfo(ctx context.Context, ec *MinerStateExtractionContext
 		}
 	} else {
 		var err error
-		sectorChanges, err = miner.DiffSectors(ctx, ec.Store, ec.PrevState, ec.CurrState)
+		sectorChanges, err = getSectorDiff(ctx, ec)
 		if err != nil {
 			return nil, err
 		}
@@ -413,9 +474,9 @@ func ExtractMinerSectorDeals(ctx context.Context, ec *MinerStateExtractionContex
 		}
 	} else {
 		var err error
-		sectorChanges, err = miner.DiffSectors(ctx, ec.Store, ec.PrevState, ec.CurrState)
+		sectorChanges, err = getSectorDiff(ctx, ec)
 		if err != nil {
-			return nil, xerrors.Errorf("diffing miner sectors: %w", err)
+			return nil, err
 		}
 	}
 
@@ -448,11 +509,11 @@ func ExtractMinerSectorEvents(ctx context.Context, ec *MinerStateExtractionConte
 		}
 	} else {
 		var err error
-		sectorChanges, err = miner.DiffSectors(ctx, ec.Store, ec.PrevState, ec.CurrState)
+		sectorChanges, err = getSectorDiff(ctx, ec)
 		if err != nil {
 			return nil, xerrors.Errorf("diffing miner sectors: %w", err)
 		}
-		preCommitChanges, err = miner.DiffPreCommits(ctx, ec.Store, ec.PrevState, ec.CurrState)
+		preCommitChanges, err = getPreCommitDiff(ctx, ec)
 		if err != nil {
 			return nil, err
 		}
