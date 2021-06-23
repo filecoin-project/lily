@@ -35,48 +35,36 @@ commands:
       - run: git submodule sync
       - run: sudo apt-get install gcc libc-dev
       - run: git submodule update --init
-  publish-docker-master-production:
+  publish-docker-from-branch-production:
     steps:
-      - run:
-          name: Build Production Docker image
-          command: docker build -t $IMAGE_NAME -f Dockerfile .
       - run:
           name: Publish Production Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            ./scripts/push-docker-tags.sh "${IMAGE_NAME}" "$CIRCLE_SHA1" "${CIRCLE_BRANCH}-${tag_suffix}"
-  publish-docker-master-dev:
+            VISOR_IMAGE_TAG=${CIRCLE_BRANCH}-${tag_suffix} make docker-mainnet-push
+  publish-docker-from-branch-dev:
     steps:
-      - run:
-          name: Build Dev Docker image
-          command: docker build -t ${IMAGE_NAME} -f Dockerfile.dev .
       - run:
           name: Publish Dev Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            ./scripts/push-docker-tags.sh "${IMAGE_NAME}" "$CIRCLE_SHA1" "${CIRCLE_BRANCH}-${tag_suffix}-dev"
+            VISOR_IMAGE_TAG=${CIRCLE_BRANCH}-${tag_suffix}-dev make docker-mainnet-dev-push
   publish-docker-semver-production:
     steps:
       - run:
-          name: Build Production Semver Docker image
-          command: docker build -t ${IMAGE_NAME} -f Dockerfile .
-      - run:
-          name: Publish Production Semver Docker Image to Docker Hub
+          name: Publish Mainnet Production Semver Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            ./scripts/push-docker-tags.sh "${IMAGE_NAME}" "$CIRCLE_SHA1" "${CIRCLE_TAG}"
+            VISOR_IMAGE_TAG=${CIRCLE_TAG} make docker-mainnet-push
   publish-docker-semver-dev:
     steps:
-      - run:
-          name: Build Dev Semver Docker image
-          command: docker build -t ${IMAGE_NAME} -f Dockerfile.dev .
       - run:
           name: Publish Dev Semver Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            ./scripts/push-docker-tags.sh "${IMAGE_NAME}" "$CIRCLE_SHA1" "${CIRCLE_TAG}-dev"
+            VISOR_IMAGE_TAG=${CIRCLE_TAG}-dev make docker-mainnet-dev-push
 
 jobs:
   publish-docker-from-master:
@@ -86,8 +74,8 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
           version: "18.09.3"
-      - publish-docker-master-dev
-      - publish-docker-master-production
+      - publish-docker-from-branch-dev
+      - publish-docker-from-branch-production
   publish-docker-from-tag:
     executor: dockerizer
     steps:
@@ -217,7 +205,7 @@ workflows:
           # build and push latest master docker image
           filters:
             branches:
-              only: /^(master|main)$/
+              only: /^(master|main|mg\/feat\/calibnet-docker-builds)$/
             tags:
               ignore: /.*/
       - publish-docker-from-tag:

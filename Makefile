@@ -1,8 +1,10 @@
 SHELL=/usr/bin/env bash
 
+GO_BUILD_IMAGE?=golang:1.16.5
 PG_IMAGE?=postgres:10
 REDIS_IMAGE?=redis:6
-COMMIT := $(shell git rev-parse --short HEAD)
+VISOR_IMAGE_NAME?=filecoin/sentinel-visor
+COMMIT := $(shell git rev-parse --short=8 HEAD)
 
 # GITVERSION is the nearest tag plus number of commits and short form of most recent commit since the tag, if any
 GITVERSION=$(shell git describe --always --tag --dirty)
@@ -107,10 +109,54 @@ visor:
 	go build $(GOFLAGS) -o visor -mod=readonly .
 BINS+=visor
 
+.PHONY: docker-files
+docker-files: Dockerfile Dockerfile.dev
+
+Dockerfile:
+	@echo "Writing ./Dockerfile..."
+	@cat build/docker/builder.tpl build/docker/prod_entrypoint.tpl > ./Dockerfile
+CLEAN+=Dockerfile
+
+Dockerfile.dev:
+	@echo "Writing ./Dockerfile.dev..."
+	@cat build/docker/builder.tpl build/docker/dev_entrypoint.tpl > ./Dockerfile.dev
+CLEAN+=Dockerfile.dev
+
+.PHONY: docker-mainnet
+docker-mainnet: VISOR_DOCKER_FILE ?= Dockerfile
+docker-mainnet: VISOR_NETWORK_TARGET ?= mainnet
+docker-mainnet: docker-files docker-build-image-template
+
+.PHONY: docker-mainnet-push
+docker-mainnet-push: VISOR_IMAGE_TAG ?= $(COMMIT)
+docker-mainnet-push: docker-mainnet docker-tag-and-push-template
+
+.PHONY: docker-mainnet-dev
+docker-mainnet-dev: VISOR_DOCKER_FILE ?= Dockerfile.dev
+docker-mainnet-dev: VISOR_NETWORK_TARGET ?= mainnet
+docker-mainnet-dev: docker-files docker-build-image-template
+
+.PHONY: docker-mainnet-dev-push
+docker-mainnet-dev-push: VISOR_IMAGE_TAG ?= $(COMMIT)
+docker-mainnet-dev-push: docker-mainnet-dev docker-tag-and-push-template
+
+.PHONY: docker-build-image-template
+docker-build-image-template:
+	docker build -f $(VISOR_DOCKER_FILE) \
+		--build-arg network_target=$(VISOR_NETWORK_TARGET) \
+		--build-arg build_image=$(GO_BUILD_IMAGE) \
+		-t $(VISOR_IMAGE_NAME) \
+		-t $(VISOR_IMAGE_NAME):latest \
+		-t $(VISOR_IMAGE_NAME):$(COMMIT) \
+		.
+
+.PHONY: docker-tag-and-push-template
+docker-tag-and-push-template:
+	./scripts/push-docker-tags.sh $(VISOR_IMAGE_NAME) deprecatedvalue $(VISOR_IMAGE_TAG)
+
 .PHONY: docker-image
-docker-image:
-	docker build -t "filecoin/sentinel-visor" .
-	docker tag "filecoin/sentinel-visor:latest" "filecoin/sentinel-visor:$(COMMIT)"
+docker-image: docker-mainnet
+	@echo "*** Deprecated make target 'docker-image': Please use 'make docker-mainnet' instead. ***"
 
 .PHONY: clean
 clean:
@@ -166,3 +212,6 @@ butterflynet: build
 
 interopnet: GOFLAGS+=-tags=interopnet
 interopnet: build
+
+# alias to match other network-specific targets
+mainnet: build
