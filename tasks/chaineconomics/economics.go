@@ -12,13 +12,11 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/model"
 	chainmodel "github.com/filecoin-project/sentinel-visor/model/chain"
-	"github.com/filecoin-project/sentinel-visor/model/visor"
 )
 
 type EconomicsStorage interface {
 	PersistBatch(ctx context.Context, ps ...model.Persistable) error
 	MarkTipSetEconomicsComplete(ctx context.Context, tipset string, height int64, completedAt time.Time, errorsDetected string) error
-	LeaseTipSetEconomics(ctx context.Context, claimUntil time.Time, batchSize int, minHeight, maxHeight int64) (visor.ProcessingTipSetList, error)
 }
 
 type ChainEconomicsLens interface {
