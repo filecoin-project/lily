@@ -24,6 +24,7 @@ import (
 	"github.com/filecoin-project/lily/chain"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/lens/util"
+	"github.com/filecoin-project/lily/network"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 )
@@ -324,6 +325,38 @@ func (m *LilyNodeAPI) LogSetLevel(ctx context.Context, subsystem, level string) 
 func (m *LilyNodeAPI) Shutdown(ctx context.Context) error {
 	m.ShutdownChan <- struct{}{}
 	return nil
+}
+
+func (m *LilyNodeAPI) LilyObserve(_ context.Context, cfg *LilyObserveConfig) (*schedule.JobSubmitResult, error) {
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx := context.Background()
+
+	md := storage.Metadata{
+		JobName: cfg.Name,
+	}
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
+	if err != nil {
+		return nil, err
+	}
+
+	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+	obs, err := network.NewObserver(m, strg, cfg.Interval, cfg.Name, cfg.Tasks)
+	if err != nil {
+		return nil, err
+	}
+
+	id := m.Scheduler.Submit(&schedule.JobConfig{
+		Name:                cfg.Name,
+		Tasks:               cfg.Tasks,
+		Job:                 obs,
+		RestartOnFailure:    cfg.RestartOnFailure,
+		RestartOnCompletion: cfg.RestartOnCompletion,
+		RestartDelay:        cfg.RestartDelay,
+	})
+
+	return id, nil
 }
 
 var _ events.TipSetObserver = (*HeadNotifier)(nil)

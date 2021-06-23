@@ -145,6 +145,7 @@ func main() {
 			commands.LogCmd,
 			commands.MigrateCmd,
 			commands.NetCmd,
+			commands.ObserveCmd,
 			commands.StopCmd,
 			commands.SyncCmd,
 			commands.WaitApiCmd,
