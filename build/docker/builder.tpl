@@ -21,6 +21,8 @@ RUN apt-get install -y \
 WORKDIR /go/src/github.com/filecoin-project/sentinel-visor
 COPY . /go/src/github.com/filecoin-project/sentinel-visor
 
+RUN make deps
+RUN go mod download
 RUN make $VISOR_NETWORK_TARGET
 RUN cp ./visor /usr/bin/
 
