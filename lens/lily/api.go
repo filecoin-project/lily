@@ -21,6 +21,7 @@ type LilyAPI interface {
 
 	LilyWatch(ctx context.Context, cfg *LilyWatchConfig) (*schedule.JobSubmitResult, error)
 	LilyWalk(ctx context.Context, cfg *LilyWalkConfig) (*schedule.JobSubmitResult, error)
+	LilySurvey(ctx context.Context, cfg *LilySurveyConfig) (*schedule.JobSubmitResult, error)
 
 	LilyJobStart(ctx context.Context, ID schedule.JobID) error
 	LilyJobStop(ctx context.Context, ID schedule.JobID) error
@@ -105,4 +106,14 @@ type LilyGapFillConfig struct {
 	To                  uint64
 	From                uint64
 	Tasks               []string // name of tasks to fill gaps for
+}
+
+type LilySurveyConfig struct {
+	Name                string
+	Tasks               []string
+	Interval            time.Duration
+	RestartOnFailure    bool
+	RestartOnCompletion bool
+	RestartDelay        time.Duration
+	Storage             string // name of storage system to use, may be empty
 }
