@@ -34,5 +34,5 @@ func init() {
 	DROP TABLE IF EXISTS public.multisig_approvals;
 `)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

@@ -18,5 +18,5 @@ func init() {
 	DROP TABLE IF EXISTS public.power_actor_claims;
 `)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

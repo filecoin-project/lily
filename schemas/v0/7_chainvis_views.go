@@ -73,5 +73,5 @@ DROP MATERIALIZED VIEW IF EXISTS chain_visualizer_blocks_with_parents_view;
 DROP MATERIALIZED VIEW IF EXISTS chain_visualizer_orphans_view;
 DROP MATERIALIZED VIEW IF EXISTS chain_visualizer_chain_data_view;
 	`)
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

@@ -19,5 +19,5 @@ ALTER TABLE public.visor_processing_tipsets DROP COLUMN IF EXISTS economics_clai
 ALTER TABLE public.visor_processing_tipsets DROP COLUMN IF EXISTS economics_completed_at;
 ALTER TABLE public.visor_processing_tipsets DROP COLUMN IF EXISTS economics_errors_detected;
 `)
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

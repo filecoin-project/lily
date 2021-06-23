@@ -137,5 +137,5 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS chain_visualizer_blocks_view AS
 WITH NO DATA;
 `)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

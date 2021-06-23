@@ -48,5 +48,5 @@ DROP TABLE IF EXISTS public.visor_processing_actors;
 
 DROP TABLE IF EXISTS public.visor_processing_messages;
 	`)
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

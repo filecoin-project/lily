@@ -108,5 +108,5 @@ DROP INDEX IF EXISTS public.derived_gas_outputs_exit_code_index;
 DROP TABLE IF EXISTS public.derived_gas_outputs;
 
 	`)
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

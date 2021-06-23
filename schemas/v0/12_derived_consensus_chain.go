@@ -37,5 +37,5 @@ WITH NO DATA;
 DROP MATERIALIZED VIEW IF EXISTS derived_consensus_chain_view;
 	`)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

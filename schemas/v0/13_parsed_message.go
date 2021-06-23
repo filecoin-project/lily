@@ -23,5 +23,5 @@ DROP INDEX IF EXISTS public.message_parsed_from_idx;
 DROP INDEX IF EXISTS public.message_parsed_to_idx;
 `)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

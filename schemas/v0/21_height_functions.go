@@ -18,5 +18,5 @@ func init() {
 	DROP FUNCTION IF EXISTS public.height_to_unix;
 `)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

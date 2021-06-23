@@ -29,5 +29,5 @@ SELECT create_hypertable(
 DROP TABLE IF EXISTS public.visor_processing_stats;
 
 `)
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

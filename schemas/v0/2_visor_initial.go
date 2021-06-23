@@ -188,5 +188,5 @@ ALTER TABLE public.receipts ALTER exit type integer;
 
 `)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

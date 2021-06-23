@@ -55,5 +55,5 @@ CREATE VIEW chain_visualizer_chain_data_view AS
 	// no take backsies.
 	down := batch(`SELECT 1;`)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

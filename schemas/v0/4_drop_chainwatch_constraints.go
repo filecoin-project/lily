@@ -27,5 +27,5 @@ ALTER TABLE public.mpool_messages DROP CONSTRAINT IF EXISTS mpool_messages_messa
 	// to be met, especially since we do not populate block_cids table any more.
 	down := batch("SELECT 1;")
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

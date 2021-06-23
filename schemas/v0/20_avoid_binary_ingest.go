@@ -39,5 +39,5 @@ func init() {
 	ALTER TABLE public.receipts ADD COLUMN return bytea;
 `)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }
