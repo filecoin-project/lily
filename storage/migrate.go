@@ -35,7 +35,7 @@ func (d *Database) GetSchemaVersions(ctx context.Context) (model.Version, model.
 		return model.Version{}, model.Version{}, xerrors.Errorf("connect: %w", err)
 	}
 	defer db.Close() // nolint: errcheck
-	dbVersion, _, err := getDatabaseSchemaVersion(ctx, db, "public")
+	dbVersion, _, err := getDatabaseSchemaVersion(ctx, db, d.schemaName)
 	return dbVersion, latest, err
 }
 
