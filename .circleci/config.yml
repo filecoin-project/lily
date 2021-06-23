@@ -257,7 +257,7 @@ workflows:
           # build and push latest master docker image
           filters:
             branches:
-              only: /^(master|main|mg\/feat\/calibnet-docker-builds)$/
+              only: /^(master|main)$/
             tags:
               ignore: /.*/
       - publish-docker-from-tag:
