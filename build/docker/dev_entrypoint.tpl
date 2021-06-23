@@ -3,4 +3,3 @@
 
 ENTRYPOINT ["/usr/bin/visor"]
 CMD ["--help"]
-

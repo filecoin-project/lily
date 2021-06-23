@@ -59,9 +59,6 @@ ifneq ($(strip $(LDFLAGS)),)
 endif
 GOFLAGS+=-ldflags="$(ldflags)"
 
-.PHONY: all
-all: build
-
 .PHONY: build
 build: deps visor
 
@@ -170,17 +167,22 @@ mainnet: build
 
 # Dockerfiles
 
-.PHONY: docker-files
 docker-files: Dockerfile Dockerfile.dev
 
 Dockerfile:
 	@echo "Writing ./Dockerfile..."
-	@cat build/docker/builder.tpl build/docker/prod_entrypoint.tpl > ./Dockerfile
+	@cat build/docker/header.tpl \
+		build/docker/builder.tpl \
+		build/docker/prod_entrypoint.tpl \
+		> ./Dockerfile
 CLEAN+=Dockerfile
 
 Dockerfile.dev:
 	@echo "Writing ./Dockerfile.dev..."
-	@cat build/docker/builder.tpl build/docker/dev_entrypoint.tpl > ./Dockerfile.dev
+	@cat build/docker/header.tpl \
+		build/docker/builder.tpl \
+		build/docker/dev_entrypoint.tpl \
+		> ./Dockerfile.dev
 CLEAN+=Dockerfile.dev
 
 # Docker images
