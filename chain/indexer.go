@@ -502,7 +502,7 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 			return out, nil
 		}
 	}
-	log.Debugf("using slow state diff")
+	log.Debug("using slow state diff")
 	return t.node.StateChangedActors(ctx, old, new)
 }
 
