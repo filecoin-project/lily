@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"strings"
 	"sync"
 	"time"
 
@@ -29,6 +30,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
+	registry "github.com/filecoin-project/sentinel-visor/model/registry/registered"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 	"github.com/filecoin-project/sentinel-visor/tasks/blocks"
@@ -79,6 +81,60 @@ func AddressFilterOpt(f *AddressFilter) TipSetIndexerOpt {
 	}
 }
 
+// TODO this may be hard to maintain without some sort of codegen
+func ModelStringToType(ms string) (model.Persistable, error) {
+	return registry.ModelForString(ms)
+}
+
+func ParseTaskString(name string) (string, model.PersistableList, error) {
+	if strings.Contains(name, ":") {
+		tokens := strings.Split(name, ":")
+		if len(tokens) != 2 {
+			// TODO don't do this
+			panic("invalid task format? you fucked up, stop doing that")
+		}
+		taskName := tokens[0]
+		taskModels := strings.Split(tokens[1], ",")
+		log.Infow("task with subtasks created", "task", taskName, "subtasks", taskModels)
+		var out model.PersistableList
+		for _, tm := range taskModels {
+			m, err := ModelStringToType(tm)
+			if err != nil {
+				return "", nil, err
+			}
+			out = append(out, m)
+		}
+		return taskName, out, nil
+	} else {
+		switch name {
+		case BlocksTask:
+			return name, nil, nil
+		case MessagesTask:
+			return name, nil, nil
+		case ChainEconomicsTask:
+			return name, nil, nil
+		case ActorStatesRawTask:
+			return name, nil, nil
+		case ActorStatesPowerTask:
+			return name, nil, nil
+		case ActorStatesRewardTask:
+			return name, nil, nil
+		case ActorStatesMinerTask:
+			return name, nil, nil
+		case ActorStatesInitTask:
+			return name, nil, nil
+		case ActorStatesMarketTask:
+			return name, nil, nil
+		case ActorStatesMultisigTask:
+			return name, nil, nil
+		case MultisigApprovalsTask:
+			return name, nil, nil
+		default:
+			return "", nil, xerrors.Errorf("unknown task: %s", name)
+		}
+	}
+}
+
 // A TipSetIndexer extracts block, message and actor state data from a tipset and persists it to storage. Extraction
 // and persistence are concurrent. Extraction of the a tipset can proceed while data from the previous extraction is
 // being persisted. The indexer may be given a time window in which to complete data extraction. The name of the
@@ -96,7 +152,11 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 	}
 
 	for _, task := range tasks {
-		switch task {
+		taskName, models, err := ParseTaskString(task)
+		if err != nil {
+			return nil, err
+		}
+		switch taskName {
 		case BlocksTask:
 			tsi.processors[BlocksTask] = blocks.NewTask()
 		case MessagesTask:
@@ -106,17 +166,17 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 		case ActorStatesRawTask:
 			tsi.actorProcessors[ActorStatesRawTask] = actorstate.NewTask(o, &actorstate.RawActorExtractorMap{})
 		case ActorStatesPowerTask:
-			tsi.actorProcessors[ActorStatesPowerTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(power.AllCodes()))
+			tsi.actorProcessors[ActorStatesPowerTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(power.AllCodes()), models...)
 		case ActorStatesRewardTask:
-			tsi.actorProcessors[ActorStatesRewardTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(reward.AllCodes()))
+			tsi.actorProcessors[ActorStatesRewardTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(reward.AllCodes()), models...)
 		case ActorStatesMinerTask:
-			tsi.actorProcessors[ActorStatesMinerTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(miner.AllCodes()))
+			tsi.actorProcessors[ActorStatesMinerTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(miner.AllCodes()), models...)
 		case ActorStatesInitTask:
-			tsi.actorProcessors[ActorStatesInitTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(init_.AllCodes()))
+			tsi.actorProcessors[ActorStatesInitTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(init_.AllCodes()), models...)
 		case ActorStatesMarketTask:
-			tsi.actorProcessors[ActorStatesMarketTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(market.AllCodes()))
+			tsi.actorProcessors[ActorStatesMarketTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(market.AllCodes()), models...)
 		case ActorStatesMultisigTask:
-			tsi.actorProcessors[ActorStatesMultisigTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(multisig.AllCodes()))
+			tsi.actorProcessors[ActorStatesMultisigTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(multisig.AllCodes()), models...)
 		case MultisigApprovalsTask:
 			tsi.messageProcessors[MultisigApprovalsTask] = msapprovals.NewTask(o)
 		default:
