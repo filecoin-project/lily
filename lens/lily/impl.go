@@ -24,6 +24,7 @@ import (
 	"github.com/filecoin-project/lily/chain"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/lens/util"
+	"github.com/filecoin-project/lily/network"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 )
@@ -324,6 +325,34 @@ func (m *LilyNodeAPI) LogSetLevel(ctx context.Context, subsystem, level string) 
 func (m *LilyNodeAPI) Shutdown(ctx context.Context) error {
 	m.ShutdownChan <- struct{}{}
 	return nil
+}
+
+func (m *LilyNodeAPI) LilySurvey(_ context.Context, cfg *LilySurveyConfig) (*schedule.JobSubmitResult, error) {
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx := context.Background()
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, storage.Metadata{JobName: cfg.Name})
+	if err != nil {
+		return nil, err
+	}
+
+	// instantiate a new surveyer.
+	surv, err := network.NewSurveyer(m, strg, cfg.Interval, cfg.Name, cfg.Tasks)
+	if err != nil {
+		return nil, err
+	}
+
+	res := m.Scheduler.Submit(&schedule.JobConfig{
+		Name:                cfg.Name,
+		Tasks:               cfg.Tasks,
+		Job:                 surv,
+		RestartOnFailure:    cfg.RestartOnFailure,
+		RestartOnCompletion: cfg.RestartOnCompletion,
+		RestartDelay:        cfg.RestartDelay,
+	})
+
+	return res, nil
 }
 
 var _ events.TipSetObserver = (*HeadNotifier)(nil)
