@@ -204,9 +204,6 @@ jobs:
           docker_layer_caching: true
           version: "18.09.3"
       - run:
-          name: Prepare Dockerfiles
-          command: make docker-files
-      - run:
           name: Build Production Mainnet Docker image
           command: make docker-mainnet
   test-docker-mainnet-dev:
@@ -216,9 +213,6 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
           version: "18.09.3"
-      - run:
-          name: Prepare Dockerfiles
-          command: make docker-files
       - run:
           name: Build Dev Mainnet Docker image
           command: make docker-mainnet-dev
@@ -230,9 +224,6 @@ jobs:
           docker_layer_caching: true
           version: "18.09.3"
       - run:
-          name: Prepare Dockerfiles
-          command: make docker-files
-      - run:
           name: Build Production Calibnet Docker image
           command: make docker-calibnet
   test-docker-calibnet-dev:
@@ -242,9 +233,6 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
           version: "18.09.3"
-      - run:
-          name: Prepare Dockerfiles
-          command: make docker-files
       - run:
           name: Build Dev Calibnet Docker image
           command: make docker-calibnet-dev
