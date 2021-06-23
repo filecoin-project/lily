@@ -196,7 +196,7 @@ jobs:
             staticcheck ./... | sed -e 's@\(.*\)\.go@./\1.go@g'
   lint-all:
     <<: *lint
-  test-docker:
+  test-docker-mainnet:
     executor: dockerizer
     steps:
       - checkout
@@ -204,11 +204,50 @@ jobs:
           docker_layer_caching: true
           version: "18.09.3"
       - run:
-          name: Build Production Docker image
-          command: docker build -t ${IMAGE_NAME} -f Dockerfile .
+          name: Prepare Dockerfiles
+          command: make docker-files
       - run:
-          name: Build Dev Semver Docker image
-          command: docker build -t ${IMAGE_NAME}-dev -f Dockerfile.dev .
+          name: Build Production Mainnet Docker image
+          command: make docker-mainnet
+  test-docker-mainnet-dev:
+    executor: dockerizer
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: "18.09.3"
+      - run:
+          name: Prepare Dockerfiles
+          command: make docker-files
+      - run:
+          name: Build Dev Mainnet Docker image
+          command: make docker-mainnet-dev
+  test-docker-calibnet:
+    executor: dockerizer
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: "18.09.3"
+      - run:
+          name: Prepare Dockerfiles
+          command: make docker-files
+      - run:
+          name: Build Production Calibnet Docker image
+          command: make docker-calibnet
+  test-docker-calibnet-dev:
+    executor: dockerizer
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: "18.09.3"
+      - run:
+          name: Prepare Dockerfiles
+          command: make docker-files
+      - run:
+          name: Build Dev Calibnet Docker image
+          command: make docker-calibnet-dev
 
 workflows:
   version: 2
@@ -218,7 +257,10 @@ workflows:
       - mod-tidy-check
       - lint-all
       - test
-      - test-docker
+      - test-docker-mainnet
+      - test-docker-mainnet-dev
+      - test-docker-calibnet
+      - test-docker-calibnet-dev
   build-docker-images:
     # `build-push-*` runs on master or main branches and tags that look like semver
     # see: https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
