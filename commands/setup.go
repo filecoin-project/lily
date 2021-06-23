@@ -140,7 +140,7 @@ func jaegerConfigFromCliContext(cctx *cli.Context) (*jaegerConfig, error) {
 
 func setupLogging(cctx *cli.Context) error {
 	ll := cctx.String("log-level")
-	if err := logging.SetLogLevelRegex(".*", ll); err != nil {
+	if err := logging.SetLogLevel("*", ll); err != nil {
 		return xerrors.Errorf("set log level: %w", err)
 	}
 

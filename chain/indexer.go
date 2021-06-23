@@ -232,6 +232,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 			// If we have actor processors then find actors that have changed state
 			if len(t.actorProcessors) > 0 {
+				changesStart := time.Now()
 				var err error
 				var changes map[string]types.Actor
 				// special case, we want to extract all actor states from the genesis block.
@@ -241,6 +242,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 					changes, err = t.stateChangedActors(tctx, parent.ParentState(), child.ParentState())
 				}
 				if err == nil {
+					ll.Debugw("found actor state changes", "count", len(changes), "time", time.Since(changesStart))
 					if t.addressFilter != nil {
 						for addr := range changes {
 							if !t.addressFilter.Allow(addr) {
@@ -305,8 +307,8 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		// Fill in some report metadata
 		res.Report.Reporter = t.name
 		res.Report.Task = res.Task
-		res.Report.StartedAt = start
-		res.Report.CompletedAt = time.Now()
+		res.Report.StartedAt = res.StartedAt
+		res.Report.CompletedAt = res.CompletedAt
 
 		if res.Report.ErrorsDetected != nil {
 			res.Report.Status = visormodel.ProcessingStatusError
@@ -355,6 +357,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		for task, p := range taskOutputs {
 			go func(task string, p model.Persistable) {
 				defer wg.Done()
+				start := time.Now()
 				ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, task))
 
 				if err := t.storage.PersistBatch(ctx, p); err != nil {
@@ -377,20 +380,25 @@ func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, nam
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
+	start := time.Now()
 
 	data, report, err := p.ProcessTipSet(ctx, ts)
 	if err != nil {
 		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
-			Task:  name,
-			Error: err,
+			Task:        name,
+			Error:       err,
+			StartedAt:   start,
+			CompletedAt: time.Now(),
 		}
 		return
 	}
 	results <- &TaskResult{
-		Task:   name,
-		Report: report,
-		Data:   data,
+		Task:        name,
+		Report:      report,
+		Data:        data,
+		StartedAt:   start,
+		CompletedAt: time.Now(),
 	}
 }
 
@@ -413,7 +421,6 @@ func (t *TipSetIndexer) getGenesisActors(ctx context.Context) (map[string]types.
 	if err := tree.ForEach(func(addr address.Address, act *types.Actor) error {
 		out[addr.String()] = *act
 		return nil
-
 	}); err != nil {
 		return nil, err
 	}
@@ -450,6 +457,7 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 		if span.IsRecording() {
 			span.SetAttribute("diff", "fast")
 		}
+		// TODO: replace hamt.UseTreeBitWidth and hamt.UseHashFunction with values based on network version
 		changes, err := hamt.Diff(ctx, t.node.Store(), t.node.Store(), oldRoot, newRoot, hamt.UseTreeBitWidth(5), hamt.UseHashFunction(func(input []byte) []byte {
 			res := sha256.Sum256(input)
 			return res[:]
@@ -494,6 +502,7 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 			return out, nil
 		}
 	}
+	log.Debug("using slow state diff")
 	return t.node.StateChangedActors(ctx, old, new)
 }
 
@@ -502,20 +511,25 @@ func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProces
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
+	start := time.Now()
 
 	data, report, err := p.ProcessMessages(ctx, ts, pts, emsgs, blkMsgs)
 	if err != nil {
 		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
-			Task:  name,
-			Error: err,
+			Task:        name,
+			Error:       err,
+			StartedAt:   start,
+			CompletedAt: time.Now(),
 		}
 		return
 	}
 	results <- &TaskResult{
-		Task:   name,
-		Report: report,
-		Data:   data,
+		Task:        name,
+		Report:      report,
+		Data:        data,
+		StartedAt:   start,
+		CompletedAt: time.Now(),
 	}
 }
 
@@ -524,20 +538,25 @@ func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor,
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
+	start := time.Now()
 
 	data, report, err := p.ProcessActors(ctx, ts, pts, actors)
 	if err != nil {
 		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
-			Task:  name,
-			Error: err,
+			Task:        name,
+			Error:       err,
+			StartedAt:   start,
+			CompletedAt: time.Now(),
 		}
 		return
 	}
 	results <- &TaskResult{
-		Task:   name,
-		Report: report,
-		Data:   data,
+		Task:        name,
+		Report:      report,
+		Data:        data,
+		StartedAt:   start,
+		CompletedAt: time.Now(),
 	}
 }
 
@@ -594,10 +613,12 @@ func (t *TipSetIndexer) Close() error {
 // A TaskResult is either some data to persist or an error which indicates that the task did not complete. Partial
 // completions are possible provided the Data contains a persistable log of the results.
 type TaskResult struct {
-	Task   string
-	Error  error
-	Report *visormodel.ProcessingReport
-	Data   model.Persistable
+	Task        string
+	Error       error
+	Report      *visormodel.ProcessingReport
+	Data        model.Persistable
+	StartedAt   time.Time
+	CompletedAt time.Time
 }
 
 type TipSetProcessor interface {
