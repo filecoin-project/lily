@@ -42,13 +42,13 @@ commands:
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            VISOR_IMAGE_TAG=${CIRCLE_BRANCH}-${tag_suffix} make docker-mainnet-push
+            VISOR_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix} make docker-mainnet-push
       - run:
           name: Publish Calibnet Production Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            VISOR_IMAGE_TAG=${CIRCLE_BRANCH}-${tag_suffix}-calibnet make docker-calibnet-push
+            VISOR_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-calibnet make docker-calibnet-push
   publish-docker-from-branch-dev:
     steps:
       - run:
@@ -56,37 +56,37 @@ commands:
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            VISOR_IMAGE_TAG=${CIRCLE_BRANCH}-${tag_suffix}-dev make docker-mainnet-dev-push
+            VISOR_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-dev make docker-mainnet-dev-push
       - run:
           name: Publish Calibnet Dev Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            VISOR_IMAGE_TAG=${CIRCLE_BRANCH}-${tag_suffix}-calibnet-dev make docker-calibnet-dev-push
+            VISOR_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-calibnet-dev make docker-calibnet-dev-push
   publish-docker-semver-production:
     steps:
       - run:
           name: Publish Mainnet Production Semver Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            VISOR_IMAGE_TAG=${CIRCLE_TAG} make docker-mainnet-push
+            VISOR_IMAGE_TAG=${CIRCLE_TAG//\//-} make docker-mainnet-push
       - run:
           name: Publish Calibnet Production Semver Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            VISOR_IMAGE_TAG=${CIRCLE_TAG}-calibnet make docker-calibnet-push
+            VISOR_IMAGE_TAG=${CIRCLE_TAG//\//-}-calibnet make docker-calibnet-push
   publish-docker-semver-dev:
     steps:
       - run:
           name: Publish Mainnet Dev Semver Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            VISOR_IMAGE_TAG=${CIRCLE_TAG}-dev make docker-mainnet-dev-push
+            VISOR_IMAGE_TAG=${CIRCLE_TAG//\//-}-dev make docker-mainnet-dev-push
       - run:
           name: Publish Calibnet Dev Semver Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            VISOR_IMAGE_TAG=${CIRCLE_TAG}-calibnet-dev make docker-calibnet-dev-push
+            VISOR_IMAGE_TAG=${CIRCLE_TAG//\//-}-calibnet-dev make docker-calibnet-dev-push
 
 jobs:
   publish-docker-from-master:
