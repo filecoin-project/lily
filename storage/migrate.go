@@ -169,17 +169,6 @@ func latestSchemaVersionForMajor(major int) model.Version {
 	}
 }
 
-func getHighestMigration(coll *migrations.Collection) int {
-	var latestMigration int64
-	ms := coll.Migrations()
-	for _, m := range ms {
-		if m.Version > latestMigration {
-			latestMigration = m.Version
-		}
-	}
-	return int(latestMigration)
-}
-
 // MigrateSchema migrates the database schema to the latest version based on the list of migrations available
 func (d *Database) MigrateSchema(ctx context.Context) error {
 	return d.MigrateSchemaTo(ctx, LatestSchemaVersion())
