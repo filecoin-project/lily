@@ -1,18 +1,48 @@
-package miner
+package extractors
 
 import (
 	"context"
 
-	"github.com/filecoin-project/sentinel-visor/model/registry"
-	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/api/global"
-
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/tasks"
+	"go.opencensus.io/tag"
+	"go.opentelemetry.io/otel/api/global"
 )
 
 func init() {
-	registry.ModelRegistry.Register(registry.ActorStatesMinerTask, &MinerCurrentDeadlineInfo{})
+	tasks.Register(&MinerCurrentDeadlineInfo{}, ExtractMinerCurrentDeadlineInfo)
+}
+
+func ExtractMinerCurrentDeadlineInfo(ctx context.Context, ec *tasks.MinerStateExtractionContext) (model.Persistable, error) {
+	_, span := global.Tracer("").Start(ctx, "ExtractMinerDeadlineInfo")
+	defer span.End()
+	currDeadlineInfo, err := ec.CurrState.DeadlineInfo(ec.CurrTs.Height())
+	if err != nil {
+		return nil, err
+	}
+
+	if ec.HasPreviousState() {
+		prevDeadlineInfo, err := ec.PrevState.DeadlineInfo(ec.CurrTs.Height())
+		if err != nil {
+			return nil, err
+		}
+		if prevDeadlineInfo == currDeadlineInfo {
+			return nil, nil
+		}
+	}
+
+	return &MinerCurrentDeadlineInfo{
+		Height:        int64(ec.CurrTs.Height()),
+		MinerID:       ec.Address.String(),
+		StateRoot:     ec.CurrTs.ParentState().String(),
+		DeadlineIndex: currDeadlineInfo.Index,
+		PeriodStart:   int64(currDeadlineInfo.PeriodStart),
+		Open:          int64(currDeadlineInfo.Open),
+		Close:         int64(currDeadlineInfo.Close),
+		Challenge:     int64(currDeadlineInfo.Challenge),
+		FaultCutoff:   int64(currDeadlineInfo.FaultCutoff),
+	}, nil
 }
 
 type MinerCurrentDeadlineInfo struct {

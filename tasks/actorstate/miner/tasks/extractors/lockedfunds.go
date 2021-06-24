@@ -1,19 +1,46 @@
-package miner
+package extractors
 
 import (
 	"context"
 
-	"github.com/filecoin-project/sentinel-visor/model/registry"
+	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/tasks"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
-
-	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 func init() {
-	registry.ModelRegistry.Register(registry.ActorStatesMinerTask, &MinerLockedFund{})
+	tasks.Register(&MinerLockedFund{}, ExtractMinerLockedFunds)
+}
+
+func ExtractMinerLockedFunds(ctx context.Context, ec *tasks.MinerStateExtractionContext) (model.Persistable, error) {
+	_, span := global.Tracer("").Start(ctx, "ExtractMinerLockedFunds")
+	defer span.End()
+	currLocked, err := ec.CurrState.LockedFunds()
+	if err != nil {
+		return nil, xerrors.Errorf("loading current miner locked funds: %w", err)
+	}
+	if ec.HasPreviousState() {
+		prevLocked, err := ec.PrevState.LockedFunds()
+		if err != nil {
+			return nil, xerrors.Errorf("loading previous miner locked funds: %w", err)
+		}
+		if prevLocked == currLocked {
+			return nil, nil
+		}
+	}
+	// funds changed
+
+	return &MinerLockedFund{
+		Height:            int64(ec.CurrTs.Height()),
+		MinerID:           ec.Address.String(),
+		StateRoot:         ec.CurrTs.ParentState().String(),
+		LockedFunds:       currLocked.VestingFunds.String(),
+		InitialPledge:     currLocked.InitialPledgeRequirement.String(),
+		PreCommitDeposits: currLocked.PreCommitDeposits.String(),
+	}, nil
 }
 
 type MinerLockedFund struct {

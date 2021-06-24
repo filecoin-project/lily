@@ -1,21 +1,54 @@
-package miner
+package extractors
 
 import (
 	"context"
 
-	"github.com/filecoin-project/sentinel-visor/model/registry"
+	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/tasks"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
-
-	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 func init() {
-	registry.ModelRegistry.Register(registry.ActorStatesMinerTask, &MinerPreCommitInfo{})
+	tasks.Register(&MinerPreCommitInfo{}, ExtractMinerPreCommitInfo)
+}
+
+func ExtractMinerPreCommitInfo(ctx context.Context, ec *tasks.MinerStateExtractionContext) (model.Persistable, error) {
+	if !ec.HasPreviousState() {
+		return nil, nil
+	}
+
+	preCommitChanges, err := tasks.GetPreCommitDiff(ctx, ec)
+	if err != nil {
+		return nil, err
+	}
+
+	preCommitModel := MinerPreCommitInfoList{}
+	for _, added := range preCommitChanges.Added {
+		pcm := &MinerPreCommitInfo{
+			Height:                 int64(ec.CurrTs.Height()),
+			MinerID:                ec.Address.String(),
+			SectorID:               uint64(added.Info.SectorNumber),
+			StateRoot:              ec.CurrTs.ParentState().String(),
+			SealedCID:              added.Info.SealedCID.String(),
+			SealRandEpoch:          int64(added.Info.SealRandEpoch),
+			ExpirationEpoch:        int64(added.Info.Expiration),
+			PreCommitDeposit:       added.PreCommitDeposit.String(),
+			PreCommitEpoch:         int64(added.PreCommitEpoch),
+			DealWeight:             added.DealWeight.String(),
+			VerifiedDealWeight:     added.VerifiedDealWeight.String(),
+			IsReplaceCapacity:      added.Info.ReplaceCapacity,
+			ReplaceSectorDeadline:  added.Info.ReplaceSectorDeadline,
+			ReplaceSectorPartition: added.Info.ReplaceSectorPartition,
+			ReplaceSectorNumber:    uint64(added.Info.ReplaceSectorNumber),
+		}
+		preCommitModel = append(preCommitModel, pcm)
+	}
+	return preCommitModel, nil
 }
 
 type MinerPreCommitInfo struct {

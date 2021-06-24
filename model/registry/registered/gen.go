@@ -2,6 +2,7 @@
 package registered
 
 import (
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/tasks/extractors"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -17,8 +18,6 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/messages"
 
 	"github.com/filecoin-project/sentinel-visor/model/actors/common"
-
-	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
 
 	"github.com/filecoin-project/sentinel-visor/model/actors/power"
 
@@ -50,31 +49,31 @@ func ModelForString(name string) (model.Persistable, error) {
 		return &market.MarketDealState{}, nil
 
 	case "miner_current_deadline_info":
-		return &miner.MinerCurrentDeadlineInfo{}, nil
+		return &extractors.MinerCurrentDeadlineInfo{}, nil
 
 	case "miner_fee_debt":
-		return &miner.MinerFeeDebt{}, nil
+		return &extractors.MinerFeeDebt{}, nil
 
 	case "miner_locked_fund":
-		return &miner.MinerLockedFund{}, nil
+		return &extractors.MinerLockedFund{}, nil
 
 	case "miner_info":
-		return &miner.MinerInfo{}, nil
+		return &extractors.MinerInfo{}, nil
 
 	case "miner_pre_commit_info":
-		return &miner.MinerPreCommitInfo{}, nil
+		return &extractors.MinerPreCommitInfo{}, nil
 
 	case "miner_sector_info":
-		return &miner.MinerSectorInfo{}, nil
+		return &extractors.MinerSectorInfo{}, nil
 
 	case "miner_sector_deal":
-		return &miner.MinerSectorDeal{}, nil
+		return &extractors.MinerSectorDeal{}, nil
 
 	case "miner_sector_event":
-		return &miner.MinerSectorEvent{}, nil
+		return &extractors.MinerSectorEvent{}, nil
 
 	case "miner_sector_post":
-		return &miner.MinerSectorPost{}, nil
+		return &extractors.MinerSectorPost{}, nil
 
 	case "multisig_transaction":
 		return &multisig.MultisigTransaction{}, nil

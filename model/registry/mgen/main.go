@@ -18,7 +18,6 @@ import (
 	_ "github.com/filecoin-project/sentinel-visor/model/actors/common"
 	_ "github.com/filecoin-project/sentinel-visor/model/actors/init_"
 	_ "github.com/filecoin-project/sentinel-visor/model/actors/market"
-	_ "github.com/filecoin-project/sentinel-visor/model/actors/miner"
 	_ "github.com/filecoin-project/sentinel-visor/model/actors/multisig"
 	_ "github.com/filecoin-project/sentinel-visor/model/actors/power"
 	_ "github.com/filecoin-project/sentinel-visor/model/actors/reward"
@@ -27,6 +26,8 @@ import (
 	_ "github.com/filecoin-project/sentinel-visor/model/derived"
 	_ "github.com/filecoin-project/sentinel-visor/model/messages"
 	_ "github.com/filecoin-project/sentinel-visor/model/msapprovals"
+	// refactor
+	_ "github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner"
 )
 
 func main() {

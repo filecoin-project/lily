@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/tasks/extractors"
 
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
@@ -80,7 +80,7 @@ func TestModelUpsert(t *testing.T) {
 	}
 
 	// model was picked for this test since it has nullable fields and untagged pg fields.
-	minerInfo := &miner.MinerInfo{
+	minerInfo := &extractors.MinerInfo{
 		Height:                  1,
 		MinerID:                 "minerID",
 		StateRoot:               "stateroot",

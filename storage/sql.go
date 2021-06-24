@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	miner "github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/tasks/extractors"
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
 	"github.com/go-pg/pg/v10/types"
@@ -19,7 +20,6 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/actors/common"
 	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init_"
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
-	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
 	"github.com/filecoin-project/sentinel-visor/model/actors/multisig"
 	"github.com/filecoin-project/sentinel-visor/model/actors/power"
 	"github.com/filecoin-project/sentinel-visor/model/actors/reward"

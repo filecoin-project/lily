@@ -1,21 +1,81 @@
-package miner
+package extractors
 
 import (
 	"context"
 
-	"github.com/filecoin-project/sentinel-visor/model/registry"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/miner"
+	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/tasks"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
-
-	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 func init() {
-	registry.ModelRegistry.Register(registry.ActorStatesMinerTask, &MinerSectorInfo{})
+	tasks.Register(&MinerSectorInfo{}, ExtractMinerSectorInfo)
+}
+
+func ExtractMinerSectorInfo(ctx context.Context, ec *tasks.MinerStateExtractionContext) (model.Persistable, error) {
+	sectorChanges := new(miner.SectorChanges)
+	sectorModel := MinerSectorInfoList{}
+	if !ec.HasPreviousState() {
+		msectors, err := ec.CurrState.LoadSectors(nil)
+		if err != nil {
+			return nil, err
+		}
+
+		sectorChanges.Added = make([]miner.SectorOnChainInfo, len(msectors))
+		for idx, sector := range msectors {
+			sectorChanges.Added[idx] = *sector
+		}
+	} else {
+		var err error
+		sectorChanges, err = tasks.GetSectorDiff(ctx, ec)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for _, added := range sectorChanges.Added {
+		sm := &MinerSectorInfo{
+			Height:                int64(ec.CurrTs.Height()),
+			MinerID:               ec.Address.String(),
+			SectorID:              uint64(added.SectorNumber),
+			StateRoot:             ec.CurrTs.ParentState().String(),
+			SealedCID:             added.SealedCID.String(),
+			ActivationEpoch:       int64(added.Activation),
+			ExpirationEpoch:       int64(added.Expiration),
+			DealWeight:            added.DealWeight.String(),
+			VerifiedDealWeight:    added.VerifiedDealWeight.String(),
+			InitialPledge:         added.InitialPledge.String(),
+			ExpectedDayReward:     added.ExpectedDayReward.String(),
+			ExpectedStoragePledge: added.ExpectedStoragePledge.String(),
+		}
+		sectorModel = append(sectorModel, sm)
+	}
+
+	// do the same for extended sectors, since they have a new deadline
+	for _, extended := range sectorChanges.Extended {
+		sm := &MinerSectorInfo{
+			Height:                int64(ec.CurrTs.Height()),
+			MinerID:               ec.Address.String(),
+			SectorID:              uint64(extended.To.SectorNumber),
+			StateRoot:             ec.CurrTs.ParentState().String(),
+			SealedCID:             extended.To.SealedCID.String(),
+			ActivationEpoch:       int64(extended.To.Activation),
+			ExpirationEpoch:       int64(extended.To.Expiration),
+			DealWeight:            extended.To.DealWeight.String(),
+			VerifiedDealWeight:    extended.To.VerifiedDealWeight.String(),
+			InitialPledge:         extended.To.InitialPledge.String(),
+			ExpectedDayReward:     extended.To.ExpectedDayReward.String(),
+			ExpectedStoragePledge: extended.To.ExpectedStoragePledge.String(),
+		}
+		sectorModel = append(sectorModel, sm)
+	}
+	return sectorModel, nil
 }
 
 type MinerSectorInfo struct {
