@@ -3,9 +3,9 @@ package fcjson
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/ipfs/go-cid"
 	"github.com/polydawn/refmt/shared"
@@ -188,7 +188,7 @@ func (d *DagMarshaler) MarshalRecursive(n ipld.Node, sink shared.TokenSink) erro
 				}
 			}
 			tk.Type = tok.TMapOpen
-			tk.Length = 2
+			tk.Length = 3
 			if _, err = sink.Step(&tk); err != nil {
 				return err
 			}
@@ -201,15 +201,27 @@ func (d *DagMarshaler) MarshalRecursive(n ipld.Node, sink shared.TokenSink) erro
 			if _, err = sink.Step(&tk); err != nil {
 				return err
 			}
-			tk.Str = "bytes"
+			tk.Str = "elemcount"
 			if _, err = sink.Step(&tk); err != nil {
 				return err
 			}
-			buf := bytes.NewBuffer([]byte{})
-			if err = b.MarshalCBOR(buf); err != nil {
+			elemCount, err := b.Count()
+			if err != nil {
 				return err
 			}
-			tk.Str = hex.EncodeToString(buf.Bytes())
+			tk.Str = strconv.FormatUint(elemCount, 10)
+			if _, err = sink.Step(&tk); err != nil {
+				return err
+			}
+			tk.Str = "rle"
+			if _, err = sink.Step(&tk); err != nil {
+				return err
+			}
+			buf, err := b.MarshalJSON()
+			if err != nil {
+				return err
+			}
+			tk.Str = string(buf)
 			if _, err = sink.Step(&tk); err != nil {
 				return err
 			}
