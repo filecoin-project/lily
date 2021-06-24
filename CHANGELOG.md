@@ -5,6 +5,44 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+
+
+<a name="v0.7.0"></a>
+## [v0.7.0] - 2021-06-24
+
+This version introduces a revised database schema, support for filecoin network version 13 and actors 5.
+
+### Fix
+ - Add usage for --api flag
+ - Update amt package with diffing fix
+ - Bare migrate command uses supplied schema name
+ - Use actorname function generated for v5 actors
+ - Better errors, equals method, correct cid
+ - Give head notifier a buffer
+ - Correctly handle the genesis state
+ - log-level option should apply to all loggers
+ - Add hamt map opts for v5 actors
+ - Use correct log level regex
+ - Ensure id_addresses contains height
+
+### Feat
+ - Introduce major schema versioning and version 1 schema
+ - Add stop command
+ - Add net commands for inspecting daemon connectivity
+ - Decode message bitfields to json
+
+
+### Other
+ - Update lotus dependency to include v1.10 changes
+ - Add support for v5 actors
+ - Automated Calibnet Docker Builds
+ - Removed unused visor processing models
+ - Support building visor for devnets
+ - Sort list of log levels
+ - Replace golangci-lint by staticcheck
+ - Support building and executing on M1-based Macs
+
+
 <a name="v0.6.7"></a>
 ## [v0.6.7] - 2021-06-10
 
