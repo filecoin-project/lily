@@ -35,48 +35,58 @@ commands:
       - run: git submodule sync
       - run: sudo apt-get install gcc libc-dev
       - run: git submodule update --init
-  publish-docker-master-production:
+  publish-docker-from-branch-production:
     steps:
       - run:
-          name: Build Production Docker image
-          command: docker build -t $IMAGE_NAME -f Dockerfile .
-      - run:
-          name: Publish Production Docker Image to Docker Hub
+          name: Publish Mainnet Production Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            ./scripts/push-docker-tags.sh "${IMAGE_NAME}" "$CIRCLE_SHA1" "${CIRCLE_BRANCH}-${tag_suffix}"
-  publish-docker-master-dev:
-    steps:
+            VISOR_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix} make docker-mainnet-push
       - run:
-          name: Build Dev Docker image
-          command: docker build -t ${IMAGE_NAME} -f Dockerfile.dev .
-      - run:
-          name: Publish Dev Docker Image to Docker Hub
+          name: Publish Calibnet Production Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            ./scripts/push-docker-tags.sh "${IMAGE_NAME}" "$CIRCLE_SHA1" "${CIRCLE_BRANCH}-${tag_suffix}-dev"
+            VISOR_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-calibnet make docker-calibnet-push
+  publish-docker-from-branch-dev:
+    steps:
+      - run:
+          name: Publish Mainnet Dev Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
+            VISOR_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-dev make docker-mainnet-dev-push
+      - run:
+          name: Publish Calibnet Dev Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
+            VISOR_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-calibnet-dev make docker-calibnet-dev-push
   publish-docker-semver-production:
     steps:
       - run:
-          name: Build Production Semver Docker image
-          command: docker build -t ${IMAGE_NAME} -f Dockerfile .
-      - run:
-          name: Publish Production Semver Docker Image to Docker Hub
+          name: Publish Mainnet Production Semver Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            ./scripts/push-docker-tags.sh "${IMAGE_NAME}" "$CIRCLE_SHA1" "${CIRCLE_TAG}"
+            VISOR_IMAGE_TAG=${CIRCLE_TAG//\//-} make docker-mainnet-push
+      - run:
+          name: Publish Calibnet Production Semver Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            VISOR_IMAGE_TAG=${CIRCLE_TAG//\//-}-calibnet make docker-calibnet-push
   publish-docker-semver-dev:
     steps:
       - run:
-          name: Build Dev Semver Docker image
-          command: docker build -t ${IMAGE_NAME} -f Dockerfile.dev .
-      - run:
-          name: Publish Dev Semver Docker Image to Docker Hub
+          name: Publish Mainnet Dev Semver Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            ./scripts/push-docker-tags.sh "${IMAGE_NAME}" "$CIRCLE_SHA1" "${CIRCLE_TAG}-dev"
+            VISOR_IMAGE_TAG=${CIRCLE_TAG//\//-}-dev make docker-mainnet-dev-push
+      - run:
+          name: Publish Calibnet Dev Semver Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            VISOR_IMAGE_TAG=${CIRCLE_TAG//\//-}-calibnet-dev make docker-calibnet-dev-push
 
 jobs:
   publish-docker-from-master:
@@ -86,8 +96,8 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
           version: "18.09.3"
-      - publish-docker-master-dev
-      - publish-docker-master-production
+      - publish-docker-from-branch-dev
+      - publish-docker-from-branch-production
   publish-docker-from-tag:
     executor: dockerizer
     steps:
@@ -186,7 +196,7 @@ jobs:
             staticcheck ./... | sed -e 's@\(.*\)\.go@./\1.go@g'
   lint-all:
     <<: *lint
-  test-docker:
+  test-docker-mainnet:
     executor: dockerizer
     steps:
       - checkout
@@ -194,11 +204,38 @@ jobs:
           docker_layer_caching: true
           version: "18.09.3"
       - run:
-          name: Build Production Docker image
-          command: docker build -t ${IMAGE_NAME} -f Dockerfile .
+          name: Build Production Mainnet Docker image
+          command: make docker-mainnet
+  test-docker-mainnet-dev:
+    executor: dockerizer
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: "18.09.3"
       - run:
-          name: Build Dev Semver Docker image
-          command: docker build -t ${IMAGE_NAME}-dev -f Dockerfile.dev .
+          name: Build Dev Mainnet Docker image
+          command: make docker-mainnet-dev
+  test-docker-calibnet:
+    executor: dockerizer
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: "18.09.3"
+      - run:
+          name: Build Production Calibnet Docker image
+          command: make docker-calibnet
+  test-docker-calibnet-dev:
+    executor: dockerizer
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: "18.09.3"
+      - run:
+          name: Build Dev Calibnet Docker image
+          command: make docker-calibnet-dev
 
 workflows:
   version: 2
@@ -208,7 +245,10 @@ workflows:
       - mod-tidy-check
       - lint-all
       - test
-      - test-docker
+      - test-docker-mainnet
+      - test-docker-mainnet-dev
+      - test-docker-calibnet
+      - test-docker-calibnet-dev
   build-docker-images:
     # `build-push-*` runs on master or main branches and tags that look like semver
     # see: https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag

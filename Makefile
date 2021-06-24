@@ -1,8 +1,10 @@
 SHELL=/usr/bin/env bash
 
+GO_BUILD_IMAGE?=golang:1.16.5
 PG_IMAGE?=postgres:10
 REDIS_IMAGE?=redis:6
-COMMIT := $(shell git rev-parse --short HEAD)
+VISOR_IMAGE_NAME?=filecoin/sentinel-visor
+COMMIT := $(shell git rev-parse --short=8 HEAD)
 
 # GITVERSION is the nearest tag plus number of commits and short form of most recent commit since the tag, if any
 GITVERSION=$(shell git describe --always --tag --dirty)
@@ -57,9 +59,6 @@ ifneq ($(strip $(LDFLAGS)),)
 endif
 GOFLAGS+=-ldflags="$(ldflags)"
 
-.PHONY: all
-all: build
-
 .PHONY: build
 build: deps visor
 
@@ -106,11 +105,6 @@ visor:
 	rm -f visor
 	go build $(GOFLAGS) -o visor -mod=readonly .
 BINS+=visor
-
-.PHONY: docker-image
-docker-image:
-	docker build -t "filecoin/sentinel-visor" .
-	docker tag "filecoin/sentinel-visor:latest" "filecoin/sentinel-visor:$(COMMIT)"
 
 .PHONY: clean
 clean:
@@ -166,3 +160,163 @@ butterflynet: build
 
 interopnet: GOFLAGS+=-tags=interopnet
 interopnet: build
+
+# alias to match other network-specific targets
+mainnet: build
+
+
+# Dockerfiles
+
+docker-files: Dockerfile Dockerfile.dev
+
+Dockerfile:
+	@echo "Writing ./Dockerfile..."
+	@cat build/docker/header.tpl \
+		build/docker/builder.tpl \
+		build/docker/prod_entrypoint.tpl \
+		> ./Dockerfile
+CLEAN+=Dockerfile
+
+Dockerfile.dev:
+	@echo "Writing ./Dockerfile.dev..."
+	@cat build/docker/header.tpl \
+		build/docker/builder.tpl \
+		build/docker/dev_entrypoint.tpl \
+		> ./Dockerfile.dev
+CLEAN+=Dockerfile.dev
+
+# Docker images
+
+# MAINNET
+.PHONY: docker-mainnet
+docker-mainnet: VISOR_DOCKER_FILE ?= Dockerfile
+docker-mainnet: VISOR_NETWORK_TARGET ?= mainnet
+docker-mainnet: VISOR_IMAGE_TAG ?= $(COMMIT)
+docker-mainnet: docker-build-image-template
+
+.PHONY: docker-mainnet-push
+docker-mainnet-push: docker-mainnet docker-tag-and-push-template
+
+.PHONY: docker-mainnet-dev
+docker-mainnet-dev: VISOR_DOCKER_FILE ?= Dockerfile.dev
+docker-mainnet-dev: VISOR_NETWORK_TARGET ?= mainnet
+docker-mainnet-dev: VISOR_IMAGE_TAG ?= $(COMMIT)-dev
+docker-mainnet-dev: docker-build-image-template
+
+.PHONY: docker-mainnet-dev-push
+docker-mainnet-dev-push: docker-mainnet-dev docker-tag-and-push-template
+
+# CALIBNET
+.PHONY: docker-calibnet
+docker-calibnet: VISOR_DOCKER_FILE ?= Dockerfile
+docker-calibnet: VISOR_NETWORK_TARGET ?= calibnet
+docker-calibnet: VISOR_IMAGE_TAG ?= $(COMMIT)-calibnet
+docker-calibnet: docker-build-image-template
+
+.PHONY: docker-calibnet-push
+docker-calibnet-push: docker-calibnet docker-tag-and-push-template
+
+.PHONY: docker-calibnet-dev
+docker-calibnet-dev: VISOR_DOCKER_FILE ?= Dockerfile.dev
+docker-calibnet-dev: VISOR_NETWORK_TARGET ?= calibnet
+docker-calibnet-dev: VISOR_IMAGE_TAG ?= $(COMMIT)-calibnet-dev
+docker-calibnet-dev: docker-build-image-template
+
+.PHONY: docker-calibnet-dev-push
+docker-calibnet-dev-push: docker-calibnet-dev docker-tag-and-push-template
+
+# INTEROPNET
+.PHONY: docker-interopnet
+docker-interopnet: VISOR_DOCKER_FILE ?= Dockerfile
+docker-interopnet: VISOR_NETWORK_TARGET ?= interopnet
+docker-interopnet: VISOR_IMAGE_TAG ?= $(COMMIT)-interopnet
+docker-interopnet: docker-build-image-template
+
+.PHONY: docker-interopnet-push
+docker-interopnet-push: docker-interopnet docker-tag-and-push-template
+
+.PHONY: docker-interopnet-dev
+docker-interopnet-dev: VISOR_DOCKER_FILE ?= Dockerfile.dev
+docker-interopnet-dev: VISOR_NETWORK_TARGET ?= interopnet
+docker-interopnet-dev: VISOR_IMAGE_TAG ?= $(COMMIT)-interopnet-dev
+docker-interopnet-dev: docker-build-image-template
+
+.PHONY: docker-interopnet-dev-push
+docker-interopnet-dev-push: docker-interopnet-dev docker-tag-and-push-template
+
+# BUTTERFLYNET
+.PHONY: docker-butterflynet
+docker-butterflynet: VISOR_DOCKER_FILE ?= Dockerfile
+docker-butterflynet: VISOR_NETWORK_TARGET ?= butterflynet
+docker-butterflynet: VISOR_IMAGE_TAG ?= $(COMMIT)-butterflynet
+docker-butterflynet: docker-build-image-template
+
+.PHONY: docker-butterflynet-push
+docker-butterflynet-push: docker-butterflynet docker-tag-and-push-template
+
+.PHONY: docker-butterflynet-dev
+docker-butterflynet-dev: VISOR_DOCKER_FILE ?= Dockerfile.dev
+docker-butterflynet-dev: VISOR_NETWORK_TARGET ?= butterflynet
+docker-butterflynet-dev: VISOR_IMAGE_TAG ?= $(COMMIT)-butterflynet-dev
+docker-butterflynet-dev: docker-build-image-template
+
+.PHONY: docker-butterflynet-dev-push
+docker-butterflynet-dev-push: docker-butterflynet-dev docker-tag-and-push-template
+
+# NERPANET
+.PHONY: docker-nerpanet
+docker-nerpanet: VISOR_DOCKER_FILE ?= Dockerfile
+docker-nerpanet: VISOR_NETWORK_TARGET ?= nerpanet
+docker-nerpanet: VISOR_IMAGE_TAG ?= $(COMMIT)-nerpanet
+docker-nerpanet: docker-build-image-template
+
+.PHONY: docker-nerpanet-push
+docker-nerpanet-push: docker-nerpanet docker-tag-and-push-template
+
+.PHONY: docker-nerpanet-dev
+docker-nerpanet-dev: VISOR_DOCKER_FILE ?= Dockerfile.dev
+docker-nerpanet-dev: VISOR_NETWORK_TARGET ?= nerpanet
+docker-nerpanet-dev: VISOR_IMAGE_TAG ?= $(COMMIT)-nerpanet-dev
+docker-nerpanet-dev: docker-build-image-template
+
+.PHONY: docker-nerpanet-dev-push
+docker-nerpanet-dev-push: docker-nerpanet-dev docker-tag-and-push-template
+
+# 2K
+.PHONY: docker-2k
+docker-2k: VISOR_DOCKER_FILE ?= Dockerfile
+docker-2k: VISOR_NETWORK_TARGET ?= 2k
+docker-2k: VISOR_IMAGE_TAG ?= $(COMMIT)-2k
+docker-2k: docker-build-image-template
+
+.PHONY: docker-2k-push
+docker-2k-push: docker-2k docker-tag-and-push-template
+
+.PHONY: docker-2k-dev
+docker-2k-dev: VISOR_DOCKER_FILE ?= Dockerfile.dev
+docker-2k-dev: VISOR_NETWORK_TARGET ?= 2k
+docker-2k-dev: VISOR_IMAGE_TAG ?= $(COMMIT)-2k-dev
+docker-2k-dev: docker-build-image-template
+
+.PHONY: docker-2k-dev-push
+docker-2k-dev-push: docker-2k-dev docker-tag-and-push-template
+
+
+.PHONY: docker-build-image-template
+docker-build-image-template:
+	@echo "Building visor docker image for '$(VISOR_NETWORK_TARGET)'..."
+	docker build -f $(VISOR_DOCKER_FILE) \
+		--build-arg VISOR_NETWORK_TARGET=$(VISOR_NETWORK_TARGET) \
+		--build-arg GO_BUILD_IMAGE=$(GO_BUILD_IMAGE) \
+		-t $(VISOR_IMAGE_NAME) \
+		-t $(VISOR_IMAGE_NAME):latest \
+		-t $(VISOR_IMAGE_NAME):$(VISOR_IMAGE_TAG) \
+		.
+
+.PHONY: docker-tag-and-push-template
+docker-tag-and-push-template:
+	./scripts/push-docker-tags.sh $(VISOR_IMAGE_NAME) deprecatedvalue $(VISOR_IMAGE_TAG)
+
+.PHONY: docker-image
+docker-image: docker-mainnet
+	@echo "*** Deprecated make target 'docker-image': Please use 'make docker-mainnet' instead. ***"

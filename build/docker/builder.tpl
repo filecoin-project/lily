@@ -1,6 +1,3 @@
-# This file was generated with `make docker-files` and should not
-# be editted directly. Please see build/docker/README.md for more info.
-
 # build/docker/builder.tpl
 # partial for building visor without the entrypoint to allow for additional steps to be added
 
@@ -25,12 +22,7 @@ WORKDIR /go/src/github.com/filecoin-project/sentinel-visor
 COPY . /go/src/github.com/filecoin-project/sentinel-visor
 
 RUN make deps
-RUN go mod download -x
+RUN go mod download
 RUN make $VISOR_NETWORK_TARGET
 RUN cp ./visor /usr/bin/
 
-# build/docker/dev_entrypoint.tpl
-# partial for completing a dev visor dockerfile
-
-ENTRYPOINT ["/usr/bin/visor"]
-CMD ["--help"]
