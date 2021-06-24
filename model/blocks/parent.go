@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&BlockParent{})
+	registry.ModelRegistry.Register(registry.BlocksTask, &BlockParent{})
 }
 
 type BlockParent struct {

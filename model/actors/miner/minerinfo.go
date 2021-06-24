@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&MinerInfo{})
+	registry.ModelRegistry.Register(registry.ActorStatesMinerTask, &MinerInfo{})
 }
 
 type MinerInfo struct {

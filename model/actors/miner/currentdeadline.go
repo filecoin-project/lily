@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&MinerCurrentDeadlineInfo{})
+	registry.ModelRegistry.Register(registry.ActorStatesMinerTask, &MinerCurrentDeadlineInfo{})
 }
 
 type MinerCurrentDeadlineInfo struct {

@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&MarketDealProposal{})
+	registry.ModelRegistry.Register(registry.ActorStatesMarketTask, &MarketDealProposal{})
 }
 
 type MarketDealProposal struct {

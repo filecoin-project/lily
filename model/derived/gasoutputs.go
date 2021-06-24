@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&GasOutputs{})
+	registry.ModelRegistry.Register(registry.MessagesTask, &GasOutputs{})
 }
 
 type GasOutputs struct {

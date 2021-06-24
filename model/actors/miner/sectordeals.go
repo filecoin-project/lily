@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&MinerSectorDeal{})
+	registry.ModelRegistry.Register(registry.ActorStatesMinerTask, &MinerSectorDeal{})
 }
 
 type MinerSectorDeal struct {

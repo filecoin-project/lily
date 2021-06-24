@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&PowerActorClaim{})
+	registry.ModelRegistry.Register(registry.ActorStatesPowerTask, &PowerActorClaim{})
 }
 
 type PowerActorClaim struct {

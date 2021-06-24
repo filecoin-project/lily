@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&IdAddress{})
+	registry.ModelRegistry.Register(registry.ActorStatesInitTask, &IdAddress{})
 }
 
 type IdAddress struct {

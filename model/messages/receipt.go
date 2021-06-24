@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&Receipt{})
+	registry.ModelRegistry.Register(registry.MessagesTask, &Receipt{})
 }
 
 type Receipt struct {

@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&MultisigApproval{})
+	registry.ModelRegistry.Register(registry.MultisigApprovalsTask, &MultisigApproval{})
 }
 
 type MultisigApproval struct {

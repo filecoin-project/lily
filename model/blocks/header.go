@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&BlockHeader{})
+	registry.ModelRegistry.Register(registry.BlocksTask, &BlockHeader{})
 }
 
 type BlockHeader struct {

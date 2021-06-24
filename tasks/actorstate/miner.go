@@ -333,8 +333,12 @@ func getPreCommitDiff(ctx context.Context, ec *MinerStateExtractionContext) (*mi
 		if err != nil {
 			return nil, err
 		}
-		ec.cache.Put(PreCommitDiff, result)
+		ec.cache.Put(PreCommitDiff, preCommitChanges)
 	} else {
+		// a nil diff is a valid result, we want to keep this as to avoid rediffing to get nil
+		if result == nil {
+			return preCommitChanges, nil
+		}
 		preCommitChanges = result.(*miner.PreCommitChanges)
 	}
 	return preCommitChanges, nil
@@ -349,8 +353,12 @@ func getSectorDiff(ctx context.Context, ec *MinerStateExtractionContext) (*miner
 		if err != nil {
 			return nil, err
 		}
-		ec.cache.Put(SectorDiff, result)
+		ec.cache.Put(SectorDiff, sectorChanges)
 	} else {
+		// a nil diff is a valid result, we want to keep this as to avoid rediffing to get nil
+		if result == nil {
+			return sectorChanges, nil
+		}
 		sectorChanges = result.(*miner.SectorChanges)
 	}
 	return sectorChanges, nil

@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&MultisigTransaction{})
+	registry.ModelRegistry.Register(registry.ActorStatesMultisigTask, &MultisigTransaction{})
 }
 
 type MultisigTransaction struct {

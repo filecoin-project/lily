@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&MessageGasEconomy{})
+	registry.ModelRegistry.Register(registry.MessagesTask, &MessageGasEconomy{})
 }
 
 type MessageGasEconomy struct {

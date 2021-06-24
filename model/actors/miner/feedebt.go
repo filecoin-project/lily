@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&MinerFeeDebt{})
+	registry.ModelRegistry.Register(registry.ActorStatesMinerTask, &MinerFeeDebt{})
 }
 
 type MinerFeeDebt struct {

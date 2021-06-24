@@ -26,7 +26,7 @@ func NewDrandBlockEntries(header *types.BlockHeader) DrandBlockEntries {
 }
 
 func init() {
-	registry.ModelRegistry.Register(&DrandBlockEntrie{})
+	registry.ModelRegistry.Register(registry.BlocksTask, &DrandBlockEntrie{})
 }
 
 type DrandBlockEntrie struct {

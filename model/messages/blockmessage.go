@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&BlockMessage{})
+	registry.ModelRegistry.Register(registry.MessagesTask, &BlockMessage{})
 }
 
 type BlockMessage struct {

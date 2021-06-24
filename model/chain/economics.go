@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&ChainEconomics{})
+	registry.ModelRegistry.Register(registry.ChainEconomicsTask, &ChainEconomics{})
 }
 
 type ChainEconomics struct {

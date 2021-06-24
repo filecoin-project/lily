@@ -14,8 +14,8 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&Actor{})
-	registry.ModelRegistry.Register(&ActorState{})
+	registry.ModelRegistry.Register(registry.ActorStatesRawTask, &Actor{})
+	registry.ModelRegistry.Register(registry.ActorStatesRawTask, &ActorState{})
 }
 
 type Actor struct {

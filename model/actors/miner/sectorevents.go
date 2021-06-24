@@ -30,7 +30,7 @@ const (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&MinerSectorEvent{})
+	registry.ModelRegistry.Register(registry.ActorStatesMinerTask, &MinerSectorEvent{})
 }
 
 type MinerSectorEvent struct {

@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&ChainPower{})
+	registry.ModelRegistry.Register(registry.ActorStatesPowerTask, &ChainPower{})
 }
 
 type ChainPower struct {

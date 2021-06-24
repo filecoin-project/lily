@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&InternalMessage{})
+	registry.ModelRegistry.Register(registry.MessagesTask, &InternalMessage{})
 }
 
 type InternalMessage struct {

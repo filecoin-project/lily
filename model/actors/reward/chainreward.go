@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&ChainReward{})
+	registry.ModelRegistry.Register(registry.ActorStatesRewardTask, &ChainReward{})
 }
 
 type ChainReward struct {

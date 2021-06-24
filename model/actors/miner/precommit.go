@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	registry.ModelRegistry.Register(&MinerPreCommitInfo{})
+	registry.ModelRegistry.Register(registry.ActorStatesMinerTask, &MinerPreCommitInfo{})
 }
 
 type MinerPreCommitInfo struct {
