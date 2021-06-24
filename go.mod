@@ -17,12 +17,12 @@ require (
 	github.com/filecoin-project/go-multistore v0.0.3
 	github.com/filecoin-project/go-paramfetch v0.0.2-0.20210614165157-25a6c7769498
 	github.com/filecoin-project/go-state-types v0.1.1-0.20210506134452-99b279731c48
-	github.com/filecoin-project/lotus v1.10.0-rc6.0.20210621151951-fa2b247f755f
+	github.com/filecoin-project/lotus v1.10.1-0.20210624080236-04b25e09eab9
 	github.com/filecoin-project/specs-actors v0.9.14
 	github.com/filecoin-project/specs-actors/v2 v2.3.5
 	github.com/filecoin-project/specs-actors/v3 v3.1.1
 	github.com/filecoin-project/specs-actors/v4 v4.0.1
-	github.com/filecoin-project/specs-actors/v5 v5.0.0-20210609212542-73e0409ac77c
+	github.com/filecoin-project/specs-actors/v5 v5.0.1
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.3.1
 	github.com/go-pg/pgext v0.1.4
