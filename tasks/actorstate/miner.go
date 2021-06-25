@@ -540,9 +540,6 @@ func ExtractMinerSectorEvents(ctx context.Context, ec *MinerStateExtractionConte
 func ExtractMinerPoSts(ctx context.Context, ec *MinerStateExtractionContext) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "ExtractMinerPoSts")
 	defer span.End()
-	if !ec.HasPreviousState() {
-		return nil, nil
-	}
 	// short circuit genesis state, no PoSt messages in genesis blocks.
 	if !ec.HasPreviousState() {
 		return nil, nil
