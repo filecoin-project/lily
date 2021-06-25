@@ -31,7 +31,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
-	regmodels "github.com/filecoin-project/sentinel-visor/model/registry/registered"
+	regmodels "github.com/filecoin-project/sentinel-visor/model/registry/modeltasks"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 	"github.com/filecoin-project/sentinel-visor/tasks/blocks"
@@ -80,11 +80,10 @@ func ParseTaskString(name string) (string, model.PersistableList, error) {
 	if strings.Contains(name, ":") {
 		tokens := strings.Split(name, ":")
 		if len(tokens) != 2 {
-			// TODO don't do this
-			panic("invalid task format? you fucked up, stop doing that")
+			return "", nil, xerrors.Errorf("invalid task string format. Invalid: %s", name)
 		}
 		taskName := tokens[0]
-		taskModels := strings.Split(tokens[1], ",")
+		taskModels := strings.Split(tokens[1], "+")
 		log.Infow("task with subtasks created", "task", taskName, "subtasks", taskModels)
 		var out model.PersistableList
 		for _, tm := range taskModels {
@@ -100,32 +99,7 @@ func ParseTaskString(name string) (string, model.PersistableList, error) {
 		if err != nil {
 			return "", nil, err
 		}
-		switch name {
-		case modelreg.BlocksTask:
-			return name, models, nil
-		case modelreg.MessagesTask:
-			return name, models, nil
-		case modelreg.ChainEconomicsTask:
-			return name, models, nil
-		case modelreg.ActorStatesRawTask:
-			return name, models, nil
-		case modelreg.ActorStatesPowerTask:
-			return name, models, nil
-		case modelreg.ActorStatesRewardTask:
-			return name, models, nil
-		case modelreg.ActorStatesMinerTask:
-			return name, models, nil
-		case modelreg.ActorStatesInitTask:
-			return name, models, nil
-		case modelreg.ActorStatesMarketTask:
-			return name, models, nil
-		case modelreg.ActorStatesMultisigTask:
-			return name, models, nil
-		case modelreg.MultisigApprovalsTask:
-			return name, models, nil
-		default:
-			return "", nil, xerrors.Errorf("unknown task: %s", name)
-		}
+		return name, models, nil
 	}
 }
 

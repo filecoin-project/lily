@@ -99,7 +99,7 @@ var WalkCmd = &cli.Command{
 
 		cfg := &lily.LilyWalkConfig{
 			Name:                walkName,
-			Tasks:               strings.Split(walkFlags.tasks, "|"),
+			Tasks:               strings.Split(walkFlags.tasks, ","),
 			Window:              walkFlags.window,
 			From:                walkFlags.from,
 			To:                  walkFlags.to,

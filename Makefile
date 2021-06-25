@@ -145,12 +145,6 @@ actors-gen:
 	go run ./chain/actors/agen
 	go fmt ./...
 
-.PHONY: models-gen
-models-gen:
-	go run ./model/registry/mgen
-	go fmt ./model/registry/...
-
-
 .PHONY: types-gen
 types-gen: $(toolspath)/bin/gen
 	$(toolspath)/bin/gen ./tasks/messages/types

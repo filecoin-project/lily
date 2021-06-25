@@ -3,6 +3,7 @@ package actorstate
 import (
 	"bytes"
 	"context"
+	"sync"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
@@ -74,10 +75,12 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node Ac
 
 	var out model.PersistableList
 	for _, m := range a.Models {
+		// look up the extraction method required to produce this model.
 		extF, err := ModelExtractors(m)
 		if err != nil {
 			return nil, err
 		}
+		// execute and collect data.
 		data, err := extF(ctx, ec)
 		if err != nil {
 			return nil, err
@@ -157,7 +160,8 @@ func NewDiffCache() *diffCache {
 }
 
 type diffCache struct {
-	cache map[diffType]interface{}
+	cacheMu sync.Mutex
+	cache   map[diffType]interface{}
 }
 
 type diffType string
@@ -168,10 +172,14 @@ const (
 )
 
 func (d *diffCache) Put(diff diffType, result interface{}) {
+	d.cacheMu.Lock()
+	defer d.cacheMu.Unlock()
 	d.cache[diff] = result
 }
 
 func (d *diffCache) Get(diffType diffType) (interface{}, bool) {
+	d.cacheMu.Lock()
+	defer d.cacheMu.Unlock()
 	result, found := d.cache[diffType]
 	return result, found
 }
