@@ -63,7 +63,8 @@ type TipSetIndexer struct {
 	messageProcessors map[string]MessageProcessor
 	actorProcessors   map[string]ActorProcessor
 	name              string
-	persistSlot       chan struct{} // filled with a token when a gorroutine is persisting data
+	processSlot       chan struct{} // filled with a token when a goroutine is processing a tipset
+	persistSlot       chan struct{} // filled with a token when a goroutine is persisting data
 	lastTipSet        *types.TipSet
 	node              lens.API
 	opener            lens.APIOpener
@@ -88,6 +89,7 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 		storage:           d,
 		window:            window,
 		name:              name,
+		processSlot:       make(chan struct{}, 1), // allow one concurrent processing job
 		persistSlot:       make(chan struct{}, 1), // allow one concurrent persistence job
 		processors:        map[string]TipSetProcessor{},
 		messageProcessors: map[string]MessageProcessor{},
@@ -133,7 +135,33 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 
 // TipSet is called when a new tipset has been discovered
 func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
-	ctx, span := global.Tracer("").Start(ctx, "Indexer.TipSet")
+	// Process the tipset if we can, otherwise skip it so we don't block if indexing is too slow
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case t.processSlot <- struct{}{}:
+		// Processing slot was available which means we can continue.
+		go func() {
+			// Clear the slot when we have completed processing
+			defer func() {
+				<-t.processSlot
+			}()
+
+			err := t.processTipSet(ctx, ts)
+			if err != nil {
+				log.Errorw("failed to process tipset", "error", err, "height", ts.Height())
+			}
+		}()
+	default:
+		// TODO: write processing report to the database
+		log.Errorw("skipped tipset since processor not available", "height", ts.Height())
+	}
+
+	return nil // only fatal errors should be returned
+}
+
+func (t *TipSetIndexer) processTipSet(ctx context.Context, ts *types.TipSet) error {
+	ctx, span := global.Tracer("").Start(ctx, "Indexer.processTipSet")
 	if span.IsRecording() {
 		span.SetAttributes(label.String("tipset", ts.String()), label.Int64("height", int64(ts.Height())))
 	}

@@ -53,7 +53,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedu
 
 	// HeadNotifier bridges between the event system and the watcher
 	obs := &HeadNotifier{
-		bufferSize: 40,
+		bufferSize: 5,
 	}
 
 	// get the current head and set it on the tipset cache (mimic chain.watcher behaviour)
