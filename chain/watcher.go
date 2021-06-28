@@ -16,6 +16,7 @@ func NewWatcher(obs TipSetObserver, hn HeadNotifier, confidence int) *Watcher {
 		obs:        obs,
 		confidence: confidence,
 		cache:      NewTipSetCache(confidence),
+		indexSlot:  make(chan struct{}, 1), // allow one concurrent indexing job
 	}
 }
 
@@ -23,8 +24,9 @@ func NewWatcher(obs TipSetObserver, hn HeadNotifier, confidence int) *Watcher {
 type Watcher struct {
 	notifier   HeadNotifier
 	obs        TipSetObserver
-	confidence int          // size of tipset cache
-	cache      *TipSetCache // caches tipsets for possible reversion
+	confidence int           // size of tipset cache
+	cache      *TipSetCache  // caches tipsets for possible reversion
+	indexSlot  chan struct{} // filled with a token when a goroutine is indexing a tipset
 }
 
 func (c *Watcher) Params() map[string]interface{} {
@@ -88,6 +90,33 @@ func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {
 	log.Debugw("tipset cache", "height", c.cache.Height(), "tail_height", c.cache.TailHeight(), "length", c.cache.Len())
 
 	return nil
+}
+
+// maybeIndexTipSet is called when a new tipset has been discovered
+func (c *Watcher) maybeIndexTipSet(ctx context.Context, ts *types.TipSet) error {
+	// Process the tipset if we can, otherwise skip it so we don't block if indexing is too slow
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case c.indexSlot <- struct{}{}:
+		// Indexing slot was available which means we can continue.
+		go func() {
+			// Clear the slot when we have completed indexing
+			defer func() {
+				<-c.indexSlot
+			}()
+
+			if err := c.obs.TipSet(ctx, ts); err != nil {
+				log.Errorw("failed to index tipset", "error", err, "height", ts.Height())
+			}
+		}()
+	default:
+		// TODO: write processing report to the database
+		// TODO: report metric
+		log.Errorw("skipped tipset since indexer is not ready", "height", ts.Height())
+	}
+
+	return nil // only fatal errors should be returned
 }
 
 // A HeadNotifier reports tipset events that occur at the head of the chain
