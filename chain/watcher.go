@@ -78,7 +78,7 @@ func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {
 
 		// Send the tipset that fell out of the confidence window to the observer
 		if tail != nil {
-			if err := c.obs.TipSet(ctx, tail); err != nil {
+			if err := c.maybeIndexTipSet(ctx, tail); err != nil {
 				return xerrors.Errorf("notify tipset: %w", err)
 			}
 		}
