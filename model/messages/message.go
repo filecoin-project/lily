@@ -101,13 +101,15 @@ func (ms Messages) Persist(ctx context.Context, s model.StorageBatch, version mo
 	defer stop()
 
 	if version.Major != 1 {
-		// Support older versions, but in a non-optimal way
+		vms := make([]interface{}, 0, len(ms))
 		for _, m := range ms {
-			if err := m.Persist(ctx, s, version); err != nil {
-				return err
+			vm, ok := m.AsVersion(version)
+			if !ok {
+				return xerrors.Errorf("Message not supported for schema version %s", version)
 			}
+			vms = append(vms, vm)
 		}
-		return nil
+		return s.PersistModel(ctx, vms)
 	}
 
 	return s.PersistModel(ctx, ms)

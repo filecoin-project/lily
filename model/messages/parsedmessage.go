@@ -85,13 +85,15 @@ func (pms ParsedMessages) Persist(ctx context.Context, s model.StorageBatch, ver
 	defer stop()
 
 	if version.Major != 1 {
-		// Support older versions, but in a non-optimal way
+		vpms := make([]interface{}, 0, len(pms))
 		for _, m := range pms {
-			if err := m.Persist(ctx, s, version); err != nil {
-				return err
+			vpm, ok := m.AsVersion(version)
+			if !ok {
+				return xerrors.Errorf("ParsedMessage not supported for schema version %s", version)
 			}
+			vpms = append(vpms, vpm)
 		}
-		return nil
+		return s.PersistModel(ctx, vpms)
 	}
 
 	return s.PersistModel(ctx, pms)
