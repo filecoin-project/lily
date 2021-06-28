@@ -4,7 +4,10 @@ import (
 	"context"
 
 	"github.com/filecoin-project/lotus/chain/types"
+	"go.opencensus.io/stats"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/sentinel-visor/metrics"
 )
 
 // NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held
@@ -111,9 +114,14 @@ func (c *Watcher) maybeIndexTipSet(ctx context.Context, ts *types.TipSet) error 
 			}
 		}()
 	default:
-		// TODO: write processing report to the database
-		// TODO: report metric
-		log.Errorw("skipped tipset since indexer is not ready", "height", ts.Height())
+		// The indexer is taking longer than one epoch to process. We need to avoid blocking the stream of incoming
+		// tipsets otherwise we will cause the node to fall behind the chain while it waits for us to catch up
+		// (which may never happen if we consistently take too long)
+		log.Errorw("skipping tipset since indexer is not ready", "height", ts.Height())
+		stats.Record(ctx, metrics.TipSetSkip.M(1))
+		if err := c.obs.SkipTipSet(ctx, ts, "indexer not ready"); err != nil {
+			log.Errorw("failed to skip tipset", "error", err, "height", ts.Height())
+		}
 	}
 
 	return nil // only fatal errors should be returned

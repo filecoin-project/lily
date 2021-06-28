@@ -30,6 +30,7 @@ var (
 	ProcessingFailure   = stats.Int64("processing_failure", "Number of processing failures", stats.UnitDimensionless)
 	PersistFailure      = stats.Int64("persist_failure", "Number of persistence failures", stats.UnitDimensionless)
 	WatchHeight         = stats.Int64("watch_height", "The height of the tipset last seen by the watch command", stats.UnitDimensionless)
+	TipSetSkip          = stats.Int64("tipset_skip", "Number of tipsets that were not processed. This is is an indication that visor cannot keep up with chain.", stats.UnitDimensionless)
 )
 
 var (
@@ -79,6 +80,12 @@ var (
 	WatchHeightView = &view.View{
 		Measure:     WatchHeight,
 		Aggregation: view.LastValue(),
+		TagKeys:     []tag.Key{},
+	}
+	TipSetSkipTotalView = &view.View{
+		Name:        TipSetSkip.Name() + "_total",
+		Measure:     TipSetSkip,
+		Aggregation: view.Sum(),
 		TagKeys:     []tag.Key{},
 	}
 )

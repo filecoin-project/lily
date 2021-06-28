@@ -11,12 +11,15 @@ import (
 // A TipSetObserver waits for notifications of new tipsets.
 type TipSetObserver interface {
 	TipSet(ctx context.Context, ts *types.TipSet) error
+	SkipTipSet(ctx context.Context, ts *types.TipSet, reason string) error
 	Close() error
 }
 
-var ErrCacheEmpty = errors.New("cache empty")
-var ErrAddOutOfOrder = errors.New("added tipset height lower than current head")
-var ErrRevertOutOfOrder = errors.New("reverted tipset does not match current head")
+var (
+	ErrCacheEmpty       = errors.New("cache empty")
+	ErrAddOutOfOrder    = errors.New("added tipset height lower than current head")
+	ErrRevertOutOfOrder = errors.New("reverted tipset does not match current head")
+)
 
 // TipSetCache is a cache of recent tipsets that can keep track of reversions.
 // Inspired by tipSetCache in Lotus chain/events package.

@@ -17,6 +17,7 @@ const (
 	ProcessingStatusOK    = "OK"
 	ProcessingStatusInfo  = "INFO"  // Processing was successful but the task reported information in the StatusInformation column
 	ProcessingStatusError = "ERROR" // one or more errors were encountered, data may be incomplete
+	ProcessingStatusSkip  = "SKIP"  // no processing was attempted, a reason may be given in the StatusInformation column
 )
 
 type ProcessingReport struct {
