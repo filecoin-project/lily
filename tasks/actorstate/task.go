@@ -8,6 +8,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/actor"
 	"github.com/ipfs/go-cid"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
@@ -61,7 +62,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	}
 	t.nodeMu.Unlock()
 
-	log.Debugw("processing actor state changes", "height", ts.Height(), "parent_height", pts.Height())
+	actor.log.Debugw("processing actor state changes", "height", ts.Height(), "parent_height", pts.Height())
 
 	report := &visormodel.ProcessingReport{
 		Height:    int64(ts.Height()),
@@ -69,7 +70,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 		Status:    visormodel.ProcessingStatusOK,
 	}
 
-	ll := log.With("height", int64(ts.Height()))
+	ll := actor.log.With("height", int64(ts.Height()))
 
 	// Filter to just allowed actors
 	actors := map[string]types.Actor{}
@@ -102,7 +103,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	for inFlight > 0 {
 		res := <-results
 		inFlight--
-		lla := log.With("height", int64(ts.Height()), "actor", builtin.ActorNameByCode(res.Code), "address", res.Address)
+		lla := actor.log.With("height", int64(ts.Height()), "actor", builtin.ActorNameByCode(res.Code), "address", res.Address)
 
 		if res.Error != nil {
 			lla.Errorw("actor returned with error", "error", res.Error.Error())
@@ -124,7 +125,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 		data = append(data, res.Data)
 	}
 
-	log.Debugw("completed processing actor state changes", "height", ts.Height(), "success", len(actors)-len(errorsDetected)-skippedActors, "errors", len(errorsDetected), "skipped", skippedActors, "time", time.Since(start))
+	actor.log.Debugw("completed processing actor state changes", "height", ts.Height(), "success", len(actors)-len(errorsDetected)-skippedActors, "errors", len(errorsDetected), "skipped", skippedActors, "time", time.Since(start))
 
 	if skippedActors > 0 {
 		report.StatusInformation = fmt.Sprintf("did not parse %d actors", skippedActors)
@@ -155,7 +156,7 @@ func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pt
 		return
 	}
 
-	info := ActorInfo{
+	info := actor.ActorInfo{
 		Actor:           act,
 		Address:         addr,
 		ParentStateRoot: ts.ParentState(),
@@ -220,7 +221,7 @@ type ActorStateError struct {
 // An ActorExtractorMap controls which actor types may be extracted.
 type ActorExtractorMap interface {
 	Allow(code cid.Cid) bool
-	GetExtractor(code cid.Cid) (ActorStateExtractor, bool)
+	GetExtractor(code cid.Cid) (actor.ActorStateExtractor, bool)
 }
 
 type ActorExtractorFilter interface {
@@ -234,8 +235,8 @@ func (RawActorExtractorMap) Allow(code cid.Cid) bool {
 	return true
 }
 
-func (RawActorExtractorMap) GetExtractor(code cid.Cid) (ActorStateExtractor, bool) {
-	return ActorExtractor{}, true
+func (RawActorExtractorMap) GetExtractor(code cid.Cid) (actor.ActorStateExtractor, bool) {
+	return actor.ActorExtractor{}, true
 }
 
 // A TypedActorExtractorMap extracts a single type of actor using full parsing of actor state
@@ -257,9 +258,9 @@ func (t *TypedActorExtractorMap) Allow(code cid.Cid) bool {
 	return t.codes.Has(code)
 }
 
-func (t *TypedActorExtractorMap) GetExtractor(code cid.Cid) (ActorStateExtractor, bool) {
+func (t *TypedActorExtractorMap) GetExtractor(code cid.Cid) (actor.ActorStateExtractor, bool) {
 	if !t.Allow(code) {
 		return nil, false
 	}
-	return GetActorStateExtractor(code)
+	return actor.GetActorStateExtractor(code)
 }

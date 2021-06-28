@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/tasks/extractors"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extractors/extractors"
 
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
