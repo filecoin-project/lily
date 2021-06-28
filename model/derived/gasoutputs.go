@@ -136,13 +136,15 @@ func (l GasOutputsList) Persist(ctx context.Context, s model.StorageBatch, versi
 	defer stop()
 
 	if version.Major != 1 {
-		// Support older versions, but in a non-optimal way
-		for _, m := range l {
-			if err := m.Persist(ctx, s, version); err != nil {
-				return err
+		vgl := make([]interface{}, 0, len(l))
+		for _, g := range l {
+			vg, ok := g.AsVersion(version)
+			if !ok {
+				return xerrors.Errorf("GasOutputs not supported for schema version %s", version)
 			}
+			vgl = append(vgl, vg)
 		}
-		return nil
+		return s.PersistModel(ctx, vgl)
 	}
 
 	return s.PersistModel(ctx, l)
