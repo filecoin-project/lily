@@ -347,7 +347,7 @@ func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 	}
 
 	// Keep this job running forever
-	doneFirstRun := false
+	delayNextRestart := false
 	for {
 
 		// Is the context done?
@@ -357,20 +357,23 @@ func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 		default:
 		}
 
-		if doneFirstRun {
+		if delayNextRestart {
 			jc.log.Infow("restarting job", "delay", jc.RestartDelay)
 			if jc.RestartDelay > 0 {
 				time.Sleep(jc.RestartDelay)
 			}
 		} else {
 			jc.log.Info("running job")
-			doneFirstRun = true
+			delayNextRestart = true
 		}
 
 		err := jc.Job.Run(ctx)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				break
+			}
+			if errors.Is(err, context.DeadlineExceeded) {
+				delayNextRestart = false
 			}
 			jc.log.Errorw("job exited with failure", "error", err.Error())
 			jc.errorMsg = err.Error()
