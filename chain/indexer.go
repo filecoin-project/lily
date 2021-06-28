@@ -133,7 +133,7 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 
 // TipSet is called when a new tipset has been discovered
 func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
-	ctx, span := global.Tracer("").Start(ctx, "Indexer.processTipSet")
+	ctx, span := global.Tracer("").Start(ctx, "Indexer.TipSet")
 	if span.IsRecording() {
 		span.SetAttributes(label.String("tipset", ts.String()), label.Int64("height", int64(ts.Height())))
 	}
