@@ -42,7 +42,7 @@ func Version() model.Version {
 	}
 }
 
-var patches patchList
+var patches = NewPatchList()
 
 type patch struct {
 	seq  int
@@ -51,6 +51,10 @@ type patch struct {
 
 type patchList struct {
 	pm map[int]patch
+}
+
+func NewPatchList() patchList {
+	return patchList{map[int]patch{}}
 }
 
 // Register adds a patch to the patch list. This should be called in an init function.
@@ -79,14 +83,15 @@ func (pl *patchList) Collection(cfg schemas.Config) (*migrations.Collection, err
 		return nil, xerrors.Errorf("found patch 0, which should not exist")
 	}
 
-	for i := 1; i < count; i++ {
+	// index from 1 since schema seq 0 is the base and not in `pm`
+	for i := 1; i <= count; i++ {
 		if _, exists := pl.pm[i]; !exists {
 			return nil, xerrors.Errorf("missing patch %d", i)
 		}
 	}
 
 	migs := make([]*migrations.Migration, 0, count)
-	for i := 0; i < count; i++ {
+	for i := 1; i <= count; i++ {
 		p := pl.pm[i]
 
 		var buf strings.Builder
