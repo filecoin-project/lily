@@ -63,7 +63,7 @@ type TipSetIndexer struct {
 	messageProcessors map[string]MessageProcessor
 	actorProcessors   map[string]ActorProcessor
 	name              string
-	persistSlot       chan struct{} // filled with a token when a gorroutine is persisting data
+	persistSlot       chan struct{} // filled with a token when a goroutine is persisting data
 	lastTipSet        *types.TipSet
 	node              lens.API
 	opener            lens.APIOpener
@@ -608,6 +608,43 @@ func (t *TipSetIndexer) Close() error {
 	<-t.persistSlot
 
 	return t.closeProcessors()
+}
+
+// SkipTipSet writes a processing report to storage for each indexer task to indicate that the entire tipset
+// was not processed.
+func (t *TipSetIndexer) SkipTipSet(ctx context.Context, ts *types.TipSet, reason string) error {
+	var reports model.PersistableList
+
+	timestamp := time.Now()
+	for name := range t.processors {
+		reports = append(reports, t.buildSkippedTipsetReport(ts, name, timestamp, reason))
+	}
+
+	for name := range t.messageProcessors {
+		reports = append(reports, t.buildSkippedTipsetReport(ts, name, timestamp, reason))
+	}
+
+	for name := range t.actorProcessors {
+		reports = append(reports, t.buildSkippedTipsetReport(ts, name, timestamp, reason))
+	}
+
+	if err := t.storage.PersistBatch(ctx, reports...); err != nil {
+		return xerrors.Errorf("persist reports: %w", err)
+	}
+	return nil
+}
+
+func (t *TipSetIndexer) buildSkippedTipsetReport(ts *types.TipSet, taskName string, timestamp time.Time, reason string) *visormodel.ProcessingReport {
+	return &visormodel.ProcessingReport{
+		Height:            int64(ts.Height()),
+		StateRoot:         ts.ParentState().String(),
+		Reporter:          t.name,
+		Task:              taskName,
+		StartedAt:         timestamp,
+		CompletedAt:       timestamp,
+		Status:            visormodel.ProcessingStatusSkip,
+		StatusInformation: reason,
+	}
 }
 
 // A TaskResult is either some data to persist or an error which indicates that the task did not complete. Partial
