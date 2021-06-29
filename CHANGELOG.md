@@ -7,6 +7,15 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 
 
+<a name="v0.7.1"></a>
+## [v0.7.1] - 2021-06-29
+
+### Fix
+ - Avoid indexer blocking head events
+ - Add batch persist support for v0 schema message tables
+ - Increase API cache size 
+
+
 <a name="v0.7.0"></a>
 ## [v0.7.0] - 2021-06-24
 
