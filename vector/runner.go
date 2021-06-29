@@ -142,7 +142,7 @@ func (r *Runner) Validate(ctx context.Context) error {
 		if diff != "" {
 			log.Errorf("Validate Model %s: Failed\n", expTable)
 			fmt.Println(diff)
-			errStr = append(errStr, "failed to validate model: %s", expTable)
+			errStr = append(errStr, fmt.Sprintf("failed to validate model: %s\n", expTable))
 		} else {
 			log.Infof("Validate Model %s: Passed\n", expTable)
 		}
