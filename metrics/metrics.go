@@ -68,13 +68,13 @@ var (
 	ProcessingFailureTotalView = &view.View{
 		Name:        ProcessingFailure.Name() + "_total",
 		Measure:     ProcessingFailure,
-		Aggregation: view.Sum(),
+		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{TaskType, ActorCode},
 	}
 	PersistFailureTotalView = &view.View{
 		Name:        PersistFailure.Name() + "_total",
 		Measure:     PersistFailure,
-		Aggregation: view.Sum(),
+		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{TaskType, Table, ActorCode},
 	}
 	WatchHeightView = &view.View{
@@ -99,6 +99,7 @@ var DefaultViews = []*view.View{
 	TipsetHeightView,
 	ProcessingFailureTotalView,
 	PersistFailureTotalView,
+	TipSetSkipTotalView,
 }
 
 // SinceInMilliseconds returns the duration of time since the provide time as a float64.
