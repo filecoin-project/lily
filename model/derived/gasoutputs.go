@@ -119,6 +119,7 @@ func (g *GasOutputs) Persist(ctx context.Context, s model.StorageBatch, version 
 		return xerrors.Errorf("GasOutputs not supported for schema version %s", version)
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, vg)
 }
 
@@ -147,5 +148,6 @@ func (l GasOutputsList) Persist(ctx context.Context, s model.StorageBatch, versi
 		return s.PersistModel(ctx, vgl)
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(l))
 	return s.PersistModel(ctx, l)
 }

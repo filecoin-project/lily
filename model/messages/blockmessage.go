@@ -23,6 +23,7 @@ func (bm *BlockMessage) Persist(ctx context.Context, s model.StorageBatch, versi
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, bm)
 }
 
@@ -39,5 +40,6 @@ func (bms BlockMessages) Persist(ctx context.Context, s model.StorageBatch, vers
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(bms))
 	return s.PersistModel(ctx, bms)
 }

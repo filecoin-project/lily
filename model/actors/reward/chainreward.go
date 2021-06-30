@@ -82,5 +82,6 @@ func (r *ChainReward) Persist(ctx context.Context, s model.StorageBatch, version
 		return xerrors.Errorf("ChainReward not supported for schema version %s", version)
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, vr)
 }

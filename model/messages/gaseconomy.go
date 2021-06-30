@@ -79,5 +79,6 @@ func (g *MessageGasEconomy) Persist(ctx context.Context, s model.StorageBatch, v
 		return xerrors.Errorf("MessageGasEconomy not supported for schema version %s", version)
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, vm)
 }

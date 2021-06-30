@@ -63,6 +63,7 @@ func (p *PowerActorClaim) Persist(ctx context.Context, s model.StorageBatch, ver
 		return xerrors.Errorf("PowerActorClaim not supported for schema version %s", version)
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, vp)
 }
 
@@ -90,5 +91,6 @@ func (pl PowerActorClaimList) Persist(ctx context.Context, s model.StorageBatch,
 		return nil
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(pl))
 	return s.PersistModel(ctx, pl)
 }

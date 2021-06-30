@@ -69,6 +69,7 @@ func (c *ChainEconomics) Persist(ctx context.Context, s model.StorageBatch, vers
 		return xerrors.Errorf("ChainEconomics not supported for schema version %s", version)
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, m)
 }
 
@@ -95,5 +96,6 @@ func (l ChainEconomicsList) Persist(ctx context.Context, s model.StorageBatch, v
 		return nil
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(l))
 	return s.PersistModel(ctx, l)
 }

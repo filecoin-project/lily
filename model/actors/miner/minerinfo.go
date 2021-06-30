@@ -38,6 +38,7 @@ func (m *MinerInfo) Persist(ctx context.Context, s model.StorageBatch, version m
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, m)
 }
 
@@ -54,5 +55,6 @@ func (ml MinerInfoList) Persist(ctx context.Context, s model.StorageBatch, versi
 	if len(ml) == 0 {
 		return nil
 	}
+	metrics.RecordCount(ctx, metrics.PersistModel, len(ml))
 	return s.PersistModel(ctx, ml)
 }

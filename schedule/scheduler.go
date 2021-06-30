@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/wait"
 )
@@ -307,6 +308,7 @@ func (s *Scheduler) Jobs() []JobResult {
 
 func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 	ctx, cancel := context.WithCancel(s.context)
+	ctx = metrics.WithTagValue(ctx, metrics.Job, jc.Name)
 
 	jc.lk.Lock()
 	jc.cancel = cancel
@@ -367,13 +369,17 @@ func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 			delayNextRestart = true
 		}
 
+		metrics.RecordInc(ctx, metrics.JobStart)
 		err := jc.Job.Run(ctx)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				break
 			}
 			if errors.Is(err, context.DeadlineExceeded) {
+				metrics.RecordInc(ctx, metrics.JobTimeout)
 				delayNextRestart = false
+			} else {
+				metrics.RecordInc(ctx, metrics.JobError)
 			}
 			jc.log.Errorw("job exited with failure", "error", err.Error())
 			jc.errorMsg = err.Error()
@@ -383,6 +389,7 @@ func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 				break
 			}
 		} else {
+			metrics.RecordInc(ctx, metrics.JobComplete)
 			jc.log.Info("job exited cleanly")
 
 			if !jc.RestartOnCompletion {

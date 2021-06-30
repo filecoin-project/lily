@@ -32,6 +32,7 @@ func (ma *MultisigApproval) Persist(ctx context.Context, s model.StorageBatch, v
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, ma)
 }
 
@@ -45,5 +46,6 @@ func (mal MultisigApprovalList) Persist(ctx context.Context, s model.StorageBatc
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(mal))
 	return s.PersistModel(ctx, mal)
 }

@@ -27,6 +27,7 @@ func (r *Receipt) Persist(ctx context.Context, s model.StorageBatch, version mod
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, r)
 }
 
@@ -43,5 +44,6 @@ func (rs Receipts) Persist(ctx context.Context, s model.StorageBatch, version mo
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(rs))
 	return s.PersistModel(ctx, rs)
 }

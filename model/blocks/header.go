@@ -45,6 +45,7 @@ func (bh *BlockHeader) Persist(ctx context.Context, s model.StorageBatch, versio
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, bh)
 }
 
@@ -61,5 +62,6 @@ func (bhl BlockHeaders) Persist(ctx context.Context, s model.StorageBatch, versi
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(bhl))
 	return s.PersistModel(ctx, bhl)
 }

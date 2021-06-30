@@ -34,6 +34,7 @@ func (im *InternalMessage) Persist(ctx context.Context, s model.StorageBatch, ve
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, im)
 }
 
@@ -50,6 +51,7 @@ func (l InternalMessageList) Persist(ctx context.Context, s model.StorageBatch, 
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(l))
 	return s.PersistModel(ctx, l)
 }
 
@@ -70,6 +72,7 @@ func (ipm *InternalParsedMessage) Persist(ctx context.Context, s model.StorageBa
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, ipm)
 }
 
@@ -86,5 +89,6 @@ func (l InternalParsedMessageList) Persist(ctx context.Context, s model.StorageB
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(l))
 	return s.PersistModel(ctx, l)
 }

@@ -27,6 +27,7 @@ func (msp *MinerSectorPost) Persist(ctx context.Context, s model.StorageBatch, v
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, msp)
 }
 
@@ -41,5 +42,6 @@ func (ml MinerSectorPostList) Persist(ctx context.Context, s model.StorageBatch,
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(ml))
 	return s.PersistModel(ctx, ml)
 }

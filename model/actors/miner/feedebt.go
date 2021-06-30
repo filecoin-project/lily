@@ -62,6 +62,7 @@ func (m *MinerFeeDebt) Persist(ctx context.Context, s model.StorageBatch, versio
 		return xerrors.Errorf("MinerFeeDebt not supported for schema version %s", version)
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, vm)
 }
 
@@ -89,5 +90,6 @@ func (ml MinerFeeDebtList) Persist(ctx context.Context, s model.StorageBatch, ve
 		return nil
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(ml))
 	return s.PersistModel(ctx, ml)
 }
