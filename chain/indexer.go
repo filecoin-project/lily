@@ -279,11 +279,14 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 				log.Errorw("child tipset is not on the same chain as parent", "height", ts.Height(), "child", child.Key(), "parent", parent.Key())
 
 				// We need to report that all message and actor tasks were skipped
+				reason := "child tipset was not on the same chain as parent"
 				for name := range t.messageProcessors {
-					taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, "child tipset was not on the same chain as parent")}
+					taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, reason)}
+					ll.Infow("task skipped", "task", name, "reason", reason)
 				}
 				for name := range t.actorProcessors {
-					taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, "child tipset was not on the same chain as parent")}
+					taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, reason)}
+					ll.Infow("task skipped", "task", name, "reason", reason)
 				}
 			}
 		}
