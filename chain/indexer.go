@@ -276,10 +276,13 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 					}
 				}
 			} else {
-				log.Errorw("child tipset is not on the same chain as parent", "height", ts.Height(), "child", child.Key(), "parent", parent.Key())
+				// TODO: we could fetch the parent stateroot and proceed to index this tipset. However this will be
+				// slower and increases the likelihood that we exceed the processing window and cause the next
+				// tipset to be skipped completely.
+				log.Errorw("mismatching child and parent tipsets", "height", ts.Height(), "child", child.Key(), "parent", parent.Key())
 
 				// We need to report that all message and actor tasks were skipped
-				reason := "child tipset was not on the same chain as parent"
+				reason := "tipset did not have expected parent or child"
 				for name := range t.messageProcessors {
 					taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, reason)}
 					ll.Infow("task skipped", "task", name, "reason", reason)
