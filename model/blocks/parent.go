@@ -24,6 +24,7 @@ func (bp *BlockParent) Persist(ctx context.Context, s model.StorageBatch, versio
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, bp)
 }
 
@@ -52,5 +53,6 @@ func (bps BlockParents) Persist(ctx context.Context, s model.StorageBatch, versi
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(bps))
 	return s.PersistModel(ctx, bps)
 }

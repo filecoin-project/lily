@@ -27,6 +27,7 @@ func (ds *MarketDealState) Persist(ctx context.Context, s model.StorageBatch, ve
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, ds)
 }
 
@@ -40,5 +41,6 @@ func (dss MarketDealStates) Persist(ctx context.Context, s model.StorageBatch, v
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(dss))
 	return s.PersistModel(ctx, dss)
 }

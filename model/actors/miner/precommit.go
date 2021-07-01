@@ -98,6 +98,7 @@ func (mpi *MinerPreCommitInfo) Persist(ctx context.Context, s model.StorageBatch
 		return xerrors.Errorf("MinerPreCommitInfo not supported for schema version %s", version)
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, m)
 }
 
@@ -125,5 +126,6 @@ func (ml MinerPreCommitInfoList) Persist(ctx context.Context, s model.StorageBat
 		return nil
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(ml))
 	return s.PersistModel(ctx, ml)
 }

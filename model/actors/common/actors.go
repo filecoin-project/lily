@@ -27,6 +27,7 @@ func (a *Actor) Persist(ctx context.Context, s model.StorageBatch, version model
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actors"))
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
@@ -42,6 +43,7 @@ func (actors ActorList) Persist(ctx context.Context, s model.StorageBatch, versi
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actors"))
+	metrics.RecordCount(ctx, metrics.PersistModel, len(actors))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
@@ -67,6 +69,7 @@ func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, version
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, as)
 }
 
@@ -85,5 +88,6 @@ func (states ActorStateList) Persist(ctx context.Context, s model.StorageBatch, 
 	if len(states) == 0 {
 		return nil
 	}
+	metrics.RecordCount(ctx, metrics.PersistModel, len(states))
 	return s.PersistModel(ctx, states)
 }

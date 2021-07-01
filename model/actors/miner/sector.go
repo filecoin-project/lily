@@ -91,6 +91,7 @@ func (msi *MinerSectorInfo) Persist(ctx context.Context, s model.StorageBatch, v
 		return xerrors.Errorf("MinerSectorInfo not supported for schema version %s", version)
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, m)
 }
 
@@ -120,5 +121,6 @@ func (ml MinerSectorInfoList) Persist(ctx context.Context, s model.StorageBatch,
 		return nil
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(ml))
 	return s.PersistModel(ctx, ml)
 }

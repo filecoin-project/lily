@@ -34,6 +34,7 @@ func (dbe *DrandBlockEntrie) Persist(ctx context.Context, s model.StorageBatch, 
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, dbe)
 }
 
@@ -50,5 +51,6 @@ func (dbes DrandBlockEntries) Persist(ctx context.Context, s model.StorageBatch,
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(dbes))
 	return s.PersistModel(ctx, dbes)
 }

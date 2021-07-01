@@ -68,6 +68,7 @@ func (pm *ParsedMessage) Persist(ctx context.Context, s model.StorageBatch, vers
 		return xerrors.Errorf("ParsedMessage not supported for schema version %s", version)
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, vpm)
 }
 
@@ -96,5 +97,6 @@ func (pms ParsedMessages) Persist(ctx context.Context, s model.StorageBatch, ver
 		return s.PersistModel(ctx, vpms)
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(pms))
 	return s.PersistModel(ctx, pms)
 }

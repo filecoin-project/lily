@@ -45,6 +45,7 @@ func (mse *MinerSectorEvent) Persist(ctx context.Context, s model.StorageBatch, 
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, mse)
 }
 
@@ -62,5 +63,6 @@ func (l MinerSectorEventList) Persist(ctx context.Context, s model.StorageBatch,
 		return nil
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(l))
 	return s.PersistModel(ctx, l)
 }

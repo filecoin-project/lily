@@ -84,6 +84,7 @@ func (m *Message) Persist(ctx context.Context, s model.StorageBatch, version mod
 		return xerrors.Errorf("Message not supported for schema version %s", version)
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, vm)
 }
 
@@ -112,5 +113,6 @@ func (ms Messages) Persist(ctx context.Context, s model.StorageBatch, version mo
 		return s.PersistModel(ctx, vms)
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(ms))
 	return s.PersistModel(ctx, ms)
 }

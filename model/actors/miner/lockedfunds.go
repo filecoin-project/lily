@@ -68,6 +68,7 @@ func (m *MinerLockedFund) Persist(ctx context.Context, s model.StorageBatch, ver
 		return xerrors.Errorf("MinerLockedFund not supported for schema version %s", version)
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, vm)
 }
 
@@ -95,5 +96,6 @@ func (ml MinerLockedFundsList) Persist(ctx context.Context, s model.StorageBatch
 		return nil
 	}
 
+	metrics.RecordCount(ctx, metrics.PersistModel, len(ml))
 	return s.PersistModel(ctx, ml)
 }
