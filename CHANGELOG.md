@@ -5,7 +5,18 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.7.2"></a>
+## [v0.7.2] - 2021-07-02
 
+### Fix
+ - Skip actor and message tasks if tipset is not direct child of parent
+ - Change failure metrics to counts and export tipset_skip metric 
+
+### Feat
+ - Add metrics for job lifecycle and model persistence
+
+### Build
+ - Cache vectors in CI
 
 <a name="v0.7.1"></a>
 ## [v0.7.1] - 2021-06-29
