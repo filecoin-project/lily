@@ -59,6 +59,10 @@ func NewPatchList() patchList {
 
 // Register adds a patch to the patch list. This should be called in an init function.
 func (pl *patchList) Register(seq int, text string) {
+	if seq <= 0 {
+		panic(fmt.Sprintf("invalid patch number: %d", seq))
+	}
+
 	if _, exists := pl.pm[seq]; exists {
 		panic(fmt.Sprintf("duplicate patch registered: %d", seq))
 	}
