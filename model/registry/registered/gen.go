@@ -2,6 +2,7 @@
 package registered
 
 import (
+	extractors2 "github.com/filecoin-project/sentinel-visor/tasks/actorstate/market/extract/extractors"
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract/extractors"
 	"golang.org/x/xerrors"
 
@@ -24,8 +25,6 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/derived"
 
 	"github.com/filecoin-project/sentinel-visor/model/msapprovals"
-
-	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 )
 
 func ModelForString(name string) (model.Persistable, error) {
@@ -38,10 +37,10 @@ func ModelForString(name string) (model.Persistable, error) {
 		return &common.ActorState{}, nil
 
 	case "market_deal_proposal":
-		return &market.MarketDealProposal{}, nil
+		return &extractors2.MarketDealProposal{}, nil
 
 	case "market_deal_state":
-		return &market.MarketDealState{}, nil
+		return &extractors2.MarketDealState{}, nil
 
 	case "miner_current_deadline_info":
 		return &extractors.MinerCurrentDeadlineInfo{}, nil

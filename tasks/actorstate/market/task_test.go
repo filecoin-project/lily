@@ -1,5 +1,9 @@
 package market_test
 
+// TODO need to test extractor on their own, move to extractors package.
+
+/*
+
 import (
 	"context"
 	"testing"
@@ -186,3 +190,6 @@ func TestMarketPredicates(t *testing.T) {
 		assert.EqualValues(t, newStateTs.ParentState().String(), mtr.States[1].StateRoot, "StateRoot")
 	})
 }
+
+
+*/

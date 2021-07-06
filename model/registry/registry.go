@@ -43,7 +43,6 @@ const (
 	ActorStatesRewardTask = "actorstatesreward" // task that only extracts reward actor states (but not the raw state)
 
 	ActorStatesInitTask     = "actorstatesinit"     // task that only extracts init actor states (but not the raw state)
-	ActorStatesMarketTask   = "actorstatesmarket"   // task that only extracts market actor states (but not the raw state)
 	ActorStatesMultisigTask = "actorstatesmultisig" // task that only extracts multisig actor states (but not the raw state)
 	BlocksTask              = "blocks"              // task that extracts block data
 	MessagesTask            = "messages"            // task that extracts message data
