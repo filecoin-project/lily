@@ -17,6 +17,7 @@ import (
 	init_2 "github.com/filecoin-project/sentinel-visor/tasks/actorstate/init_"
 	market2 "github.com/filecoin-project/sentinel-visor/tasks/actorstate/market"
 	miner2 "github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner"
+	power2 "github.com/filecoin-project/sentinel-visor/tasks/actorstate/power"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
@@ -112,7 +113,7 @@ func ParseTaskString(name string) (string, model.PersistableList, error) {
 			return name, models, nil
 		case modelreg.ActorStatesRawTask:
 			return name, models, nil
-		case modelreg.ActorStatesPowerTask:
+		case power2.ActorStatesPowerTask:
 			return name, models, nil
 		case modelreg.ActorStatesRewardTask:
 			return name, models, nil
@@ -162,8 +163,8 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 			tsi.processors[modelreg.ChainEconomicsTask] = chaineconomics.NewTask(o)
 		case modelreg.ActorStatesRawTask:
 			tsi.actorProcessors[modelreg.ActorStatesRawTask] = actorstate.NewTask(o, &actorstate.RawActorExtractorMap{})
-		case modelreg.ActorStatesPowerTask:
-			tsi.actorProcessors[modelreg.ActorStatesPowerTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(power.AllCodes()), models...)
+		case power2.ActorStatesPowerTask:
+			tsi.actorProcessors[power2.ActorStatesPowerTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(power.AllCodes()), models...)
 		case modelreg.ActorStatesRewardTask:
 			tsi.actorProcessors[modelreg.ActorStatesRewardTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(reward.AllCodes()), models...)
 		case miner2.ActorStatesMinerTask:

@@ -39,7 +39,6 @@ var ModelRegistry = NewRegistry()
 
 const (
 	ActorStatesRawTask    = "actorstatesraw"    // task that only extracts raw actor state
-	ActorStatesPowerTask  = "actorstatespower"  // task that only extracts power actor states (but not the raw state)
 	ActorStatesRewardTask = "actorstatesreward" // task that only extracts reward actor states (but not the raw state)
 
 	ActorStatesInitTask     = "actorstatesinit"     // task that only extracts init actor states (but not the raw state)

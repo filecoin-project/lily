@@ -12,12 +12,12 @@ import (
 
 	init_2 "github.com/filecoin-project/sentinel-visor/tasks/actorstate/init_"
 	market "github.com/filecoin-project/sentinel-visor/tasks/actorstate/market/extract/extractors"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract/extractors"
+	miner "github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract/extractors"
+	power "github.com/filecoin-project/sentinel-visor/tasks/actorstate/power/extract/extractors"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/filecoin-project/sentinel-visor/model/actors/common"
 	"github.com/filecoin-project/sentinel-visor/model/actors/multisig"
-	"github.com/filecoin-project/sentinel-visor/model/actors/power"
 	"github.com/filecoin-project/sentinel-visor/model/actors/reward"
 	modelchain "github.com/filecoin-project/sentinel-visor/model/chain"
 	"github.com/filecoin-project/sentinel-visor/model/derived"
@@ -299,14 +299,14 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 		}
 		return cmp.Diff(actType, expType), nil
 	case "miner_current_deadline_infos":
-		var expType extractors.MinerCurrentDeadlineInfoList
+		var expType miner.MinerCurrentDeadlineInfoList
 		if err := json.Unmarshal(expected, &expType); err != nil {
 			return "", err
 		}
 
-		var actType extractors.MinerCurrentDeadlineInfoList
+		var actType miner.MinerCurrentDeadlineInfoList
 		for _, raw := range actual {
-			act, ok := raw.(*extractors.MinerCurrentDeadlineInfo)
+			act, ok := raw.(*miner.MinerCurrentDeadlineInfo)
 			if !ok {
 				panic("developer error")
 			}
@@ -314,14 +314,14 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 		}
 		return cmp.Diff(actType, expType), nil
 	case "miner_fee_debts":
-		var expType extractors.MinerFeeDebtList
+		var expType miner.MinerFeeDebtList
 		if err := json.Unmarshal(expected, &expType); err != nil {
 			return "", err
 		}
 
-		var actType extractors.MinerFeeDebtList
+		var actType miner.MinerFeeDebtList
 		for _, raw := range actual {
-			act, ok := raw.(*extractors.MinerFeeDebt)
+			act, ok := raw.(*miner.MinerFeeDebt)
 			if !ok {
 				panic("developer error")
 			}
@@ -329,14 +329,14 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 		}
 		return cmp.Diff(actType, expType), nil
 	case "miner_locked_funds":
-		var expType extractors.MinerLockedFundsList
+		var expType miner.MinerLockedFundsList
 		if err := json.Unmarshal(expected, &expType); err != nil {
 			return "", err
 		}
 
-		var actType extractors.MinerLockedFundsList
+		var actType miner.MinerLockedFundsList
 		for _, raw := range actual {
-			act, ok := raw.(*extractors.MinerLockedFund)
+			act, ok := raw.(*miner.MinerLockedFund)
 			if !ok {
 				panic("developer error")
 			}
@@ -344,14 +344,14 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 		}
 		return cmp.Diff(actType, expType), nil
 	case "miner_pre_commit_infos":
-		var expType extractors.MinerPreCommitInfoList
+		var expType miner.MinerPreCommitInfoList
 		if err := json.Unmarshal(expected, &expType); err != nil {
 			return "", err
 		}
 
-		var actType extractors.MinerPreCommitInfoList
+		var actType miner.MinerPreCommitInfoList
 		for _, raw := range actual {
-			act, ok := raw.(*extractors.MinerPreCommitInfo)
+			act, ok := raw.(*miner.MinerPreCommitInfo)
 			if !ok {
 				panic("developer error")
 			}
@@ -365,14 +365,14 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 		})
 		return cmp.Diff(actType, expType), nil
 	case "miner_sector_events":
-		var expType extractors.MinerSectorEventList
+		var expType miner.MinerSectorEventList
 		if err := json.Unmarshal(expected, &expType); err != nil {
 			return "", err
 		}
 
-		var actType extractors.MinerSectorEventList
+		var actType miner.MinerSectorEventList
 		for _, raw := range actual {
-			act, ok := raw.(*extractors.MinerSectorEvent)
+			act, ok := raw.(*miner.MinerSectorEvent)
 			if !ok {
 				panic("developer error")
 			}
@@ -386,14 +386,14 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 		})
 		return cmp.Diff(actType, expType), nil
 	case "miner_sector_infos":
-		var expType extractors.MinerSectorInfoList
+		var expType miner.MinerSectorInfoList
 		if err := json.Unmarshal(expected, &expType); err != nil {
 			return "", err
 		}
 
-		var actType extractors.MinerSectorInfoList
+		var actType miner.MinerSectorInfoList
 		for _, raw := range actual {
-			act, ok := raw.(*extractors.MinerSectorInfo)
+			act, ok := raw.(*miner.MinerSectorInfo)
 			if !ok {
 				panic("developer error")
 			}
@@ -407,14 +407,14 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 		})
 		return cmp.Diff(actType, expType), nil
 	case "miner_infos":
-		var expType extractors.MinerInfoList
+		var expType miner.MinerInfoList
 		if err := json.Unmarshal(expected, &expType); err != nil {
 			return "", err
 		}
 
-		var actType extractors.MinerInfoList
+		var actType miner.MinerInfoList
 		for _, raw := range actual {
-			act, ok := raw.(*extractors.MinerInfo)
+			act, ok := raw.(*miner.MinerInfo)
 			if !ok {
 				panic("developer error")
 			}
@@ -422,14 +422,14 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 		}
 		return cmp.Diff(actType, expType), nil
 	case "miner_sector_posts":
-		var expType extractors.MinerSectorPostList
+		var expType miner.MinerSectorPostList
 		if err := json.Unmarshal(expected, &expType); err != nil {
 			return "", err
 		}
 
-		var actType extractors.MinerSectorPostList
+		var actType miner.MinerSectorPostList
 		for _, raw := range actual {
-			act, ok := raw.(*extractors.MinerSectorPost)
+			act, ok := raw.(*miner.MinerSectorPost)
 			if !ok {
 				panic("developer error")
 			}
@@ -437,14 +437,14 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 		}
 		return cmp.Diff(actType, expType), nil
 	case "miner_sector_deals":
-		var expType extractors.MinerSectorDealList
+		var expType miner.MinerSectorDealList
 		if err := json.Unmarshal(expected, &expType); err != nil {
 			return "", err
 		}
 
-		var actType extractors.MinerSectorDealList
+		var actType miner.MinerSectorDealList
 		for _, raw := range actual {
-			act, ok := raw.(*extractors.MinerSectorDeal)
+			act, ok := raw.(*miner.MinerSectorDeal)
 			if !ok {
 				panic("developer error")
 			}

@@ -1,19 +1,64 @@
-package power
+package extractors
 
 import (
 	"context"
 
-	"github.com/filecoin-project/sentinel-visor/model/registry"
+	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/power"
+	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/power/extract"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
-
-	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 func init() {
-	registry.ModelRegistry.Register(registry.ActorStatesPowerTask, &PowerActorClaim{})
+	extract.Register(&PowerActorClaim{}, ExtractClaimedPower)
+}
+
+func ExtractClaimedPower(ctx context.Context, ec *extract.PowerStateExtractionContext) (model.Persistable, error) {
+	claimModel := PowerActorClaimList{}
+	if !ec.HasPreviousState() {
+		if err := ec.CurrState.ForEachClaim(func(miner address.Address, claim power.Claim) error {
+			claimModel = append(claimModel, &PowerActorClaim{
+				Height:          int64(ec.CurrTs.Height()),
+				StateRoot:       ec.CurrTs.ParentState().String(),
+				MinerID:         miner.String(),
+				RawBytePower:    claim.RawBytePower.String(),
+				QualityAdjPower: claim.QualityAdjPower.String(),
+			})
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+		return claimModel, nil
+	}
+	// normal case.
+	claimChanges, err := power.DiffClaims(ctx, ec.Store, ec.PrevState, ec.CurrState)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, newClaim := range claimChanges.Added {
+		claimModel = append(claimModel, &PowerActorClaim{
+			Height:          int64(ec.CurrTs.Height()),
+			StateRoot:       ec.CurrTs.ParentState().String(),
+			MinerID:         newClaim.Miner.String(),
+			RawBytePower:    newClaim.Claim.RawBytePower.String(),
+			QualityAdjPower: newClaim.Claim.QualityAdjPower.String(),
+		})
+	}
+	for _, modClaim := range claimChanges.Modified {
+		claimModel = append(claimModel, &PowerActorClaim{
+			Height:          int64(ec.CurrTs.Height()),
+			StateRoot:       ec.CurrTs.ParentState().String(),
+			MinerID:         modClaim.Miner.String(),
+			RawBytePower:    modClaim.To.RawBytePower.String(),
+			QualityAdjPower: modClaim.To.QualityAdjPower.String(),
+		})
+	}
+	return claimModel, nil
 }
 
 type PowerActorClaim struct {

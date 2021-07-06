@@ -2,8 +2,9 @@
 package registered
 
 import (
-	extractors2 "github.com/filecoin-project/sentinel-visor/tasks/actorstate/market/extract/extractors"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract/extractors"
+	market "github.com/filecoin-project/sentinel-visor/tasks/actorstate/market/extract/extractors"
+	miner "github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract/extractors"
+	power "github.com/filecoin-project/sentinel-visor/tasks/actorstate/power/extract/extractors"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/model"
@@ -20,8 +21,6 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/model/actors/common"
 
-	"github.com/filecoin-project/sentinel-visor/model/actors/power"
-
 	"github.com/filecoin-project/sentinel-visor/model/derived"
 
 	"github.com/filecoin-project/sentinel-visor/model/msapprovals"
@@ -37,37 +36,37 @@ func ModelForString(name string) (model.Persistable, error) {
 		return &common.ActorState{}, nil
 
 	case "market_deal_proposal":
-		return &extractors2.MarketDealProposal{}, nil
+		return &market.MarketDealProposal{}, nil
 
 	case "market_deal_state":
-		return &extractors2.MarketDealState{}, nil
+		return &market.MarketDealState{}, nil
 
 	case "miner_current_deadline_info":
-		return &extractors.MinerCurrentDeadlineInfo{}, nil
+		return &miner.MinerCurrentDeadlineInfo{}, nil
 
 	case "miner_fee_debt":
-		return &extractors.MinerFeeDebt{}, nil
+		return &miner.MinerFeeDebt{}, nil
 
 	case "miner_locked_fund":
-		return &extractors.MinerLockedFund{}, nil
+		return &miner.MinerLockedFund{}, nil
 
 	case "miner_info":
-		return &extractors.MinerInfo{}, nil
+		return &miner.MinerInfo{}, nil
 
 	case "miner_pre_commit_info":
-		return &extractors.MinerPreCommitInfo{}, nil
+		return &miner.MinerPreCommitInfo{}, nil
 
 	case "miner_sector_info":
-		return &extractors.MinerSectorInfo{}, nil
+		return &miner.MinerSectorInfo{}, nil
 
 	case "miner_sector_deal":
-		return &extractors.MinerSectorDeal{}, nil
+		return &miner.MinerSectorDeal{}, nil
 
 	case "miner_sector_event":
-		return &extractors.MinerSectorEvent{}, nil
+		return &miner.MinerSectorEvent{}, nil
 
 	case "miner_sector_post":
-		return &extractors.MinerSectorPost{}, nil
+		return &miner.MinerSectorPost{}, nil
 
 	case "multisig_transaction":
 		return &multisig.MultisigTransaction{}, nil

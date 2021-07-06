@@ -1,21 +1,57 @@
-package power
+package extractors
 
 import (
 	"context"
 
-	"github.com/filecoin-project/sentinel-visor/model/registry"
+	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/power/extract"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
-
-	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/model"
 )
 
 func init() {
-	registry.ModelRegistry.Register(registry.ActorStatesPowerTask, &ChainPower{})
+	extract.Register(&ChainPower{}, ExtractChainPower)
+}
+
+func ExtractChainPower(ctx context.Context, ec *extract.PowerStateExtractionContext) (model.Persistable, error) {
+	locked, err := ec.CurrState.TotalLocked()
+	if err != nil {
+		return nil, err
+	}
+	pow, err := ec.CurrState.TotalPower()
+	if err != nil {
+		return nil, err
+	}
+	commit, err := ec.CurrState.TotalCommitted()
+	if err != nil {
+		return nil, err
+	}
+	smoothed, err := ec.CurrState.TotalPowerSmoothed()
+	if err != nil {
+		return nil, err
+	}
+	participating, total, err := ec.CurrState.MinerCounts()
+	if err != nil {
+		return nil, err
+	}
+
+	return &ChainPower{
+		Height:                     int64(ec.CurrTs.Height()),
+		StateRoot:                  ec.CurrTs.ParentState().String(),
+		TotalRawBytesPower:         pow.RawBytePower.String(),
+		TotalQABytesPower:          pow.QualityAdjPower.String(),
+		TotalRawBytesCommitted:     commit.RawBytePower.String(),
+		TotalQABytesCommitted:      commit.QualityAdjPower.String(),
+		TotalPledgeCollateral:      locked.String(),
+		QASmoothedPositionEstimate: smoothed.PositionEstimate.String(),
+		QASmoothedVelocityEstimate: smoothed.VelocityEstimate.String(),
+		MinerCount:                 total,
+		ParticipatingMinerCount:    participating,
+	}, nil
 }
 
 type ChainPower struct {

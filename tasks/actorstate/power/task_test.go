@@ -1,5 +1,7 @@
 package power_test
 
+// TODO break up test cases for power actor extractors
+/*
 import (
 	"context"
 	"testing"
@@ -452,3 +454,4 @@ func TestPowerExtractV4(t *testing.T) {
 		assert.EqualValues(t, newClaim.RawBytePower.String(), cp.ClaimStateModel[0].RawBytePower)
 	})
 }
+*/

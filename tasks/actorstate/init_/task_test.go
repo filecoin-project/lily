@@ -1,5 +1,7 @@
 package init__test
 
+// TODO break up
+/*
 import (
 	"context"
 	"fmt"
@@ -477,3 +479,4 @@ func TestInitExtractorV4(t *testing.T) {
 		assert.EqualValues(t, 2, is[1].Height)
 	})
 }
+*/
