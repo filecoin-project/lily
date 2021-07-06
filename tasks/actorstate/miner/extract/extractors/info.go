@@ -6,7 +6,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extractors"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/multiformats/go-multiaddr"
 	"go.opencensus.io/tag"
@@ -16,10 +16,10 @@ import (
 var log = logging.Logger("miner")
 
 func init() {
-	extractors.Register(&MinerInfo{}, ExtractMinerInfo)
+	extract.Register(&MinerInfo{}, ExtractMinerInfo)
 }
 
-func ExtractMinerInfo(ctx context.Context, ec *extractors.MinerStateExtractionContext) (model.Persistable, error) {
+func ExtractMinerInfo(ctx context.Context, ec *extract.MinerStateExtractionContext) (model.Persistable, error) {
 	_, span := global.Tracer("").Start(ctx, "ExtractMinerInfo")
 	defer span.End()
 	if !ec.HasPreviousState() {

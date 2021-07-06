@@ -8,7 +8,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/miner"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extractors"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
@@ -17,10 +17,10 @@ import (
 )
 
 func init() {
-	extractors.Register(&MinerSectorEvent{}, ExtractMinerSectorEvents)
+	extract.Register(&MinerSectorEvent{}, ExtractMinerSectorEvents)
 }
 
-func ExtractMinerSectorEvents(ctx context.Context, ec *extractors.MinerStateExtractionContext) (model.Persistable, error) {
+func ExtractMinerSectorEvents(ctx context.Context, ec *extract.MinerStateExtractionContext) (model.Persistable, error) {
 	sectorChanges := new(miner.SectorChanges)
 	preCommitChanges := new(miner.PreCommitChanges)
 	if !ec.HasPreviousState() {
@@ -35,11 +35,11 @@ func ExtractMinerSectorEvents(ctx context.Context, ec *extractors.MinerStateExtr
 		}
 	} else {
 		var err error
-		sectorChanges, err = extractors.GetSectorDiff(ctx, ec)
+		sectorChanges, err = extract.GetSectorDiff(ctx, ec)
 		if err != nil {
 			return nil, xerrors.Errorf("diffing miner sectors: %w", err)
 		}
-		preCommitChanges, err = extractors.GetPreCommitDiff(ctx, ec)
+		preCommitChanges, err = extract.GetPreCommitDiff(ctx, ec)
 		if err != nil {
 			return nil, err
 		}
@@ -47,7 +47,7 @@ func ExtractMinerSectorEvents(ctx context.Context, ec *extractors.MinerStateExtr
 	return extractMinerSectorEvents(ctx, ec, sectorChanges, preCommitChanges)
 }
 
-func extractMinerSectorEvents(ctx context.Context, ec *extractors.MinerStateExtractionContext, sc *miner.SectorChanges, pc *miner.PreCommitChanges) (MinerSectorEventList, error) {
+func extractMinerSectorEvents(ctx context.Context, ec *extract.MinerStateExtractionContext, sc *miner.SectorChanges, pc *miner.PreCommitChanges) (MinerSectorEventList, error) {
 	ctx, span := global.Tracer("").Start(ctx, "extractMinerSectorEvents")
 	defer span.End()
 
@@ -190,7 +190,7 @@ type PartitionStatus struct {
 	Recovered  bitfield.BitField
 }
 
-func extractMinerPartitionsDiff(ctx context.Context, ec *extractors.MinerStateExtractionContext) (*PartitionStatus, error) {
+func extractMinerPartitionsDiff(ctx context.Context, ec *extract.MinerStateExtractionContext) (*PartitionStatus, error) {
 	_, span := global.Tracer("").Start(ctx, "extractMinerPartitionDiff") // nolint: ineffassign,staticcheck
 	defer span.End()
 

@@ -5,7 +5,7 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extractors"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
@@ -14,15 +14,15 @@ import (
 )
 
 func init() {
-	extractors.Register(&MinerPreCommitInfo{}, ExtractMinerPreCommitInfo)
+	extract.Register(&MinerPreCommitInfo{}, ExtractMinerPreCommitInfo)
 }
 
-func ExtractMinerPreCommitInfo(ctx context.Context, ec *extractors.MinerStateExtractionContext) (model.Persistable, error) {
+func ExtractMinerPreCommitInfo(ctx context.Context, ec *extract.MinerStateExtractionContext) (model.Persistable, error) {
 	if !ec.HasPreviousState() {
 		return nil, nil
 	}
 
-	preCommitChanges, err := extractors.GetPreCommitDiff(ctx, ec)
+	preCommitChanges, err := extract.GetPreCommitDiff(ctx, ec)
 	if err != nil {
 		return nil, err
 	}

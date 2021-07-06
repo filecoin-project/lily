@@ -6,6 +6,7 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/actor"
 	power4 "github.com/filecoin-project/sentinel-visor/tasks/actorstate/power"
+	actortesting "github.com/filecoin-project/sentinel-visor/tasks/actorstate/testing"
 	tutils "github.com/filecoin-project/specs-actors/support/testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,9 +37,9 @@ import (
 func TestPowerExtractV0(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := actor.NewMockAPI(t)
+	mapi := actortesting.NewMockAPI(t)
 
-	state := mapi.mustCreateEmptyPowerStateV0()
+	state := mapi.MustCreateEmptyPowerStateV0()
 	minerAddr := tutils.NewIDAddr(t, 1234)
 
 	t.Run("power state model", func(t *testing.T) {
@@ -57,8 +58,8 @@ func TestPowerExtractV0(t *testing.T) {
 		stateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
 
-		stateTs := mapi.fakeTipset(minerAddr, 1)
-		mapi.setActor(stateTs.Key(), power.Address, &types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: stateCid})
+		stateTs := mapi.FakeTipset(minerAddr, 1)
+		mapi.SetActor(stateTs.Key(), power.Address, &types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: stateCid})
 
 		info := actor.ActorInfo{
 			Actor:           types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: stateCid},
@@ -89,7 +90,7 @@ func TestPowerExtractV0(t *testing.T) {
 	})
 
 	t.Run("power claim model", func(t *testing.T) {
-		claimMap, err := adt.AsMap(mapi.store, state.Claims)
+		claimMap, err := adt.AsMap(mapi.Store(), state.Claims)
 		require.NoError(t, err)
 		newClaim := power0.Claim{
 			RawBytePower:    abi.NewStoragePower(10),
@@ -99,8 +100,8 @@ func TestPowerExtractV0(t *testing.T) {
 		oldStateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
 
-		oldStateTs := mapi.fakeTipset(minerAddr, 1)
-		mapi.setActor(oldStateTs.Key(), power.Address, &types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: oldStateCid})
+		oldStateTs := mapi.FakeTipset(minerAddr, 1)
+		mapi.SetActor(oldStateTs.Key(), power.Address, &types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: oldStateCid})
 
 		err = claimMap.Put(abi.AddrKey(minerAddr), &newClaim)
 		require.NoError(t, err)
@@ -111,8 +112,8 @@ func TestPowerExtractV0(t *testing.T) {
 		newStateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
 
-		newStateTs := mapi.fakeTipset(minerAddr, 1)
-		mapi.setActor(newStateTs.Key(), power.Address, &types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: newStateCid})
+		newStateTs := mapi.FakeTipset(minerAddr, 1)
+		mapi.SetActor(newStateTs.Key(), power.Address, &types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: newStateCid})
 
 		info := actor.ActorInfo{
 			Epoch:           1,
@@ -140,9 +141,9 @@ func TestPowerExtractV0(t *testing.T) {
 func TestPowerExtractV2(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := actor.NewMockAPI(t)
+	mapi := actortesting.NewMockAPI(t)
 
-	state := mapi.mustCreateEmptyPowerStateV2()
+	state := mapi.MustCreateEmptyPowerStateV2()
 	minerAddr := tutils.NewIDAddr(t, 1234)
 
 	t.Run("power state model", func(t *testing.T) {
@@ -161,8 +162,8 @@ func TestPowerExtractV2(t *testing.T) {
 		stateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
 
-		stateTs := mapi.fakeTipset(minerAddr, 1)
-		mapi.setActor(stateTs.Key(), power.Address, &types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: stateCid})
+		stateTs := mapi.FakeTipset(minerAddr, 1)
+		mapi.SetActor(stateTs.Key(), power.Address, &types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: stateCid})
 
 		info := actor.ActorInfo{
 			Actor:           types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: stateCid},
@@ -193,7 +194,7 @@ func TestPowerExtractV2(t *testing.T) {
 	})
 
 	t.Run("power claim model", func(t *testing.T) {
-		claimMap, err := adt.AsMap(mapi.store, state.Claims)
+		claimMap, err := adt.AsMap(mapi.Store(), state.Claims)
 		require.NoError(t, err)
 		newClaim := power2.Claim{
 			SealProofType:   abi.RegisteredSealProof_StackedDrg64GiBV1,
@@ -204,8 +205,8 @@ func TestPowerExtractV2(t *testing.T) {
 		oldStateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
 
-		oldStateTs := mapi.fakeTipset(minerAddr, 1)
-		mapi.setActor(oldStateTs.Key(), power.Address, &types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: oldStateCid})
+		oldStateTs := mapi.FakeTipset(minerAddr, 1)
+		mapi.SetActor(oldStateTs.Key(), power.Address, &types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: oldStateCid})
 
 		err = claimMap.Put(abi.AddrKey(minerAddr), &newClaim)
 		require.NoError(t, err)
@@ -216,8 +217,8 @@ func TestPowerExtractV2(t *testing.T) {
 		newStateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
 
-		newStateTs := mapi.fakeTipset(minerAddr, 1)
-		mapi.setActor(newStateTs.Key(), power.Address, &types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: newStateCid})
+		newStateTs := mapi.FakeTipset(minerAddr, 1)
+		mapi.SetActor(newStateTs.Key(), power.Address, &types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: newStateCid})
 
 		info := actor.ActorInfo{
 			Epoch:           1,
@@ -245,9 +246,9 @@ func TestPowerExtractV2(t *testing.T) {
 func TestPowerExtractV3(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := actor.NewMockAPI(t)
+	mapi := actortesting.NewMockAPI(t)
 
-	state := mapi.mustCreateEmptyPowerStateV3()
+	state := mapi.MustCreateEmptyPowerStateV3()
 	minerAddr := tutils.NewIDAddr(t, 1234)
 
 	t.Run("power state model", func(t *testing.T) {
@@ -266,8 +267,8 @@ func TestPowerExtractV3(t *testing.T) {
 		stateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
 
-		stateTs := mapi.fakeTipset(minerAddr, 1)
-		mapi.setActor(stateTs.Key(), power.Address, &types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: stateCid})
+		stateTs := mapi.FakeTipset(minerAddr, 1)
+		mapi.SetActor(stateTs.Key(), power.Address, &types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: stateCid})
 
 		info := actor.ActorInfo{
 			Actor:           types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: stateCid},
@@ -298,7 +299,7 @@ func TestPowerExtractV3(t *testing.T) {
 	})
 
 	t.Run("power claim model", func(t *testing.T) {
-		claimMap, err := adt3.AsMap(mapi.store, state.Claims, sa3builtin.DefaultHamtBitwidth)
+		claimMap, err := adt3.AsMap(mapi.Store(), state.Claims, sa3builtin.DefaultHamtBitwidth)
 		require.NoError(t, err)
 		newClaim := power3.Claim{
 			WindowPoStProofType: abi.RegisteredPoStProof_StackedDrgWinning64GiBV1,
@@ -309,8 +310,8 @@ func TestPowerExtractV3(t *testing.T) {
 		oldStateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
 
-		oldStateTs := mapi.fakeTipset(minerAddr, 1)
-		mapi.setActor(oldStateTs.Key(), power.Address, &types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: oldStateCid})
+		oldStateTs := mapi.FakeTipset(minerAddr, 1)
+		mapi.SetActor(oldStateTs.Key(), power.Address, &types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: oldStateCid})
 
 		err = claimMap.Put(abi.AddrKey(minerAddr), &newClaim)
 		require.NoError(t, err)
@@ -321,8 +322,8 @@ func TestPowerExtractV3(t *testing.T) {
 		newStateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
 
-		newStateTs := mapi.fakeTipset(minerAddr, 1)
-		mapi.setActor(newStateTs.Key(), power.Address, &types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: newStateCid})
+		newStateTs := mapi.FakeTipset(minerAddr, 1)
+		mapi.SetActor(newStateTs.Key(), power.Address, &types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: newStateCid})
 
 		info := actor.ActorInfo{
 			Epoch:           1,
@@ -350,9 +351,9 @@ func TestPowerExtractV3(t *testing.T) {
 func TestPowerExtractV4(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := actor.NewMockAPI(t)
+	mapi := actortesting.NewMockAPI(t)
 
-	state := mapi.mustCreateEmptyPowerStateV4()
+	state := mapi.MustCreateEmptyPowerStateV4()
 	minerAddr := tutils.NewIDAddr(t, 1234)
 
 	t.Run("power state model", func(t *testing.T) {
@@ -371,8 +372,8 @@ func TestPowerExtractV4(t *testing.T) {
 		stateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
 
-		stateTs := mapi.fakeTipset(minerAddr, 1)
-		mapi.setActor(stateTs.Key(), power.Address, &types.Actor{Code: sa4builtin.StoragePowerActorCodeID, Head: stateCid})
+		stateTs := mapi.FakeTipset(minerAddr, 1)
+		mapi.SetActor(stateTs.Key(), power.Address, &types.Actor{Code: sa4builtin.StoragePowerActorCodeID, Head: stateCid})
 
 		info := actor.ActorInfo{
 			Actor:           types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: stateCid},
@@ -403,7 +404,7 @@ func TestPowerExtractV4(t *testing.T) {
 	})
 
 	t.Run("power claim model", func(t *testing.T) {
-		claimMap, err := adt3.AsMap(mapi.store, state.Claims, sa3builtin.DefaultHamtBitwidth)
+		claimMap, err := adt3.AsMap(mapi.Store(), state.Claims, sa3builtin.DefaultHamtBitwidth)
 		require.NoError(t, err)
 		newClaim := power3.Claim{
 			WindowPoStProofType: abi.RegisteredPoStProof_StackedDrgWinning64GiBV1,
@@ -414,8 +415,8 @@ func TestPowerExtractV4(t *testing.T) {
 		oldStateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
 
-		oldStateTs := mapi.fakeTipset(minerAddr, 1)
-		mapi.setActor(oldStateTs.Key(), power.Address, &types.Actor{Code: sa4builtin.StoragePowerActorCodeID, Head: oldStateCid})
+		oldStateTs := mapi.FakeTipset(minerAddr, 1)
+		mapi.SetActor(oldStateTs.Key(), power.Address, &types.Actor{Code: sa4builtin.StoragePowerActorCodeID, Head: oldStateCid})
 
 		err = claimMap.Put(abi.AddrKey(minerAddr), &newClaim)
 		require.NoError(t, err)
@@ -426,8 +427,8 @@ func TestPowerExtractV4(t *testing.T) {
 		newStateCid, err := mapi.Store().Put(ctx, state)
 		require.NoError(t, err)
 
-		newStateTs := mapi.fakeTipset(minerAddr, 1)
-		mapi.setActor(newStateTs.Key(), power.Address, &types.Actor{Code: sa4builtin.StoragePowerActorCodeID, Head: newStateCid})
+		newStateTs := mapi.FakeTipset(minerAddr, 1)
+		mapi.SetActor(newStateTs.Key(), power.Address, &types.Actor{Code: sa4builtin.StoragePowerActorCodeID, Head: newStateCid})
 
 		info := actor.ActorInfo{
 			Epoch:           1,

@@ -1,13 +1,10 @@
-package extractors
+package extract
 
 import (
 	"context"
 
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/miner"
-	logging "github.com/ipfs/go-log/v2"
 )
-
-var log = logging.Logger("visor/tasks/miner")
 
 func NewDiffCache() *DiffCache {
 	return &DiffCache{cache: make(map[diffType]interface{})}

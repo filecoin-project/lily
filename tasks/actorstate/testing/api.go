@@ -35,7 +35,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 
@@ -63,6 +62,11 @@ func NewMockAPI(test testing.TB) *MockAPI {
 type actorKey struct {
 	tsk  types.TipSetKey
 	addr address.Address
+}
+
+type Balance struct {
+	Available abi.TokenAmount
+	Locked    abi.TokenAmount
 }
 
 func (m *MockAPI) Store() adt.Store {
@@ -163,14 +167,14 @@ func (m *MockAPI) SetActor(tsk types.TipSetKey, addr address.Address, actor *typ
 	m.actors[key] = actor
 }
 
-func (m *MockAPI) MustCreateMarketState(ctx context.Context, deals map[abi.DealID]*samarket.DealState, props map[abi.DealID]*samarket.DealProposal, balances map[address.Address]actorstate.balance) cid.Cid {
-	dealRootCid := m.mustCreateDealAMT(deals)
+func (m *MockAPI) MustCreateMarketState(ctx context.Context, deals map[abi.DealID]*samarket.DealState, props map[abi.DealID]*samarket.DealProposal, balances map[address.Address]Balance) cid.Cid {
+	dealRootCid := m.MustCreateDealAMT(deals)
 
-	propRootCid := m.mustCreateProposalAMT(props)
+	propRootCid := m.MustCreateProposalAMT(props)
 
-	balancesCids := m.mustCreateBalanceTable(balances)
+	balancesCids := m.MustCreateBalanceTable(balances)
 
-	state := m.mustCreateEmptyMarketState()
+	state := m.MustCreateEmptyMarketState()
 
 	state.States = dealRootCid
 	state.Proposals = propRootCid
@@ -217,7 +221,7 @@ func (m *MockAPI) MustCreateProposalAMT(props map[abi.DealID]*samarket.DealPropo
 	return rootCid
 }
 
-func (m *MockAPI) MustCreateBalanceTable(balances map[address.Address]actorstate.balance) [2]cid.Cid {
+func (m *MockAPI) MustCreateBalanceTable(balances map[address.Address]Balance) [2]cid.Cid {
 	escrowMapRoot := adt.MakeEmptyMap(m.store)
 	escrowMapRootCid, err := escrowMapRoot.Root()
 	require.NoError(m.t, err)
@@ -233,10 +237,10 @@ func (m *MockAPI) MustCreateBalanceTable(balances map[address.Address]actorstate
 	require.NoError(m.t, err)
 
 	for addr, balance := range balances {
-		err := escrowRoot.Add(addr, big.Add(balance.available, balance.locked))
+		err := escrowRoot.Add(addr, big.Add(balance.Available, balance.Locked))
 		require.NoError(m.t, err)
 
-		err = lockedRoot.Add(addr, balance.locked)
+		err = lockedRoot.Add(addr, balance.Locked)
 		require.NoError(m.t, err)
 
 	}

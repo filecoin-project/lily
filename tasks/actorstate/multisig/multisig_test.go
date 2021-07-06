@@ -456,7 +456,7 @@ func TestMultisigExtractorV2(t *testing.T) {
 		// update global state
 		singleTxStateCid, err := mapi.Store().Put(ctx, &singleTxState)
 		require.NoError(t, err)
-		genesisTs := mapi.FakeTipset(minerAddr, 1, actor.WithHeight(0))
+		genesisTs := mapi.FakeTipset(minerAddr, 1, actortesting.WithHeight(0))
 		mapi.SetActor(genesisTs.Key(), multiSigAddress, &types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: singleTxStateCid})
 
 		info := actor.ActorInfo{
@@ -488,7 +488,7 @@ func TestMultisigExtractorV2(t *testing.T) {
 func TestMultisigExtractorV3(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := actor.NewMockAPI(t)
+	mapi := actortesting.NewMockAPI(t)
 	minerAddr := tutils.NewIDAddr(t, 1234)
 
 	emptyMap, err := adt3.MakeEmptyMap(mapi.Store(), sa3builtin.DefaultHamtBitwidth)
@@ -687,7 +687,7 @@ func TestMultisigExtractorV3(t *testing.T) {
 		// update global state
 		singleTxStateCid, err := mapi.Store().Put(ctx, &singleTxState)
 		require.NoError(t, err)
-		genesisTs := mapi.FakeTipset(minerAddr, 1, actor.WithHeight(0))
+		genesisTs := mapi.FakeTipset(minerAddr, 1, actortesting.WithHeight(0))
 		mapi.SetActor(genesisTs.Key(), multiSigAddress, &types.Actor{Code: sa3builtin.MultisigActorCodeID, Head: singleTxStateCid})
 
 		info := actor.ActorInfo{
@@ -719,7 +719,7 @@ func TestMultisigExtractorV3(t *testing.T) {
 func TestMultisigExtractorV4(t *testing.T) {
 	ctx := context.Background()
 
-	mapi := actor.NewMockAPI(t)
+	mapi := actortesting.NewMockAPI(t)
 	minerAddr := tutils.NewIDAddr(t, 1234)
 
 	emptyMap, err := adt3.MakeEmptyMap(mapi.Store(), sa4builtin.DefaultHamtBitwidth)
@@ -918,7 +918,7 @@ func TestMultisigExtractorV4(t *testing.T) {
 		// update global state
 		singleTxStateCid, err := mapi.Store().Put(ctx, &singleTxState)
 		require.NoError(t, err)
-		genesisTs := mapi.FakeTipset(minerAddr, 1, actor.WithHeight(0))
+		genesisTs := mapi.FakeTipset(minerAddr, 1, actortesting.WithHeight(0))
 		mapi.SetActor(genesisTs.Key(), multiSigAddress, &types.Actor{Code: sa4builtin.MultisigActorCodeID, Head: singleTxStateCid})
 
 		info := actor.ActorInfo{

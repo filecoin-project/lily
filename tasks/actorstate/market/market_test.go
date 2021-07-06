@@ -23,11 +23,6 @@ import (
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 
-type Balance struct {
-	available abi.TokenAmount
-	locked    abi.TokenAmount
-}
-
 func TestMarketPredicates(t *testing.T) {
 	ctx := context.Background()
 
@@ -77,7 +72,7 @@ func TestMarketPredicates(t *testing.T) {
 		abi.DealID(2): oldProp2,
 	}
 
-	oldBalances := map[address.Address]Balance{
+	oldBalances := map[address.Address]actortest.Balance{
 		tutils.NewIDAddr(t, 1): {abi.NewTokenAmount(1000), abi.NewTokenAmount(1000)},
 		tutils.NewIDAddr(t, 2): {abi.NewTokenAmount(2000), abi.NewTokenAmount(500)},
 		tutils.NewIDAddr(t, 3): {abi.NewTokenAmount(3000), abi.NewTokenAmount(2000)},
@@ -124,7 +119,7 @@ func TestMarketPredicates(t *testing.T) {
 		// prop 2 was removed
 		abi.DealID(3): newProp3, // new
 	}
-	newBalances := map[address.Address]Balance{
+	newBalances := map[address.Address]actortest.Balance{
 		tutils.NewIDAddr(t, 1): {abi.NewTokenAmount(3000), abi.NewTokenAmount(0)},
 		tutils.NewIDAddr(t, 2): {abi.NewTokenAmount(2000), abi.NewTokenAmount(500)},
 		tutils.NewIDAddr(t, 4): {abi.NewTokenAmount(5000), abi.NewTokenAmount(0)},

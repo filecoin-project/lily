@@ -10,7 +10,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/miner"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extractors"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
@@ -19,10 +19,10 @@ import (
 )
 
 func init() {
-	extractors.Register(&MinerSectorPost{}, ExtractMinerPoSts)
+	extract.Register(&MinerSectorPost{}, ExtractMinerPoSts)
 }
 
-func ExtractMinerPoSts(ctx context.Context, ec *extractors.MinerStateExtractionContext) (model.Persistable, error) {
+func ExtractMinerPoSts(ctx context.Context, ec *extract.MinerStateExtractionContext) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "ExtractMinerPoSts")
 	defer span.End()
 	if !ec.HasPreviousState() {

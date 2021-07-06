@@ -2,7 +2,7 @@
 package registered
 
 import (
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extractors/extractors"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract/extractors"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/model"

@@ -10,7 +10,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extractors/extractors"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract/extractors"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/filecoin-project/sentinel-visor/model/actors/common"

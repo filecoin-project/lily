@@ -10,6 +10,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/actor"
 	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/label"
@@ -21,6 +22,8 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 )
+
+var log = logging.Logger("visor/tasks/actorstate")
 
 // A Task processes the extraction of actor state according the allowed types in its extracter map.
 type Task struct {
@@ -62,7 +65,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	}
 	t.nodeMu.Unlock()
 
-	actor.log.Debugw("processing actor state changes", "height", ts.Height(), "parent_height", pts.Height())
+	log.Debugw("processing actor state changes", "height", ts.Height(), "parent_height", pts.Height())
 
 	report := &visormodel.ProcessingReport{
 		Height:    int64(ts.Height()),
@@ -70,7 +73,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 		Status:    visormodel.ProcessingStatusOK,
 	}
 
-	ll := actor.log.With("height", int64(ts.Height()))
+	ll := log.With("height", int64(ts.Height()))
 
 	// Filter to just allowed actors
 	actors := map[string]types.Actor{}
@@ -103,7 +106,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	for inFlight > 0 {
 		res := <-results
 		inFlight--
-		lla := actor.log.With("height", int64(ts.Height()), "actor", builtin.ActorNameByCode(res.Code), "address", res.Address)
+		lla := log.With("height", int64(ts.Height()), "actor", builtin.ActorNameByCode(res.Code), "address", res.Address)
 
 		if res.Error != nil {
 			lla.Errorw("actor returned with error", "error", res.Error.Error())
@@ -125,7 +128,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 		data = append(data, res.Data)
 	}
 
-	actor.log.Debugw("completed processing actor state changes", "height", ts.Height(), "success", len(actors)-len(errorsDetected)-skippedActors, "errors", len(errorsDetected), "skipped", skippedActors, "time", time.Since(start))
+	log.Debugw("completed processing actor state changes", "height", ts.Height(), "success", len(actors)-len(errorsDetected)-skippedActors, "errors", len(errorsDetected), "skipped", skippedActors, "time", time.Since(start))
 
 	if skippedActors > 0 {
 		report.StatusInformation = fmt.Sprintf("did not parse %d actors", skippedActors)

@@ -6,7 +6,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/miner"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extractors"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
@@ -15,10 +15,10 @@ import (
 )
 
 func init() {
-	extractors.Register(&MinerSectorInfo{}, ExtractMinerSectorInfo)
+	extract.Register(&MinerSectorInfo{}, ExtractMinerSectorInfo)
 }
 
-func ExtractMinerSectorInfo(ctx context.Context, ec *extractors.MinerStateExtractionContext) (model.Persistable, error) {
+func ExtractMinerSectorInfo(ctx context.Context, ec *extract.MinerStateExtractionContext) (model.Persistable, error) {
 	sectorChanges := new(miner.SectorChanges)
 	sectorModel := MinerSectorInfoList{}
 	if !ec.HasPreviousState() {
@@ -33,7 +33,7 @@ func ExtractMinerSectorInfo(ctx context.Context, ec *extractors.MinerStateExtrac
 		}
 	} else {
 		var err error
-		sectorChanges, err = extractors.GetSectorDiff(ctx, ec)
+		sectorChanges, err = extract.GetSectorDiff(ctx, ec)
 		if err != nil {
 			return nil, err
 		}

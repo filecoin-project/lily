@@ -5,16 +5,16 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extractors"
+	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/api/global"
 )
 
 func init() {
-	extractors.Register(&MinerCurrentDeadlineInfo{}, ExtractMinerCurrentDeadlineInfo)
+	extract.Register(&MinerCurrentDeadlineInfo{}, ExtractMinerCurrentDeadlineInfo)
 }
 
-func ExtractMinerCurrentDeadlineInfo(ctx context.Context, ec *extractors.MinerStateExtractionContext) (model.Persistable, error) {
+func ExtractMinerCurrentDeadlineInfo(ctx context.Context, ec *extract.MinerStateExtractionContext) (model.Persistable, error) {
 	_, span := global.Tracer("").Start(ctx, "ExtractMinerDeadlineInfo")
 	defer span.End()
 	currDeadlineInfo, err := ec.CurrState.DeadlineInfo(ec.CurrTs.Height())
