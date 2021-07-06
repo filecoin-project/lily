@@ -10,11 +10,11 @@ import (
 	"os"
 	"sort"
 
+	init_2 "github.com/filecoin-project/sentinel-visor/tasks/actorstate/init_"
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract/extractors"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/filecoin-project/sentinel-visor/model/actors/common"
-	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init_"
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 	"github.com/filecoin-project/sentinel-visor/model/actors/multisig"
 	"github.com/filecoin-project/sentinel-visor/model/actors/power"
@@ -578,14 +578,14 @@ func modelTypeFromTable(tableName string, expected json.RawMessage, actual []int
 		}
 		return cmp.Diff(actType, expType), nil
 	case "id_addresses":
-		var expType init_.IdAddressList
+		var expType init_2.IdAddressList
 		if err := json.Unmarshal(expected, &expType); err != nil {
 			return "", err
 		}
 
-		var actType init_.IdAddressList
+		var actType init_2.IdAddressList
 		for _, raw := range actual {
-			act, ok := raw.(*init_.IdAddress)
+			act, ok := raw.(*init_2.IdAddress)
 			if !ok {
 				panic("developer error")
 			}

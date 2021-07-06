@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	init_2 "github.com/filecoin-project/sentinel-visor/tasks/actorstate/init_"
 	miner "github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract/extractors"
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
@@ -18,7 +19,6 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/model/actors/common"
-	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init_"
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 	"github.com/filecoin-project/sentinel-visor/model/actors/multisig"
 	"github.com/filecoin-project/sentinel-visor/model/actors/power"
@@ -62,7 +62,7 @@ var models = []interface{}{
 	(*common.Actor)(nil),
 	(*common.ActorState)(nil),
 
-	(*init_.IdAddress)(nil),
+	(*init_2.IdAddress)(nil),
 
 	(*derived.GasOutputs)(nil),
 	(*chain.ChainEconomics)(nil),

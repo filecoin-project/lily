@@ -14,6 +14,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/sentinel-visor/lens/lotus"
 	modelreg "github.com/filecoin-project/sentinel-visor/model/registry"
+	init_2 "github.com/filecoin-project/sentinel-visor/tasks/actorstate/init_"
 	miner2 "github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -166,7 +167,7 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 			tsi.actorProcessors[modelreg.ActorStatesRewardTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(reward.AllCodes()), models...)
 		case miner2.ActorStatesMinerTask:
 			tsi.actorProcessors[miner2.ActorStatesMinerTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(miner.AllCodes()), models...)
-		case modelreg.ActorStatesInitTask:
+		case init_2.ActorStatesInitTask:
 			tsi.actorProcessors[modelreg.ActorStatesInitTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(init_.AllCodes()), models...)
 		case modelreg.ActorStatesMarketTask:
 			tsi.actorProcessors[modelreg.ActorStatesMarketTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(market.AllCodes()), models...)

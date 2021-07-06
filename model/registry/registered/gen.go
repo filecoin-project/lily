@@ -25,8 +25,6 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/model/msapprovals"
 
-	"github.com/filecoin-project/sentinel-visor/model/actors/init_"
-
 	"github.com/filecoin-project/sentinel-visor/model/actors/market"
 )
 
@@ -38,9 +36,6 @@ func ModelForString(name string) (model.Persistable, error) {
 
 	case "actor_state":
 		return &common.ActorState{}, nil
-
-	case "id_address":
-		return &init_.IdAddress{}, nil
 
 	case "market_deal_proposal":
 		return &market.MarketDealProposal{}, nil
