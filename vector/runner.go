@@ -13,11 +13,11 @@ import (
 	init_2 "github.com/filecoin-project/sentinel-visor/tasks/actorstate/init_"
 	market "github.com/filecoin-project/sentinel-visor/tasks/actorstate/market/extract/extractors"
 	miner "github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract/extractors"
+	multisig "github.com/filecoin-project/sentinel-visor/tasks/actorstate/multisig"
 	power "github.com/filecoin-project/sentinel-visor/tasks/actorstate/power/extract/extractors"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/filecoin-project/sentinel-visor/model/actors/common"
-	"github.com/filecoin-project/sentinel-visor/model/actors/multisig"
 	"github.com/filecoin-project/sentinel-visor/model/actors/reward"
 	modelchain "github.com/filecoin-project/sentinel-visor/model/chain"
 	"github.com/filecoin-project/sentinel-visor/model/derived"

@@ -4,12 +4,11 @@ package registered
 import (
 	market "github.com/filecoin-project/sentinel-visor/tasks/actorstate/market/extract/extractors"
 	miner "github.com/filecoin-project/sentinel-visor/tasks/actorstate/miner/extract/extractors"
+	multisig "github.com/filecoin-project/sentinel-visor/tasks/actorstate/multisig"
 	power "github.com/filecoin-project/sentinel-visor/tasks/actorstate/power/extract/extractors"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/model"
-
-	"github.com/filecoin-project/sentinel-visor/model/actors/multisig"
 
 	"github.com/filecoin-project/sentinel-visor/model/actors/reward"
 

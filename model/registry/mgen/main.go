@@ -16,7 +16,6 @@ import (
 
 	// imported for the side effect of calling each packages init method
 	_ "github.com/filecoin-project/sentinel-visor/model/actors/common"
-	_ "github.com/filecoin-project/sentinel-visor/model/actors/multisig"
 	_ "github.com/filecoin-project/sentinel-visor/model/actors/reward"
 	_ "github.com/filecoin-project/sentinel-visor/model/blocks"
 	_ "github.com/filecoin-project/sentinel-visor/model/chain"
