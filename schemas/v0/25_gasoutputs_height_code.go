@@ -37,5 +37,5 @@ func init() {
 	ALTER TABLE public.derived_gas_outputs DROP COLUMN actor_name;
 `)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

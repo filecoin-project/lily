@@ -471,5 +471,5 @@ SELECT create_hypertable(
 	// there is no simple way to convert a hypertable back to a normal table
 	down := batch(`SELECT 1`)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

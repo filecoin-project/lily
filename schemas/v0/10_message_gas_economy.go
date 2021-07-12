@@ -18,5 +18,5 @@ CREATE TABLE IF NOT EXISTS public.message_gas_economy (
 DROP TABLE IF EXISTS public.message_gas_economy;
 `)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

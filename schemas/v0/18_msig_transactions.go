@@ -23,5 +23,5 @@ func init() {
 	DROP TABLE IF EXISTS public.multisig_transactions;
 `)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

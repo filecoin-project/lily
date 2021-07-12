@@ -28,6 +28,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/derived"
 	"github.com/filecoin-project/sentinel-visor/model/messages"
 	"github.com/filecoin-project/sentinel-visor/model/msapprovals"
+	"github.com/filecoin-project/sentinel-visor/schemas"
 )
 
 var models = []interface{}{
@@ -120,36 +121,42 @@ func NewDatabase(ctx context.Context, url string, poolSize int, name string, sch
 	}
 
 	return &Database{
-		opt:        opt,
-		schemaName: schemaName,
-		Clock:      clock.New(),
-		Upsert:     upsert,
+		opt: opt,
+		schemaConfig: schemas.Config{
+			SchemaName: schemaName,
+		},
+		Clock:  clock.New(),
+		Upsert: upsert,
 	}, nil
 }
 
 func NewDatabaseFromDB(ctx context.Context, db *pg.DB, schemaName string) (*Database, error) {
-	dbVersion, err := validateDatabaseSchemaVersion(ctx, db, schemaName)
+	cfg := schemas.Config{
+		SchemaName: schemaName,
+	}
+	dbVersion, err := validateDatabaseSchemaVersion(ctx, db, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Database{
-		db:      db,
-		opt:     new(pg.Options),
-		Clock:   clock.New(),
-		version: dbVersion,
+		db:           db,
+		opt:          new(pg.Options),
+		Clock:        clock.New(),
+		version:      dbVersion,
+		schemaConfig: cfg,
 	}, nil
 }
 
 var _ Connector = (*Database)(nil)
 
 type Database struct {
-	db         *pg.DB
-	opt        *pg.Options
-	schemaName string
-	Clock      clock.Clock
-	Upsert     bool
-	version    model.Version // schema version identified in the database
+	db           *pg.DB
+	opt          *pg.Options
+	schemaConfig schemas.Config
+	Clock        clock.Clock
+	Upsert       bool
+	version      model.Version // schema version identified in the database
 }
 
 // Connect opens a connection to the database and checks that the schema is compatible with the version required
@@ -161,7 +168,7 @@ func (d *Database) Connect(ctx context.Context) error {
 		return xerrors.Errorf("connect: %w", err)
 	}
 
-	dbVersion, err := validateDatabaseSchemaVersion(ctx, db, d.schemaName)
+	dbVersion, err := validateDatabaseSchemaVersion(ctx, db, d.SchemaConfig())
 	if err != nil {
 		_ = db.Close() // nolint: errcheck
 		return err
@@ -215,12 +222,16 @@ func (d *Database) Close(ctx context.Context) error {
 	return err
 }
 
+func (d *Database) SchemaConfig() schemas.Config {
+	return d.schemaConfig
+}
+
 // VerifyCurrentSchema compares the schema present in the database with the models used by visor
 // and returns an error if they are incompatible
 func (d *Database) VerifyCurrentSchema(ctx context.Context) error {
 	// If we're already connected then use that connection
 	if d.db != nil {
-		return verifyCurrentSchema(ctx, d.db, d.schemaName)
+		return verifyCurrentSchema(ctx, d.db, d.SchemaConfig())
 	}
 
 	// Temporarily connect
@@ -229,15 +240,15 @@ func (d *Database) VerifyCurrentSchema(ctx context.Context) error {
 		return xerrors.Errorf("connect: %w", err)
 	}
 	defer db.Close() // nolint: errcheck
-	return verifyCurrentSchema(ctx, db, d.schemaName)
+	return verifyCurrentSchema(ctx, db, schemas.Config{SchemaName: "public"})
 }
 
-func verifyCurrentSchema(ctx context.Context, db *pg.DB, schemaName string) error {
+func verifyCurrentSchema(ctx context.Context, db *pg.DB, cfg schemas.Config) error {
 	type versionable interface {
 		AsVersion(model.Version) (interface{}, bool)
 	}
 
-	version, initialized, err := getDatabaseSchemaVersion(ctx, db, schemaName)
+	version, initialized, err := getDatabaseSchemaVersion(ctx, db, cfg)
 	if err != nil {
 		return xerrors.Errorf("get schema version: %w", err)
 	}
@@ -259,7 +270,7 @@ func verifyCurrentSchema(ctx context.Context, db *pg.DB, schemaName string) erro
 		q := db.Model(model)
 		tm := q.TableModel()
 		m := tm.Table()
-		err := verifyModel(ctx, db, schemaName, m)
+		err := verifyModel(ctx, db, cfg.SchemaName, m)
 		if err != nil {
 			valid = false
 			log.Errorf("verify schema: %v", err)

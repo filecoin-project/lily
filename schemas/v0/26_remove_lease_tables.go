@@ -113,5 +113,5 @@ func init() {
 		on visor_processing_stats (recorded_at desc);
 `)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

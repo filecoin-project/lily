@@ -20,5 +20,5 @@ ALTER TABLE public.chain_powers ADD COLUMN new_raw_bytes_power text;
 ALTER TABLE public.chain_powers ADD COLUMN new_qa_bytes_power text;
 ALTER TABLE public.chain_powers ADD COLUMN new_pledge_collateral text;
 `)
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

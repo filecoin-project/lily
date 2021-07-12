@@ -15,5 +15,5 @@ func init() {
 	down := batch(`
 DROP TABLE IF EXISTS "miner_sector_posts";
 `)
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

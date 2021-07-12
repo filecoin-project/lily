@@ -556,5 +556,5 @@ func init() {
 	COMMENT ON COLUMN receipts.state_root IS NULL;
 `)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

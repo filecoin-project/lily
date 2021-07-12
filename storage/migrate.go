@@ -2,11 +2,7 @@ package storage
 
 import (
 	"context"
-	"fmt"
-	"reflect"
 	"strconv"
-	"strings"
-	"text/template"
 
 	"github.com/go-pg/migrations/v8"
 	"github.com/go-pg/pg/v10"
@@ -25,7 +21,7 @@ func (d *Database) GetSchemaVersions(ctx context.Context) (model.Version, model.
 
 	// If we're already connected then use that connection
 	if d.db != nil {
-		dbVersion, _, err := getDatabaseSchemaVersion(ctx, d.db, d.schemaName)
+		dbVersion, _, err := getDatabaseSchemaVersion(ctx, d.db, d.SchemaConfig())
 		return dbVersion, latest, err
 	}
 
@@ -35,7 +31,7 @@ func (d *Database) GetSchemaVersions(ctx context.Context) (model.Version, model.
 		return model.Version{}, model.Version{}, xerrors.Errorf("connect: %w", err)
 	}
 	defer db.Close() // nolint: errcheck
-	dbVersion, _, err := getDatabaseSchemaVersion(ctx, db, d.schemaName)
+	dbVersion, _, err := getDatabaseSchemaVersion(ctx, db, schemas.Config{SchemaName: "public"})
 	return dbVersion, latest, err
 }
 
@@ -43,13 +39,13 @@ func (d *Database) GetSchemaVersions(ctx context.Context) (model.Version, model.
 // tables have been initialized. If no schema version tables can be found then the database is assumed to be
 // uninitialized and a zero version and false value will be returned. The returned boolean will only be true
 // if the schema versioning tables exist and are populated correctly.
-func getDatabaseSchemaVersion(ctx context.Context, db *pg.DB, schemaName string) (model.Version, bool, error) {
-	vvExists, err := tableExists(ctx, db, schemaName, "visor_version")
+func getDatabaseSchemaVersion(ctx context.Context, db *pg.DB, cfg schemas.Config) (model.Version, bool, error) {
+	vvExists, err := tableExists(ctx, db, cfg.SchemaName, "visor_version")
 	if err != nil {
 		return model.Version{}, false, xerrors.Errorf("checking if visor_version exists:%w", err)
 	}
 
-	migExists, err := tableExists(ctx, db, schemaName, "gopg_migrations")
+	migExists, err := tableExists(ctx, db, cfg.SchemaName, "gopg_migrations")
 	if err != nil {
 		return model.Version{}, false, xerrors.Errorf("checking if gopg_migrations exists:%w", err)
 	}
@@ -60,7 +56,7 @@ func getDatabaseSchemaVersion(ctx context.Context, db *pg.DB, schemaName string)
 	}
 
 	// Ensure the visor_version table exists
-	vvTableName := schemaName + ".visor_version"
+	vvTableName := cfg.SchemaName + ".visor_version"
 	var major int
 	_, err = db.QueryOne(pg.Scan(&major), `SELECT major FROM ? LIMIT 1`, pg.SafeQuery(vvTableName))
 	if err != nil && err != pg.ErrNoRows {
@@ -69,11 +65,10 @@ func getDatabaseSchemaVersion(ctx context.Context, db *pg.DB, schemaName string)
 
 	coll, err := collectionForVersion(model.Version{
 		Major: major,
-	})
+	}, cfg)
 	if err != nil {
 		return model.Version{}, false, err
 	}
-	coll.SetTableName(schemaName + ".gopg_migrations")
 
 	migration, err := coll.Version(db)
 	if err != nil {
@@ -94,16 +89,16 @@ func getDatabaseSchemaVersion(ctx context.Context, db *pg.DB, schemaName string)
 }
 
 // initDatabaseSchema initializes the version tables for tracking schema version installed in the database
-func initDatabaseSchema(ctx context.Context, db *pg.DB, schemaName string) error {
-	if schemaName != "public" {
-		_, err := db.Exec(`CREATE SCHEMA IF NOT EXISTS ?`, pg.SafeQuery(schemaName))
+func initDatabaseSchema(ctx context.Context, db *pg.DB, cfg schemas.Config) error {
+	if cfg.SchemaName != "public" {
+		_, err := db.Exec(`CREATE SCHEMA IF NOT EXISTS ?`, pg.SafeQuery(cfg.SchemaName))
 		if err != nil {
 			return xerrors.Errorf("ensure schema exists :%w", err)
 		}
 	}
 
 	// Ensure the visor_version table exists
-	vvTableName := schemaName + ".visor_version"
+	vvTableName := cfg.SchemaName + ".visor_version"
 	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS ? (
 			"major" int NOT NULL,
@@ -115,7 +110,7 @@ func initDatabaseSchema(ctx context.Context, db *pg.DB, schemaName string) error
 	}
 
 	// Ensure the gopg migrations table exists
-	migTableName := schemaName + ".gopg_migrations"
+	migTableName := cfg.SchemaName + ".gopg_migrations"
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS ? (
 			id serial,
@@ -130,9 +125,9 @@ func initDatabaseSchema(ctx context.Context, db *pg.DB, schemaName string) error
 	return nil
 }
 
-func validateDatabaseSchemaVersion(ctx context.Context, db *pg.DB, schemaName string) (model.Version, error) {
+func validateDatabaseSchemaVersion(ctx context.Context, db *pg.DB, cfg schemas.Config) (model.Version, error) {
 	// Check if the version of the schema is compatible
-	dbVersion, initialized, err := getDatabaseSchemaVersion(ctx, db, schemaName)
+	dbVersion, initialized, err := getDatabaseSchemaVersion(ctx, db, cfg)
 	if err != nil {
 		return model.Version{}, xerrors.Errorf("get schema version: %w", err)
 	}
@@ -164,28 +159,14 @@ func LatestSchemaVersion() model.Version {
 // latestSchemaVersionForMajor returns the most recent version of the model schema for a given patch version. It is
 // based on the highest migration version
 func latestSchemaVersionForMajor(major int) model.Version {
-	version := model.Version{
-		Major: major,
+	switch major {
+	case 0:
+		return v0.Version()
+	case 1:
+		return v1.Version()
+	default:
+		return model.Version{} //, xerrors.Errorf("unsupported major version: %d", version.Major)
 	}
-
-	coll, err := collectionForVersion(version)
-	if err != nil {
-		panic(fmt.Sprintf("inconsistent schema versions: no patches found for major version %d", version.Major))
-	}
-
-	version.Patch = getHighestMigration(coll)
-	return version
-}
-
-func getHighestMigration(coll *migrations.Collection) int {
-	var latestMigration int64
-	ms := coll.Migrations()
-	for _, m := range ms {
-		if m.Version > latestMigration {
-			latestMigration = m.Version
-		}
-	}
-	return int(latestMigration)
 }
 
 // MigrateSchema migrates the database schema to the latest version based on the list of migrations available
@@ -196,7 +177,7 @@ func (d *Database) MigrateSchema(ctx context.Context) error {
 // MigrateSchema migrates the database schema to a specific version. Note that downgrading a schema to an earlier
 // version is destructive and may result in the loss of data.
 func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) error {
-	if target.Major == 0 && d.schemaName != "public" {
+	if target.Major == 0 && d.schemaConfig.SchemaName != "public" {
 		return xerrors.Errorf("v0 schema must use the public postgresql schema")
 	}
 
@@ -206,7 +187,7 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) er
 	}
 	defer db.Close() // nolint: errcheck
 
-	dbVersion, initialized, err := getDatabaseSchemaVersion(ctx, db, d.schemaName)
+	dbVersion, initialized, err := getDatabaseSchemaVersion(ctx, db, d.SchemaConfig())
 	if err != nil {
 		return xerrors.Errorf("get schema versions: %w", err)
 	}
@@ -226,11 +207,10 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) er
 		return xerrors.Errorf("database schema is already at version %d", dbVersion)
 	}
 
-	coll, err := collectionForVersion(target)
+	coll, err := collectionForVersion(target, d.SchemaConfig())
 	if err != nil {
 		return xerrors.Errorf("no schema definition corresponds to version %s: %w", target, err)
 	}
-	coll.SetTableName(d.schemaName + ".gopg_migrations")
 
 	if err := checkMigrationSequence(ctx, coll, dbVersion.Patch, target.Patch); err != nil {
 		return xerrors.Errorf("check migration sequence: %w", err)
@@ -241,7 +221,7 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) er
 		return xerrors.Errorf("acquiring schema lock: %w", err)
 	}
 
-	if err := initDatabaseSchema(ctx, db, d.schemaName); err != nil {
+	if err := initDatabaseSchema(ctx, db, d.SchemaConfig()); err != nil {
 		return xerrors.Errorf("initializing schema version tables: %w", err)
 	}
 
@@ -249,11 +229,7 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) er
 	if dbVersion.Patch == 0 {
 		log.Infof("creating base schema for major version %d", target.Major)
 
-		cfg := schemas.Config{
-			SchemaName: d.schemaName,
-		}
-
-		base, err := baseForVersion(target, cfg)
+		base, err := baseForVersion(target, d.SchemaConfig())
 		if err != nil {
 			return xerrors.Errorf("no base schema defined for version %s: %w", target, err)
 		}
@@ -333,12 +309,12 @@ func checkMigrationSequence(ctx context.Context, coll *migrations.Collection, fr
 	return nil
 }
 
-func collectionForVersion(version model.Version) (*migrations.Collection, error) {
+func collectionForVersion(version model.Version, cfg schemas.Config) (*migrations.Collection, error) {
 	switch version.Major {
 	case 0:
-		return v0.Patches, nil
+		return v0.GetPatches(cfg)
 	case 1:
-		return v1.Patches, nil
+		return v1.GetPatches(cfg)
 	default:
 		return nil, xerrors.Errorf("unsupported major version: %d", version.Major)
 	}
@@ -349,51 +325,8 @@ func baseForVersion(version model.Version, cfg schemas.Config) (string, error) {
 	case 0:
 		return v0.Base, nil
 	case 1:
-		tmpl, err := template.New("base").Funcs(schemaTemplateFuncMap).Parse(v1.BaseTemplate)
-		if err != nil {
-			return "", xerrors.Errorf("parse base template: %w", err)
-		}
-		var buf strings.Builder
-		if err := tmpl.Execute(&buf, cfg); err != nil {
-			return "", xerrors.Errorf("execute base template: %w", err)
-		}
-		return buf.String(), nil
+		return v1.GetBase(cfg)
 	default:
 		return "", xerrors.Errorf("unsupported major version: %d", version.Major)
 	}
-}
-
-func isEmpty(val interface{}) bool {
-	v := reflect.ValueOf(val)
-	if !v.IsValid() {
-		return true
-	}
-
-	switch v.Kind() {
-	case reflect.Array, reflect.Slice, reflect.Map, reflect.String:
-		return v.Len() == 0
-	case reflect.Bool:
-		return !v.Bool()
-	case reflect.Complex64, reflect.Complex128:
-		return v.Complex() == 0
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int() == 0
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return v.Uint() == 0
-	case reflect.Float32, reflect.Float64:
-		return v.Float() == 0
-	case reflect.Struct:
-		return false
-	default:
-		return v.IsNil()
-	}
-}
-
-var schemaTemplateFuncMap = template.FuncMap{
-	"default": func(def interface{}, value interface{}) interface{} {
-		if isEmpty(value) {
-			return def
-		}
-		return value
-	},
 }

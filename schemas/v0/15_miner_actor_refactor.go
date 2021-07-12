@@ -87,5 +87,5 @@ func init() {
 	ALTER TABLE public.miner_sector_deals RENAME TO miner_deal_sectors;
 `)
 
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

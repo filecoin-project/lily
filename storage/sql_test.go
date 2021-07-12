@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
-
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
+	"github.com/filecoin-project/sentinel-visor/schemas"
 	_ "github.com/filecoin-project/sentinel-visor/schemas/v0"
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
@@ -24,7 +24,7 @@ const defaultDatabaseWaitTime = time.Second * 20
 func TestConsistentSchemaMigrationSequence(t *testing.T) {
 	latestVersion := LatestSchemaVersion()
 
-	coll, err := collectionForVersion(latestVersion)
+	coll, err := collectionForVersion(latestVersion, schemas.Config{SchemaName: "public"})
 	require.NoError(t, err)
 
 	err = checkMigrationSequence(context.Background(), coll, 0, latestVersion.Patch)

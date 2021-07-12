@@ -866,5 +866,5 @@ DROP TABLE IF EXISTS public.market_deal_proposals;
 DROP TABLE IF EXISTS public.messages;
 DROP TYPE IF EXISTS public.miner_sector_event_type;
 `)
-	Patches.MustRegisterTx(up, down)
+	patches.MustRegisterTx(up, down)
 }

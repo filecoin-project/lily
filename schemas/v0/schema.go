@@ -1,15 +1,39 @@
 package v0
 
 import (
-	"github.com/filecoin-project/sentinel-visor/schemas"
 	"github.com/go-pg/migrations/v8"
+
+	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/sentinel-visor/schemas"
 )
 
-// Patches is the collection of patches made to the base schema
-var Patches = migrations.NewCollection()
+const MajorVersion = 0
 
 func init() {
-	schemas.RegisterSchema(0)
+	schemas.RegisterSchema(MajorVersion)
+}
+
+// patches is the collection of patches made to the base schema
+var patches = migrations.NewCollection()
+
+func GetPatches(cfg schemas.Config) (*migrations.Collection, error) {
+	patches.SetTableName(cfg.SchemaName + ".gopg_migrations")
+	return patches, nil
+}
+
+func Version() model.Version {
+	var latestMigration int64
+	ms := patches.Migrations()
+	for _, m := range ms {
+		if m.Version > latestMigration {
+			latestMigration = m.Version
+		}
+	}
+
+	return model.Version{
+		Major: MajorVersion,
+		Patch: int(latestMigration),
+	}
 }
 
 // batch is a syntactic helper for registering a migration
