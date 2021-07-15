@@ -2,6 +2,7 @@ package chain
 
 import (
 	"context"
+	"errors"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opencensus.io/stats"
@@ -49,6 +50,10 @@ func (c *Watcher) Run(ctx context.Context) error {
 			if !ok {
 				return c.notifier.Err()
 			}
+			if he != nil && he.TipSet != nil {
+				metrics.RecordCount(ctx, metrics.WatchHeight, int(he.TipSet.Height()))
+			}
+
 			if err := c.index(ctx, he); err != nil {
 				return xerrors.Errorf("index: %w", err)
 			}
@@ -86,9 +91,17 @@ func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {
 	case HeadEventRevert:
 		err := c.cache.Revert(he.TipSet)
 		if err != nil {
+			if errors.Is(err, ErrEmptyRevert) {
+				// The chain is unwinding but our cache is empty. This probably means we have already processed
+				// the tipset being reverted and may process it again or an alternate heaviest tipset for this height.
+				metrics.RecordInc(ctx, metrics.TipSetCacheEmptyRevert)
+			}
 			log.Errorw("tipset cache revert", "error", err.Error())
 		}
 	}
+
+	metrics.RecordCount(ctx, metrics.TipSetCacheSize, c.cache.Size())
+	metrics.RecordCount(ctx, metrics.TipSetCacheDepth, c.cache.Len())
 
 	log.Debugw("tipset cache", "height", c.cache.Height(), "tail_height", c.cache.TailHeight(), "length", c.cache.Len())
 

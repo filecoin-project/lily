@@ -14,13 +14,11 @@ import (
 	"github.com/filecoin-project/sentinel-visor/schedule"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/urfave/cli/v2"
-	"go.opencensus.io/stats"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/chain"
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/lens/lily"
-	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
@@ -292,7 +290,6 @@ func (c *LotusChainNotifier) Run(ctx context.Context) error {
 			}
 
 			for _, ch := range headEvents {
-				stats.Record(ctx, metrics.WatchHeight.M(int64(ch.Val.Height())))
 				he := &chain.HeadEvent{
 					TipSet: ch.Val,
 				}

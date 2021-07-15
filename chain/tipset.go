@@ -19,6 +19,7 @@ var (
 	ErrCacheEmpty       = errors.New("cache empty")
 	ErrAddOutOfOrder    = errors.New("added tipset height lower than current head")
 	ErrRevertOutOfOrder = errors.New("reverted tipset does not match current head")
+	ErrEmptyRevert      = errors.New("reverted received on empty cache")
 )
 
 // TipSetCache is a cache of recent tipsets that can keep track of reversions.
@@ -85,7 +86,7 @@ func (c *TipSetCache) Add(ts *types.TipSet) (*types.TipSet, error) {
 // Revert removes the head tipset
 func (c *TipSetCache) Revert(ts *types.TipSet) error {
 	if c.len == 0 {
-		return nil
+		return ErrEmptyRevert
 	}
 
 	// Can only revert the most recent tipset
@@ -120,6 +121,11 @@ func (c *TipSetCache) SetCurrent(ts *types.TipSet) error {
 // Len returns the number of tipsets in the cache. This will never exceed the size of the cache.
 func (c *TipSetCache) Len() int {
 	return c.len
+}
+
+// Size returns the maximum number of tipsets that may be present in the cache.
+func (c *TipSetCache) Size() int {
+	return len(c.buffer)
 }
 
 // Height returns the height of the current head or zero if the cache is empty.

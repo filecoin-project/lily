@@ -12,8 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var dummyCid cid.Cid
-var dummyTs *types.TipSet
+var (
+	dummyCid cid.Cid
+	dummyTs  *types.TipSet
+)
 
 func init() {
 	dummyCid, _ = cid.Parse("bafkqaaa")
@@ -21,7 +23,6 @@ func init() {
 }
 
 func TestTipSetCacheInvariants(t *testing.T) {
-
 	t.Run("empty cache", func(t *testing.T) {
 		c := NewTipSetCache(3)
 		ts, err := c.Head()
@@ -33,14 +34,13 @@ func TestTipSetCacheInvariants(t *testing.T) {
 		assert.Nil(t, ts)
 
 		err = c.Revert(dummyTs)
-		assert.NoError(t, err)
+		assert.Error(t, err, ErrEmptyRevert)
 
 		oldTail, err := c.Add(dummyTs)
 		assert.NoError(t, err)
 		assert.Nil(t, oldTail)
 
 		assert.Equal(t, 1, c.Len())
-
 	})
 
 	t.Run("reset empties cache", func(t *testing.T) {
@@ -62,11 +62,10 @@ func TestTipSetCacheInvariants(t *testing.T) {
 		assert.Nil(t, ts)
 
 		err = c.Revert(dummyTs)
-		assert.NoError(t, err)
+		assert.Error(t, err, ErrEmptyRevert)
 
 		_, err = c.Add(dummyTs)
 		assert.NoError(t, err)
-
 	})
 
 	t.Run("head returns last added", func(t *testing.T) {
@@ -214,7 +213,6 @@ func TestTipSetCacheInvariants(t *testing.T) {
 		head, err = c.Head()
 		require.NoError(t, err)
 		assert.Same(t, ts1, head)
-
 	})
 
 	t.Run("revert ring", func(t *testing.T) {
@@ -241,7 +239,6 @@ func TestTipSetCacheInvariants(t *testing.T) {
 		head, err := c.Head()
 		require.NoError(t, err)
 		assert.Same(t, ts3, head)
-
 	})
 
 	t.Run("zero sized cache", func(t *testing.T) {
@@ -262,10 +259,8 @@ func TestTipSetCacheInvariants(t *testing.T) {
 		assert.Nil(t, ts)
 
 		err = c.Revert(dummyTs)
-		assert.NoError(t, err)
-
+		assert.Error(t, err, ErrEmptyRevert)
 	})
-
 }
 
 func TestTipSetCacheAddOutOfOrder(t *testing.T) {
@@ -309,7 +304,6 @@ func TestTipSetCacheSetCurrent(t *testing.T) {
 		head, err := c.Head()
 		require.NoError(t, err)
 		assert.Same(t, ts1, head)
-
 	})
 
 	t.Run("same height", func(t *testing.T) {
@@ -328,7 +322,6 @@ func TestTipSetCacheSetCurrent(t *testing.T) {
 		head, err := c.Head()
 		require.NoError(t, err)
 		assert.Same(t, ts14alt, head)
-
 	})
 
 	t.Run("same tipset", func(t *testing.T) {
@@ -346,7 +339,6 @@ func TestTipSetCacheSetCurrent(t *testing.T) {
 		head, err := c.Head()
 		require.NoError(t, err)
 		assert.Same(t, ts14, head)
-
 	})
 
 	t.Run("higher height", func(t *testing.T) {
@@ -422,7 +414,6 @@ func TestTipSetCacheSetCurrent(t *testing.T) {
 		require.NoError(t, err)
 		assert.Same(t, ts12, head)
 	})
-
 }
 
 func TestTipSetCacheAddOnlyReturnsOldTailWhenFull(t *testing.T) {
@@ -455,7 +446,6 @@ func TestTipSetCacheAddOnlyReturnsOldTailWhenFull(t *testing.T) {
 	oldTail, err = c.Add(ts17)
 	require.NoError(t, err)
 	assert.Same(t, oldTail, ts14) // cache is now full so oldest is evicted
-
 }
 
 func mustMakeTs(parents []cid.Cid, h abi.ChainEpoch, msgcid cid.Cid) *types.TipSet {
@@ -493,7 +483,6 @@ func mustMakeTs(parents []cid.Cid, h abi.ChainEpoch, msgcid cid.Cid) *types.TipS
 			BLSAggregate: &crypto.Signature{Type: crypto.SigTypeBLS},
 		},
 	})
-
 	if err != nil {
 		panic("mustMakeTs: " + err.Error())
 	}
