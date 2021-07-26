@@ -34,17 +34,16 @@ func TestWalker(t *testing.T) {
 	require.NoError(t, err, "truncating tables")
 
 	t.Logf("preparing chain")
-	nodes, sn := itestkit.RPCMockMinerBuilder(t, itestkit.OneFull, itestkit.OneMiner)
+	full, miner, _ := itestkit.EnsembleMinimal(t)
 
-	node := nodes[0]
-	opener := testutil.NewAPIOpener(node)
+	opener := testutil.NewAPIOpener(full)
 
 	openedAPI, _, _ := opener.Open(ctx)
 
-	bm := itestkit.NewBlockMiner(t, sn[0])
-	bm.MineUntilBlock(ctx, node, nil)
+	bm := itestkit.NewBlockMiner(t, miner)
+	bm.MineUntilBlock(ctx, full, nil)
 
-	head, err := node.ChainHead(ctx)
+	head, err := full.ChainHead(ctx)
 	require.NoError(t, err, "chain head")
 
 	t.Logf("collecting chain blocks")

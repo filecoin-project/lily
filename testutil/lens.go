@@ -16,10 +16,10 @@ import (
 )
 
 type APIOpener struct {
-	node itestkit.TestFullNode
+	node *itestkit.TestFullNode
 }
 
-func NewAPIOpener(node itestkit.TestFullNode) *APIOpener {
+func NewAPIOpener(node *itestkit.TestFullNode) *APIOpener {
 	return &APIOpener{node: node}
 }
 
@@ -31,7 +31,7 @@ func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) 
 }
 
 type APIWrapper struct {
-	itestkit.TestFullNode
+	*itestkit.TestFullNode
 	ctx context.Context
 }
 
