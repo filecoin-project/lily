@@ -440,9 +440,9 @@ func MethodAndParamsForMessage(m *types.Message, destCode cid.Cid) (string, stri
 		return "", "", xerrors.Errorf("unknown method for actor type %s: %d", destCode.String(), int64(m.Method))
 	}
 	if err != nil {
-		log.Warnf("failed to parse parameters of message %s: %v", m.Cid, err)
+		log.Warnf("failed to parse parameters of message %s: %v", m.Cid(), err)
 		// this can occur when the message is not valid cbor
-		return method, "", err
+		return method, "", xerrors.Errorf("failed to parse parameters of message %s: %w", m.Cid(), err)
 	}
 	if params == nil {
 		return method, "", nil
@@ -450,7 +450,7 @@ func MethodAndParamsForMessage(m *types.Message, destCode cid.Cid) (string, stri
 
 	buf := bytes.NewBuffer(nil)
 	if err := fcjson.Encoder(params, buf); err != nil {
-		return "", "", xerrors.Errorf("json encode: %w", err)
+		return "", "", xerrors.Errorf("json encode message params: %w", err)
 	}
 
 	encoded := string(bytes.ReplaceAll(bytes.ToValidUTF8(buf.Bytes(), []byte{}), []byte{0x00}, []byte{}))

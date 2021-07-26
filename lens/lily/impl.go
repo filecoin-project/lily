@@ -168,7 +168,6 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts *typ
 		executions, err = msgMonitor.ExecutionFor(pts)
 		if err != nil {
 			return nil, xerrors.Errorf("failed to find execution trace for tipset: %s", pts.Key().String())
-			return nil, err
 		}
 	} else {
 		return nil, xerrors.Errorf("failed to extract message execution for tipset %s: %w", ts, err)
