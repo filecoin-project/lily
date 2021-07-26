@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/urfave/cli/v2"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/blockstore"
@@ -140,7 +141,7 @@ type CaptureAPI struct {
 }
 
 func (c *CaptureAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {
-	panic("implement me")
+	return nil, xerrors.Errorf("GetMessageExecutionsForTipSet not supported on vector api lens")
 }
 
 func (c *CaptureAPI) Store() adt.Store {

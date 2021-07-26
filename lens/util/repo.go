@@ -131,7 +131,7 @@ type LensAPI struct {
 }
 
 func (ra *LensAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {
-	panic("implement me")
+	return nil, xerrors.Errorf("GetMessageExecutionsForTipSet not supported on util api lens")
 }
 
 func (ra *LensAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {

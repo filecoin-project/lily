@@ -23,6 +23,7 @@ import (
 	"github.com/ipfs/go-cid"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/lens/util"
@@ -111,7 +112,7 @@ type RepoAPI struct {
 }
 
 func (ra *RepoAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {
-	panic("implement me")
+	return nil, xerrors.Errorf("GetMessageExecutionsForTipSet not supported on repo api lens")
 }
 
 func (ra *RepoAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
