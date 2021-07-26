@@ -30,6 +30,10 @@ func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) 
 	}, lens.APICloser(func() {}), nil
 }
 
+func (o *APIOpener) Daemonized() bool {
+	return false
+}
+
 type APIWrapper struct {
 	*itestkit.TestFullNode
 	ctx context.Context
