@@ -56,13 +56,12 @@ func TestWatcher(t *testing.T) {
 	require.NoError(t, err, "truncating tables")
 
 	t.Logf("preparing chain")
-	nodes, sn := itestkit.RPCMockMinerBuilder(t, itestkit.OneFull, itestkit.OneMiner)
+	full, miner, _ := itestkit.EnsembleMinimal(t)
 
-	node := nodes[0]
-	opener := testutil.NewAPIOpener(node)
+	opener := testutil.NewAPIOpener(full)
 
-	bm := itestkit.NewBlockMiner(t, sn[0])
-	bm.MineUntilBlock(ctx, node, nil)
+	bm := itestkit.NewBlockMiner(t, miner)
+	bm.MineUntilBlock(ctx, full, nil)
 
 	strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 	require.NoError(t, err, "NewDatabaseFromDB")
@@ -72,7 +71,7 @@ func TestWatcher(t *testing.T) {
 	t.Logf("initializing indexer")
 	idx := NewWatcher(tsIndexer, NullHeadNotifier{}, 0)
 
-	newHeads, err := node.ChainNotify(ctx)
+	newHeads, err := full.ChainNotify(ctx)
 	require.NoError(t, err, "chain notify")
 
 	t.Logf("indexing chain")
