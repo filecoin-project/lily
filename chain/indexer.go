@@ -752,7 +752,6 @@ type MessageProcessor interface {
 	Close() error
 }
 type MessageExecutionProcessor interface {
-	// TODO add implicit message type param
 	ProcessMessageExecutions(ctx context.Context, store adt.Store, ts *types.TipSet, pts *types.TipSet, imsgs []*lens.MessageExecution) (model.Persistable, *visormodel.ProcessingReport, error)
 	Close() error
 }

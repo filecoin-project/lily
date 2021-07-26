@@ -2,6 +2,7 @@ package lily
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/filecoin-project/lotus/api"
@@ -15,6 +16,7 @@ import (
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/chain"
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -149,44 +151,45 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts *typ
 	// this is defined in the lily daemon dep injection constructor, failure here is a developer error.
 	msgMonitor, ok := m.ExecMonitor.(*modules.BufferedExecMonitor)
 	if !ok {
-		panic("bad cast, developer error")
+		panic(fmt.Sprintf("bad cast, developer error expected modules.BufferedExecMonitor, got %T", m.ExecMonitor))
 	}
 
 	// if lily was watching the chain when this tipset was applied then its exec monitor will already
 	// contain executions for this tipset.
 	executions, err := msgMonitor.ExecutionFor(pts)
-	if err != nil && err != modules.ExecutionTraceNotFound {
-		return nil, err
-	}
-
-	// if lily hasn't watched this tipset be applied then we need to compute its execution trace.
-	// this will likely be the case for most walk tasks.
 	if err == modules.ExecutionTraceNotFound {
+		// if lily hasn't watched this tipset be applied then we need to compute its execution trace.
+		// this will likely be the case for most walk tasks.
 		_, err := m.StateManager.ExecutionTraceWithMonitor(ctx, pts, msgMonitor)
 		if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("failed to compute execution trace for tipset: %s", pts.Key().String())
 		}
 		// the above call will populate the msgMonitor with an execution trace for this tipset, get it.
 		executions, err = msgMonitor.ExecutionFor(pts)
 		if err != nil {
+			return nil, xerrors.Errorf("failed to find execution trace for tipset: %s", pts.Key().String())
 			return nil, err
 		}
+	} else {
+		return nil, xerrors.Errorf("failed to extract message execution for tipset %s: %w", ts, err)
 	}
 
 	getActorCode, err := util.MakeGetActorCodeFunc(ctx, m.ChainAPI.Chain.ActorStore(ctx), ts, pts)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("failed to make actor code query function: %w", err)
 	}
 
 	out := make([]*lens.MessageExecution, len(executions))
 	for idx, execution := range executions {
 		toCode, found := getActorCode(execution.Msg.To)
+		// if the message failed to execute due to lack of gas then the TO actor may never have been created.
 		if !found {
 			log.Warnw("failed to find TO actor", "height", ts.Height().String(), "message", execution.Msg.Cid().String(), "actor", execution.Msg.To.String())
 		}
+		// if the message sender cannot be found this is an unexpected error
 		fromCode, found := getActorCode(execution.Msg.From)
 		if !found {
-			log.Warnw("failed to find FROM actor", "height", ts.Height().String(), "message", execution.Msg.Cid().String(), "actor", execution.Msg.From.String())
+			return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", execution.Msg.From, execution.Msg.Cid())
 		}
 		out[idx] = &lens.MessageExecution{
 			Cid:           execution.Mcid,

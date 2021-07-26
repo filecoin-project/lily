@@ -320,9 +320,10 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 			if !found {
 				log.Warnw("failed to find TO actor", "height", ts.Height().String(), "message", msg.Cid().String(), "actor", msg.To.String())
 			}
+			// we must always be able to find the sender, else there is a logic error somewhere.
 			fromCode, found := getActorCode(msg.From)
 			if !found {
-				log.Warnw("failed to find FROM actor", "height", ts.Height().String(), "message", msg.Cid().String(), "actor", msg.To.String())
+				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, msg.Cid())
 			}
 			emsgs = append(emsgs, &lens.ExecutedMessage{
 				Cid:           blsm.Cid(),
@@ -340,12 +341,14 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		for _, secm := range bm.SecpkMessages {
 			msg := secm.VMMessage()
 			toCode, found := getActorCode(msg.To)
+			// if a message ran out of gas while executing this is expected.
 			if !found {
 				log.Warnw("failed to find TO actor", "height", ts.Height().String(), "message", msg.Cid().String(), "actor", msg.To.String())
 			}
+			// we must always be able to find the sender, else there is a logic error somewhere.
 			fromCode, found := getActorCode(msg.From)
 			if !found {
-				log.Warnw("failed to find FROM actor", "height", ts.Height().String(), "message", msg.Cid().String(), "actor", msg.To.String())
+				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, msg.Cid())
 			}
 			emsgs = append(emsgs, &lens.ExecutedMessage{
 				Cid:           secm.Cid(),
