@@ -91,7 +91,7 @@ func (b *BufferedExecMonitor) MessageApplied(ctx context.Context, ts *types.TipS
 
 // So long as we are are always driving this method with tipsets we get from HeadEvents then we should always find a tipset in here.
 func (b *BufferedExecMonitor) ExecutionFor(ts *types.TipSet) ([]*BufferedExecution, error) {
-	log.Infow("execution for", "ts", ts.String())
+	log.Debugw("execution for", "ts", ts.String())
 	b.cacheMu.Lock()
 	defer b.cacheMu.Unlock()
 
