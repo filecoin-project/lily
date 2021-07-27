@@ -2,7 +2,6 @@ package messageexecutions
 
 import (
 	"context"
-	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
@@ -12,13 +11,10 @@ import (
 	messagemodel "github.com/filecoin-project/sentinel-visor/model/messages"
 	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/tasks/messages"
-	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 )
-
-var log = logging.Logger("messageexecutions")
 
 func NewTask() *Task {
 	return &Task{}
@@ -159,6 +155,7 @@ func (p *Task) ProcessMessageExecutions(ctx context.Context, store adt.Store, ts
 			}
 		*/
 	}
+	report.ErrorsDetected = errorsDetected
 	return model.PersistableList{
 
 		internalResult,
@@ -166,6 +163,7 @@ func (p *Task) ProcessMessageExecutions(ctx context.Context, store adt.Store, ts
 	}, report, nil
 }
 
+/*
 func walkExecutionTrace(et *types.ExecutionTrace, trace *[]*MessageTrace) {
 	for _, sub := range et.Subcalls {
 		*trace = append(*trace, &MessageTrace{
@@ -192,3 +190,4 @@ func getChildMessagesOf(m *lens.MessageExecution) []*MessageTrace {
 	walkExecutionTrace(&m.Ret.ExecutionTrace, &out)
 	return out
 }
+*/

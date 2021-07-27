@@ -188,7 +188,7 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts *typ
 		// if the message sender cannot be found this is an unexpected error
 		fromCode, found := getActorCode(execution.Msg.From)
 		if !found {
-			return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", execution.Msg.From, execution.Msg.Cid())
+			return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", execution.Msg.From, execution.Msg.From, execution.Msg.Cid())
 		}
 		out[idx] = &lens.MessageExecution{
 			Cid:           execution.Mcid,
