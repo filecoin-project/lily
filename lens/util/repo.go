@@ -323,7 +323,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 			// we must always be able to find the sender, else there is a logic error somewhere.
 			fromCode, found := getActorCode(msg.From)
 			if !found {
-				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, msg.Cid())
+				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, ts.Height(), msg.Cid())
 			}
 			emsgs = append(emsgs, &lens.ExecutedMessage{
 				Cid:           blsm.Cid(),
@@ -348,7 +348,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 			// we must always be able to find the sender, else there is a logic error somewhere.
 			fromCode, found := getActorCode(msg.From)
 			if !found {
-				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, msg.Cid())
+				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, ts.Height(), msg.Cid())
 			}
 			emsgs = append(emsgs, &lens.ExecutedMessage{
 				Cid:           secm.Cid(),

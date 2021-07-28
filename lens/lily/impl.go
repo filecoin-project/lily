@@ -156,7 +156,7 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts *typ
 
 	// if lily was watching the chain when this tipset was applied then its exec monitor will already
 	// contain executions for this tipset.
-	executions, err := msgMonitor.ExecutionFor(pts)
+	executions, err := msgMonitor.ExecutionFor(pts) // nolint: SA4006
 	if err == modules.ExecutionTraceNotFound {
 		// if lily hasn't watched this tipset be applied then we need to compute its execution trace.
 		// this will likely be the case for most walk tasks.
@@ -188,7 +188,7 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts *typ
 		// if the message sender cannot be found this is an unexpected error
 		fromCode, found := getActorCode(execution.Msg.From)
 		if !found {
-			return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", execution.Msg.From, execution.Msg.From, execution.Msg.Cid())
+			return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", execution.Msg.From, execution.TipSet.Height(), execution.Msg.Cid())
 		}
 		out[idx] = &lens.MessageExecution{
 			Cid:           execution.Mcid,
