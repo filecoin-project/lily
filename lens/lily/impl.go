@@ -2,17 +2,21 @@ package lily
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/events"
+	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/node/impl/common"
 	"github.com/filecoin-project/lotus/node/impl/full"
+	"github.com/filecoin-project/sentinel-visor/lens/lily/modules"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/chain"
 	"github.com/filecoin-project/sentinel-visor/lens"
@@ -33,6 +37,11 @@ type LilyNodeAPI struct {
 	Events         *events.Events
 	Scheduler      *schedule.Scheduler
 	StorageCatalog *storage.Catalog
+	ExecMonitor    stmgr.ExecMonitor
+}
+
+func (m *LilyNodeAPI) Daemonized() bool {
+	return true
 }
 
 func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedule.JobID, error) {
@@ -136,6 +145,63 @@ func (m *LilyNodeAPI) Open(_ context.Context) (lens.API, lens.APICloser, error) 
 
 func (m *LilyNodeAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
 	return util.GetExecutedAndBlockMessagesForTipset(ctx, m.ChainAPI.Chain, ts, pts)
+}
+
+func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts *types.TipSet, pts *types.TipSet) ([]*lens.MessageExecution, error) {
+	// this is defined in the lily daemon dep injection constructor, failure here is a developer error.
+	msgMonitor, ok := m.ExecMonitor.(*modules.BufferedExecMonitor)
+	if !ok {
+		panic(fmt.Sprintf("bad cast, developer error expected modules.BufferedExecMonitor, got %T", m.ExecMonitor))
+	}
+
+	// if lily was watching the chain when this tipset was applied then its exec monitor will already
+	// contain executions for this tipset.
+	executions, err := msgMonitor.ExecutionFor(pts) // lint:ignore SA4006 false positive
+	if err == modules.ExecutionTraceNotFound {
+		// if lily hasn't watched this tipset be applied then we need to compute its execution trace.
+		// this will likely be the case for most walk tasks.
+		_, err := m.StateManager.ExecutionTraceWithMonitor(ctx, pts, msgMonitor)
+		if err != nil {
+			return nil, xerrors.Errorf("failed to compute execution trace for tipset: %s", pts.Key().String())
+		}
+		// the above call will populate the msgMonitor with an execution trace for this tipset, get it.
+		executions, err = msgMonitor.ExecutionFor(pts)
+		if err != nil {
+			return nil, xerrors.Errorf("failed to find execution trace for tipset: %s", pts.Key().String())
+		}
+	} else {
+		return nil, xerrors.Errorf("failed to extract message execution for tipset %s: %w", ts, err)
+	}
+
+	getActorCode, err := util.MakeGetActorCodeFunc(ctx, m.ChainAPI.Chain.ActorStore(ctx), ts, pts)
+	if err != nil {
+		return nil, xerrors.Errorf("failed to make actor code query function: %w", err)
+	}
+
+	out := make([]*lens.MessageExecution, len(executions))
+	for idx, execution := range executions {
+		toCode, found := getActorCode(execution.Msg.To)
+		// if the message failed to execute due to lack of gas then the TO actor may never have been created.
+		if !found {
+			log.Warnw("failed to find TO actor", "height", ts.Height().String(), "message", execution.Msg.Cid().String(), "actor", execution.Msg.To.String())
+		}
+		// if the message sender cannot be found this is an unexpected error
+		fromCode, found := getActorCode(execution.Msg.From)
+		if !found {
+			return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", execution.Msg.From, execution.TipSet.Height(), execution.Msg.Cid())
+		}
+		out[idx] = &lens.MessageExecution{
+			Cid:           execution.Mcid,
+			StateRoot:     execution.TipSet.ParentState(),
+			Height:        execution.TipSet.Height(),
+			Message:       execution.Msg,
+			Ret:           execution.Ret,
+			Implicit:      execution.Implicit,
+			ToActorCode:   toCode,
+			FromActorCode: fromCode,
+		}
+	}
+	return out, nil
 }
 
 func (m *LilyNodeAPI) Store() adt.Store {

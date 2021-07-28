@@ -37,6 +37,10 @@ type APIWrapper struct {
 	store adt.Store
 }
 
+func (aw *APIWrapper) GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {
+	return nil, xerrors.Errorf("GetMessageExecutionsForTipSet not supported on lotus api lens")
+}
+
 func (aw *APIWrapper) Store() adt.Store {
 	return aw.store
 }

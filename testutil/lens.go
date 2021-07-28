@@ -30,6 +30,10 @@ func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) 
 	}, lens.APICloser(func() {}), nil
 }
 
+func (o *APIOpener) Daemonized() bool {
+	return false
+}
+
 type APIWrapper struct {
 	*itestkit.TestFullNode
 	ctx context.Context
@@ -41,6 +45,10 @@ func (aw *APIWrapper) Store() adt.Store {
 
 func (aw *APIWrapper) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
 	return nil, xerrors.Errorf("GetExecutedAndBlockMessagesForTipset is not implemented")
+}
+
+func (aw *APIWrapper) GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {
+	return nil, xerrors.Errorf("GetMessageExecutionsForTipSet is not implemented")
 }
 
 func (aw *APIWrapper) Get(ctx context.Context, c cid.Cid, out interface{}) error {
