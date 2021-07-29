@@ -42,130 +42,110 @@ var (
 	TipSetCacheEmptyRevert = stats.Int64("tipset_cache_empty_revert", "Number of revert operations performed on an empty tipset cache. This is an indication that a chain reorg is underway that is deeper than the cache size and includes tipsets that have already been read from the cache.", stats.UnitDimensionless)
 )
 
-var (
-	ProcessingDurationView = &view.View{
+var DefaultViews = []*view.View{
+	{
 		Measure:     ProcessingDuration,
 		Aggregation: defaultMillisecondsDistribution,
 		TagKeys:     []tag.Key{TaskType, ActorCode},
-	}
-	PersistDurationView = &view.View{
+	},
+	{
 		Measure:     PersistDuration,
 		Aggregation: defaultMillisecondsDistribution,
 		TagKeys:     []tag.Key{TaskType, Table, ActorCode},
-	}
-	DBConnsView = &view.View{
+	},
+	{
 		Measure:     DBConns,
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{ConnState},
-	}
-	LensRequestDurationView = &view.View{
+	},
+	{
 		Measure:     LensRequestDuration,
 		Aggregation: defaultMillisecondsDistribution,
 		TagKeys:     []tag.Key{TaskType, API, ActorCode},
-	}
-	LensRequestTotal = &view.View{
+	},
+	{
 		Name:        "lens_request_total",
 		Measure:     LensRequestDuration,
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{TaskType, API, ActorCode},
-	}
-	TipsetHeightView = &view.View{
+	},
+	{
 		Measure:     TipsetHeight,
 		Aggregation: view.LastValue(),
 		TagKeys:     []tag.Key{TaskType},
-	}
-	ProcessingFailureTotalView = &view.View{
+	},
+	{
 		Name:        ProcessingFailure.Name() + "_total",
 		Measure:     ProcessingFailure,
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{TaskType, ActorCode},
-	}
-	PersistFailureTotalView = &view.View{
+	},
+	{
 		Name:        PersistFailure.Name() + "_total",
 		Measure:     PersistFailure,
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{TaskType, Table, ActorCode},
-	}
-	WatchHeightView = &view.View{
+	},
+	{
 		Measure:     WatchHeight,
 		Aggregation: view.LastValue(),
 		TagKeys:     []tag.Key{Job},
-	}
-	TipSetSkipTotalView = &view.View{
+	},
+	{
 		Name:        TipSetSkip.Name() + "_total",
 		Measure:     TipSetSkip,
 		Aggregation: view.Sum(),
 		TagKeys:     []tag.Key{Job},
-	}
+	},
 
-	JobStartTotalView = &view.View{
+	{
 		Name:        JobStart.Name() + "_total",
 		Measure:     JobStart,
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{Job},
-	}
-	JobCompleteTotalView = &view.View{
+	},
+	{
 		Name:        JobComplete.Name() + "_total",
 		Measure:     JobComplete,
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{Job},
-	}
-	JobErrorTotalView = &view.View{
+	},
+	{
 		Name:        JobError.Name() + "_total",
 		Measure:     JobError,
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{Job},
-	}
-	JobTimeoutTotalView = &view.View{
+	},
+	{
 		Name:        JobTimeout.Name() + "_total",
 		Measure:     JobTimeout,
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{Job},
-	}
+	},
 
-	PersistModelTotalView = &view.View{
+	{
 		Name:        PersistModel.Name() + "_total",
 		Measure:     PersistModel,
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{TaskType, Table},
-	}
+	},
 
-	TipSetCacheSizeView = &view.View{
+	{
 		Measure:     TipSetCacheSize,
 		Aggregation: view.LastValue(),
 		TagKeys:     []tag.Key{Job},
-	}
-	TipSetCacheDepthView = &view.View{
+	},
+	{
 		Measure:     TipSetCacheDepth,
 		Aggregation: view.LastValue(),
 		TagKeys:     []tag.Key{Job},
-	}
-	TipSetCacheEmptyRevertTotalView = &view.View{
+	},
+	{
 		Name:        TipSetCacheEmptyRevert.Name() + "_total",
 		Measure:     TipSetCacheEmptyRevert,
 		Aggregation: view.Sum(),
 		TagKeys:     []tag.Key{Job},
-	}
-)
-
-var DefaultViews = []*view.View{
-	ProcessingDurationView,
-	PersistDurationView,
-	DBConnsView,
-	LensRequestDurationView,
-	LensRequestTotal,
-	TipsetHeightView,
-	ProcessingFailureTotalView,
-	PersistFailureTotalView,
-	TipSetSkipTotalView,
-	JobStartTotalView,
-	JobCompleteTotalView,
-	JobErrorTotalView,
-	JobTimeoutTotalView,
-	PersistModelTotalView,
-	TipSetCacheSizeView,
-	TipSetCacheDepthView,
-	TipSetCacheEmptyRevertTotalView,
+	},
 }
 
 // SinceInMilliseconds returns the duration of time since the provide time as a float64.
