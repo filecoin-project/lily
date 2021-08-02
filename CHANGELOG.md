@@ -5,6 +5,14 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.7.3"></a>
+## [v0.7.3] - 2021-08-02
+
+### Feat
+ - Add v1 schema migration capability (#578)
+ - Add metrics for tipset cache used by watches (#599)
+ - Upgrade to lotus@v1.11.0 (#601)
+
 <a name="v0.7.2"></a>
 ## [v0.7.2] - 2021-07-02
 
