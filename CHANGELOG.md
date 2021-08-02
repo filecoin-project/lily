@@ -5,6 +5,16 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.7.4"></a>
+## [v0.7.4] - 2021-08-02
+
+### Feat
+ - Implement internal message task (#533)
+
+### Fix
+ - Export watch_height metric (#606)
+ - Remove space in lint comment (#607) 
+
 <a name="v0.7.3"></a>
 ## [v0.7.3] - 2021-08-02
 
