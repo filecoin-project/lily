@@ -13,6 +13,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 	"github.com/filecoin-project/sentinel-visor/lens/lotus"
+	"github.com/filecoin-project/sentinel-visor/tasks/consensus"
 	"github.com/filecoin-project/sentinel-visor/tasks/messageexecutions"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -52,6 +53,7 @@ const (
 	ChainEconomicsTask      = "chaineconomics"      // task that extracts chain economics data
 	MultisigApprovalsTask   = "msapprovals"         // task that extracts multisig actor approvals
 	ImplicitMessageTask     = "implicitmessage"     // task that extract implicitly executed messages: cron tick and block reward.
+	ChainConsunsusTask      = "consensus"
 )
 
 var log = logging.Logger("visor/chain")
@@ -66,6 +68,7 @@ type TipSetIndexer struct {
 	messageProcessors          map[string]MessageProcessor
 	messageExecutionProcessors map[string]MessageExecutionProcessor
 	actorProcessors            map[string]ActorProcessor
+	consensusProcessor         map[string]ConsensusProcessor
 	name                       string
 	persistSlot                chan struct{} // filled with a token when a goroutine is persisting data
 	lastTipSet                 *types.TipSet
@@ -96,6 +99,7 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 		processors:                 map[string]TipSetProcessor{},
 		messageProcessors:          map[string]MessageProcessor{},
 		messageExecutionProcessors: map[string]MessageExecutionProcessor{},
+		consensusProcessor:         map[string]ConsensusProcessor{},
 		actorProcessors:            map[string]ActorProcessor{},
 		opener:                     o,
 	}
@@ -124,6 +128,8 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 			tsi.actorProcessors[ActorStatesMultisigTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(multisig.AllCodes()))
 		case MultisigApprovalsTask:
 			tsi.messageProcessors[MultisigApprovalsTask] = msapprovals.NewTask(o)
+		case ChainConsunsusTask:
+			tsi.consensusProcessor[ChainConsunsusTask] = consensus.NewTask()
 		case ImplicitMessageTask:
 			if !o.Daemonized() {
 				return nil, xerrors.Errorf("daemonized API (lily node) required to run: %s task", ImplicitMessageTask)
@@ -180,7 +186,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	}
 
 	// Run each actor or message processing task concurrently if we have any and we've seen a previous tipset to compare with
-	if len(t.actorProcessors) > 0 || len(t.messageProcessors) > 0 || len(t.messageExecutionProcessors) > 0 {
+	if len(t.actorProcessors) > 0 || len(t.messageProcessors) > 0 || len(t.messageExecutionProcessors) > 0 || len(t.consensusProcessor) > 0 {
 
 		// Actor processors perform a diff between two tipsets so we need to keep track of parent and child
 		var parent, child *types.TipSet
@@ -212,6 +218,12 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 			}
 
 			if types.CidArrsEqual(child.Parents().Cids(), parent.Cids()) {
+				if len(t.consensusProcessor) > 0 {
+					for name, p := range t.consensusProcessor {
+						inFlight++
+						go t.runConsensusProcessor(ctx, p, name, child, parent, results)
+					}
+				}
 				// If we have message processors then extract the messages and receipts
 				if len(t.messageProcessors) > 0 {
 					tsMsgs, err := t.node.GetExecutedAndBlockMessagesForTipset(ctx, child, parent)
@@ -592,6 +604,34 @@ func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProces
 	}
 }
 
+func (t *TipSetIndexer) runConsensusProcessor(ctx context.Context, p ConsensusProcessor, name string, ts, pts *types.TipSet, results chan *TaskResult) {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
+	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
+	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	defer stop()
+	start := time.Now()
+
+	data, report, err := p.ProcessTipSets(ctx, ts, pts)
+	if err != nil {
+		stats.Record(ctx, metrics.ProcessingFailure.M(1))
+		results <- &TaskResult{
+			Task:        name,
+			Error:       err,
+			StartedAt:   start,
+			CompletedAt: time.Now(),
+		}
+		return
+	}
+	results <- &TaskResult{
+		Task:        name,
+		Report:      report,
+		Data:        data,
+		StartedAt:   start,
+		CompletedAt: time.Now(),
+	}
+
+}
+
 func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor, name string, ts, pts *types.TipSet, actors map[string]types.Actor, results chan *TaskResult) {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
@@ -743,6 +783,11 @@ type TipSetProcessor interface {
 	// ProcessTipSet processes a tipset. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
 	ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
+	Close() error
+}
+
+type ConsensusProcessor interface {
+	ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
 	Close() error
 }
 
