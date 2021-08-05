@@ -78,18 +78,21 @@ func getCSVModelTableByName(name string, version model.Version) (table, bool) {
 }
 
 type CSVStorage struct {
-	path    string
-	version model.Version // schema version
-	opts    CSVStorageOptions
+	path     string
+	version  model.Version // schema version
+	opts     CSVStorageOptions
+	metadata Metadata
 }
 
 type CSVStorageOptions struct {
-	OmitHeader bool
+	OmitHeader  bool
+	FilePattern string
 }
 
 func DefaultCSVStorageOptions() CSVStorageOptions {
 	return CSVStorageOptions{
-		OmitHeader: false,
+		OmitHeader:  false,
+		FilePattern: "{table}.csv",
 	}
 }
 
@@ -111,6 +114,12 @@ func NewCSVStorage(path string, version model.Version, opts CSVStorageOptions) (
 
 func NewCSVStorageLatest(path string, opts CSVStorageOptions) (*CSVStorage, error) {
 	return NewCSVStorage(path, LatestSchemaVersion(), opts)
+}
+
+func (c *CSVStorage) WithMetadata(md Metadata) *CSVStorage {
+	c2 := *c
+	c2.metadata = md
+	return &c2
 }
 
 // PersistBatch persists a batch of models to CSV, creating new files if they don't already exist otherwise appending
