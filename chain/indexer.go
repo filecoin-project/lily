@@ -53,7 +53,7 @@ const (
 	ChainEconomicsTask      = "chaineconomics"      // task that extracts chain economics data
 	MultisigApprovalsTask   = "msapprovals"         // task that extracts multisig actor approvals
 	ImplicitMessageTask     = "implicitmessage"     // task that extract implicitly executed messages: cron tick and block reward.
-	ChainConsunsusTask      = "consensus"
+	ChainConsensusTask      = "consensus"
 )
 
 var log = logging.Logger("visor/chain")
@@ -68,7 +68,7 @@ type TipSetIndexer struct {
 	messageProcessors          map[string]MessageProcessor
 	messageExecutionProcessors map[string]MessageExecutionProcessor
 	actorProcessors            map[string]ActorProcessor
-	consensusProcessor         map[string]ConsensusProcessor
+	consensusProcessor         map[string]TipSetsProcessor
 	name                       string
 	persistSlot                chan struct{} // filled with a token when a goroutine is persisting data
 	lastTipSet                 *types.TipSet
@@ -99,7 +99,7 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 		processors:                 map[string]TipSetProcessor{},
 		messageProcessors:          map[string]MessageProcessor{},
 		messageExecutionProcessors: map[string]MessageExecutionProcessor{},
-		consensusProcessor:         map[string]ConsensusProcessor{},
+		consensusProcessor:         map[string]TipSetsProcessor{},
 		actorProcessors:            map[string]ActorProcessor{},
 		opener:                     o,
 	}
@@ -128,8 +128,8 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 			tsi.actorProcessors[ActorStatesMultisigTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(multisig.AllCodes()))
 		case MultisigApprovalsTask:
 			tsi.messageProcessors[MultisigApprovalsTask] = msapprovals.NewTask(o)
-		case ChainConsunsusTask:
-			tsi.consensusProcessor[ChainConsunsusTask] = consensus.NewTask()
+		case ChainConsensusTask:
+			tsi.consensusProcessor[ChainConsensusTask] = consensus.NewTask()
 		case ImplicitMessageTask:
 			if !o.Daemonized() {
 				return nil, xerrors.Errorf("daemonized API (lily node) required to run: %s task", ImplicitMessageTask)
@@ -606,7 +606,7 @@ func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProces
 	}
 }
 
-func (t *TipSetIndexer) runConsensusProcessor(ctx context.Context, p ConsensusProcessor, name string, ts, pts *types.TipSet, results chan *TaskResult) {
+func (t *TipSetIndexer) runConsensusProcessor(ctx context.Context, p TipSetsProcessor, name string, ts, pts *types.TipSet, results chan *TaskResult) {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
@@ -788,7 +788,9 @@ type TipSetProcessor interface {
 	Close() error
 }
 
-type ConsensusProcessor interface {
+type TipSetsProcessor interface {
+	// ProcessTipSets processes a parent and child tipset. If error is non-nil then the processor encountered a fatal error.
+	// Any data returned must be accompanied by a processing report.
 	ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error)
 	Close() error
 }

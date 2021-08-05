@@ -1,4 +1,4 @@
-package consensus
+package chain
 
 import (
 	"context"
@@ -12,10 +12,10 @@ import (
 )
 
 type ChainConsensus struct {
-	Height       int64  `pg:",pk,notnull,use_zero"`
-	StateRoot    string `pg:",pk,notnull"`
-	ParentTipSet string `pg:",pk,notnull"`
-	TipSet       string
+	Height          int64  `pg:",pk,notnull,use_zero"`
+	ParentStateRoot string `pg:",pk,notnull"`
+	ParentTipSet    string `pg:",pk,notnull"`
+	TipSet          string
 }
 
 func (c ChainConsensus) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
