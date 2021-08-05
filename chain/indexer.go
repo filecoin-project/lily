@@ -285,6 +285,36 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 						}
 					}
 				}
+
+				// If we have messages execution processors then extract internal messages
+				if len(t.messageExecutionProcessors) > 0 {
+					iMsgs, err := t.node.GetMessageExecutionsForTipSet(ctx, child, parent)
+					if err == nil {
+						// Start all the message processors
+						for name, p := range t.messageExecutionProcessors {
+							inFlight++
+							go t.runMessageExecutionProcessor(tctx, p, name, child, parent, iMsgs, results)
+						}
+					} else {
+						ll.Errorw("failed to extract messages", "error", err)
+						terr := xerrors.Errorf("failed to extract messages: %w", err)
+						// We need to report that all message tasks failed
+						for name := range t.messageExecutionProcessors {
+							report := &visormodel.ProcessingReport{
+								Height:         int64(ts.Height()),
+								StateRoot:      ts.ParentState().String(),
+								Reporter:       t.name,
+								Task:           name,
+								StartedAt:      start,
+								CompletedAt:    time.Now(),
+								Status:         visormodel.ProcessingStatusError,
+								ErrorsDetected: terr,
+							}
+							taskOutputs[name] = model.PersistableList{report}
+						}
+					}
+				}
+
 			} else {
 				// TODO: we could fetch the parent stateroot and proceed to index this tipset. However this will be
 				// slower and increases the likelihood that we exceed the processing window and cause the next
@@ -300,34 +330,6 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 				for name := range t.actorProcessors {
 					taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, reason)}
 					ll.Infow("task skipped", "task", name, "reason", reason)
-				}
-			}
-
-			if len(t.messageExecutionProcessors) > 0 {
-				iMsgs, err := t.node.GetMessageExecutionsForTipSet(ctx, child, parent)
-				if err == nil {
-					// Start all the message processors
-					for name, p := range t.messageExecutionProcessors {
-						inFlight++
-						go t.runMessageExecutionProcessor(tctx, p, name, child, parent, iMsgs, results)
-					}
-				} else {
-					ll.Errorw("failed to extract messages", "error", err)
-					terr := xerrors.Errorf("failed to extract messages: %w", err)
-					// We need to report that all message tasks failed
-					for name := range t.messageExecutionProcessors {
-						report := &visormodel.ProcessingReport{
-							Height:         int64(ts.Height()),
-							StateRoot:      ts.ParentState().String(),
-							Reporter:       t.name,
-							Task:           name,
-							StartedAt:      start,
-							CompletedAt:    time.Now(),
-							Status:         visormodel.ProcessingStatusError,
-							ErrorsDetected: terr,
-						}
-						taskOutputs[name] = model.PersistableList{report}
-					}
 				}
 			}
 		}
