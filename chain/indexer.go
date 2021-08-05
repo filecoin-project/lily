@@ -369,27 +369,29 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 			return res.Error
 		}
 
-		if res.Report == nil {
+		if res.Report == nil || len(res.Report) == 0 {
 			// Nothing was done for this tipset
 			llt.Debugw("task returned with no report")
 			continue
 		}
 
-		// Fill in some report metadata
-		res.Report.Reporter = t.name
-		res.Report.Task = res.Task
-		res.Report.StartedAt = res.StartedAt
-		res.Report.CompletedAt = res.CompletedAt
+		for idx := range res.Report {
+			// Fill in some report metadata
+			res.Report[idx].Reporter = t.name
+			res.Report[idx].Task = res.Task
+			res.Report[idx].StartedAt = res.StartedAt
+			res.Report[idx].CompletedAt = res.CompletedAt
 
-		if res.Report.ErrorsDetected != nil {
-			res.Report.Status = visormodel.ProcessingStatusError
-		} else if res.Report.StatusInformation != "" {
-			res.Report.Status = visormodel.ProcessingStatusInfo
-		} else {
-			res.Report.Status = visormodel.ProcessingStatusOK
+			if res.Report[idx].ErrorsDetected != nil {
+				res.Report[idx].Status = visormodel.ProcessingStatusError
+			} else if res.Report[idx].StatusInformation != "" {
+				res.Report[idx].Status = visormodel.ProcessingStatusInfo
+			} else {
+				res.Report[idx].Status = visormodel.ProcessingStatusOK
+			}
+
+			llt.Infow("task report", "status", res.Report[idx].Status, "time", res.Report[idx].CompletedAt.Sub(res.Report[idx].StartedAt))
 		}
-
-		llt.Infow("task report", "status", res.Report.Status, "time", res.Report.CompletedAt.Sub(res.Report.StartedAt))
 
 		// Persist the processing report and the data in a single transaction
 		taskOutputs[res.Task] = model.PersistableList{res.Report, res.Data}
@@ -466,7 +468,7 @@ func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, nam
 	}
 	results <- &TaskResult{
 		Task:        name,
-		Report:      report,
+		Report:      visormodel.ProcessingReportList{report},
 		Data:        data,
 		StartedAt:   start,
 		CompletedAt: time.Now(),
@@ -597,7 +599,7 @@ func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProces
 	}
 	results <- &TaskResult{
 		Task:        name,
-		Report:      report,
+		Report:      visormodel.ProcessingReportList{report},
 		Data:        data,
 		StartedAt:   start,
 		CompletedAt: time.Now(),
@@ -652,7 +654,7 @@ func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor,
 	}
 	results <- &TaskResult{
 		Task:        name,
-		Report:      report,
+		Report:      visormodel.ProcessingReportList{report},
 		Data:        data,
 		StartedAt:   start,
 		CompletedAt: time.Now(),
@@ -676,7 +678,7 @@ func (t *TipSetIndexer) runMessageExecutionProcessor(ctx context.Context, p Mess
 	}
 	results <- &TaskResult{
 		Task:   name,
-		Report: report,
+		Report: visormodel.ProcessingReportList{report},
 		Data:   data,
 	}
 }
@@ -773,7 +775,7 @@ func (t *TipSetIndexer) buildSkippedTipsetReport(ts *types.TipSet, taskName stri
 type TaskResult struct {
 	Task        string
 	Error       error
-	Report      *visormodel.ProcessingReport
+	Report      visormodel.ProcessingReportList
 	Data        model.Persistable
 	StartedAt   time.Time
 	CompletedAt time.Time
@@ -787,7 +789,7 @@ type TipSetProcessor interface {
 }
 
 type ConsensusProcessor interface {
-	ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
+	ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error)
 	Close() error
 }
 
