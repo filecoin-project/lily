@@ -51,7 +51,10 @@ func NewCatalog(cfg config.StorageConf) (*Catalog, error) {
 		case "CSV":
 			log.Debugw("registering storage", "name", name, "type", "csv")
 
-			db, err := NewCSVStorageLatest(sc.Path)
+			opts := DefaultCSVStorageOptions()
+			opts.OmitHeader = sc.OmitHeader
+
+			db, err := NewCSVStorageLatest(sc.Path, opts)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create postgresql storage %q: %w", name, err)
 			}

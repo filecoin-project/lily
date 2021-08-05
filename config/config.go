@@ -37,8 +37,9 @@ type PgStorageConf struct {
 }
 
 type FileStorageConf struct {
-	Format string
-	Path   string
+	Format     string
+	Path       string
+	OmitHeader bool // when true, don't write column headers to new output files
 }
 
 func DefaultConf() *Conf {
@@ -98,8 +99,9 @@ func SampleConf() *Conf {
 
 		File: map[string]FileStorageConf{
 			"CSV": {
-				Format: "CSV",
-				Path:   "/tmp",
+				Format:     "CSV",
+				Path:       "/tmp",
+				OmitHeader: false,
 			},
 		},
 	}

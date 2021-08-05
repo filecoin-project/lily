@@ -80,6 +80,17 @@ func getCSVModelTableByName(name string, version model.Version) (table, bool) {
 type CSVStorage struct {
 	path    string
 	version model.Version // schema version
+	opts    CSVStorageOptions
+}
+
+type CSVStorageOptions struct {
+	OmitHeader bool
+}
+
+func DefaultCSVStorageOptions() CSVStorageOptions {
+	return CSVStorageOptions{
+		OmitHeader: false,
+	}
 }
 
 // A table is a list of columns and corresponding field names in the Go struct
@@ -90,15 +101,16 @@ type table struct {
 	types   []string
 }
 
-func NewCSVStorage(path string, version model.Version) (*CSVStorage, error) {
+func NewCSVStorage(path string, version model.Version, opts CSVStorageOptions) (*CSVStorage, error) {
 	return &CSVStorage{
 		path:    path,
 		version: version,
+		opts:    opts,
 	}, nil
 }
 
-func NewCSVStorageLatest(path string) (*CSVStorage, error) {
-	return NewCSVStorage(path, LatestSchemaVersion())
+func NewCSVStorageLatest(path string, opts CSVStorageOptions) (*CSVStorage, error) {
+	return NewCSVStorage(path, LatestSchemaVersion(), opts)
 }
 
 // PersistBatch persists a batch of models to CSV, creating new files if they don't already exist otherwise appending
@@ -133,11 +145,13 @@ func (c *CSVStorage) PersistBatch(ctx context.Context, ps ...model.Persistable) 
 			// Created file successfully
 			defer f.Close() // nolint: errcheck
 
-			// Write the headers
 			w = csv.NewWriter(f)
-			if err := w.Write(t.columns); err != nil {
-				log.Errorw("failed to write csv headers", "error", err, "filename", filename)
-				continue
+			if !c.opts.OmitHeader {
+				// Write the headers
+				if err := w.Write(t.columns); err != nil {
+					log.Errorw("failed to write csv headers", "error", err, "filename", filename)
+					continue
+				}
 			}
 		} else {
 			var pathErr *os.PathError

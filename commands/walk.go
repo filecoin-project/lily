@@ -193,7 +193,7 @@ var RunWalkCmd = &cli.Command{
 
 		var strg model.Storage = &storage.NullStorage{}
 		if cctx.String("csv") != "" {
-			csvStorage, err := storage.NewCSVStorageLatest(cctx.String("csv"))
+			csvStorage, err := storage.NewCSVStorageLatest(cctx.String("csv"), storage.DefaultCSVStorageOptions())
 			if err != nil {
 				return xerrors.Errorf("new csv storage: %w", err)
 			}

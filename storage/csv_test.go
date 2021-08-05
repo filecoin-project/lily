@@ -104,7 +104,7 @@ func TestCSVPersist(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir, model.Version{Major: 1})
+	st, err := NewCSVStorage(dir, model.Version{Major: 1}, DefaultCSVStorageOptions())
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -144,7 +144,7 @@ func TestCSVPersistMulti(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir, model.Version{Major: 1})
+	st, err := NewCSVStorage(dir, model.Version{Major: 1}, DefaultCSVStorageOptions())
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tms...)
@@ -202,7 +202,7 @@ func TestCSVPersistComposite(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir, model.Version{Major: 1})
+	st, err := NewCSVStorage(dir, model.Version{Major: 1}, DefaultCSVStorageOptions())
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), comp)
@@ -237,7 +237,7 @@ func TestCSVPersistTime(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir, model.Version{Major: 1})
+	st, err := NewCSVStorage(dir, model.Version{Major: 1}, DefaultCSVStorageOptions())
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -262,7 +262,7 @@ func TestCSVPersistInterfaceNil(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir, model.Version{Major: 1})
+	st, err := NewCSVStorage(dir, model.Version{Major: 1}, DefaultCSVStorageOptions())
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -292,7 +292,7 @@ func TestCSVPersistInterfaceValue(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir, model.Version{Major: 1})
+	st, err := NewCSVStorage(dir, model.Version{Major: 1}, DefaultCSVStorageOptions())
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -317,7 +317,7 @@ func TestCSVPersistInterfaceNilJSON(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir, model.Version{Major: 1})
+	st, err := NewCSVStorage(dir, model.Version{Major: 1}, DefaultCSVStorageOptions())
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -342,7 +342,7 @@ func TestCSVPersistInterfaceValueJSON(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir, model.Version{Major: 1})
+	st, err := NewCSVStorage(dir, model.Version{Major: 1}, DefaultCSVStorageOptions())
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -367,7 +367,7 @@ func TestCSVPersistValueJSON(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir, model.Version{Major: 1})
+	st, err := NewCSVStorage(dir, model.Version{Major: 1}, DefaultCSVStorageOptions())
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -392,7 +392,7 @@ func TestCSVPersistValueStringSlice(t *testing.T) {
 
 	defer os.RemoveAll(dir) // nolint: errcheck
 
-	st, err := NewCSVStorage(dir, model.Version{Major: 1})
+	st, err := NewCSVStorage(dir, model.Version{Major: 1}, DefaultCSVStorageOptions())
 	require.NoError(t, err)
 
 	err = st.PersistBatch(context.Background(), tm)
@@ -482,7 +482,7 @@ func TestCSVPersistWithVersion(t *testing.T) {
 
 		defer os.RemoveAll(dir) // nolint: errcheck
 
-		st, err := NewCSVStorage(dir, model.Version{Major: 3})
+		st, err := NewCSVStorage(dir, model.Version{Major: 3}, DefaultCSVStorageOptions())
 		require.NoError(t, err)
 
 		err = st.PersistBatch(context.Background(), vm)
@@ -504,7 +504,7 @@ func TestCSVPersistWithVersion(t *testing.T) {
 
 		defer os.RemoveAll(dir) // nolint: errcheck
 
-		st, err := NewCSVStorage(dir, model.Version{Major: 2})
+		st, err := NewCSVStorage(dir, model.Version{Major: 2}, DefaultCSVStorageOptions())
 		require.NoError(t, err)
 
 		err = st.PersistBatch(context.Background(), vm)
@@ -516,5 +516,44 @@ func TestCSVPersistWithVersion(t *testing.T) {
 			"height,block\n"+
 				"42,blocka\n",
 			string(written))
+	})
+}
+
+func TestCSVOptionOmitHeader(t *testing.T) {
+	tm := &TestModel{
+		Height:  42,
+		Block:   "blocka",
+		Message: "msg1",
+	}
+
+	baseName := t.Name()
+
+	runTest := func(t *testing.T, omitHeader bool, expected string) {
+		dir, err := ioutil.TempDir("", baseName)
+		t.Logf("dir %s", dir)
+		require.NoError(t, err)
+
+		defer os.RemoveAll(dir) // nolint: errcheck
+
+		opts := DefaultCSVStorageOptions()
+		opts.OmitHeader = omitHeader
+
+		st, err := NewCSVStorage(dir, model.Version{Major: 1}, opts)
+		require.NoError(t, err)
+
+		err = st.PersistBatch(context.Background(), tm)
+		require.NoError(t, err)
+
+		written, err := ioutil.ReadFile(filepath.Join(dir, "test_models.csv"))
+		require.NoError(t, err)
+		assert.EqualValues(t, expected, string(written))
+	}
+
+	t.Run("false", func(t *testing.T) {
+		runTest(t, false, "height,block,message\n"+"42,blocka,msg1\n")
+	})
+
+	t.Run("true", func(t *testing.T) {
+		runTest(t, true, "42,blocka,msg1\n")
 	})
 }
