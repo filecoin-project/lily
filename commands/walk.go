@@ -53,13 +53,13 @@ var WalkCmd = &cli.Command{
 			Name:        "from",
 			Usage:       "Limit actor and message processing to tipsets at or above `HEIGHT`",
 			Destination: &walkFlags.from,
+			Required:    true,
 		},
 		&cli.Int64Flag{
 			Name:        "to",
 			Usage:       "Limit actor and message processing to tipsets at or below `HEIGHT`",
-			Value:       estimateCurrentEpoch(),
-			DefaultText: "MaxInt64",
 			Destination: &walkFlags.to,
+			Required:    true,
 		},
 		&cli.StringFlag{
 			Name:        "storage",
