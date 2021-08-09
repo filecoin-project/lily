@@ -580,9 +580,9 @@ func TestCSVOptionFilePattern(t *testing.T) {
 		st, err := NewCSVStorage(dir, model.Version{Major: 1}, opts)
 		require.NoError(t, err)
 
-		st = st.WithMetadata(md)
+		mst := st.WithMetadata(md)
 
-		err = st.PersistBatch(context.Background(), tm)
+		err = mst.PersistBatch(context.Background(), tm)
 		require.NoError(t, err)
 
 		_, err = os.Stat(filepath.Join(dir, expected))

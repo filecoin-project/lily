@@ -85,6 +85,8 @@ type CSVStorage struct {
 	metadata Metadata
 }
 
+var _ StorageWithMetadata = (*CSVStorage)(nil)
+
 type CSVStorageOptions struct {
 	OmitHeader  bool
 	FilePattern string
@@ -129,7 +131,7 @@ func NewCSVStorageLatest(path string, opts CSVStorageOptions) (*CSVStorage, erro
 	return NewCSVStorage(path, LatestSchemaVersion(), opts)
 }
 
-func (c *CSVStorage) WithMetadata(md Metadata) *CSVStorage {
+func (c *CSVStorage) WithMetadata(md Metadata) model.Storage {
 	c2 := *c
 	c2.metadata = md
 	return &c2
