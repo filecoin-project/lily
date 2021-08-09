@@ -152,6 +152,6 @@ func main() {
 	app.Metadata["traceContext"] = ctx
 
 	if err := app.RunContext(ctx, os.Args); err != nil {
-		log.Fatal(err)
+		fmt.Fprintln(os.Stdout, err.Error())
 	}
 }
