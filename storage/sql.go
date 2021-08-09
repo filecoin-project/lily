@@ -240,7 +240,7 @@ func (d *Database) VerifyCurrentSchema(ctx context.Context) error {
 		return xerrors.Errorf("connect: %w", err)
 	}
 	defer db.Close() // nolint: errcheck
-	return verifyCurrentSchema(ctx, db, schemas.Config{SchemaName: "public"})
+	return verifyCurrentSchema(ctx, db, d.SchemaConfig())
 }
 
 func verifyCurrentSchema(ctx context.Context, db *pg.DB, cfg schemas.Config) error {
