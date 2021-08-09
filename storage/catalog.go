@@ -53,6 +53,7 @@ func NewCatalog(cfg config.StorageConf) (*Catalog, error) {
 
 			opts := DefaultCSVStorageOptions()
 			opts.OmitHeader = sc.OmitHeader
+			opts.FilePattern = sc.FilePattern
 
 			db, err := NewCSVStorageLatest(sc.Path, opts)
 			if err != nil {

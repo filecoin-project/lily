@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -92,9 +93,16 @@ type CSVStorageOptions struct {
 func DefaultCSVStorageOptions() CSVStorageOptions {
 	return CSVStorageOptions{
 		OmitHeader:  false,
-		FilePattern: "{table}.csv",
+		FilePattern: DefaultFilePattern,
 	}
 }
+
+const (
+	FilePatternTokenTable   = "{table}"
+	FilePatternTokenJobName = "{jobname}"
+
+	DefaultFilePattern = FilePatternTokenTable + ".csv"
+)
 
 // A table is a list of columns and corresponding field names in the Go struct
 type table struct {
@@ -105,6 +113,11 @@ type table struct {
 }
 
 func NewCSVStorage(path string, version model.Version, opts CSVStorageOptions) (*CSVStorage, error) {
+	// Ensure we always have a file pattern
+	if opts.FilePattern == "" {
+		opts.FilePattern = DefaultFilePattern
+	}
+
 	return &CSVStorage{
 		path:    path,
 		version: version,
@@ -145,7 +158,14 @@ func (c *CSVStorage) PersistBatch(ctx context.Context, ps ...model.Persistable) 
 			log.Errorf("unknown table name: %s", name)
 			continue
 		}
-		filename := filepath.Join(c.path, name+".csv")
+
+		r := strings.NewReplacer(
+			FilePatternTokenTable, name,
+			FilePatternTokenJobName, c.metadata.JobName,
+		)
+		localname := r.Replace(c.opts.FilePattern)
+
+		filename := filepath.Join(c.path, localname)
 		var w *csv.Writer
 
 		// Try to create the file
