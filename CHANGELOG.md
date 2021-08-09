@@ -5,6 +5,24 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.7.5"></a>
+## [v0.7.5] - 2021-08-09
+
+### Feat
+- Add option to omit writing csv headers (#617)
+- Add basic templating of csv filenames (#622)
+
+### Fix
+- Only process message executions for tipsets on same chain (#618)
+- Correctly handle error for internal message processing (#627)
+- Use schema config for migrations (#628)
+
+### Chore
+- Log timings for message extraction (#626)
+- Add newlines to walk and watch output, print command errors to stdout (#625)
+- Use lowercase for id option for consistency (#623)
+- Make from and to options required for walk command (#624)
+
 <a name="v0.7.4"></a>
 ## [v0.7.4] - 2021-08-02
 
