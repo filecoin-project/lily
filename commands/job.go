@@ -32,8 +32,8 @@ var JobStartCmd = &cli.Command{
 		clientAPIFlagSet,
 		[]cli.Flag{
 			&cli.IntFlag{
-				Name:        "ID",
-				Usage:       "ID of job to start",
+				Name:        "id",
+				Usage:       "Identifier of job to start",
 				Required:    true,
 				Destination: &jobControlFlags.ID,
 			},
@@ -58,8 +58,8 @@ var JobStopCmd = &cli.Command{
 		clientAPIFlagSet,
 		[]cli.Flag{
 			&cli.IntFlag{
-				Name:        "ID",
-				Usage:       "ID of job to stop",
+				Name:        "id",
+				Usage:       "Identifier of job to stop",
 				Required:    true,
 				Destination: &jobControlFlags.ID,
 			},
