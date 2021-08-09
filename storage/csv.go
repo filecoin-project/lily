@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -78,20 +79,32 @@ func getCSVModelTableByName(name string, version model.Version) (table, bool) {
 }
 
 type CSVStorage struct {
-	path    string
-	version model.Version // schema version
-	opts    CSVStorageOptions
+	path     string
+	version  model.Version // schema version
+	opts     CSVStorageOptions
+	metadata Metadata
 }
 
+var _ StorageWithMetadata = (*CSVStorage)(nil)
+
 type CSVStorageOptions struct {
-	OmitHeader bool
+	OmitHeader  bool
+	FilePattern string
 }
 
 func DefaultCSVStorageOptions() CSVStorageOptions {
 	return CSVStorageOptions{
-		OmitHeader: false,
+		OmitHeader:  false,
+		FilePattern: DefaultFilePattern,
 	}
 }
+
+const (
+	FilePatternTokenTable   = "{table}"
+	FilePatternTokenJobName = "{jobname}"
+
+	DefaultFilePattern = FilePatternTokenTable + ".csv"
+)
 
 // A table is a list of columns and corresponding field names in the Go struct
 type table struct {
@@ -102,6 +115,11 @@ type table struct {
 }
 
 func NewCSVStorage(path string, version model.Version, opts CSVStorageOptions) (*CSVStorage, error) {
+	// Ensure we always have a file pattern
+	if opts.FilePattern == "" {
+		opts.FilePattern = DefaultFilePattern
+	}
+
 	return &CSVStorage{
 		path:    path,
 		version: version,
@@ -111,6 +129,12 @@ func NewCSVStorage(path string, version model.Version, opts CSVStorageOptions) (
 
 func NewCSVStorageLatest(path string, opts CSVStorageOptions) (*CSVStorage, error) {
 	return NewCSVStorage(path, LatestSchemaVersion(), opts)
+}
+
+func (c *CSVStorage) WithMetadata(md Metadata) model.Storage {
+	c2 := *c
+	c2.metadata = md
+	return &c2
 }
 
 // PersistBatch persists a batch of models to CSV, creating new files if they don't already exist otherwise appending
@@ -136,7 +160,14 @@ func (c *CSVStorage) PersistBatch(ctx context.Context, ps ...model.Persistable) 
 			log.Errorf("unknown table name: %s", name)
 			continue
 		}
-		filename := filepath.Join(c.path, name+".csv")
+
+		r := strings.NewReplacer(
+			FilePatternTokenTable, name,
+			FilePatternTokenJobName, c.metadata.JobName,
+		)
+		localname := r.Replace(c.opts.FilePattern)
+
+		filename := filepath.Join(c.path, localname)
 		var w *csv.Writer
 
 		// Try to create the file

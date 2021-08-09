@@ -557,3 +557,47 @@ func TestCSVOptionOmitHeader(t *testing.T) {
 		runTest(t, true, "42,blocka,msg1\n")
 	})
 }
+
+func TestCSVOptionFilePattern(t *testing.T) {
+	tm := &TestModel{
+		Height:  42,
+		Block:   "blocka",
+		Message: "msg1",
+	}
+
+	baseName := t.Name()
+
+	runTest := func(t *testing.T, pattern string, md Metadata, expected string) {
+		dir, err := ioutil.TempDir("", baseName)
+		t.Logf("dir %s", dir)
+		require.NoError(t, err)
+
+		defer os.RemoveAll(dir) // nolint: errcheck
+
+		opts := DefaultCSVStorageOptions()
+		opts.FilePattern = pattern
+
+		st, err := NewCSVStorage(dir, model.Version{Major: 1}, opts)
+		require.NoError(t, err)
+
+		mst := st.WithMetadata(md)
+
+		err = mst.PersistBatch(context.Background(), tm)
+		require.NoError(t, err)
+
+		_, err = os.Stat(filepath.Join(dir, expected))
+		require.NoError(t, err)
+	}
+
+	t.Run("default", func(t *testing.T) {
+		runTest(t, "", Metadata{}, "test_models.csv")
+	})
+
+	t.Run("table", func(t *testing.T) {
+		runTest(t, "{table}.csv", Metadata{}, "test_models.csv")
+	})
+
+	t.Run("jobname", func(t *testing.T) {
+		runTest(t, "{jobname}.csv", Metadata{JobName: "job1"}, "job1.csv")
+	})
+}

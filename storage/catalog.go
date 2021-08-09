@@ -53,6 +53,7 @@ func NewCatalog(cfg config.StorageConf) (*Catalog, error) {
 
 			opts := DefaultCSVStorageOptions()
 			opts.OmitHeader = sc.OmitHeader
+			opts.FilePattern = sc.FilePattern
 
 			db, err := NewCSVStorageLatest(sc.Path, opts)
 			if err != nil {
@@ -75,7 +76,7 @@ type Catalog struct {
 }
 
 // Connect returns a storage that is ready for use. If name is empty, a null storage will be returned
-func (c *Catalog) Connect(ctx context.Context, name string) (model.Storage, error) {
+func (c *Catalog) Connect(ctx context.Context, name string, md Metadata) (model.Storage, error) {
 	if name == "" {
 		return &NullStorage{}, nil
 	}
@@ -83,6 +84,12 @@ func (c *Catalog) Connect(ctx context.Context, name string) (model.Storage, erro
 	s, exists := c.storages[name]
 	if !exists {
 		return nil, fmt.Errorf("unknown storage: %q", name)
+	}
+
+	// Does this storage support metadata?
+	ms, ok := s.(StorageWithMetadata)
+	if ok {
+		s = ms.WithMetadata(md)
 	}
 
 	// Does this storage need to be connected?
@@ -97,4 +104,14 @@ func (c *Catalog) Connect(ctx context.Context, name string) (model.Storage, erro
 	}
 
 	return s, nil
+}
+
+type StorageWithMetadata interface {
+	// WithMetadata returns a storage based configured with the supplied metadata
+	WithMetadata(Metadata) model.Storage
+}
+
+// Metadata is additional information that a storage may use to annotate the data it writes
+type Metadata struct {
+	JobName string // name of the job using the storage
 }

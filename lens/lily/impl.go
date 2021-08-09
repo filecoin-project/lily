@@ -48,8 +48,12 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedu
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
 
+	md := storage.Metadata{
+		JobName: cfg.Name,
+	}
+
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage)
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
 	if err != nil {
 		return schedule.InvalidJobID, err
 	}
@@ -97,8 +101,12 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (schedule
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
 
+	md := storage.Metadata{
+		JobName: cfg.Name,
+	}
+
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage)
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
 	if err != nil {
 		return schedule.InvalidJobID, err
 	}
