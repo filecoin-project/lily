@@ -214,8 +214,10 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 			if types.CidArrsEqual(child.Parents().Cids(), parent.Cids()) {
 				// If we have message processors then extract the messages and receipts
 				if len(t.messageProcessors) > 0 {
+					execMessagesStart := time.Now()
 					tsMsgs, err := t.node.GetExecutedAndBlockMessagesForTipset(ctx, child, parent)
 					if err == nil {
+						ll.Debugw("found executed messages", "count", len(tsMsgs.Executed), "time", time.Since(execMessagesStart))
 						// Start all the message processors
 						for name, p := range t.messageProcessors {
 							inFlight++
@@ -288,8 +290,10 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 				// If we have messages execution processors then extract internal messages
 				if len(t.messageExecutionProcessors) > 0 {
+					execMessagesStart := time.Now()
 					iMsgs, err := t.node.GetMessageExecutionsForTipSet(ctx, child, parent)
 					if err == nil {
+						ll.Debugw("found message execution results", "count", len(iMsgs), "time", time.Since(execMessagesStart))
 						// Start all the message processors
 						for name, p := range t.messageExecutionProcessors {
 							inFlight++
@@ -753,6 +757,7 @@ type MessageProcessor interface {
 	ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error)
 	Close() error
 }
+
 type MessageExecutionProcessor interface {
 	ProcessMessageExecutions(ctx context.Context, store adt.Store, ts *types.TipSet, pts *types.TipSet, imsgs []*lens.MessageExecution) (model.Persistable, *visormodel.ProcessingReport, error)
 	Close() error
