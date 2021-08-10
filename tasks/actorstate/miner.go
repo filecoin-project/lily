@@ -38,7 +38,7 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node Ac
 	}
 	defer span.End()
 
-	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
 	defer stop()
 
 	ec, err := NewMinerStateExtractionContext(ctx, a, node)
