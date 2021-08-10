@@ -89,7 +89,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedu
 		Name: cfg.Name,
 		Type: "watch",
 		Params: map[string]string{
-			"window":     fmt.Sprintf("%s", cfg.Window),
+			"window":     cfg.Window.String(),
 			"confidence": fmt.Sprintf("%d", cfg.Confidence),
 			"storage":    cfg.Storage,
 		},
@@ -127,7 +127,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (schedule
 		Name: cfg.Name,
 		Type: "walk",
 		Params: map[string]string{
-			"window":    fmt.Sprintf("%s", cfg.Window),
+			"window":    cfg.Window.String(),
 			"minHeight": fmt.Sprintf("%d", cfg.From),
 			"maxHeight": fmt.Sprintf("%d", cfg.To),
 			"storage":   cfg.Storage,
