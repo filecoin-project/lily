@@ -17,7 +17,6 @@ func NewWalker(obs TipSetObserver, opener lens.APIOpener, minHeight, maxHeight i
 	return &Walker{
 		opener:    opener,
 		obs:       obs,
-		finality:  900,
 		minHeight: minHeight,
 		maxHeight: maxHeight,
 	}
@@ -27,14 +26,12 @@ func NewWalker(obs TipSetObserver, opener lens.APIOpener, minHeight, maxHeight i
 type Walker struct {
 	opener    lens.APIOpener
 	obs       TipSetObserver
-	finality  int   // epochs after which chain state is considered final
 	minHeight int64 // limit persisting to tipsets equal to or above this height
 	maxHeight int64 // limit persisting to tipsets equal to or below this height}
 }
 
 func (c *Walker) Params() map[string]interface{} {
 	out := make(map[string]interface{})
-	out["finality"] = c.finality
 	out["minHeight"] = c.minHeight
 	out["maxHeight"] = c.maxHeight
 	return out
