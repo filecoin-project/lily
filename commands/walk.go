@@ -141,8 +141,8 @@ var RunWalkCmd = &cli.Command{
 			&cli.Int64Flag{
 				Name:        "to",
 				Usage:       "Limit actor and message processing to tipsets at or below `HEIGHT`",
-				Value:       estimateCurrentEpoch(),
-				DefaultText: "MaxInt64",
+				Value:       chain.CurrentMainnetHeight(),
+				DefaultText: "current epoch",
 				EnvVars:     []string{"VISOR_HEIGHT_TO"},
 			},
 			&cli.StringFlag{

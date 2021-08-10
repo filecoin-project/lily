@@ -2,9 +2,11 @@ package chain
 
 import (
 	"context"
+	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
+	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
 	states0 "github.com/filecoin-project/specs-actors/actors/states"
 	states2 "github.com/filecoin-project/specs-actors/v2/actors/states"
 	states3 "github.com/filecoin-project/specs-actors/v3/actors/states"
@@ -70,4 +72,21 @@ func getStateTreeMapCIDAndVersion(ctx context.Context, store adt.Store, c cid.Ci
 		return cid.Undef, 0, err
 	}
 	return hamtRoot, root.Version, nil
+}
+
+const MainnetGenesisTs = 1598306400 // unix timestamp of genesis epoch
+
+// HeightToUnix converts a chain height to a unix timestamp given the unix timestamp of the genesis epoch.
+func HeightToUnix(height int64, genesisTs int64) int64 {
+	return height*builtin.EpochDurationSeconds + genesisTs
+}
+
+// UnixToHeight converts a unix timestamp a chain height given the unix timestamp of the genesis epoch.
+func UnixToHeight(ts int64, genesisTs int64) int64 {
+	return (ts - genesisTs) / builtin.EpochDurationSeconds
+}
+
+// CurrentMainnetHeight calculates the current height of the filecoin mainnet.
+func CurrentMainnetHeight() int64 {
+	return UnixToHeight(time.Now().Unix(), MainnetGenesisTs)
 }
