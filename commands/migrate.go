@@ -10,13 +10,13 @@ import (
 
 var MigrateCmd = &cli.Command{
 	Name:  "migrate",
-	Usage: "Reports and verifies the current database schema version and latest available for migration. Use --to or --latest to perform a schema migration.",
+	Usage: "Manage the schema version installed in a database.",
 	Flags: flagSet(
 		dbConnectFlags,
 		[]cli.Flag{
 			&cli.StringFlag{
 				Name:  "to",
-				Usage: "Migrate the schema to the `VERSION`.",
+				Usage: "Migrate the schema to specific `VERSION`.",
 				Value: "",
 			},
 			&cli.BoolFlag{
