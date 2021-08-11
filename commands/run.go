@@ -73,7 +73,7 @@ var dbConnectFlags = []cli.Flag{
 		Name:    "db",
 		EnvVars: []string{"LOTUS_DB"},
 		Value:   "",
-		Usage:   "A connection string for the TimescaleDB database, for example postgres://postgres:password@localhost:5432/postgres",
+		Usage:   "A connection string for the TimescaleDB database, for example postgres://postgres:password@localhost:5432/postgres?sslmode=disable",
 	},
 	&cli.IntFlag{
 		Name:    "db-pool-size",

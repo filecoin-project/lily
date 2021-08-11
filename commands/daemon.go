@@ -73,7 +73,7 @@ Lotus documentation for full details.
 
 Once the repository is initialized, start the daemon:
 
-  visor daemon --repo=<path>
+  visor daemon --repo=<path> --config=<path>/config.toml
 
 Visor will connect to the filecoin network and begin synchronizing with the
 chain. To check the synchronization status use 'visor sync status' or
@@ -83,7 +83,8 @@ Jobs may be started on the daemon at any time. A watch job will wait for the
 daemon to become synchronized before extracting data and will pause if the
 daemon falls out of sync. Start a watch using 'visor watch'.
 
-A walk job will start immediately. Start a walk using 'visor walk'.
+A walk job will start immediately. Start a walk using 'visor walk'. A walk may
+only be performed between heights that have been synchronized with the network.
 
 Note that jobs are not persisted between restarts of the daemon. See
 'visor help job' for more information on managing jobs being run by the daemon.

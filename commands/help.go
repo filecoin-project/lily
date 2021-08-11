@@ -118,8 +118,7 @@ see 'visor help tasks'.
 
 Data is extracted into models that represent chain objects, components of actor
 state and derived statistics. Visor can insert these extracted models into a
-TimescaleDB database as separate tables or emit them as csv files. For more
-information on the database schema used by visor see 'visor help schema'.
+TimescaleDB database as separate tables or emit them as csv files.
 
 Visor requires access to a filecoin blockstore that holds the state of the
 chain. For watching incoming tipsets the blockstore must be connected and in
@@ -221,7 +220,7 @@ Other tasks:
 		Name:        "monitoring",
 		Description: "Monitoring visor operation",
 		Text: `Visor may be monitored during operation using logfiles, metrics and tracing.
-The visor command reocgnizes environment variables and provides options to
+The visor command recognizes environment variables and provides options to
 control the behaviour of each type of monitoring output. Options should be
 supplied before any sub command:
 
