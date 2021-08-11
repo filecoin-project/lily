@@ -6,9 +6,11 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
+	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
 	init_ "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
+	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
 )
@@ -25,6 +27,12 @@ func init() {
 }
 
 func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
+	ctx, span := global.Tracer("").Start(ctx, "InitExtractor")
+	defer span.End()
+
+	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
+	defer stop()
+
 	// genesis state.
 	if a.Epoch == 1 {
 		initActorState, err := init_.Load(node.Store(), &a.Actor)
@@ -33,9 +41,11 @@ func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAP
 		}
 
 		out := initmodel.IdAddressList{}
-		for _, builtinAddress := range []address.Address{builtin.SystemActorAddr, builtin.InitActorAddr,
+		for _, builtinAddress := range []address.Address{
+			builtin.SystemActorAddr, builtin.InitActorAddr,
 			builtin.RewardActorAddr, builtin.CronActorAddr, builtin.StoragePowerActorAddr, builtin.StorageMarketActorAddr,
-			builtin.VerifiedRegistryActorAddr, builtin.BurntFundsActorAddr} {
+			builtin.VerifiedRegistryActorAddr, builtin.BurntFundsActorAddr,
+		} {
 			out = append(out, &initmodel.IdAddress{
 				Height:    0,
 				ID:        builtinAddress.String(),

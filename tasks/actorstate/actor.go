@@ -7,7 +7,6 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
-	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	commonmodel "github.com/filecoin-project/sentinel-visor/model/actors/common"
 )
@@ -20,9 +19,6 @@ type ActorExtractor struct{}
 func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "ActorExtractor")
 	defer span.End()
-
-	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
-	defer stop()
 
 	ast, err := node.StateReadState(ctx, a.Address, a.TipSet.Key())
 	if err != nil {

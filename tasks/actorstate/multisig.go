@@ -26,7 +26,7 @@ func (m MultiSigActorExtractor) Extract(ctx context.Context, a ActorInfo, node A
 	ctx, span := global.Tracer("").Start(ctx, "MultiSigActor")
 	defer span.End()
 
-	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
 	defer stop()
 
 	ec, err := NewMultiSigExtractionContext(ctx, a, node)

@@ -79,7 +79,7 @@ func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, node Acto
 	ctx, span := global.Tracer("").Start(ctx, "StoragePowerExtractor")
 	defer span.End()
 
-	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
 	defer stop()
 
 	ec, err := NewPowerStateExtractionContext(ctx, a, node)

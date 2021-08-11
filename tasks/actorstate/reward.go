@@ -26,7 +26,7 @@ func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node ActorState
 	ctx, span := global.Tracer("").Start(ctx, "RewardExtractor")
 	defer span.End()
 
-	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
 	defer stop()
 
 	rstate, err := reward.Load(node.Store(), &a.Actor)

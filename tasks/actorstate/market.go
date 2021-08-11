@@ -78,7 +78,7 @@ func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node A
 	ctx, span := global.Tracer("").Start(ctx, "StorageMarketExtractor")
 	defer span.End()
 
-	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
 	defer stop()
 
 	ec, err := NewMarketStateExtractionContext(ctx, a, node)
