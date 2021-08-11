@@ -16,7 +16,7 @@ import (
 
 var VectorCmd = &cli.Command{
 	Name:  "vector",
-	Usage: "Vector tooling for Visor.",
+	Usage: "Test vector tooling for visor.",
 	Subcommands: []*cli.Command{
 		BuildVectorCmd,
 		ExecuteVectorCmd,
