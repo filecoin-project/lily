@@ -33,12 +33,6 @@ type Watcher struct {
 	indexSlot  chan struct{} // filled with a token when a goroutine is indexing a tipset
 }
 
-func (c *Watcher) Params() map[string]interface{} {
-	out := make(map[string]interface{})
-	out["confidence"] = c.confidence
-	return out
-}
-
 // Run starts following the chain head and blocks until the context is done or
 // an error occurs.
 func (c *Watcher) Run(ctx context.Context) error {

@@ -86,7 +86,13 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedu
 	}
 
 	id := m.Scheduler.Submit(&schedule.JobConfig{
-		Name:                cfg.Name,
+		Name: cfg.Name,
+		Type: "watch",
+		Params: map[string]string{
+			"window":     cfg.Window.String(),
+			"confidence": fmt.Sprintf("%d", cfg.Confidence),
+			"storage":    cfg.Storage,
+		},
 		Tasks:               cfg.Tasks,
 		Job:                 chain.NewWatcher(indexer, obs, cfg.Confidence),
 		RestartOnFailure:    cfg.RestartOnFailure,
@@ -118,7 +124,14 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (schedule
 	}
 
 	id := m.Scheduler.Submit(&schedule.JobConfig{
-		Name:                cfg.Name,
+		Name: cfg.Name,
+		Type: "walk",
+		Params: map[string]string{
+			"window":    cfg.Window.String(),
+			"minHeight": fmt.Sprintf("%d", cfg.From),
+			"maxHeight": fmt.Sprintf("%d", cfg.To),
+			"storage":   cfg.Storage,
+		},
 		Tasks:               cfg.Tasks,
 		Job:                 chain.NewWalker(indexer, m, cfg.From, cfg.To),
 		RestartOnFailure:    cfg.RestartOnFailure,

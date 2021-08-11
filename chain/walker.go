@@ -30,13 +30,6 @@ type Walker struct {
 	maxHeight int64 // limit persisting to tipsets equal to or below this height}
 }
 
-func (c *Walker) Params() map[string]interface{} {
-	out := make(map[string]interface{})
-	out["minHeight"] = c.minHeight
-	out["maxHeight"] = c.maxHeight
-	return out
-}
-
 // Run starts walking the chain history and continues until the context is done or
 // the start of the chain is reached.
 func (c *Walker) Run(ctx context.Context) error {
