@@ -155,7 +155,9 @@ func (p *Task) ProcessMessageExecutions(ctx context.Context, store adt.Store, ts
 			}
 		*/
 	}
-	report.ErrorsDetected = errorsDetected
+	if len(errorsDetected) != 0 {
+		report.ErrorsDetected = errorsDetected
+	}
 	return model.PersistableList{
 
 		internalResult,

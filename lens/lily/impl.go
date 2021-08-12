@@ -178,21 +178,22 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts *typ
 	// if lily was watching the chain when this tipset was applied then its exec monitor will already
 	// contain executions for this tipset.
 	executions, err := msgMonitor.ExecutionFor(pts)
-	if err == modules.ExecutionTraceNotFound {
-		// if lily hasn't watched this tipset be applied then we need to compute its execution trace.
-		// this will likely be the case for most walk tasks.
-		_, err := m.StateManager.ExecutionTraceWithMonitor(ctx, pts, msgMonitor)
-		if err != nil {
-			return nil, xerrors.Errorf("failed to compute execution trace for tipset: %s", pts.Key().String())
-		}
-		// the above call will populate the msgMonitor with an execution trace for this tipset, get it.
-		executions, err = msgMonitor.ExecutionFor(pts)
-		if err != nil {
-			return nil, xerrors.Errorf("failed to find execution trace for tipset: %s", pts.Key().String())
-		}
-	}
 	if err != nil {
-		return nil, xerrors.Errorf("failed to extract message execution for tipset %s: %w", ts, err)
+		if err == modules.ExecutionTraceNotFound {
+			// if lily hasn't watched this tipset be applied then we need to compute its execution trace.
+			// this will likely be the case for most walk tasks.
+			_, err := m.StateManager.ExecutionTraceWithMonitor(ctx, pts, msgMonitor)
+			if err != nil {
+				return nil, xerrors.Errorf("failed to compute execution trace for tipset: %s", pts.Key().String())
+			}
+			// the above call will populate the msgMonitor with an execution trace for this tipset, get it.
+			executions, err = msgMonitor.ExecutionFor(pts)
+			if err != nil {
+				return nil, xerrors.Errorf("failed to find execution trace for tipset: %s", pts.Key().String())
+			}
+		} else {
+			return nil, xerrors.Errorf("failed to extract message execution for tipset %s: %w", ts, err)
+		}
 	}
 
 	getActorCode, err := util.MakeGetActorCodeFunc(ctx, m.ChainAPI.Chain.ActorStore(ctx), ts, pts)
