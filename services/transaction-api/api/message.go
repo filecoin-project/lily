@@ -95,6 +95,7 @@ func (ix *MessageAPI) Init(ctx context.Context) error {
 
 		msgs, err := ix.MessagesTo(a)
 		if err != nil {
+			log.Errorw("MessagesTo", "address", a.String(), "error", err)
 			return err
 		}
 
@@ -110,6 +111,7 @@ func (ix *MessageAPI) Init(ctx context.Context) error {
 
 		msgs, err := ix.MessagesFrom(a)
 		if err != nil {
+			log.Errorw("MessagesFrom", "address", a.String(), "error", err)
 			return err
 		}
 
@@ -125,6 +127,7 @@ func (ix *MessageAPI) Init(ctx context.Context) error {
 
 		msgs, err := ix.MessagesFor(a, 200)
 		if err != nil {
+			log.Errorw("MessagesFor", "address", a.String(), "error", err)
 			return err
 		}
 
