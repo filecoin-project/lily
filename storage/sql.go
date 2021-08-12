@@ -365,6 +365,11 @@ func (d *Database) ExecContext(c context.Context, query interface{}, params ...i
 	return d.db.ExecContext(c, query, params...)
 }
 
+// MUST call Connect before using
+func (d *Database) AsORM() *pg.DB {
+	return d.db
+}
+
 type TxStorage struct {
 	tx     *pg.Tx
 	upsert bool
