@@ -267,7 +267,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 					var changes map[string]types.Actor
 					// special case, we want to extract all actor states from the genesis block.
 					if parent.Height() == 0 {
-						changes, err = t.getGenesisActors(ctx)
+						changes, err = t.getGenesisActors(tctx)
 					} else {
 						changes, err = t.stateChangedActors(tctx, parent.ParentState(), child.ParentState())
 					}

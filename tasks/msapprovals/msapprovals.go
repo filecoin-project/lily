@@ -64,8 +64,8 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 	}
 
 	report := &visormodel.ProcessingReport{
-		Height:    int64(pts.Height()),
-		StateRoot: pts.ParentState().String(),
+		Height:    int64(ts.Height()),
+		StateRoot: ts.ParentState().String(),
 	}
 
 	errorsDetected := make([]*MultisigError, 0, len(emsgs))

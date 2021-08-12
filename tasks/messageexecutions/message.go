@@ -35,8 +35,8 @@ func (p *Task) ProcessMessageExecutions(ctx context.Context, store adt.Store, ts
 	defer span.End()
 
 	report := &visormodel.ProcessingReport{
-		Height:    int64(pts.Height()),
-		StateRoot: pts.ParentState().String(),
+		Height:    int64(ts.Height()),
+		StateRoot: ts.ParentState().String(),
 	}
 
 	var (
