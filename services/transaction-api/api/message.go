@@ -4,13 +4,19 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-jsonrpc"
+	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/api/client"
+	"github.com/filecoin-project/lotus/chain/types"
+	cliutil "github.com/filecoin-project/lotus/cli/util"
 	"github.com/filecoin-project/sentinel-visor/model/derived"
-	msgmodel "github.com/filecoin-project/sentinel-visor/model/messages"
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/go-pg/pg/v10"
+	lru "github.com/hashicorp/golang-lru"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/xerrors"
@@ -73,62 +79,80 @@ type Config struct {
 	Schema   string
 	Name     string
 	PoolSize int
+	LotusAPI string
 }
 
 func NewMessageAPI(cfg *Config) *MessageAPI {
-	return &MessageAPI{cfg: cfg}
+	cache, err := lru.New(100_000)
+	if err != nil {
+		panic(err)
+	}
+	return &MessageAPI{cfg: cfg, resolveCache: cache}
 }
 
 type MessageAPI struct {
-	cfg *Config
+	cfg          *Config
+	resolveCache *lru.Cache
 
-	db     *pg.DB
-	server *echo.Echo
+	db       *pg.DB
+	server   *echo.Echo
+	closer   jsonrpc.ClientCloser
+	lotusAPI api.FullNode
 }
 
 func (ix *MessageAPI) Init(ctx context.Context) error {
 	logging.SetAllLoggers(logging.LevelInfo)
+
+	ainfo := cliutil.ParseApiInfo(ix.cfg.LotusAPI)
+	darg, err := ainfo.DialArgs("v1")
+	if err != nil {
+		return err
+	}
+	lotusAPI, closer, err := client.NewFullNodeRPCV1(ctx, darg, nil)
+	if err != nil {
+		return err
+	}
+	ix.lotusAPI = lotusAPI
+	ix.closer = closer
+
 	e := echo.New()
 	e.GET("/index/msgs/to/:addr", func(c echo.Context) error {
-		addr := c.Param("addr")
-		a, err := address.NewFromString(addr)
+		a, resolve, err := parseRequest(c)
 		if err != nil {
-			return err
+			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 
-		msgs, err := ix.MessagesTo(a)
+		msgs, err := ix.MessagesTo(a, resolve)
 		if err != nil {
 			log.Errorw("MessagesTo", "address", a.String(), "error", err)
-			return err
+			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 
 		return c.JSON(http.StatusOK, msgs)
 	})
 
 	e.GET("/index/msgs/from/:addr", func(c echo.Context) error {
-		addr := c.Param("addr")
-		a, err := address.NewFromString(addr)
+		a, resolve, err := parseRequest(c)
 		if err != nil {
-			return err
+			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 
-		msgs, err := ix.MessagesFrom(a)
+		msgs, err := ix.MessagesFrom(a, resolve)
 		if err != nil {
 			log.Errorw("MessagesFrom", "address", a.String(), "error", err)
-			return err
+			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 
 		return c.JSON(http.StatusOK, msgs)
 	})
 
 	e.GET("/index/msgs/for/:addr", func(c echo.Context) error {
-		addr := c.Param("addr")
-		a, err := address.NewFromString(addr)
+		a, resolve, err := parseRequest(c)
 		if err != nil {
-			return err
+			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 
-		msgs, err := ix.MessagesFor(a, 200)
+		msgs, err := ix.MessagesFor(a, resolve)
 		if err != nil {
 			log.Errorw("MessagesFor", "address", a.String(), "error", err)
 			return err
@@ -140,7 +164,7 @@ func (ix *MessageAPI) Init(ctx context.Context) error {
 	e.GET("/index/msgs/count", func(c echo.Context) error {
 		count, err := ix.MessagesCount()
 		if err != nil {
-			return err
+			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -160,6 +184,30 @@ func (ix *MessageAPI) Init(ctx context.Context) error {
 	db.AsORM().AddQueryHook(LogDebugHook{})
 	ix.db = db.AsORM()
 	return nil
+}
+
+func parseRequest(c echo.Context) (address.Address, bool, error) {
+	addr := c.Param("addr")
+	a, err := addrFromString(addr)
+	if err != nil {
+		return address.Undef, false, err
+	}
+	r := c.QueryParam("resolve")
+	if r == "" {
+		return a, false, nil
+	}
+	resolve, err := strconv.ParseBool(r)
+	if err != nil {
+		return address.Undef, false, err
+	}
+	return a, resolve, nil
+}
+
+func addrFromString(addrStr string) (address.Address, error) {
+	if addrStr[0] == 't' {
+		return address.Undef, xerrors.Errorf("cannot query testnet address %s", addrStr)
+	}
+	return address.NewFromString(addrStr)
 }
 
 type LogDebugHook struct {
@@ -190,72 +238,64 @@ func (ix *MessageAPI) Start() error {
 }
 
 func (ix *MessageAPI) Stop() {
-	if err := ix.server.Close(); err != nil {
-		log.Errorw("stopping failed to close server", "error", err)
-	}
+	// close lotus api
+	ix.closer()
+	// close connection to DB
 	if err := ix.db.Close(); err != nil {
 		log.Errorw("stopping failed to close db", "error", err)
 	}
+	// shutdown http server
+	if err := ix.server.Close(); err != nil {
+		log.Errorw("stopping failed to close server", "error", err)
+	}
+
 }
 
 func (ix *MessageAPI) MessagesCount() (int, error) {
-	count, err := ix.db.Model(&msgmodel.Message{}).Count()
+	count, err := ix.db.Model(&derived.GasOutputs{}).Count()
 	if err != nil {
-		return 0, xerrors.Errorf("failed to find messages to target: %w", err)
+		return 0, xerrors.Errorf("failed to find messages count: %w", err)
 	}
 
 	return count, nil
 }
 
-func (ix *MessageAPI) MessagesFor(addr address.Address, limit int) ([]APIMessage, error) {
-	var res []*derived.GasOutputs
-	if err := ix.db.Model(&res).
-		Order("height desc").
-		Where("\"to\" = ? OR \"from\" = ?", addr.String(), addr.String()).
-		//Limit(limit).
-		Select(); err != nil {
-		return nil, err
+func (ix *MessageAPI) resolveAddress(ctx context.Context, addr address.Address) (address.Address, bool) {
+	resAddr, found := ix.resolveCache.Get(addr)
+	if found {
+		return resAddr.(address.Address), true
 	}
-	out := make([]APIMessage, 0, len(res))
-	for _, r := range res {
-		out = append(out, APIMessage{
-			Cid:                r.Cid,
-			To:                 r.To,
-			From:               r.From,
-			Value:              r.Value,
-			Nonce:              r.Nonce,
-			Height:             r.Height,
-			ExitCode:           r.ExitCode,
-			GasLimit:           r.GasLimit,
-			GasFeeCap:          r.GasFeeCap,
-			GasPremium:         r.GasPremium,
-			GasUsed:            r.GasUsed,
-			ParentBaseFee:      r.ParentBaseFee,
-			BaseFeeBurn:        r.BaseFeeBurn,
-			OverEstimationBurn: r.OverEstimationBurn,
-			MinerPenalty:       r.MinerPenalty,
-			MinerTip:           r.MinerTip,
-			Refund:             r.Refund,
-			GasRefund:          r.GasRefund,
-			ActorFamily:        r.ActorFamily,
-			ActorName:          r.ActorName,
-			Method:             r.Method,
-		})
+	switch addr.Protocol() {
+	case address.BLS, address.SECP256K1:
+		idAddr, err := ix.lotusAPI.StateLookupID(ctx, addr, types.EmptyTSK)
+		if err != nil {
+			log.Warnw("failed to look up address", "address", addr)
+			return address.Undef, false
+		}
+		ix.resolveCache.Add(addr, idAddr)
+		return idAddr, true
+	case address.ID:
+		// TODO this will fail for any address that isn't an account actor. The solution is to
+		// call ResolveAddress on the Runtime. IDK where this is exposed
+		// Problem you need to solve is to go from ID address to multisig address.
+		pkAddr, err := ix.lotusAPI.StateAccountKey(ctx, addr, types.EmptyTSK)
+		if err != nil {
+			log.Warnw("failed to look up account key", "address", addr)
+			return address.Undef, false
+		}
+		ix.resolveCache.Add(addr, pkAddr)
+		return pkAddr, true
+	case address.Actor:
+		// TODO need a way to look this up
+		return address.Undef, false
 	}
-	return out, nil
+	return address.Undef, false
 }
 
-func (ix *MessageAPI) MessagesTo(addr address.Address) ([]APIMessage, error) {
-	var res derived.GasOutputsList
-	if err := ix.db.Model(&res).
-		Order("height desc").
-		Where("\"to\" = ?", addr.String()).
-		Select(); err != nil {
-		return nil, err
-	}
-	out := make([]APIMessage, 0, len(res))
-	for _, r := range res {
-		out = append(out, APIMessage{
+func marshalResults(res []*derived.GasOutputs) []APIMessage {
+	out := make([]APIMessage, len(res), len(res))
+	for ix, r := range res {
+		out[ix] = APIMessage{
 			Cid:                r.Cid,
 			To:                 r.To,
 			From:               r.From,
@@ -277,44 +317,94 @@ func (ix *MessageAPI) MessagesTo(addr address.Address) ([]APIMessage, error) {
 			ActorFamily:        r.ActorFamily,
 			ActorName:          r.ActorName,
 			Method:             r.Method,
-		})
+		}
 	}
-	return out, nil
+	return out
 }
 
-func (ix *MessageAPI) MessagesFrom(addr address.Address) ([]APIMessage, error) {
-	var res derived.GasOutputsList
-	if err := ix.db.Model(&res).
-		Order("height desc").
-		Where("\"from\" = ?", addr.String()).
-		Select(); err != nil {
-		return nil, err
+func (ix *MessageAPI) MessagesFor(addr address.Address, resolveAddr bool) ([]APIMessage, error) {
+	var (
+		ctx          = context.TODO()
+		addrResolved = false
+		res          []*derived.GasOutputs
+		addr2        address.Address
+	)
+
+	if resolveAddr {
+		addr2, addrResolved = ix.resolveAddress(ctx, addr)
 	}
-	out := make([]APIMessage, 0, len(res))
-	for _, r := range res {
-		out = append(out, APIMessage{
-			Cid:                r.Cid,
-			To:                 r.To,
-			From:               r.From,
-			Value:              r.Value,
-			Nonce:              r.Nonce,
-			Height:             r.Height,
-			ExitCode:           r.ExitCode,
-			GasLimit:           r.GasLimit,
-			GasFeeCap:          r.GasFeeCap,
-			GasPremium:         r.GasPremium,
-			GasUsed:            r.GasUsed,
-			ParentBaseFee:      r.ParentBaseFee,
-			BaseFeeBurn:        r.BaseFeeBurn,
-			OverEstimationBurn: r.OverEstimationBurn,
-			MinerPenalty:       r.MinerPenalty,
-			MinerTip:           r.MinerTip,
-			Refund:             r.Refund,
-			GasRefund:          r.GasRefund,
-			ActorFamily:        r.ActorFamily,
-			ActorName:          r.ActorName,
-			Method:             r.Method,
-		})
+	if addrResolved {
+		if err := ix.db.Model(&res).
+			Order("height desc").
+			Where("\"to\" = ? OR \"from\" = ? OR \"to\" = ? OR \"from\" = ?", addr.String(), addr.String(), addr2.String(), addr2.String()).
+			Select(); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := ix.db.Model(&res).
+			Order("height desc").
+			Where("\"to\" = ? OR \"from\" = ?", addr.String(), addr.String()).
+			Select(); err != nil {
+			return nil, err
+		}
 	}
-	return out, nil
+	return marshalResults(res), nil
+}
+
+func (ix *MessageAPI) MessagesTo(addr address.Address, resolveAddr bool) ([]APIMessage, error) {
+	var (
+		ctx          = context.TODO()
+		addrResolved = false
+		res          []*derived.GasOutputs
+		addr2        address.Address
+	)
+
+	if resolveAddr {
+		addr2, addrResolved = ix.resolveAddress(ctx, addr)
+	}
+	if addrResolved {
+		if err := ix.db.Model(&res).
+			Order("height desc").
+			Where("\"to\" = ? OR \"to\" = ?", addr.String(), addr2.String()).
+			Select(); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := ix.db.Model(&res).
+			Order("height desc").
+			Where("\"to\" = ?", addr.String()).
+			Select(); err != nil {
+			return nil, err
+		}
+	}
+	return marshalResults(res), nil
+}
+
+func (ix *MessageAPI) MessagesFrom(addr address.Address, resolveAddr bool) ([]APIMessage, error) {
+	var (
+		ctx          = context.TODO()
+		addrResolved = false
+		res          []*derived.GasOutputs
+		addr2        address.Address
+	)
+
+	if resolveAddr {
+		addr2, addrResolved = ix.resolveAddress(ctx, addr)
+	}
+	if addrResolved {
+		if err := ix.db.Model(&res).
+			Order("height desc").
+			Where("\"from\" = ? OR \"from\" = ?", addr.String(), addr2.String()).
+			Select(); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := ix.db.Model(&res).
+			Order("height desc").
+			Where("\"from\" = ?", addr.String()).
+			Select(); err != nil {
+			return nil, err
+		}
+	}
+	return marshalResults(res), nil
 }

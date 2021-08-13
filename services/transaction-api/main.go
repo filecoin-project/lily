@@ -22,7 +22,7 @@ func main() {
 	app.Setup()
 
 	if err := app.Run(os.Args); err != nil {
-		fmt.Errorf("shutting down: %s", err)
+		fmt.Printf("\nshutting down: %s\n", err)
 	}
 }
 
@@ -33,6 +33,7 @@ type runOps struct {
 	schema   string
 	name     string
 	poolSize int
+	lotus    string
 }
 
 var runFlags runOps
@@ -77,6 +78,13 @@ var runCmd = &cli.Command{
 			Value:       10,
 			Destination: &runFlags.poolSize,
 		},
+		&cli.StringFlag{
+			Name:        "lotus",
+			Usage:       "lotus connection string",
+			Value:       "https://api.chain.love",
+			EnvVars:     []string{"FILADDR_LOTUS"},
+			Destination: &runFlags.lotus,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		// Set up a context that is canceled when the command is interrupted
@@ -90,6 +98,7 @@ var runCmd = &cli.Command{
 			Schema:   runFlags.schema,
 			Name:     runFlags.name,
 			PoolSize: runFlags.poolSize,
+			LotusAPI: runFlags.lotus,
 		})
 
 		// setup api endpoints and connect to the database

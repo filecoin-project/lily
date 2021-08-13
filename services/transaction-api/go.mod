@@ -4,8 +4,11 @@ go 1.16
 
 require (
 	github.com/filecoin-project/go-address v0.0.6
+	github.com/filecoin-project/go-jsonrpc v0.1.4-0.20210217175800-45ea43ac2bec
+	github.com/filecoin-project/lotus v1.11.0
 	github.com/filecoin-project/sentinel-visor v0.7.2
 	github.com/go-pg/pg/v10 v10.10.3
+	github.com/hashicorp/golang-lru v0.5.4
 	github.com/ipfs/go-log v1.0.5 // indirect
 	github.com/ipfs/go-log/v2 v2.1.3
 	github.com/labstack/echo/v4 v4.4.0
