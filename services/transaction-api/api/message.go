@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/sentinel-visor/model/derived"
@@ -86,6 +87,7 @@ type MessageAPI struct {
 }
 
 func (ix *MessageAPI) Init(ctx context.Context) error {
+	logging.SetAllLoggers(logging.LevelInfo)
 	e := echo.New()
 	e.GET("/index/msgs/to/:addr", func(c echo.Context) error {
 		addr := c.Param("addr")
@@ -170,7 +172,7 @@ func (l LogDebugHook) BeforeQuery(ctx context.Context, evt *pg.QueryEvent) (cont
 	}
 
 	if evt.Err != nil {
-		fmt.Printf("%s executing a query:\n%s\n", evt.Err, q)
+		log.Errorf("%s executing a query:%s", evt.Err, q)
 	}
 	fmt.Println(string(q))
 
@@ -178,6 +180,7 @@ func (l LogDebugHook) BeforeQuery(ctx context.Context, evt *pg.QueryEvent) (cont
 }
 
 func (l LogDebugHook) AfterQuery(ctx context.Context, event *pg.QueryEvent) error {
+	log.Infow("Executed", "duration", time.Since(event.StartTime), "rows_returned", event.Result.RowsReturned())
 	return nil
 }
 
