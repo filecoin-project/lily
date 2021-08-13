@@ -23,6 +23,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/model/actors/multisig"
 	"github.com/filecoin-project/sentinel-visor/model/actors/power"
 	"github.com/filecoin-project/sentinel-visor/model/actors/reward"
+	"github.com/filecoin-project/sentinel-visor/model/actors/verifreg"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
 	"github.com/filecoin-project/sentinel-visor/model/chain"
 	"github.com/filecoin-project/sentinel-visor/model/derived"
@@ -31,6 +32,8 @@ import (
 	"github.com/filecoin-project/sentinel-visor/schemas"
 )
 
+// Note this list is manually updated. Its only significant use is to verify schema compatibility
+// between the version of visor being used and the database being written to.
 var models = []interface{}{
 	(*blocks.BlockHeader)(nil),
 	(*blocks.BlockParent)(nil),
@@ -54,20 +57,29 @@ var models = []interface{}{
 	(*messages.Receipt)(nil),
 	(*messages.MessageGasEconomy)(nil),
 	(*messages.ParsedMessage)(nil),
+	(*messages.InternalMessage)(nil),
 
 	(*multisig.MultisigTransaction)(nil),
 
 	(*power.ChainPower)(nil),
 	(*power.PowerActorClaim)(nil),
+
 	(*reward.ChainReward)(nil),
+
 	(*common.Actor)(nil),
 	(*common.ActorState)(nil),
 
 	(*init_.IdAddress)(nil),
 
 	(*derived.GasOutputs)(nil),
+
 	(*chain.ChainEconomics)(nil),
+	(*chain.ChainConsensus)(nil),
+
 	(*msapprovals.MultisigApproval)(nil),
+
+	(*verifreg.VerifiedRegistryVerifier)(nil),
+	(*verifreg.VerifiedRegistryVerifiedClient)(nil),
 }
 
 var log = logging.Logger("visor/storage")
