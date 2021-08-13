@@ -8,6 +8,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/sentinel-visor/model/derived"
 	msgmodel "github.com/filecoin-project/sentinel-visor/model/messages"
+	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/go-pg/pg/v10"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/labstack/echo/v4"
@@ -146,19 +147,37 @@ func (ix *MessageAPI) Init(ctx context.Context) error {
 	})
 	ix.server = e
 
-	opt, err := pg.ParseURL(ix.cfg.URL)
+	db, err := storage.NewDatabase(ctx, ix.cfg.URL, ix.cfg.PoolSize, ix.cfg.Name, ix.cfg.Schema, false)
 	if err != nil {
 		return err
 	}
 
-	opt.ApplicationName = ix.cfg.Name
-	opt.Database = ix.cfg.Database
-	opt.PoolSize = ix.cfg.PoolSize
-	db := pg.Connect(opt)
-	if err := db.Ping(ctx); err != nil {
+	if err := db.Connect(ctx); err != nil {
 		return err
 	}
-	ix.db = db
+	db.AsORM().AddQueryHook(LogDebugHook{})
+	ix.db = db.AsORM()
+	return nil
+}
+
+type LogDebugHook struct {
+}
+
+func (l LogDebugHook) BeforeQuery(ctx context.Context, evt *pg.QueryEvent) (context.Context, error) {
+	q, err := evt.FormattedQuery()
+	if err != nil {
+		return nil, err
+	}
+
+	if evt.Err != nil {
+		fmt.Printf("%s executing a query:\n%s\n", evt.Err, q)
+	}
+	fmt.Println(string(q))
+
+	return ctx, nil
+}
+
+func (l LogDebugHook) AfterQuery(ctx context.Context, event *pg.QueryEvent) error {
 	return nil
 }
 
@@ -186,11 +205,11 @@ func (ix *MessageAPI) MessagesCount() (int, error) {
 }
 
 func (ix *MessageAPI) MessagesFor(addr address.Address, limit int) ([]APIMessage, error) {
-	var res derived.GasOutputsList
+	var res []*derived.GasOutputs
 	if err := ix.db.Model(&res).
 		Order("height desc").
 		Where("\"to\" = ? OR \"from\" = ?", addr.String(), addr.String()).
-		Limit(limit).
+		//Limit(limit).
 		Select(); err != nil {
 		return nil, err
 	}
