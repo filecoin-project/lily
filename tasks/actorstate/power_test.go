@@ -28,6 +28,7 @@ import (
 	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	sa4smoothing "github.com/filecoin-project/specs-actors/v4/actors/util/smoothing"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
 	powermodel "github.com/filecoin-project/sentinel-visor/model/actors/power"
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 )
@@ -68,7 +69,7 @@ func TestPowerExtractV0(t *testing.T) {
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		cp, ok := res.(*powermodel.PowerTaskResult)
@@ -123,7 +124,7 @@ func TestPowerExtractV0(t *testing.T) {
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		cp, ok := res.(*powermodel.PowerTaskResult)
@@ -172,7 +173,7 @@ func TestPowerExtractV2(t *testing.T) {
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		cp, ok := res.(*powermodel.PowerTaskResult)
@@ -228,7 +229,7 @@ func TestPowerExtractV2(t *testing.T) {
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		cp, ok := res.(*powermodel.PowerTaskResult)
@@ -277,7 +278,7 @@ func TestPowerExtractV3(t *testing.T) {
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		cp, ok := res.(*powermodel.PowerTaskResult)
@@ -333,7 +334,7 @@ func TestPowerExtractV3(t *testing.T) {
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		cp, ok := res.(*powermodel.PowerTaskResult)
@@ -382,7 +383,7 @@ func TestPowerExtractV4(t *testing.T) {
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		cp, ok := res.(*powermodel.PowerTaskResult)
@@ -438,7 +439,7 @@ func TestPowerExtractV4(t *testing.T) {
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		cp, ok := res.(*powermodel.PowerTaskResult)

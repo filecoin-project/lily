@@ -15,6 +15,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	miner "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/miner"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	minermodel "github.com/filecoin-project/sentinel-visor/model/actors/miner"
@@ -31,7 +32,7 @@ func init() {
 	}
 }
 
-func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
+func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "StorageMinerExtractor")
 	if span.IsRecording() {
 		span.SetAttributes(label.String("actor", a.Address.String()))
@@ -71,7 +72,7 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node Ac
 		return nil, xerrors.Errorf("extracting miner sector changes: %w", err)
 	}
 
-	posts, err := ExtractMinerPoSts(ctx, &a, ec, node)
+	posts, err := ExtractMinerPoSts(ctx, &a, ec, emsgs, node)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner posts: %v", err)
 	}
@@ -418,7 +419,7 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 	return preCommitModel, sectorModel, sectorDealsModel, sectorEventModel, nil
 }
 
-func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtractionContext, node ActorStateAPI) (minermodel.MinerSectorPostList, error) {
+func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtractionContext, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (minermodel.MinerSectorPostList, error) {
 	ctx, span := global.Tracer("").Start(ctx, "ExtractMinerPoSts")
 	defer span.End()
 	// short circuit genesis state, no PoSt messages in genesis blocks.
@@ -427,11 +428,6 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 	}
 	addr := actor.Address.String()
 	posts := make(minermodel.MinerSectorPostList, 0)
-	block := actor.TipSet.Cids()[0]
-	msgs, err := node.ChainGetParentMessages(ctx, block)
-	if err != nil {
-		return nil, xerrors.Errorf("diffing miner posts: %v", err)
-	}
 
 	var partitions map[uint64]miner.Partition
 	loadPartitions := func(state miner.State, epoch abi.ChainEpoch) (map[uint64]miner.Partition, error) {
@@ -453,20 +449,17 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 		return pmap, nil
 	}
 
-	processPostMsg := func(msg *types.Message) error {
+	processPostMsg := func(msg *lens.ExecutedMessage) error {
 		sectors := make([]uint64, 0)
-		rcpt, err := node.StateGetReceipt(ctx, msg.Cid(), actor.TipSet.Key())
-		if err != nil {
-			return xerrors.Errorf("get post receipt: %w", err)
-		}
-		if rcpt == nil || rcpt.ExitCode.IsError() {
+		if msg.Receipt == nil || msg.Receipt.ExitCode.IsError() {
 			return nil
 		}
 		params := miner.SubmitWindowedPoStParams{}
-		if err := params.UnmarshalCBOR(bytes.NewBuffer(msg.Params)); err != nil {
+		if err := params.UnmarshalCBOR(bytes.NewBuffer(msg.Message.Params)); err != nil {
 			return xerrors.Errorf("unmarshal post params: %w", err)
 		}
 
+		var err error
 		// use previous miner state and tipset state since we are using parent messages
 		if partitions == nil {
 			partitions, err = loadPartitions(ec.PrevState, ec.PrevTs.Height())
@@ -498,15 +491,15 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 				Height:         int64(ec.PrevTs.Height()),
 				MinerID:        addr,
 				SectorID:       s,
-				PostMessageCID: msg.Cid().String(),
+				PostMessageCID: msg.Cid.String(),
 			})
 		}
 		return nil
 	}
 
-	for _, msg := range msgs {
+	for _, msg := range emsgs {
 		if msg.Message.To == actor.Address && msg.Message.Method == 5 /* miner.SubmitWindowedPoSt */ {
-			if err := processPostMsg(msg.Message); err != nil {
+			if err := processPostMsg(msg); err != nil {
 				return nil, xerrors.Errorf("process post msg: %w", err)
 			}
 		}

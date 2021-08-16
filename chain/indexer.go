@@ -228,17 +228,65 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 						go t.runConsensusProcessor(ctx, p, name, child, parent, results)
 					}
 				}
-				// If we have message processors then extract the messages and receipts
-				if len(t.messageProcessors) > 0 {
+				// If we have message or actor processors then extract the messages and receipts
+				if len(t.messageProcessors) > 0 || len(t.actorProcessors) > 0 {
 					execMessagesStart := time.Now()
 					tsMsgs, err := t.node.GetExecutedAndBlockMessagesForTipset(ctx, child, parent)
 					if err == nil {
 						ll.Debugw("found executed messages", "count", len(tsMsgs.Executed), "time", time.Since(execMessagesStart))
-						// Start all the message processors
-						for name, p := range t.messageProcessors {
-							inFlight++
-							go t.runMessageProcessor(tctx, p, name, child, parent, tsMsgs.Executed, tsMsgs.Block, results)
+
+						if len(t.messageProcessors) > 0 {
+							// Start all the message processors
+							for name, p := range t.messageProcessors {
+								inFlight++
+								go t.runMessageProcessor(tctx, p, name, child, parent, tsMsgs.Executed, tsMsgs.Block, results)
+							}
 						}
+
+						// If we have actor processors then find actors that have changed state
+						if len(t.actorProcessors) > 0 {
+							changesStart := time.Now()
+							var err error
+							var changes map[string]types.Actor
+							// special case, we want to extract all actor states from the genesis block.
+							if parent.Height() == 0 {
+								changes, err = t.getGenesisActors(ctx)
+							} else {
+								changes, err = t.stateChangedActors(tctx, parent.ParentState(), child.ParentState())
+							}
+							if err == nil {
+								ll.Debugw("found actor state changes", "count", len(changes), "time", time.Since(changesStart))
+								if t.addressFilter != nil {
+									for addr := range changes {
+										if !t.addressFilter.Allow(addr) {
+											delete(changes, addr)
+										}
+									}
+								}
+								for name, p := range t.actorProcessors {
+									inFlight++
+									go t.runActorProcessor(tctx, p, name, child, parent, changes, tsMsgs.Executed, results)
+								}
+							} else {
+								ll.Errorw("failed to extract actor changes", "error", err)
+								terr := xerrors.Errorf("failed to extract actor changes: %w", err)
+								// We need to report that all actor tasks failed
+								for name := range t.actorProcessors {
+									report := &visormodel.ProcessingReport{
+										Height:         int64(ts.Height()),
+										StateRoot:      ts.ParentState().String(),
+										Reporter:       t.name,
+										Task:           name,
+										StartedAt:      start,
+										CompletedAt:    time.Now(),
+										Status:         visormodel.ProcessingStatusError,
+										ErrorsDetected: terr,
+									}
+									taskOutputs[name] = model.PersistableList{report}
+								}
+							}
+						}
+
 					} else {
 						ll.Errorw("failed to extract messages", "error", err)
 						terr := xerrors.Errorf("failed to extract messages: %w", err)
@@ -256,38 +304,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 							}
 							taskOutputs[name] = model.PersistableList{report}
 						}
-
-					}
-				}
-
-				// If we have actor processors then find actors that have changed state
-				if len(t.actorProcessors) > 0 {
-					changesStart := time.Now()
-					var err error
-					var changes map[string]types.Actor
-					// special case, we want to extract all actor states from the genesis block.
-					if parent.Height() == 0 {
-						changes, err = t.getGenesisActors(ctx)
-					} else {
-						changes, err = t.stateChangedActors(tctx, parent.ParentState(), child.ParentState())
-					}
-					if err == nil {
-						ll.Debugw("found actor state changes", "count", len(changes), "time", time.Since(changesStart))
-						if t.addressFilter != nil {
-							for addr := range changes {
-								if !t.addressFilter.Allow(addr) {
-									delete(changes, addr)
-								}
-							}
-						}
-						for name, p := range t.actorProcessors {
-							inFlight++
-							go t.runActorProcessor(tctx, p, name, child, parent, changes, results)
-						}
-					} else {
-						ll.Errorw("failed to extract actor changes", "error", err)
-						terr := xerrors.Errorf("failed to extract actor changes: %w", err)
-						// We need to report that all actor tasks failed
+						// We also need to report that all actor tasks failed
 						for name := range t.actorProcessors {
 							report := &visormodel.ProcessingReport{
 								Height:         int64(ts.Height()),
@@ -301,6 +318,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 							}
 							taskOutputs[name] = model.PersistableList{report}
 						}
+
 					}
 				}
 
@@ -639,17 +657,16 @@ func (t *TipSetIndexer) runConsensusProcessor(ctx context.Context, p TipSetsProc
 		StartedAt:   start,
 		CompletedAt: time.Now(),
 	}
-
 }
 
-func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor, name string, ts, pts *types.TipSet, actors map[string]types.Actor, results chan *TaskResult) {
+func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor, name string, ts, pts *types.TipSet, actors map[string]types.Actor, emsgs []*lens.ExecutedMessage, results chan *TaskResult) {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
 	start := time.Now()
 
-	data, report, err := p.ProcessActors(ctx, ts, pts, actors)
+	data, report, err := p.ProcessActors(ctx, ts, pts, actors, emsgs)
 	if err != nil {
 		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
@@ -819,6 +836,6 @@ type MessageExecutionProcessor interface {
 type ActorProcessor interface {
 	// ProcessActor processes a set of actors. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
-	ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors map[string]types.Actor) (model.Persistable, *visormodel.ProcessingReport, error)
+	ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors map[string]types.Actor, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error)
 	Close() error
 }

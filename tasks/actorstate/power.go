@@ -11,6 +11,7 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/power"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	powermodel "github.com/filecoin-project/sentinel-visor/model/actors/power"
@@ -75,7 +76,7 @@ func (p *PowerStateExtractionContext) HasPreviousState() bool {
 	return !(p.CurrTs.Height() == 1 || p.PrevState == p.CurrState)
 }
 
-func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
+func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "StoragePowerExtractor")
 	defer span.End()
 

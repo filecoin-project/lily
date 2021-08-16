@@ -39,7 +39,7 @@ func NewTask(opener lens.APIOpener, extracterMap ActorExtractorMap) *Task {
 	return p
 }
 
-func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates map[string]types.Actor) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates map[string]types.Actor, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := global.Tracer("").Start(ctx, "ProcessActors")
 	if span.IsRecording() {
 		span.SetAttributes(label.String("tipset", ts.String()), label.String("parent_tipset", pts.String()), label.Int64("height", int64(ts.Height())))
@@ -91,7 +91,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	// Run each task concurrently
 	results := make(chan *ActorStateResult, len(actors))
 	for addr, act := range actors {
-		go t.runActorStateExtraction(ctx, ts, pts, addr, act, results)
+		go t.runActorStateExtraction(ctx, ts, pts, addr, act, emsgs, results)
 	}
 
 	// Gather results
@@ -134,7 +134,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	return data, report, nil
 }
 
-func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pts *types.TipSet, addrStr string, act types.Actor, results chan *ActorStateResult) {
+func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pts *types.TipSet, addrStr string, act types.Actor, emsgs []*lens.ExecutedMessage, results chan *ActorStateResult) {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ActorCode, builtin.ActorNameByCode(act.Code)))
 
 	res := &ActorStateResult{
@@ -176,7 +176,7 @@ func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pt
 		}
 
 		// Parse state
-		data, err := extracter.Extract(ctx, info, nodeAPI)
+		data, err := extracter.Extract(ctx, info, emsgs, nodeAPI)
 		if err != nil {
 			res.Error = xerrors.Errorf("failed to extract parsed actor state: %w", err)
 			return

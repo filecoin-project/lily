@@ -10,6 +10,7 @@ import (
 	"golang.org/x/xerrors"
 
 	init_ "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
@@ -26,7 +27,7 @@ func init() {
 	}
 }
 
-func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
+func (InitExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "InitExtractor")
 	defer span.End()
 

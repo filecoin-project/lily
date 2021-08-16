@@ -12,6 +12,7 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/verifreg"
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 )
@@ -73,7 +74,7 @@ func NewVerifiedRegistryExtractorContext(ctx context.Context, a ActorInfo, node 
 	}, nil
 }
 
-func (VerifiedRegistryExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
+func (VerifiedRegistryExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "VerifiedRegistryExtractor")
 	defer span.End()
 

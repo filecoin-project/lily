@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/account"
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
 )
 
@@ -17,7 +18,7 @@ func init() {
 }
 
 // Extract will create persistable data for a given actor's state.
-func (AccountExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
+func (AccountExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
 	return model.NoData, nil
 }
 

@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	multisigmodel "github.com/filecoin-project/sentinel-visor/model/actors/multisig"
@@ -22,7 +23,7 @@ func init() {
 
 type MultiSigActorExtractor struct{}
 
-func (m MultiSigActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
+func (m MultiSigActorExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "MultiSigActor")
 	defer span.End()
 

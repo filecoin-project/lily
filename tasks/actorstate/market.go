@@ -11,6 +11,7 @@ import (
 
 	market "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/market"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	marketmodel "github.com/filecoin-project/sentinel-visor/model/actors/market"
@@ -74,7 +75,7 @@ func (m *MarketStateExtractionContext) IsGenesis() bool {
 	return m.CurrTs.Height() == 0
 }
 
-func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
+func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "StorageMarketExtractor")
 	defer span.End()
 

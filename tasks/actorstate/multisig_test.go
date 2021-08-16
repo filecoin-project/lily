@@ -23,6 +23,7 @@ import (
 	adt3 "github.com/filecoin-project/specs-actors/v3/actors/util/adt"
 	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
 	multisigmodel "github.com/filecoin-project/sentinel-visor/model/actors/multisig"
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 )
@@ -92,7 +93,7 @@ func TestMultisigExtractorV0(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -178,7 +179,7 @@ func TestMultisigExtractorV0(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -237,7 +238,7 @@ func TestMultisigExtractorV0(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -320,7 +321,7 @@ func TestMultisigExtractorV2(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -406,7 +407,7 @@ func TestMultisigExtractorV2(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -465,7 +466,7 @@ func TestMultisigExtractorV2(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -551,7 +552,7 @@ func TestMultisigExtractorV3(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -637,7 +638,7 @@ func TestMultisigExtractorV3(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -696,7 +697,7 @@ func TestMultisigExtractorV3(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -782,7 +783,7 @@ func TestMultisigExtractorV4(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -868,7 +869,7 @@ func TestMultisigExtractorV4(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -927,7 +928,7 @@ func TestMultisigExtractorV4(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, mapi)
+		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)

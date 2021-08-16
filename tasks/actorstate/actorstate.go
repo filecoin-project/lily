@@ -12,6 +12,7 @@ import (
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
 )
 
@@ -47,7 +48,7 @@ type ActorStateAPI interface {
 
 // An ActorStateExtractor extracts actor state into a persistable format
 type ActorStateExtractor interface {
-	Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error)
+	Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error)
 }
 
 // All supported actor state extractors
