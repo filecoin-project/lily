@@ -481,3 +481,8 @@ func GenerateUpsertStrings(model interface{}) (string, string) {
 	}
 	return conflict.String(), upsert.String()
 }
+
+// MUST call Connect before using
+func (d *Database) AsORM() *pg.DB {
+	return d.db
+}
