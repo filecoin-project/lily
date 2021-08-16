@@ -90,6 +90,10 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 			return xerrors.Errorf("get tipset: %w", err)
 		}
 
+		if int64(ts.Height()) < c.minHeight {
+			break
+		}
+
 		log.Debugw("found tipset", "height", ts.Height())
 		if err := c.obs.TipSet(ctx, ts); err != nil {
 			return xerrors.Errorf("notify tipset: %w", err)
