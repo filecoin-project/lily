@@ -420,7 +420,7 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 }
 
 func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtractionContext, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (minermodel.MinerSectorPostList, error) {
-	ctx, span := global.Tracer("").Start(ctx, "ExtractMinerPoSts")
+	_, span := global.Tracer("").Start(ctx, "ExtractMinerPoSts")
 	defer span.End()
 	// short circuit genesis state, no PoSt messages in genesis blocks.
 	if !ec.HasPreviousState() {
