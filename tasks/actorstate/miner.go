@@ -437,18 +437,18 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 	loadPartitions := func(state miner.State, epoch abi.ChainEpoch) (map[uint64]miner.Partition, error) {
 		info, err := state.DeadlineInfo(epoch)
 		if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("deadline info: %w", err)
 		}
 		dline, err := state.LoadDeadline(info.Index)
 		if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("load deadline: %w", err)
 		}
 		pmap := make(map[uint64]miner.Partition)
 		if err := dline.ForEachPartition(func(idx uint64, p miner.Partition) error {
 			pmap[idx] = p
 			return nil
 		}); err != nil {
-			return nil, err
+			return nil, xerrors.Errorf("foreach partition: %w", err)
 		}
 		return pmap, nil
 	}
@@ -457,39 +457,39 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 		sectors := make([]uint64, 0)
 		rcpt, err := node.StateGetReceipt(ctx, msg.Cid(), actor.TipSet.Key())
 		if err != nil {
-			return err
+			return xerrors.Errorf("get post receipt: %w", err)
 		}
 		if rcpt == nil || rcpt.ExitCode.IsError() {
 			return nil
 		}
 		params := miner.SubmitWindowedPoStParams{}
 		if err := params.UnmarshalCBOR(bytes.NewBuffer(msg.Params)); err != nil {
-			return err
+			return xerrors.Errorf("unmarshal post params: %w", err)
 		}
 
 		// use previous miner state and tipset state since we are using parent messages
 		if partitions == nil {
 			partitions, err = loadPartitions(ec.PrevState, ec.PrevTs.Height())
 			if err != nil {
-				return err
+				return xerrors.Errorf("load partitions: %w", err)
 			}
 		}
 
 		for _, p := range params.Partitions {
 			all, err := partitions[p.Index].AllSectors()
 			if err != nil {
-				return err
+				return xerrors.Errorf("all sectors: %w", err)
 			}
 			proven, err := bitfield.SubtractBitField(all, p.Skipped)
 			if err != nil {
-				return err
+				return xerrors.Errorf("subtract skipped bitfield: %w", err)
 			}
 
 			if err := proven.ForEach(func(sector uint64) error {
 				sectors = append(sectors, sector)
 				return nil
 			}); err != nil {
-				return err
+				return xerrors.Errorf("foreach proven: %w", err)
 			}
 		}
 
@@ -507,7 +507,7 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 	for _, msg := range msgs {
 		if msg.Message.To == actor.Address && msg.Message.Method == 5 /* miner.SubmitWindowedPoSt */ {
 			if err := processPostMsg(msg.Message); err != nil {
-				return nil, err
+				return nil, xerrors.Errorf("process post msg: %w", err)
 			}
 		}
 	}
