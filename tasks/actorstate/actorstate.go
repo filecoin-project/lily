@@ -12,6 +12,7 @@ import (
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model"
 )
 
@@ -28,9 +29,6 @@ type ActorInfo struct {
 
 // ActorStateAPI is the minimal subset of lens.API that is needed for actor state extraction
 type ActorStateAPI interface {
-	ChainGetParentMessages(ctx context.Context, msg cid.Cid) ([]api.Message, error)
-	StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error)
-
 	// TODO(optimize): StateGetActor is just a wrapper around StateManager.LoadActor with a lookup of the tipset which we already have
 	StateGetActor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error)
 
@@ -47,7 +45,7 @@ type ActorStateAPI interface {
 
 // An ActorStateExtractor extracts actor state into a persistable format
 type ActorStateExtractor interface {
-	Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error)
+	Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error)
 }
 
 // All supported actor state extractors

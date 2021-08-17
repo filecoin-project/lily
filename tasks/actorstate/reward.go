@@ -6,6 +6,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/reward"
 	"go.opentelemetry.io/otel/api/global"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/metrics"
 	"github.com/filecoin-project/sentinel-visor/model"
 	rewardmodel "github.com/filecoin-project/sentinel-visor/model/actors/reward"
@@ -22,7 +23,7 @@ func init() {
 	}
 }
 
-func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
+func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := global.Tracer("").Start(ctx, "RewardExtractor")
 	defer span.End()
 

@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/reward"
 	tutils "github.com/filecoin-project/specs-actors/support/testing"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
 	rewardmodel "github.com/filecoin-project/sentinel-visor/model/actors/reward"
 	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 
@@ -56,7 +57,7 @@ func TestRewardExtractV0(t *testing.T) {
 	}
 
 	ex := actorstate.RewardExtractor{}
-	res, err := ex.Extract(ctx, info, mapi)
+	res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 	require.NoError(t, err)
 
 	cr, ok := res.(*rewardmodel.ChainReward)
@@ -105,7 +106,7 @@ func TestRewardExtractV2(t *testing.T) {
 	}
 
 	ex := actorstate.RewardExtractor{}
-	res, err := ex.Extract(ctx, info, mapi)
+	res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 	require.NoError(t, err)
 
 	cr, ok := res.(*rewardmodel.ChainReward)
@@ -154,7 +155,7 @@ func TestRewardExtractV3(t *testing.T) {
 	}
 
 	ex := actorstate.RewardExtractor{}
-	res, err := ex.Extract(ctx, info, mapi)
+	res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 	require.NoError(t, err)
 
 	cr, ok := res.(*rewardmodel.ChainReward)
@@ -203,7 +204,7 @@ func TestRewardExtractV4(t *testing.T) {
 	}
 
 	ex := actorstate.RewardExtractor{}
-	res, err := ex.Extract(ctx, info, mapi)
+	res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 	require.NoError(t, err)
 
 	cr, ok := res.(*rewardmodel.ChainReward)

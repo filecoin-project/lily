@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/testutil"
 )
 
@@ -147,7 +148,7 @@ func TestMarketPredicates(t *testing.T) {
 	}
 
 	ex := actorstate.StorageMarketExtractor{}
-	res, err := ex.Extract(ctx, info, mapi)
+	res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
 	require.NoError(t, err)
 
 	mtr, ok := res.(*marketmodel.MarketTaskResult)

@@ -9,9 +9,7 @@ import (
 )
 
 func TestExecuteVectors(t *testing.T) {
-	if testing.Short() {
-		t.Skipf("skipping, short testing specified")
-	}
+	t.Skipf("skipping, see https://github.com/filecoin-project/sentinel-visor/issues/603")
 	ctx := context.Background()
 	var vectorPaths []string
 	if err := filepath.Walk("./data", func(path string, info os.FileInfo, _ error) error {
