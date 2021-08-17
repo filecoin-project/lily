@@ -91,6 +91,7 @@ func TestWatcher(t *testing.T) {
 		require.NoError(t, err, "index")
 	}
 
+	bm.MineUntilBlock(ctx, full, nil)
 	child := <-newHeads
 	for _, hc := range child {
 		he := &HeadEvent{Type: hc.Type, TipSet: hc.Val}
