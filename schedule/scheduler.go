@@ -69,6 +69,12 @@ type JobConfig struct {
 
 	// Params is a map of additional parameters that add human readable context to the job.
 	Params map[string]string
+
+	// StartedAt is the time the job started running.
+	StartedAt time.Time
+
+	// EndedAt is the time the job stopped running, either through successful completion or failure. Reset if job is restarted.
+	EndedAt time.Time
 }
 
 // Locker represents a general lock that a job may need to take before operating.
@@ -276,7 +282,9 @@ type JobResult struct {
 	RestartOnCompletion bool
 	RestartDelay        time.Duration
 
-	Params map[string]string
+	Params    map[string]string
+	StartedAt time.Time
+	EndedAt   time.Time
 }
 
 var InvalidJobID = JobID(0)
@@ -304,6 +312,8 @@ func (s *Scheduler) Jobs() []JobResult {
 			RestartOnCompletion: j.RestartOnCompletion,
 			RestartDelay:        j.RestartDelay,
 			Params:              j.Params,
+			StartedAt:           j.StartedAt,
+			EndedAt:             j.EndedAt,
 		})
 		j.lk.Unlock()
 	}
@@ -317,6 +327,8 @@ func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 	jc.lk.Lock()
 	jc.cancel = cancel
 	jc.running = true
+	jc.StartedAt = time.Now().UTC()
+	jc.EndedAt = time.Time{}
 	jc.lk.Unlock()
 
 	// Report job is complete when this goroutine exits
@@ -325,6 +337,7 @@ func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 
 		jc.lk.Lock()
 		jc.running = false
+		jc.EndedAt = time.Now().UTC()
 		jc.cancel()
 		jc.lk.Unlock()
 
