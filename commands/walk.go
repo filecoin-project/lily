@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -11,13 +9,9 @@ import (
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
 	"github.com/filecoin-project/sentinel-visor/lens/lily"
-	"github.com/filecoin-project/sentinel-visor/schedule"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/chain"
-	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
 type walkOps struct {
@@ -119,113 +113,6 @@ var WalkCmd = &cli.Command{
 			return err
 		}
 		if _, err := fmt.Fprintf(os.Stdout, "Created walk job %d\n", watchID); err != nil {
-			return err
-		}
-		return nil
-	},
-}
-
-var RunWalkCmd = &cli.Command{
-	Name:  "walk",
-	Usage: "Walk a range of the filecoin blockchain and process blocks as they are discovered.",
-	Flags: flagSet(
-		dbConnectFlags,
-		dbBehaviourFlags,
-		runLensFlags,
-		[]cli.Flag{
-			&cli.Int64Flag{
-				Name:    "from",
-				Usage:   "Limit actor and message processing to tipsets at or above `HEIGHT`",
-				EnvVars: []string{"VISOR_HEIGHT_FROM"},
-			},
-			&cli.Int64Flag{
-				Name:        "to",
-				Usage:       "Limit actor and message processing to tipsets at or below `HEIGHT`",
-				Value:       chain.CurrentMainnetHeight(),
-				DefaultText: "current epoch",
-				EnvVars:     []string{"VISOR_HEIGHT_TO"},
-			},
-			&cli.StringFlag{
-				Name:    "tasks",
-				Usage:   "Comma separated list of tasks to run. Each task is reported separately in the database.",
-				Value:   strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorStatesRawTask}, ","),
-				EnvVars: []string{"VISOR_WALK_TASKS"},
-			},
-			&cli.StringFlag{
-				Name:   "csv",
-				Usage:  "Path to write csv files.",
-				Hidden: true,
-			},
-		},
-	),
-	Action: func(cctx *cli.Context) error {
-		// Validate flags
-		heightFrom := cctx.Int64("from")
-		heightTo := cctx.Int64("to")
-
-		if heightFrom > heightTo {
-			return xerrors.Errorf("--from must not be greater than --to")
-		}
-
-		tasks := strings.Split(cctx.String("tasks"), ",")
-
-		if err := setupLogging(cctx); err != nil {
-			return xerrors.Errorf("setup logging: %w", err)
-		}
-
-		if err := setupMetrics(cctx); err != nil {
-			return xerrors.Errorf("setup metrics: %w", err)
-		}
-
-		tcloser, err := setupTracing(cctx)
-		if err != nil {
-			return xerrors.Errorf("setup tracing: %w", err)
-		}
-		defer tcloser()
-
-		lensOpener, lensCloser, err := setupLens(cctx)
-		if err != nil {
-			return xerrors.Errorf("setup lens: %w", err)
-		}
-		defer func() {
-			lensCloser()
-		}()
-
-		var strg model.Storage = &storage.NullStorage{}
-		if cctx.String("csv") != "" {
-			csvStorage, err := storage.NewCSVStorageLatest(cctx.String("csv"), storage.DefaultCSVStorageOptions())
-			if err != nil {
-				return xerrors.Errorf("new csv storage: %w", err)
-			}
-			strg = csvStorage
-		} else {
-			if cctx.String("db") == "" {
-				log.Warnw("database not specified, data will not be persisted")
-			} else {
-				db, err := setupDatabase(cctx)
-				if err != nil {
-					return xerrors.Errorf("setup database: %w", err)
-				}
-				strg = db
-			}
-		}
-
-		tsIndexer, err := chain.NewTipSetIndexer(lensOpener, strg, 0, cctx.String("name"), tasks)
-		if err != nil {
-			return xerrors.Errorf("setup indexer: %w", err)
-		}
-
-		scheduler := schedule.NewScheduler(cctx.Duration("task-delay"),
-			&schedule.JobConfig{
-				Name:                "Walker",
-				Job:                 chain.NewWalker(tsIndexer, lensOpener, heightFrom, heightTo),
-				RestartOnFailure:    false, // Don't restart after a failure otherwise the walk will start from the beginning again
-				RestartOnCompletion: false,
-				RestartDelay:        time.Minute,
-			})
-
-		err = scheduler.Run(cctx.Context)
-		if !errors.Is(err, context.Canceled) {
 			return err
 		}
 		return nil

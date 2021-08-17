@@ -29,6 +29,33 @@ import (
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
 
+var clientAPIFlags struct {
+	apiAddr  string
+	apiToken string
+}
+
+var clientAPIFlag = &cli.StringFlag{
+	Name:        "api",
+	Usage:       "Address of visor api in multiaddr format.",
+	EnvVars:     []string{"VISOR_API"},
+	Value:       "/ip4/127.0.0.1/tcp/1234",
+	Destination: &clientAPIFlags.apiAddr,
+}
+
+var clientTokenFlag = &cli.StringFlag{
+	Name:        "api-token",
+	Usage:       "Authentication token for visor api.",
+	EnvVars:     []string{"VISOR_API_TOKEN"},
+	Value:       "",
+	Destination: &clientAPIFlags.apiToken,
+}
+
+// clientAPIFlagSet are used by commands that act as clients of a daemon's API
+var clientAPIFlagSet = []cli.Flag{
+	clientAPIFlag,
+	clientTokenFlag,
+}
+
 type daemonOpts struct {
 	repo      string
 	bootstrap bool // TODO: is this necessary - do we want to run visor in this mode?
@@ -123,15 +150,15 @@ Note that jobs are not persisted between restarts of the daemon. See
 	Action: func(c *cli.Context) error {
 		lotuslog.SetupLogLevels()
 
-		if err := setupLogging(c); err != nil {
+		if err := setupLogging(VisorLogFlags); err != nil {
 			return xerrors.Errorf("setup logging: %w", err)
 		}
 
-		if err := setupMetrics(c); err != nil {
+		if err := setupMetrics(VisorMetricFlags); err != nil {
 			return xerrors.Errorf("setup metrics: %w", err)
 		}
 
-		tcloser, err := setupTracing(c)
+		tcloser, err := setupTracing(VisorTracingFlags)
 		if err != nil {
 			return xerrors.Errorf("setup tracing: %w", err)
 		}

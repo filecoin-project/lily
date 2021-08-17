@@ -60,13 +60,6 @@ type StateAPI interface {
 	StateNetworkName(context.Context) (dtypes.NetworkName, error)
 }
 
-type APICloser func()
-
-type APIOpener interface {
-	Open(context.Context) (API, APICloser, error)
-	Daemonized() bool
-}
-
 type TipSetMessages struct {
 	Executed []*ExecutedMessage
 	Block    []*BlockMessages

@@ -15,7 +15,7 @@ import (
 
 type GapIndexer struct {
 	DB                   *storage.Database
-	opener               lens.APIOpener
+	node                 lens.API
 	name                 string
 	minHeight, maxHeight uint64
 	taskSet              mapset.Set
@@ -30,14 +30,14 @@ func init() {
 	}
 }
 
-func NewGapIndexer(o lens.APIOpener, db *storage.Database, name string, minHeight, maxHeight uint64, tasks []string) *GapIndexer {
+func NewGapIndexer(node lens.API, db *storage.Database, name string, minHeight, maxHeight uint64, tasks []string) *GapIndexer {
 	taskSet := mapset.NewSet()
 	for _, t := range tasks {
 		taskSet.Add(t)
 	}
 	return &GapIndexer{
 		DB:        db,
-		opener:    o,
+		node:      node,
 		name:      name,
 		taskSet:   taskSet,
 		maxHeight: maxHeight,
@@ -47,15 +47,8 @@ func NewGapIndexer(o lens.APIOpener, db *storage.Database, name string, minHeigh
 
 func (g *GapIndexer) Run(ctx context.Context) error {
 	startTime := time.Now()
-	node, closer, err := g.opener.Open(ctx)
-	if err != nil {
-		return xerrors.Errorf("open lens: %w", err)
-	}
-	defer func() {
-		closer()
-	}()
 
-	head, err := node.ChainHead(ctx)
+	head, err := g.node.ChainHead(ctx)
 	if err != nil {
 		return err
 	}
@@ -73,7 +66,7 @@ func (g *GapIndexer) Run(ctx context.Context) error {
 	findLog.Infow("found gaps in tasks", "count", len(taskGaps))
 
 	// looks for missing epochs and null rounds. A missing epoch is a non-null-round height missing from the processing report table
-	heightGaps, nulls, err := g.findEpochGapsAndNullRounds(ctx, node)
+	heightGaps, nulls, err := g.findEpochGapsAndNullRounds(ctx, g.node)
 	if err != nil {
 		return xerrors.Errorf("finding epoch gaps: %w", err)
 	}

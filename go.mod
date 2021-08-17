@@ -11,11 +11,8 @@ require (
 	github.com/filecoin-project/go-address v0.0.5
 	github.com/filecoin-project/go-amt-ipld/v3 v3.1.1
 	github.com/filecoin-project/go-bitfield v0.2.4
-	github.com/filecoin-project/go-bs-postgres-chainnotated v0.0.0-20210609215026-5cb3c10d68ad
-	github.com/filecoin-project/go-fil-markets v1.5.0
 	github.com/filecoin-project/go-hamt-ipld/v3 v3.1.0
 	github.com/filecoin-project/go-jsonrpc v0.1.4-0.20210217175800-45ea43ac2bec
-	github.com/filecoin-project/go-multistore v0.0.3
 	github.com/filecoin-project/go-paramfetch v0.0.2-0.20210614165157-25a6c7769498
 	github.com/filecoin-project/go-state-types v0.1.1-0.20210506134452-99b279731c48
 	github.com/filecoin-project/lotus v1.11.0
@@ -27,20 +24,14 @@ require (
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.3.1
 	github.com/go-pg/pgext v0.1.4
-	github.com/google/go-cmp v0.5.4
+	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/ipfs/go-block-format v0.0.3
-	github.com/ipfs/go-blockservice v0.1.4
 	github.com/ipfs/go-cid v0.0.7
-	github.com/ipfs/go-datastore v0.4.5
 	github.com/ipfs/go-graphsync v0.7.0 // indirect
-	github.com/ipfs/go-ipfs-exchange-offline v0.0.1
 	github.com/ipfs/go-ipld-cbor v0.0.5
-	github.com/ipfs/go-ipld-format v0.2.0
 	github.com/ipfs/go-log/v2 v2.1.3
-	github.com/ipfs/go-merkledag v0.3.2
 	github.com/ipfs/go-metrics-prometheus v0.0.2
-	github.com/ipld/go-car v0.1.1-0.20201119040415-11b6074b6d4d
 	github.com/ipld/go-ipld-prime v0.7.0
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.9.0
@@ -60,13 +51,13 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/whyrusleeping/cbor-gen v0.0.0-20210303213153-67a261a1d291
-	github.com/willscott/carbs v0.0.4
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/otel v0.12.0
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.12.0
 	go.opentelemetry.io/otel/sdk v0.12.0
 	go.uber.org/fx v1.9.0
 	go.uber.org/zap v1.16.0
+	golang.org/x/exp v0.0.0-20200924195034-c827fd4f18b9 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 	gopkg.in/yaml.v2 v2.4.0 // indirect

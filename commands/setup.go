@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/pprof"
@@ -14,7 +13,6 @@ import (
 	metricsprom "github.com/ipfs/go-metrics-prometheus"
 	_ "github.com/lib/pq"
 	prom "github.com/prometheus/client_golang/prometheus"
-	"github.com/urfave/cli/v2"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/zpages"
 	"go.opentelemetry.io/otel/api/global"
@@ -23,75 +21,42 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"golang.org/x/xerrors"
 
-	lens "github.com/filecoin-project/sentinel-visor/lens"
-	carapi "github.com/filecoin-project/sentinel-visor/lens/carrepo"
-	vapi "github.com/filecoin-project/sentinel-visor/lens/lotus"
-	repoapi "github.com/filecoin-project/sentinel-visor/lens/lotusrepo"
-	sqlapi "github.com/filecoin-project/sentinel-visor/lens/sqlrepo"
 	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/version"
 )
 
 var log = logging.Logger("visor/commands")
 
-func setupDatabase(cctx *cli.Context) (*storage.Database, error) {
-	ctx := cctx.Context
-	db, err := storage.NewDatabase(ctx, cctx.String("db"), cctx.Int("db-pool-size"), cctx.String("name"), cctx.String("schema"), cctx.Bool("db-allow-upsert"))
-	if err != nil {
-		return nil, xerrors.Errorf("new database: %w", err)
-	}
-
-	if err := db.Connect(ctx); err != nil {
-		if !errors.Is(err, storage.ErrSchemaTooOld) || !cctx.Bool("allow-schema-migration") {
-			return nil, xerrors.Errorf("connect database: %w", err)
-		}
-
-		log.Infof("connect database: %v", err.Error())
-
-		// Schema is out of data and we're allowed to do schema migrations
-		log.Info("Migrating schema to latest version")
-		err := db.MigrateSchema(ctx)
-		if err != nil {
-			return nil, xerrors.Errorf("migrate schema: %w", err)
-		}
-
-		// Try to connect again
-		if err := db.Connect(ctx); err != nil {
-			return nil, xerrors.Errorf("connect database: %w", err)
-		}
-	}
-
-	// Make sure the schema is a compatible with what this version of Visor requires
-	if err := db.VerifyCurrentSchema(ctx); err != nil {
-		db.Close(ctx) // nolint: errcheck
-		return nil, xerrors.Errorf("verify schema: %w", err)
-	}
-
-	return db, nil
+type VisorLogOpts struct {
+	LogLevel      string
+	LogLevelNamed string
 }
 
-func setupLens(cctx *cli.Context) (lens.APIOpener, lens.APICloser, error) {
-	switch cctx.String("lens") {
-	case "lotus":
-		return vapi.NewAPIOpener(cctx, 100_000)
-	case "lotusrepo":
-		return repoapi.NewAPIOpener(cctx)
-	case "carrepo":
-		return carapi.NewAPIOpener(cctx)
-	case "sql":
-		return sqlapi.NewAPIOpener(cctx)
-	default:
-		return nil, nil, xerrors.Errorf("unsupported lens type: %s", cctx.String("lens"))
-	}
+var VisorLogFlags VisorLogOpts
+
+type VisorTracingOpts struct {
+	Tracing            bool
+	JaegerHost         string
+	JaegerPort         int
+	JaegerName         string
+	JaegerSampleType   string
+	JaegerSamplerParam float64
 }
 
-func setupTracing(cctx *cli.Context) (func(), error) {
-	if !cctx.Bool("tracing") {
+var VisorTracingFlags VisorTracingOpts
+
+type VisorMetricOpts struct {
+	PrometheusPort string
+}
+
+var VisorMetricFlags VisorMetricOpts
+
+func setupTracing(flags VisorTracingOpts) (func(), error) {
+	if !flags.Tracing {
 		global.SetTracerProvider(trace.NoopTracerProvider())
 	}
 
-	jcfg, err := jaegerConfigFromCliContext(cctx)
+	jcfg, err := jaegerConfigFromCliContext(flags)
 	if err != nil {
 		return nil, xerrors.Errorf("read jeager config: %w", err)
 	}
@@ -116,35 +81,35 @@ type jaegerConfig struct {
 	Sampler       sdktrace.Sampler
 }
 
-func jaegerConfigFromCliContext(cctx *cli.Context) (*jaegerConfig, error) {
+func jaegerConfigFromCliContext(flags VisorTracingOpts) (*jaegerConfig, error) {
 	cfg := jaegerConfig{
-		ServiceName:   cctx.String("jaeger-service-name"),
-		AgentEndpoint: fmt.Sprintf("%s:%d", cctx.String("jaeger-agent-host"), cctx.Int("jaeger-agent-port")),
+		ServiceName:   flags.JaegerName,
+		AgentEndpoint: fmt.Sprintf("%s:%d", flags.JaegerHost, flags.JaegerPort),
 	}
 
-	switch cctx.String("jaeger-sampler-type") {
+	switch flags.JaegerSampleType {
 	case "probabilistic":
-		cfg.Sampler = sdktrace.ParentBased(sdktrace.TraceIDRatioBased(cctx.Float64("jaeger-sampler-param")))
+		cfg.Sampler = sdktrace.ParentBased(sdktrace.TraceIDRatioBased(flags.JaegerSamplerParam))
 	case "const":
-		if cctx.Float64("jaeger-sampler-param") == 1 {
+		if flags.JaegerSamplerParam == 1 {
 			cfg.Sampler = sdktrace.AlwaysSample()
 		} else {
 			cfg.Sampler = sdktrace.NeverSample()
 		}
 	default:
-		return nil, fmt.Errorf("unsupported jaeger-sampler-type option: %s", cctx.String("jaeger-sampler-type"))
+		return nil, fmt.Errorf("unsupported jaeger-sampler-type option: %s", flags.JaegerSampleType)
 	}
 
 	return &cfg, nil
 }
 
-func setupLogging(cctx *cli.Context) error {
-	ll := cctx.String("log-level")
+func setupLogging(flags VisorLogOpts) error {
+	ll := flags.LogLevel
 	if err := logging.SetLogLevel("*", ll); err != nil {
 		return xerrors.Errorf("set log level: %w", err)
 	}
 
-	llnamed := cctx.String("log-level-named")
+	llnamed := flags.LogLevelNamed
 	if llnamed != "" {
 		for _, llname := range strings.Split(llnamed, ",") {
 			parts := strings.Split(llname, ":")
@@ -163,7 +128,7 @@ func setupLogging(cctx *cli.Context) error {
 	return nil
 }
 
-func setupMetrics(cctx *cli.Context) error {
+func setupMetrics(flags VisorMetricOpts) error {
 	// setup Prometheus
 	registry := prom.NewRegistry()
 	goCollector := prom.NewGoCollector()
@@ -211,7 +176,7 @@ func setupMetrics(cctx *cli.Context) error {
 		mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
 		mux.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
 		mux.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
-		if err := http.ListenAndServe(cctx.String("prometheus-port"), mux); err != nil {
+		if err := http.ListenAndServe(flags.PrometheusPort, mux); err != nil {
 			log.Fatalf("Failed to run Prometheus /metrics endpoint: %v", err)
 		}
 	}()

@@ -4,7 +4,6 @@ package msapprovals
 import (
 	"bytes"
 	"context"
-	"sync"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/multisig"
@@ -30,15 +29,12 @@ const (
 )
 
 type Task struct {
-	nodeMu sync.Mutex // guards mutations to node, opener and closer
-	node   lens.API
-	opener lens.APIOpener
-	closer lens.APICloser
+	node lens.API
 }
 
-func NewTask(opener lens.APIOpener) *Task {
+func NewTask(node lens.API) *Task {
 	return &Task{
-		opener: opener,
+		node: node,
 	}
 }
 
@@ -48,20 +44,6 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		span.SetAttributes(label.String("tipset", ts.String()), label.Int64("height", int64(ts.Height())))
 	}
 	defer span.End()
-
-	// We use p.node continually through this method so take a broad lock
-	p.nodeMu.Lock()
-	defer p.nodeMu.Unlock()
-
-	// TODO: refactor this boilerplate into a helper
-	if p.node == nil {
-		node, closer, err := p.opener.Open(ctx)
-		if err != nil {
-			return nil, nil, xerrors.Errorf("unable to open lens: %w", err)
-		}
-		p.node = node
-		p.closer = closer
-	}
 
 	report := &visormodel.ProcessingReport{
 		Height:    int64(pts.Height()),
@@ -180,18 +162,6 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 	}
 
 	return results, report, nil
-}
-
-func (p *Task) Close() error {
-	p.nodeMu.Lock()
-	defer p.nodeMu.Unlock()
-
-	if p.closer != nil {
-		p.closer()
-		p.closer = nil
-	}
-	p.node = nil
-	return nil
 }
 
 func isMultisigActor(code cid.Cid) bool {

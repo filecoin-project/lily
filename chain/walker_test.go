@@ -35,9 +35,7 @@ func TestWalker(t *testing.T) {
 	t.Logf("preparing chain")
 	full, miner, _ := itestkit.EnsembleMinimal(t)
 
-	opener := testutil.NewAPIOpener(full)
-
-	openedAPI, _, _ := opener.Open(ctx)
+	nodeAPI := testutil.NewAPIWrapper(full)
 
 	bm := itestkit.NewBlockMiner(t, miner)
 	bm.MineUntilBlock(ctx, full, nil)
@@ -47,10 +45,10 @@ func TestWalker(t *testing.T) {
 
 	t.Logf("collecting chain blocks from tipset before head")
 
-	beforeHead, err := openedAPI.ChainGetTipSet(ctx, head.Parents())
+	beforeHead, err := full.ChainGetTipSet(ctx, head.Parents())
 	require.NoError(t, err, "get tipset before head")
 
-	bhs, err := collectBlockHeaders(openedAPI, beforeHead)
+	bhs, err := collectBlockHeaders(nodeAPI, beforeHead)
 	require.NoError(t, err, "collect chain blocks")
 
 	cids := bhs.Cids()
@@ -59,13 +57,13 @@ func TestWalker(t *testing.T) {
 	strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 	require.NoError(t, err, "NewDatabaseFromDB")
 
-	tsIndexer, err := NewTipSetIndexer(opener, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
+	tsIndexer, err := NewTipSetIndexer(nodeAPI, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
 	require.NoError(t, err, "NewTipSetIndexer")
 	t.Logf("initializing indexer")
-	idx := NewWalker(tsIndexer, opener, 0, int64(beforeHead.Height()))
+	idx := NewWalker(tsIndexer, nodeAPI, 0, int64(beforeHead.Height()))
 
 	t.Logf("indexing chain")
-	err = idx.WalkChain(ctx, openedAPI, head)
+	err = idx.WalkChain(ctx, nodeAPI, head)
 	require.NoError(t, err, "WalkChain")
 
 	// TODO NewTipSetIndexer runs its processors in their own go routines (started when TipSet() is called)

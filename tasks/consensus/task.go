@@ -58,7 +58,3 @@ func (t *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) 
 	}
 	return pl, rp, nil
 }
-
-func (t *Task) Close() error {
-	return nil
-}

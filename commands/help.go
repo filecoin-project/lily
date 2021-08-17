@@ -123,16 +123,13 @@ TimescaleDB database as separate tables or emit them as csv files.
 Visor requires access to a filecoin blockstore that holds the state of the
 chain. For watching incoming tipsets the blockstore must be connected and in
 sync with the filecoin network. Historic walks can be performed against an
-offline store. Visor may be operated in two different modes that control the
-way in which the blockstore is accessed.
+offline store.
 
-When run as a daemon, visor will maintain its own local blockstore and attempt
+While running, visor will maintain its own local blockstore and attempt
 to synchronise it with the filecoin network. For more information on running
 visor as a daemon, including how to initialise the blockstore, see
 'visor help daemon'.
 
-In standalone mode visor uses an external source of filecoin block data such as
-a Lotus node or a chain export file. See 'visor help run' for more information.
 `,
 	},
 
