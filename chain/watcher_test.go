@@ -75,17 +75,24 @@ func TestWatcher(t *testing.T) {
 	require.NoError(t, err, "chain notify")
 
 	t.Logf("indexing chain")
-	nh := <-newHeads
+	parent := <-newHeads
 
 	var bhs blockHeaderList
-	for _, head := range nh {
+	for _, head := range parent {
 		bhs = append(bhs, head.Val.Blocks()...)
 	}
 
 	cids := bhs.Cids()
 	rounds := bhs.Rounds()
 
-	for _, hc := range nh {
+	for _, hc := range parent {
+		he := &HeadEvent{Type: hc.Type, TipSet: hc.Val}
+		err = idx.index(ctx, he)
+		require.NoError(t, err, "index")
+	}
+
+	child := <-newHeads
+	for _, hc := range child {
 		he := &HeadEvent{Type: hc.Type, TipSet: hc.Val}
 		err = idx.index(ctx, he)
 		require.NoError(t, err, "index")
