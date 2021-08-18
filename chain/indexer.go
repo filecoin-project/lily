@@ -160,6 +160,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Name, t.name))
+	log.Debugw("indexing tipset", "height", ts.Height())
 
 	var cancel func()
 	var tctx context.Context // cancellable context for the task
@@ -359,7 +360,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		// TODO: we could fetch the parent stateroot and proceed to index this tipset. However this will be
 		// slower and increases the likelihood that we exceed the processing window and cause the next
 		// tipset to be skipped completely.
-		ll.Errorw("mismatching current and next tipsets", "current_tipset", current.Key(), "next_tipset", next.Key())
+		ll.Errorw("mismatching current and next tipsets", "current_tipset", current.Key(), "next_tipset", next.Key(), "next_parents", next.Parents().Cids())
 
 		// We need to report that all message and actor tasks were skipped
 		reason := "tipset did not have expected parent or child"
@@ -426,7 +427,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 	if len(taskOutputs) == 0 {
 		// Nothing to persist
-		ll.Infow("tipset complete, nothing to persist", "total_time", time.Since(start))
+		ll.Infow("tasks complete, nothing to persist", "total_time", time.Since(start))
 		return nil
 	}
 
@@ -465,7 +466,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 			}(task, p)
 		}
 		wg.Wait()
-		ll.Infow("tipset complete", "total_time", time.Since(start))
+		ll.Infow("tasks complete", "total_time", time.Since(start))
 	}()
 
 	return nil
