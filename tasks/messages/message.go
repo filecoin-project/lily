@@ -27,13 +27,13 @@ import (
 
 var log = logging.Logger("visor/task/messages")
 
-type Task struct {
-}
+type Task struct{}
 
 func NewTask() *Task {
 	return &Task{}
 }
 
+// Note that pts is the parent tipset containing the messages, ts is the following tipset containing the receipts
 func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := global.Tracer("").Start(ctx, "ProcessMessages")
 	if span.IsRecording() {
@@ -74,7 +74,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		blk := bm.Block
 		for _, msg := range bm.SecpMessages {
 			blockMessageResults = append(blockMessageResults, &messagemodel.BlockMessage{
-				Height:  int64(ts.Height()),
+				Height:  int64(bm.Block.Height),
 				Block:   blk.Cid().String(),
 				Message: msg.Cid().String(),
 			})
@@ -96,7 +96,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 
 			// record all unique Secp messages
 			msg := &messagemodel.Message{
-				Height:     int64(ts.Height()),
+				Height:     int64(bm.Block.Height),
 				Cid:        msg.Cid().String(),
 				From:       msg.Message.From.String(),
 				To:         msg.Message.To.String(),
@@ -113,7 +113,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 		for _, msg := range bm.BlsMessages {
 			blockMessageResults = append(blockMessageResults, &messagemodel.BlockMessage{
-				Height:  int64(ts.Height()),
+				Height:  int64(bm.Block.Height),
 				Block:   blk.Cid().String(),
 				Message: msg.Cid().String(),
 			})
@@ -135,7 +135,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 
 			// record all unique bls messages
 			msg := &messagemodel.Message{
-				Height:     int64(ts.Height()),
+				Height:     int64(bm.Block.Height),
 				Cid:        msg.Cid().String(),
 				From:       msg.From.String(),
 				To:         msg.To.String(),
@@ -181,7 +181,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 
 		rcpt := &messagemodel.Receipt{
-			Height:    int64(ts.Height()), // this is the child height
+			Height:    int64(ts.Height()),
 			Message:   m.Cid.String(),
 			StateRoot: ts.ParentState().String(),
 			Idx:       int(m.Index),
