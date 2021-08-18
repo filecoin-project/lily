@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -11,13 +9,11 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/lotus/api"
-	"github.com/filecoin-project/lotus/api/v0api"
 	lotusbuild "github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/types"
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/ipfs/go-cid"
 	"github.com/urfave/cli/v2"
-	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 )
 
@@ -117,7 +113,7 @@ var ChainGetBlock = &cli.Command{
 		recpts, err := lapi.ChainGetParentReceipts(ctx, bcid)
 		if err != nil {
 			log.Warn(err)
-			//return xerrors.Errorf("failed to get receipts: %w", err)
+			// return xerrors.Errorf("failed to get receipts: %w", err)
 		}
 
 		cblock := struct {
@@ -141,7 +137,6 @@ var ChainGetBlock = &cli.Command{
 
 		fmt.Println(string(out))
 		return nil
-
 	},
 }
 
@@ -409,36 +404,6 @@ var ChainListCmd = &cli.Command{
 		}
 		return nil
 	},
-}
-
-type apiIpldStore struct {
-	ctx context.Context
-	api v0api.FullNode
-}
-
-func (ht *apiIpldStore) Context() context.Context {
-	return ht.ctx
-}
-
-func (ht *apiIpldStore) Get(ctx context.Context, c cid.Cid, out interface{}) error {
-	raw, err := ht.api.ChainReadObj(ctx, c)
-	if err != nil {
-		return err
-	}
-
-	cu, ok := out.(cbg.CBORUnmarshaler)
-	if ok {
-		if err := cu.UnmarshalCBOR(bytes.NewReader(raw)); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	return fmt.Errorf("Object does not implement CBORUnmarshaler")
-}
-
-func (ht *apiIpldStore) Put(ctx context.Context, v interface{}) (cid.Cid, error) {
-	panic("No mutations allowed")
 }
 
 func printTipSet(format string, ts *types.TipSet) {
