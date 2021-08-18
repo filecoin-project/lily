@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/node/impl/common"
 	"github.com/filecoin-project/lotus/node/impl/full"
+	"github.com/filecoin-project/sentinel-visor/chain/gap"
 	"github.com/filecoin-project/sentinel-visor/lens/lily/modules"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
@@ -134,6 +135,59 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (schedule
 		},
 		Tasks:               cfg.Tasks,
 		Job:                 chain.NewWalker(indexer, m, cfg.From, cfg.To),
+		RestartOnFailure:    cfg.RestartOnFailure,
+		RestartOnCompletion: cfg.RestartOnCompletion,
+		RestartDelay:        cfg.RestartDelay,
+	})
+
+	return id, nil
+}
+
+func (m *LilyNodeAPI) LilyGapFind(_ context.Context, cfg *LilyGapFindConfig) (schedule.JobID, error) {
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx := context.Background()
+
+	md := storage.Metadata{
+		JobName: cfg.Name,
+	}
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	db, err := m.StorageCatalog.ConnectAsDatabase(ctx, cfg.Storage, md)
+	if err != nil {
+		return schedule.InvalidJobID, err
+	}
+
+	// TODO add params like walk and watch
+	id := m.Scheduler.Submit(&schedule.JobConfig{
+		Name:                cfg.Name,
+		Job:                 gap.NewGapIndexer(m, db, cfg.Name, cfg.MaxHeight, cfg.MinHeight),
+		RestartOnFailure:    cfg.RestartOnFailure,
+		RestartOnCompletion: cfg.RestartOnCompletion,
+		RestartDelay:        cfg.RestartDelay,
+	})
+
+	return id, nil
+}
+
+func (m *LilyNodeAPI) LilyGapFill(_ context.Context, cfg *LilyGapFillConfig) (schedule.JobID, error) {
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx := context.Background()
+
+	md := storage.Metadata{
+		JobName: cfg.Name,
+	}
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	db, err := m.StorageCatalog.ConnectAsDatabase(ctx, cfg.Storage, md)
+	if err != nil {
+		return schedule.InvalidJobID, err
+	}
+
+	// TODO add params like walk and watch
+	id := m.Scheduler.Submit(&schedule.JobConfig{
+		Name:                cfg.Name,
+		Tasks:               cfg.Tasks,
+		Job:                 gap.NewGapFiller(m, db, cfg.Name, cfg.MaxHeight, cfg.MinHeight, cfg.Tasks),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
