@@ -20,6 +20,12 @@ const (
 	ProcessingStatusSkip  = "SKIP"  // no processing was attempted, a reason may be given in the StatusInformation column
 )
 
+const (
+	// ProcessingStatusInformationNullRound is set byt the consensus task to indicate a null round
+	ProcessingStatusInformationNullRound = "NULL_ROUND" // used by consensus task to indicate a null round
+	// TODO this could likely be a status of its own, but the indexer isn't currently suited for tasks to set their own status.
+)
+
 type ProcessingReport struct {
 	//lint:ignore U1000 tableName is a convention used by go-pg
 	tableName struct{} `pg:"visor_processing_reports"`
