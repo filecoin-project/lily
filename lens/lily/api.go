@@ -32,15 +32,16 @@ type LilyAPI interface {
 	// SyncState returns the current status of the chain sync system.
 	SyncState(context.Context) (*api.SyncState, error) //perm:read
 
-	ChainHead(context.Context) (*types.TipSet, error)                                               //perm:read
-	ChainGetBlock(context.Context, cid.Cid) (*types.BlockHeader, error)                             //perm:read
-	ChainReadObj(context.Context, cid.Cid) ([]byte, error)                                          //perm:read
-	ChainStatObj(context.Context, cid.Cid, cid.Cid) (api.ObjStat, error)                            //perm:read
-	ChainGetTipSet(context.Context, types.TipSetKey) (*types.TipSet, error)                         //perm:read
-	ChainGetTipSetByHeight(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error) //perm:read
-	ChainGetBlockMessages(context.Context, cid.Cid) (*api.BlockMessages, error)                     //perm:read
-	ChainGetParentReceipts(context.Context, cid.Cid) ([]*types.MessageReceipt, error)               //perm:read
-	ChainGetParentMessages(context.Context, cid.Cid) ([]api.Message, error)                         //perm:read
+	ChainHead(context.Context) (*types.TipSet, error)                                                  //perm:read
+	ChainGetBlock(context.Context, cid.Cid) (*types.BlockHeader, error)                                //perm:read
+	ChainReadObj(context.Context, cid.Cid) ([]byte, error)                                             //perm:read
+	ChainStatObj(context.Context, cid.Cid, cid.Cid) (api.ObjStat, error)                               //perm:read
+	ChainGetTipSet(context.Context, types.TipSetKey) (*types.TipSet, error)                            //perm:read
+	ChainGetTipSetByHeight(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error)    //perm:read
+	ChainGetTipSetAfterHeight(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error) //perm:read
+	ChainGetBlockMessages(context.Context, cid.Cid) (*api.BlockMessages, error)                        //perm:read
+	ChainGetParentReceipts(context.Context, cid.Cid) ([]*types.MessageReceipt, error)                  //perm:read
+	ChainGetParentMessages(context.Context, cid.Cid) ([]api.Message, error)                            //perm:read
 
 	// trigger graceful shutdown
 	Shutdown(context.Context) error

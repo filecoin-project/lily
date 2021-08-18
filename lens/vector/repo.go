@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
@@ -138,6 +139,10 @@ type CaptureAPI struct {
 	cacheSize int
 
 	tbs *TracingBlockstore
+}
+
+func (c *CaptureAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {
+	panic("implement me")
 }
 
 func (c *CaptureAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {

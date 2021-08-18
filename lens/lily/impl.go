@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/stmgr"
@@ -39,6 +40,15 @@ type LilyNodeAPI struct {
 	Scheduler      *schedule.Scheduler
 	StorageCatalog *storage.Catalog
 	ExecMonitor    stmgr.ExecMonitor
+}
+
+func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {
+	// TODO (Frrist): I copied this from lotus, I need it now to handle gap filling edge cases.
+	ts, err := m.ChainAPI.Chain.GetTipSetFromKey(key)
+	if err != nil {
+		return nil, xerrors.Errorf("loading tipset %s: %w", key, err)
+	}
+	return m.ChainAPI.Chain.GetTipsetByHeight(ctx, epoch, ts, false)
 }
 
 func (m *LilyNodeAPI) Daemonized() bool {
