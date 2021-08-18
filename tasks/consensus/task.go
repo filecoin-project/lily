@@ -11,8 +11,7 @@ import (
 	"go.opentelemetry.io/otel/label"
 )
 
-type Task struct {
-}
+type Task struct{}
 
 func NewTask() *Task {
 	return &Task{}
@@ -26,20 +25,20 @@ func (t *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) 
 	}
 	defer span.End()
 
-	var pl = make(chain.ChainConsensusList, child.Height()-parent.Height())
-	var rp = make(visormodel.ProcessingReportList, child.Height()-parent.Height())
+	pl := make(chain.ChainConsensusList, child.Height()-parent.Height())
+	rp := make(visormodel.ProcessingReportList, child.Height()-parent.Height())
 	idx := 0
-	for epoch := child.Height(); epoch > parent.Height(); epoch-- {
-		if child.Height() == epoch {
+	for epoch := parent.Height(); epoch < child.Height(); epoch++ {
+		if parent.Height() == epoch {
 			pl[idx] = &chain.ChainConsensus{
 				Height:          int64(epoch),
-				ParentStateRoot: child.ParentState().String(),
-				ParentTipSet:    child.Parents().String(),
-				TipSet:          child.Key().String(),
+				ParentStateRoot: parent.ParentState().String(),
+				ParentTipSet:    parent.Parents().String(),
+				TipSet:          parent.Key().String(),
 			}
 			rp[idx] = &visormodel.ProcessingReport{
 				Height:    int64(epoch),
-				StateRoot: child.ParentState().String(),
+				StateRoot: parent.ParentState().String(),
 			}
 		} else {
 			// null round no tipset

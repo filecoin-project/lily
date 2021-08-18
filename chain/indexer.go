@@ -160,6 +160,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Name, t.name))
+	log.Debugw("indexing tipset", "height", ts.Height())
 
 	var cancel func()
 	var tctx context.Context // cancellable context for the task
@@ -173,8 +174,6 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	}
 	defer cancel()
 
-	ll := log.With("height", int64(ts.Height()))
-
 	start := time.Now()
 
 	inFlight := 0
@@ -183,193 +182,195 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	// A map to gather the persistable outputs from each task
 	taskOutputs := make(map[string]model.PersistableList, len(t.processors)+len(t.actorProcessors))
 
+	// current is the primary tipset that tasks act upon.
+	// next adds additional context such as outcomes of message execution.
+	var current, next *types.TipSet
+	if t.lastTipSet != nil {
+		if t.lastTipSet.Height() > ts.Height() {
+			// last tipset seen was the child
+			next = t.lastTipSet
+			current = ts
+		} else if t.lastTipSet.Height() < ts.Height() {
+			// last tipset seen was the parent
+			next = ts
+			current = t.lastTipSet
+		} else {
+			log.Errorw("out of order tipsets", "height", ts.Height(), "last_height", t.lastTipSet.Height())
+		}
+	}
+
+	// remember the last tipset we observed
+	t.lastTipSet = ts
+
+	// current is nil when we have only seen the first tipset in our sequence. we should wait for the next one.
+	if current == nil {
+		return nil
+	}
+
+	ll := log.With("current", int64(current.Height()), "next", int64(next.Height()))
+
 	// Run each tipset processing task concurrently
 	for name, p := range t.processors {
 		inFlight++
-		go t.runProcessor(tctx, p, name, ts, results)
+		go t.runProcessor(tctx, p, name, current, results)
 	}
 
-	// Run each actor or message processing task concurrently if we have any and we've seen a previous tipset to compare with
-	if len(t.actorProcessors) > 0 || len(t.messageProcessors) > 0 || len(t.messageExecutionProcessors) > 0 || len(t.consensusProcessor) > 0 {
+	if t.node == nil {
+		node, closer, err := t.opener.Open(ctx)
+		if err != nil {
+			return xerrors.Errorf("unable to open lens: %w", err)
+		}
+		t.node = node
+		t.closer = closer
+	}
 
-		// Actor processors perform a diff between two tipsets so we need to keep track of parent and child
-		var parent, child *types.TipSet
-		if t.lastTipSet != nil {
-			if t.lastTipSet.Height() > ts.Height() {
-				// last tipset seen was the child
-				child = t.lastTipSet
-				parent = ts
-			} else if t.lastTipSet.Height() < ts.Height() {
-				// last tipset seen was the parent
-				child = ts
-				parent = t.lastTipSet
+	if types.CidArrsEqual(next.Parents().Cids(), current.Cids()) {
+		if len(t.consensusProcessor) > 0 {
+			for name, p := range t.consensusProcessor {
+				inFlight++
+				go t.runConsensusProcessor(ctx, p, name, next, current, results)
+			}
+		}
+		// If we have message or actor processors then extract the messages and receipts
+		if len(t.messageProcessors) > 0 || len(t.actorProcessors) > 0 {
+			execMessagesStart := time.Now()
+			tsMsgs, err := t.node.GetExecutedAndBlockMessagesForTipset(ctx, next, current)
+			if err == nil {
+				ll.Debugw("found executed messages", "count", len(tsMsgs.Executed), "time", time.Since(execMessagesStart))
+
+				if len(t.messageProcessors) > 0 {
+					// Start all the message processors
+					for name, p := range t.messageProcessors {
+						inFlight++
+						go t.runMessageProcessor(tctx, p, name, next, current, tsMsgs.Executed, tsMsgs.Block, results)
+					}
+				}
+
+				// If we have actor processors then find actors that have changed state
+				if len(t.actorProcessors) > 0 {
+					changesStart := time.Now()
+					var err error
+					var changes map[string]types.Actor
+					// special case, we want to extract all actor states from the genesis block.
+					if current.Height() == 0 {
+						changes, err = t.getGenesisActors(ctx)
+					} else {
+						changes, err = t.stateChangedActors(tctx, current.ParentState(), next.ParentState())
+					}
+					if err == nil {
+						ll.Debugw("found actor state changes", "count", len(changes), "time", time.Since(changesStart))
+						if t.addressFilter != nil {
+							for addr := range changes {
+								if !t.addressFilter.Allow(addr) {
+									delete(changes, addr)
+								}
+							}
+						}
+						for name, p := range t.actorProcessors {
+							inFlight++
+							go t.runActorProcessor(tctx, p, name, next, current, changes, tsMsgs.Executed, results)
+						}
+					} else {
+						ll.Errorw("failed to extract actor changes", "error", err)
+						terr := xerrors.Errorf("failed to extract actor changes: %w", err)
+						// We need to report that all actor tasks failed
+						for name := range t.actorProcessors {
+							report := &visormodel.ProcessingReport{
+								Height:         int64(current.Height()),
+								StateRoot:      current.ParentState().String(),
+								Reporter:       t.name,
+								Task:           name,
+								StartedAt:      start,
+								CompletedAt:    time.Now(),
+								Status:         visormodel.ProcessingStatusError,
+								ErrorsDetected: terr,
+							}
+							taskOutputs[name] = model.PersistableList{report}
+						}
+					}
+				}
+
 			} else {
-				log.Errorw("out of order tipsets", "height", ts.Height(), "last_height", t.lastTipSet.Height())
+				ll.Errorw("failed to extract messages", "error", err)
+				terr := xerrors.Errorf("failed to extract messages: %w", err)
+				// We need to report that all message tasks failed
+				for name := range t.messageProcessors {
+					report := &visormodel.ProcessingReport{
+						Height:         int64(current.Height()),
+						StateRoot:      current.ParentState().String(),
+						Reporter:       t.name,
+						Task:           name,
+						StartedAt:      start,
+						CompletedAt:    time.Now(),
+						Status:         visormodel.ProcessingStatusError,
+						ErrorsDetected: terr,
+					}
+					taskOutputs[name] = model.PersistableList{report}
+				}
+				// We also need to report that all actor tasks failed
+				for name := range t.actorProcessors {
+					report := &visormodel.ProcessingReport{
+						Height:         int64(current.Height()),
+						StateRoot:      current.ParentState().String(),
+						Reporter:       t.name,
+						Task:           name,
+						StartedAt:      start,
+						CompletedAt:    time.Now(),
+						Status:         visormodel.ProcessingStatusError,
+						ErrorsDetected: terr,
+					}
+					taskOutputs[name] = model.PersistableList{report}
+				}
+
 			}
 		}
 
-		// If no parent tipset available then we need to skip processing. It's likely we received the last or first tipset
-		// in a batch. No report is generated because a different run of the indexer could cover the parent and child
-		// for this tipset.
-		if parent != nil {
-			if t.node == nil {
-				node, closer, err := t.opener.Open(ctx)
-				if err != nil {
-					return xerrors.Errorf("unable to open lens: %w", err)
+		// If we have messages execution processors then extract internal messages
+		if len(t.messageExecutionProcessors) > 0 {
+			execMessagesStart := time.Now()
+			iMsgs, err := t.node.GetMessageExecutionsForTipSet(ctx, next, current)
+			if err == nil {
+				ll.Debugw("found message execution results", "count", len(iMsgs), "time", time.Since(execMessagesStart))
+				// Start all the message processors
+				for name, p := range t.messageExecutionProcessors {
+					inFlight++
+					go t.runMessageExecutionProcessor(tctx, p, name, next, current, iMsgs, results)
 				}
-				t.node = node
-				t.closer = closer
-			}
-
-			if types.CidArrsEqual(child.Parents().Cids(), parent.Cids()) {
-				if len(t.consensusProcessor) > 0 {
-					for name, p := range t.consensusProcessor {
-						inFlight++
-						go t.runConsensusProcessor(ctx, p, name, child, parent, results)
-					}
-				}
-				// If we have message or actor processors then extract the messages and receipts
-				if len(t.messageProcessors) > 0 || len(t.actorProcessors) > 0 {
-					execMessagesStart := time.Now()
-					tsMsgs, err := t.node.GetExecutedAndBlockMessagesForTipset(ctx, child, parent)
-					if err == nil {
-						ll.Debugw("found executed messages", "count", len(tsMsgs.Executed), "time", time.Since(execMessagesStart))
-
-						if len(t.messageProcessors) > 0 {
-							// Start all the message processors
-							for name, p := range t.messageProcessors {
-								inFlight++
-								go t.runMessageProcessor(tctx, p, name, child, parent, tsMsgs.Executed, tsMsgs.Block, results)
-							}
-						}
-
-						// If we have actor processors then find actors that have changed state
-						if len(t.actorProcessors) > 0 {
-							changesStart := time.Now()
-							var err error
-							var changes map[string]types.Actor
-							// special case, we want to extract all actor states from the genesis block.
-							if parent.Height() == 0 {
-								changes, err = t.getGenesisActors(ctx)
-							} else {
-								changes, err = t.stateChangedActors(tctx, parent.ParentState(), child.ParentState())
-							}
-							if err == nil {
-								ll.Debugw("found actor state changes", "count", len(changes), "time", time.Since(changesStart))
-								if t.addressFilter != nil {
-									for addr := range changes {
-										if !t.addressFilter.Allow(addr) {
-											delete(changes, addr)
-										}
-									}
-								}
-								for name, p := range t.actorProcessors {
-									inFlight++
-									go t.runActorProcessor(tctx, p, name, child, parent, changes, tsMsgs.Executed, results)
-								}
-							} else {
-								ll.Errorw("failed to extract actor changes", "error", err)
-								terr := xerrors.Errorf("failed to extract actor changes: %w", err)
-								// We need to report that all actor tasks failed
-								for name := range t.actorProcessors {
-									report := &visormodel.ProcessingReport{
-										Height:         int64(ts.Height()),
-										StateRoot:      ts.ParentState().String(),
-										Reporter:       t.name,
-										Task:           name,
-										StartedAt:      start,
-										CompletedAt:    time.Now(),
-										Status:         visormodel.ProcessingStatusError,
-										ErrorsDetected: terr,
-									}
-									taskOutputs[name] = model.PersistableList{report}
-								}
-							}
-						}
-
-					} else {
-						ll.Errorw("failed to extract messages", "error", err)
-						terr := xerrors.Errorf("failed to extract messages: %w", err)
-						// We need to report that all message tasks failed
-						for name := range t.messageProcessors {
-							report := &visormodel.ProcessingReport{
-								Height:         int64(ts.Height()),
-								StateRoot:      ts.ParentState().String(),
-								Reporter:       t.name,
-								Task:           name,
-								StartedAt:      start,
-								CompletedAt:    time.Now(),
-								Status:         visormodel.ProcessingStatusError,
-								ErrorsDetected: terr,
-							}
-							taskOutputs[name] = model.PersistableList{report}
-						}
-						// We also need to report that all actor tasks failed
-						for name := range t.actorProcessors {
-							report := &visormodel.ProcessingReport{
-								Height:         int64(ts.Height()),
-								StateRoot:      ts.ParentState().String(),
-								Reporter:       t.name,
-								Task:           name,
-								StartedAt:      start,
-								CompletedAt:    time.Now(),
-								Status:         visormodel.ProcessingStatusError,
-								ErrorsDetected: terr,
-							}
-							taskOutputs[name] = model.PersistableList{report}
-						}
-
-					}
-				}
-
-				// If we have messages execution processors then extract internal messages
-				if len(t.messageExecutionProcessors) > 0 {
-					execMessagesStart := time.Now()
-					iMsgs, err := t.node.GetMessageExecutionsForTipSet(ctx, child, parent)
-					if err == nil {
-						ll.Debugw("found message execution results", "count", len(iMsgs), "time", time.Since(execMessagesStart))
-						// Start all the message processors
-						for name, p := range t.messageExecutionProcessors {
-							inFlight++
-							go t.runMessageExecutionProcessor(tctx, p, name, child, parent, iMsgs, results)
-						}
-					} else {
-						ll.Errorw("failed to extract messages", "error", err)
-						terr := xerrors.Errorf("failed to extract messages: %w", err)
-						// We need to report that all message tasks failed
-						for name := range t.messageExecutionProcessors {
-							report := &visormodel.ProcessingReport{
-								Height:         int64(ts.Height()),
-								StateRoot:      ts.ParentState().String(),
-								Reporter:       t.name,
-								Task:           name,
-								StartedAt:      start,
-								CompletedAt:    time.Now(),
-								Status:         visormodel.ProcessingStatusError,
-								ErrorsDetected: terr,
-							}
-							taskOutputs[name] = model.PersistableList{report}
-						}
-					}
-				}
-
 			} else {
-				// TODO: we could fetch the parent stateroot and proceed to index this tipset. However this will be
-				// slower and increases the likelihood that we exceed the processing window and cause the next
-				// tipset to be skipped completely.
-				log.Errorw("mismatching child and parent tipsets", "height", ts.Height(), "child", child.Key(), "parent", parent.Key())
-
-				// We need to report that all message and actor tasks were skipped
-				reason := "tipset did not have expected parent or child"
-				for name := range t.messageProcessors {
-					taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, reason)}
-					ll.Infow("task skipped", "task", name, "reason", reason)
-				}
-				for name := range t.actorProcessors {
-					taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, reason)}
-					ll.Infow("task skipped", "task", name, "reason", reason)
+				ll.Errorw("failed to extract messages", "error", err)
+				terr := xerrors.Errorf("failed to extract messages: %w", err)
+				// We need to report that all message tasks failed
+				for name := range t.messageExecutionProcessors {
+					report := &visormodel.ProcessingReport{
+						Height:         int64(current.Height()),
+						StateRoot:      current.ParentState().String(),
+						Reporter:       t.name,
+						Task:           name,
+						StartedAt:      start,
+						CompletedAt:    time.Now(),
+						Status:         visormodel.ProcessingStatusError,
+						ErrorsDetected: terr,
+					}
+					taskOutputs[name] = model.PersistableList{report}
 				}
 			}
+		}
+
+	} else {
+		// TODO: we could fetch the parent stateroot and proceed to index this tipset. However this will be
+		// slower and increases the likelihood that we exceed the processing window and cause the next
+		// tipset to be skipped completely.
+		ll.Errorw("mismatching current and next tipsets", "current_tipset", current.Key(), "next_tipset", next.Key(), "next_parents", next.Parents().Cids())
+
+		// We need to report that all message and actor tasks were skipped
+		reason := "tipset did not have expected parent or child"
+		for name := range t.messageProcessors {
+			taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, reason)}
+			ll.Infow("task skipped", "task", name, "reason", reason)
+		}
+		for name := range t.actorProcessors {
+			taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, reason)}
+			ll.Infow("task skipped", "task", name, "reason", reason)
 		}
 	}
 
@@ -416,24 +417,21 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 				res.Report[idx].Status = visormodel.ProcessingStatusOK
 			}
 
-			llt.Infow("task report", "status", res.Report[idx].Status, "time", res.Report[idx].CompletedAt.Sub(res.Report[idx].StartedAt))
+			llt.Debugw("task report", "status", res.Report[idx].Status, "time", res.Report[idx].CompletedAt.Sub(res.Report[idx].StartedAt))
 		}
 
 		// Persist the processing report and the data in a single transaction
 		taskOutputs[res.Task] = model.PersistableList{res.Report, res.Data}
 	}
-
-	// remember the last tipset we observed
-	t.lastTipSet = ts
+	ll.Debugw("data extracted", "time", time.Since(start))
 
 	if len(taskOutputs) == 0 {
 		// Nothing to persist
-		ll.Debugw("tipset complete, nothing to persist", "total_time", time.Since(start))
+		ll.Infow("tasks complete, nothing to persist", "total_time", time.Since(start))
 		return nil
 	}
 
 	// wait until there is an empty slot before persisting
-	ll.Debugw("waiting to persist data", "time", time.Since(start))
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -468,7 +466,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 			}(task, p)
 		}
 		wg.Wait()
-		ll.Debugw("tipset complete", "total_time", time.Since(start))
+		ll.Infow("tasks complete", "total_time", time.Since(start))
 	}()
 
 	return nil

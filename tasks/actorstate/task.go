@@ -61,8 +61,8 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	log.Debugw("processing actor state changes", "height", ts.Height(), "parent_height", pts.Height())
 
 	report := &visormodel.ProcessingReport{
-		Height:    int64(ts.Height()),
-		StateRoot: ts.ParentState().String(),
+		Height:    int64(pts.Height()),
+		StateRoot: pts.ParentState().String(),
 		Status:    visormodel.ProcessingStatusOK,
 	}
 

@@ -5,13 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
-
 	itestkit "github.com/filecoin-project/lotus/itests/kit"
 	"github.com/go-pg/pg/v10"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
 	"github.com/filecoin-project/sentinel-visor/model/blocks"
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/testutil"
@@ -46,8 +45,12 @@ func TestWalker(t *testing.T) {
 	head, err := full.ChainHead(ctx)
 	require.NoError(t, err, "chain head")
 
-	t.Logf("collecting chain blocks")
-	bhs, err := collectBlockHeaders(openedAPI, head)
+	t.Logf("collecting chain blocks from tipset before head")
+
+	beforeHead, err := openedAPI.ChainGetTipSet(ctx, head.Parents())
+	require.NoError(t, err, "get tipset before head")
+
+	bhs, err := collectBlockHeaders(openedAPI, beforeHead)
 	require.NoError(t, err, "collect chain blocks")
 
 	cids := bhs.Cids()
@@ -59,7 +62,7 @@ func TestWalker(t *testing.T) {
 	tsIndexer, err := NewTipSetIndexer(opener, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
 	require.NoError(t, err, "NewTipSetIndexer")
 	t.Logf("initializing indexer")
-	idx := NewWalker(tsIndexer, opener, 0, int64(head.Height()))
+	idx := NewWalker(tsIndexer, opener, 0, int64(beforeHead.Height()))
 
 	t.Logf("indexing chain")
 	err = idx.WalkChain(ctx, openedAPI, head)

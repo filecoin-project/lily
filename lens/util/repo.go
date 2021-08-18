@@ -456,7 +456,6 @@ func MethodAndParamsForMessage(m *types.Message, destCode cid.Cid) (string, stri
 	encoded := string(bytes.ReplaceAll(bytes.ToValidUTF8(buf.Bytes(), []byte{}), []byte{0x00}, []byte{}))
 
 	return method, encoded, nil
-
 }
 
 func ActorNameAndFamilyFromCode(c cid.Cid) (name string, family string, err error) {
@@ -519,5 +518,4 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, ts, pts *types.T
 
 		return cid.Undef, false
 	}, nil
-
 }
