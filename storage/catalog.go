@@ -7,6 +7,7 @@ import (
 
 	"github.com/filecoin-project/sentinel-visor/config"
 	"github.com/filecoin-project/sentinel-visor/model"
+	"golang.org/x/xerrors"
 )
 
 type Connector interface {
@@ -114,4 +115,19 @@ type StorageWithMetadata interface {
 // Metadata is additional information that a storage may use to annotate the data it writes
 type Metadata struct {
 	JobName string // name of the job using the storage
+}
+
+// ConnectAsDatabase returns a storage that is ready to use for reading and writing: `name` must corresponds to
+// a Database storage.
+func (c *Catalog) ConnectAsDatabase(ctx context.Context, name string, md Metadata) (*Database, error) {
+	strg, err := c.Connect(ctx, name, md)
+	if err != nil {
+		return nil, err
+	}
+
+	db, ok := strg.(*Database)
+	if !ok {
+		return nil, xerrors.Errorf("connecting to storage as database. unexpected type: %T", strg)
+	}
+	return db, nil
 }
