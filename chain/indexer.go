@@ -203,7 +203,6 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	// If no parent tipset available then we need to wait for another tipset. It's likely we received the last or first tipset
 	// in a batch.
 	if parent != nil {
-
 		// Run each tipset processing task concurrently
 		for name, p := range t.processors {
 			inFlight++

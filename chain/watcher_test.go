@@ -17,6 +17,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/power"
 	"github.com/filecoin-project/specs-actors/actors/builtin/verifreg"
 	"github.com/go-pg/pg/v10"
+	logging "github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -37,6 +38,9 @@ func init() {
 	}
 	power.ConsensusMinerMinPower = big.NewInt(2048)
 	verifreg.MinVerifiedDealSize = big.NewInt(256)
+
+	logging.SetLogLevel("*", "ERROR")
+	logging.SetLogLevelRegex("visor/.+", "DEBUG")
 }
 
 func TestWatcher(t *testing.T) {
@@ -60,9 +64,6 @@ func TestWatcher(t *testing.T) {
 
 	opener := testutil.NewAPIOpener(full)
 
-	bm := itestkit.NewBlockMiner(t, miner)
-	bm.MineUntilBlock(ctx, full, nil)
-
 	strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 	require.NoError(t, err, "NewDatabaseFromDB")
 
@@ -74,26 +75,33 @@ func TestWatcher(t *testing.T) {
 	newHeads, err := full.ChainNotify(ctx)
 	require.NoError(t, err, "chain notify")
 
-	t.Logf("indexing chain")
-	parent := <-newHeads
+	bm := itestkit.NewBlockMiner(t, miner)
+	t.Logf("mining first block")
+	bm.MineUntilBlock(ctx, full, nil)
+
+	first := <-newHeads
 
 	var bhs blockHeaderList
-	for _, head := range parent {
+	for _, head := range first {
 		bhs = append(bhs, head.Val.Blocks()...)
 	}
 
 	cids := bhs.Cids()
 	rounds := bhs.Rounds()
 
-	for _, hc := range parent {
+	t.Logf("indexing first tipset")
+	for _, hc := range first {
 		he := &HeadEvent{Type: hc.Type, TipSet: hc.Val}
 		err = idx.index(ctx, he)
 		require.NoError(t, err, "index")
 	}
 
+	t.Logf("mining second block")
 	bm.MineUntilBlock(ctx, full, nil)
-	child := <-newHeads
-	for _, hc := range child {
+
+	second := <-newHeads
+	t.Logf("indexing second tipset")
+	for _, hc := range second {
 		he := &HeadEvent{Type: hc.Type, TipSet: hc.Val}
 		err = idx.index(ctx, he)
 		require.NoError(t, err, "index")
