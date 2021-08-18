@@ -136,8 +136,9 @@ func main() {
 		HideHelp: true,
 		Metadata: commands.Metadata(),
 		Commands: []*cli.Command{
-			commands.HelpCmd,
+			commands.ChainCmd,
 			commands.DaemonCmd,
+			commands.HelpCmd,
 			commands.InitCmd,
 			commands.JobCmd,
 			commands.LogCmd,
@@ -148,8 +149,8 @@ func main() {
 			commands.SyncCmd,
 			commands.VectorCmd,
 			commands.WaitApiCmd,
-			commands.WatchCmd,
 			commands.WalkCmd,
+			commands.WatchCmd,
 		},
 	}
 	app.Setup()
