@@ -181,7 +181,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 
 		rcpt := &messagemodel.Receipt{
-			Height:    int64(m.Height + 1),
+			Height:    int64(ts.Height()),
 			Message:   m.Cid.String(),
 			StateRoot: ts.ParentState().String(),
 			Idx:       int(m.Index),
