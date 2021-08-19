@@ -131,7 +131,7 @@ type LensAPI struct {
 }
 
 func (ra *LensAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {
-	return ra.ChainGetTipSetAfterHeight(ctx, epoch, key)
+	panic("implement me")
 }
 
 func (ra *LensAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {
