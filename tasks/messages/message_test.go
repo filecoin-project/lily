@@ -15,7 +15,7 @@ func TestParseMessageParams(t *testing.T) {
 		name        string
 		method      abi.MethodNum
 		params      []byte
-		actor       cid.Cid
+		actorCode   cid.Cid
 		wantMethod  string
 		wantEncoded string
 		wantErr     bool
@@ -25,7 +25,7 @@ func TestParseMessageParams(t *testing.T) {
 			name:        "unknown actor code",
 			method:      4,
 			params:      nil,
-			actor:       cid.Undef,
+			actorCode:   cid.Undef,
 			wantMethod:  "Unknown",
 			wantEncoded: "",
 			wantErr:     false,
@@ -47,7 +47,7 @@ func TestParseMessageParams(t *testing.T) {
 				Params: tc.params,
 			}
 
-			method, encoded, err := task.parseMessageParams(msg, tc.actor)
+			method, encoded, err := task.parseMessageParams(msg, tc.actorCode)
 			switch {
 			case tc.wantErr && err == nil:
 				t.Errorf("got no error but wanted one")

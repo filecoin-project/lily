@@ -94,6 +94,21 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 				})
 			}
 
+			// To and From may be empty if the actor could not be found in the state tree
+			if msg.Message.To.Empty() {
+				errorsDetected = append(errorsDetected, &MessageError{
+					Cid:   msg.Cid(),
+					Error: "to address is empty",
+				})
+			}
+
+			if msg.Message.From.Empty() {
+				errorsDetected = append(errorsDetected, &MessageError{
+					Cid:   msg.Cid(),
+					Error: "from address is empty",
+				})
+			}
+
 			// record all unique Secp messages
 			msg := &messagemodel.Message{
 				Height:     int64(bm.Block.Height),
@@ -130,6 +145,21 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 				errorsDetected = append(errorsDetected, &MessageError{
 					Cid:   msg.Cid(),
 					Error: xerrors.Errorf("failed to serialize message: %w", err).Error(),
+				})
+			}
+
+			// To and From may be empty if the actor could not be found in the state tree
+			if msg.To.Empty() {
+				errorsDetected = append(errorsDetected, &MessageError{
+					Cid:   msg.Cid(),
+					Error: "to address is empty",
+				})
+			}
+
+			if msg.From.Empty() {
+				errorsDetected = append(errorsDetected, &MessageError{
+					Cid:   msg.Cid(),
+					Error: "from address is empty",
 				})
 			}
 
@@ -276,6 +306,10 @@ func (p *Task) parseMessageParams(m *types.Message, destCode cid.Cid) (string, s
 	// Method is optional, zero means a plain value transfer
 	if m.Method == 0 {
 		return "Send", "", nil
+	}
+
+	if !destCode.Defined() {
+		return "Unknown", "", nil
 	}
 
 	var params ipld.Node
