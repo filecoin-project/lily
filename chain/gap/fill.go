@@ -58,7 +58,7 @@ func (g *GapFiller) Run(ctx context.Context) error {
 		}
 		fillLog.Infow("fill success", "height", height, "remaining", len(gaps)-idx)
 
-		if err := g.setGapsFilled(ctx, height); err != nil {
+		if err := g.setGapsFilled(ctx, height, gaps[height]...); err != nil {
 			return err
 		}
 		idx += 1
@@ -113,10 +113,11 @@ func (g *GapFiller) queryGaps(ctx context.Context) ([]*visor.GapReport, error) {
 }
 
 // mark all gaps at height as filled.
-func (g *GapFiller) setGapsFilled(ctx context.Context, height int64) error {
+func (g *GapFiller) setGapsFilled(ctx context.Context, height int64, tasks ...string) error {
 	if _, err := g.DB.AsORM().ModelContext(ctx, &visor.GapReport{}).
 		Set("status = 'FILLED'").
 		Where("height = ?", height).
+		Where("task = ANY (?)", pg.Array(tasks)).
 		Update(); err != nil {
 		return err
 	}

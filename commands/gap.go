@@ -84,7 +84,6 @@ var GapFillCmd = &cli.Command{
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		fmt.Println(chain.AllTasks)
 
 		api, closer, err := GetAPI(ctx, gapFlags.apiAddr, gapFlags.apiToken)
 		if err != nil {
