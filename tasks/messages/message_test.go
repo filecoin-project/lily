@@ -28,7 +28,7 @@ func TestParseMessageParams(t *testing.T) {
 			actorCode:   cid.Undef,
 			wantMethod:  "Unknown",
 			wantEncoded: "",
-			wantErr:     false,
+			wantErr:     true,
 		},
 	}
 
