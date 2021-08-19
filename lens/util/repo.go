@@ -481,7 +481,7 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, ts, pts *types.T
 		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", ts.Key(), pts.Key())
 	}
 
-	stateTree, err := state.LoadStateTree(store, ts.ParentState())
+	stateTree, err := state.LoadStateTree(store, pts.ParentState())
 	if err != nil {
 		return nil, xerrors.Errorf("load state tree: %w", err)
 	}
@@ -523,6 +523,7 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, ts, pts *types.T
 			return c, true
 		}
 
+		log.Warnw("failed to find actor code", "address", a.String(), "resolved", ra.String())
 		return cid.Undef, false
 	}, nil
 }
