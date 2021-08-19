@@ -501,40 +501,8 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 		return nil, xerrors.Errorf("iterate actors: %w", err)
 	}
 
-	currentStateTree, err := state.LoadStateTree(store, current.ParentState())
-	if err != nil {
-		return nil, xerrors.Errorf("load state tree: %w", err)
-	}
-	currentInitActor, err := currentStateTree.GetActor(builtininit.Address)
-	if err != nil {
-		return nil, xerrors.Errorf("getting init actor: %w", err)
-	}
-	currentInitActorState, err := builtininit.Load(store, currentInitActor)
-	if err != nil {
-		return nil, xerrors.Errorf("loading init actor state: %w", err)
-	}
-
-	addressChanges, err := builtininit.DiffAddressMap(ctx, store, currentInitActorState, nextInitActorState)
-	if err != nil {
-		return nil, xerrors.Errorf("diffing init actor state: %w", err)
-	}
-
-	for _, modAddr := range addressChanges.Modified {
-		log.Debugw("actor address changed", "from_id", modAddr.From.ID.String(), "from_address", modAddr.From.PK.String(), "from_id", modAddr.To.ID.String(), "to_address", modAddr.To.PK.String())
-	}
-
-	for _, remAddr := range addressChanges.Removed {
-		log.Debugw("actor address removed", "id", remAddr.ID.String(), "address", remAddr.PK.String())
-	}
-
 	return func(a address.Address) (cid.Cid, bool) {
-		act, err := nextStateTree.GetActor(a)
-		if err != nil {
-			log.Warnw("failed to get actor", "error", err.Error(), "address", a.String())
-		}
-		if act != nil {
-			log.Debugw("got actor", "address", a.String(), "code", act.Code)
-		}
+		// Shortcut lookup before resolving
 		c, ok := actorCodes[a]
 		if ok {
 			return c, true
@@ -551,7 +519,7 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 			return c, true
 		}
 
-		log.Warnw("failed to find actor code", "address", a.String(), "resolved", ra.String())
+		log.Warnw("failed to find actor in state tree", "address", a.String(), "resolved", ra.String())
 		return cid.Undef, false
 	}, nil
 }
