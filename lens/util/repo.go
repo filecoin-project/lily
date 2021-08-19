@@ -263,40 +263,40 @@ func (m FakeVerifier) VerifyAggregateSeals(aggregate proof5.AggregateSealVerifyP
 // GetMessagesForTipset returns a list of messages sent as part of pts (parent) with receipts found in ts (child).
 // No attempt at deduplication of messages is made. A list of blocks with their corresponding messages is also returned - it contains all messages
 // in the block regardless if they were applied during the state change.
-func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainStore, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
-	if !types.CidArrsEqual(ts.Parents().Cids(), pts.Cids()) {
-		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", ts.Key(), pts.Key())
+func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainStore, next, current *types.TipSet) (*lens.TipSetMessages, error) {
+	if !types.CidArrsEqual(next.Parents().Cids(), current.Cids()) {
+		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", next.Key(), current.Key())
 	}
 
-	getActorCode, err := MakeGetActorCodeFunc(ctx, cs.ActorStore(ctx), ts, pts)
+	getActorCode, err := MakeGetActorCodeFunc(ctx, cs.ActorStore(ctx), current)
 	if err != nil {
 		return nil, err
 	}
 
 	// Build a lookup of which blocks each message appears in
 	messageBlocks := map[cid.Cid][]cid.Cid{}
-	for blockIdx, bh := range pts.Blocks() {
+	for blockIdx, bh := range current.Blocks() {
 		blscids, secpkcids, err := cs.ReadMsgMetaCids(bh.Messages)
 		if err != nil {
 			return nil, xerrors.Errorf("read messages for block: %w", err)
 		}
 
 		for _, c := range blscids {
-			messageBlocks[c] = append(messageBlocks[c], pts.Cids()[blockIdx])
+			messageBlocks[c] = append(messageBlocks[c], current.Cids()[blockIdx])
 		}
 
 		for _, c := range secpkcids {
-			messageBlocks[c] = append(messageBlocks[c], pts.Cids()[blockIdx])
+			messageBlocks[c] = append(messageBlocks[c], current.Cids()[blockIdx])
 		}
 
 	}
 
-	bmsgs, err := cs.BlockMsgsForTipset(pts)
+	bmsgs, err := cs.BlockMsgsForTipset(current)
 	if err != nil {
 		return nil, xerrors.Errorf("block messages for tipset: %w", err)
 	}
 
-	pblocks := pts.Blocks()
+	pblocks := current.Blocks()
 	if len(bmsgs) != len(pblocks) {
 		// logic error somewhere
 		return nil, xerrors.Errorf("mismatching number of blocks returned from block messages, got %d wanted %d", len(bmsgs), len(pblocks))
@@ -318,16 +318,16 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 			// if a message ran out of gas while executing this is expected.
 			toCode, found := getActorCode(msg.To)
 			if !found {
-				log.Warnw("failed to find TO actor", "height", ts.Height().String(), "message", msg.Cid().String(), "actor", msg.To.String())
+				log.Warnw("failed to find TO actor", "height", next.Height().String(), "message", msg.Cid().String(), "actor", msg.To.String())
 			}
 			// we must always be able to find the sender, else there is a logic error somewhere.
 			fromCode, found := getActorCode(msg.From)
 			if !found {
-				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, ts.Height(), msg.Cid())
+				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, next.Height(), msg.Cid())
 			}
 			emsgs = append(emsgs, &lens.ExecutedMessage{
 				Cid:           blsm.Cid(),
-				Height:        pts.Height(),
+				Height:        current.Height(),
 				Message:       msg,
 				BlockHeader:   pblocks[blockIdx],
 				Blocks:        messageBlocks[blsm.Cid()],
@@ -343,16 +343,16 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 			toCode, found := getActorCode(msg.To)
 			// if a message ran out of gas while executing this is expected.
 			if !found {
-				log.Warnw("failed to find TO actor", "height", ts.Height().String(), "message", msg.Cid().String(), "actor", msg.To.String())
+				log.Warnw("failed to find TO actor", "height", next.Height().String(), "message", msg.Cid().String(), "actor", msg.To.String())
 			}
 			// we must always be able to find the sender, else there is a logic error somewhere.
 			fromCode, found := getActorCode(msg.From)
 			if !found {
-				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, ts.Height(), msg.Cid())
+				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, next.Height(), msg.Cid())
 			}
 			emsgs = append(emsgs, &lens.ExecutedMessage{
 				Cid:           secm.Cid(),
-				Height:        pts.Height(),
+				Height:        current.Height(),
 				Message:       secm.VMMessage(),
 				BlockHeader:   pblocks[blockIdx],
 				Blocks:        messageBlocks[secm.Cid()],
@@ -366,7 +366,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 	}
 
 	// Retrieve receipts using a block from the child tipset
-	rs, err := adt.AsArray(cs.ActorStore(ctx), ts.Blocks()[0].ParentMessageReceipts)
+	rs, err := adt.AsArray(cs.ActorStore(ctx), next.Blocks()[0].ParentMessageReceipts)
 	if err != nil {
 		return nil, xerrors.Errorf("amt load: %w", err)
 	}
@@ -378,8 +378,8 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 
 	// Create a skeleton vm just for calling ShouldBurn
 	vmi, err := vm.NewVM(ctx, &vm.VMOpts{
-		StateBase:   pts.ParentState(),
-		Epoch:       pts.Height(),
+		StateBase:   current.ParentState(),
+		Epoch:       current.Height(),
 		Bstore:      cs.StateBlockstore(),
 		NtwkVersion: DefaultNetwork.Version,
 	})
@@ -387,7 +387,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		return nil, xerrors.Errorf("creating temporary vm: %w", err)
 	}
 
-	parentStateTree, err := state.LoadStateTree(cs.ActorStore(ctx), pts.ParentState())
+	parentStateTree, err := state.LoadStateTree(cs.ActorStore(ctx), current.ParentState())
 	if err != nil {
 		return nil, xerrors.Errorf("load state tree: %w", err)
 	}
@@ -410,8 +410,8 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		em.GasOutputs = vm.ComputeGasOutputs(em.Receipt.GasUsed, em.Message.GasLimit, em.BlockHeader.ParentBaseFee, em.Message.GasFeeCap, em.Message.GasPremium, burn)
 
 	}
-	blkMsgs := make([]*lens.BlockMessages, len(ts.Blocks()))
-	for idx, blk := range ts.Blocks() {
+	blkMsgs := make([]*lens.BlockMessages, len(next.Blocks()))
+	for idx, blk := range next.Blocks() {
 		msgs, smsgs, err := cs.MessagesForBlock(blk)
 		if err != nil {
 			return nil, err
@@ -476,12 +476,8 @@ func ActorNameAndFamilyFromCode(c cid.Cid) (name string, family string, err erro
 	return
 }
 
-func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, ts, pts *types.TipSet) (func(a address.Address) (cid.Cid, bool), error) {
-	if !types.CidArrsEqual(ts.Parents().Cids(), pts.Cids()) {
-		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", ts.Key(), pts.Key())
-	}
-
-	stateTree, err := state.LoadStateTree(store, pts.ParentState())
+func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, current *types.TipSet) (func(a address.Address) (cid.Cid, bool), error) {
+	stateTree, err := state.LoadStateTree(store, current.ParentState())
 	if err != nil {
 		return nil, xerrors.Errorf("load state tree: %w", err)
 	}
@@ -508,7 +504,6 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, ts, pts *types.T
 	return func(a address.Address) (cid.Cid, bool) {
 		c, ok := actorCodes[a]
 		if ok {
-			log.Debugw("found actor code with unresolved address", "address", a.String(), "code", c.String())
 			return c, true
 		}
 
