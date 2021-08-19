@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
+	builtin3 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
 	"github.com/ipfs/go-cid"
@@ -90,6 +91,17 @@ func TestParseMessageParams(t *testing.T) {
 			wantMethod:  "DisputeWindowedPoSt",
 			wantEncoded: "{\n\t\"Deadline\": 18,\n\t\"PoStIndex\": 1\n}\n",
 			wantErr:     false,
+		},
+		{
+			// Derived from message bafy2bzacebpiuu7tgya6yz56sfllpqc3rqbo5s5xl7353xeuavc53qlpb4sqw
+			// Account actor is not supported for parameter parsing
+			name:        "issue-663",
+			method:      1,
+			params:      nil,
+			actorCode:   builtin3.AccountActorCodeID,
+			wantMethod:  "",
+			wantEncoded: "",
+			wantErr:     true,
 		},
 	}
 
