@@ -528,6 +528,13 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 	}
 
 	return func(a address.Address) (cid.Cid, bool) {
+		act, err := nextStateTree.GetActor(a)
+		if err != nil {
+			log.Warnw("failed to get actor", "error", err.Error(), "address", a.String())
+		}
+		if act != nil {
+			log.Debugw("got actor", "address", a.String(), "code", act.Code)
+		}
 		c, ok := actorCodes[a]
 		if ok {
 			return c, true
