@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
+	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
 	"github.com/ipfs/go-cid"
 )
@@ -79,6 +80,16 @@ func TestParseMessageParams(t *testing.T) {
 			wantMethod:  "InitExecParams",
 			wantEncoded: "",
 			wantErr:     true,
+		},
+		{
+			// Derived from message bafy2bzacedqt52o7iyghmiqvvgjvcc2bw3xivspj635tl7dtlrsasreaby5ug
+			name:        "issue-668",
+			method:      24,
+			params:      mustDecodeBase64(t, "ghIB"),
+			actorCode:   builtin4.StorageMinerActorCodeID,
+			wantMethod:  "DisputeWindowedPoSt",
+			wantEncoded: "{\n\t\"Deadline\": 18,\n\t\"PoStIndex\": 1\n}\n",
+			wantErr:     false,
 		},
 	}
 
