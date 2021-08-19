@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
 	itestkit "github.com/filecoin-project/lotus/itests/kit"
@@ -37,6 +38,10 @@ func (o *APIOpener) Daemonized() bool {
 type APIWrapper struct {
 	*itestkit.TestFullNode
 	ctx context.Context
+}
+
+func (aw *APIWrapper) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {
+	panic("implement me")
 }
 
 func (aw *APIWrapper) Store() adt.Store {
