@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/big"
 
+	"github.com/filecoin-project/go-state-types/exitcode"
 	"github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -232,10 +233,14 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			}
 			parsedMessageResults = append(parsedMessageResults, pm)
 		} else {
-			errorsDetected = append(errorsDetected, &MessageError{
-				Cid:   m.Cid,
-				Error: xerrors.Errorf("failed to parse message params: %w", err).Error(),
-			})
+			if rcpt.ExitCode == int64(exitcode.ErrSerialization) {
+				// ignore the parse error since the params are probably malformed, as reported by the vm
+			} else {
+				errorsDetected = append(errorsDetected, &MessageError{
+					Cid:   m.Cid,
+					Error: xerrors.Errorf("failed to parse message params: %w", err).Error(),
+				})
+			}
 		}
 	}
 
