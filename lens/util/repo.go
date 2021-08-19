@@ -508,6 +508,7 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, ts, pts *types.T
 	return func(a address.Address) (cid.Cid, bool) {
 		ra, found, err := initActorState.ResolveAddress(a)
 		if err != nil || !found {
+			log.Warnw("failed to resolve actor address", "address", a.String())
 			return cid.Undef, false
 		}
 
