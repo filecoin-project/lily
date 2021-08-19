@@ -168,7 +168,7 @@ func (m *LilyNodeAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, 
 	return util.GetExecutedAndBlockMessagesForTipset(ctx, m.ChainAPI.Chain, ts, pts)
 }
 
-func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts *types.TipSet, pts *types.TipSet) ([]*lens.MessageExecution, error) {
+func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, next *types.TipSet, current *types.TipSet) ([]*lens.MessageExecution, error) {
 	// this is defined in the lily daemon dep injection constructor, failure here is a developer error.
 	msgMonitor, ok := m.ExecMonitor.(*modules.BufferedExecMonitor)
 	if !ok {
@@ -177,26 +177,26 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts *typ
 
 	// if lily was watching the chain when this tipset was applied then its exec monitor will already
 	// contain executions for this tipset.
-	executions, err := msgMonitor.ExecutionFor(pts)
+	executions, err := msgMonitor.ExecutionFor(current)
 	if err != nil {
 		if err == modules.ExecutionTraceNotFound {
 			// if lily hasn't watched this tipset be applied then we need to compute its execution trace.
 			// this will likely be the case for most walk tasks.
-			_, err := m.StateManager.ExecutionTraceWithMonitor(ctx, pts, msgMonitor)
+			_, err := m.StateManager.ExecutionTraceWithMonitor(ctx, current, msgMonitor)
 			if err != nil {
-				return nil, xerrors.Errorf("failed to compute execution trace for tipset: %s", pts.Key().String())
+				return nil, xerrors.Errorf("failed to compute execution trace for tipset: %s", current.Key().String())
 			}
 			// the above call will populate the msgMonitor with an execution trace for this tipset, get it.
-			executions, err = msgMonitor.ExecutionFor(pts)
+			executions, err = msgMonitor.ExecutionFor(current)
 			if err != nil {
-				return nil, xerrors.Errorf("failed to find execution trace for tipset: %s", pts.Key().String())
+				return nil, xerrors.Errorf("failed to find execution trace for tipset: %s", current.Key().String())
 			}
 		} else {
-			return nil, xerrors.Errorf("failed to extract message execution for tipset %s: %w", ts, err)
+			return nil, xerrors.Errorf("failed to extract message execution for tipset %s: %w", next, err)
 		}
 	}
 
-	getActorCode, err := util.MakeGetActorCodeFunc(ctx, m.ChainAPI.Chain.ActorStore(ctx), ts, pts)
+	getActorCode, err := util.MakeGetActorCodeFunc(ctx, m.ChainAPI.Chain.ActorStore(ctx), current)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to make actor code query function: %w", err)
 	}
@@ -206,7 +206,7 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts *typ
 		toCode, found := getActorCode(execution.Msg.To)
 		// if the message failed to execute due to lack of gas then the TO actor may never have been created.
 		if !found {
-			log.Warnw("failed to find TO actor", "height", ts.Height().String(), "message", execution.Msg.Cid().String(), "actor", execution.Msg.To.String())
+			log.Warnw("failed to find TO actor", "height", next.Height().String(), "message", execution.Msg.Cid().String(), "actor", execution.Msg.To.String())
 		}
 		// if the message sender cannot be found this is an unexpected error
 		fromCode, found := getActorCode(execution.Msg.From)
