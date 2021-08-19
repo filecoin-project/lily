@@ -268,7 +268,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", next.Key(), current.Key())
 	}
 
-	getActorCode, err := MakeGetActorCodeFunc(ctx, cs.ActorStore(ctx), current)
+	getActorCode, err := MakeGetActorCodeFunc(ctx, cs.ActorStore(ctx), next, current)
 	if err != nil {
 		return nil, err
 	}
@@ -476,29 +476,55 @@ func ActorNameAndFamilyFromCode(c cid.Cid) (name string, family string, err erro
 	return
 }
 
-func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, current *types.TipSet) (func(a address.Address) (cid.Cid, bool), error) {
-	stateTree, err := state.LoadStateTree(store, current.ParentState())
+func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *types.TipSet) (func(a address.Address) (cid.Cid, bool), error) {
+	nextStateTree, err := state.LoadStateTree(store, next.ParentState())
 	if err != nil {
 		return nil, xerrors.Errorf("load state tree: %w", err)
 	}
 
-	initActor, err := stateTree.GetActor(builtininit.Address)
+	nextInitActor, err := nextStateTree.GetActor(builtininit.Address)
 	if err != nil {
 		return nil, xerrors.Errorf("getting init actor: %w", err)
 	}
 
-	initActorState, err := builtininit.Load(store, initActor)
+	nextInitActorState, err := builtininit.Load(store, nextInitActor)
 	if err != nil {
 		return nil, xerrors.Errorf("loading init actor state: %w", err)
 	}
 
-	// Build a lookup of actor codes
+	// Build a lookup of actor codes that exist after all messages in the current epoch have been executed
 	actorCodes := map[address.Address]cid.Cid{}
-	if err := stateTree.ForEach(func(a address.Address, act *types.Actor) error {
+	if err := nextStateTree.ForEach(func(a address.Address, act *types.Actor) error {
 		actorCodes[a] = act.Code
 		return nil
 	}); err != nil {
 		return nil, xerrors.Errorf("iterate actors: %w", err)
+	}
+
+	currentStateTree, err := state.LoadStateTree(store, current.ParentState())
+	if err != nil {
+		return nil, xerrors.Errorf("load state tree: %w", err)
+	}
+	currentInitActor, err := currentStateTree.GetActor(builtininit.Address)
+	if err != nil {
+		return nil, xerrors.Errorf("getting init actor: %w", err)
+	}
+	currentInitActorState, err := builtininit.Load(store, currentInitActor)
+	if err != nil {
+		return nil, xerrors.Errorf("loading init actor state: %w", err)
+	}
+
+	addressChanges, err := builtininit.DiffAddressMap(ctx, store, currentInitActorState, nextInitActorState)
+	if err != nil {
+		return nil, xerrors.Errorf("diffing init actor state: %w", err)
+	}
+
+	for _, modAddr := range addressChanges.Modified {
+		log.Debugw("actor address changed", "from_id", modAddr.From.ID.String(), "from_address", modAddr.From.PK.String(), "from_id", modAddr.To.ID.String(), "to_address", modAddr.To.PK.String())
+	}
+
+	for _, remAddr := range addressChanges.Removed {
+		log.Debugw("actor address removed", "id", remAddr.ID.String(), "address", remAddr.PK.String())
 	}
 
 	return func(a address.Address) (cid.Cid, bool) {
@@ -507,7 +533,7 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, current *types.T
 			return c, true
 		}
 
-		ra, found, err := initActorState.ResolveAddress(a)
+		ra, found, err := nextInitActorState.ResolveAddress(a)
 		if err != nil || !found {
 			log.Warnw("failed to resolve actor address", "address", a.String())
 			return cid.Undef, false

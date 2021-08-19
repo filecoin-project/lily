@@ -196,7 +196,7 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, next *t
 		}
 	}
 
-	getActorCode, err := util.MakeGetActorCodeFunc(ctx, m.ChainAPI.Chain.ActorStore(ctx), current)
+	getActorCode, err := util.MakeGetActorCodeFunc(ctx, m.ChainAPI.Chain.ActorStore(ctx), next, current)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to make actor code query function: %w", err)
 	}
