@@ -28,9 +28,6 @@ import (
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/lotus/node/modules"
 	"github.com/filecoin-project/lotus/node/repo"
-	builtininit "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
-	"github.com/filecoin-project/sentinel-visor/tasks/messages"
-	"github.com/filecoin-project/sentinel-visor/tasks/messages/fcjson"
 	"github.com/filecoin-project/specs-actors/actors/runtime/proof"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	proof5 "github.com/filecoin-project/specs-actors/v5/actors/runtime/proof"
@@ -41,7 +38,10 @@ import (
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	"golang.org/x/xerrors"
 
+	builtininit "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
 	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/sentinel-visor/tasks/messages"
+	"github.com/filecoin-project/sentinel-visor/tasks/messages/fcjson"
 )
 
 var log = logging.Logger("lens/util")
@@ -482,6 +482,15 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 		return nil, xerrors.Errorf("load state tree: %w", err)
 	}
 
+	// Build a lookup of actor codes that exist after all messages in the current epoch have been executed
+	actorCodes := map[address.Address]cid.Cid{}
+	if err := nextStateTree.ForEach(func(a address.Address, act *types.Actor) error {
+		actorCodes[a] = act.Code
+		return nil
+	}); err != nil {
+		return nil, xerrors.Errorf("iterate actors: %w", err)
+	}
+
 	nextInitActor, err := nextStateTree.GetActor(builtininit.Address)
 	if err != nil {
 		return nil, xerrors.Errorf("getting init actor: %w", err)
@@ -490,15 +499,6 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 	nextInitActorState, err := builtininit.Load(store, nextInitActor)
 	if err != nil {
 		return nil, xerrors.Errorf("loading init actor state: %w", err)
-	}
-
-	// Build a lookup of actor codes that exist after all messages in the current epoch have been executed
-	actorCodes := map[address.Address]cid.Cid{}
-	if err := nextStateTree.ForEach(func(a address.Address, act *types.Actor) error {
-		actorCodes[a] = act.Code
-		return nil
-	}); err != nil {
-		return nil, xerrors.Errorf("iterate actors: %w", err)
 	}
 
 	return func(a address.Address) (cid.Cid, bool) {
@@ -519,7 +519,19 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 			return c, true
 		}
 
-		log.Warnw("failed to find actor in state tree", "address", a.String(), "resolved", ra.String())
-		return cid.Undef, false
+		// Fall back to looking in current state tree. This actor may have been deleted.
+		currentStateTree, err := state.LoadStateTree(store, current.ParentState())
+		if err != nil {
+			log.Warnf("failed to load state tree: %v", err)
+			return cid.Undef, false
+		}
+
+		act, err := currentStateTree.GetActor(a)
+		if err != nil {
+			log.Warnw("failed to find actor in state tree", "address", a.String(), "error", err.Error())
+			return cid.Undef, false
+		}
+
+		return act.Code, true
 	}, nil
 }
