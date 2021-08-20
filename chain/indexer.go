@@ -160,7 +160,6 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Name, t.name))
-	log.Debugw("indexing tipset", "height", ts.Height())
 
 	var cancel func()
 	var tctx context.Context // cancellable context for the task
@@ -208,6 +207,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	}
 
 	ll := log.With("current", int64(current.Height()), "next", int64(next.Height()))
+	ll.Debugw("indexing tipset")
 
 	// Run each tipset processing task concurrently
 	for name, p := range t.processors {
