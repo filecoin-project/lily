@@ -7,7 +7,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
-	builtin3 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
+	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
 	"github.com/ipfs/go-cid"
