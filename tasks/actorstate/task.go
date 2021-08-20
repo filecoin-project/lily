@@ -39,7 +39,7 @@ func NewTask(opener lens.APIOpener, extracterMap ActorExtractorMap) *Task {
 	return p
 }
 
-func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates map[string]types.Actor, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates map[string]lens.ActorStateChange, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := global.Tracer("").Start(ctx, "ProcessActors")
 	if span.IsRecording() {
 		span.SetAttributes(label.String("tipset", ts.String()), label.String("parent_tipset", pts.String()), label.Int64("height", int64(ts.Height())))
@@ -69,10 +69,10 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	ll := log.With("height", int64(ts.Height()))
 
 	// Filter to just allowed actors
-	actors := map[string]types.Actor{}
-	for addr, act := range candidates {
-		if t.extracterMap.Allow(act.Code) {
-			actors[addr] = act
+	actors := map[string]lens.ActorStateChange{}
+	for addr, ch := range candidates {
+		if t.extracterMap.Allow(ch.Actor.Code) {
+			actors[addr] = ch
 		}
 	}
 
@@ -90,8 +90,8 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 
 	// Run each task concurrently
 	results := make(chan *ActorStateResult, len(actors))
-	for addr, act := range actors {
-		go t.runActorStateExtraction(ctx, ts, pts, addr, act, emsgs, results)
+	for addr, ch := range actors {
+		go t.runActorStateExtraction(ctx, ts, pts, addr, ch, emsgs, results)
 	}
 
 	// Gather results
@@ -134,12 +134,12 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	return data, report, nil
 }
 
-func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pts *types.TipSet, addrStr string, act types.Actor, emsgs []*lens.ExecutedMessage, results chan *ActorStateResult) {
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ActorCode, builtin.ActorNameByCode(act.Code)))
+func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pts *types.TipSet, addrStr string, ch lens.ActorStateChange, emsgs []*lens.ExecutedMessage, results chan *ActorStateResult) {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ActorCode, builtin.ActorNameByCode(ch.Actor.Code)))
 
 	res := &ActorStateResult{
-		Code:    act.Code,
-		Head:    act.Head,
+		Code:    ch.Actor.Code,
+		Head:    ch.Actor.Head,
 		Address: addrStr,
 	}
 	defer func() {
@@ -153,7 +153,8 @@ func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pt
 	}
 
 	info := ActorInfo{
-		Actor:           act,
+		Actor:           ch.Actor,
+		ChangeType:      ch.ChangeType,
 		Address:         addr,
 		ParentStateRoot: ts.ParentState(),
 		Epoch:           ts.Height(),
@@ -161,7 +162,7 @@ func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pt
 		ParentTipSet:    pts,
 	}
 
-	extracter, ok := t.extracterMap.GetExtractor(act.Code)
+	extracter, ok := t.extracterMap.GetExtractor(ch.Actor.Code)
 	if !ok {
 		res.SkippedParse = true
 	} else {

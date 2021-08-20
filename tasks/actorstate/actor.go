@@ -21,6 +21,23 @@ func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.Ex
 	ctx, span := global.Tracer("").Start(ctx, "ActorExtractor")
 	defer span.End()
 
+	result := &commonmodel.ActorTaskResult{
+		Actor: &commonmodel.Actor{
+			Height:    int64(a.Epoch),
+			ID:        a.Address.String(),
+			StateRoot: a.ParentStateRoot.String(),
+			Code:      builtin.ActorNameByCode(a.Actor.Code),
+			Head:      a.Actor.Head.String(),
+			Balance:   a.Actor.Balance.String(),
+			Nonce:     a.Actor.Nonce,
+		},
+	}
+
+	// Don't attempt to read state if the actor has been deleted
+	if a.ChangeType == lens.ChangeTypeRemove {
+		return result, nil
+	}
+
 	ast, err := node.StateReadState(ctx, a.Address, a.TipSet.Key())
 	if err != nil {
 		return nil, err
@@ -31,21 +48,12 @@ func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.Ex
 		return nil, err
 	}
 
-	return &commonmodel.ActorTaskResult{
-		Actor: &commonmodel.Actor{
-			Height:    int64(a.Epoch),
-			ID:        a.Address.String(),
-			StateRoot: a.ParentStateRoot.String(),
-			Code:      builtin.ActorNameByCode(a.Actor.Code),
-			Head:      a.Actor.Head.String(),
-			Balance:   a.Actor.Balance.String(),
-			Nonce:     a.Actor.Nonce,
-		},
-		State: &commonmodel.ActorState{
-			Height: int64(a.Epoch),
-			Head:   a.Actor.Head.String(),
-			Code:   a.Actor.Code.String(),
-			State:  string(state),
-		},
-	}, nil
+	result.State = &commonmodel.ActorState{
+		Height: int64(a.Epoch),
+		Head:   a.Actor.Head.String(),
+		Code:   a.Actor.Code.String(),
+		State:  string(state),
+	}
+
+	return result, nil
 }

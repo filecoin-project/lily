@@ -103,3 +103,18 @@ type BlockMessages struct {
 	BlsMessages  []*types.Message       // BLS messages in block `Block`
 	SecpMessages []*types.SignedMessage // SECP messages in block `Block`
 }
+
+// ChangeType denotes type of state change
+type ChangeType int
+
+const (
+	ChangeTypeUnknown = 0
+	ChangeTypeAdd     = 1
+	ChangeTypeRemove  = 2
+	ChangeTypeModify  = 3
+)
+
+type ActorStateChange struct {
+	Actor      types.Actor
+	ChangeType ChangeType
+}
