@@ -1,4 +1,4 @@
-package gap
+package chain
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/crypto"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/sentinel-visor/chain"
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
@@ -48,8 +47,8 @@ func TestFind(t *testing.T) {
 
 	t.Run("gap all tasks at epoch 1", func(t *testing.T) {
 		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), chain.AllTasks...)
-		gapEpochVPR(t, db, 1, chain.AllTasks...)
+		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
+		gapEpochVPR(t, db, 1, AllTasks...)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
@@ -64,18 +63,18 @@ func TestFind(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, nullRounds, 0)
 
-		expected := makeGapReportList(tsh1, chain.AllTasks...)
+		expected := makeGapReportList(tsh1, AllTasks...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("gap all tasks at epoch 1 null rounds at epochs 5 6 7 9", func(t *testing.T) {
 		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), chain.AllTasks...)
-		gapEpochVPR(t, db, 1, chain.AllTasks...)
-		gapEpochVPR(t, db, 5, chain.AllTasks...)
-		gapEpochVPR(t, db, 6, chain.AllTasks...)
-		gapEpochVPR(t, db, 7, chain.AllTasks...)
-		gapEpochVPR(t, db, 9, chain.AllTasks...)
+		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
+		gapEpochVPR(t, db, 1, AllTasks...)
+		gapEpochVPR(t, db, 5, AllTasks...)
+		gapEpochVPR(t, db, 6, AllTasks...)
+		gapEpochVPR(t, db, 7, AllTasks...)
+		gapEpochVPR(t, db, 9, AllTasks...)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
@@ -97,7 +96,7 @@ func TestFind(t *testing.T) {
 			findEpochGapsAndNullRounds(ctx, mlens, maxHeight, minHeight)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh1, chain.AllTasks...)
+		expected := makeGapReportList(tsh1, AllTasks...)
 		assertGapReportsEqual(t, expected, actual)
 
 		assert.Len(t, nullRounds, 4)
@@ -106,10 +105,10 @@ func TestFind(t *testing.T) {
 
 	t.Run("gap all tasks at epoch 1 4 5", func(t *testing.T) {
 		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), chain.AllTasks...)
-		gapEpochVPR(t, db, 1, chain.AllTasks...)
-		gapEpochVPR(t, db, 4, chain.AllTasks...)
-		gapEpochVPR(t, db, 5, chain.AllTasks...)
+		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
+		gapEpochVPR(t, db, 1, AllTasks...)
+		gapEpochVPR(t, db, 4, AllTasks...)
+		gapEpochVPR(t, db, 5, AllTasks...)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
@@ -130,9 +129,9 @@ func TestFind(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, nullRounds, 0)
 
-		expected1 := makeGapReportList(tsh1, chain.AllTasks...)
-		expected4 := makeGapReportList(tsh4, chain.AllTasks...)
-		expected5 := makeGapReportList(tsh5, chain.AllTasks...)
+		expected1 := makeGapReportList(tsh1, AllTasks...)
+		expected4 := makeGapReportList(tsh4, AllTasks...)
+		expected5 := makeGapReportList(tsh5, AllTasks...)
 		expected := append(expected1, expected4...)
 		expected = append(expected, expected5...)
 		assertGapReportsEqual(t, expected, actual)
@@ -140,8 +139,8 @@ func TestFind(t *testing.T) {
 
 	t.Run("gap at epoch 2 for miner and init task", func(t *testing.T) {
 		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), chain.AllTasks...)
-		gapEpochVPR(t, db, 2, chain.ActorStatesMinerTask, chain.ActorStatesInitTask)
+		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
+		gapEpochVPR(t, db, 2, ActorStatesMinerTask, ActorStatesInitTask)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
@@ -152,18 +151,18 @@ func TestFind(t *testing.T) {
 			Return(tsh2, nil)
 
 		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), maxHeight, minHeight).
-			findTaskEpochGaps(ctx, maxHeight, minHeight, chain.AllTasks...)
+			findTaskEpochGaps(ctx, maxHeight, minHeight, AllTasks...)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, chain.ActorStatesMinerTask, chain.ActorStatesInitTask)
+		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("gap at epoch 2 for miner and init task epoch 10 blocks messages market", func(t *testing.T) {
 		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), chain.AllTasks...)
-		gapEpochVPR(t, db, 2, chain.ActorStatesMinerTask, chain.ActorStatesInitTask)
-		gapEpochVPR(t, db, 10, chain.BlocksTask, chain.MessagesTask, chain.ActorStatesMarketTask)
+		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
+		gapEpochVPR(t, db, 2, ActorStatesMinerTask, ActorStatesInitTask)
+		gapEpochVPR(t, db, 10, BlocksTask, MessagesTask, ActorStatesMarketTask)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
@@ -177,19 +176,19 @@ func TestFind(t *testing.T) {
 			Return(tsh10, nil)
 
 		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), maxHeight, minHeight).
-			findTaskEpochGaps(ctx, maxHeight, minHeight, chain.AllTasks...)
+			findTaskEpochGaps(ctx, maxHeight, minHeight, AllTasks...)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, chain.ActorStatesMinerTask, chain.ActorStatesInitTask)
-		expected = append(expected, makeGapReportList(tsh10, chain.BlocksTask, chain.MessagesTask, chain.ActorStatesMarketTask)...)
+		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
+		expected = append(expected, makeGapReportList(tsh10, BlocksTask, MessagesTask, ActorStatesMarketTask)...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("skip all tasks at epoch 1 and miner task at epoch 5", func(t *testing.T) {
 		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), chain.AllTasks...)
-		skipEpochSkippedVRP(t, db, 1, chain.AllTasks...)
-		skipEpochSkippedVRP(t, db, 5, chain.ActorStatesMinerTask)
+		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
+		skipEpochSkippedVRP(t, db, 1, AllTasks...)
+		skipEpochSkippedVRP(t, db, 5, ActorStatesMinerTask)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
@@ -200,15 +199,15 @@ func TestFind(t *testing.T) {
 
 		tsh1 := fakeTipset(t, 1)
 		tsh5 := fakeTipset(t, 5)
-		expected := makeGapReportList(tsh1, chain.AllTasks...)
-		expected = append(expected, makeGapReportList(tsh5, chain.ActorStatesMinerTask)...)
+		expected := makeGapReportList(tsh1, AllTasks...)
+		expected = append(expected, makeGapReportList(tsh5, ActorStatesMinerTask)...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("gap at epoch 2 for miner and init task with null rounds 4,5,7", func(t *testing.T) {
 		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), chain.AllTasks...)
-		gapEpochVPR(t, db, 2, chain.ActorStatesMinerTask, chain.ActorStatesInitTask)
+		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
+		gapEpochVPR(t, db, 2, ActorStatesMinerTask, ActorStatesInitTask)
 		nullRoundEpochVPR(t, db, t.Name(), 4)
 		nullRoundEpochVPR(t, db, t.Name(), 5)
 		nullRoundEpochVPR(t, db, t.Name(), 7)
@@ -222,22 +221,22 @@ func TestFind(t *testing.T) {
 			Return(tsh2, nil)
 
 		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), maxHeight, minHeight).
-			findTaskEpochGaps(ctx, maxHeight, minHeight, chain.AllTasks...)
+			findTaskEpochGaps(ctx, maxHeight, minHeight, AllTasks...)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, chain.ActorStatesMinerTask, chain.ActorStatesInitTask)
+		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("gap at epoch 2 for miner and init task with null rounds 4,5,7, miner errors in 8, all errors in 9", func(t *testing.T) {
 		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), chain.AllTasks...)
-		gapEpochVPR(t, db, 2, chain.ActorStatesMinerTask, chain.ActorStatesInitTask)
+		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
+		gapEpochVPR(t, db, 2, ActorStatesMinerTask, ActorStatesInitTask)
 		nullRoundEpochVPR(t, db, t.Name(), 4)
 		nullRoundEpochVPR(t, db, t.Name(), 5)
 		nullRoundEpochVPR(t, db, t.Name(), 7)
-		errorEpochTasksVPR(t, db, 8, chain.ActorStatesMinerTask)
-		errorEpochTasksVPR(t, db, 9, chain.AllTasks...)
+		errorEpochTasksVPR(t, db, 8, ActorStatesMinerTask)
+		errorEpochTasksVPR(t, db, 9, AllTasks...)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
@@ -248,19 +247,19 @@ func TestFind(t *testing.T) {
 			Return(tsh2, nil)
 
 		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), maxHeight, minHeight).
-			findTaskEpochGaps(ctx, maxHeight, minHeight, chain.AllTasks...)
+			findTaskEpochGaps(ctx, maxHeight, minHeight, AllTasks...)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, chain.ActorStatesMinerTask, chain.ActorStatesInitTask)
+		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	// ensure that when there is more than one processing entry for a height we handle is correctly
 	t.Run("duplicate processing row with gap at epoch 2 for miner and init task with duplicate null rounds 4,5,7", func(t *testing.T) {
 		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), chain.AllTasks...)
-		initializeVPR(t, db, maxHeight, t.Name()+"_2", chain.AllTasks...)
-		gapEpochVPR(t, db, 2, chain.ActorStatesMinerTask, chain.ActorStatesInitTask)
+		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
+		initializeVPR(t, db, maxHeight, t.Name()+"_2", AllTasks...)
+		gapEpochVPR(t, db, 2, ActorStatesMinerTask, ActorStatesInitTask)
 		nullRoundEpochVPR(t, db, t.Name()+"_2", 4)
 		nullRoundEpochVPR(t, db, t.Name()+"_2", 5)
 		nullRoundEpochVPR(t, db, t.Name()+"_2", 7)
@@ -274,10 +273,10 @@ func TestFind(t *testing.T) {
 			Return(tsh2, nil)
 
 		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), maxHeight, minHeight).
-			findTaskEpochGaps(ctx, maxHeight, minHeight, chain.AllTasks...)
+			findTaskEpochGaps(ctx, maxHeight, minHeight, AllTasks...)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, chain.ActorStatesMinerTask, chain.ActorStatesInitTask)
+		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
 		assertGapReportsEqual(t, expected, actual)
 	})
 }
@@ -348,7 +347,7 @@ func errorEpochTasksVPR(tb testing.TB, db *pg.DB, epoch int, tasks ...string) {
 
 func nullRoundEpochVPR(tb testing.TB, db *pg.DB, reporter string, epoch int) {
 	// remove every task at this epoch
-	gapEpochVPR(tb, db, epoch, chain.AllTasks...)
+	gapEpochVPR(tb, db, epoch, AllTasks...)
 	query := fmt.Sprintf(
 		`insert into public.visor_processing_reports(height, state_root, reporter, task, started_at, completed_at, status, status_information, errors_detected)
                 values(%d, concat(%d, '_state_root'), '%s', 'consensus', '2021-01-01 00:00:00.000000 +00:00', '2021-01-21 00:00:00.000000 +00:00', 'INFO','NULL_ROUND', null);`,

@@ -1,19 +1,15 @@
-package gap
+package chain
 
 import (
 	"context"
 	"sort"
 
-	"github.com/filecoin-project/sentinel-visor/chain"
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/go-pg/pg/v10"
-	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/xerrors"
 )
-
-var log = logging.Logger("visor/gap")
 
 type GapFiller struct {
 	DB                   *storage.Database
@@ -44,13 +40,13 @@ func (g *GapFiller) Run(ctx context.Context) error {
 
 	idx := 0
 	for _, height := range heights {
-		indexer, err := chain.NewTipSetIndexer(g.opener, g.DB, 0, g.name, gaps[height])
+		indexer, err := NewTipSetIndexer(g.opener, g.DB, 0, g.name, gaps[height])
 		if err != nil {
 			return err
 		}
 
 		// walk a single height at a time since there is no guarantee neighboring heights share the same missing tasks.
-		if err := chain.NewWalker(indexer, g.opener, height, height).Run(ctx); err != nil {
+		if err := NewWalker(indexer, g.opener, height, height).Run(ctx); err != nil {
 			log.Errorw("fill failed", "height", height, "error", err.Error())
 			// TODO we could add an error to the gap report in a follow on if needed, but the actualy error should
 			// exist in the processing report if this fails.

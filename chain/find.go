@@ -1,4 +1,4 @@
-package gap
+package chain
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"github.com/deckarep/golang-set"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/sentinel-visor/chain"
 	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
@@ -25,7 +24,7 @@ var TaskSet mapset.Set
 
 func init() {
 	TaskSet = mapset.NewSet()
-	for _, t := range chain.AllTasks {
+	for _, t := range AllTasks {
 		TaskSet.Add(t)
 	}
 }
@@ -62,7 +61,7 @@ func (g *GapIndexer) Run(ctx context.Context) error {
 	findLog := log.With("type", "find")
 
 	// looks for incomplete epochs. An incomplete epoch has some, but not all tasks in the processing report table.
-	taskGaps, err := g.findTaskEpochGaps(ctx, maxHeight, g.minHeight, chain.AllTasks...)
+	taskGaps, err := g.findTaskEpochGaps(ctx, maxHeight, g.minHeight, AllTasks...)
 	if err != nil {
 		return xerrors.Errorf("finding task epoch gaps: %w", err)
 	}
@@ -162,7 +161,7 @@ func (g *GapIndexer) findEpochGapsAndNullRounds(ctx context.Context, node GapInd
 		}
 		if tsgap.Height() == gh {
 			log.Debugw("found gap", "height", gh)
-			for _, task := range chain.AllTasks {
+			for _, task := range AllTasks {
 				gapReport = append(gapReport, &visor.GapReport{
 					Height:     int64(tsgap.Height()),
 					Task:       task,

@@ -12,7 +12,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/node/impl/common"
 	"github.com/filecoin-project/lotus/node/impl/full"
-	"github.com/filecoin-project/sentinel-visor/chain/gap"
 	"github.com/filecoin-project/sentinel-visor/lens/lily/modules"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
@@ -170,7 +169,7 @@ func (m *LilyNodeAPI) LilyGapFind(_ context.Context, cfg *LilyGapFindConfig) (sc
 	// TODO add params like walk and watch
 	id := m.Scheduler.Submit(&schedule.JobConfig{
 		Name:                cfg.Name,
-		Job:                 gap.NewGapIndexer(m, db, cfg.Name, cfg.MaxHeight, cfg.MinHeight),
+		Job:                 chain.NewGapIndexer(m, db, cfg.Name, cfg.MaxHeight, cfg.MinHeight),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
@@ -197,7 +196,7 @@ func (m *LilyNodeAPI) LilyGapFill(_ context.Context, cfg *LilyGapFillConfig) (sc
 	id := m.Scheduler.Submit(&schedule.JobConfig{
 		Name:                cfg.Name,
 		Tasks:               cfg.Tasks,
-		Job:                 gap.NewGapFiller(m, db, cfg.Name, cfg.MaxHeight, cfg.MinHeight, cfg.Tasks),
+		Job:                 chain.NewGapFiller(m, db, cfg.Name, cfg.MaxHeight, cfg.MinHeight, cfg.Tasks),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
