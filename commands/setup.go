@@ -139,13 +139,9 @@ func jaegerConfigFromCliContext(cctx *cli.Context) (*jaegerConfig, error) {
 }
 
 func setupLogging(cctx *cli.Context) error {
-	//ll := cctx.String("log-level")
-	if err := logging.SetLogLevel("*", "error"); err != nil {
+	ll := cctx.String("log-level")
+	if err := logging.SetLogLevel("*", ll); err != nil {
 		return xerrors.Errorf("set log level: %w", err)
-	}
-
-	if err := logging.SetLogLevelRegex("visor/*", "debug"); err != nil {
-		panic(err)
 	}
 
 	llnamed := cctx.String("log-level-named")
@@ -163,9 +159,6 @@ func setupLogging(cctx *cli.Context) error {
 	}
 
 	log.Infof("Visor version:%s", version.String())
-	if err := logging.SetLogLevelRegex("visor/*", "info"); err != nil {
-		panic(err)
-	}
 
 	return nil
 }

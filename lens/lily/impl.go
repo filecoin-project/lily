@@ -14,6 +14,7 @@ import (
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/sentinel-visor/lens/lily/modules"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
@@ -166,10 +167,16 @@ func (m *LilyNodeAPI) LilyGapFind(_ context.Context, cfg *LilyGapFindConfig) (sc
 		return schedule.InvalidJobID, err
 	}
 
-	// TODO add params like walk and watch
 	id := m.Scheduler.Submit(&schedule.JobConfig{
-		Name:                cfg.Name,
-		Job:                 chain.NewGapIndexer(m, db, cfg.Name, cfg.MaxHeight, cfg.MinHeight),
+		Name:  cfg.Name,
+		Type:  "Find",
+		Tasks: cfg.Tasks,
+		Params: map[string]string{
+			"minHeight": fmt.Sprintf("%d", cfg.From),
+			"maxHeight": fmt.Sprintf("%d", cfg.To),
+			"storage":   cfg.Storage,
+		},
+		Job:                 chain.NewGapIndexer(m, db, cfg.Name, cfg.From, cfg.To, cfg.Tasks),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
@@ -192,11 +199,16 @@ func (m *LilyNodeAPI) LilyGapFill(_ context.Context, cfg *LilyGapFillConfig) (sc
 		return schedule.InvalidJobID, err
 	}
 
-	// TODO add params like walk and watch
 	id := m.Scheduler.Submit(&schedule.JobConfig{
-		Name:                cfg.Name,
+		Name: cfg.Name,
+		Type: "Fill",
+		Params: map[string]string{
+			"minHeight": fmt.Sprintf("%d", cfg.From),
+			"maxHeight": fmt.Sprintf("%d", cfg.To),
+			"storage":   cfg.Storage,
+		},
 		Tasks:               cfg.Tasks,
-		Job:                 chain.NewGapFiller(m, db, cfg.Name, cfg.MaxHeight, cfg.MinHeight, cfg.Tasks),
+		Job:                 chain.NewGapFiller(m, db, cfg.Name, cfg.From, cfg.To, cfg.Tasks),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
@@ -432,5 +444,28 @@ func (h *HeadNotifier) Revert(ctx context.Context, ts *types.TipSet) error {
 		Type:   chain.HeadEventRevert,
 		TipSet: ts,
 	}
+	return nil
+}
+
+// used for debugging querries, call ORM.AddHook and this will print all queries.
+type LogQueryHook struct {
+}
+
+func (l *LogQueryHook) BeforeQuery(ctx context.Context, evt *pg.QueryEvent) (context.Context, error) {
+	q, err := evt.FormattedQuery()
+	if err != nil {
+		return nil, err
+	}
+
+	if evt.Err != nil {
+		fmt.Printf("%s executing a query:\n%s\n", evt.Err, q)
+	}
+
+	fmt.Println(string(q))
+
+	return ctx, nil
+}
+
+func (l *LogQueryHook) AfterQuery(ctx context.Context, event *pg.QueryEvent) error {
 	return nil
 }

@@ -19,7 +19,7 @@ type GapFiller struct {
 	tasks                []string
 }
 
-func NewGapFiller(o lens.APIOpener, db *storage.Database, name string, maxHeight, minHeight uint64, tasks []string) *GapFiller {
+func NewGapFiller(o lens.APIOpener, db *storage.Database, name string, minHeight, maxHeight uint64, tasks []string) *GapFiller {
 	return &GapFiller{
 		DB:        db,
 		opener:    o,

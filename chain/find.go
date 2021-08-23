@@ -18,22 +18,28 @@ type GapIndexer struct {
 	opener               lens.APIOpener
 	name                 string
 	minHeight, maxHeight uint64
+	taskSet              mapset.Set
 }
 
-var TaskSet mapset.Set
+var FullTaskSet mapset.Set
 
 func init() {
-	TaskSet = mapset.NewSet()
+	FullTaskSet = mapset.NewSet()
 	for _, t := range AllTasks {
-		TaskSet.Add(t)
+		FullTaskSet.Add(t)
 	}
 }
 
-func NewGapIndexer(o lens.APIOpener, db *storage.Database, name string, maxHeight, minHeight uint64) *GapIndexer {
+func NewGapIndexer(o lens.APIOpener, db *storage.Database, name string, minHeight, maxHeight uint64, tasks []string) *GapIndexer {
+	taskSet := mapset.NewSet()
+	for _, t := range tasks {
+		taskSet.Add(t)
+	}
 	return &GapIndexer{
 		DB:        db,
 		opener:    o,
 		name:      name,
+		taskSet:   taskSet,
 		maxHeight: maxHeight,
 		minHeight: minHeight,
 	}
@@ -53,7 +59,6 @@ func (g *GapIndexer) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	maxHeight := g.maxHeight
 	if uint64(head.Height()) < g.maxHeight {
 		return xerrors.Errorf("cannot look for gaps beyond chain head height %d", head.Height())
 	}
@@ -61,14 +66,14 @@ func (g *GapIndexer) Run(ctx context.Context) error {
 	findLog := log.With("type", "find")
 
 	// looks for incomplete epochs. An incomplete epoch has some, but not all tasks in the processing report table.
-	taskGaps, err := g.findTaskEpochGaps(ctx, maxHeight, g.minHeight, AllTasks...)
+	taskGaps, err := g.findTaskEpochGaps(ctx)
 	if err != nil {
 		return xerrors.Errorf("finding task epoch gaps: %w", err)
 	}
 	findLog.Infow("found gaps in tasks", "count", len(taskGaps))
 
 	// looks for missing epochs and null rounds. A missing epoch is a non-null-round height missing from the processing report table
-	heightGaps, nulls, err := g.findEpochGapsAndNullRounds(ctx, node, maxHeight, g.minHeight)
+	heightGaps, nulls, err := g.findEpochGapsAndNullRounds(ctx, node)
 	if err != nil {
 		return xerrors.Errorf("finding epoch gaps: %w", err)
 	}
@@ -76,7 +81,7 @@ func (g *GapIndexer) Run(ctx context.Context) error {
 	findLog.Infow("found null rounds", "count", len(nulls))
 
 	// looks for entriest in the visor processing report table that have been skipped.
-	skipGaps, err := g.findEpochSkips(ctx, maxHeight, g.minHeight)
+	skipGaps, err := g.findEpochSkips(ctx)
 	if err != nil {
 		return xerrors.Errorf("detecting skipped gaps: %w", err)
 	}
@@ -84,6 +89,11 @@ func (g *GapIndexer) Run(ctx context.Context) error {
 
 	var nullRounds visor.ProcessingReportList
 	for _, epoch := range nulls {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
 		nullRounds = append(nullRounds, &visor.ProcessingReport{
 			Height:            int64(epoch),
 			StateRoot:         "NULL_ROUND", // let gap fill add the correct state root for this epoch when it runs the consensus task.
@@ -103,7 +113,7 @@ type GapIndexerLens interface {
 	ChainGetTipSetByHeight(ctx context.Context, epoch abi.ChainEpoch, tsk types.TipSetKey) (*types.TipSet, error)
 }
 
-func (g *GapIndexer) findEpochSkips(ctx context.Context, max, min uint64) (visor.GapReportList, error) {
+func (g *GapIndexer) findEpochSkips(ctx context.Context) (visor.GapReportList, error) {
 	log.Debug("finding skipped epochs")
 	reportTime := time.Now()
 
@@ -111,8 +121,8 @@ func (g *GapIndexer) findEpochSkips(ctx context.Context, max, min uint64) (visor
 	if err := g.DB.AsORM().ModelContext(ctx, &skippedReports).
 		Order("height desc").
 		Where("status = ?", visor.ProcessingStatusSkip).
-		Where("height >= ?", min).
-		Where("height <= ?", max).
+		Where("height >= ?", g.minHeight).
+		Where("height <= ?", g.maxHeight).
 		Select(); err != nil {
 		return nil, xerrors.Errorf("query processing report skips: %w", err)
 	}
@@ -120,6 +130,11 @@ func (g *GapIndexer) findEpochSkips(ctx context.Context, max, min uint64) (visor
 
 	gapReport := make([]*visor.GapReport, len(skippedReports))
 	for idx, r := range skippedReports {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
 		gapReport[idx] = &visor.GapReport{
 			Height:     r.Height,
 			Task:       r.Task,
@@ -131,7 +146,7 @@ func (g *GapIndexer) findEpochSkips(ctx context.Context, max, min uint64) (visor
 	return gapReport, nil
 }
 
-func (g *GapIndexer) findEpochGapsAndNullRounds(ctx context.Context, node GapIndexerLens, max, min uint64) (visor.GapReportList, []abi.ChainEpoch, error) {
+func (g *GapIndexer) findEpochGapsAndNullRounds(ctx context.Context, node GapIndexerLens) (visor.GapReportList, []abi.ChainEpoch, error) {
 	log.Debug("finding epoch gaps and null rounds")
 	reportTime := time.Now()
 
@@ -145,7 +160,7 @@ func (g *GapIndexer) findEpochGapsAndNullRounds(ctx context.Context, node GapInd
 		FROM generate_series(?, ?) s(i)
 		WHERE NOT EXISTS (SELECT 1 FROM visor_processing_reports WHERE height = s.i);
 		`,
-		min, max)
+		g.minHeight, g.maxHeight)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -154,6 +169,11 @@ func (g *GapIndexer) findEpochGapsAndNullRounds(ctx context.Context, node GapInd
 	gapReport := make([]*visor.GapReport, 0, len(missingHeights))
 	// walk the possible gaps and query lotus to determine if gap was a null round or missed epoch.
 	for _, gap := range missingHeights {
+		select {
+		case <-ctx.Done():
+			return nil, nil, ctx.Err()
+		default:
+		}
 		gh := abi.ChainEpoch(gap)
 		tsgap, err := node.ChainGetTipSetByHeight(ctx, gh, types.EmptyTSK)
 		if err != nil {
@@ -186,7 +206,7 @@ type TaskHeight struct {
 
 // TODO rather than use the length of `tasks` to determine where gaps are, use the contents to look for
 // gaps in specific task. Forrest' SQL-Foo isn't good enough for this yet.
-func (g *GapIndexer) findTaskEpochGaps(ctx context.Context, max, min uint64, tasks ...string) (visor.GapReportList, error) {
+func (g *GapIndexer) findTaskEpochGaps(ctx context.Context) (visor.GapReportList, error) {
 	log.Debug("finding task epoch gaps")
 	start := time.Now()
 	var result []TaskHeight
@@ -224,7 +244,7 @@ from (
 where height >= ? and height <= ?
 order by height desc
 `,
-		len(tasks), visor.ProcessingStatusInformationNullRound, min, max,
+		len(AllTasks), visor.ProcessingStatusInformationNullRound, g.minHeight, g.maxHeight,
 	)
 	if err != nil {
 		return nil, err
@@ -236,17 +256,27 @@ order by height desc
 
 	// result has all the tasks completed at each height, now we need to find what is missing
 	// at each height.
-	var taskMap = make(map[uint64][]string)
+	var CompletedTasksForHeight = make(map[uint64][]string)
 	for _, th := range result {
-		taskMap[th.Height] = append(taskMap[th.Height], th.Task)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+		CompletedTasksForHeight[th.Height] = append(CompletedTasksForHeight[th.Height], th.Task)
 	}
 
-	for height, tasks := range taskMap {
-		querySet := mapset.NewSet()
-		for _, t := range tasks {
-			querySet.Add(t)
+	for height, tasks := range CompletedTasksForHeight {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
 		}
-		missingTasks := TaskSet.Difference(querySet)
+		completedTasks := mapset.NewSet()
+		for _, t := range tasks {
+			completedTasks.Add(t)
+		}
+		missingTasks := FullTaskSet.Difference(completedTasks).Intersect(g.taskSet)
 		log.Debugw("found tasks with gaps", "height", height, "missing", missingTasks.String())
 		for mt := range missingTasks.Iter() {
 			missing := mt.(string)

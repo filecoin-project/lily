@@ -65,7 +65,7 @@ var GapFillCmd = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:        "name",
-			Usage:       "name of instance performing find",
+			Usage:       "Name of job for easy identification later.",
 			Value:       "",
 			Destination: &gapFlags.name,
 		},
@@ -110,13 +110,13 @@ var GapFillCmd = &cli.Command{
 			Storage:             gapFlags.storage,
 			Name:                fillName,
 			Tasks:               tasks,
-			MaxHeight:           gapFlags.to,
-			MinHeight:           gapFlags.from,
+			To:                  gapFlags.to,
+			From:                gapFlags.from,
 		})
 		if err != nil {
 			return err
 		}
-		if _, err := fmt.Fprintf(os.Stdout, "Created Gap Job: %d", gapFindID); err != nil {
+		if _, err := fmt.Fprintf(os.Stdout, "Created Gap Job: %d\n", gapFindID); err != nil {
 			return err
 		}
 		return nil
@@ -149,9 +149,15 @@ var GapFindCmd = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:        "name",
-			Usage:       "name of instance performing find",
+			Usage:       "Name of job for easy identification later.",
 			Value:       "",
 			Destination: &gapFlags.name,
+		},
+		&cli.StringFlag{
+			Name:        "tasks",
+			Usage:       "Comma separated list of tasks to fill. Each task is reported separately in the database. If empty all task will be filled.",
+			Value:       "",
+			Destination: &gapFlags.tasks,
 		},
 		&cli.Uint64Flag{
 			Name:        "to",
@@ -180,19 +186,27 @@ var GapFindCmd = &cli.Command{
 			findName = gapFlags.name
 		}
 
+		var tasks []string
+		if gapFlags.tasks == "" {
+			tasks = chain.AllTasks
+		} else {
+			tasks = strings.Split(gapFlags.tasks, ",")
+		}
+
 		gapFindID, err := api.LilyGapFind(ctx, &lily.LilyGapFindConfig{
 			RestartOnFailure:    false,
 			RestartOnCompletion: false,
 			RestartDelay:        0,
 			Storage:             gapFlags.storage,
+			Tasks:               tasks,
 			Name:                findName,
-			MaxHeight:           gapFlags.to,
-			MinHeight:           gapFlags.from,
+			To:                  gapFlags.to,
+			From:                gapFlags.from,
 		})
 		if err != nil {
 			return err
 		}
-		if _, err := fmt.Fprintf(os.Stdout, "Created Gap Job: %d", gapFindID); err != nil {
+		if _, err := fmt.Fprintf(os.Stdout, "Created Gap Job: %d\n", gapFindID); err != nil {
 			return err
 		}
 		return nil

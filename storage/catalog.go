@@ -127,7 +127,7 @@ func (c *Catalog) ConnectAsDatabase(ctx context.Context, name string, md Metadat
 
 	db, ok := strg.(*Database)
 	if !ok {
-		return nil, xerrors.Errorf("connecting to storage as database. unexpected type: %T", strg)
+		return nil, xerrors.Errorf("storage type (%T) is unsupported", strg)
 	}
 	return db, nil
 }

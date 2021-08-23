@@ -58,8 +58,8 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh1.Height(), types.EmptyTSK).
 			Return(tsh1, nil)
 
-		actual, nullRounds, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), maxHeight, minHeight).
-			findEpochGapsAndNullRounds(ctx, mlens, maxHeight, minHeight)
+		actual, nullRounds, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+			findEpochGapsAndNullRounds(ctx, mlens)
 		require.NoError(t, err)
 		require.Len(t, nullRounds, 0)
 
@@ -92,8 +92,8 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, abi.ChainEpoch(9), types.EmptyTSK).
 			Return(tsh1, nil)
 
-		actual, nullRounds, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), maxHeight, minHeight).
-			findEpochGapsAndNullRounds(ctx, mlens, maxHeight, minHeight)
+		actual, nullRounds, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+			findEpochGapsAndNullRounds(ctx, mlens)
 		require.NoError(t, err)
 
 		expected := makeGapReportList(tsh1, AllTasks...)
@@ -124,8 +124,8 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh5.Height(), types.EmptyTSK).
 			Return(tsh5, nil)
 
-		actual, nullRounds, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), maxHeight, minHeight).
-			findEpochGapsAndNullRounds(ctx, mlens, maxHeight, minHeight)
+		actual, nullRounds, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+			findEpochGapsAndNullRounds(ctx, mlens)
 		require.NoError(t, err)
 		require.Len(t, nullRounds, 0)
 
@@ -150,8 +150,8 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
 			Return(tsh2, nil)
 
-		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), maxHeight, minHeight).
-			findTaskEpochGaps(ctx, maxHeight, minHeight, AllTasks...)
+		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
 		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
@@ -175,8 +175,8 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh10.Height(), types.EmptyTSK).
 			Return(tsh10, nil)
 
-		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), maxHeight, minHeight).
-			findTaskEpochGaps(ctx, maxHeight, minHeight, AllTasks...)
+		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
 		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
@@ -193,8 +193,8 @@ func TestFind(t *testing.T) {
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), maxHeight, minHeight).
-			findEpochSkips(ctx, maxHeight, minHeight)
+		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+			findEpochSkips(ctx)
 		require.NoError(t, err)
 
 		tsh1 := fakeTipset(t, 1)
@@ -220,8 +220,8 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
 			Return(tsh2, nil)
 
-		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), maxHeight, minHeight).
-			findTaskEpochGaps(ctx, maxHeight, minHeight, AllTasks...)
+		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
 		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
@@ -246,8 +246,8 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
 			Return(tsh2, nil)
 
-		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), maxHeight, minHeight).
-			findTaskEpochGaps(ctx, maxHeight, minHeight, AllTasks...)
+		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
 		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
@@ -272,11 +272,55 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
 			Return(tsh2, nil)
 
-		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), maxHeight, minHeight).
-			findTaskEpochGaps(ctx, maxHeight, minHeight, AllTasks...)
+		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
 		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
+		assertGapReportsEqual(t, expected, actual)
+	})
+
+	t.Run("(sub task indexer, full reports table) gap at epoch 2 for messages and init task", func(t *testing.T) {
+		monitoringTasks := []string{BlocksTask, MessagesTask, ChainEconomicsTask, ActorStatesInitTask}
+		truncateVPR(t, db)
+		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
+		gapEpochVPR(t, db, 2, MessagesTask, ActorStatesInitTask)
+
+		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
+		require.NoError(t, err, "NewDatabaseFromDB")
+
+		tsh2 := fakeTipset(t, 2)
+		mlens := new(MockedFindLens)
+		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
+			Return(tsh2, nil)
+
+		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, monitoringTasks).
+			findTaskEpochGaps(ctx)
+		require.NoError(t, err)
+
+		expected := makeGapReportList(tsh2, MessagesTask, ActorStatesInitTask)
+		assertGapReportsEqual(t, expected, actual)
+	})
+
+	t.Run("(sub task indexer partial reports table) gap at epoch 2 for messages and init task", func(t *testing.T) {
+		monitoringTasks := []string{BlocksTask, MessagesTask, ChainEconomicsTask, ActorStatesInitTask}
+		truncateVPR(t, db)
+		initializeVPR(t, db, maxHeight, t.Name(), monitoringTasks...)
+		gapEpochVPR(t, db, 2, MessagesTask, ActorStatesInitTask)
+
+		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
+		require.NoError(t, err, "NewDatabaseFromDB")
+
+		tsh2 := fakeTipset(t, 2)
+		mlens := new(MockedFindLens)
+		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
+			Return(tsh2, nil)
+
+		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, monitoringTasks).
+			findTaskEpochGaps(ctx)
+		require.NoError(t, err)
+
+		expected := makeGapReportList(tsh2, MessagesTask, ActorStatesInitTask)
 		assertGapReportsEqual(t, expected, actual)
 	})
 }
@@ -389,6 +433,8 @@ func truncateVPR(tb testing.TB, db *pg.DB) {
 // fill the table at every epoch with every task for `count` epochs.
 func initializeVPR(tb testing.TB, db *pg.DB, count uint64, reporter string, tasks ...string) {
 	// build the task array
+	// uncomment to see all query
+	//db.AddQueryHook(&LoggingQueryHook{})
 	taskQbuilder := strings.Builder{}
 	for idx, t := range tasks {
 		taskQbuilder.WriteString("'")
@@ -452,4 +498,25 @@ func fakeTipset(t testing.TB, height int) *types.TipSet {
 	ts, err := types.NewTipSet([]*types.BlockHeader{bh})
 	require.NoError(t, err)
 	return ts
+}
+
+type LoggingQueryHook struct {
+}
+
+func (l *LoggingQueryHook) BeforeQuery(ctx context.Context, event *pg.QueryEvent) (context.Context, error) {
+	q, err := event.FormattedQuery()
+	if err != nil {
+		return nil, err
+	}
+
+	if event.Err != nil {
+		fmt.Printf("%s executing a query:\n%s\n", event.Err, q)
+	}
+	fmt.Println(string(q))
+
+	return ctx, nil
+}
+
+func (l *LoggingQueryHook) AfterQuery(ctx context.Context, event *pg.QueryEvent) error {
+	return nil
 }
