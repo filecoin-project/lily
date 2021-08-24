@@ -250,7 +250,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 				if len(t.actorProcessors) > 0 {
 					changesStart := time.Now()
 					var err error
-					var changes map[string]types.Actor
+					var changes map[string]lens.ActorStateChange
 					// special case, we want to extract all actor states from the genesis block.
 					if current.Height() == 0 {
 						changes, err = t.getGenesisActors(ctx)
@@ -500,8 +500,8 @@ func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, nam
 }
 
 // getGenesisActors returns a map of all actors contained in the genesis block.
-func (t *TipSetIndexer) getGenesisActors(ctx context.Context) (map[string]types.Actor, error) {
-	out := map[string]types.Actor{}
+func (t *TipSetIndexer) getGenesisActors(ctx context.Context) (map[string]lens.ActorStateChange, error) {
+	out := map[string]lens.ActorStateChange{}
 
 	genesis, err := t.node.ChainGetGenesis(ctx)
 	if err != nil {
@@ -516,7 +516,10 @@ func (t *TipSetIndexer) getGenesisActors(ctx context.Context) (map[string]types.
 		return nil, err
 	}
 	if err := tree.ForEach(func(addr address.Address, act *types.Actor) error {
-		out[addr.String()] = *act
+		out[addr.String()] = lens.ActorStateChange{
+			Actor:      *act,
+			ChangeType: lens.ChangeTypeAdd,
+		}
 		return nil
 	}); err != nil {
 		return nil, err
@@ -527,7 +530,7 @@ func (t *TipSetIndexer) getGenesisActors(ctx context.Context) (map[string]types.
 // stateChangedActors is an optimized version of the lotus API method StateChangedActors. This method takes advantage of the efficient hamt/v3 diffing logic
 // and applies it to versions of state tress supporting it. These include Version 2 and 3 of the lotus state tree implementation.
 // stateChangedActors will fall back to the lotus API method when the optimized diffing cannot be applied.
-func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid) (map[string]types.Actor, error) {
+func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid) (map[string]lens.ActorStateChange, error) {
 	ctx, span := global.Tracer("").Start(ctx, "StateChangedActors")
 	if span.IsRecording() {
 		span.SetAttributes(label.String("old", old.String()), label.String("new", new.String()))
@@ -536,7 +539,7 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 
 	var (
 		buf = bytes.NewReader(nil)
-		out = map[string]types.Actor{}
+		out = map[string]lens.ActorStateChange{}
 	)
 
 	oldRoot, oldVersion, err := getStateTreeMapCIDAndVersion(ctx, t.node.Store(), old)
@@ -570,37 +573,52 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 				if err != nil {
 					return nil, xerrors.Errorf("address in state tree was not valid: %w", err)
 				}
-				var act types.Actor
+				var ch lens.ActorStateChange
 				switch change.Type {
 				case hamt.Add:
+					ch.ChangeType = lens.ChangeTypeAdd
 					buf.Reset(change.After.Raw)
-					err = act.UnmarshalCBOR(buf)
+					err = ch.Actor.UnmarshalCBOR(buf)
 					buf.Reset(nil)
 					if err != nil {
 						return nil, err
 					}
 				case hamt.Remove:
+					ch.ChangeType = lens.ChangeTypeRemove
 					buf.Reset(change.Before.Raw)
-					err = act.UnmarshalCBOR(buf)
+					err = ch.Actor.UnmarshalCBOR(buf)
 					buf.Reset(nil)
 					if err != nil {
 						return nil, err
 					}
 				case hamt.Modify:
+					ch.ChangeType = lens.ChangeTypeModify
 					buf.Reset(change.After.Raw)
-					err = act.UnmarshalCBOR(buf)
+					err = ch.Actor.UnmarshalCBOR(buf)
 					buf.Reset(nil)
 					if err != nil {
 						return nil, err
 					}
 				}
-				out[addr.String()] = act
+				out[addr.String()] = ch
 			}
 			return out, nil
 		}
 	}
 	log.Debug("using slow state diff")
-	return t.node.StateChangedActors(ctx, old, new)
+	actors, err := t.node.StateChangedActors(ctx, old, new)
+	if err != nil {
+		return nil, err
+	}
+
+	for addr, act := range actors {
+		out[addr] = lens.ActorStateChange{
+			Actor:      act,
+			ChangeType: lens.ChangeTypeUnknown,
+		}
+	}
+
+	return out, nil
 }
 
 func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProcessor, name string, ts, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages, results chan *TaskResult) {
@@ -657,7 +675,7 @@ func (t *TipSetIndexer) runConsensusProcessor(ctx context.Context, p TipSetsProc
 	}
 }
 
-func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor, name string, ts, pts *types.TipSet, actors map[string]types.Actor, emsgs []*lens.ExecutedMessage, results chan *TaskResult) {
+func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor, name string, ts, pts *types.TipSet, actors map[string]lens.ActorStateChange, emsgs []*lens.ExecutedMessage, results chan *TaskResult) {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
@@ -834,6 +852,6 @@ type MessageExecutionProcessor interface {
 type ActorProcessor interface {
 	// ProcessActor processes a set of actors. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
-	ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors map[string]types.Actor, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error)
+	ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors map[string]lens.ActorStateChange, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error)
 	Close() error
 }

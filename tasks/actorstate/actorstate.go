@@ -20,6 +20,7 @@ var log = logging.Logger("visor/task/actorstate")
 
 type ActorInfo struct {
 	Actor           types.Actor
+	ChangeType      lens.ChangeType
 	Address         address.Address
 	ParentStateRoot cid.Cid
 	Epoch           abi.ChainEpoch

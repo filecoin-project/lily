@@ -23,6 +23,11 @@ type Actor struct {
 }
 
 func (a *Actor) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+	if a == nil {
+		// Nothing to do
+		return nil
+	}
+
 	ctx, span := global.Tracer("").Start(ctx, "Actor.Persist")
 	defer span.End()
 
@@ -37,7 +42,6 @@ func (a *Actor) Persist(ctx context.Context, s model.StorageBatch, version model
 // ActorList is a slice of Actors persistable in a single batch.
 type ActorList []*Actor
 
-// Persist
 func (actors ActorList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "ActorList.Persist", trace.WithAttributes(label.Int("count", len(actors))))
 	defer span.End()
@@ -60,8 +64,12 @@ type ActorState struct {
 	State  string `pg:",type:jsonb,notnull"`
 }
 
-// PersistWithTx inserts the batch using the given transaction.
 func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+	if as == nil {
+		// Nothing to do
+		return nil
+	}
+
 	ctx, span := global.Tracer("").Start(ctx, "ActorState.Persist")
 	defer span.End()
 
@@ -76,7 +84,6 @@ func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, version
 // ActorStateList is a list of ActorStates persistable in a single batch.
 type ActorStateList []*ActorState
 
-// PersistWithTx inserts the batch using the given transaction.
 func (states ActorStateList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, span := global.Tracer("").Start(ctx, "ActorStateList.Persist", trace.WithAttributes(label.Int("count", len(states))))
 	defer span.End()
