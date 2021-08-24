@@ -5,6 +5,31 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.7.6"></a>
+## [v0.7.6] - 2021-08-24
+
+### Feat
+- implement consensus task (#615)
+- revamp help command and add topic based help text (#546)
+- implement verifreg actor tracking (#539)
+
+### Fix
+- report separate metric for actor state extraction (#633)
+- replace current epoch estimation with new function (#631)
+- add missing models to schema verification (#643)
+- internal message bugs (#639)
+- avoid missing block when miner loads receipt (#648)
+- record correct height for messages and block_messages (#650)
+- consistent processing report heights (#653)
+- avoid reporting processing error for malformed messages (#671)
+- avoid reading state of deleted actors (#672)
+
+### Chore
+- remove unused finality field (#632)
+- track start and end times for jobs (#638)
+- implement chain reading methods (#657)
+- include window and storage in job params output (#630)
+
 <a name="v0.7.5"></a>
 ## [v0.7.5] - 2021-08-09
 
