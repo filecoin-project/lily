@@ -5,6 +5,12 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.7.7"></a>
+## [v0.7.7] - 2021-08-24
+
+### Feat
+- GapFind and GapFill task implementation (#598)
+
 <a name="v0.7.6"></a>
 ## [v0.7.6] - 2021-08-24
 
