@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/big"
 
+	"github.com/filecoin-project/go-state-types/exitcode"
 	"github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -232,10 +233,14 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			}
 			parsedMessageResults = append(parsedMessageResults, pm)
 		} else {
-			errorsDetected = append(errorsDetected, &MessageError{
-				Cid:   m.Cid,
-				Error: xerrors.Errorf("failed to parse message params: %w", err).Error(),
-			})
+			if rcpt.ExitCode == int64(exitcode.ErrSerialization) || rcpt.ExitCode == int64(exitcode.ErrIllegalArgument) {
+				// ignore the parse error since the params are probably malformed, as reported by the vm
+			} else {
+				errorsDetected = append(errorsDetected, &MessageError{
+					Cid:   m.Cid,
+					Error: xerrors.Errorf("failed to parse message params: %w", err).Error(),
+				})
+			}
 		}
 	}
 
@@ -276,6 +281,10 @@ func (p *Task) parseMessageParams(m *types.Message, destCode cid.Cid) (string, s
 	// Method is optional, zero means a plain value transfer
 	if m.Method == 0 {
 		return "Send", "", nil
+	}
+
+	if !destCode.Defined() {
+		return "Unknown", "", xerrors.Errorf("missing actor code")
 	}
 
 	var params ipld.Node
