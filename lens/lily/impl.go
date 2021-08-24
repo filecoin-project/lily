@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/stmgr"
@@ -13,6 +14,7 @@ import (
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/sentinel-visor/lens/lily/modules"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
@@ -38,6 +40,15 @@ type LilyNodeAPI struct {
 	Scheduler      *schedule.Scheduler
 	StorageCatalog *storage.Catalog
 	ExecMonitor    stmgr.ExecMonitor
+}
+
+func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {
+	// TODO (Frrist): I copied this from lotus, I need it now to handle gap filling edge cases.
+	ts, err := m.ChainAPI.Chain.GetTipSetFromKey(key)
+	if err != nil {
+		return nil, xerrors.Errorf("loading tipset %s: %w", key, err)
+	}
+	return m.ChainAPI.Chain.GetTipsetByHeight(ctx, epoch, ts, false)
 }
 
 func (m *LilyNodeAPI) Daemonized() bool {
@@ -134,6 +145,70 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (schedule
 		},
 		Tasks:               cfg.Tasks,
 		Job:                 chain.NewWalker(indexer, m, cfg.From, cfg.To),
+		RestartOnFailure:    cfg.RestartOnFailure,
+		RestartOnCompletion: cfg.RestartOnCompletion,
+		RestartDelay:        cfg.RestartDelay,
+	})
+
+	return id, nil
+}
+
+func (m *LilyNodeAPI) LilyGapFind(_ context.Context, cfg *LilyGapFindConfig) (schedule.JobID, error) {
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx := context.Background()
+
+	md := storage.Metadata{
+		JobName: cfg.Name,
+	}
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	db, err := m.StorageCatalog.ConnectAsDatabase(ctx, cfg.Storage, md)
+	if err != nil {
+		return schedule.InvalidJobID, err
+	}
+
+	id := m.Scheduler.Submit(&schedule.JobConfig{
+		Name:  cfg.Name,
+		Type:  "Find",
+		Tasks: cfg.Tasks,
+		Params: map[string]string{
+			"minHeight": fmt.Sprintf("%d", cfg.From),
+			"maxHeight": fmt.Sprintf("%d", cfg.To),
+			"storage":   cfg.Storage,
+		},
+		Job:                 chain.NewGapIndexer(m, db, cfg.Name, cfg.From, cfg.To, cfg.Tasks),
+		RestartOnFailure:    cfg.RestartOnFailure,
+		RestartOnCompletion: cfg.RestartOnCompletion,
+		RestartDelay:        cfg.RestartDelay,
+	})
+
+	return id, nil
+}
+
+func (m *LilyNodeAPI) LilyGapFill(_ context.Context, cfg *LilyGapFillConfig) (schedule.JobID, error) {
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx := context.Background()
+
+	md := storage.Metadata{
+		JobName: cfg.Name,
+	}
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	db, err := m.StorageCatalog.ConnectAsDatabase(ctx, cfg.Storage, md)
+	if err != nil {
+		return schedule.InvalidJobID, err
+	}
+
+	id := m.Scheduler.Submit(&schedule.JobConfig{
+		Name: cfg.Name,
+		Type: "Fill",
+		Params: map[string]string{
+			"minHeight": fmt.Sprintf("%d", cfg.From),
+			"maxHeight": fmt.Sprintf("%d", cfg.To),
+			"storage":   cfg.Storage,
+		},
+		Tasks:               cfg.Tasks,
+		Job:                 chain.NewGapFiller(m, db, cfg.Name, cfg.From, cfg.To, cfg.Tasks),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
@@ -369,5 +444,28 @@ func (h *HeadNotifier) Revert(ctx context.Context, ts *types.TipSet) error {
 		Type:   chain.HeadEventRevert,
 		TipSet: ts,
 	}
+	return nil
+}
+
+// used for debugging querries, call ORM.AddHook and this will print all queries.
+type LogQueryHook struct {
+}
+
+func (l *LogQueryHook) BeforeQuery(ctx context.Context, evt *pg.QueryEvent) (context.Context, error) {
+	q, err := evt.FormattedQuery()
+	if err != nil {
+		return nil, err
+	}
+
+	if evt.Err != nil {
+		fmt.Printf("%s executing a query:\n%s\n", evt.Err, q)
+	}
+
+	fmt.Println(string(q))
+
+	return ctx, nil
+}
+
+func (l *LogQueryHook) AfterQuery(ctx context.Context, event *pg.QueryEvent) error {
 	return nil
 }

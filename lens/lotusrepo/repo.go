@@ -8,6 +8,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-fil-markets/storagemarket"
 	"github.com/filecoin-project/go-multistore"
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
@@ -109,6 +110,15 @@ type RepoAPI struct {
 	impl.FullNodeAPI
 	context.Context
 	cacheSize int
+}
+
+func (ra *RepoAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {
+	// TODO use lotus apiv1 method instead.
+	ts, err := ra.FullNodeAPI.ChainAPI.Chain.GetTipSetFromKey(key)
+	if err != nil {
+		return nil, xerrors.Errorf("loading tipset %s: %w", key, err)
+	}
+	return ra.FullNodeAPI.ChainAPI.Chain.GetTipsetByHeight(ctx, epoch, ts, false)
 }
 
 func (ra *RepoAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {

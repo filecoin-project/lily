@@ -36,19 +36,23 @@ type LilyAPIStruct struct {
 		LilyJobStop  func(ctx context.Context, ID schedule.JobID) error      `perm:"read"`
 		LilyJobList  func(ctx context.Context) ([]schedule.JobResult, error) `perm:"read"`
 
+		LilyGapFind func(ctx context.Context, cfg *LilyGapFindConfig) (schedule.JobID, error) `perm:"read"`
+		LilyGapFill func(ctx context.Context, cfg *LilyGapFillConfig) (schedule.JobID, error) `perm:"read"`
+
 		Shutdown func(context.Context) error `perm:"read"`
 
 		SyncState func(ctx context.Context) (*api.SyncState, error) `perm:"read"`
 
-		ChainHead              func(context.Context) (*types.TipSet, error)                                  `perm:"read"`
-		ChainGetBlock          func(context.Context, cid.Cid) (*types.BlockHeader, error)                    `perm:"read"`
-		ChainReadObj           func(context.Context, cid.Cid) ([]byte, error)                                `perm:"read"`
-		ChainStatObj           func(context.Context, cid.Cid, cid.Cid) (api.ObjStat, error)                  `perm:"read"`
-		ChainGetTipSet         func(context.Context, types.TipSetKey) (*types.TipSet, error)                 `perm:"read"`
-		ChainGetTipSetByHeight func(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error) `perm:"read"`
-		ChainGetBlockMessages  func(context.Context, cid.Cid) (*api.BlockMessages, error)                    `perm:"read"`
-		ChainGetParentReceipts func(context.Context, cid.Cid) ([]*types.MessageReceipt, error)               `perm:"read"`
-		ChainGetParentMessages func(context.Context, cid.Cid) ([]api.Message, error)                         `perm:"read"`
+		ChainHead                 func(context.Context) (*types.TipSet, error)                                  `perm:"read"`
+		ChainGetBlock             func(context.Context, cid.Cid) (*types.BlockHeader, error)                    `perm:"read"`
+		ChainReadObj              func(context.Context, cid.Cid) ([]byte, error)                                `perm:"read"`
+		ChainStatObj              func(context.Context, cid.Cid, cid.Cid) (api.ObjStat, error)                  `perm:"read"`
+		ChainGetTipSet            func(context.Context, types.TipSetKey) (*types.TipSet, error)                 `perm:"read"`
+		ChainGetTipSetByHeight    func(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error) `perm:"read"`
+		ChainGetBlockMessages     func(context.Context, cid.Cid) (*api.BlockMessages, error)                    `perm:"read"`
+		ChainGetParentReceipts    func(context.Context, cid.Cid) ([]*types.MessageReceipt, error)               `perm:"read"`
+		ChainGetParentMessages    func(context.Context, cid.Cid) ([]api.Message, error)                         `perm:"read"`
+		ChainGetTipSetAfterHeight func(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error) `perm:"read"`
 
 		LogList     func(context.Context) ([]string, error)     `perm:"read"`
 		LogSetLevel func(context.Context, string, string) error `perm:"read"`
@@ -61,6 +65,10 @@ type LilyAPIStruct struct {
 		NetAgentVersion  func(ctx context.Context, p peer.ID) (string, error)          `perm:"read"`
 		NetPeerInfo      func(context.Context, peer.ID) (*api.ExtendedPeerInfo, error) `perm:"read"`
 	}
+}
+
+func (s *LilyAPIStruct) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {
+	return s.Internal.ChainGetTipSetAfterHeight(ctx, epoch, key)
 }
 
 func (s *LilyAPIStruct) ChainGetBlock(ctx context.Context, c cid.Cid) (*types.BlockHeader, error) {
@@ -117,6 +125,14 @@ func (s *LilyAPIStruct) LilyJobStop(ctx context.Context, ID schedule.JobID) erro
 
 func (s *LilyAPIStruct) LilyJobList(ctx context.Context) ([]schedule.JobResult, error) {
 	return s.Internal.LilyJobList(ctx)
+}
+
+func (s *LilyAPIStruct) LilyGapFind(ctx context.Context, cfg *LilyGapFindConfig) (schedule.JobID, error) {
+	return s.Internal.LilyGapFind(ctx, cfg)
+}
+
+func (s *LilyAPIStruct) LilyGapFill(ctx context.Context, cfg *LilyGapFillConfig) (schedule.JobID, error) {
+	return s.Internal.LilyGapFill(ctx, cfg)
 }
 
 func (s *LilyAPIStruct) Shutdown(ctx context.Context) error {

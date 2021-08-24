@@ -51,7 +51,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) 
 			rp[idx] = &visormodel.ProcessingReport{
 				Height:            int64(epoch),
 				StateRoot:         parent.ParentState().String(),
-				StatusInformation: "Null Round",
+				StatusInformation: visormodel.ProcessingStatusInformationNullRound,
 			}
 		}
 		idx += 1

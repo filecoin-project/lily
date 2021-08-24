@@ -58,6 +58,22 @@ const (
 	ChainConsensusTask      = "consensus"
 )
 
+var AllTasks = []string{
+	ActorStatesRawTask,
+	ActorStatesPowerTask,
+	ActorStatesRewardTask,
+	ActorStatesMinerTask,
+	ActorStatesInitTask,
+	ActorStatesMarketTask,
+	ActorStatesMultisigTask,
+	BlocksTask,
+	MessagesTask,
+	ChainEconomicsTask,
+	MultisigApprovalsTask,
+	ImplicitMessageTask,
+	ChainConsensusTask,
+}
+
 var log = logging.Logger("visor/chain")
 
 var _ TipSetObserver = (*TipSetIndexer)(nil)

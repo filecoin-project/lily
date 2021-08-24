@@ -130,6 +130,10 @@ type LensAPI struct {
 	cs        *store.ChainStore
 }
 
+func (ra *LensAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {
+	panic("implement me")
+}
+
 func (ra *LensAPI) GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {
 	return nil, xerrors.Errorf("GetMessageExecutionsForTipSet not supported on util api lens")
 }

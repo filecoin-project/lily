@@ -26,18 +26,22 @@ type LilyAPI interface {
 	LilyJobStop(ctx context.Context, ID schedule.JobID) error
 	LilyJobList(ctx context.Context) ([]schedule.JobResult, error)
 
+	LilyGapFind(ctx context.Context, cfg *LilyGapFindConfig) (schedule.JobID, error)
+	LilyGapFill(ctx context.Context, cfg *LilyGapFillConfig) (schedule.JobID, error)
+
 	// SyncState returns the current status of the chain sync system.
 	SyncState(context.Context) (*api.SyncState, error) //perm:read
 
-	ChainHead(context.Context) (*types.TipSet, error)                                               //perm:read
-	ChainGetBlock(context.Context, cid.Cid) (*types.BlockHeader, error)                             //perm:read
-	ChainReadObj(context.Context, cid.Cid) ([]byte, error)                                          //perm:read
-	ChainStatObj(context.Context, cid.Cid, cid.Cid) (api.ObjStat, error)                            //perm:read
-	ChainGetTipSet(context.Context, types.TipSetKey) (*types.TipSet, error)                         //perm:read
-	ChainGetTipSetByHeight(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error) //perm:read
-	ChainGetBlockMessages(context.Context, cid.Cid) (*api.BlockMessages, error)                     //perm:read
-	ChainGetParentReceipts(context.Context, cid.Cid) ([]*types.MessageReceipt, error)               //perm:read
-	ChainGetParentMessages(context.Context, cid.Cid) ([]api.Message, error)                         //perm:read
+	ChainHead(context.Context) (*types.TipSet, error)                                                  //perm:read
+	ChainGetBlock(context.Context, cid.Cid) (*types.BlockHeader, error)                                //perm:read
+	ChainReadObj(context.Context, cid.Cid) ([]byte, error)                                             //perm:read
+	ChainStatObj(context.Context, cid.Cid, cid.Cid) (api.ObjStat, error)                               //perm:read
+	ChainGetTipSet(context.Context, types.TipSetKey) (*types.TipSet, error)                            //perm:read
+	ChainGetTipSetByHeight(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error)    //perm:read
+	ChainGetTipSetAfterHeight(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error) //perm:read
+	ChainGetBlockMessages(context.Context, cid.Cid) (*api.BlockMessages, error)                        //perm:read
+	ChainGetParentReceipts(context.Context, cid.Cid) ([]*types.MessageReceipt, error)                  //perm:read
+	ChainGetParentMessages(context.Context, cid.Cid) ([]api.Message, error)                            //perm:read
 
 	// trigger graceful shutdown
 	Shutdown(context.Context) error
@@ -77,4 +81,26 @@ type LilyWalkConfig struct {
 	RestartOnCompletion bool
 	RestartDelay        time.Duration
 	Storage             string // name of storage system to use, may be empty
+}
+
+type LilyGapFindConfig struct {
+	RestartOnFailure    bool
+	RestartOnCompletion bool
+	RestartDelay        time.Duration
+	Storage             string // name of storage system to use, cannot be empty and must be Database storage.
+	Name                string
+	To                  uint64
+	From                uint64
+	Tasks               []string // name of tasks to fill gaps for
+}
+
+type LilyGapFillConfig struct {
+	RestartOnFailure    bool
+	RestartOnCompletion bool
+	RestartDelay        time.Duration
+	Storage             string // name of storage system to use, cannot be empty and must be Database storage.
+	Name                string
+	To                  uint64
+	From                uint64
+	Tasks               []string // name of tasks to fill gaps for
 }
