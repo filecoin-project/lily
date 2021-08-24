@@ -13,9 +13,9 @@ import (
 	"github.com/filecoin-project/sentinel-visor/lens"
 )
 
-func NewWalker(obs TipSetObserver, opener lens.APIOpener, minHeight, maxHeight int64) *Walker {
+func NewWalker(obs TipSetObserver, node lens.API, minHeight, maxHeight int64) *Walker {
 	return &Walker{
-		opener:    opener,
+		node:      node,
 		obs:       obs,
 		minHeight: minHeight,
 		maxHeight: maxHeight,
@@ -24,7 +24,7 @@ func NewWalker(obs TipSetObserver, opener lens.APIOpener, minHeight, maxHeight i
 
 // Walker is a task that indexes blocks by walking the chain history.
 type Walker struct {
-	opener    lens.APIOpener
+	node      lens.API
 	obs       TipSetObserver
 	minHeight int64 // limit persisting to tipsets equal to or above this height
 	maxHeight int64 // limit persisting to tipsets equal to or below this height}
@@ -33,19 +33,13 @@ type Walker struct {
 // Run starts walking the chain history and continues until the context is done or
 // the start of the chain is reached.
 func (c *Walker) Run(ctx context.Context) error {
-	node, closer, err := c.opener.Open(ctx)
-	if err != nil {
-		return xerrors.Errorf("open lens: %w", err)
-	}
-
 	defer func() {
-		closer()
 		if err := c.obs.Close(); err != nil {
 			log.Errorw("walker failed to close TipSetObserver", "error", err)
 		}
 	}()
 
-	ts, err := node.ChainHead(ctx)
+	ts, err := c.node.ChainHead(ctx)
 	if err != nil {
 		return xerrors.Errorf("get chain head: %w", err)
 	}
@@ -57,13 +51,13 @@ func (c *Walker) Run(ctx context.Context) error {
 	// Start at maxHeight+1 so that the tipset at maxHeight becomes the parent for any tasks that need to make a diff between two tipsets.
 	// A walk where min==max must still process two tipsets to be sure of extracting data.
 	if int64(ts.Height()) > c.maxHeight+1 {
-		ts, err = node.ChainGetTipSetAfterHeight(ctx, abi.ChainEpoch(c.maxHeight+1), types.EmptyTSK)
+		ts, err = c.node.ChainGetTipSetAfterHeight(ctx, abi.ChainEpoch(c.maxHeight+1), types.EmptyTSK)
 		if err != nil {
 			return xerrors.Errorf("get tipset by height: %w", err)
 		}
 	}
 
-	if err := c.WalkChain(ctx, node, ts); err != nil {
+	if err := c.WalkChain(ctx, c.node, ts); err != nil {
 		return xerrors.Errorf("walk chain: %w", err)
 	}
 

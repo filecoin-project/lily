@@ -13,16 +13,16 @@ import (
 
 type GapFiller struct {
 	DB                   *storage.Database
-	opener               lens.APIOpener
+	node                 lens.API
 	name                 string
 	minHeight, maxHeight uint64
 	tasks                []string
 }
 
-func NewGapFiller(o lens.APIOpener, db *storage.Database, name string, minHeight, maxHeight uint64, tasks []string) *GapFiller {
+func NewGapFiller(node lens.API, db *storage.Database, name string, minHeight, maxHeight uint64, tasks []string) *GapFiller {
 	return &GapFiller{
 		DB:        db,
-		opener:    o,
+		node:      node,
 		name:      name,
 		maxHeight: maxHeight,
 		minHeight: minHeight,
@@ -40,13 +40,13 @@ func (g *GapFiller) Run(ctx context.Context) error {
 
 	idx := 0
 	for _, height := range heights {
-		indexer, err := NewTipSetIndexer(g.opener, g.DB, 0, g.name, gaps[height])
+		indexer, err := NewTipSetIndexer(g.node, g.DB, 0, g.name, gaps[height])
 		if err != nil {
 			return err
 		}
 
 		// walk a single height at a time since there is no guarantee neighboring heights share the same missing tasks.
-		if err := NewWalker(indexer, g.opener, height, height).Run(ctx); err != nil {
+		if err := NewWalker(indexer, g.node, height, height).Run(ctx); err != nil {
 			log.Errorw("fill failed", "height", height, "error", err.Error())
 			// TODO we could add an error to the gap report in a follow on if needed, but the actualy error should
 			// exist in the processing report if this fails.

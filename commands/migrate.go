@@ -1,12 +1,67 @@
 package commands
 
 import (
+	"fmt"
+	"os"
+
+	"github.com/filecoin-project/sentinel-visor/version"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/model"
 	"github.com/filecoin-project/sentinel-visor/storage"
 )
+
+var defaultName = "visor"
+
+func init() {
+	defaultName = "visor_" + version.String()
+	hostname, err := os.Hostname()
+	if err == nil {
+		defaultName = fmt.Sprintf("%s_%s_%d", defaultName, hostname, os.Getpid())
+	}
+}
+
+type VisorDBOpts struct {
+	DB                string
+	Name              string
+	DBSchema          string
+	DBPoolSize        int
+	DBAllowUpsert     bool
+	DBAllowMigrations bool
+}
+
+var VisorDBFlags VisorDBOpts
+
+var dbConnectFlags = []cli.Flag{
+	&cli.StringFlag{
+		Name:        "db",
+		EnvVars:     []string{"LOTUS_DB"},
+		Value:       "",
+		Usage:       "A connection string for the TimescaleDB database, for example postgres://postgres:password@localhost:5432/postgres?sslmode=disable",
+		Destination: &VisorDBFlags.DB,
+	},
+	&cli.IntFlag{
+		Name:        "db-pool-size",
+		EnvVars:     []string{"LOTUS_DB_POOL_SIZE"},
+		Value:       75,
+		Destination: &VisorDBFlags.DBPoolSize,
+	},
+	&cli.StringFlag{
+		Name:        "name",
+		EnvVars:     []string{"VISOR_NAME"},
+		Value:       defaultName,
+		Usage:       "A name that helps to identify this instance of visor.",
+		Destination: &VisorDBFlags.Name,
+	},
+	&cli.StringFlag{
+		Name:        "schema",
+		EnvVars:     []string{"VISOR_SCHEMA"},
+		Value:       "public",
+		Usage:       "The name of the postgresql schema that holds the objects used by this instance of visor.",
+		Destination: &VisorDBFlags.DBSchema,
+	},
+}
 
 var MigrateCmd = &cli.Command{
 	Name:  "migrate",
@@ -27,13 +82,13 @@ var MigrateCmd = &cli.Command{
 		},
 	),
 	Action: func(cctx *cli.Context) error {
-		if err := setupLogging(cctx); err != nil {
+		if err := setupLogging(VisorLogFlags); err != nil {
 			return xerrors.Errorf("setup logging: %w", err)
 		}
 
 		ctx := cctx.Context
 
-		db, err := storage.NewDatabase(ctx, cctx.String("db"), cctx.Int("db-pool-size"), cctx.String("name"), cctx.String("schema"), false)
+		db, err := storage.NewDatabase(ctx, VisorDBFlags.DB, VisorDBFlags.DBPoolSize, VisorDBFlags.Name, VisorDBFlags.DBSchema, false)
 		if err != nil {
 			return xerrors.Errorf("connect database: %w", err)
 		}

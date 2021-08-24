@@ -62,12 +62,12 @@ func TestWatcher(t *testing.T) {
 	t.Logf("preparing chain")
 	full, miner, _ := itestkit.EnsembleMinimal(t)
 
-	opener := testutil.NewAPIOpener(full)
+	nodeAPI := testutil.NewAPIWrapper(full)
 
 	strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 	require.NoError(t, err, "NewDatabaseFromDB")
 
-	tsIndexer, err := NewTipSetIndexer(opener, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
+	tsIndexer, err := NewTipSetIndexer(nodeAPI, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
 	require.NoError(t, err, "NewTipSetIndexer")
 	t.Logf("initializing indexer")
 	idx := NewWatcher(tsIndexer, NullHeadNotifier{}, 0)

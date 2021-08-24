@@ -235,10 +235,6 @@ func (m *LilyNodeAPI) LilyJobList(_ context.Context) ([]schedule.JobResult, erro
 	return m.Scheduler.Jobs(), nil
 }
 
-func (m *LilyNodeAPI) Open(_ context.Context) (lens.API, lens.APICloser, error) {
-	return m, func() {}, nil
-}
-
 func (m *LilyNodeAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
 	return util.GetExecutedAndBlockMessagesForTipset(ctx, m.ChainAPI.Chain, ts, pts)
 }

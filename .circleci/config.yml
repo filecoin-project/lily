@@ -130,17 +130,6 @@ jobs:
             DOCKERIZE_VERSION: v0.3.0
       - run: sudo apt-get update
       - run: make deps
-      - restore_cache:
-          name: Restore test vector files
-          key: testvectors-{{ checksum "vector/VECTOR_MANIFEST" }}
-          paths:
-            - vector/data/
-      - run: make vector-setup
-      - save_cache:
-          name: Save test vector files
-          key: testvectors-{{ checksum "vector/VECTOR_MANIFEST" }}
-          paths:
-            - vector/data/
       - run: make build
       - run:
           name: waiting for db

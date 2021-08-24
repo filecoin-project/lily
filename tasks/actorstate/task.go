@@ -3,7 +3,6 @@ package actorstate
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/filecoin-project/go-address"
@@ -23,17 +22,14 @@ import (
 
 // A Task processes the extraction of actor state according the allowed types in its extracter map.
 type Task struct {
-	nodeMu sync.Mutex // guards mutations to node, opener and closer
-	node   lens.API
-	opener lens.APIOpener
-	closer lens.APICloser
+	node lens.API
 
 	extracterMap ActorExtractorMap
 }
 
-func NewTask(opener lens.APIOpener, extracterMap ActorExtractorMap) *Task {
+func NewTask(node lens.API, extracterMap ActorExtractorMap) *Task {
 	p := &Task{
-		opener:       opener,
+		node:         node,
 		extracterMap: extracterMap,
 	}
 	return p
@@ -45,19 +41,6 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 		span.SetAttributes(label.String("tipset", ts.String()), label.String("parent_tipset", pts.String()), label.Int64("height", int64(ts.Height())))
 	}
 	defer span.End()
-	// t.node is used only by goroutines started by this method
-	t.nodeMu.Lock()
-	if t.node == nil {
-		node, closer, err := t.opener.Open(ctx)
-		if err != nil {
-			t.nodeMu.Unlock()
-			return nil, nil, xerrors.Errorf("unable to open lens: %w", err)
-		}
-		t.node = node
-		t.closer = closer
-	}
-	t.nodeMu.Unlock()
-
 	log.Debugw("processing actor state changes", "height", ts.Height(), "parent_height", pts.Height())
 
 	report := &visormodel.ProcessingReport{
@@ -166,35 +149,14 @@ func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pt
 	if !ok {
 		res.SkippedParse = true
 	} else {
-		// get reference to the lens api, which may have been closed due to a failure elsewhere
-		t.nodeMu.Lock()
-		nodeAPI := t.node
-		t.nodeMu.Unlock()
-
-		if nodeAPI == nil {
-			res.Error = xerrors.Errorf("failed to extract parsed actor state: no connection to api")
-			return
-		}
-
 		// Parse state
-		data, err := extracter.Extract(ctx, info, emsgs, nodeAPI)
+		data, err := extracter.Extract(ctx, info, emsgs, t.node)
 		if err != nil {
 			res.Error = xerrors.Errorf("failed to extract parsed actor state: %w", err)
 			return
 		}
 		res.Data = data
 	}
-}
-
-func (t *Task) Close() error {
-	t.nodeMu.Lock()
-	defer t.nodeMu.Unlock()
-	if t.closer != nil {
-		t.closer()
-		t.closer = nil
-	}
-	t.node = nil
-	return nil
 }
 
 type ActorStateResult struct {

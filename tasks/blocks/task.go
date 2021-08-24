@@ -46,7 +46,3 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 
 	return pl, report, nil
 }
-
-func (p *Task) Close() error {
-	return nil
-}

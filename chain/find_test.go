@@ -12,7 +12,6 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/crypto"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/sentinel-visor/lens"
 	"github.com/filecoin-project/sentinel-visor/model/visor"
 	"github.com/filecoin-project/sentinel-visor/storage"
 	"github.com/filecoin-project/sentinel-visor/testutil"
@@ -58,7 +57,7 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh1.Height(), types.EmptyTSK).
 			Return(tsh1, nil)
 
-		actual, nullRounds, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+		actual, nullRounds, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
 			findEpochGapsAndNullRounds(ctx, mlens)
 		require.NoError(t, err)
 		require.Len(t, nullRounds, 0)
@@ -92,7 +91,7 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, abi.ChainEpoch(9), types.EmptyTSK).
 			Return(tsh1, nil)
 
-		actual, nullRounds, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+		actual, nullRounds, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
 			findEpochGapsAndNullRounds(ctx, mlens)
 		require.NoError(t, err)
 
@@ -124,7 +123,7 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh5.Height(), types.EmptyTSK).
 			Return(tsh5, nil)
 
-		actual, nullRounds, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+		actual, nullRounds, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
 			findEpochGapsAndNullRounds(ctx, mlens)
 		require.NoError(t, err)
 		require.Len(t, nullRounds, 0)
@@ -150,7 +149,7 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
 			Return(tsh2, nil)
 
-		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
@@ -175,7 +174,7 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh10.Height(), types.EmptyTSK).
 			Return(tsh10, nil)
 
-		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
@@ -193,7 +192,7 @@ func TestFind(t *testing.T) {
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
 			findEpochSkips(ctx)
 		require.NoError(t, err)
 
@@ -220,7 +219,7 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
 			Return(tsh2, nil)
 
-		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
@@ -246,7 +245,7 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
 			Return(tsh2, nil)
 
-		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
@@ -272,7 +271,7 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
 			Return(tsh2, nil)
 
-		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, AllTasks).
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
@@ -294,7 +293,7 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
 			Return(tsh2, nil)
 
-		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, monitoringTasks).
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, monitoringTasks).
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
@@ -316,7 +315,7 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
 			Return(tsh2, nil)
 
-		actual, err := NewGapIndexer(&FakeFindLensOpener{}, strg, t.Name(), minHeight, maxHeight, monitoringTasks).
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, monitoringTasks).
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
@@ -461,17 +460,6 @@ $$;`, taskQbuilder.String(), count, reporter)
 	_, err := db.Exec(query)
 
 	require.NoError(tb, err)
-}
-
-type FakeFindLensOpener struct {
-}
-
-func (m *FakeFindLensOpener) Daemonized() bool {
-	return false
-}
-
-func (m *FakeFindLensOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) {
-	return nil, func() {}, nil
 }
 
 type MockedFindLens struct {

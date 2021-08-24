@@ -13,7 +13,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/verifreg"
-	"github.com/filecoin-project/sentinel-visor/lens/lotus"
 	"github.com/filecoin-project/sentinel-visor/tasks/consensus"
 	"github.com/filecoin-project/sentinel-visor/tasks/messageexecutions"
 	"github.com/ipfs/go-cid"
@@ -78,7 +77,7 @@ var log = logging.Logger("visor/chain")
 
 var _ TipSetObserver = (*TipSetIndexer)(nil)
 
-// A TipSetWatcher waits for tipsets and persists their block data into a database.
+// TipSetIndexer waits for tipsets and persists their block data into a database.
 type TipSetIndexer struct {
 	window                     time.Duration
 	storage                    model.Storage
@@ -91,24 +90,15 @@ type TipSetIndexer struct {
 	persistSlot                chan struct{} // filled with a token when a goroutine is persisting data
 	lastTipSet                 *types.TipSet
 	node                       lens.API
-	opener                     lens.APIOpener
-	closer                     lens.APICloser
-	addressFilter              *AddressFilter
 }
 
 type TipSetIndexerOpt func(t *TipSetIndexer)
 
-func AddressFilterOpt(f *AddressFilter) TipSetIndexerOpt {
-	return func(t *TipSetIndexer) {
-		t.addressFilter = f
-	}
-}
-
-// A TipSetIndexer extracts block, message and actor state data from a tipset and persists it to storage. Extraction
+// NewTipSetIndexer extracts block, message and actor state data from a tipset and persists it to storage. Extraction
 // and persistence are concurrent. Extraction of the a tipset can proceed while data from the previous extraction is
 // being persisted. The indexer may be given a time window in which to complete data extraction. The name of the
 // indexer is used as the reporter in the visor_processing_reports table.
-func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, name string, tasks []string, options ...TipSetIndexerOpt) (*TipSetIndexer, error) {
+func NewTipSetIndexer(node lens.API, d model.Storage, window time.Duration, name string, tasks []string, options ...TipSetIndexerOpt) (*TipSetIndexer, error) {
 	tsi := &TipSetIndexer{
 		storage:                    d,
 		window:                     window,
@@ -119,7 +109,7 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 		messageExecutionProcessors: map[string]MessageExecutionProcessor{},
 		consensusProcessor:         map[string]TipSetsProcessor{},
 		actorProcessors:            map[string]ActorProcessor{},
-		opener:                     o,
+		node:                       node,
 	}
 
 	for _, task := range tasks {
@@ -129,31 +119,28 @@ func NewTipSetIndexer(o lens.APIOpener, d model.Storage, window time.Duration, n
 		case MessagesTask:
 			tsi.messageProcessors[MessagesTask] = messages.NewTask()
 		case ChainEconomicsTask:
-			tsi.processors[ChainEconomicsTask] = chaineconomics.NewTask(o)
+			tsi.processors[ChainEconomicsTask] = chaineconomics.NewTask(node)
 		case ActorStatesRawTask:
-			tsi.actorProcessors[ActorStatesRawTask] = actorstate.NewTask(o, &actorstate.RawActorExtractorMap{})
+			tsi.actorProcessors[ActorStatesRawTask] = actorstate.NewTask(node, &actorstate.RawActorExtractorMap{})
 		case ActorStatesPowerTask:
-			tsi.actorProcessors[ActorStatesPowerTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(power.AllCodes()))
+			tsi.actorProcessors[ActorStatesPowerTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(power.AllCodes()))
 		case ActorStatesRewardTask:
-			tsi.actorProcessors[ActorStatesRewardTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(reward.AllCodes()))
+			tsi.actorProcessors[ActorStatesRewardTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(reward.AllCodes()))
 		case ActorStatesMinerTask:
-			tsi.actorProcessors[ActorStatesMinerTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(miner.AllCodes()))
+			tsi.actorProcessors[ActorStatesMinerTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(miner.AllCodes()))
 		case ActorStatesInitTask:
-			tsi.actorProcessors[ActorStatesInitTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(init_.AllCodes()))
+			tsi.actorProcessors[ActorStatesInitTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(init_.AllCodes()))
 		case ActorStatesMarketTask:
-			tsi.actorProcessors[ActorStatesMarketTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(market.AllCodes()))
+			tsi.actorProcessors[ActorStatesMarketTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(market.AllCodes()))
 		case ActorStatesMultisigTask:
-			tsi.actorProcessors[ActorStatesMultisigTask] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(multisig.AllCodes()))
+			tsi.actorProcessors[ActorStatesMultisigTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(multisig.AllCodes()))
 		case ActorStatesVerifreg:
-			tsi.actorProcessors[ActorStatesVerifreg] = actorstate.NewTask(o, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes()))
+			tsi.actorProcessors[ActorStatesVerifreg] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes()))
 		case MultisigApprovalsTask:
-			tsi.messageProcessors[MultisigApprovalsTask] = msapprovals.NewTask(o)
+			tsi.messageProcessors[MultisigApprovalsTask] = msapprovals.NewTask(node)
 		case ChainConsensusTask:
 			tsi.consensusProcessor[ChainConsensusTask] = consensus.NewTask()
 		case ImplicitMessageTask:
-			if !o.Daemonized() {
-				return nil, xerrors.Errorf("daemonized API (lily node) required to run: %s task", ImplicitMessageTask)
-			}
 			tsi.messageExecutionProcessors[ImplicitMessageTask] = messageexecutions.NewTask()
 		default:
 			return nil, xerrors.Errorf("unknown task: %s", task)
@@ -231,15 +218,6 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		go t.runProcessor(tctx, p, name, current, results)
 	}
 
-	if t.node == nil {
-		node, closer, err := t.opener.Open(ctx)
-		if err != nil {
-			return xerrors.Errorf("unable to open lens: %w", err)
-		}
-		t.node = node
-		t.closer = closer
-	}
-
 	if types.CidArrsEqual(next.Parents().Cids(), current.Cids()) {
 		if len(t.consensusProcessor) > 0 {
 			for name, p := range t.consensusProcessor {
@@ -275,13 +253,6 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 					}
 					if err == nil {
 						ll.Debugw("found actor state changes", "count", len(changes), "time", time.Since(changesStart))
-						if t.addressFilter != nil {
-							for addr := range changes {
-								if !t.addressFilter.Allow(addr) {
-									delete(changes, addr)
-								}
-							}
-						}
 						for name, p := range t.actorProcessors {
 							inFlight++
 							go t.runActorProcessor(tctx, p, name, next, current, changes, tsMsgs.Executed, results)
@@ -406,9 +377,6 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		if res.Error != nil {
 			llt.Errorw("task returned with error", "error", res.Error.Error())
 			// tell all the processors to close their connections to the lens, they can reopen when needed
-			if err := t.closeProcessors(); err != nil {
-				log.Errorw("error received while closing tipset indexer", "error", err)
-			}
 			return res.Error
 		}
 
@@ -567,9 +535,7 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 		return nil, err
 	}
 
-	// efficient HAMT diffing does not work over the API lens
-	_, isLotusAPILens := t.node.(*lotus.APIWrapper)
-	if !isLotusAPILens && newVersion == oldVersion && (newVersion != types.StateTreeVersion0 && newVersion != types.StateTreeVersion1) {
+	if newVersion == oldVersion && (newVersion != types.StateTreeVersion0 && newVersion != types.StateTreeVersion1) {
 		if span.IsRecording() {
 			span.SetAttribute("diff", "fast")
 		}
@@ -740,32 +706,6 @@ func (t *TipSetIndexer) runMessageExecutionProcessor(ctx context.Context, p Mess
 	}
 }
 
-func (t *TipSetIndexer) closeProcessors() error {
-	if t.closer != nil {
-		t.closer()
-		t.closer = nil
-	}
-	t.node = nil
-
-	for name, p := range t.processors {
-		if err := p.Close(); err != nil {
-			log.Errorw("error received while closing task processor", "error", err, "task", name)
-		}
-	}
-	for name, p := range t.messageProcessors {
-		if err := p.Close(); err != nil {
-			log.Errorw("error received while closing message task processor", "error", err, "task", name)
-		}
-	}
-	for name, p := range t.actorProcessors {
-		if err := p.Close(); err != nil {
-			log.Errorw("error received while closing actor task processor", "error", err, "task", name)
-		}
-	}
-
-	return nil
-}
-
 func (t *TipSetIndexer) Close() error {
 	log.Debug("closing tipset indexer")
 
@@ -787,7 +727,7 @@ func (t *TipSetIndexer) Close() error {
 	// the channel is empty for reuse.
 	<-t.persistSlot
 
-	return t.closeProcessors()
+	return nil
 }
 
 // SkipTipSet writes a processing report to storage for each indexer task to indicate that the entire tipset
@@ -842,14 +782,12 @@ type TipSetProcessor interface {
 	// ProcessTipSet processes a tipset. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
 	ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
-	Close() error
 }
 
 type TipSetsProcessor interface {
 	// ProcessTipSets processes a parent and child tipset. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
 	ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error)
-	Close() error
 }
 
 type MessageProcessor interface {
@@ -857,17 +795,14 @@ type MessageProcessor interface {
 	// pts is the tipset containing the messages, ts is the tipset containing the receipts
 	// Any data returned must be accompanied by a processing report.
 	ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error)
-	Close() error
 }
 
 type MessageExecutionProcessor interface {
 	ProcessMessageExecutions(ctx context.Context, store adt.Store, ts *types.TipSet, pts *types.TipSet, imsgs []*lens.MessageExecution) (model.Persistable, *visormodel.ProcessingReport, error)
-	Close() error
 }
 
 type ActorProcessor interface {
-	// ProcessActor processes a set of actors. If error is non-nil then the processor encountered a fatal error.
+	// ProcessActors processes a set of actors. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
 	ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors map[string]lens.ActorStateChange, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error)
-	Close() error
 }

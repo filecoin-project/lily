@@ -314,10 +314,6 @@ func (p *Task) parseMessageParams(m *types.Message, destCode cid.Cid) (string, s
 	return method, encoded, nil
 }
 
-func (p *Task) Close() error {
-	return nil
-}
-
 type MessageError struct {
 	Cid   cid.Cid
 	Error string

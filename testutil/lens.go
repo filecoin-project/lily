@@ -16,23 +16,8 @@ import (
 	"github.com/filecoin-project/sentinel-visor/lens"
 )
 
-type APIOpener struct {
-	node *itestkit.TestFullNode
-}
-
-func NewAPIOpener(node *itestkit.TestFullNode) *APIOpener {
-	return &APIOpener{node: node}
-}
-
-func (o *APIOpener) Open(ctx context.Context) (lens.API, lens.APICloser, error) {
-	return &APIWrapper{
-		TestFullNode: o.node,
-		ctx:          ctx,
-	}, lens.APICloser(func() {}), nil
-}
-
-func (o *APIOpener) Daemonized() bool {
-	return false
+func NewAPIWrapper(node *itestkit.TestFullNode) lens.API {
+	return &APIWrapper{TestFullNode: node}
 }
 
 type APIWrapper struct {
