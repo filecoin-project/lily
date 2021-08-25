@@ -29,10 +29,11 @@ func NewCatalog(cfg config.StorageConf) (*Catalog, error) {
 
 		// Find the url of the database, which is either indirectly specified using URLEnv or explicit via URL
 		var dburl string
+		dburl = sc.URL
 		if sc.URLEnv != "" {
-			dburl = os.Getenv(sc.URLEnv)
-		} else {
-			dburl = sc.URL
+			if os.Getenv(sc.URLEnv) != "" {
+				dburl = os.Getenv(sc.URLEnv)
+			}
 		}
 
 		db, err := NewDatabase(context.TODO(), dburl, sc.PoolSize, sc.ApplicationName, sc.SchemaName, sc.AllowUpsert)

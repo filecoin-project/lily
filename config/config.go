@@ -82,7 +82,7 @@ func SampleConf() *Conf {
 		Postgresql: map[string]PgStorageConf{
 			"Database1": {
 				URLEnv:          "LOTUS_DB", // LOTUS_DB is a historical accident, but we keep it as the default for compatibility
-				URL:             "postgres://postgres:password@localhost:5432/postgres",
+				URL:             "postgres://postgres:password@localhost:5432/postgres?sslmode=disable",
 				PoolSize:        20,
 				ApplicationName: "visor",
 				AllowUpsert:     false,
@@ -111,15 +111,15 @@ func SampleConf() *Conf {
 	return &cfg
 }
 
-func EnsureExists(path string) error {
+func EnsureExists(path string, init bool) error {
 	_, err := os.Stat(path)
-	if err == nil {
+	if err == nil && !init {
 		return nil
-	} else if !os.IsNotExist(err) {
+	} else if err != nil {
 		return err
 	}
 
-	c, err := os.Create(path)
+	c, err := os.OpenFile(path, os.O_TRUNC|os.O_WRONLY, os.ModeAppend)
 	if err != nil {
 		return err
 	}

@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"io/ioutil"
-	"path/filepath"
 
 	paramfetch "github.com/filecoin-project/go-paramfetch"
 	lotusbuild "github.com/filecoin-project/lotus/build"
@@ -57,10 +56,11 @@ var clientAPIFlagSet = []cli.Flag{
 }
 
 type daemonOpts struct {
-	repo      string
-	bootstrap bool // TODO: is this necessary - do we want to run visor in this mode?
-	config    string
-	genesis   string
+	repo          string
+	bootstrap     bool
+	config        string
+	commentConfig bool
+	genesis       string
 }
 
 var daemonFlags daemonOpts
@@ -127,18 +127,24 @@ Note that jobs are not persisted between restarts of the daemon. See
 			Destination: &daemonFlags.repo,
 		},
 		&cli.BoolFlag{
-			Name: "bootstrap",
-			// TODO: usage description
+			Name:        "bootstrap",
+			Usage:       "If set to false the daemon will not connected to peers or sync the chain.",
 			EnvVars:     []string{"VISOR_BOOTSTRAP"},
 			Value:       true,
 			Destination: &daemonFlags.bootstrap,
-			Hidden:      true, // hide until we decide if we want to keep this.
 		},
 		&cli.StringFlag{
 			Name:        "config",
 			Usage:       "Specify path of config file to use.",
 			EnvVars:     []string{"VISOR_CONFIG"},
+			Value:       "~/.lotus/config.toml",
 			Destination: &daemonFlags.config,
+		},
+		&cli.BoolFlag{
+			Name:        "default-config",
+			Usage:       "If true the daemon config file will be overwritten with default configuration values.",
+			Value:       false,
+			Destination: &daemonFlags.commentConfig,
 		},
 		&cli.StringFlag{
 			Name:        "genesis",
@@ -165,38 +171,32 @@ Note that jobs are not persisted between restarts of the daemon. See
 		defer tcloser()
 
 		ctx := context.Background()
-		repoDir, err := homedir.Expand(daemonFlags.repo)
-		if err != nil {
-			log.Warnw("could not expand repo location", "error", err)
-		} else {
-			log.Infof("visor repo: %s", repoDir)
-		}
 
-		r, err := repo.NewFS(daemonFlags.repo)
+		repoPath, err := homedir.Expand(daemonFlags.repo)
+		if err != nil {
+			return xerrors.Errorf("could not expand repo location: %w", err)
+		}
+		log.Infof("repo path: %s", repoPath)
+		configPath, err := homedir.Expand(daemonFlags.config)
+		if err != nil {
+			return xerrors.Errorf("could not expand config location: %w", err)
+		}
+		log.Infof("config path: %s", configPath)
+
+		r, err := repo.NewFS(repoPath)
 		if err != nil {
 			return xerrors.Errorf("opening fs repo: %w", err)
 		}
-
-		if daemonFlags.config == "" {
-			daemonFlags.config = filepath.Join(repoDir, "config.toml")
-		} else {
-			daemonFlags.config, err = homedir.Expand(daemonFlags.config)
-			if err != nil {
-				log.Warnw("could not expand repo location", "error", err)
-			} else {
-				log.Infof("visor config: %s", repoDir)
-			}
-		}
-
-		if err := config.EnsureExists(daemonFlags.config); err != nil {
-			return xerrors.Errorf("ensuring config is present at %q: %w", daemonFlags.config, err)
-		}
-		r.SetConfigPath(daemonFlags.config)
 
 		err = r.Init(repo.FullNode)
 		if err != nil && err != repo.ErrRepoExists {
 			return xerrors.Errorf("repo init error: %w", err)
 		}
+
+		if err := config.EnsureExists(configPath, daemonFlags.commentConfig); err != nil {
+			return xerrors.Errorf("ensuring config is present at %q: %w", configPath, err)
+		}
+		r.SetConfigPath(configPath)
 
 		if err := paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), lotusbuild.SrsJSON(), 0); err != nil {
 			return xerrors.Errorf("fetching proof parameters: %w", err)
@@ -224,7 +224,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 		stop, err := node.New(ctx,
 			// Start Sentinel Dep injection
 			LilyNodeAPIOption(&api),
-			node.Override(new(*config.Conf), modules.LoadConf(daemonFlags.config)),
+			node.Override(new(*config.Conf), modules.LoadConf(configPath)),
 			node.Override(new(*events.Events), modules.NewEvents),
 			node.Override(new(*schedule.Scheduler), schedule.NewSchedulerDaemon),
 			node.Override(new(*storage.Catalog), modules.NewStorageCatalog),

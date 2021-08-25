@@ -8,12 +8,12 @@ import (
 	lcli "github.com/filecoin-project/lotus/cli"
 	"github.com/filecoin-project/lotus/lib/lotuslog"
 	"github.com/filecoin-project/lotus/node/repo"
+	"github.com/filecoin-project/sentinel-visor/config"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/sentinel-visor/commands/util"
-	"github.com/filecoin-project/sentinel-visor/config"
 )
 
 var initFlags struct {
@@ -37,6 +37,7 @@ var InitCmd = &cli.Command{
 			Name:        "config",
 			Usage:       "Specify path of config file to use.",
 			EnvVars:     []string{"VISOR_CONFIG"},
+			Value:       "~/.lotus/config.toml",
 			Destination: &initFlags.config,
 		},
 		&cli.StringFlag{
@@ -58,22 +59,30 @@ var InitCmd = &cli.Command{
 			}
 		}
 
-		r, err := repo.NewFS(initFlags.repo)
+		repoPath, err := homedir.Expand(initFlags.repo)
 		if err != nil {
-			return xerrors.Errorf("opening fs repo: %w", err)
+			return xerrors.Errorf("could not expand repo location: %w", err)
+		}
+		configPath, err := homedir.Expand(initFlags.config)
+		if err != nil {
+			return xerrors.Errorf("could not expand config location: %w", err)
 		}
 
-		if initFlags.config != "" {
-			if err := config.EnsureExists(initFlags.config); err != nil {
-				return xerrors.Errorf("ensuring config is present at %q: %w", initFlags.config, err)
-			}
-			r.SetConfigPath(initFlags.config)
+		r, err := repo.NewFS(repoPath)
+		if err != nil {
+			return xerrors.Errorf("opening fs repo: %w", err)
 		}
 
 		err = r.Init(repo.FullNode)
 		if err != nil && err != repo.ErrRepoExists {
 			return xerrors.Errorf("repo init error: %w", err)
 		}
+
+		if err := config.EnsureExists(configPath, true); err != nil {
+			return xerrors.Errorf("ensuring config is present at %q: %w", configPath, err)
+		}
+
+		r.SetConfigPath(configPath)
 
 		if err := paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), lotusbuild.SrsJSON(), 0); err != nil {
 			return xerrors.Errorf("fetching proof parameters: %w", err)
