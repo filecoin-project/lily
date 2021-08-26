@@ -8,7 +8,7 @@ FROM $GO_BUILD_IMAGE AS builder
 # ARG LILY_NETWORK_TARGET determines which network the lily binary is built for.
 # Options: mainnet, nerpanet, calibnet, butterflynet, interopnet, 2k
 # See https://network.filecoin.io/ for more information about network_targets.
-ARG VISOR_NETWORK_TARGET=mainnet
+ARG LILY_NETWORK_TARGET=mainnet
 
 RUN apt-get update
 RUN apt-get install -y \

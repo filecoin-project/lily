@@ -29,20 +29,20 @@ var InitCmd = &cli.Command{
 		&cli.StringFlag{
 			Name:        "repo",
 			Usage:       "Specify path where visor should store chain state.",
-			EnvVars:     []string{"VISOR_REPO"},
+			EnvVars:     []string{"LILY_REPO"},
 			Value:       "~/.lotus",
 			Destination: &initFlags.repo,
 		},
 		&cli.StringFlag{
 			Name:        "config",
 			Usage:       "Specify path of config file to use.",
-			EnvVars:     []string{"VISOR_CONFIG"},
+			EnvVars:     []string{"LILY_CONFIG"},
 			Destination: &initFlags.config,
 		},
 		&cli.StringFlag{
 			Name:        "import-snapshot",
 			Usage:       "Import chain state from a given chain export file or url.",
-			EnvVars:     []string{"VISOR_SNAPSHOT"},
+			EnvVars:     []string{"LILY_SNAPSHOT"},
 			Destination: &initFlags.importSnapshot,
 		},
 	},

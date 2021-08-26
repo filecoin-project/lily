@@ -614,7 +614,7 @@ After this change:
 - compute gas outputs ([#67](https://github.com/filecoin-project/sentinel-visor/issues/67))
 - add tests for indexer ([#12](https://github.com/filecoin-project/sentinel-visor/issues/12))
 - add schema migration capability ([#40](https://github.com/filecoin-project/sentinel-visor/issues/40))
-- add VISOR_TEST_DB environment variable to specify test database ([#35](https://github.com/filecoin-project/sentinel-visor/issues/35))
+- add LILY_TEST_DB environment variable to specify test database ([#35](https://github.com/filecoin-project/sentinel-visor/issues/35))
 - respect log level flag and allow per logger levels ([#34](https://github.com/filecoin-project/sentinel-visor/issues/34))
 - remove run subcommand and make index and process top level
 - embed version number from build
@@ -645,7 +645,7 @@ After this change:
 - **task:** correct index when computing deal state
 ### Chore
 - add tests for reward and power actor state extracters ([#83](https://github.com/filecoin-project/sentinel-visor/issues/83))
-- fail database tests if VISOR_TEST_DB not set ([#79](https://github.com/filecoin-project/sentinel-visor/issues/79))
+- fail database tests if LILY_TEST_DB not set ([#79](https://github.com/filecoin-project/sentinel-visor/issues/79))
 - use clock package for time mocking ([#65](https://github.com/filecoin-project/sentinel-visor/issues/65))
 - remove unused redis-based scheduler code ([#64](https://github.com/filecoin-project/sentinel-visor/issues/64))
 - Push docker images on [a-z]*-master branch updates ([#49](https://github.com/filecoin-project/sentinel-visor/issues/49))

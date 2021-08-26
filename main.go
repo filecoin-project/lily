@@ -85,14 +85,14 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:        "log-level-named",
-				EnvVars:     []string{"VISOR_LOG_LEVEL_NAMED"},
+				EnvVars:     []string{"LILY_LOG_LEVEL_NAMED"},
 				Value:       "",
 				Usage:       "A comma delimited list of named loggers and log levels formatted as name:level, for example 'logger1:debug,logger2:info'",
 				Destination: &commands.VisorLogFlags.LogLevelNamed,
 			},
 			&cli.BoolFlag{
 				Name:        "tracing",
-				EnvVars:     []string{"VISOR_TRACING"},
+				EnvVars:     []string{"LILY_TRACING"},
 				Value:       false,
 				Destination: &commands.VisorTracingFlags.Tracing,
 			},
@@ -128,7 +128,7 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:        "prometheus-port",
-				EnvVars:     []string{"VISOR_PROMETHEUS_PORT"},
+				EnvVars:     []string{"LILY_PROMETHEUS_PORT"},
 				Value:       ":9991",
 				Destination: &commands.VisorMetricFlags.PrometheusPort,
 			},
