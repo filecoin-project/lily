@@ -19,7 +19,7 @@
 #   ./push-docker-tags.sh myimage testingsha v0.5.0
 #
 #   # serving suggestion in circle ci - https://circleci.com/docs/2.0/env-vars/#built-in-environment-variables
-#   ./push-docker-tags.sh filecoin/sentinel-visor $CIRCLE_SHA1 $CIRCLE_TAG
+#   ./push-docker-tags.sh filecoin/lily $CIRCLE_SHA1 $CIRCLE_TAG
 #
 set -euo pipefail
 

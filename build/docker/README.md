@@ -2,7 +2,7 @@
 
 ### Background
 
-Dockerfiles for sentinel-visor have been broken into partials with a few
+Dockerfiles for lily have been broken into partials with a few
 parameters. This was done in order to minimize repetitive configuration over
 multiple files and to reduce the opportunity for human error.
 

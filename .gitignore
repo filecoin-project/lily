@@ -16,7 +16,7 @@
 .idea
 visor
 !model/visor
-sentinel-visor
+/*lily
 
 build/.*
 support/tools/bin
