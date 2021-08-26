@@ -15,7 +15,7 @@ $ cd lily
 $ make deps
 ```
 
-Build the `visor` binary to the root of the project directory:
+Build the `lily` binary to the root of the project directory:
 
 ```console
 $ make build
@@ -23,7 +23,7 @@ $ make build
 
 #### Building on M1-based Macs
 
-Because of the novel architecture of the M1-based Mac computers, some specific environment variables must be set before creating the visor executable.
+Because of the novel architecture of the M1-based Mac computers, some specific environment variables must be set before creating the lily executable.
 
 Create necessary environment variable to allow Visor to run on ARM architecture:
 ```console
@@ -33,7 +33,7 @@ export LIBRARY_PATH=/opt/homebrew/lib
 export FFI_BUILD_FROM_SOURCE=1
 
 ```
-Now, build the `visor` binary to the root of the project directory:
+Now, build the `lily` binary to the root of the project directory:
 
 ```console
 $ make build
@@ -58,19 +58,19 @@ For more, manual test running, you could also prepare your environment in the fo
 Create a new DB in postgres for testing:
 
 ```sql
-CREATE DATABASE visor_test;
+CREATE DATABASE lily_test;
 ```
 
 Migrate the database to the latest schema:
 
 ```sh
-visor --db "postgres://username@localhost/visor_test?sslmode=disable" migrate --latest
+lily --db "postgres://username@localhost/lily_test?sslmode=disable" migrate --latest
 ```
 
 Run the tests:
 
 ```sh
-LILY_TEST_DB="postgres://username@localhost/visor_test?sslmode=disable" go test ./...
+LILY_TEST_DB="postgres://username@localhost/lily_test?sslmode=disable" go test ./...
 ```
 
 ### Usage
@@ -81,7 +81,7 @@ LILY_TEST_DB="postgres://username@localhost/visor_test?sslmode=disable" go test 
   Use 'lily help <command>' to learn more about each command.
 ```
 
-Use the following env vars to configure the lotus node that visor reads from, and the database that it writes to:
+Use the following env vars to configure the lotus node that lily reads from, and the database that it writes to:
 
 - `LOTUS_PATH` - path to the lotus data dir. _default: `~/.lotus`_
 - `LOTUS_DB` - database connection . _default: `postgres://postgres:password@localhost:5432/postgres?sslmode=disable`_
@@ -117,7 +117,7 @@ Tracing expects a Jaeger server to be available. Configure the Jaeger settings u
 
 These variables may also be set using equivalent cli flags.
 
-By default visor uses probabilistic sampling with a rate of 0.0001. During testing it can be easier to override to remove sampling by setting
+By default lily uses probabilistic sampling with a rate of 0.0001. During testing it can be easier to override to remove sampling by setting
 the following environment variables:
 
 ```

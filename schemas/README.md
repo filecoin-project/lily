@@ -1,18 +1,18 @@
 # Schema Definitions
 
 This directory and its subdirectories holds the scripts for creating TimescaleDB database schemas compatible with the
-visor data model defined by the structs in the `models` package.
+lily data model defined by the structs in the `models` package.
 
 The data model and the corresponding database schemas are versioned using a `major` version number plus a `patch` number.
 For example `0.28`. Schemas with different major versions are not compatible with one another. Manual data migration 
 is required to transition from one major version to another.
 
 Patches are applied on top of the base schema for a major version and contain only additive, non-breaking changes with no data migration.
-This ensures patches are safe and can be applied by visor automatically. Some examples of additive, non-migration patches are adding a 
+This ensures patches are safe and can be applied by lily automatically. Some examples of additive, non-migration patches are adding a 
 new table or view or adding field comments. 
 
 Patches must be fully backwards compatible so that a database can be upgraded by a new version of
-visor without breaking an older version of visor that is using the same major schema version.
+lily without breaking an older version of lily that is using the same major schema version.
 
 Changes that are not suitable for patches include adding an index or column (even if nullable), changing a column type (may require long migrations and 
 database unavailability), removing a table, renaming a table or column.
@@ -62,13 +62,14 @@ The next patch version will be one higher than the highest patch version listed 
 **Do not modify existing migration files**
 
 1. Make the required changes to the Go models. 
-2. Ensure your test database is on the latest schema version (run `visor migrate --latest`)
+2. Ensure your test database is on the latest schema version (run `lily migrate --latest`)
 3. Run the `TestSchemaIsCurrent` test in the storage package to compare the models to the current database schema. This will log the `CREATE TABLE` ddl for any altered tables.
 4. Create a new migration file using the next patch version as a prefix.
 5. Add all the statements required to migrate the schema from the previous patch to an `up` variable.
 6. Optionally, add all the statements required to migrate the schema to the previous patch to a `down` variable.
+<<<<<<< HEAD
 7. Call `patches.Register` with your patch number and sql statements.
-8. Run the migration by running `visor migrate --to <new-version>`
-9. Test the migration is compatible by using `visor migrate`
+8. Run the migration by running `lily migrate --to <new-version>`
+9. Test the migration is compatible by using `lily migrate`
 
 
