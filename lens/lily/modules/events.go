@@ -6,8 +6,8 @@ import (
 	"github.com/filecoin-project/lotus/node/modules/helpers"
 	"go.uber.org/fx"
 
-	"github.com/filecoin-project/sentinel-visor/config"
-	"github.com/filecoin-project/sentinel-visor/storage"
+	"github.com/filecoin-project/lily/config"
+	"github.com/filecoin-project/lily/storage"
 )
 
 func NewEvents(mctx helpers.MetricsCtx, lc fx.Lifecycle, chainAPI full.ChainModuleAPI, stateAPI full.StateModuleAPI) *events.Events {

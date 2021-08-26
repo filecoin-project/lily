@@ -5,7 +5,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

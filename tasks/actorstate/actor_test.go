@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-	commonmodel "github.com/filecoin-project/sentinel-visor/model/actors/common"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
+	"github.com/filecoin-project/lily/lens"
+	commonmodel "github.com/filecoin-project/lily/model/actors/common"
+	"github.com/filecoin-project/lily/tasks/actorstate"
 )
 
 func TestActorExtractor(t *testing.T) {

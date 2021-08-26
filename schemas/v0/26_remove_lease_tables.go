@@ -1,6 +1,6 @@
 package v0
 
-// Schema version 26 removes work leasing tables https://github.com/filecoin-project/sentinel-visor/issues/311
+// Schema version 26 removes work leasing tables https://github.com/filecoin-project/lily/issues/311
 
 func init() {
 	up := batch(`

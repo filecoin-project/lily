@@ -10,8 +10,8 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/urfave/cli/v2"
 
-	"github.com/filecoin-project/sentinel-visor/chain"
-	"github.com/filecoin-project/sentinel-visor/lens/lily"
+	"github.com/filecoin-project/lily/chain"
+	"github.com/filecoin-project/lily/lens/lily"
 )
 
 type watchOps struct {

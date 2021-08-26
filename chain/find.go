@@ -6,10 +6,10 @@ import (
 
 	"github.com/deckarep/golang-set"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/model/visor"
+	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/model/visor"
-	"github.com/filecoin-project/sentinel-visor/storage"
 	"golang.org/x/xerrors"
 )
 

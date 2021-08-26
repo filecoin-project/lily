@@ -7,9 +7,9 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/label"
 
-	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/model/blocks"
-	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
+	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/model/blocks"
+	visormodel "github.com/filecoin-project/lily/model/visor"
 )
 
 type Task struct {

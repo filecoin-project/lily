@@ -7,8 +7,8 @@ import (
 
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/storage"
-	"github.com/filecoin-project/sentinel-visor/wait"
+	"github.com/filecoin-project/lily/storage"
+	"github.com/filecoin-project/lily/wait"
 )
 
 var chainVisViews = []string{

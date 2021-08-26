@@ -3,10 +3,10 @@ package consensus
 import (
 	"context"
 
+	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/model/chain"
+	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/model/chain"
-	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/label"
 )

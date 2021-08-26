@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/filecoin-project/sentinel-visor/config"
-	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/lily/config"
+	"github.com/filecoin-project/lily/model"
 	"golang.org/x/xerrors"
 )
 

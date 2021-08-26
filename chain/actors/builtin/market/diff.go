@@ -13,8 +13,8 @@ import (
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt/diff"
+	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 )
 
 var log = logging.Logger("visor/actors/market")

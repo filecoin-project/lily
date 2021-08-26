@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/filecoin-project/go-state-types/exitcode"
-	. "github.com/filecoin-project/sentinel-visor/chain/actors/aerrors"
+	. "github.com/filecoin-project/lily/chain/actors/aerrors"
 
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/xerrors"

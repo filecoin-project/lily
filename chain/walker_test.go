@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
-	"github.com/filecoin-project/sentinel-visor/model/blocks"
-	"github.com/filecoin-project/sentinel-visor/storage"
-	"github.com/filecoin-project/sentinel-visor/testutil"
+	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/model/blocks"
+	"github.com/filecoin-project/lily/storage"
+	"github.com/filecoin-project/lily/testutil"
 )
 
 func TestWalker(t *testing.T) {

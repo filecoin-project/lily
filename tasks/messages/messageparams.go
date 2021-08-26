@@ -13,7 +13,7 @@ import (
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/codec/dagcbor"
 
-	"github.com/filecoin-project/sentinel-visor/tasks/messages/types"
+	"github.com/filecoin-project/lily/tasks/messages/types"
 )
 
 type methodMeta struct {

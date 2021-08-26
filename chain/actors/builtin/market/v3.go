@@ -11,7 +11,7 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/adt"
 
 	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	market3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/market"

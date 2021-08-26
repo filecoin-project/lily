@@ -12,11 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
-	"github.com/filecoin-project/sentinel-visor/schemas"
-	_ "github.com/filecoin-project/sentinel-visor/schemas/v0"
-	"github.com/filecoin-project/sentinel-visor/testutil"
+	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/model/actors/miner"
+	"github.com/filecoin-project/lily/schemas"
+	_ "github.com/filecoin-project/lily/schemas/v0"
+	"github.com/filecoin-project/lily/testutil"
 )
 
 const defaultDatabaseWaitTime = time.Second * 20

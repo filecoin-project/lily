@@ -11,7 +11,7 @@ import (
 	"github.com/filecoin-project/lotus/node/repo"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/lens/lily"
+	"github.com/filecoin-project/lily/lens/lily"
 )
 
 func GetAPI(ctx context.Context, addrStr string, token string) (lily.LilyAPI, jsonrpc.ClientCloser, error) {

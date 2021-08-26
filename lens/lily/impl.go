@@ -6,13 +6,13 @@ import (
 	"sync"
 
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lily/lens/lily/modules"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/node/impl/common"
 	"github.com/filecoin-project/lotus/node/impl/full"
-	"github.com/filecoin-project/sentinel-visor/lens/lily/modules"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
@@ -20,11 +20,11 @@ import (
 	"go.uber.org/fx"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/chain"
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/lens/util"
-	"github.com/filecoin-project/sentinel-visor/schedule"
-	"github.com/filecoin-project/sentinel-visor/storage"
+	"github.com/filecoin-project/lily/chain"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/lens/util"
+	"github.com/filecoin-project/lily/schedule"
+	"github.com/filecoin-project/lily/storage"
 )
 
 var _ LilyAPI = (*LilyNodeAPI)(nil)

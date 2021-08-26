@@ -17,10 +17,10 @@ import (
 	"github.com/ipld/go-ipld-prime"
 	"golang.org/x/xerrors"
 
-	builtininit "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/tasks/messages"
-	"github.com/filecoin-project/sentinel-visor/tasks/messages/fcjson"
+	builtininit "github.com/filecoin-project/lily/chain/actors/builtin/init"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/tasks/messages"
+	"github.com/filecoin-project/lily/tasks/messages/fcjson"
 )
 
 var log = logging.Logger("lens/util")

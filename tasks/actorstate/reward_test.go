@@ -6,14 +6,14 @@ import (
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
+	"github.com/filecoin-project/lily/chain/actors/builtin/power"
+	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/power"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/reward"
 	tutils "github.com/filecoin-project/specs-actors/support/testing"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-	rewardmodel "github.com/filecoin-project/sentinel-visor/model/actors/reward"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
+	"github.com/filecoin-project/lily/lens"
+	rewardmodel "github.com/filecoin-project/lily/model/actors/reward"
+	"github.com/filecoin-project/lily/tasks/actorstate"
 
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa0smoothing "github.com/filecoin-project/specs-actors/actors/util/smoothing"

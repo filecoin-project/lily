@@ -12,8 +12,8 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/commands/util"
-	"github.com/filecoin-project/sentinel-visor/config"
+	"github.com/filecoin-project/lily/commands/util"
+	"github.com/filecoin-project/lily/config"
 )
 
 var initFlags struct {

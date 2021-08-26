@@ -9,8 +9,8 @@ import (
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
+	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/builtin"
 
 	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	power3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/power"

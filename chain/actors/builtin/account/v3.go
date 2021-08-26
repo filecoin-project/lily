@@ -5,7 +5,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/ipfs/go-cid"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/adt"
 
 	account3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/account"
 )

@@ -21,12 +21,12 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/commands/util"
-	"github.com/filecoin-project/sentinel-visor/config"
-	"github.com/filecoin-project/sentinel-visor/lens/lily"
-	"github.com/filecoin-project/sentinel-visor/lens/lily/modules"
-	"github.com/filecoin-project/sentinel-visor/schedule"
-	"github.com/filecoin-project/sentinel-visor/storage"
+	"github.com/filecoin-project/lily/commands/util"
+	"github.com/filecoin-project/lily/config"
+	"github.com/filecoin-project/lily/lens/lily"
+	"github.com/filecoin-project/lily/lens/lily/modules"
+	"github.com/filecoin-project/lily/schedule"
+	"github.com/filecoin-project/lily/storage"
 )
 
 var clientAPIFlags struct {

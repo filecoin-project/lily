@@ -28,7 +28,7 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/adt"
 
 	miner5 "github.com/filecoin-project/specs-actors/v5/actors/builtin/miner"
 	proof5 "github.com/filecoin-project/specs-actors/v5/actors/runtime/proof"

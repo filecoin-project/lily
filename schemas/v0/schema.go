@@ -3,8 +3,8 @@ package v0
 import (
 	"github.com/go-pg/migrations/v8"
 
-	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/schemas"
+	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/schemas"
 )
 
 const MajorVersion = 0

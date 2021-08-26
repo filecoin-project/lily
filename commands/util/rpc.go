@@ -22,7 +22,7 @@ import (
 	"github.com/filecoin-project/lotus/metrics"
 	"github.com/filecoin-project/lotus/node"
 
-	"github.com/filecoin-project/sentinel-visor/lens/lily"
+	"github.com/filecoin-project/lily/lens/lily"
 )
 
 var (

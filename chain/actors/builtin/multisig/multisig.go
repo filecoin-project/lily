@@ -23,9 +23,9 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
+	"github.com/filecoin-project/lily/chain/actors"
+	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/builtin"
 )
 
 func init() {

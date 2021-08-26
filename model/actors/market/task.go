@@ -3,7 +3,7 @@ package market
 import (
 	"context"
 
-	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/lily/model"
 )
 
 type MarketTaskResult struct {

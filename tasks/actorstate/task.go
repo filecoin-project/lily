@@ -13,11 +13,11 @@ import (
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/model"
-	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
+	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
+	visormodel "github.com/filecoin-project/lily/model/visor"
 )
 
 // A Task processes the extraction of actor state according the allowed types in its extracter map.

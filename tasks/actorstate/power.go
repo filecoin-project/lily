@@ -9,12 +9,12 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/power"
+	"github.com/filecoin-project/lily/chain/actors/builtin/power"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/model"
-	powermodel "github.com/filecoin-project/sentinel-visor/model/actors/power"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
+	powermodel "github.com/filecoin-project/lily/model/actors/power"
 )
 
 // was services/processor/tasks/power/power.go

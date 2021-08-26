@@ -15,7 +15,7 @@ import (
 
 	"github.com/go-pg/pg/v10/orm"
 
-	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/lily/model"
 )
 
 const PostgresTimestampFormat = "2006-01-02T15:04:05.999Z07:00"

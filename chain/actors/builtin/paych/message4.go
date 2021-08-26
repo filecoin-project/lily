@@ -11,8 +11,8 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors"
-	init_ "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
+	"github.com/filecoin-project/lily/chain/actors"
+	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 )
 
 type message4 struct{ from address.Address }

@@ -9,8 +9,8 @@ import (
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
 )
 
 type ParsedMessage struct {

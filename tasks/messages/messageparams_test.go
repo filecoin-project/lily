@@ -71,7 +71,7 @@ import (
 	sa5system "github.com/filecoin-project/specs-actors/v5/actors/builtin/system"
 	sa5verifreg "github.com/filecoin-project/specs-actors/v5/actors/builtin/verifreg"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
+	"github.com/filecoin-project/lily/chain/actors/builtin"
 )
 
 // TODO: generate this test

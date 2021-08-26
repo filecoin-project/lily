@@ -6,7 +6,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/paych"
+	"github.com/filecoin-project/lily/chain/actors/builtin/paych"
 )
 
 type mockState struct {

@@ -13,7 +13,7 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/adt"
 
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
 	msig5 "github.com/filecoin-project/specs-actors/v5/actors/builtin/multisig"

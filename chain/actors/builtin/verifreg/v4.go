@@ -6,8 +6,8 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors"
+	"github.com/filecoin-project/lily/chain/actors/adt"
 
 	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	verifreg4 "github.com/filecoin-project/specs-actors/v4/actors/builtin/verifreg"

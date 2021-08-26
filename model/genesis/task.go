@@ -5,12 +5,12 @@ import (
 
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/model"
-	init_ "github.com/filecoin-project/sentinel-visor/model/actors/init"
-	"github.com/filecoin-project/sentinel-visor/model/actors/market"
-	"github.com/filecoin-project/sentinel-visor/model/actors/miner"
-	"github.com/filecoin-project/sentinel-visor/model/actors/multisig"
-	"github.com/filecoin-project/sentinel-visor/model/actors/power"
+	"github.com/filecoin-project/lily/model"
+	init_ "github.com/filecoin-project/lily/model/actors/init"
+	"github.com/filecoin-project/lily/model/actors/market"
+	"github.com/filecoin-project/lily/model/actors/miner"
+	"github.com/filecoin-project/lily/model/actors/multisig"
+	"github.com/filecoin-project/lily/model/actors/power"
 )
 
 type ProcessGenesisSingletonResult struct {

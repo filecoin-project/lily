@@ -3,9 +3,9 @@ package actorstate
 import (
 	"context"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/account"
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/lily/chain/actors/builtin/account"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/model"
 )
 
 // AccountExtractor is a state extractor that deals with Account actors.
