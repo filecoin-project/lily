@@ -21,7 +21,7 @@ git pull                                # checkout/pull latest master
 git checkout -b vX.Y.Z(-rcN)-release          # create release branch
 vi CHANGELOG.md                         # update CHANGELOG.md
 go mod tidy                             # ensure tidy go.mod for release
-make visor                              # validate build
+make lily                              # validate build
 git add CHANGELOG.md go.mod go.sum
 git commit -m "chore(docs): Update CHANGELOG for vX.Y.Z(-rcN)"
                                         # commit CHANGELOG/go.mod updates

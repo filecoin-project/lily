@@ -8,7 +8,7 @@ multiple files and to reduce the opportunity for human error.
 
 ### Usage
 
-Dockerfile and Dockerfile.dev are designed to enable a visor image to be built
+Dockerfile and Dockerfile.dev are designed to enable a lily image to be built
 for any needed network. Dockerfile produces a minimal production image and
 Dockerfile.dev provides additional tools and a full shell where troubleshooting
 is easier.
