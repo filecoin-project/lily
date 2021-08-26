@@ -26,7 +26,7 @@ import (
 	"github.com/filecoin-project/lily/tasks/messages/fcjson"
 )
 
-var log = logging.Logger("visor/task/messages")
+var log = logging.Logger("lily/task/messages")
 
 type Task struct{}
 

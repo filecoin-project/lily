@@ -82,7 +82,7 @@ var models = []interface{}{
 	(*verifreg.VerifiedRegistryVerifiedClient)(nil),
 }
 
-var log = logging.Logger("visor/storage")
+var log = logging.Logger("lily/storage")
 
 // Advisory locks
 var (

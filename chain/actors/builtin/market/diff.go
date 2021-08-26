@@ -17,7 +17,7 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 )
 
-var log = logging.Logger("visor/actors/market")
+var log = logging.Logger("lily/actors/market")
 
 func DiffDealProposals(ctx context.Context, store adt.Store, pre, cur State) (*DealProposalChanges, error) {
 	preOpts := pre.DealProposalsAmtBitwidth()

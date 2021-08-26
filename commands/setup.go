@@ -25,7 +25,7 @@ import (
 	"github.com/filecoin-project/lily/version"
 )
 
-var log = logging.Logger("visor/commands")
+var log = logging.Logger("lily/commands")
 
 type VisorLogOpts struct {
 	LogLevel      string

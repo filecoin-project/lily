@@ -18,7 +18,7 @@ import (
 	"github.com/filecoin-project/lily/version"
 )
 
-var log = logging.Logger("visor/main")
+var log = logging.Logger("lily/main")
 
 type UpSchedule struct {
 	Height    int64
