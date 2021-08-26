@@ -8,7 +8,7 @@ executors:
     docker:
       - image: cimg/go:1.16.5
     environment:
-      IMAGE_NAME: filecoin/sentinel-visor
+      IMAGE_NAME: filecoin/lily
   golang:
     docker:
       - image: circleci/golang:1.16.5
@@ -136,7 +136,7 @@ jobs:
           command: dockerize -wait tcp://localhost:5432 -timeout 1m
       - run: 
           name: installing schema
-          command: ./visor migrate --latest
+          command: ./lily migrate --latest
           environment:
             LOTUS_DB: postgres://postgres:password@localhost:5432/postgres?sslmode=disable
       - run:
@@ -147,7 +147,7 @@ jobs:
       - codecov/upload:
           file: /tmp/artifacts/coverage.out
       - store_artifacts:
-          path: sentinel-visor
+          path: lily
   lint: &lint
     description: |
       Run golangci-lint.
