@@ -3,11 +3,11 @@
 # from a prior build step (builder.tpl)
 
 FROM buildpack-deps:buster-curl
-COPY --from=builder /go/src/github.com/filecoin-project/sentinel-visor/visor /usr/bin/
+COPY --from=builder /go/src/github.com/filecoin-project/lily/lily /usr/bin/
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libOpenCL.so* /lib/
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libhwloc.so* /lib/
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libnuma.so* /lib/
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libltdl.so* /lib/
 
-ENTRYPOINT ["/usr/bin/visor"]
+ENTRYPOINT ["/usr/bin/lily"]
 CMD ["--help"]

@@ -3,7 +3,7 @@ SHELL=/usr/bin/env bash
 GO_BUILD_IMAGE?=golang:1.16.5
 PG_IMAGE?=postgres:10
 REDIS_IMAGE?=redis:6
-VISOR_IMAGE_NAME?=filecoin/sentinel-visor
+VISOR_IMAGE_NAME?=filecoin/lily
 COMMIT := $(shell git rev-parse --short=8 HEAD)
 
 # GITVERSION is the nearest tag plus number of commits and short form of most recent commit since the tag, if any
@@ -53,14 +53,14 @@ CLEAN+=build/.update-modules
 # tools
 toolspath:=support/tools
 
-ldflags=-X=github.com/filecoin-project/sentinel-visor/version.GitVersion=$(GITVERSION)
+ldflags=-X=github.com/filecoin-project/lily/version.GitVersion=$(GITVERSION)
 ifneq ($(strip $(LDFLAGS)),)
 	ldflags+=-extldflags=$(LDFLAGS)
 endif
 GOFLAGS+=-ldflags="$(ldflags)"
 
 .PHONY: build
-build: deps visor
+build: deps lily
 
 .PHONY: deps
 deps: $(BUILD_DEPS)
@@ -82,7 +82,7 @@ dockerdown:
 testfull: build
 	docker-compose up -d
 	sleep 2
-	./visor migrate --latest
+	./lily migrate --latest
 	-TZ= PGSSLMODE=disable go test ./... -v
 	docker-compose down
 
@@ -91,11 +91,11 @@ testfull: build
 testshort:
 	go test -short ./... -v
 
-.PHONY: visor
-visor:
-	rm -f visor
-	go build $(GOFLAGS) -o visor -mod=readonly .
-BINS+=visor
+.PHONY: lily
+lily:
+	rm -f lily
+	go build $(GOFLAGS) -o lily -mod=readonly .
+BINS+=lily
 
 .PHONY: clean
 clean:
@@ -295,7 +295,7 @@ docker-2k-dev-push: docker-2k-dev docker-tag-and-push-template
 
 .PHONY: docker-build-image-template
 docker-build-image-template:
-	@echo "Building visor docker image for '$(VISOR_NETWORK_TARGET)'..."
+	@echo "Building lily docker image for '$(VISOR_NETWORK_TARGET)'..."
 	docker build -f $(VISOR_DOCKER_FILE) \
 		--build-arg VISOR_NETWORK_TARGET=$(VISOR_NETWORK_TARGET) \
 		--build-arg GO_BUILD_IMAGE=$(GO_BUILD_IMAGE) \
