@@ -67,7 +67,6 @@ The next patch version will be one higher than the highest patch version listed 
 4. Create a new migration file using the next patch version as a prefix.
 5. Add all the statements required to migrate the schema from the previous patch to an `up` variable.
 6. Optionally, add all the statements required to migrate the schema to the previous patch to a `down` variable.
-<<<<<<< HEAD
 7. Call `patches.Register` with your patch number and sql statements.
 8. Run the migration by running `lily migrate --to <new-version>`
 9. Test the migration is compatible by using `lily migrate`
