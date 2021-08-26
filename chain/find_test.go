@@ -28,12 +28,9 @@ var (
 )
 
 func TestFind(t *testing.T) {
-	/*
-		if testing.Short() {
-			t.Skip("short testing requested")
-		}
-
-	*/
+	if testing.Short() {
+		t.Skip("short testing requested")
+	}
 
 	// TODO adjust timeout
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
@@ -433,7 +430,7 @@ func truncateVPR(tb testing.TB, db *pg.DB) {
 func initializeVPR(tb testing.TB, db *pg.DB, count uint64, reporter string, tasks ...string) {
 	// build the task array
 	// uncomment to see all query
-	//db.AddQueryHook(&LoggingQueryHook{})
+	// db.AddQueryHook(&LoggingQueryHook{})
 	taskQbuilder := strings.Builder{}
 	for idx, t := range tasks {
 		taskQbuilder.WriteString("'")
@@ -488,8 +485,7 @@ func fakeTipset(t testing.TB, height int) *types.TipSet {
 	return ts
 }
 
-type LoggingQueryHook struct {
-}
+type LoggingQueryHook struct{}
 
 func (l *LoggingQueryHook) BeforeQuery(ctx context.Context, event *pg.QueryEvent) (context.Context, error) {
 	q, err := event.FormattedQuery()
