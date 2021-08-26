@@ -73,7 +73,7 @@ var AllTasks = []string{
 	ChainConsensusTask,
 }
 
-var log = logging.Logger("visor/chain")
+var log = logging.Logger("lily/chain")
 
 var _ TipSetObserver = (*TipSetIndexer)(nil)
 

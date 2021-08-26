@@ -15,7 +15,7 @@ import (
 	typegen "github.com/whyrusleeping/cbor-gen"
 )
 
-var log = logging.Logger("visor/actor/init")
+var log = logging.Logger("lily/actor/init")
 
 type AddressMapChanges struct {
 	Added    []AddressPair

@@ -17,7 +17,7 @@ import (
 	"github.com/filecoin-project/lily/wait"
 )
 
-var log = logging.Logger("visor/schedule")
+var log = logging.Logger("lily/schedule")
 
 type Job interface {
 	// Run starts running the task and blocks until the context is done or
