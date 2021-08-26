@@ -30,7 +30,7 @@ git push --tags origin vX.Y.Z(-rcN)-release
                                         # push release branch and tags
 ```
 
-NOTE: `sentinel-visor` pull requests prefer to be squash-merged into `master`, however considering this workflow tags release candidate within the release branch which we want to easily resolve in the repository's history, it is preferred to not squash and instead merge the release branch into `master`.
+NOTE: `lily` pull requests prefer to be squash-merged into `master`, however considering this workflow tags release candidate within the release branch which we want to easily resolve in the repository's history, it is preferred to not squash and instead merge the release branch into `master`.
 
 
 ## Updating CHANGELOG.md
@@ -58,4 +58,4 @@ git add CHANGELOG.md
 git commit -m 'chore(docs): Update CHANGELOG for v0.5.0-rc1'
 ```
 
-Here is an [example of how the diff might look](https://github.com/filecoin-project/sentinel-visor/pull/326/commits/9536df9e39991a3b78013d1d1b36fef94562556d).
+Here is an [example of how the diff might look](https://github.com/filecoin-project/lily/pull/326/commits/9536df9e39991a3b78013d1d1b36fef94562556d).

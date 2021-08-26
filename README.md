@@ -1,5 +1,5 @@
 # Sentinel Visor
-[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/filecoin-project/sentinel-visor) [![docker build status](https://img.shields.io/docker/cloud/build/filecoin/sentinel-visor?style=flat-square)](https://hub.docker.com/repository/docker/filecoin/sentinel-visor) [![CI build](https://img.shields.io/circleci/build/gh/filecoin-project/sentinel-visor?label=ci%20build&style=flat-square)](https://app.circleci.com/pipelines/github/filecoin-project/sentinel-visor)
+[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/filecoin-project/lily) [![docker build status](https://img.shields.io/docker/cloud/build/filecoin/lily?style=flat-square)](https://hub.docker.com/repository/docker/filecoin/lily) [![CI build](https://img.shields.io/circleci/build/gh/filecoin-project/lily?label=ci%20build&style=flat-square)](https://app.circleci.com/pipelines/github/filecoin-project/lily)
 
 A component of [**Sentinel**](https://github.com/filecoin-project/sentinel), a collection of services which monitor the health and function of the Filecoin network. 
 
@@ -10,8 +10,8 @@ A **Visor** process collects _permanent_ Filecoin chain meterics from a [**Lotus
 Clone the repo and build the dependencies:
 
 ```console
-$ git clone git@github.com:filecoin-project/sentinel-visor.git
-$ cd sentinel-visor
+$ git clone git@github.com:filecoin-project/lily.git
+$ cd lily
 $ make deps
 ```
 
@@ -76,9 +76,9 @@ VISOR_TEST_DB="postgres://username@localhost/visor_test?sslmode=disable" go test
 ### Usage
 
 ```
-  sentinel-visor [<flags>] <command>
+  lily [<flags>] <command>
 
-  Use 'sentinel-visor help <command>' to learn more about each command.
+  Use 'lily help <command>' to learn more about each command.
 ```
 
 Use the following env vars to configure the lotus node that visor reads from, and the database that it writes to:
@@ -109,7 +109,7 @@ The global flag `--tracing=<bool>` turns tracing on or off. It is on by default.
 
 Tracing expects a Jaeger server to be available. Configure the Jaeger settings using the following subset of the standard Jaeger [environment variables](https://github.com/jaegertracing/jaeger-client-go#environment-variables):
 
- * `JAEGER_SERVICE_NAME` - name of the service (defaults to `sentinel-visor`).
+ * `JAEGER_SERVICE_NAME` - name of the service (defaults to `lily`).
  * `JAEGER_AGENT_HOST` - hostname for communicating with Jaeger agent via UDP (defaults to `localhost`).
  * `JAEGER_AGENT_PORT` - port for communicating with Jaeger agent via UDP (defaults to `6831`).
  * `JAEGER_SAMPLER_TYPE` - type of sampling to use, either `probabilistic` or `const` (defaults to `probabilistic`).
@@ -149,12 +149,12 @@ Sentinel Visor follows the [Filecoin Project Code of Conduct](https://github.com
 
 ## Contributing
 
-Welcoming [new issues](https://github.com/filecoin-project/sentinel-visor/issues/new) and [pull requests](https://github.com/filecoin-project/sentinel-visor/pulls).
+Welcoming [new issues](https://github.com/filecoin-project/lily/issues/new) and [pull requests](https://github.com/filecoin-project/lily/pulls).
 
 
 ## License
 
 The Filecoin Project and Sentinel Visor is dual-licensed under Apache 2.0 and MIT terms:
 
-- Apache License, Version 2.0, ([LICENSE-APACHE](https://github.com/filecoin-project/sentinel-visor/blob/master/LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
-- MIT license ([LICENSE-MIT](https://github.com/filecoin-project/sentinel-visor/blob/master/LICENSE-MIT) or http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0, ([LICENSE-APACHE](https://github.com/filecoin-project/lily/blob/master/LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](https://github.com/filecoin-project/lily/blob/master/LICENSE-MIT) or http://opensource.org/licenses/MIT)
