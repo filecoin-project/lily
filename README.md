@@ -49,9 +49,9 @@ docker-compose up --build timescaledb
 
 ### Running tests
 
-To quickly run tests, you can provide the `VISOR_TEST_DB` envvar and execute `make test` like so:
+To quickly run tests, you can provide the `LILY_TEST_DB` envvar and execute `make test` like so:
 
-`VISOR_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" make test`
+`LILY_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" make test`
 
 For more, manual test running, you could also prepare your environment in the following way:
 
@@ -70,7 +70,7 @@ visor --db "postgres://username@localhost/visor_test?sslmode=disable" migrate --
 Run the tests:
 
 ```sh
-VISOR_TEST_DB="postgres://username@localhost/visor_test?sslmode=disable" go test ./...
+LILY_TEST_DB="postgres://username@localhost/visor_test?sslmode=disable" go test ./...
 ```
 
 ### Usage

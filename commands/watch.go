@@ -57,14 +57,14 @@ var WatchCmd = &cli.Command{
 		&cli.StringFlag{
 			Name:        "api",
 			Usage:       "Address of visor api in multiaddr format.",
-			EnvVars:     []string{"VISOR_API"},
+			EnvVars:     []string{"LILY_API"},
 			Value:       "/ip4/127.0.0.1/tcp/1234",
 			Destination: &watchFlags.apiAddr,
 		},
 		&cli.StringFlag{
 			Name:        "api-token",
 			Usage:       "Authentication token for visor api.",
-			EnvVars:     []string{"VISOR_API_TOKEN"},
+			EnvVars:     []string{"LILY_API_TOKEN"},
 			Value:       "",
 			Destination: &watchFlags.apiToken,
 		},

@@ -49,14 +49,14 @@ var dbConnectFlags = []cli.Flag{
 	},
 	&cli.StringFlag{
 		Name:        "name",
-		EnvVars:     []string{"VISOR_NAME"},
+		EnvVars:     []string{"LILY_NAME"},
 		Value:       defaultName,
 		Usage:       "A name that helps to identify this instance of visor.",
 		Destination: &VisorDBFlags.Name,
 	},
 	&cli.StringFlag{
 		Name:        "schema",
-		EnvVars:     []string{"VISOR_SCHEMA"},
+		EnvVars:     []string{"LILY_SCHEMA"},
 		Value:       "public",
 		Usage:       "The name of the postgresql schema that holds the objects used by this instance of visor.",
 		Destination: &VisorDBFlags.DBSchema,

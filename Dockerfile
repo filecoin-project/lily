@@ -11,7 +11,7 @@ FROM $GO_BUILD_IMAGE AS builder
 # ARG LILY_NETWORK_TARGET determines which network the lily binary is built for.
 # Options: mainnet, nerpanet, calibnet, butterflynet, interopnet, 2k
 # See https://network.filecoin.io/ for more information about network_targets.
-ARG VISOR_NETWORK_TARGET=mainnet
+ARG LILY_NETWORK_TARGET=mainnet
 
 RUN apt-get update
 RUN apt-get install -y \
@@ -26,13 +26,8 @@ COPY . /go/src/github.com/filecoin-project/lily
 
 RUN make deps
 RUN go mod download -x
-<<<<<<< HEAD
-RUN make $VISOR_NETWORK_TARGET
-RUN cp ./visor /usr/bin/
-=======
 RUN make $LILY_NETWORK_TARGET
 RUN cp ./lily /usr/bin/
->>>>>>> bf0acf6... fixup! chore(lily): rename dockery and buily things
 
 # build/docker/prod_entrypoint.tpl
 # partial for producing a minimal image by extracting the binary

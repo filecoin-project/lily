@@ -13,7 +13,7 @@ import (
 	"github.com/filecoin-project/lily/wait"
 )
 
-var testDatabase = os.Getenv("VISOR_TEST_DB")
+var testDatabase = os.Getenv("LILY_TEST_DB")
 
 // DatabaseAvailable reports whether a database is available for testing
 func DatabaseAvailable() bool {
@@ -28,7 +28,7 @@ func DatabaseOptions() string {
 // WaitForExclusiveDatabase waits for exclusive access to the test database until the context is done or the
 // exclusive access is granted. It returns a cleanup function that should be called to close the database connection.
 func WaitForExclusiveDatabase(ctx context.Context, tb testing.TB) (*pg.DB, func() error, error) {
-	require.NotEmpty(tb, testDatabase, "No test database available: VISOR_TEST_DB not set")
+	require.NotEmpty(tb, testDatabase, "No test database available: LILY_TEST_DB not set")
 	opt, err := pg.ParseURL(testDatabase)
 	require.NoError(tb, err)
 

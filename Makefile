@@ -3,7 +3,7 @@ SHELL=/usr/bin/env bash
 GO_BUILD_IMAGE?=golang:1.16.5
 PG_IMAGE?=postgres:10
 REDIS_IMAGE?=redis:6
-VISOR_IMAGE_NAME?=filecoin/lily
+LILY_IMAGE_NAME?=filecoin/lily
 COMMIT := $(shell git rev-parse --short=8 HEAD)
 
 # GITVERSION is the nearest tag plus number of commits and short form of most recent commit since the tag, if any
@@ -108,7 +108,7 @@ dist-clean:
 
 .PHONY: test-coverage
 test-coverage:
-	VISOR_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test -coverprofile=coverage.out ./...
+	LILY_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test -coverprofile=coverage.out ./...
 
 # tools
 
@@ -180,18 +180,18 @@ CLEAN+=Dockerfile.dev
 
 # MAINNET
 .PHONY: docker-mainnet
-docker-mainnet: VISOR_DOCKER_FILE ?= Dockerfile
-docker-mainnet: VISOR_NETWORK_TARGET ?= mainnet
-docker-mainnet: VISOR_IMAGE_TAG ?= $(COMMIT)
+docker-mainnet: LILY_DOCKER_FILE ?= Dockerfile
+docker-mainnet: LILY_NETWORK_TARGET ?= mainnet
+docker-mainnet: LILY_IMAGE_TAG ?= $(COMMIT)
 docker-mainnet: docker-build-image-template
 
 .PHONY: docker-mainnet-push
 docker-mainnet-push: docker-mainnet docker-tag-and-push-template
 
 .PHONY: docker-mainnet-dev
-docker-mainnet-dev: VISOR_DOCKER_FILE ?= Dockerfile.dev
-docker-mainnet-dev: VISOR_NETWORK_TARGET ?= mainnet
-docker-mainnet-dev: VISOR_IMAGE_TAG ?= $(COMMIT)-dev
+docker-mainnet-dev: LILY_DOCKER_FILE ?= Dockerfile.dev
+docker-mainnet-dev: LILY_NETWORK_TARGET ?= mainnet
+docker-mainnet-dev: LILY_IMAGE_TAG ?= $(COMMIT)-dev
 docker-mainnet-dev: docker-build-image-template
 
 .PHONY: docker-mainnet-dev-push
@@ -199,18 +199,18 @@ docker-mainnet-dev-push: docker-mainnet-dev docker-tag-and-push-template
 
 # CALIBNET
 .PHONY: docker-calibnet
-docker-calibnet: VISOR_DOCKER_FILE ?= Dockerfile
-docker-calibnet: VISOR_NETWORK_TARGET ?= calibnet
-docker-calibnet: VISOR_IMAGE_TAG ?= $(COMMIT)-calibnet
+docker-calibnet: LILY_DOCKER_FILE ?= Dockerfile
+docker-calibnet: LILY_NETWORK_TARGET ?= calibnet
+docker-calibnet: LILY_IMAGE_TAG ?= $(COMMIT)-calibnet
 docker-calibnet: docker-build-image-template
 
 .PHONY: docker-calibnet-push
 docker-calibnet-push: docker-calibnet docker-tag-and-push-template
 
 .PHONY: docker-calibnet-dev
-docker-calibnet-dev: VISOR_DOCKER_FILE ?= Dockerfile.dev
-docker-calibnet-dev: VISOR_NETWORK_TARGET ?= calibnet
-docker-calibnet-dev: VISOR_IMAGE_TAG ?= $(COMMIT)-calibnet-dev
+docker-calibnet-dev: LILY_DOCKER_FILE ?= Dockerfile.dev
+docker-calibnet-dev: LILY_NETWORK_TARGET ?= calibnet
+docker-calibnet-dev: LILY_IMAGE_TAG ?= $(COMMIT)-calibnet-dev
 docker-calibnet-dev: docker-build-image-template
 
 .PHONY: docker-calibnet-dev-push
@@ -218,18 +218,18 @@ docker-calibnet-dev-push: docker-calibnet-dev docker-tag-and-push-template
 
 # INTEROPNET
 .PHONY: docker-interopnet
-docker-interopnet: VISOR_DOCKER_FILE ?= Dockerfile
-docker-interopnet: VISOR_NETWORK_TARGET ?= interopnet
-docker-interopnet: VISOR_IMAGE_TAG ?= $(COMMIT)-interopnet
+docker-interopnet: LILY_DOCKER_FILE ?= Dockerfile
+docker-interopnet: LILY_NETWORK_TARGET ?= interopnet
+docker-interopnet: LILY_IMAGE_TAG ?= $(COMMIT)-interopnet
 docker-interopnet: docker-build-image-template
 
 .PHONY: docker-interopnet-push
 docker-interopnet-push: docker-interopnet docker-tag-and-push-template
 
 .PHONY: docker-interopnet-dev
-docker-interopnet-dev: VISOR_DOCKER_FILE ?= Dockerfile.dev
-docker-interopnet-dev: VISOR_NETWORK_TARGET ?= interopnet
-docker-interopnet-dev: VISOR_IMAGE_TAG ?= $(COMMIT)-interopnet-dev
+docker-interopnet-dev: LILY_DOCKER_FILE ?= Dockerfile.dev
+docker-interopnet-dev: LILY_NETWORK_TARGET ?= interopnet
+docker-interopnet-dev: LILY_IMAGE_TAG ?= $(COMMIT)-interopnet-dev
 docker-interopnet-dev: docker-build-image-template
 
 .PHONY: docker-interopnet-dev-push
@@ -237,18 +237,18 @@ docker-interopnet-dev-push: docker-interopnet-dev docker-tag-and-push-template
 
 # BUTTERFLYNET
 .PHONY: docker-butterflynet
-docker-butterflynet: VISOR_DOCKER_FILE ?= Dockerfile
-docker-butterflynet: VISOR_NETWORK_TARGET ?= butterflynet
-docker-butterflynet: VISOR_IMAGE_TAG ?= $(COMMIT)-butterflynet
+docker-butterflynet: LILY_DOCKER_FILE ?= Dockerfile
+docker-butterflynet: LILY_NETWORK_TARGET ?= butterflynet
+docker-butterflynet: LILY_IMAGE_TAG ?= $(COMMIT)-butterflynet
 docker-butterflynet: docker-build-image-template
 
 .PHONY: docker-butterflynet-push
 docker-butterflynet-push: docker-butterflynet docker-tag-and-push-template
 
 .PHONY: docker-butterflynet-dev
-docker-butterflynet-dev: VISOR_DOCKER_FILE ?= Dockerfile.dev
-docker-butterflynet-dev: VISOR_NETWORK_TARGET ?= butterflynet
-docker-butterflynet-dev: VISOR_IMAGE_TAG ?= $(COMMIT)-butterflynet-dev
+docker-butterflynet-dev: LILY_DOCKER_FILE ?= Dockerfile.dev
+docker-butterflynet-dev: LILY_NETWORK_TARGET ?= butterflynet
+docker-butterflynet-dev: LILY_IMAGE_TAG ?= $(COMMIT)-butterflynet-dev
 docker-butterflynet-dev: docker-build-image-template
 
 .PHONY: docker-butterflynet-dev-push
@@ -256,18 +256,18 @@ docker-butterflynet-dev-push: docker-butterflynet-dev docker-tag-and-push-templa
 
 # NERPANET
 .PHONY: docker-nerpanet
-docker-nerpanet: VISOR_DOCKER_FILE ?= Dockerfile
-docker-nerpanet: VISOR_NETWORK_TARGET ?= nerpanet
-docker-nerpanet: VISOR_IMAGE_TAG ?= $(COMMIT)-nerpanet
+docker-nerpanet: LILY_DOCKER_FILE ?= Dockerfile
+docker-nerpanet: LILY_NETWORK_TARGET ?= nerpanet
+docker-nerpanet: LILY_IMAGE_TAG ?= $(COMMIT)-nerpanet
 docker-nerpanet: docker-build-image-template
 
 .PHONY: docker-nerpanet-push
 docker-nerpanet-push: docker-nerpanet docker-tag-and-push-template
 
 .PHONY: docker-nerpanet-dev
-docker-nerpanet-dev: VISOR_DOCKER_FILE ?= Dockerfile.dev
-docker-nerpanet-dev: VISOR_NETWORK_TARGET ?= nerpanet
-docker-nerpanet-dev: VISOR_IMAGE_TAG ?= $(COMMIT)-nerpanet-dev
+docker-nerpanet-dev: LILY_DOCKER_FILE ?= Dockerfile.dev
+docker-nerpanet-dev: LILY_NETWORK_TARGET ?= nerpanet
+docker-nerpanet-dev: LILY_IMAGE_TAG ?= $(COMMIT)-nerpanet-dev
 docker-nerpanet-dev: docker-build-image-template
 
 .PHONY: docker-nerpanet-dev-push
@@ -275,18 +275,18 @@ docker-nerpanet-dev-push: docker-nerpanet-dev docker-tag-and-push-template
 
 # 2K
 .PHONY: docker-2k
-docker-2k: VISOR_DOCKER_FILE ?= Dockerfile
-docker-2k: VISOR_NETWORK_TARGET ?= 2k
-docker-2k: VISOR_IMAGE_TAG ?= $(COMMIT)-2k
+docker-2k: LILY_DOCKER_FILE ?= Dockerfile
+docker-2k: LILY_NETWORK_TARGET ?= 2k
+docker-2k: LILY_IMAGE_TAG ?= $(COMMIT)-2k
 docker-2k: docker-build-image-template
 
 .PHONY: docker-2k-push
 docker-2k-push: docker-2k docker-tag-and-push-template
 
 .PHONY: docker-2k-dev
-docker-2k-dev: VISOR_DOCKER_FILE ?= Dockerfile.dev
-docker-2k-dev: VISOR_NETWORK_TARGET ?= 2k
-docker-2k-dev: VISOR_IMAGE_TAG ?= $(COMMIT)-2k-dev
+docker-2k-dev: LILY_DOCKER_FILE ?= Dockerfile.dev
+docker-2k-dev: LILY_NETWORK_TARGET ?= 2k
+docker-2k-dev: LILY_IMAGE_TAG ?= $(COMMIT)-2k-dev
 docker-2k-dev: docker-build-image-template
 
 .PHONY: docker-2k-dev-push
@@ -295,18 +295,18 @@ docker-2k-dev-push: docker-2k-dev docker-tag-and-push-template
 
 .PHONY: docker-build-image-template
 docker-build-image-template:
-	@echo "Building lily docker image for '$(VISOR_NETWORK_TARGET)'..."
-	docker build -f $(VISOR_DOCKER_FILE) \
-		--build-arg VISOR_NETWORK_TARGET=$(VISOR_NETWORK_TARGET) \
+	@echo "Building lily docker image for '$(LILY_NETWORK_TARGET)'..."
+	docker build -f $(LILY_DOCKER_FILE) \
+		--build-arg LILY_NETWORK_TARGET=$(LILY_NETWORK_TARGET) \
 		--build-arg GO_BUILD_IMAGE=$(GO_BUILD_IMAGE) \
-		-t $(VISOR_IMAGE_NAME) \
-		-t $(VISOR_IMAGE_NAME):latest \
-		-t $(VISOR_IMAGE_NAME):$(VISOR_IMAGE_TAG) \
+		-t $(LILY_IMAGE_NAME) \
+		-t $(LILY_IMAGE_NAME):latest \
+		-t $(LILY_IMAGE_NAME):$(LILY_IMAGE_TAG) \
 		.
 
 .PHONY: docker-tag-and-push-template
 docker-tag-and-push-template:
-	./scripts/push-docker-tags.sh $(VISOR_IMAGE_NAME) deprecatedvalue $(VISOR_IMAGE_TAG)
+	./scripts/push-docker-tags.sh $(LILY_IMAGE_NAME) deprecatedvalue $(LILY_IMAGE_TAG)
 
 .PHONY: docker-image
 docker-image: docker-mainnet

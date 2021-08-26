@@ -249,7 +249,7 @@ destination of the logs.
                          a combination. Separate each keyword with a '+', for
                          example: file+stderr
 
-  VISOR_LOG_LEVEL_NAMED  Set the log level of specific loggers. The value
+  LILY_LOG_LEVEL_NAMED  Set the log level of specific loggers. The value
                          should be a comma delimited list of log systems and
                          log levels formatted as name:level, for example
                          'logger1:debug,logger2:info'.
@@ -262,7 +262,7 @@ In addition, visor supports some global options for controlling logging:
 
   --log-level-named value  Set the log level of specific loggers. This option
                            overrides any value set using the
-                           VISOR_LOG_LEVEL_NAMED environment variable.
+                           LILY_LOG_LEVEL_NAMED environment variable.
 
 To control logging output while the visor daemon is running see 'visor help log'.
 
@@ -283,7 +283,7 @@ default tracing is disabled.
 
 Environment variables for controlling function level tracing:
 
-  VISOR_TRACING         Enable tracing. Set to 'true' to enable tracing.
+  LILY_TRACING         Enable tracing. Set to 'true' to enable tracing.
 
   JAEGER_AGENT_HOST,    Hostname and port of a Jaeger compatible agent that
   JAEGER_AGENT_PORT     visor should send traces to.

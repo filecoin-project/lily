@@ -37,7 +37,7 @@ var clientAPIFlags struct {
 var clientAPIFlag = &cli.StringFlag{
 	Name:        "api",
 	Usage:       "Address of visor api in multiaddr format.",
-	EnvVars:     []string{"VISOR_API"},
+	EnvVars:     []string{"LILY_API"},
 	Value:       "/ip4/127.0.0.1/tcp/1234",
 	Destination: &clientAPIFlags.apiAddr,
 }
@@ -45,7 +45,7 @@ var clientAPIFlag = &cli.StringFlag{
 var clientTokenFlag = &cli.StringFlag{
 	Name:        "api-token",
 	Usage:       "Authentication token for visor api.",
-	EnvVars:     []string{"VISOR_API_TOKEN"},
+	EnvVars:     []string{"LILY_API_TOKEN"},
 	Value:       "",
 	Destination: &clientAPIFlags.apiToken,
 }
@@ -122,14 +122,14 @@ Note that jobs are not persisted between restarts of the daemon. See
 		&cli.StringFlag{
 			Name:        "repo",
 			Usage:       "Specify path where visor should store chain state.",
-			EnvVars:     []string{"VISOR_REPO"},
+			EnvVars:     []string{"LILY_REPO"},
 			Value:       "~/.lotus",
 			Destination: &daemonFlags.repo,
 		},
 		&cli.BoolFlag{
 			Name: "bootstrap",
 			// TODO: usage description
-			EnvVars:     []string{"VISOR_BOOTSTRAP"},
+			EnvVars:     []string{"LILY_BOOTSTRAP"},
 			Value:       true,
 			Destination: &daemonFlags.bootstrap,
 			Hidden:      true, // hide until we decide if we want to keep this.
@@ -137,13 +137,13 @@ Note that jobs are not persisted between restarts of the daemon. See
 		&cli.StringFlag{
 			Name:        "config",
 			Usage:       "Specify path of config file to use.",
-			EnvVars:     []string{"VISOR_CONFIG"},
+			EnvVars:     []string{"LILY_CONFIG"},
 			Destination: &daemonFlags.config,
 		},
 		&cli.StringFlag{
 			Name:        "genesis",
 			Usage:       "Genesis file to use for first node run.",
-			EnvVars:     []string{"VISOR_GENESIS"},
+			EnvVars:     []string{"LILY_GENESIS"},
 			Destination: &daemonFlags.genesis,
 		},
 	},
