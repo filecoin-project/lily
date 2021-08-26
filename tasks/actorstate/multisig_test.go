@@ -23,9 +23,9 @@ import (
 	adt3 "github.com/filecoin-project/specs-actors/v3/actors/util/adt"
 	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-	multisigmodel "github.com/filecoin-project/sentinel-visor/model/actors/multisig"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
+	"github.com/filecoin-project/lily/lens"
+	multisigmodel "github.com/filecoin-project/lily/model/actors/multisig"
+	"github.com/filecoin-project/lily/tasks/actorstate"
 )
 
 func TestMultisigExtractorV0(t *testing.T) {

@@ -14,8 +14,8 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
 
-	"github.com/filecoin-project/sentinel-visor/commands"
-	"github.com/filecoin-project/sentinel-visor/version"
+	"github.com/filecoin-project/lily/commands"
+	"github.com/filecoin-project/lily/version"
 )
 
 var log = logging.Logger("visor/main")

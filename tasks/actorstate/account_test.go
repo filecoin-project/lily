@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/model"
 )
 
 func TestAccountExtract(t *testing.T) {

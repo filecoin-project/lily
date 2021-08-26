@@ -3,16 +3,16 @@ package actorstate
 import (
 	"context"
 
+	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/multisig"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/model"
-	multisigmodel "github.com/filecoin-project/sentinel-visor/model/actors/multisig"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
+	multisigmodel "github.com/filecoin-project/lily/model/actors/multisig"
 )
 
 func init() {

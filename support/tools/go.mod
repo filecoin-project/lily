@@ -1,4 +1,4 @@
-module github.com/filecoin-project/sentinel-visor/support/tools
+module github.com/filecoin-project/sentinel-lily/support/tools
 
 go 1.16
 

@@ -8,7 +8,7 @@ import (
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
 
-	"github.com/filecoin-project/sentinel-visor/schedule"
+	"github.com/filecoin-project/lily/schedule"
 )
 
 var JobCmd = &cli.Command{

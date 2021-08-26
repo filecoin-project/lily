@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/wait"
+	"github.com/filecoin-project/lily/wait"
 )
 
 var testDatabase = os.Getenv("VISOR_TEST_DB")

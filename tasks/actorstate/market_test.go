@@ -7,10 +7,10 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
+	"github.com/filecoin-project/lily/chain/actors/builtin/market"
+	marketmodel "github.com/filecoin-project/lily/model/actors/market"
+	"github.com/filecoin-project/lily/tasks/actorstate"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/market"
-	marketmodel "github.com/filecoin-project/sentinel-visor/model/actors/market"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
 
 	sabuiltin "github.com/filecoin-project/specs-actors/actors/builtin"
 	samarket "github.com/filecoin-project/specs-actors/actors/builtin/market"
@@ -18,8 +18,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/testutil"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/testutil"
 )
 
 type balance struct {

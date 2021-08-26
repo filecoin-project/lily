@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lotus/api"
 	lotuscli "github.com/filecoin-project/lotus/cli"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
 	cid "github.com/ipfs/go-cid"
 	"github.com/urfave/cli/v2"
 
-	"github.com/filecoin-project/sentinel-visor/lens/lily"
+	"github.com/filecoin-project/lily/lens/lily"
 )
 
 var SyncCmd = &cli.Command{

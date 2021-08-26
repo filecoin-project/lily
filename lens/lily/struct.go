@@ -12,8 +12,8 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p-core/peer"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/schedule"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/schedule"
 )
 
 var log = logging.Logger("visor/lens/lily")

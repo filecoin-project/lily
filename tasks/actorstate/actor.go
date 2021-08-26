@@ -6,10 +6,10 @@ import (
 
 	"go.opentelemetry.io/otel/api/global"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/model"
-	commonmodel "github.com/filecoin-project/sentinel-visor/model/actors/common"
+	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/model"
+	commonmodel "github.com/filecoin-project/lily/model/actors/common"
 )
 
 // was services/processor/tasks/common/actor.go

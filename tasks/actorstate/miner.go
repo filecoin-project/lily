@@ -12,13 +12,13 @@ import (
 
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
+	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
-	miner "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/miner"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/model"
-	minermodel "github.com/filecoin-project/sentinel-visor/model/actors/miner"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
+	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 )
 
 // was services/processor/tasks/miner/miner.go

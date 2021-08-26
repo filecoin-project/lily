@@ -8,7 +8,7 @@ import (
 	"go.opencensus.io/stats"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/metrics"
+	"github.com/filecoin-project/lily/metrics"
 )
 
 // NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held

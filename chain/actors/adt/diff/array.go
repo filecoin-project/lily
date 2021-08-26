@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/filecoin-project/go-amt-ipld/v3"
+	adt2 "github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
-	adt2 "github.com/filecoin-project/sentinel-visor/chain/actors/adt"
 )
 
 // Amt returns a set of changes that transform `preArr` into `curArr`. opts are applied to both `preArr` and `curArr`.

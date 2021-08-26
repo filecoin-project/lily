@@ -13,7 +13,7 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/lily/lens"
 )
 
 func NewAPIWrapper(node *itestkit.TestFullNode) lens.API {

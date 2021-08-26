@@ -1,4 +1,4 @@
-module github.com/filecoin-project/sentinel-visor
+module github.com/filecoin-project/lily
 
 go 1.16
 

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/agen/generator"
+	"github.com/filecoin-project/lily/chain/actors/agen/generator"
 )
 
 func main() {

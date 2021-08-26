@@ -5,8 +5,8 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/multisig"
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
@@ -17,10 +17,10 @@ import (
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/model/msapprovals"
-	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/model/msapprovals"
+	visormodel "github.com/filecoin-project/lily/model/visor"
 )
 
 const (

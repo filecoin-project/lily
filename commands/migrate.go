@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/filecoin-project/sentinel-visor/version"
+	"github.com/filecoin-project/lily/version"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/storage"
+	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/storage"
 )
 
 var defaultName = "visor"

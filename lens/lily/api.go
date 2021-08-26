@@ -11,7 +11,7 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p-core/peer"
 
-	"github.com/filecoin-project/sentinel-visor/schedule"
+	"github.com/filecoin-project/lily/schedule"
 )
 
 type LilyAPI interface {

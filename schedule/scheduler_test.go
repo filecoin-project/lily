@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/fx/fxtest"
 
-	"github.com/filecoin-project/sentinel-visor/schedule"
+	"github.com/filecoin-project/lily/schedule"
 )
 
 func newTestJob() *testJob {

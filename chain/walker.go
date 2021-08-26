@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
+	"github.com/filecoin-project/lily/lens"
 )
 
 func NewWalker(obs TipSetObserver, node lens.API, minHeight, maxHeight int64) *Walker {

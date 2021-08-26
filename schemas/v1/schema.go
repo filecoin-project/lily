@@ -9,8 +9,8 @@ import (
 	"github.com/go-pg/migrations/v8"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/schemas"
+	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/schemas"
 )
 
 const MajorVersion = 1

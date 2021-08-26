@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-pg/pg/v10/orm"
 
-	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/lily/model"
 )
 
 func NewMemStorage(version model.Version) *MemStorage {

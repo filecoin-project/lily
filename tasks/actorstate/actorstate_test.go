@@ -9,10 +9,10 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/go-state-types/crypto"
+	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/api"
 	bstore "github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/types"
-	miner "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/miner"
 	sa0account "github.com/filecoin-project/specs-actors/actors/builtin/account"
 	sa0init "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	samarket "github.com/filecoin-project/specs-actors/actors/builtin/market"
@@ -34,8 +34,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
-	"github.com/filecoin-project/sentinel-visor/testutil"
+	"github.com/filecoin-project/lily/tasks/actorstate"
+	"github.com/filecoin-project/lily/testutil"
 )
 
 var _ actorstate.ActorStateAPI = (*MockAPI)(nil)

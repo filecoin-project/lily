@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/filecoin-project/sentinel-visor/testutil"
+	"github.com/filecoin-project/lily/testutil"
 )
 
 type MockedChainEconomicsLens struct {

@@ -5,16 +5,16 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	verifregmodel "github.com/filecoin-project/lily/model/actors/verifreg"
 	"github.com/filecoin-project/lotus/chain/types"
-	verifregmodel "github.com/filecoin-project/sentinel-visor/model/actors/verifreg"
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/adt"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/verifreg"
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/model"
+	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
 )
 
 type VerifiedRegistryExtractor struct{}

@@ -8,10 +8,10 @@ import (
 	"github.com/go-pg/pg/v10"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/model"
-	"github.com/filecoin-project/sentinel-visor/schemas"
-	v0 "github.com/filecoin-project/sentinel-visor/schemas/v0"
-	v1 "github.com/filecoin-project/sentinel-visor/schemas/v1"
+	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/schemas"
+	v0 "github.com/filecoin-project/lily/schemas/v0"
+	v1 "github.com/filecoin-project/lily/schemas/v1"
 )
 
 // GetSchemaVersions returns the schema version in the database and the latest schema version defined by the available

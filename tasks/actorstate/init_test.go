@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/filecoin-project/go-address"
+	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lotus/chain/types"
-	init_ "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa0init "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	tutils "github.com/filecoin-project/specs-actors/support/testing"
@@ -21,9 +21,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
+	"github.com/filecoin-project/lily/lens"
+	initmodel "github.com/filecoin-project/lily/model/actors/init"
+	"github.com/filecoin-project/lily/tasks/actorstate"
 )
 
 func mapWithBuiltinAddresses() map[string]string {

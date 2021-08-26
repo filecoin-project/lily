@@ -21,8 +21,8 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/version"
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/version"
 )
 
 var log = logging.Logger("visor/commands")

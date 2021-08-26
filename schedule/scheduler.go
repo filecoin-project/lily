@@ -12,9 +12,9 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/storage"
-	"github.com/filecoin-project/sentinel-visor/wait"
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/storage"
+	"github.com/filecoin-project/lily/wait"
 )
 
 var log = logging.Logger("visor/schedule")

@@ -17,13 +17,13 @@ import (
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin"
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/model"
-	derivedmodel "github.com/filecoin-project/sentinel-visor/model/derived"
-	messagemodel "github.com/filecoin-project/sentinel-visor/model/messages"
-	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
-	"github.com/filecoin-project/sentinel-visor/tasks/messages/fcjson"
+	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/model"
+	derivedmodel "github.com/filecoin-project/lily/model/derived"
+	messagemodel "github.com/filecoin-project/lily/model/messages"
+	visormodel "github.com/filecoin-project/lily/model/visor"
+	"github.com/filecoin-project/lily/tasks/messages/fcjson"
 )
 
 var log = logging.Logger("visor/task/messages")

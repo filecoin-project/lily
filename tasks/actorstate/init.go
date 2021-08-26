@@ -9,11 +9,11 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/xerrors"
 
-	init_ "github.com/filecoin-project/sentinel-visor/chain/actors/builtin/init"
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/model"
-	initmodel "github.com/filecoin-project/sentinel-visor/model/actors/init"
+	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
+	initmodel "github.com/filecoin-project/lily/model/actors/init"
 )
 
 // was services/processor/tasks/init/init_actor.go

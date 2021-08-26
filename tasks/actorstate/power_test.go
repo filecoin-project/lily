@@ -11,8 +11,8 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 
+	"github.com/filecoin-project/lily/chain/actors/builtin/power"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/power"
 
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	power0 "github.com/filecoin-project/specs-actors/actors/builtin/power"
@@ -28,9 +28,9 @@ import (
 	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	sa4smoothing "github.com/filecoin-project/specs-actors/v4/actors/util/smoothing"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-	powermodel "github.com/filecoin-project/sentinel-visor/model/actors/power"
-	"github.com/filecoin-project/sentinel-visor/tasks/actorstate"
+	"github.com/filecoin-project/lily/lens"
+	powermodel "github.com/filecoin-project/lily/model/actors/power"
+	"github.com/filecoin-project/lily/tasks/actorstate"
 )
 
 func TestPowerExtractV0(t *testing.T) {

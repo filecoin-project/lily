@@ -16,7 +16,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
-	"github.com/filecoin-project/sentinel-visor/tasks/messages/types"
+	"github.com/filecoin-project/lily/tasks/messages/types"
 )
 
 // This is dagjson with special pretty-print sauce.

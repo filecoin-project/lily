@@ -10,8 +10,8 @@ import (
 	"go.opentelemetry.io/otel/label"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/sentinel-visor/model"
-	chainmodel "github.com/filecoin-project/sentinel-visor/model/chain"
+	"github.com/filecoin-project/lily/model"
+	chainmodel "github.com/filecoin-project/lily/model/chain"
 )
 
 type EconomicsStorage interface {

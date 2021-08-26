@@ -6,9 +6,9 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/model"
-	visormodel "github.com/filecoin-project/sentinel-visor/model/visor"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/model"
+	visormodel "github.com/filecoin-project/lily/model/visor"
 )
 
 var log = logging.Logger("visor/task/chaineconomics")

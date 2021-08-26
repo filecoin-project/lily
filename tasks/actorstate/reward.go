@@ -3,13 +3,13 @@ package actorstate
 import (
 	"context"
 
-	"github.com/filecoin-project/sentinel-visor/chain/actors/builtin/reward"
+	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	"go.opentelemetry.io/otel/api/global"
 
-	"github.com/filecoin-project/sentinel-visor/lens"
-	"github.com/filecoin-project/sentinel-visor/metrics"
-	"github.com/filecoin-project/sentinel-visor/model"
-	rewardmodel "github.com/filecoin-project/sentinel-visor/model/actors/reward"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
+	rewardmodel "github.com/filecoin-project/lily/model/actors/reward"
 )
 
 // was services/processor/tasks/reward/reward.go
