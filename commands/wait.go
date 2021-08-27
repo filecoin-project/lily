@@ -12,7 +12,7 @@ import (
 
 var WaitApiCmd = &cli.Command{
 	Name:  "wait-api",
-	Usage: "Wait for visor api to come online",
+	Usage: "Wait for lily api to come online",
 	Flags: flagSet(
 		clientAPIFlagSet,
 		[]cli.Flag{

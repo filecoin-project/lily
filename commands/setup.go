@@ -147,7 +147,7 @@ func setupMetrics(flags VisorMetricOpts) error {
 	view.SetReportingPeriod(2 * time.Second)
 
 	views := []*view.View{}
-	views = append(views, metrics.DefaultViews...)        // visor metrics
+	views = append(views, metrics.DefaultViews...)        // lily metrics
 	views = append(views, lotusmetrics.ChainNodeViews...) // lotus chain metrics
 
 	// register the metrics views of interest

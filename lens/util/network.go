@@ -9,7 +9,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/stmgr"
 )
 
-// DefaultNetwork is the filecoing network this version of visor has been built against
+// DefaultNetwork is the filecoing network this version of lily has been built against
 var DefaultNetwork = NewNetwork(stmgr.DefaultUpgradeSchedule(), build.NewestNetworkVersion)
 
 // Network holds properties of the filecoin network
