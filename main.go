@@ -72,7 +72,7 @@ func main() {
 	cli.AppHelpTemplate = commands.AppHelpTemplate
 
 	app := &cli.App{
-		Name:    "visor",
+		Name:    "lily",
 		Usage:   "a tool for capturing on-chain state from the filecoin network",
 		Version: fmt.Sprintf("VisorVersion: \t%s\n   NewestNetworkVersion: \t%d\n   GenesisFile: \t%s\n   DevNet: \t%t\n   UserVersion: \t%s\n   UpgradeSchedule: \n%s", version.String(), build.NewestNetworkVersion, build.GenesisFile, build.Devnet, build.UserVersion(), up.String()),
 		Flags: []cli.Flag{
