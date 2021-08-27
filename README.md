@@ -39,9 +39,9 @@ Now, build the `lily` binary to the root of the project directory:
 $ make build
 ```
 
-Install TimescaleDB v1.7.4:
+Install TimescaleDB v2.x:
 
-In a separate shell, use docker-compose to start the appropriate version of Postgres with TimescaleDB. (Note: Visor requires TimescaleDB v1.7.x and will not work with v2.0.)
+In a separate shell, use docker-compose to start the appropriate version of Postgres with TimescaleDB.
 
 ```sh
 docker-compose up --build timescaledb
