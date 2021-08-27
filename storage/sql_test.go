@@ -15,7 +15,6 @@ import (
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/actors/miner"
 	"github.com/filecoin-project/lily/schemas"
-	_ "github.com/filecoin-project/lily/schemas/v0"
 	"github.com/filecoin-project/lily/testutil"
 )
 

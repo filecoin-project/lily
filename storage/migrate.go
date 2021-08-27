@@ -10,7 +10,6 @@ import (
 
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/schemas"
-	v0 "github.com/filecoin-project/lily/schemas/v0"
 	v1 "github.com/filecoin-project/lily/schemas/v1"
 )
 
@@ -160,8 +159,6 @@ func LatestSchemaVersion() model.Version {
 // based on the highest migration version
 func latestSchemaVersionForMajor(major int) model.Version {
 	switch major {
-	case 0:
-		return v0.Version()
 	case 1:
 		return v1.Version()
 	default:
@@ -177,10 +174,6 @@ func (d *Database) MigrateSchema(ctx context.Context) error {
 // MigrateSchema migrates the database schema to a specific version. Note that downgrading a schema to an earlier
 // version is destructive and may result in the loss of data.
 func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) error {
-	if target.Major == 0 && d.schemaConfig.SchemaName != "public" {
-		return xerrors.Errorf("v0 schema must use the public postgresql schema")
-	}
-
 	db, err := connect(ctx, d.opt)
 	if err != nil {
 		return xerrors.Errorf("connect: %w", err)
@@ -311,8 +304,6 @@ func checkMigrationSequence(ctx context.Context, coll *migrations.Collection, fr
 
 func collectionForVersion(version model.Version, cfg schemas.Config) (*migrations.Collection, error) {
 	switch version.Major {
-	case 0:
-		return v0.GetPatches(cfg)
 	case 1:
 		return v1.GetPatches(cfg)
 	default:
@@ -322,8 +313,6 @@ func collectionForVersion(version model.Version, cfg schemas.Config) (*migration
 
 func baseForVersion(version model.Version, cfg schemas.Config) (string, error) {
 	switch version.Major {
-	case 0:
-		return v0.Base, nil
 	case 1:
 		return v1.GetBase(cfg)
 	default:
