@@ -9,13 +9,16 @@ is required to transition from one major version to another.
 
 Patches are applied on top of the base schema for a major version and contain only additive, non-breaking changes with no data migration.
 This ensures patches are safe and can be applied by visor automatically. Some examples of additive, non-migration patches are adding a 
-new table or view, adding field comments or adding a nullable column with a default. 
+new table or view or adding field comments. 
 
 Patches must be fully backwards compatible so that a database can be upgraded by a new version of
 visor without breaking an older version of visor that is using the same major schema version.
 
-Changes that are not suitable for patches include adding an index or changing a column type (may require long migrations and 
+Changes that are not suitable for patches include adding an index or column (even if nullable), changing a column type (may require long migrations and 
 database unavailability), removing a table, renaming a table or column.
+
+Once a table has been defined in a schema its structure should be considered immutable. 
+Changes that would require modification of a table's schema should instead create a new table.
 
 ## Schema Directories
 
@@ -31,10 +34,10 @@ with a collection called `Patches` which must be exported.
 Migrations are Go source files named after the patch version they migrate to plus a short tag. 
 For example,`2_visor_initial.go` is the migration to patch 2 of the schema. 
 
-Each migration consists of an `init()` function with a single call to `Patches.MustRegisterTx` with up to two arguments: 
+Each migration consists of an `init()` function with a single call to `patches.Register` with two arguments: 
 
+ - the sequence number of the migration. The highest of these becomes the current `patch` number.
  - a set of *up* statements that migrate the schema up from the previous version 
- - a set of *down* statements that migrate back down to the previous version. The *down* argument is optional but if omitted it prevents automatic rollback of failed deployments.
 
 The **latest patch version** is defined to be the highest version used by a migration in this directory. 
 
@@ -64,9 +67,8 @@ The next patch version will be one higher than the highest patch version listed 
 4. Create a new migration file using the next patch version as a prefix.
 5. Add all the statements required to migrate the schema from the previous patch to an `up` variable.
 6. Optionally, add all the statements required to migrate the schema to the previous patch to a `down` variable.
-7. Call `Patches.MustRegisterTx` with your `up` and `down` statements.
+7. Call `patches.Register` with your patch number and sql statements.
 8. Run the migration by running `visor migrate --to <new-version>`
 9. Test the migration is compatible by using `visor migrate`
-10. If needed, revert the migration by running `visor migrate --to <old-version>`
 
 
