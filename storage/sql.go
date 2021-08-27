@@ -33,7 +33,7 @@ import (
 )
 
 // Note this list is manually updated. Its only significant use is to verify schema compatibility
-// between the version of visor being used and the database being written to.
+// between the version of lily being used and the database being written to.
 var models = []interface{}{
 	(*blocks.BlockHeader)(nil),
 	(*blocks.BlockParent)(nil),
@@ -429,7 +429,7 @@ func (s *TxStorage) PersistModel(ctx context.Context, m interface{}) error {
 	return nil
 }
 
-// GenerateUpsertString accepts a visor model and returns two string containing SQL that may be used
+// GenerateUpsertString accepts a lily model and returns two string containing SQL that may be used
 // to upsert the model. The first string is the conflict statement and the second is the insert.
 //
 // Example given the below model:

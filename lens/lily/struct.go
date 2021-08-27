@@ -22,7 +22,7 @@ var _ LilyAPI = (*LilyAPIStruct)(nil)
 
 type LilyAPIStruct struct {
 	// authentication
-	// TODO: avoid importing CommonStruct, split out into separate visor structs
+	// TODO: avoid importing CommonStruct, split out into separate lily structs
 	v0api.CommonStruct
 
 	Internal struct {

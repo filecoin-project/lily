@@ -7,7 +7,7 @@ import (
 
 var StopCmd = &cli.Command{
 	Name:  "stop",
-	Usage: "Stop a running visor daemon",
+	Usage: "Stop a running lily daemon",
 	Flags: flagSet(
 		clientAPIFlagSet,
 	),

@@ -112,7 +112,7 @@ A walk takes a range of heights and will walk from the heaviest tipset at the
 upper height to the lower height using the parent state root present in each
 tipset.
 
-The type of data extracted by visor is controlled by 'tasks' that focus on
+The type of data extracted by lily is controlled by 'tasks' that focus on
 particular parts of the chain. For more information about available tasks
 see 'visor help tasks'.
 
@@ -125,7 +125,7 @@ chain. For watching incoming tipsets the blockstore must be connected and in
 sync with the filecoin network. Historic walks can be performed against an
 offline store.
 
-While running, visor will maintain its own local blockstore and attempt
+While running, lily will maintain its own local blockstore and attempt
 to synchronise it with the filecoin network. For more information on running
 visor as a daemon, including how to initialise the blockstore, see
 'visor help daemon'.
@@ -215,13 +215,13 @@ Other tasks:
 
 	{
 		Name:        "monitoring",
-		Description: "Monitoring visor operation",
+		Description: "Monitoring lily operation",
 		Text: `Visor may be monitored during operation using logfiles, metrics and tracing.
-The visor command recognizes environment variables and provides options to
+The lily command recognizes environment variables and provides options to
 control the behaviour of each type of monitoring output. Options should be
 supplied before any sub command:
 
-  visor [global options] <command>
+  lily [global options] <command>
 
 Visor uses the IPFS logging library (https://github.com/ipfs/go-ipfs) to write
 application logs. By default logs are written to STDERR in JSON format. Log
@@ -254,7 +254,7 @@ destination of the logs.
                          log levels formatted as name:level, for example
                          'logger1:debug,logger2:info'.
 
-In addition, visor supports some global options for controlling logging:
+In addition, lily supports some global options for controlling logging:
 
   --log-level LEVEL        Set the default log level for all loggers to LEVEL.
                            This option overrides any value set using the
@@ -264,9 +264,9 @@ In addition, visor supports some global options for controlling logging:
                            overrides any value set using the
                            LILY_LOG_LEVEL_NAMED environment variable.
 
-To control logging output while the visor daemon is running see 'visor help log'.
+To control logging output while the lily daemon is running see 'visor help log'.
 
-During operation visor exposes metrics and debugging information on port 9991
+During operation lily exposes metrics and debugging information on port 9991
 by default. The address used by this http server can be changed using the
 '--prometheus-port' option which expects an IP address and port number. The
 address may be omitted to run the server on all interfaces, for example: ':9991'.
@@ -286,9 +286,9 @@ Environment variables for controlling function level tracing:
   LILY_TRACING         Enable tracing. Set to 'true' to enable tracing.
 
   JAEGER_AGENT_HOST,    Hostname and port of a Jaeger compatible agent that
-  JAEGER_AGENT_PORT     visor should send traces to.
+  JAEGER_AGENT_PORT     lily should send traces to.
 
-  JAEGER_SERVICE_NAME   The name visor should use when reporting traces.
+  JAEGER_SERVICE_NAME   The name lily should use when reporting traces.
 
   JAEGER_SAMPLER_TYPE,  Control the type of sampling used to capture traces.
   JAEGER_SAMPLER_PARAM  The type may be either 'const' or 'probabilistic'.

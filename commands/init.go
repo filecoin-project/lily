@@ -24,11 +24,11 @@ var initFlags struct {
 
 var InitCmd = &cli.Command{
 	Name:  "init",
-	Usage: "Initialise a visor repository.",
+	Usage: "Initialise a lily repository.",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:        "repo",
-			Usage:       "Specify path where visor should store chain state.",
+			Usage:       "Specify path where lily should store chain state.",
 			EnvVars:     []string{"LILY_REPO"},
 			Value:       "~/.lotus",
 			Destination: &initFlags.repo,

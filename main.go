@@ -111,7 +111,7 @@ func main() {
 			&cli.StringFlag{
 				Name:        "jaeger-service-name",
 				EnvVars:     []string{"JAEGER_SERVICE_NAME"},
-				Value:       "visor",
+				Value:       "lily",
 				Destination: &commands.VisorTracingFlags.JaegerName,
 			},
 			&cli.StringFlag{

@@ -5,7 +5,7 @@ import (
 	"errors"
 )
 
-// OldestSupportedSchemaVersion is the oldest version of the schema that visor can convert its models to
+// OldestSupportedSchemaVersion is the oldest version of the schema that lily can convert its models to
 // Models can be persisted using any version between this and the latest version. Version 28 is the version
 // in which support for multiple schemas was introduced.
 var OldestSupportedSchemaVersion = Version{Major: 0, Patch: 28}

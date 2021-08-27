@@ -73,7 +73,7 @@ func (g *GapIndexer) Run(ctx context.Context) error {
 	findLog.Infow("found gaps in epochs", "count", len(heightGaps))
 	findLog.Infow("found null rounds", "count", len(nulls))
 
-	// looks for entriest in the visor processing report table that have been skipped.
+	// looks for entriest in the lily processing report table that have been skipped.
 	skipGaps, err := g.findEpochSkips(ctx)
 	if err != nil {
 		return xerrors.Errorf("detecting skipped gaps: %w", err)

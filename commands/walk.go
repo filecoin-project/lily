@@ -63,14 +63,14 @@ var WalkCmd = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:        "api",
-			Usage:       "Address of visor api in multiaddr format.",
+			Usage:       "Address of lily api in multiaddr format.",
 			EnvVars:     []string{"LILY_API"},
 			Value:       "/ip4/127.0.0.1/tcp/1234",
 			Destination: &walkFlags.apiAddr,
 		},
 		&cli.StringFlag{
 			Name:        "api-token",
-			Usage:       "Authentication token for visor api.",
+			Usage:       "Authentication token for lily api.",
 			EnvVars:     []string{"LILY_API_TOKEN"},
 			Value:       "",
 			Destination: &walkFlags.apiToken,

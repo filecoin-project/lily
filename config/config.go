@@ -74,7 +74,7 @@ func DefaultConf() *Conf {
 	}
 }
 
-// SampleConf is the example configuration that is written when visor is first started. All entries will be commented out.
+// SampleConf is the example configuration that is written when lily is first started. All entries will be commented out.
 func SampleConf() *Conf {
 	def := DefaultConf()
 	cfg := *def

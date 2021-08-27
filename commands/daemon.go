@@ -36,7 +36,7 @@ var clientAPIFlags struct {
 
 var clientAPIFlag = &cli.StringFlag{
 	Name:        "api",
-	Usage:       "Address of visor api in multiaddr format.",
+	Usage:       "Address of lily api in multiaddr format.",
 	EnvVars:     []string{"LILY_API"},
 	Value:       "/ip4/127.0.0.1/tcp/1234",
 	Destination: &clientAPIFlags.apiAddr,
@@ -44,7 +44,7 @@ var clientAPIFlag = &cli.StringFlag{
 
 var clientTokenFlag = &cli.StringFlag{
 	Name:        "api-token",
-	Usage:       "Authentication token for visor api.",
+	Usage:       "Authentication token for lily api.",
 	EnvVars:     []string{"LILY_API_TOKEN"},
 	Value:       "",
 	Destination: &clientAPIFlags.apiToken,
@@ -58,7 +58,7 @@ var clientAPIFlagSet = []cli.Flag{
 
 type daemonOpts struct {
 	repo      string
-	bootstrap bool // TODO: is this necessary - do we want to run visor in this mode?
+	bootstrap bool // TODO: is this necessary - do we want to run lily in this mode?
 	config    string
 	genesis   string
 }
@@ -67,9 +67,9 @@ var daemonFlags daemonOpts
 
 var DaemonCmd = &cli.Command{
 	Name:  "daemon",
-	Usage: "Start a visor daemon process.",
-	Description: `Starts visor in daemon mode with its own blockstore.
-In daemon mode visor synchronizes with the filecoin network and runs jobs such
+	Usage: "Start a lily daemon process.",
+	Description: `Starts lily in daemon mode with its own blockstore.
+In daemon mode lily synchronizes with the filecoin network and runs jobs such
 as walk and watch against its local blockstore. This gives better performance
 than operating against an external blockstore but requires more disk space and
 memory.
@@ -79,10 +79,10 @@ and synchronized. Visor can use a copy of an already synchronized Lotus node
 repository or can initialize its own empty one and import a snapshot to catch
 up to the chain.
 
-To initialize an empty visor blockstore repository and import an initial
+To initialize an empty lily blockstore repository and import an initial
 snapshot of the chain:
 
-  visor init --repo=<path> --import-snapshot=<url>
+  lily init --repo=<path> --import-snapshot=<url>
 
 This will initialize a blockstore repository at <path> and import chain state
 from the snapshot at <url>. The type of snapshot needed depends on the type
@@ -100,7 +100,7 @@ Lotus documentation for full details.
 
 Once the repository is initialized, start the daemon:
 
-  visor daemon --repo=<path> --config=<path>/config.toml
+  lily daemon --repo=<path> --config=<path>/config.toml
 
 Visor will connect to the filecoin network and begin synchronizing with the
 chain. To check the synchronization status use 'visor sync status' or
@@ -121,7 +121,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 		clientAPIFlag,
 		&cli.StringFlag{
 			Name:        "repo",
-			Usage:       "Specify path where visor should store chain state.",
+			Usage:       "Specify path where lily should store chain state.",
 			EnvVars:     []string{"LILY_REPO"},
 			Value:       "~/.lotus",
 			Destination: &daemonFlags.repo,
