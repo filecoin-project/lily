@@ -117,7 +117,7 @@ jobs:
     resource_class: large
     docker:
       - image: cimg/go:1.16.5
-      - image: timescale/timescaledb:1.7.4-pg12
+      - image: timescale/timescaledb:2.4.1-pg13
         environment:
           POSTGRES_PASSWORD: password
     steps:
