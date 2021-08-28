@@ -10,7 +10,7 @@ A **Visor** process collects _permanent_ Filecoin chain meterics from a [**Lotus
 Clone the repo and build the dependencies:
 
 ```console
-$ git clone git@github.com:filecoin-project/lily.git
+$ git clone https://github.com/filecoin-project/lily
 $ cd lily
 $ make deps
 ```
