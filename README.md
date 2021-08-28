@@ -64,7 +64,7 @@ CREATE DATABASE lily_test;
 Migrate the database to the latest schema:
 
 ```sh
-lily --db "postgres://username@localhost/lily_test?sslmode=disable" migrate --latest
+lily migrate --db "postgres://username@localhost/lily_test?sslmode=disable" --latest
 ```
 
 Run the tests:
