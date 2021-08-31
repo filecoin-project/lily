@@ -36,14 +36,14 @@ var VisorDBFlags VisorDBOpts
 var dbConnectFlags = []cli.Flag{
 	&cli.StringFlag{
 		Name:        "db",
-		EnvVars:     []string{"LOTUS_DB"},
+		EnvVars:     []string{"LILY_DB"},
 		Value:       "",
 		Usage:       "A connection string for the TimescaleDB database, for example postgres://postgres:password@localhost:5432/postgres?sslmode=disable",
 		Destination: &VisorDBFlags.DB,
 	},
 	&cli.IntFlag{
 		Name:        "db-pool-size",
-		EnvVars:     []string{"LOTUS_DB_POOL_SIZE"},
+		EnvVars:     []string{"LILY_DB_POOL_SIZE"},
 		Value:       75,
 		Destination: &VisorDBFlags.DBPoolSize,
 	},

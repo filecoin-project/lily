@@ -84,7 +84,7 @@ LILY_TEST_DB="postgres://username@localhost/lily_test?sslmode=disable" go test .
 Use the following env vars to configure the lotus node that lily reads from, and the database that it writes to:
 
 - `LILY_PATH` - path to the lotus data dir. _default: `~/.lily`_
-- `LOTUS_DB` - database connection . _default: `postgres://postgres:password@localhost:5432/postgres?sslmode=disable`_
+- `LILY_DB` - database connection . _default: `postgres://postgres:password@localhost:5432/postgres?sslmode=disable`_
 
 The `walk` and `watch` commands expect a list of tasks to be provided. Each task is responsible for reading a particular type of data from the chain and persisting it to the database.
 The mapping between available tasks and database tables is as follows:

@@ -81,7 +81,7 @@ func SampleConf() *Conf {
 	cfg.Storage = StorageConf{
 		Postgresql: map[string]PgStorageConf{
 			"Database1": {
-				URLEnv:          "LOTUS_DB", // LOTUS_DB is a historical accident, but we keep it as the default for compatibility
+				URLEnv:          "LILY_DB", // LILY_DB is a historical accident, but we keep it as the default for compatibility
 				URL:             "postgres://postgres:password@localhost:5432/postgres",
 				PoolSize:        20,
 				ApplicationName: "visor",
