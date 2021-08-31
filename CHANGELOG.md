@@ -5,6 +5,24 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.8.0"></a>
+## [v0.8.0] - 2021-08-27
+
+Note: This is a major release. The project name has changed from `sentinel-visor` to `lily`, the binary
+produced when building the project has changed from `visor` to `lily`, and all lenses have been removed.
+This means lily will cease to work with the lotusAPI lens, CAR-file lens, and Repo lens. Henceforth, Lily
+will run as a deamonized process capable of both syncing and processing the Filecoin blockchain.
+
+### Docs
+- strengthen constraints on schema migrations (#683)
+
+### Chore
+- remove unused lens implementations (#654)
+- uncomment skip logic in TestFind (#682)
+- rename sentinel-visor/visor -> lily (#677)
+- remove v0 schema (#684)
+- update CI w Timescale v2.x (#686)
+
 <a name="v0.7.7"></a>
 ## [v0.7.7] - 2021-08-24
 
