@@ -138,7 +138,7 @@ jobs:
           name: installing schema
           command: ./lily migrate --latest
           environment:
-            LOTUS_DB: postgres://postgres:password@localhost:5432/postgres?sslmode=disable
+            LILY_DB: postgres://postgres:password@localhost:5432/postgres?sslmode=disable
       - run:
           command: |
             make test-coverage
