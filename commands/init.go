@@ -30,7 +30,7 @@ var InitCmd = &cli.Command{
 			Name:        "repo",
 			Usage:       "Specify path where lily should store chain state.",
 			EnvVars:     []string{"LILY_REPO"},
-			Value:       "~/.lotus",
+			Value:       "~/.lily",
 			Destination: &initFlags.repo,
 		},
 		&cli.StringFlag{
