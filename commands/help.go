@@ -268,8 +268,9 @@ To control logging output while the lily daemon is running see 'visor help log'.
 
 During operation lily exposes metrics and debugging information on port 9991
 by default. The address used by this http server can be changed using the
-'--prometheus-port' option which expects an IP address and port number. The
-address may be omitted to run the server on all interfaces, for example: ':9991'.
+'--prometheus-port' option or the 'LILY_PROMETHEUS_PORT' environment variable
+which expects an IP address and port number. The address may be omitted to run
+the server on all interfaces, for example: ':9991'.
 
 The following paths can be accessed using a standard web browser.
 
