@@ -25,6 +25,7 @@ services:
       - "16686:16686"
 
   prometheus:
+    container_name: prometheus
     image: prom/prometheus:v2.1.0
     volumes:
       - ./build/prometheus/:/etc/prometheus/
@@ -34,12 +35,14 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--log.level=warn'
     ports:
       - 9090:9090
     network_mode: "host"
     restart: always
 
   grafana:
+    container_name: grafana
     image: grafana/grafana
     user: "472"
     depends_on:
@@ -54,7 +57,26 @@ services:
       - ./build/grafana/config.monitoring
     restart: always
 
+  #lily:
+    #container_name: lily
+    #image: filecoin/lily:v0.8.0-calibnet
+    #env_file:
+      #- ./build/lily/docker.env
+    #depends_on:
+      #- prometheus
+      #- timescaledb
+      #- jaeger
+    #ports:
+      #- 1234:1234
+    #volumes:
+      #- lily_data:/var/lib/lily
+      #- ./build/lily/docker_init.sh:/usr/bin/docker_init.sh
+    #entrypoint: /usr/bin/docker_init.sh
+    #command:
+      #- daemon
+
 volumes:
   timescaledb: {}
   prometheus_data: {}
   grafana_data: {}
+  lily_data: {}
