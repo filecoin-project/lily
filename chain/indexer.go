@@ -91,6 +91,7 @@ type TipSetIndexer struct {
 	persistSlot                chan struct{} // filled with a token when a goroutine is persisting data
 	lastTipSet                 *types.TipSet
 	node                       lens.API
+	tasks                      []string
 }
 
 type TipSetIndexerOpt func(t *TipSetIndexer)
@@ -111,6 +112,7 @@ func NewTipSetIndexer(node lens.API, d model.Storage, window time.Duration, name
 		consensusProcessor:         map[string]TipSetsProcessor{},
 		actorProcessors:            map[string]ActorProcessor{},
 		node:                       node,
+		tasks:                      tasks,
 	}
 
 	for _, task := range tasks {
@@ -181,9 +183,9 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 	inFlight := 0
 	// TODO should these be allocated to the size of message and message execution processors
-	results := make(chan *TaskResult, len(t.processors)+len(t.actorProcessors))
+	results := make(chan *TaskResult, len(t.processors)+len(t.actorProcessors)+len(t.messageExecutionProcessors)+len(t.consensusProcessor)+len(t.messageProcessors))
 	// A map to gather the persistable outputs from each task
-	taskOutputs := make(map[string]model.PersistableList, len(t.processors)+len(t.actorProcessors))
+	taskOutputs := make(map[string]model.PersistableList, len(t.processors)+len(t.actorProcessors)+len(t.messageExecutionProcessors)+len(t.consensusProcessor)+len(t.messageProcessors))
 
 	// current is the primary tipset that tasks act upon.
 	// next adds additional context such as outcomes of message execution.
@@ -356,6 +358,14 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 			taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, reason)}
 			ll.Infow("task skipped", "task", name, "reason", reason)
 		}
+		for name := range t.messageExecutionProcessors {
+			taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, reason)}
+			ll.Infow("task skipped", "task", name, "reason", reason)
+		}
+		for name := range t.consensusProcessor {
+			taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, reason)}
+			ll.Infow("task skipped", "task", name, "reason", reason)
+		}
 		for name := range t.actorProcessors {
 			taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, reason)}
 			ll.Infow("task skipped", "task", name, "reason", reason)
@@ -363,11 +373,24 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	}
 
 	// Wait for all tasks to complete
+	completed := map[string]struct{}{}
 	for inFlight > 0 {
 		var res *TaskResult
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
+		case <-tctx.Done():
+			// if the indexers timeout (window) context is done then we have run out of time.
+			// loop over all tasks expected to complete, if they have not been completed mark them as skipped
+			// then goto persistence routine.
+			for _, name := range t.tasks {
+				if _, complete := completed[name]; !complete {
+					taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, "indexer not ready")}
+					ll.Infow("task skipped", "task", name, "reason", "indexer not ready")
+				}
+			}
+			stats.Record(ctx, metrics.TipSetSkip.M(1))
+			goto persist
 		case res = <-results:
 		}
 		inFlight--
@@ -407,6 +430,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 		// Persist the processing report and the data in a single transaction
 		taskOutputs[res.Task] = model.PersistableList{res.Report, res.Data}
+		completed[res.Task] = struct{}{}
 	}
 	ll.Debugw("data extracted", "time", time.Since(start))
 
@@ -416,6 +440,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		return nil
 	}
 
+persist:
 	// wait until there is an empty slot before persisting
 	select {
 	case <-ctx.Done():
@@ -750,7 +775,15 @@ func (t *TipSetIndexer) SkipTipSet(ctx context.Context, ts *types.TipSet, reason
 		reports = append(reports, t.buildSkippedTipsetReport(ts, name, timestamp, reason))
 	}
 
+	for name := range t.messageExecutionProcessors {
+		reports = append(reports, t.buildSkippedTipsetReport(ts, name, timestamp, reason))
+	}
+
 	for name := range t.actorProcessors {
+		reports = append(reports, t.buildSkippedTipsetReport(ts, name, timestamp, reason))
+	}
+
+	for name := range t.consensusProcessor {
 		reports = append(reports, t.buildSkippedTipsetReport(ts, name, timestamp, reason))
 	}
 

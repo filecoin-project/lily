@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/filecoin-project/lotus/chain/types"
-	"go.opencensus.io/stats"
+	"github.com/gammazero/workerpool"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
@@ -21,6 +21,7 @@ func NewWatcher(obs TipSetObserver, hn HeadNotifier, confidence int) *Watcher {
 		confidence: confidence,
 		cache:      NewTipSetCache(confidence),
 		indexSlot:  make(chan struct{}, 1), // allow one concurrent indexing job
+		wp:         workerpool.New(8),      // TODO this value should be derived from the window duration passed to indexer
 	}
 }
 
@@ -31,6 +32,7 @@ type Watcher struct {
 	confidence int           // size of tipset cache
 	cache      *TipSetCache  // caches tipsets for possible reversion
 	indexSlot  chan struct{} // filled with a token when a goroutine is indexing a tipset
+	wp         *workerpool.WorkerPool
 }
 
 // Run starts following the chain head and blocks until the context is done or
@@ -108,27 +110,18 @@ func (c *Watcher) maybeIndexTipSet(ctx context.Context, ts *types.TipSet) error 
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case c.indexSlot <- struct{}{}:
-		// Indexing slot was available which means we can continue.
-		go func() {
-			// Clear the slot when we have completed indexing
-			defer func() {
-				<-c.indexSlot
-			}()
-
+	default:
+		// record how many workers are currently waiting to execute
+		metrics.RecordCount(ctx, metrics.WatcherWaitingWorkers, c.wp.WaitingQueueSize())
+		c.wp.Submit(func() {
+			// record a new worker starting
+			metrics.RecordInc(ctx, metrics.WatcherActiveWorkers)
 			if err := c.obs.TipSet(ctx, ts); err != nil {
 				log.Errorw("failed to index tipset", "error", err, "height", ts.Height())
 			}
-		}()
-	default:
-		// The indexer is taking longer than one epoch to process. We need to avoid blocking the stream of incoming
-		// tipsets otherwise we will cause the node to fall behind the chain while it waits for us to catch up
-		// (which may never happen if we consistently take too long)
-		log.Errorw("skipping tipset since indexer is not ready", "height", ts.Height())
-		stats.Record(ctx, metrics.TipSetSkip.M(1))
-		if err := c.obs.SkipTipSet(ctx, ts, "indexer not ready"); err != nil {
-			log.Errorw("failed to skip tipset", "error", err, "height", ts.Height())
-		}
+			// record a worker completing.
+			metrics.RecordDec(ctx, metrics.WatcherActiveWorkers)
+		})
 	}
 
 	return nil // only fatal errors should be returned
