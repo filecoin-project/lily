@@ -219,7 +219,7 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) er
 	}
 
 	// Check if we need to create the base schema
-	if dbVersion.Patch == 0 {
+	if !initialized {
 		log.Infof("creating base schema for major version %d", target.Major)
 
 		base, err := baseForVersion(target, d.SchemaConfig())
