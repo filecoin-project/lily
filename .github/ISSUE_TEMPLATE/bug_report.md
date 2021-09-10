@@ -9,4 +9,4 @@ assignees: ''
 
 ### Steps to Reproduce:
 
-### Visor Version: vx.x.x
+### Lily Version: vx.x.x
