@@ -689,20 +689,25 @@ func (t *TipSetIndexer) runMessageExecutionProcessor(ctx context.Context, p Mess
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 	defer stop()
+	start := time.Now()
 
 	data, report, err := p.ProcessMessageExecutions(ctx, t.node.Store(), ts, pts, imsgs)
 	if err != nil {
 		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
-			Task:  name,
-			Error: err,
+			Task:        name,
+			Error:       err,
+			StartedAt:   start,
+			CompletedAt: time.Now(),
 		}
 		return
 	}
 	results <- &TaskResult{
-		Task:   name,
-		Report: visormodel.ProcessingReportList{report},
-		Data:   data,
+		Task:        name,
+		Report:      visormodel.ProcessingReportList{report},
+		Data:        data,
+		StartedAt:   start,
+		CompletedAt: time.Now(),
 	}
 }
 
