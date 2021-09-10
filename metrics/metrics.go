@@ -41,6 +41,8 @@ var (
 	TipSetCacheSize         = stats.Int64("tipset_cache_size", "Configured size of the tipset cache (aka confidence).", stats.UnitDimensionless)
 	TipSetCacheDepth        = stats.Int64("tipset_cache_depth", "Number of tipsets currently in the tipset cache.", stats.UnitDimensionless)
 	TipSetCacheEmptyRevert  = stats.Int64("tipset_cache_empty_revert", "Number of revert operations performed on an empty tipset cache. This is an indication that a chain reorg is underway that is deeper than the cache size and includes tipsets that have already been read from the cache.", stats.UnitDimensionless)
+	WatcherActiveWorkers    = stats.Int64("watcher_active_workers", "Current number of watcher observers executing", stats.UnitDimensionless)
+	WatcherWaitingWorkers   = stats.Int64("watcher_waiting_workers", "Current number of watcher observers waiting to execute", stats.UnitDimensionless)
 )
 
 var DefaultViews = []*view.View{
@@ -152,6 +154,16 @@ var DefaultViews = []*view.View{
 		Aggregation: view.Sum(),
 		TagKeys:     []tag.Key{Job},
 	},
+	{
+		Measure:     WatcherActiveWorkers,
+		Aggregation: view.LastValue(),
+		TagKeys:     []tag.Key{Job},
+	},
+	{
+		Measure:     WatcherWaitingWorkers,
+		Aggregation: view.LastValue(),
+		TagKeys:     []tag.Key{Job},
+	},
 }
 
 // SinceInMilliseconds returns the duration of time since the provide time as a float64.
@@ -171,6 +183,11 @@ func Timer(ctx context.Context, m *stats.Float64Measure) func() {
 // RecordInc is a convenience function that increments a counter.
 func RecordInc(ctx context.Context, m *stats.Int64Measure) {
 	stats.Record(ctx, m.M(1))
+}
+
+// RecordDec is a convenience function that decrements a counter.
+func RecordDec(ctx context.Context, m *stats.Int64Measure) {
+	stats.Record(ctx, m.M(-1))
 }
 
 // RecordCount is a convenience function that increments a counter by a count.
