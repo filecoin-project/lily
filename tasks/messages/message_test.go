@@ -93,15 +93,37 @@ func TestParseMessageParams(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			// Derived from message bafy2bzacebpiuu7tgya6yz56sfllpqc3rqbo5s5xl7353xeuavc53qlpb4sqw
-			// Account actor is not supported for parameter parsing
+			// Derived from message bafy2bzacea4ndy46bfhxa4uucflufo6g3wupppumlas57l5bz4dbjyzydpy5m
+			// Account actor is supported for parameter parsing it the constructor method.
 			name:        "issue-663",
-			method:      1,
+			method:      16,
 			params:      nil,
 			actorCode:   builtin3.AccountActorCodeID,
 			wantMethod:  "",
 			wantEncoded: "",
 			wantErr:     true,
+		},
+		{
+			// Derived from message bafy2bzacebpiuu7tgya6yz56sfllpqc3rqbo5s5xl7353xeuavc53qlpb4sqw
+			// Account actor is supported for parameter parsing it the constructor method.
+			name:        "issue-709",
+			method:      1,
+			params:      nil,
+			actorCode:   builtin3.AccountActorCodeID,
+			wantMethod:  "Constructor",
+			wantEncoded: `""`,
+			wantErr:     false,
+		},
+		{
+			// Derived from message bafy2bzacedzfkgkgwmyhnrty3nenkmxuhlkfhskywb3olqolhxln3yeb2cklu
+			// Account actor is supported for parameter parsing it the constructor method.
+			name:        "issue-709",
+			method:      2,
+			params:      nil,
+			actorCode:   builtin3.AccountActorCodeID,
+			wantMethod:  "PubkeyAddress",
+			wantEncoded: `""`,
+			wantErr:     false,
 		},
 	}
 
