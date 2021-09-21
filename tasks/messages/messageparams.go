@@ -134,6 +134,11 @@ var cronTable = methodtable{
 	2: methodMeta{"EpochTick", types.Type.Any__Repr},
 }
 
+var accountTable = methodtable{
+	1: methodMeta{"Constructor", types.Type.Address__Repr},
+	2: methodMeta{"PubkeyAddress", types.Type.Any__Repr},
+}
+
 // LotusType represents known types
 type LotusType string
 
@@ -164,7 +169,7 @@ const (
 )
 
 var messageParamTable = map[cid.Cid]methodtable{
-	sa0builtin.AccountActorCodeID:          {},
+	sa0builtin.AccountActorCodeID:          accountTable,
 	sa0builtin.CronActorCodeID:             cronTable,
 	sa0builtin.InitActorCodeID:             initTable,
 	sa0builtin.MultisigActorCodeID:         multisigTable,
@@ -177,7 +182,7 @@ var messageParamTable = map[cid.Cid]methodtable{
 	sa0builtin.VerifiedRegistryActorCodeID: verifregTable,
 
 	// v2
-	sa2builtin.AccountActorCodeID:          {},
+	sa2builtin.AccountActorCodeID:          accountTable,
 	sa2builtin.CronActorCodeID:             cronTable,
 	sa2builtin.InitActorCodeID:             initTable,
 	sa2builtin.MultisigActorCodeID:         multisigTable,
@@ -190,7 +195,7 @@ var messageParamTable = map[cid.Cid]methodtable{
 	sa2builtin.VerifiedRegistryActorCodeID: verifregTable,
 
 	// v3
-	sa3builtin.AccountActorCodeID:          {},
+	sa3builtin.AccountActorCodeID:          accountTable,
 	sa3builtin.CronActorCodeID:             cronTable,
 	sa3builtin.InitActorCodeID:             initTable,
 	sa3builtin.MultisigActorCodeID:         multisigTable,
@@ -203,7 +208,7 @@ var messageParamTable = map[cid.Cid]methodtable{
 	sa3builtin.VerifiedRegistryActorCodeID: verifregTable,
 
 	// v4
-	sa4builtin.AccountActorCodeID:          {},
+	sa4builtin.AccountActorCodeID:          accountTable,
 	sa4builtin.CronActorCodeID:             cronTable,
 	sa4builtin.InitActorCodeID:             initTable,
 	sa4builtin.MultisigActorCodeID:         multisigTable,
@@ -216,7 +221,7 @@ var messageParamTable = map[cid.Cid]methodtable{
 	sa4builtin.VerifiedRegistryActorCodeID: verifregTable,
 
 	// v5
-	sa5builtin.AccountActorCodeID:          {},
+	sa5builtin.AccountActorCodeID:          accountTable,
 	sa5builtin.CronActorCodeID:             cronTable,
 	sa5builtin.InitActorCodeID:             initTable,
 	sa5builtin.MultisigActorCodeID:         multisigTable,
