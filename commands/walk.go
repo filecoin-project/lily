@@ -34,30 +34,35 @@ var WalkCmd = &cli.Command{
 		&cli.StringFlag{
 			Name:        "tasks",
 			Usage:       "Comma separated list of tasks to run. Each task is reported separately in the database.",
+			EnvVars:     []string{"LILY_TASKS"},
 			Value:       strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorStatesRawTask}, ","),
 			Destination: &walkFlags.tasks,
 		},
 		&cli.DurationFlag{
 			Name:        "window",
 			Usage:       "Duration after which any indexing work not completed will be marked incomplete",
+			EnvVars:     []string{"LILY_WINDOW"},
 			Value:       builtin.EpochDurationSeconds * time.Second * 10, // walks don't need to complete within a single epoch
 			Destination: &walkFlags.window,
 		},
 		&cli.Int64Flag{
 			Name:        "from",
 			Usage:       "Limit actor and message processing to tipsets at or above `HEIGHT`",
+			EnvVars:     []string{"LILY_FROM"},
 			Destination: &walkFlags.from,
 			Required:    true,
 		},
 		&cli.Int64Flag{
 			Name:        "to",
 			Usage:       "Limit actor and message processing to tipsets at or below `HEIGHT`",
+			EnvVars:     []string{"LILY_TO"},
 			Destination: &walkFlags.to,
 			Required:    true,
 		},
 		&cli.StringFlag{
 			Name:        "storage",
 			Usage:       "Name of storage that results will be written to.",
+			EnvVars:     []string{"LILY_STORAGE"},
 			Value:       "",
 			Destination: &walkFlags.storage,
 		},
@@ -78,6 +83,7 @@ var WalkCmd = &cli.Command{
 		&cli.StringFlag{
 			Name:        "name",
 			Usage:       "Name of job for easy identification later.",
+			EnvVars:     []string{"LILY_JOB_NAME"},
 			Value:       "",
 			Destination: &walkFlags.name,
 		},
