@@ -5,6 +5,20 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.8.1"></a>
+## [v0.8.1] - 2021-09-23
+
+### Feat
+ - add environment variables for command options (#716)
+
+### Fix
+ - implement method table for account actor (#714)
+ - record internal message start and end time (#712)
+ - consider initialization when deciding to create base schema (#707)
+
+### Chore
+ - issue template uses lily (#713)
+
 <a name="v0.8.0"></a>
 ## [v0.8.0] - 2021-08-27
 
