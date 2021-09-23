@@ -33,24 +33,28 @@ var WatchCmd = &cli.Command{
 		&cli.IntFlag{
 			Name:        "confidence",
 			Usage:       "Sets the size of the cache used to hold tipsets for possible reversion before being committed to the database",
+			EnvVars:     []string{"LILY_CONFIDENCE"},
 			Value:       2,
 			Destination: &watchFlags.confidence,
 		},
 		&cli.StringFlag{
 			Name:        "tasks",
 			Usage:       "Comma separated list of tasks to run. Each task is reported separately in the database.",
+			EnvVars:     []string{"LILY_TASKS"},
 			Value:       strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorStatesRawTask}, ","),
 			Destination: &watchFlags.tasks,
 		},
 		&cli.DurationFlag{
 			Name:        "window",
 			Usage:       "Duration after which any indexing work not completed will be marked incomplete",
+			EnvVars:     []string{"LILY_WINDOW"},
 			Value:       builtin.EpochDurationSeconds * time.Second,
 			Destination: &watchFlags.window,
 		},
 		&cli.StringFlag{
 			Name:        "storage",
 			Usage:       "Name of storage that results will be written to.",
+			EnvVars:     []string{"LILY_STORAGE"},
 			Value:       "",
 			Destination: &watchFlags.storage,
 		},
@@ -71,6 +75,7 @@ var WatchCmd = &cli.Command{
 		&cli.StringFlag{
 			Name:        "name",
 			Usage:       "Name of job for easy identification later.",
+			EnvVars:     []string{"LILY_JOB_NAME"},
 			Value:       "",
 			Destination: &watchFlags.name,
 		},
