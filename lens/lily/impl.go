@@ -255,12 +255,12 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, next *t
 			// this will likely be the case for most walk tasks.
 			_, err := m.StateManager.ExecutionTraceWithMonitor(ctx, current, msgMonitor)
 			if err != nil {
-				return nil, xerrors.Errorf("failed to compute execution trace for tipset: %s", current.Key().String())
+				return nil, xerrors.Errorf("failed to compute execution trace for tipset %s: %w", current.Key().String(), err)
 			}
 			// the above call will populate the msgMonitor with an execution trace for this tipset, get it.
 			executions, err = msgMonitor.ExecutionFor(current)
 			if err != nil {
-				return nil, xerrors.Errorf("failed to find execution trace for tipset: %s", current.Key().String())
+				return nil, xerrors.Errorf("failed to find execution trace for tipset %s: %w", current.Key().String(), err)
 			}
 		} else {
 			return nil, xerrors.Errorf("failed to extract message execution for tipset %s: %w", next, err)
@@ -444,8 +444,7 @@ func (h *HeadNotifier) Revert(ctx context.Context, ts *types.TipSet) error {
 }
 
 // used for debugging querries, call ORM.AddHook and this will print all queries.
-type LogQueryHook struct {
-}
+type LogQueryHook struct{}
 
 func (l *LogQueryHook) BeforeQuery(ctx context.Context, evt *pg.QueryEvent) (context.Context, error) {
 	q, err := evt.FormattedQuery()
