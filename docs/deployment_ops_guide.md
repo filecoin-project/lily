@@ -4,7 +4,7 @@
 
 [Lily](https://github.com/filecoin-project/lily), a node designed specifically for indexing the Filecoin blockchain, wraps [Lotus's](https://github.com/filecoin-project/lotus)* code up with additional instrumentation and extraction to get data into easier database formats for later query and analysis.
 
-**Note: While Lily contains most/all of the capabilities of Lotus, one should note that Lily is not intended to be a replacement for Lotus. Features and performance in Lily will prioritize its primary purpose of scraping and indexing which may cause aspects of Lotus's normal behavior to be suboptimal for other use cases.*
+**Note: While Lily contains most/all of the capabilities of Lotus, one should note that Lily is not intended to be a replacement for Lotus. Features and performance in Lily will prioritize its primary purpose of scraping and indexing which may cause aspects of Lotus's normal behavior to be suboptimal for other use cases.**
 
 ## Using this Guide
 
@@ -62,7 +62,7 @@ A typical deployment of Lily will configure two server instances w the following
 - High confidence values will protect you from indexing data on the wrong branch during a reorg. (See [args: `lily [watch|walk] --confidence` (TODO: link needed)](#LINKNEEDED) for details.)
 - Large timeout windows allow a Task which may occasionally run longer to complete instead of being terminated. (See [args: `lily [watch|walk] --window` (TODO: link needed)](#LINKNEEDED) for details.)
 - The `actorstatesminer` Task produces the most intensive workload of all the Tasks. It is recommended to isolate that Task on its own Job and preferably on its own machine. The miner state of each two tipsets is loaded into memory for diffing and it is the largest of all the states.
-- When multiple Tasks are assigned to the same Job, the Job will not continue to the next tipset until all Tasks are completed or skipped.
+- When multiple Tasks are assigned to the same Job, the Job will not continue to the next tipset until all Tasks are completed or skipped, therefore, in the example above, `actorstatesinit` and `actorstatesmarket`, which are are times more intensive, are separated into their own jobs which run in parallel.
 - Lily Tasks are typically memory-bound, then disk-bound before they are CPU-bound. Disk IO and CPU usage are not as highly demanded as memory. Memory-optimized hardware should be prioritized for Lily deployments.
 
 A quick overview of Lily's operation is also available by executing `lily help overview` in the console.
@@ -79,6 +79,7 @@ TODO
 
 Once your local Lily build is ready, you can get supporting services up and running quickly using pre-built Docker containers with `docker-compose`.
 
+This is useful for testing and seeing how things work, but may not be suited to a production environment (with a Lily-mainnet node), which we recommend planning according to your needs and the tasks you will run.
 > _(Note: `docker`, `docker-compose`, and `make` are dependencies. See [Docker](https://docs.docker.com/engine/install/) and [GNU Make](https://www.gnu.org/software/make/) documentation for installation instructions on your system.)_
 
 Included in the [`docker-compose.yml`](https://github.com/filecoin-project/lily/tree/master/docker-compose.yml) are all the complimentary services that Lily requires for local debugging and development. These services come preconfigured to work with Lily's default ports.
@@ -292,7 +293,7 @@ Omitting `--version` argument will use the latest available version.
 
 Lily supports operation as a deamon process which allows stateful management of Jobs. The daemon starts without any Jobs assigned and will proceed to sync to the network and then wait until Jobs are provided. 
 
-1. Typical initialization and startup for Lily starts with initialization which establishes the datastore, params, and boilerplate config.
+1. Typical initialization and startup for Lily starts with initialization which establishes the datastore, params, and boilerplate config. This is equivalent to how a Lotus node works, since Lily is a Lotus node after all. For more information about initialization and configuration of Lotus, you can [check the docs](#TODO LINK TO DOCS)
 
 ```
 $ lily init
@@ -668,7 +669,7 @@ $ lily watch --window=60s
 
 - config: `Storage.Postgresql|File.[Name]` (object)
 
-Lily can deliver scraped data to multiple PostgreSQL and File destinations on a per-Task basis. Each destination should be enumerated with a unique `[Name]` which will be used as an argument when starting a Task.
+Lily can deliver scraped data to multiple PostgreSQL and File destinations on a per-Task basis. Each destination should be enumerated with a unique `[Name]` which will be used as an argument (via `--storage`) when starting a Task. (See [config: Task Storage destination (TODO: linkneeded)](#linkneeded) for more information about assigning storage config to a task.)
 
 > _Note: Duplicate names among both PostgreSQL and File destinations will have undefined behavior._
 
