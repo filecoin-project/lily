@@ -70,11 +70,13 @@ commands:
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             LILY_IMAGE_TAG=${CIRCLE_TAG//\//-} make docker-mainnet-push
+            LILY_IMAGE_TAG=latest make docker-mainnet-push
       - run:
           name: Publish Calibnet Production Semver Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-calibnet make docker-calibnet-push
+            LILY_IMAGE_TAG=calibnet-latest make docker-calibnet-push
   publish-docker-semver-dev:
     steps:
       - run:
