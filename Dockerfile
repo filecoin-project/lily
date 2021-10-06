@@ -25,7 +25,7 @@ WORKDIR /go/src/github.com/filecoin-project/lily
 COPY . /go/src/github.com/filecoin-project/lily
 
 RUN make deps
-RUN go mod download -x
+RUN go mod download
 RUN make $LILY_NETWORK_TARGET
 RUN cp ./lily /usr/bin/
 
@@ -39,6 +39,10 @@ COPY --from=builder /usr/lib/x86_64-linux-gnu/libOpenCL.so* /lib/
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libhwloc.so* /lib/
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libnuma.so* /lib/
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libltdl.so* /lib/
+
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends \
+      jq
 
 ENTRYPOINT ["/usr/bin/lily"]
 CMD ["--help"]
