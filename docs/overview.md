@@ -265,13 +265,13 @@ Validated 0 messages (0 per second)
 
 Lily is capable of running Jobs, these include "Walk" and "Watch" jobs. Jobs can be controlled via the `job` command.
 
-### Walk
-
-A Walk job accepts a range of heights and traverses the chain from the heaviest tipset set at the upper height to the lower height using the parent state root present in each tipset.
-
 ### Watch
 
 A Watch job follows the chain as is grows. Watch jobs subscribe to incoming tipsets and process them as they arrive. a confidence level may be specified which determines how many epochs lily should wait before processing a tipset. 
+
+### Walk
+
+A Walk job accepts a range of heights and traverses the chain from the heaviest tipset set at the upper height to the lower height using the parent state root present in each tipset.
 
 ## Tasks
 
@@ -283,14 +283,14 @@ Lily provides several tasks to capture different aspects of the blockchain state
 |   chaineconomics    |           Captures circulating supply information.           |      [chain_economics](./models.md#drand_block_entries)      |             50 ms              |
 |      consensus      | Captures consensus view of the chain which includes null rounds. |        [chain_consensus](./models.md#chain_consensus)        |              1 ms              |
 |      messages       | Captures data about messages that were carried in a tipset's blocks. The receipt is also captured for any messages that were executed. Detailed information about gas usage by each messages as well as a summary of gas usage by all messages is also captured. The task does not produce any data until it has seen two tipsets since receipts are carried in the tipset following the one containing the messages. | [block_messages](./models.md#block_messages), [derived_gas_outputs](./models.md#derived_gas_outputs), [messages](./models.md#messages), [messages_gas_economy](./models.md#messages_gas_economy), [parsed_messages](./models.md#parsed_messages), [receipts](./models.md#receipts), |             50 ms              |
-|   actorstatesraw    | Captures basic actor properties for any actors that have changed state and serializes a shallow form of the new state to JSON. | [actors](./models.md#actors), [actor_states](./models.md#actor_states) |             50 ms              |
-|   actorstatesinit   | Captures changes to the init actor to provide mappings between canonical ID-addresses and actor addresses or public keys. |             [id_address](./models.md#id_address)             |              3 s               |
-|  actorstatesmarket  | Captures new deal proposals and changes to deal states recorded by the storage market actor. | [market_deal_proposals](./models.md#market_deal_proposals), [market_deal_states](./models.md#market_deal_states) |              3 s               |
-|  actorstatesminer   | Captures changes to miner actors to provide information about sectors, posts, and locked funds. | [miner_current_deadline_infos](./models.md#miner_current_deadline_infos), [miner_fee_debts](./models.md#miner_fee_debts), [miner_locked_funds](./models.md#miner_locked_funds), [miner_infos](./models.md#miner_infos), [miner_sector_posts](./models.md#miner_sector_posts), [miner_pre_commit_infos](./models.md#miner_pre_commit_infos), [miner_sector_infos](./models.md#miner_sector_infos),            [miner_sector_events](./models.md#miner_sector_events), [miner_sector_deals](./models.md#miner_sector_deals) |              18 s              |
-| actorstatesmultisig |    Captures changes to multisig actors transaction state.    |  [multisig_transactions](./models.md#multisig_transactions)  |             100 ms             |
-|  actorstatespower   | Captures changes to the power actors state including total power at each epoch and updates to the miner power claims. | [chain_powers](./models.md#chain_powers), [power_actor_claims](./models.md#power_actor_claims) |              5 s               |
-|  actorstatesreward  | Captures changes to the reward actors state including information about miner rewards for each epoch. |           [chain_reward](./models.md#chain_reward)           |             100 ms             |
-| actorstatesverifreg | Captures changes to the verified registry actor and verified registry clients. | [verified_registry_verified_clients](./models.md#verified_registry_verified_clients), [verified_registry_verifiers](./models.md#verified_registry_verifiers) |             10 ms              |
 |  implicitmessages   | Captures internal message sends not appearing on chain including Multisig actor sends, Cron Event Ticks, Block and Reward Messages | [internal_messages](./models.md#internal_messages), [internal_parsed_messages](./models.md#internal_parsed_messages) |              1 ms              |
 |     msapprovals     |        Captures approvals of multisig gated messages         |     [multisig_approvals](./models.md#multisig_approvals)     |             10 ms              |
+|   actorstatesraw    | Captures basic actor properties for any actors that have changed state and serializes a shallow form of the new state to JSON. | [actors](./models.md#actors), [actor_states](./models.md#actor_states) |             50 ms              |
+| actorstatesverifreg | Captures changes to the verified registry actor and verified registry clients. | [verified_registry_verified_clients](./models.md#verified_registry_verified_clients), [verified_registry_verifiers](./models.md#verified_registry_verifiers) |             10 ms              |
+| actorstatesmultisig |    Captures changes to multisig actors transaction state.    |  [multisig_transactions](./models.md#multisig_transactions)  |             100 ms             |
+|  actorstatesreward  | Captures changes to the reward actors state including information about miner rewards for each epoch. |           [chain_reward](./models.md#chain_reward)           |             100 ms             |
+|   actorstatesinit   | Captures changes to the init actor to provide mappings between canonical ID-addresses and actor addresses or public keys. |             [id_address](./models.md#id_address)             |              3 s               |
+|  actorstatespower   | Captures changes to the power actors state including total power at each epoch and updates to the miner power claims. | [chain_powers](./models.md#chain_powers), [power_actor_claims](./models.md#power_actor_claims) |              5 s               |
+|  actorstatesmarket  | Captures new deal proposals and changes to deal states recorded by the storage market actor. | [market_deal_proposals](./models.md#market_deal_proposals), [market_deal_states](./models.md#market_deal_states) |              10 s              |
+|  actorstatesminer   | Captures changes to miner actors to provide information about sectors, posts, and locked funds. | [miner_current_deadline_infos](./models.md#miner_current_deadline_infos), [miner_fee_debts](./models.md#miner_fee_debts), [miner_locked_funds](./models.md#miner_locked_funds), [miner_infos](./models.md#miner_infos), [miner_sector_posts](./models.md#miner_sector_posts), [miner_pre_commit_infos](./models.md#miner_pre_commit_infos), [miner_sector_infos](./models.md#miner_sector_infos),            [miner_sector_events](./models.md#miner_sector_events), [miner_sector_deals](./models.md#miner_sector_deals) |              18 s              |
 
