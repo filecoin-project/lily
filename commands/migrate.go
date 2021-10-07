@@ -82,7 +82,7 @@ var MigrateCmd = &cli.Command{
 		},
 	),
 	Action: func(cctx *cli.Context) error {
-		if err := setupLogging(VisorLogFlags); err != nil {
+		if err := setupLogging(LilyLogFlags); err != nil {
 			return xerrors.Errorf("setup logging: %w", err)
 		}
 

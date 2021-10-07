@@ -103,18 +103,18 @@ Once the repository is initialized, start the daemon:
   lily daemon --repo=<path> --config=<path>/config.toml
 
 Visor will connect to the filecoin network and begin synchronizing with the
-chain. To check the synchronization status use 'visor sync status' or
-'visor sync wait'.
+chain. To check the synchronization status use 'lily sync status' or
+'lily sync wait'.
 
 Jobs may be started on the daemon at any time. A watch job will wait for the
 daemon to become synchronized before extracting data and will pause if the
-daemon falls out of sync. Start a watch using 'visor watch'.
+daemon falls out of sync. Start a watch using 'lily watch'.
 
-A walk job will start immediately. Start a walk using 'visor walk'. A walk may
+A walk job will start immediately. Start a walk using 'lily walk'. A walk may
 only be performed between heights that have been synchronized with the network.
 
 Note that jobs are not persisted between restarts of the daemon. See
-'visor help job' for more information on managing jobs being run by the daemon.
+'lily help job' for more information on managing jobs being run by the daemon.
 `,
 
 	Flags: []cli.Flag{
@@ -150,15 +150,15 @@ Note that jobs are not persisted between restarts of the daemon. See
 	Action: func(c *cli.Context) error {
 		lotuslog.SetupLogLevels()
 
-		if err := setupLogging(VisorLogFlags); err != nil {
+		if err := setupLogging(LilyLogFlags); err != nil {
 			return xerrors.Errorf("setup logging: %w", err)
 		}
 
-		if err := setupMetrics(VisorMetricFlags); err != nil {
+		if err := setupMetrics(LilyMetricFlags); err != nil {
 			return xerrors.Errorf("setup metrics: %w", err)
 		}
 
-		tcloser, err := setupTracing(VisorTracingFlags)
+		tcloser, err := setupTracing(LilyTracingFlags)
 		if err != nil {
 			return xerrors.Errorf("setup tracing: %w", err)
 		}
@@ -169,7 +169,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 		if err != nil {
 			log.Warnw("could not expand repo location", "error", err)
 		} else {
-			log.Infof("visor repo: %s", repoDir)
+			log.Infof("lily repo: %s", repoDir)
 		}
 
 		r, err := repo.NewFS(daemonFlags.repo)
@@ -184,7 +184,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 			if err != nil {
 				log.Warnw("could not expand repo location", "error", err)
 			} else {
-				log.Infof("visor config: %s", repoDir)
+				log.Infof("lily config: %s", daemonFlags.config)
 			}
 		}
 

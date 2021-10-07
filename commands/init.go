@@ -54,7 +54,7 @@ var InitCmd = &cli.Command{
 			if err != nil {
 				log.Warnw("could not expand repo location", "error", err)
 			} else {
-				log.Infof("lotus repo: %s", dir)
+				log.Infof("lily repo: %s", dir)
 			}
 		}
 

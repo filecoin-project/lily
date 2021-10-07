@@ -84,7 +84,7 @@ func SampleConf() *Conf {
 				URLEnv:          "LILY_DB", // LILY_DB is a historical accident, but we keep it as the default for compatibility
 				URL:             "postgres://postgres:password@localhost:5432/postgres",
 				PoolSize:        20,
-				ApplicationName: "visor",
+				ApplicationName: "lily",
 				AllowUpsert:     false,
 				SchemaName:      "public",
 			},
@@ -92,7 +92,7 @@ func SampleConf() *Conf {
 			"Database2": {
 				URL:             "postgres://postgres:password@localhost:5432/postgres",
 				PoolSize:        10,
-				ApplicationName: "visor",
+				ApplicationName: "lily",
 				AllowUpsert:     false,
 				SchemaName:      "public",
 			},

@@ -27,14 +27,14 @@ import (
 
 var log = logging.Logger("lily/commands")
 
-type VisorLogOpts struct {
+type LilyLogOpts struct {
 	LogLevel      string
 	LogLevelNamed string
 }
 
-var VisorLogFlags VisorLogOpts
+var LilyLogFlags LilyLogOpts
 
-type VisorTracingOpts struct {
+type LilyTracingOpts struct {
 	Tracing            bool
 	JaegerHost         string
 	JaegerPort         int
@@ -43,15 +43,15 @@ type VisorTracingOpts struct {
 	JaegerSamplerParam float64
 }
 
-var VisorTracingFlags VisorTracingOpts
+var LilyTracingFlags LilyTracingOpts
 
-type VisorMetricOpts struct {
+type LilyMetricOpts struct {
 	PrometheusPort string
 }
 
-var VisorMetricFlags VisorMetricOpts
+var LilyMetricFlags LilyMetricOpts
 
-func setupTracing(flags VisorTracingOpts) (func(), error) {
+func setupTracing(flags LilyTracingOpts) (func(), error) {
 	if !flags.Tracing {
 		global.SetTracerProvider(trace.NoopTracerProvider())
 	}
@@ -81,7 +81,7 @@ type jaegerConfig struct {
 	Sampler       sdktrace.Sampler
 }
 
-func jaegerConfigFromCliContext(flags VisorTracingOpts) (*jaegerConfig, error) {
+func jaegerConfigFromCliContext(flags LilyTracingOpts) (*jaegerConfig, error) {
 	cfg := jaegerConfig{
 		ServiceName:   flags.JaegerName,
 		AgentEndpoint: fmt.Sprintf("%s:%d", flags.JaegerHost, flags.JaegerPort),
@@ -103,10 +103,16 @@ func jaegerConfigFromCliContext(flags VisorTracingOpts) (*jaegerConfig, error) {
 	return &cfg, nil
 }
 
-func setupLogging(flags VisorLogOpts) error {
-	ll := flags.LogLevel
-	if err := logging.SetLogLevel("*", ll); err != nil {
+func setupLogging(flags LilyLogOpts) error {
+	// everything is set to error
+	if err := logging.SetLogLevel("*", "error"); err != nil {
 		return xerrors.Errorf("set log level: %w", err)
+	}
+
+	ll := flags.LogLevel
+	// ensure only lily logs below error level are logged.
+	if err := logging.SetLogLevelRegex("lily/*", ll); err != nil {
+		return xerrors.Errorf("set lily log level: %w", err)
 	}
 
 	llnamed := flags.LogLevelNamed
@@ -123,19 +129,19 @@ func setupLogging(flags VisorLogOpts) error {
 		}
 	}
 
-	log.Infof("Visor version:%s", version.String())
+	log.Infof("Lily version:%s", version.String())
 
 	return nil
 }
 
-func setupMetrics(flags VisorMetricOpts) error {
+func setupMetrics(flags LilyMetricOpts) error {
 	// setup Prometheus
 	registry := prom.NewRegistry()
 	goCollector := prom.NewGoCollector()
 	procCollector := prom.NewProcessCollector(prom.ProcessCollectorOpts{})
 	registry.MustRegister(goCollector, procCollector)
 	pe, err := prometheus.NewExporter(prometheus.Options{
-		Namespace: "visor",
+		Namespace: "lily",
 		Registry:  registry,
 	})
 	if err != nil {
