@@ -19,15 +19,15 @@ type LilyAPI interface {
 
 	AuthVerify(ctx context.Context, token string) ([]auth.Permission, error)
 
-	LilyWatch(ctx context.Context, cfg *LilyWatchConfig) (schedule.JobID, error)
-	LilyWalk(ctx context.Context, cfg *LilyWalkConfig) (schedule.JobID, error)
+	LilyWatch(ctx context.Context, cfg *LilyWatchConfig) (*schedule.JobSubmitResult, error)
+	LilyWalk(ctx context.Context, cfg *LilyWalkConfig) (*schedule.JobSubmitResult, error)
 
 	LilyJobStart(ctx context.Context, ID schedule.JobID) error
 	LilyJobStop(ctx context.Context, ID schedule.JobID) error
-	LilyJobList(ctx context.Context) ([]schedule.JobResult, error)
+	LilyJobList(ctx context.Context) ([]schedule.JobListResult, error)
 
-	LilyGapFind(ctx context.Context, cfg *LilyGapFindConfig) (schedule.JobID, error)
-	LilyGapFill(ctx context.Context, cfg *LilyGapFillConfig) (schedule.JobID, error)
+	LilyGapFind(ctx context.Context, cfg *LilyGapFindConfig) (*schedule.JobSubmitResult, error)
+	LilyGapFill(ctx context.Context, cfg *LilyGapFillConfig) (*schedule.JobSubmitResult, error)
 
 	// SyncState returns the current status of the chain sync system.
 	SyncState(context.Context) (*api.SyncState, error) //perm:read

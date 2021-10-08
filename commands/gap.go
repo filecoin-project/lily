@@ -108,7 +108,7 @@ var GapFillCmd = &cli.Command{
 			fillName = gapFlags.name
 		}
 
-		gapFindID, err := api.LilyGapFill(ctx, &lily.LilyGapFillConfig{
+		res, err := api.LilyGapFill(ctx, &lily.LilyGapFillConfig{
 			RestartOnFailure:    false,
 			RestartOnCompletion: false,
 			RestartDelay:        0,
@@ -121,7 +121,7 @@ var GapFillCmd = &cli.Command{
 		if err != nil {
 			return err
 		}
-		if _, err := fmt.Fprintf(os.Stdout, "Created Gap Job: %d\n", gapFindID); err != nil {
+		if err := printNewJob(os.Stdout, res); err != nil {
 			return err
 		}
 		return nil
@@ -198,7 +198,7 @@ var GapFindCmd = &cli.Command{
 			tasks = strings.Split(gapFlags.tasks, ",")
 		}
 
-		gapFindID, err := api.LilyGapFind(ctx, &lily.LilyGapFindConfig{
+		res, err := api.LilyGapFind(ctx, &lily.LilyGapFindConfig{
 			RestartOnFailure:    false,
 			RestartOnCompletion: false,
 			RestartDelay:        0,
@@ -211,7 +211,7 @@ var GapFindCmd = &cli.Command{
 		if err != nil {
 			return err
 		}
-		if _, err := fmt.Fprintf(os.Stdout, "Created Gap Job: %d\n", gapFindID); err != nil {
+		if err := printNewJob(os.Stdout, res); err != nil {
 			return err
 		}
 		return nil
