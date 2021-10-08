@@ -158,5 +158,6 @@ func main() {
 
 	if err := app.RunContext(ctx, os.Args); err != nil {
 		fmt.Fprintln(os.Stdout, err.Error())
+		os.Exit(1)
 	}
 }
