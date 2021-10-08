@@ -29,15 +29,15 @@ type LilyAPIStruct struct {
 		Store                                func() adt.Store                                                                  `perm:"read"`
 		GetExecutedAndBlockMessagesForTipset func(context.Context, *types.TipSet, *types.TipSet) (*lens.TipSetMessages, error) `perm:"read"`
 
-		LilyWatch func(context.Context, *LilyWatchConfig) (schedule.JobID, error) `perm:"read"`
-		LilyWalk  func(context.Context, *LilyWalkConfig) (schedule.JobID, error)  `perm:"read"`
+		LilyWatch func(context.Context, *LilyWatchConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
+		LilyWalk  func(context.Context, *LilyWalkConfig) (*schedule.JobSubmitResult, error)  `perm:"read"`
 
-		LilyJobStart func(ctx context.Context, ID schedule.JobID) error      `perm:"read"`
-		LilyJobStop  func(ctx context.Context, ID schedule.JobID) error      `perm:"read"`
-		LilyJobList  func(ctx context.Context) ([]schedule.JobResult, error) `perm:"read"`
+		LilyJobStart func(ctx context.Context, ID schedule.JobID) error          `perm:"read"`
+		LilyJobStop  func(ctx context.Context, ID schedule.JobID) error          `perm:"read"`
+		LilyJobList  func(ctx context.Context) ([]schedule.JobListResult, error) `perm:"read"`
 
-		LilyGapFind func(ctx context.Context, cfg *LilyGapFindConfig) (schedule.JobID, error) `perm:"read"`
-		LilyGapFill func(ctx context.Context, cfg *LilyGapFillConfig) (schedule.JobID, error) `perm:"read"`
+		LilyGapFind func(ctx context.Context, cfg *LilyGapFindConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
+		LilyGapFill func(ctx context.Context, cfg *LilyGapFillConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
 
 		Shutdown func(context.Context) error `perm:"read"`
 
@@ -107,11 +107,11 @@ func (s *LilyAPIStruct) Store() adt.Store {
 	return s.Internal.Store()
 }
 
-func (s *LilyAPIStruct) LilyWatch(ctx context.Context, cfg *LilyWatchConfig) (schedule.JobID, error) {
+func (s *LilyAPIStruct) LilyWatch(ctx context.Context, cfg *LilyWatchConfig) (*schedule.JobSubmitResult, error) {
 	return s.Internal.LilyWatch(ctx, cfg)
 }
 
-func (s *LilyAPIStruct) LilyWalk(ctx context.Context, cfg *LilyWalkConfig) (schedule.JobID, error) {
+func (s *LilyAPIStruct) LilyWalk(ctx context.Context, cfg *LilyWalkConfig) (*schedule.JobSubmitResult, error) {
 	return s.Internal.LilyWalk(ctx, cfg)
 }
 
@@ -123,15 +123,15 @@ func (s *LilyAPIStruct) LilyJobStop(ctx context.Context, ID schedule.JobID) erro
 	return s.Internal.LilyJobStop(ctx, ID)
 }
 
-func (s *LilyAPIStruct) LilyJobList(ctx context.Context) ([]schedule.JobResult, error) {
+func (s *LilyAPIStruct) LilyJobList(ctx context.Context) ([]schedule.JobListResult, error) {
 	return s.Internal.LilyJobList(ctx)
 }
 
-func (s *LilyAPIStruct) LilyGapFind(ctx context.Context, cfg *LilyGapFindConfig) (schedule.JobID, error) {
+func (s *LilyAPIStruct) LilyGapFind(ctx context.Context, cfg *LilyGapFindConfig) (*schedule.JobSubmitResult, error) {
 	return s.Internal.LilyGapFind(ctx, cfg)
 }
 
-func (s *LilyAPIStruct) LilyGapFill(ctx context.Context, cfg *LilyGapFillConfig) (schedule.JobID, error) {
+func (s *LilyAPIStruct) LilyGapFill(ctx context.Context, cfg *LilyGapFillConfig) (*schedule.JobSubmitResult, error) {
 	return s.Internal.LilyGapFill(ctx, cfg)
 }
 

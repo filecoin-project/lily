@@ -55,7 +55,7 @@ func (m *LilyNodeAPI) Daemonized() bool {
 	return true
 }
 
-func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedule.JobID, error) {
+func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*schedule.JobSubmitResult, error) {
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
 
@@ -66,13 +66,13 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedu
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
 	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
 	if err != nil {
-		return schedule.InvalidJobID, err
+		return nil, err
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
 	indexer, err := chain.NewTipSetIndexer(m, strg, cfg.Window, cfg.Name, cfg.Tasks)
 	if err != nil {
-		return schedule.InvalidJobID, err
+		return nil, err
 	}
 
 	// HeadNotifier bridges between the event system and the watcher
@@ -83,7 +83,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedu
 	// get the current head and set it on the tipset cache (mimic chain.watcher behaviour)
 	head, err := m.ChainModuleAPI.ChainHead(ctx)
 	if err != nil {
-		return schedule.InvalidJobID, err
+		return nil, err
 	}
 
 	// Won't block since we are using non-zero buffer size in head notifier
@@ -93,10 +93,10 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedu
 
 	// Hook up the notifier to the event system
 	if err := m.Events.Observe(obs); err != nil {
-		return schedule.InvalidJobID, err
+		return nil, err
 	}
 
-	id := m.Scheduler.Submit(&schedule.JobConfig{
+	res := m.Scheduler.Submit(&schedule.JobConfig{
 		Name: cfg.Name,
 		Type: "watch",
 		Params: map[string]string{
@@ -111,10 +111,10 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (schedu
 		RestartDelay:        cfg.RestartDelay,
 	})
 
-	return id, nil
+	return res, nil
 }
 
-func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (schedule.JobID, error) {
+func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedule.JobSubmitResult, error) {
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
 
@@ -125,16 +125,16 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (schedule
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
 	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
 	if err != nil {
-		return schedule.InvalidJobID, err
+		return nil, err
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
 	indexer, err := chain.NewTipSetIndexer(m, strg, cfg.Window, cfg.Name, cfg.Tasks)
 	if err != nil {
-		return schedule.InvalidJobID, err
+		return nil, err
 	}
 
-	id := m.Scheduler.Submit(&schedule.JobConfig{
+	res := m.Scheduler.Submit(&schedule.JobConfig{
 		Name: cfg.Name,
 		Type: "walk",
 		Params: map[string]string{
@@ -150,10 +150,10 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (schedule
 		RestartDelay:        cfg.RestartDelay,
 	})
 
-	return id, nil
+	return res, nil
 }
 
-func (m *LilyNodeAPI) LilyGapFind(_ context.Context, cfg *LilyGapFindConfig) (schedule.JobID, error) {
+func (m *LilyNodeAPI) LilyGapFind(_ context.Context, cfg *LilyGapFindConfig) (*schedule.JobSubmitResult, error) {
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
 
@@ -164,10 +164,10 @@ func (m *LilyNodeAPI) LilyGapFind(_ context.Context, cfg *LilyGapFindConfig) (sc
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
 	db, err := m.StorageCatalog.ConnectAsDatabase(ctx, cfg.Storage, md)
 	if err != nil {
-		return schedule.InvalidJobID, err
+		return nil, err
 	}
 
-	id := m.Scheduler.Submit(&schedule.JobConfig{
+	res := m.Scheduler.Submit(&schedule.JobConfig{
 		Name:  cfg.Name,
 		Type:  "Find",
 		Tasks: cfg.Tasks,
@@ -182,10 +182,10 @@ func (m *LilyNodeAPI) LilyGapFind(_ context.Context, cfg *LilyGapFindConfig) (sc
 		RestartDelay:        cfg.RestartDelay,
 	})
 
-	return id, nil
+	return res, nil
 }
 
-func (m *LilyNodeAPI) LilyGapFill(_ context.Context, cfg *LilyGapFillConfig) (schedule.JobID, error) {
+func (m *LilyNodeAPI) LilyGapFill(_ context.Context, cfg *LilyGapFillConfig) (*schedule.JobSubmitResult, error) {
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
 
@@ -196,10 +196,10 @@ func (m *LilyNodeAPI) LilyGapFill(_ context.Context, cfg *LilyGapFillConfig) (sc
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
 	db, err := m.StorageCatalog.ConnectAsDatabase(ctx, cfg.Storage, md)
 	if err != nil {
-		return schedule.InvalidJobID, err
+		return nil, err
 	}
 
-	id := m.Scheduler.Submit(&schedule.JobConfig{
+	res := m.Scheduler.Submit(&schedule.JobConfig{
 		Name: cfg.Name,
 		Type: "Fill",
 		Params: map[string]string{
@@ -214,7 +214,7 @@ func (m *LilyNodeAPI) LilyGapFill(_ context.Context, cfg *LilyGapFillConfig) (sc
 		RestartDelay:        cfg.RestartDelay,
 	})
 
-	return id, nil
+	return res, nil
 }
 
 func (m *LilyNodeAPI) LilyJobStart(_ context.Context, ID schedule.JobID) error {
@@ -231,7 +231,7 @@ func (m *LilyNodeAPI) LilyJobStop(_ context.Context, ID schedule.JobID) error {
 	return nil
 }
 
-func (m *LilyNodeAPI) LilyJobList(_ context.Context) ([]schedule.JobResult, error) {
+func (m *LilyNodeAPI) LilyJobList(_ context.Context) ([]schedule.JobListResult, error) {
 	return m.Scheduler.Jobs(), nil
 }
 

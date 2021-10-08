@@ -105,13 +105,14 @@ var WatchCmd = &cli.Command{
 		}
 		defer closer()
 
-		watchID, err := api.LilyWatch(ctx, cfg)
+		res, err := api.LilyWatch(ctx, cfg)
 		if err != nil {
 			return err
 		}
-		if _, err := fmt.Fprintf(os.Stdout, "Created watch job %d\n", watchID); err != nil {
+		if err := printNewJob(os.Stdout, res); err != nil {
 			return err
 		}
+
 		return nil
 	},
 }

@@ -114,11 +114,11 @@ var WalkCmd = &cli.Command{
 		}
 		defer closer()
 
-		watchID, err := api.LilyWalk(ctx, cfg)
+		res, err := api.LilyWalk(ctx, cfg)
 		if err != nil {
 			return err
 		}
-		if _, err := fmt.Fprintf(os.Stdout, "Created walk job %d\n", watchID); err != nil {
+		if err := printNewJob(os.Stdout, res); err != nil {
 			return err
 		}
 		return nil

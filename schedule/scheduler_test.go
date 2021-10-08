@@ -82,7 +82,7 @@ func TestScheduler(t *testing.T) {
 		assert.Len(t, jobs, 0)
 
 		tJob := newTestJob()
-		jobID := s.Submit(&schedule.JobConfig{
+		jobRes := s.Submit(&schedule.JobConfig{
 			Name:                t.Name(),
 			Job:                 tJob,
 			RestartOnFailure:    false,
@@ -95,7 +95,7 @@ func TestScheduler(t *testing.T) {
 
 		jobs = s.Jobs()
 		assert.Len(t, jobs, 1)
-		assert.Equal(t, jobs[0].ID, jobID)
+		assert.Equal(t, jobs[0].ID, jobRes.ID)
 		assert.True(t, jobs[0].Running, true)
 		assert.Equal(t, jobs[0].Name, t.Name())
 	})
@@ -111,7 +111,7 @@ func TestScheduler(t *testing.T) {
 		assert.Error(t, s.StartJob(schedule.InvalidJobID))
 
 		tJob := newTestJob()
-		jobID := s.Submit(&schedule.JobConfig{
+		jobRes := s.Submit(&schedule.JobConfig{
 			Name:                t.Name(),
 			Job:                 tJob,
 			RestartOnFailure:    false,
@@ -122,35 +122,35 @@ func TestScheduler(t *testing.T) {
 		<-tJob.started
 		jobs := s.Jobs()
 		assert.Len(t, jobs, 1)
-		assert.Equal(t, jobs[0].ID, jobID)
+		assert.Equal(t, jobs[0].ID, jobRes.ID)
 		assert.True(t, jobs[0].Running)
 		assert.Equal(t, jobs[0].Name, t.Name())
 
 		// wait for the job to stop and assert it is no longer running
-		assert.NoError(t, s.StopJob(jobID))
+		assert.NoError(t, s.StopJob(jobRes.ID))
 		<-tJob.stopped
 
 		jobs = s.Jobs()
 		assert.Len(t, jobs, 1)
-		assert.Equal(t, jobs[0].ID, jobID)
+		assert.Equal(t, jobs[0].ID, jobRes.ID)
 		assert.False(t, jobs[0].Running)
 		assert.Equal(t, jobs[0].Name, t.Name())
 
 		// stopping a job that is already stopped should fail
-		assert.Error(t, s.StopJob(jobID))
+		assert.Error(t, s.StopJob(jobRes.ID))
 
 		// ensure the job can be started again
-		assert.NoError(t, s.StartJob(jobID))
+		assert.NoError(t, s.StartJob(jobRes.ID))
 		<-tJob.started
 
 		jobs = s.Jobs()
 		assert.Len(t, jobs, 1)
-		assert.Equal(t, jobs[0].ID, jobID)
+		assert.Equal(t, jobs[0].ID, jobRes.ID)
 		assert.True(t, jobs[0].Running)
 		assert.Equal(t, jobs[0].Name, t.Name())
 
 		// starting a job twice should error
-		assert.Error(t, s.StartJob(jobID))
+		assert.Error(t, s.StartJob(jobRes.ID))
 	})
 
 	t.Run("Job restarts on failure", func(t *testing.T) {

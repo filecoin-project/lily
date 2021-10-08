@@ -159,7 +159,18 @@ type Scheduler struct {
 	daemonMode bool
 }
 
-func (s *Scheduler) Submit(jc *JobConfig) JobID {
+type JobSubmitResult struct {
+	ID                  JobID
+	Name                string
+	Type                string
+	Tasks               []string
+	Params              map[string]string
+	RestartOnFailure    bool
+	RestartOnCompletion bool
+	RestartDelay        time.Duration
+}
+
+func (s *Scheduler) Submit(jc *JobConfig) *JobSubmitResult {
 	s.jobIDMu.Lock()
 	defer s.jobIDMu.Unlock()
 
@@ -167,7 +178,16 @@ func (s *Scheduler) Submit(jc *JobConfig) JobID {
 	jc.id = s.jobID
 	s.jobQueue <- jc
 
-	return s.jobID
+	return &JobSubmitResult{
+		ID:                  jc.id,
+		Name:                jc.Name,
+		Type:                jc.Type,
+		Tasks:               jc.Tasks,
+		Params:              jc.Params,
+		RestartOnFailure:    jc.RestartOnFailure,
+		RestartOnCompletion: jc.RestartOnCompletion,
+		RestartDelay:        jc.RestartDelay,
+	}
 }
 
 // Run starts running the scheduler and blocks until the context is done.
@@ -269,7 +289,7 @@ func (s *Scheduler) StopJob(id JobID) error {
 	return nil
 }
 
-type JobResult struct {
+type JobListResult struct {
 	ID    JobID
 	Name  string
 	Type  string
@@ -291,17 +311,17 @@ var InvalidJobID = JobID(0)
 
 type JobID int
 
-func (s *Scheduler) Jobs() []JobResult {
+func (s *Scheduler) Jobs() []JobListResult {
 	s.jobsMu.Lock()
 	defer s.jobsMu.Unlock()
 
 	if len(s.jobs) == 0 {
 		return nil
 	}
-	var out []JobResult
+	var out []JobListResult
 	for _, j := range s.jobs {
 		j.lk.Lock()
-		out = append(out, JobResult{
+		out = append(out, JobListResult{
 			ID:                  j.id,
 			Name:                j.Name,
 			Tasks:               j.Tasks,
