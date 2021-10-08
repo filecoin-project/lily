@@ -3,6 +3,7 @@ package schedule
 import (
 	"context"
 	"errors"
+	"sort"
 	"sync"
 	"time"
 
@@ -317,6 +318,9 @@ func (s *Scheduler) Jobs() []JobResult {
 		})
 		j.lk.Unlock()
 	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].ID < out[j].ID
+	})
 	return out
 }
 

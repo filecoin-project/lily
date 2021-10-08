@@ -99,7 +99,7 @@ var JobListCmd = &cli.Command{
 		if err != nil {
 			return err
 		}
-		if _, err := fmt.Fprintf(os.Stdout, "List Jobs:\n%s\n", prettyJobs); err != nil {
+		if _, err := fmt.Fprintf(os.Stdout, "%s\n", prettyJobs); err != nil {
 			return err
 		}
 		return nil
