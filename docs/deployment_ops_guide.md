@@ -286,42 +286,87 @@ Lily supports operation as a deamon process which allows stateful management of 
 
 1. Typical initialization and startup for Lily starts with initialization which establishes the datastore, params, and boilerplate config. This is equivalent to how a Lotus node works, since Lily is a Lotus node after all. For more information about initialization and configuration of Lotus, you can [check the docs](#TODO LINK TO DOCS)
 
+  ```
+$ lily init --repo=/path/to/lilydata
 ```
-$ lily init
-```
 
-> _Note: Import a snapshot to quickly bootstrap a new node syncing to a network. (This is especially useful for long-lived networks, such as `mainnet`.) Protocol Labs maintains snapshots for `mainnet` at [https://docs.filecoin.io/get-started/lotus/chain/#syncing](https://docs.filecoin.io/get-started/lotus/chain/#syncing).
+  > _Note: Import a snapshot to quickly bootstrap a new node syncing to a network. (This is especially useful for long-lived networks, such as `mainnet`.) Protocol Labs maintains snapshots for `mainnet` at [https://docs.filecoin.io/get-started/lotus/chain/#syncing](https://docs.filecoin.io/get-started/lotus/chain/#syncing).
 
-> _Note: A lightweight snapshot will not contain complete historical state and will fail to work for historical indexing. Please double-check the snapshot chosen for import._
+  > _Note: A lightweight snapshot will not contain complete historical state and will fail to work for historical indexing. Please double-check the snapshot chosen for import._
 
-> Example:
+  > Example:
 
-> As an argument:
+  > As an argument:
 
-> ```
+  > ```
 $ lily init --import-snapshot="https://fil-chain-snapshots-fallback.s3.amazonaws.com/mainnet/minimal_finality_stateroots_latest.car"
 ```
 
-> As an envvar:
+  > As an envvar:
 
-> ```
+  > ```
 $ LILY_SNAPSHOT=https://fil-chain-snapshots-fallback.s3.amazonaws.com/mainnet/minimal_finality_stateroots_latest.car lily init
 ```
 
-2. Once Lily is prepared, it may be started with `lily daemon` (including any arguments you also provided with `lily init`):
+2. Lily typically connects to a database to persist the extracted data from the blockchain. A configuration indicates how persistence is handled on a per-Job basis. Storage is configured and named via a TOML file. The `name` should be specified to lily on all job requests.
 
+  Here is an example of a partial config with multiple persistence targets defined. There are two PostgreSQL targets named `analysis` and `monitoring` and two CSV targets named `tmp-etl-export` and `local-export`. These are the values which are passed into the `--storage` option when starting Jobs.
+
+  _(Note: CSV persistence targets accept `{table}` and `{jobname}` as placeholders in `Storage.File.NAME.FilePattern`.)_
+
+  ```
+...(more options)...
+[Storage]
+  [Storage.Postgresql]
+    [Storage.Postgresql.analysis]
+      URL = "postgres://postgres:password@localhost:5432/primarydatabase"
+      ApplicationName = "lily-production-analysis"
+      SchemaName = "public"
+      PoolSize = 20
+      AllowUpsert = false
+    [Storage.Postgresql.monitoring]
+      URL = "postgres://postgres:password@localhost:5432/anotherdatabase"
+      ApplicationName = "lily-production-monitoring"
+      SchemaName = "lily"
+      PoolSize = 10
+      AllowUpsert = false
+  [Storage.File]
+    [Storage.File.tmp-etl-export]
+      Format = "CSV"
+      Path = "/tmp"
+      OmitHeader = true
+      FilePattern = "{table}-{jobname}.csv"
+    [Storage.File.local-export]
+      Format = "CSV"
+      Path = "/lily-csv"
+      OmitHeader = false
+      FilePattern = "{table}-{jobname}.csv"
+...(more options)...
 ```
-$ lily daemon
+
+3. Lily must migrate the PostgreSQL storage targets before they can recieve data.
+
+  ```
+  $ lily migrate --db="postgres://username:password@host:port/database?options=value" --schema=lily
 ```
 
+4. Once Lily is prepared, it may be started with `lily daemon` (including any arguments you also provided with `lily init`):
 
-3. The status of Lily's sync to the network can be checked with `lily sync status`, or for a blocking version `lily sync wait`.
-
+  ```
+$ lily daemon --repo=/path/to/lilydata --config=/path/to/config.toml --api=/ip4/127.0.0.1/tcp/1234
 ```
+
+5. The status of Lily's sync to the network can be checked with `lily sync status`, or for a blocking version `lily sync wait`.
+
+  ```
 $ lily sync status
 ```
 
-Once Lily reports that sync is complete, you may initiate your first Job.
+6. Once Lily reports that sync is complete, you may initiate your first Job.
+
+  ```
+  $ lily watch --storage=analysis --tasks="blocks,messages" --window=60s --confidence=120 --name="blocks-messages-analysis-job"
+```
 
 ### Job Management
 
@@ -467,13 +512,9 @@ Inspect profile interactively via `http://localhost:1234/debug/pprof` and host a
 $ go tool pprof -http :8000 :1234/debug/pprof/heap
 ```
 
-## Common Configuration Options
+### Configuration Operational Details
 
-(TODO: I'm expecting there to be overlap w regular Lily docs here. Leaving this for last.)
-
-The options described here are not exhaustive and focus on those most helpful to operator usage. Please refer to the Lily Documentation for full details on each option.
-
-### Configuration Precedence
+#### Configuration Precedence
 
 There are many ways to define certain options in Lily and precedence is defined in the following order:
 
