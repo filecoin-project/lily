@@ -280,7 +280,7 @@ Omitting `--version` argument will use the latest available version.
 
 ## Operating Lily
 
-### Daemon First Start
+### Daemon First Start using Snapshot
 
 Lily supports operation as a deamon process which allows stateful management of Jobs. The daemon starts without any Jobs assigned and will proceed to sync to the network and then wait until Jobs are provided. 
 
@@ -288,6 +288,24 @@ Lily supports operation as a deamon process which allows stateful management of 
 
 ```
 $ lily init
+```
+
+> _Note: Import a snapshot to quickly bootstrap a new node syncing to a network. (This is especially useful for long-lived networks, such as `mainnet`.) Protocol Labs maintains snapshots for `mainnet` at [https://docs.filecoin.io/get-started/lotus/chain/#syncing](https://docs.filecoin.io/get-started/lotus/chain/#syncing).
+
+> _Note: A lightweight snapshot will not contain complete historical state and will fail to work for historical indexing. Please double-check the snapshot chosen for import._
+
+> Example:
+
+> As an argument:
+
+> ```
+$ lily init --import-snapshot="https://fil-chain-snapshots-fallback.s3.amazonaws.com/mainnet/minimal_finality_stateroots_latest.car"
+```
+
+> As an envvar:
+
+> ```
+$ LILY_SNAPSHOT=https://fil-chain-snapshots-fallback.s3.amazonaws.com/mainnet/minimal_finality_stateroots_latest.car lily init
 ```
 
 2. Once Lily is prepared, it may be started with `lily daemon` (including any arguments you also provided with `lily init`):
@@ -465,21 +483,6 @@ There are many ways to define certain options in Lily and precedence is defined 
 3. Default defined on the flag
 
 ### Options: `lily init`
-
-#### option: Import Snapshot
-
-- arg: `lily init --import-snapshot`
-- env: `$LILY_SNAPSHOT`
-
-Import a snapshot to quickly bootstrap a new node syncing to a network. (This is especially useful for long-lived networks, such as `mainnet`.)
-
-Protocol Labs maintains a snapshot for `mainnet` at [https://docs.filecoin.io/get-started/lotus/chain/#syncing](https://docs.filecoin.io/get-started/lotus/chain/#syncing). (*Note: A lightweight snapshot will not contain complete historical state and will fail to work for historical indexing. Please double-check the snapshot chosen for import.*)
-
-Example:
-
-```
-$ lily init --import-snapshot="https://fil-chain-snapshots-fallback.s3.amazonaws.com/mainnet/minimal_finality_stateroots_latest.car"
-```
 
 #### option: Initialize Repo Path
 
