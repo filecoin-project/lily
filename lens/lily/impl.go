@@ -86,6 +86,12 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		return nil, err
 	}
 
+	// warm the tipset cache.
+	tsCache := chain.NewTipSetCache(cfg.Confidence)
+	if err := tsCache.Warm(ctx, head, m.ChainModuleAPI.ChainGetTipSet); err != nil {
+		return nil, err
+	}
+
 	// Won't block since we are using non-zero buffer size in head notifier
 	if err := obs.SetCurrent(ctx, head); err != nil {
 		log.Errorw("failed to set current head tipset", "error", err)
@@ -105,7 +111,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 			"storage":    cfg.Storage,
 		},
 		Tasks:               cfg.Tasks,
-		Job:                 chain.NewWatcher(indexer, obs, cfg.Confidence),
+		Job:                 chain.NewWatcher(indexer, obs, tsCache),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
