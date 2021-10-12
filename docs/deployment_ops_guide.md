@@ -404,12 +404,6 @@ A description of these metrics are included inline in the reply. A sample may be
 $ curl 0.0.0.0:9991/metrics -o lily_prom_sample.txt
 ```
 
-#### Pre-built Grafana Dashboards
-
-Grafana is a metrics visualization tool which requests, transforms, and presents the data captured within your Prometheus and storage database. [Pre-build dashboards are available (TODO: link needed)](#linkneeded) in the github repository which can be imported into your own instance of Grafana. Or you can start a copy of Grafana with the dashboards pre-loaded as described in [Running Dependencies w Docker (TODO: link needed)](#linkneeded). The panels have titles, labels, and descriptions (TODO: doublecheck and add panel descriptions to the dashboards in the repo) which describe what the visualization is for.
-
-(TODO: Upload and add a screenshot.)
-
 #### Logging
 
 Lily emits logs about each module contained within the runtime. Their level of verbosity can be managed on a per-module basis. A full list of registered modules can be retrieved on the console with `$ lily log list`. All modules have defaults set to prevent verbose output. Logging levels are one of `DEBUG, INFO, WARN, ERROR, DPANIC, PANIC, FATAL`. Logging can also be generated in colorized text (default), plain text, and JSON. (See [config: Node Logging options (TODO: link needed)](#linkneeded) for more information.)
