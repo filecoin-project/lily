@@ -25,7 +25,7 @@ WORKDIR /go/src/github.com/filecoin-project/lily
 COPY . /go/src/github.com/filecoin-project/lily
 
 RUN make deps
-RUN go mod download -x
+RUN go mod download
 RUN make $LILY_NETWORK_TARGET
 RUN cp ./lily /usr/bin/
 
