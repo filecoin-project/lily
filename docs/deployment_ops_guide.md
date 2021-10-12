@@ -8,16 +8,7 @@
 
 ## Using this Guide
 
-### A note about names: Lily vs Visor
-
-[The Sentinel Visor github repository](https://github.com/filecoin-project/sentinel-visor) has been renamed to "Lily". This guide refers to Visor by its new name, Lily, in all cases. This change takes effect as of release `v0.8`. Users should change instances and fragments of `lily` to `visor` for versions before `v0.8` (though we do not recommend using old versions).
-
-For example:
-
-- The command `visor daemon` becomes `lily daemon`.
-- Environment variable `VISOR_API` becomes `LILY_API`.
-
-### Using the examples
+### Examples in this guide
 
 Examples will be included throughout this guide. Commands for you to execute will begin with the dollar sign (`$`). Comments are provided for clearer understanding and will begin with the octothorpe AKA pound sign (`#`).
 
