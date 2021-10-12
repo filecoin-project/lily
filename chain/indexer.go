@@ -65,6 +65,7 @@ var AllTasks = []string{
 	ActorStatesInitTask,
 	ActorStatesMarketTask,
 	ActorStatesMultisigTask,
+	ActorStatesVerifreg,
 	BlocksTask,
 	MessagesTask,
 	ChainEconomicsTask,
