@@ -64,7 +64,23 @@ There are multiple ways to get Lily running. The fastest way to get Lily running
 
 ### Building Lily
 
-TODO
+#### Binary builds
+
+Lily can be built for multiple networks via `make` by passing one of the following targets as an argument: `mainnet`, `calibnet`, `nerpanet`, `butterflynet`, `interopnet`, `2k`. Details about the public networks can be found at [https://docs.filecoin.io/networks/](https://docs.filecoin.io/networks/).
+
+Private network builds are useful for certain scenarios. Most noteably, `2k` uses small 2kb sectors which allow for easy local network testing. See [devnet testing](https://docs.filecoin.io/build/local-devnet/#manual-set-up) for more information.
+
+```
+# mainnet lily build
+$ make mainnet
+
+# calibnet lily build
+$ make calibnet
+```
+
+#### Docker image builds
+
+Lily docker images can be produced for multiple networks via `make` by passing one of the following targets as an argument: `docker-mainnet`, `docker-calibnet`, `docker-nerpanet`, `docker-butterflynet`, `docker-interopnet`, `docker-2k`.
 
 ### Using Docker to run service dependencies
 
