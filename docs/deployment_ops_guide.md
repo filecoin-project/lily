@@ -314,16 +314,12 @@ $ lily init --repo=/path/to/lilydata
 
   > Example:
 
-  > As an argument:
-
   > ```
-$ lily init --import-snapshot="https://fil-chain-snapshots-fallback.s3.amazonaws.com/mainnet/minimal_finality_stateroots_latest.car"
-```
+    # As an argument:
+    $ lily init --import-snapshot="https://fil-chain-snapshots-fallback.s3.amazonaws.com/mainnet/minimal_finality_stateroots_latest.car"
 
-  > As an envvar:
-
-  > ```
-$ LILY_SNAPSHOT=https://fil-chain-snapshots-fallback.s3.amazonaws.com/mainnet/minimal_finality_stateroots_latest.car lily init
+    # As an envvar:
+    $ LILY_SNAPSHOT=https://fil-chain-snapshots-fallback.s3.amazonaws.com/mainnet/minimal_finality_stateroots_latest.car lily init
 ```
 
 2. Lily typically connects to a database to persist the extracted data from the blockchain. A configuration indicates how persistence is handled on a per-Job basis. Storage is configured and named via a TOML file. The `name` should be specified to lily on all job requests.
@@ -739,7 +735,7 @@ Example:
 
 #### Configuring your environment for Kubernetes
 
-Also sometimes appears as the following deployment error: "Error: Kubernetes cluster unreachable: context "<name>" does not exist".
+Also sometimes appears as the following deployment error: `Error: Kubernetes cluster unreachable: context "<name>" does not exist`.
 
 > _Background: When deploying to Kubernetes (using `helm` or `kubectl`) a `kube-context` is required to indicate which cluster the current operation should be applied to. If `kube-context` is not provided, the `default` context is assumed and generally works fine. But if a custom context is provided and has not been configured in your local environment yet, you may get the error `context "<name>" does not exist`._
 
@@ -770,27 +766,19 @@ $ source ~/.bashrc
 
 3. Follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/create-kubeconfig.html) to setup kubectl config. Here's an overview of the steps:
 
-  - Verify version 1.16.156 or later; python 2.7.9 or later:
 
       ```
-$ aws --version
-```
-  - Setup configuration to work with AWS EKS:
+      # Verify version 1.16.156 or later; python 2.7.9 or later:
+      $ aws --version
 
-      ```
-$ aws eks --region $AWS_REGION update-kubeconfig --name <aws-eks-custom-name>
-```
+      # Setup configuration to work with AWS EKS:
+      $ aws eks --region $AWS_REGION update-kubeconfig --name <aws-eks-custom-name>
 
-  - Test your kubectl configuration:
+      # Test your kubectl configuration:
+      $ kubectl get nodes
 
-      ```
-$ kubectl get nodes
-```
-
-    - Test helm can show current releases (may be an empty list, just looking for no error):
-
-      ```
-$ helm ls
+      # Test helm can show current releases (may be an empty list, just looking for no error):
+      $ helm ls
 ```
 
     > _Note: To configure your local environment for Kubernetes that isn't on AWS, refer to the [cluster setup documentation for local development](https://kubernetes.io/docs/tasks/tools/)._
