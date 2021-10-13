@@ -43,6 +43,7 @@ func LilyNodeAPIOption(out *lily.LilyAPI, fopts ...node.Option) node.Option {
 	resAPI := &lily.LilyNodeAPI{}
 	opts := node.Options(
 		node.WithRepoType(repo.FullNode),
+		node.WithEnableLibp2pNode(true),
 		node.Options(fopts...),
 		node.WithInvokesKey(node.ExtractApiKey, resAPI),
 	)

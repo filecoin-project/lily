@@ -6,7 +6,7 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lotus/chain/types"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel"
 	"golang.org/x/xerrors"
 
 	market "github.com/filecoin-project/lily/chain/actors/builtin/market"
@@ -76,7 +76,7 @@ func (m *MarketStateExtractionContext) IsGenesis() bool {
 }
 
 func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
-	ctx, span := global.Tracer("").Start(ctx, "StorageMarketExtractor")
+	ctx, span := otel.Tracer("").Start(ctx, "StorageMarketExtractor")
 	defer span.End()
 
 	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)

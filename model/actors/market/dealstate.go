@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -34,7 +34,7 @@ func (ds *MarketDealState) Persist(ctx context.Context, s model.StorageBatch, ve
 type MarketDealStates []*MarketDealState
 
 func (dss MarketDealStates) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := global.Tracer("").Start(ctx, "MarketDealStates.PersistWithTx", trace.WithAttributes(label.Int("count", len(dss))))
+	ctx, span := otel.Tracer("").Start(ctx, "MarketDealStates.PersistWithTx", trace.WithAttributes(attribute.Int("count", len(dss))))
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "market_deal_states"))

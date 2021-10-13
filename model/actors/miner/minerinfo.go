@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -31,7 +31,7 @@ type MinerInfo struct {
 }
 
 func (m *MinerInfo) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerInfoModel.Persist")
+	ctx, span := otel.Tracer("").Start(ctx, "MinerInfoModel.Persist")
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_infos"))
@@ -45,7 +45,7 @@ func (m *MinerInfo) Persist(ctx context.Context, s model.StorageBatch, version m
 type MinerInfoList []*MinerInfo
 
 func (ml MinerInfoList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerInfoList.Persist")
+	ctx, span := otel.Tracer("").Start(ctx, "MinerInfoList.Persist")
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_infos"))

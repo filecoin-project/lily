@@ -7,7 +7,7 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	verifregmodel "github.com/filecoin-project/lily/model/actors/verifreg"
 	"github.com/filecoin-project/lotus/chain/types"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
@@ -75,7 +75,7 @@ func NewVerifiedRegistryExtractorContext(ctx context.Context, a ActorInfo, node 
 }
 
 func (VerifiedRegistryExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
-	ctx, span := global.Tracer("").Start(ctx, "VerifiedRegistryExtractor")
+	ctx, span := otel.Tracer("").Start(ctx, "VerifiedRegistryExtractor")
 	defer span.End()
 
 	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)

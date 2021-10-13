@@ -8,11 +8,13 @@ import (
 	"os"
 	"strings"
 
+	"github.com/filecoin-project/lotus/chain/consensus/filcns"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/lotus/extern/sector-storage/ffiwrapper"
 	"github.com/filecoin-project/lotus/journal"
+	"github.com/filecoin-project/lotus/journal/fsjournal"
 	"github.com/filecoin-project/lotus/node/repo"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/xerrors"
@@ -72,12 +74,12 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 		return err
 	}
 
-	j, err := journal.OpenFSJournal(lr, journal.EnvDisabledEvents())
+	j, err := fsjournal.OpenFSJournal(lr, journal.EnvDisabledEvents())
 	if err != nil {
 		return xerrors.Errorf("failed to open journal: %w", err)
 	}
 
-	cst := store.NewChainStore(bs, bs, mds, vm.Syscalls(ffiwrapper.ProofVerifier), j)
+	cst := store.NewChainStore(bs, bs, mds, filcns.Weight, j)
 	defer cst.Close() //nolint:errcheck
 
 	log.Infof("importing chain from %s...", fname)
@@ -113,7 +115,10 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 		return err
 	}
 
-	stm := stmgr.NewStateManager(cst)
+	stm, err := stmgr.NewStateManager(cst, filcns.NewTipSetExecutor(), vm.Syscalls(ffiwrapper.ProofVerifier), filcns.DefaultUpgradeSchedule(), nil)
+	if err != nil {
+		return err
+	}
 
 	if !snapshot {
 		log.Infof("validating imported chain...")

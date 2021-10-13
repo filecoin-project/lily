@@ -5,9 +5,9 @@ import (
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/lens"
@@ -65,7 +65,7 @@ func (c *Walker) Run(ctx context.Context) error {
 }
 
 func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet) error {
-	ctx, span := global.Tracer("").Start(ctx, "Walker.WalkChain", trace.WithAttributes(label.Int64("height", c.maxHeight)))
+	ctx, span := otel.Tracer("").Start(ctx, "Walker.WalkChain", trace.WithAttributes(attribute.Int64("height", c.maxHeight)))
 	defer span.End()
 
 	log.Debugw("found tipset", "height", ts.Height())

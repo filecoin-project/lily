@@ -6,7 +6,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/v3/actors/util/adt"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/power"
@@ -77,7 +77,7 @@ func (p *PowerStateExtractionContext) HasPreviousState() bool {
 }
 
 func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
-	ctx, span := global.Tracer("").Start(ctx, "StoragePowerExtractor")
+	ctx, span := otel.Tracer("").Start(ctx, "StoragePowerExtractor")
 	defer span.End()
 
 	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)

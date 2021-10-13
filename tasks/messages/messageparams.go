@@ -254,7 +254,7 @@ func ParseParams(params []byte, method int64, destType cid.Cid) (ipld.Node, stri
 	}
 
 	builder := proto.NewBuilder()
-	if err := dagcbor.Decoder(builder, bytes.NewBuffer(params)); err != nil {
+	if err := dagcbor.Decode(builder, bytes.NewBuffer(params)); err != nil {
 		return nil, name, fmt.Errorf("cbor decode into %s (%s.%d) failed: %v", name, destType, method, err)
 	}
 

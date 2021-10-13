@@ -13,8 +13,8 @@ import (
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/ipld/go-ipld-prime"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
@@ -36,9 +36,9 @@ func NewTask() *Task {
 
 // Note that pts is the parent tipset containing the messages, ts is the following tipset containing the receipts
 func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error) {
-	ctx, span := global.Tracer("").Start(ctx, "ProcessMessages")
+	ctx, span := otel.Tracer("").Start(ctx, "ProcessMessages")
 	if span.IsRecording() {
-		span.SetAttributes(label.String("tipset", ts.String()), label.Int64("height", int64(ts.Height())))
+		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))
 	}
 	defer span.End()
 

@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
@@ -81,7 +81,7 @@ func (cp *ChainPower) AsVersion(version model.Version) (interface{}, bool) {
 }
 
 func (cp *ChainPower) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := global.Tracer("").Start(ctx, "ChainPower.PersistWithTx")
+	ctx, span := otel.Tracer("").Start(ctx, "ChainPower.PersistWithTx")
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_powers"))
@@ -103,7 +103,7 @@ type ChainPowerList []*ChainPower
 // PersistWithTx makes a batch insertion of the list using the given
 // transaction.
 func (cpl ChainPowerList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := global.Tracer("").Start(ctx, "ChainPowerList.PersistWithTx", trace.WithAttributes(label.Int("count", len(cpl))))
+	ctx, span := otel.Tracer("").Start(ctx, "ChainPowerList.PersistWithTx", trace.WithAttributes(attribute.Int("count", len(cpl))))
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_powers"))

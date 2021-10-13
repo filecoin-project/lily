@@ -13,6 +13,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/node/impl/common"
 	"github.com/filecoin-project/lotus/node/impl/full"
+	"github.com/filecoin-project/lotus/node/impl/net"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
@@ -32,6 +33,7 @@ var _ LilyAPI = (*LilyNodeAPI)(nil)
 type LilyNodeAPI struct {
 	fx.In
 
+	net.NetAPI
 	full.ChainAPI
 	full.StateAPI
 	full.SyncAPI
@@ -80,25 +82,15 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		bufferSize: 5,
 	}
 
-	// get the current head and set it on the tipset cache (mimic chain.watcher behaviour)
-	head, err := m.ChainModuleAPI.ChainHead(ctx)
-	if err != nil {
+	// Hook up the notifier to the event system
+	head := m.Events.Observe(obs)
+	if err := obs.SetCurrent(ctx, head); err != nil {
 		return nil, err
 	}
 
 	// warm the tipset cache.
 	tsCache := chain.NewTipSetCache(cfg.Confidence)
 	if err := tsCache.Warm(ctx, head, m.ChainModuleAPI.ChainGetTipSet); err != nil {
-		return nil, err
-	}
-
-	// Won't block since we are using non-zero buffer size in head notifier
-	if err := obs.SetCurrent(ctx, head); err != nil {
-		log.Errorw("failed to set current head tipset", "error", err)
-	}
-
-	// Hook up the notifier to the event system
-	if err := m.Events.Observe(obs); err != nil {
 		return nil, err
 	}
 
@@ -334,6 +326,8 @@ func (m *LilyNodeAPI) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+var _ events.TipSetObserver = (*HeadNotifier)(nil)
+
 type HeadNotifier struct {
 	mu     sync.Mutex            // protects following fields
 	events chan *chain.HeadEvent // created lazily, closed by first cancel call
@@ -403,7 +397,7 @@ func (h *HeadNotifier) SetCurrent(ctx context.Context, ts *types.TipSet) error {
 	return nil
 }
 
-func (h *HeadNotifier) Apply(ctx context.Context, ts *types.TipSet) error {
+func (h *HeadNotifier) Apply(ctx context.Context, from, to *types.TipSet) error {
 	h.mu.Lock()
 	if h.err != nil {
 		err := h.err
@@ -421,12 +415,12 @@ func (h *HeadNotifier) Apply(ctx context.Context, ts *types.TipSet) error {
 
 	ev <- &chain.HeadEvent{
 		Type:   chain.HeadEventApply,
-		TipSet: ts,
+		TipSet: to,
 	}
 	return nil
 }
 
-func (h *HeadNotifier) Revert(ctx context.Context, ts *types.TipSet) error {
+func (h *HeadNotifier) Revert(ctx context.Context, from, to *types.TipSet) error {
 	h.mu.Lock()
 	if h.err != nil {
 		err := h.err
@@ -444,7 +438,7 @@ func (h *HeadNotifier) Revert(ctx context.Context, ts *types.TipSet) error {
 
 	ev <- &chain.HeadEvent{
 		Type:   chain.HeadEventRevert,
-		TipSet: ts,
+		TipSet: to,
 	}
 	return nil
 }

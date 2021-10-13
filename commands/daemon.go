@@ -19,6 +19,8 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/urfave/cli/v2"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/commands/util"
@@ -158,11 +160,15 @@ Note that jobs are not persisted between restarts of the daemon. See
 			return xerrors.Errorf("setup metrics: %w", err)
 		}
 
-		tcloser, err := setupTracing(VisorTracingFlags)
-		if err != nil {
-			return xerrors.Errorf("setup tracing: %w", err)
+		if VisorTracingFlags.Tracing {
+			tp, err := NewJaegerTraceProvider(VisorTracingFlags)
+			if err != nil {
+				return xerrors.Errorf("setup tracing: %w", err)
+			}
+			otel.SetTracerProvider(tp)
+		} else {
+			otel.SetTracerProvider(trace.NewNoopTracerProvider())
 		}
-		defer tcloser()
 
 		ctx := context.Background()
 		repoDir, err := homedir.Expand(daemonFlags.repo)
@@ -232,7 +238,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 
 			node.Override(new(dtypes.Bootstrapper), isBootstrapper),
 			node.Override(new(dtypes.ShutdownChan), shutdown),
-			node.Online(),
+			node.Base(),
 			node.Repo(r),
 
 			// Inject a custom StateManager, must be done after the node.Online() call as we are

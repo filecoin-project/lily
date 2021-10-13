@@ -12,11 +12,12 @@ import (
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	cbg "github.com/whyrusleeping/cbor-gen"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 func DiffVerifiers(ctx context.Context, store adt.Store, pre, cur State) (*VerifierChanges, error) {
-	ctx, span := global.Tracer("").Start(ctx, "DiffVerifiers")
+	ctx, span := otel.Tracer("").Start(ctx, "DiffVerifiers")
 	defer span.End()
 
 	prev, err := pre.verifiers()
@@ -32,7 +33,7 @@ func DiffVerifiers(ctx context.Context, store adt.Store, pre, cur State) (*Verif
 }
 
 func DiffVerifiedClients(ctx context.Context, store adt.Store, pre, cur State) (*VerifierChanges, error) {
-	ctx, span := global.Tracer("").Start(ctx, "DiffVerifiedClients")
+	ctx, span := otel.Tracer("").Start(ctx, "DiffVerifiedClients")
 	defer span.End()
 
 	prec, err := pre.verifiedClients()
@@ -48,7 +49,7 @@ func DiffVerifiedClients(ctx context.Context, store adt.Store, pre, cur State) (
 }
 
 func diffVerifierMap(ctx context.Context, store adt.Store, pre, cur State, preM, curM adt.Map) (*VerifierChanges, error) {
-	ctx, span := global.Tracer("").Start(ctx, "diffStates")
+	ctx, span := otel.Tracer("").Start(ctx, "diffStates")
 	defer span.End()
 
 	preOpts, err := adt.MapOptsForActorCode(pre.Code())
@@ -63,7 +64,7 @@ func diffVerifierMap(ctx context.Context, store adt.Store, pre, cur State, preM,
 	diffContainer := NewVerifierDiffContainer(pre, cur)
 	if mapRequiresLegacyDiffing(pre, cur, preOpts, curOpts) {
 		if span.IsRecording() {
-			span.SetAttribute("diff", "legacy")
+			span.SetAttributes(attribute.String("diff", "slow"))
 		}
 		if err := diff.CompareMap(preM, curM, diffContainer); err != nil {
 			return nil, err
@@ -71,7 +72,7 @@ func diffVerifierMap(ctx context.Context, store adt.Store, pre, cur State, preM,
 		return diffContainer.Results, nil
 	}
 	if span.IsRecording() {
-		span.SetAttribute("diff", "fast")
+		span.SetAttributes(attribute.String("diff", "fast"))
 	}
 
 	changes, err := diff.Hamt(ctx, preM, curM, store, store, hamt.UseHashFunction(hamt.HashFunc(preOpts.HashFunc)), hamt.UseTreeBitWidth(preOpts.Bitwidth))

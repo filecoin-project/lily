@@ -5,9 +5,9 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -44,7 +44,7 @@ func (dbes DrandBlockEntries) Persist(ctx context.Context, s model.StorageBatch,
 	if len(dbes) == 0 {
 		return nil
 	}
-	ctx, span := global.Tracer("").Start(ctx, "DrandBlockEntries.Persist", trace.WithAttributes(label.Int("count", len(dbes))))
+	ctx, span := otel.Tracer("").Start(ctx, "DrandBlockEntries.Persist", trace.WithAttributes(attribute.Int("count", len(dbes))))
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "drand_block_entries"))

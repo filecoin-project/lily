@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -37,7 +37,7 @@ func (rs Receipts) Persist(ctx context.Context, s model.StorageBatch, version mo
 	if len(rs) == 0 {
 		return nil
 	}
-	ctx, span := global.Tracer("").Start(ctx, "Receipts.Persist", trace.WithAttributes(label.Int("count", len(rs))))
+	ctx, span := otel.Tracer("").Start(ctx, "Receipts.Persist", trace.WithAttributes(attribute.Int("count", len(rs))))
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "receipts"))

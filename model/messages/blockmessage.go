@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -33,7 +33,7 @@ func (bms BlockMessages) Persist(ctx context.Context, s model.StorageBatch, vers
 	if len(bms) == 0 {
 		return nil
 	}
-	ctx, span := global.Tracer("").Start(ctx, "BlockMessages.Persist", trace.WithAttributes(label.Int("count", len(bms))))
+	ctx, span := otel.Tracer("").Start(ctx, "BlockMessages.Persist", trace.WithAttributes(attribute.Int("count", len(bms))))
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "block_messages"))

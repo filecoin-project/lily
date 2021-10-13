@@ -17,7 +17,6 @@ var log = logging.Logger("lily/config")
 type Conf struct {
 	config.Common
 	Client     config.Client
-	Metrics    config.Metrics
 	Chainstore config.Chainstore
 	Storage    StorageConf
 }

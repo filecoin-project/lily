@@ -10,7 +10,6 @@ import (
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
 	"github.com/go-pg/pg/v10/types"
-	"github.com/go-pg/pgext"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
 	"golang.org/x/xerrors"
@@ -201,7 +200,8 @@ func (d *Database) AsORM() *pg.DB {
 func connect(ctx context.Context, opt *pg.Options) (*pg.DB, error) {
 	db := pg.Connect(opt)
 	db = db.WithContext(ctx)
-	db.AddQueryHook(&pgext.OpenTelemetryHook{})
+	// NB: this is commented out since pgext doesn't support opentelemetry v0.20.0 or later
+	// db.AddQueryHook(&pgext.OpenTelemetryHook{})
 
 	// Check if connection credentials are valid and PostgreSQL is up and running.
 	if err := db.Ping(ctx); err != nil {
