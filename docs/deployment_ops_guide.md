@@ -312,15 +312,15 @@ $ lily init --repo=/path/to/lilydata
 
   > _Note: A lightweight snapshot will not contain complete historical state and will fail to work for historical indexing. Please double-check the snapshot chosen for import._
 
-  > Example:
-
-  > ```
+  Example:
+    
+    ```
     # As an argument:
     $ lily init --import-snapshot="https://fil-chain-snapshots-fallback.s3.amazonaws.com/mainnet/minimal_finality_stateroots_latest.car"
 
     # As an envvar:
     $ LILY_SNAPSHOT=https://fil-chain-snapshots-fallback.s3.amazonaws.com/mainnet/minimal_finality_stateroots_latest.car lily init
-```
+    ```
 
 2. Lily typically connects to a database to persist the extracted data from the blockchain. A configuration indicates how persistence is handled on a per-Job basis. Storage is configured and named via a TOML file. The `name` should be specified to lily on all job requests.
 
@@ -742,30 +742,30 @@ Also sometimes appears as the following deployment error: `Error: Kubernetes clu
 To configure your local environment for AWS EKS cluster:
 
 0. Make sure you have an AWS account setup with access keys that have privileges to access AWS EKS. Install the following:
-[AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html),
-[Kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/),
-[Helm](https://helm.sh/docs/intro/install/).
+
+      - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html),
+      - [Kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/),
+      - [Helm](https://helm.sh/docs/intro/install/).
 
 1. In `~/.bashrc` set AWS access keys:
 
-  ```
-  # editing within .bashrc
+      ```
+      # editing within .bashrc
 
-  ...
-export AWS_ACCESS_KEY_ID=”<key>”`
-export AWS_SECRET_ACCESS_KEY="<secret>”`
-export AWS_REGION=”<awsregion>”`
-...
-```
+      ...
+      export AWS_ACCESS_KEY_ID=”<key>”`
+      export AWS_SECRET_ACCESS_KEY="<secret>”`
+      export AWS_REGION=”<awsregion>”`
+      ...
+      ```
 
 2. Reload `~/.bashrc`:
 
-  ```
-$ source ~/.bashrc
-```
+      ```
+      $ source ~/.bashrc
+      ```
 
 3. Follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/create-kubeconfig.html) to setup kubectl config. Here's an overview of the steps:
-
 
       ```
       # Verify version 1.16.156 or later; python 2.7.9 or later:
@@ -779,9 +779,10 @@ $ source ~/.bashrc
 
       # Test helm can show current releases (may be an empty list, just looking for no error):
       $ helm ls
-```
+      ```
 
-    > _Note: To configure your local environment for Kubernetes that isn't on AWS, refer to the [cluster setup documentation for local development](https://kubernetes.io/docs/tasks/tools/)._
+      > _Note: To configure your local environment for Kubernetes that isn't on AWS, refer to the [cluster setup documentation for local development](https://kubernetes.io/docs/tasks/tools/)._
+
 
 ## Troubleshooting
 
