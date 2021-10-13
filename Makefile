@@ -306,7 +306,7 @@ docker-build-image-template:
 
 .PHONY: docker-tag-and-push-template
 docker-tag-and-push-template:
-	./scripts/push-docker-tags.sh $(LILY_IMAGE_NAME) deprecatedvalue $(LILY_IMAGE_TAG)
+	./scripts/push-docker-tags.sh $(LILY_IMAGE_NAME) $(LILY_IMAGE_TAG)
 
 .PHONY: docker-image
 docker-image: docker-mainnet

@@ -9,32 +9,30 @@
 # what tag, if any, to push to dockerhub.
 #
 # Usage:
-#   ./push-docker-tags.sh <image name> <git commit sha1> <docker tag> [dry run]
+#   ./push-docker-tags.sh <image name> <docker tag> [dry run]
 #
 # Example:
 #   # dry run. pass a 5th arg to have it print what it would do rather than do it.
-#   ./push-docker-tags.sh myiamge testingsha "" dryrun
+#   ./push-docker-tags.sh myimage "" dryrun
 #
 #   # push tag for a new release tag
-#   ./push-docker-tags.sh myimage testingsha v0.5.0
+#   ./push-docker-tags.sh myimage v0.5.0
 #
 #   # serving suggestion in circle ci - https://circleci.com/docs/2.0/env-vars/#built-in-environment-variables
-#   ./push-docker-tags.sh filecoin/lily $CIRCLE_SHA1 $CIRCLE_TAG
+#   ./push-docker-tags.sh filecoin/lily $CIRCLE_TAG
 #
 set -euo pipefail
 
-if [[ $# -lt 3 ]] ; then
-  echo 'At least 3 args required. Pass 4 args for a dry run.'
+if [[ $# -lt 2 ]] ; then
+  echo 'At least 2 args required. Pass 3 args for a dry run.'
   echo 'Usage:'
-  echo './push-docker-tags.sh <image name> <git commit sha1> <docker tag> [dry run]'
+  echo './push-docker-tags.sh <image name> <docker tag> [dry run]'
   exit 1
 fi
 
 IMAGE_NAME=$1
-GIT_SHA1=$2
-GIT_SHA1_SHORT=$(echo "$GIT_SHA1" | cut -c 1-8)
-GIT_TAG=${3:-""}
-DRY_RUN=${4:-false}
+GIT_TAG=${2:-""}
+DRY_RUN=${3:-false}
 
 pushTag () {
   local IMAGE_TAG="${1//\//-}"
