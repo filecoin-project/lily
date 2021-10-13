@@ -574,6 +574,8 @@ Most subcommands have multiple arguments which affect the behavior of each job. 
 
 Create a new repo at a custom path for Lily's local state on the filesystem (also known as the `repo`). The repo contains chain/block data, keys, configuration, and other operational data. This folder is portable and can be relocated as needed.
 
+> _(Important Note: The repo requires a fast disk to read and write chain state quickly enough to keep up with the network progression. Slow disks will cause Lily to fall behind or be unable to complete Jobs within the specified `--window`.)_
+
 If a directory already exists at the location, it will be untouched by `lily init`.
 
 Example:
