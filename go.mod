@@ -29,9 +29,11 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/ipfs/go-block-format v0.0.3
 	github.com/ipfs/go-cid v0.1.0
+	github.com/ipfs/go-ipfs-blockstore v1.0.4
 	github.com/ipfs/go-ipld-cbor v0.0.5
 	github.com/ipfs/go-log/v2 v2.3.0
 	github.com/ipfs/go-metrics-prometheus v0.0.2
+	github.com/ipld/go-car v0.3.2-0.20211001225732-32d0d9933823
 	github.com/ipld/go-ipld-prime v0.12.3
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.9.0
