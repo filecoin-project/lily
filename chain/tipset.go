@@ -164,18 +164,19 @@ func (c *TipSetCache) Reset() {
 }
 
 // Warm fills the TipSetCache with confidence tipsets so that subsequent calls to Add return a tipset.
-func (c *TipSetCache) Warm(ctx context.Context, head *types.TipSet, fn func(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error)) error {
+func (c *TipSetCache) Warm(ctx context.Context, head *types.TipSet, getTipSetFn func(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error)) error {
 	cur := head
 	tss := make([]*types.TipSet, 0, c.Confidence())
 	for i := 0; i < c.Confidence(); i++ {
-		cur, err := fn(ctx, cur.Parents())
+		if cur.Height() == 0 {
+			break
+		}
+		var err error
+		cur, err = getTipSetFn(ctx, cur.Parents())
 		if err != nil {
 			return err
 		}
 		tss = append(tss, cur)
-		if cur.Height() == 0 {
-			break
-		}
 	}
 	for i := len(tss) - 1; i >= 0; i-- {
 		expectNil, err := c.Add(tss[i])
