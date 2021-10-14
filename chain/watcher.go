@@ -14,12 +14,12 @@ import (
 // NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held
 // in a cache awaiting possible reversion. Tipsets will be written to the database when they are evicted from
 // the cache due to incoming later tipsets.
-func NewWatcher(obs TipSetObserver, hn HeadNotifier, confidence int) *Watcher {
+func NewWatcher(obs TipSetObserver, hn HeadNotifier, cache *TipSetCache) *Watcher {
 	return &Watcher{
 		notifier:   hn,
 		obs:        obs,
-		confidence: confidence,
-		cache:      NewTipSetCache(confidence),
+		confidence: cache.Confidence(),
+		cache:      cache,
 		indexSlot:  make(chan struct{}, 1), // allow one concurrent indexing job
 		wp:         workerpool.New(8),      // TODO this value should be derived from the window duration passed to indexer
 	}

@@ -1,6 +1,7 @@
 package chain
 
 import (
+	"context"
 	"testing"
 
 	"github.com/filecoin-project/go-address"
@@ -446,6 +447,79 @@ func TestTipSetCacheAddOnlyReturnsOldTailWhenFull(t *testing.T) {
 	oldTail, err = c.Add(ts17)
 	require.NoError(t, err)
 	assert.Same(t, oldTail, ts14) // cache is now full so oldest is evicted
+}
+
+func TestTipSetCacheWarming(t *testing.T) {
+	t.Run("happy path, warm with confidence", func(t *testing.T) {
+		t4 := mustMakeTs(nil, 10, dummyCid)
+		t3 := mustMakeTs(t4.Cids(), 11, dummyCid)
+		t2 := mustMakeTs(t3.Cids(), 12, dummyCid)
+		t1 := mustMakeTs(t2.Cids(), 13, dummyCid)
+		head := mustMakeTs(t1.Cids(), 14, dummyCid)
+		tw := &TestWarmer{
+			tss: []*types.TipSet{t1, t2, t3, t4},
+		}
+
+		c := NewTipSetCache(4)
+
+		err := c.Warm(context.Background(), head, tw.GetTipSet)
+		assert.NoError(t, err)
+
+		newHead := mustMakeTs(head.Cids(), 15, dummyCid)
+		expectC4, err := c.Add(newHead)
+		assert.NoError(t, err)
+		assert.Equal(t, expectC4, t4)
+	})
+
+	t.Run("warming with zero confidence", func(t *testing.T) {
+		head := mustMakeTs(nil, 14, dummyCid)
+		tw := &TestWarmer{}
+		c := NewTipSetCache(0)
+
+		err := c.Warm(context.Background(), head, tw.GetTipSet)
+		assert.NoError(t, err)
+
+		newHead := mustMakeTs(head.Cids(), 15, dummyCid)
+		expectHead, err := c.Add(newHead)
+		assert.NoError(t, err)
+		assert.Equal(t, expectHead, newHead)
+	})
+
+	t.Run("incomplete warm", func(t *testing.T) {
+		t2 := mustMakeTs(nil, 0, dummyCid)
+		t1 := mustMakeTs(t2.Cids(), 13, dummyCid)
+		head := mustMakeTs(t1.Cids(), 14, dummyCid)
+		tw := &TestWarmer{
+			tss: []*types.TipSet{t1, t2},
+		}
+
+		c := NewTipSetCache(4)
+
+		err := c.Warm(context.Background(), head, tw.GetTipSet)
+		assert.NoError(t, err)
+
+		expectNil, err := c.Add(mustMakeTs(head.Cids(), 15, dummyCid))
+		assert.NoError(t, err)
+		assert.Nil(t, expectNil)
+		expectNil, err = c.Add(mustMakeTs(nil, 16, dummyCid))
+		assert.NoError(t, err)
+		assert.Nil(t, expectNil)
+		expectT2, err := c.Add(mustMakeTs(nil, 17, dummyCid))
+		assert.NoError(t, err)
+		assert.Equal(t, t2, expectT2)
+	})
+}
+
+type TestWarmer struct {
+	idx int
+	tss []*types.TipSet
+}
+
+func (tw *TestWarmer) GetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error) {
+	defer func() {
+		tw.idx += 1
+	}()
+	return tw.tss[tw.idx], nil
 }
 
 func mustMakeTs(parents []cid.Cid, h abi.ChainEpoch, msgcid cid.Cid) *types.TipSet {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
+	"golang.org/x/xerrors"
 )
 
 // A TipSetObserver waits for notifications of new tipsets.
@@ -34,6 +35,11 @@ func NewTipSetCache(size int) *TipSetCache {
 	return &TipSetCache{
 		buffer: make([]*types.TipSet, size),
 	}
+}
+
+// Confidence returns the number of tipset that the cache must hold before tipsets are evicted on Add.
+func (c *TipSetCache) Confidence() int {
+	return len(c.buffer)
 }
 
 // Head returns the tipset at the head of the cache.
@@ -155,6 +161,33 @@ func (c *TipSetCache) Reset() {
 	}
 	c.idxHead = 0
 	c.len = 0
+}
+
+// Warm fills the TipSetCache with confidence tipsets so that subsequent calls to Add return a tipset.
+func (c *TipSetCache) Warm(ctx context.Context, head *types.TipSet, getTipSetFn func(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error)) error {
+	cur := head
+	tss := make([]*types.TipSet, 0, c.Confidence())
+	for i := 0; i < c.Confidence(); i++ {
+		if cur.Height() == 0 {
+			break
+		}
+		var err error
+		cur, err = getTipSetFn(ctx, cur.Parents())
+		if err != nil {
+			return err
+		}
+		tss = append(tss, cur)
+	}
+	for i := len(tss) - 1; i >= 0; i-- {
+		expectNil, err := c.Add(tss[i])
+		if err != nil {
+			return err
+		}
+		if expectNil != nil {
+			return xerrors.Errorf("unexpected tipset returned while warming tipset cache: %s", expectNil)
+		}
+	}
+	return nil
 }
 
 func normalModulo(n, m int) int {

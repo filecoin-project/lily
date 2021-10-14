@@ -70,7 +70,7 @@ func TestWatcher(t *testing.T) {
 	tsIndexer, err := NewTipSetIndexer(nodeAPI, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
 	require.NoError(t, err, "NewTipSetIndexer")
 	t.Logf("initializing indexer")
-	idx := NewWatcher(tsIndexer, NullHeadNotifier{}, 0)
+	idx := NewWatcher(tsIndexer, NullHeadNotifier{}, NewTipSetCache(0))
 
 	newHeads, err := full.ChainNotify(ctx)
 	require.NoError(t, err, "chain notify")
