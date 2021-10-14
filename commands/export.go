@@ -17,8 +17,8 @@ import (
 
 type chainExportOps struct {
 	repo        string
-	max         uint64
-	min         uint64
+	to          uint64
+	from        uint64
 	outFile     string
 	progress    bool
 	includeMsgs bool
@@ -39,16 +39,16 @@ var ExportChainCmd = &cli.Command{
 			Destination: &chainExportFlags.repo,
 		},
 		&cli.Uint64Flag{
-			Name:        "max",
-			Usage:       "inclusive max epoch to export",
+			Name:        "to",
+			Usage:       "inclusive highest epoch to export",
 			Required:    true,
-			Destination: &chainExportFlags.max,
+			Destination: &chainExportFlags.to,
 		},
 		&cli.Uint64Flag{
-			Name:        "min",
-			Usage:       "inclusive min epoch to export",
+			Name:        "from",
+			Usage:       "inclusive lowest epoch to export",
 			Required:    true,
-			Destination: &chainExportFlags.min,
+			Destination: &chainExportFlags.from,
 		},
 		&cli.BoolFlag{
 			Name:        "include-messages",
@@ -108,21 +108,19 @@ var ExportChainCmd = &cli.Command{
 		defer closer()
 
 		log.Info("loading export head...")
-		// get tipset at height `max` to start export from.
-		exportHead, err := cs.GetTipsetByHeight(ctx, abi.ChainEpoch(chainExportFlags.max), cs.GetHeaviestTipSet(), true)
+		// get tipset at height `to` to start export from.
+		exportHead, err := cs.GetTipsetByHeight(ctx, abi.ChainEpoch(chainExportFlags.to), cs.GetHeaviestTipSet(), true)
 		if err != nil {
 			return err
 		}
 		log.Infow("loaded export head", "tipset", exportHead.String())
-		return export.NewChainExporter(exportHead, bs, outFile).
-			Export(
-				ctx,
-				export.MinHeight(chainExportFlags.min),
-				export.IncludeMessages(chainExportFlags.includeMsgs),
-				export.IncludeReceipts(chainExportFlags.includeRcpt),
-				export.IncludeStateRoots(chainExportFlags.includeStrt),
-				export.WithProgress(chainExportFlags.progress),
-			)
+		return export.NewChainExporter(exportHead, bs, outFile, export.ExportConfig{
+			MinHeight:         chainExportFlags.from,
+			IncludeMessages:   chainExportFlags.includeMsgs,
+			IncludeReceipts:   chainExportFlags.includeRcpt,
+			IncludeStateRoots: chainExportFlags.includeStrt,
+			ShowProcess:       chainExportFlags.progress,
+		}).Export(ctx)
 	},
 }
 
