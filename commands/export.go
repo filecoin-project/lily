@@ -31,6 +31,31 @@ var chainExportFlags chainExportOps
 var ExportChainCmd = &cli.Command{
 	Name:        "export",
 	Description: "Export chain from repo (requires node to be offline)",
+	UsageText: `
+Exported chains will include all block headers starting at height 'from' to the genesis block.
+This means block headers are not filtered by the 'from' and 'to' flags.
+Messages, Receipts, and StateRoots are filtered by the 'from' and 'to' flags.
+
+Some examples:
+
+    lily export --from=100 --to=200 --include-messages=true --include-receipts=true --include-stateroots=false
+        - export blocks from 200 to 0.
+        - export messages from 200 to 100.
+        - export receipts from 200 to 100.
+        - no stateroots exported.
+
+    lily export --repo=~/.lily --from=0 --to=200 --include-messages=true --include-receipts=true --include-stateroots=true:
+        - export blocks from 200 to 0
+        - export messages from 200 to 0
+        - export receipts from 200 to 0
+        - export stateroots from 200 to 0
+
+    lily export --repo=~/.lily --from=0 --to=200 --include-messages=false --include-receipts=false --include-stateroots=false:
+        - export all blocks from 200 to 0
+        - no messages exported
+        - no receipts exported
+        - no stateroots exported
+`,
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:        "repo",
