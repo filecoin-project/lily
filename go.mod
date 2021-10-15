@@ -21,9 +21,9 @@ require (
 	github.com/filecoin-project/specs-actors/v2 v2.3.5
 	github.com/filecoin-project/specs-actors/v3 v3.1.1
 	github.com/filecoin-project/specs-actors/v4 v4.0.1
-	github.com/gammazero/workerpool v1.1.2
 	github.com/filecoin-project/specs-actors/v5 v5.0.4
 	github.com/filecoin-project/specs-actors/v6 v6.0.0
+	github.com/gammazero/workerpool v1.1.2
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.10.6
 	github.com/hashicorp/golang-lru v0.5.4
