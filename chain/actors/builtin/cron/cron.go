@@ -9,11 +9,12 @@ import (
 	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
+	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
 )
 
 var (
-	Address = builtin5.CronActorAddr
-	Methods = builtin5.MethodsCron
+	Address = builtin6.CronActorAddr
+	Methods = builtin6.MethodsCron
 )
 
 func AllCodes() []cid.Cid {
@@ -23,5 +24,6 @@ func AllCodes() []cid.Cid {
 		builtin3.CronActorCodeID,
 		builtin4.CronActorCodeID,
 		builtin5.CronActorCodeID,
+		builtin6.CronActorCodeID,
 	}
 }
