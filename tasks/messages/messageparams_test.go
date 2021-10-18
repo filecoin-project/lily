@@ -10,6 +10,7 @@ import (
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	sa5builtin "github.com/filecoin-project/specs-actors/v5/actors/builtin"
+	sa6builtin "github.com/filecoin-project/specs-actors/v6/actors/builtin"
 
 	sa0account "github.com/filecoin-project/specs-actors/actors/builtin/account"
 	sa0cron "github.com/filecoin-project/specs-actors/actors/builtin/cron"
@@ -70,6 +71,18 @@ import (
 	sa5reward "github.com/filecoin-project/specs-actors/v5/actors/builtin/reward"
 	sa5system "github.com/filecoin-project/specs-actors/v5/actors/builtin/system"
 	sa5verifreg "github.com/filecoin-project/specs-actors/v5/actors/builtin/verifreg"
+
+	sa6account "github.com/filecoin-project/specs-actors/v6/actors/builtin/account"
+	sa6cron "github.com/filecoin-project/specs-actors/v6/actors/builtin/cron"
+	sa6init "github.com/filecoin-project/specs-actors/v6/actors/builtin/init"
+	sa6market "github.com/filecoin-project/specs-actors/v6/actors/builtin/market"
+	sa6miner "github.com/filecoin-project/specs-actors/v6/actors/builtin/miner"
+	sa6multisig "github.com/filecoin-project/specs-actors/v6/actors/builtin/multisig"
+	sa6paych "github.com/filecoin-project/specs-actors/v6/actors/builtin/paych"
+	sa6power "github.com/filecoin-project/specs-actors/v6/actors/builtin/power"
+	sa6reward "github.com/filecoin-project/specs-actors/v6/actors/builtin/reward"
+	sa6system "github.com/filecoin-project/specs-actors/v6/actors/builtin/system"
+	sa6verifreg "github.com/filecoin-project/specs-actors/v6/actors/builtin/verifreg"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 )
@@ -147,6 +160,19 @@ func TestMethodTableCoverage(t *testing.T) {
 		sa5builtin.AccountActorCodeID:          sa5account.Actor{},
 		sa5builtin.CronActorCodeID:             sa5cron.Actor{},
 		sa5builtin.SystemActorCodeID:           sa5system.Actor{},
+
+		// v6
+		sa6builtin.InitActorCodeID:             sa6init.Actor{},
+		sa6builtin.MultisigActorCodeID:         sa6multisig.Actor{},
+		sa6builtin.PaymentChannelActorCodeID:   sa6paych.Actor{},
+		sa6builtin.RewardActorCodeID:           sa6reward.Actor{},
+		sa6builtin.StorageMarketActorCodeID:    sa6market.Actor{},
+		sa6builtin.StorageMinerActorCodeID:     sa6miner.Actor{},
+		sa6builtin.StoragePowerActorCodeID:     sa6power.Actor{},
+		sa6builtin.VerifiedRegistryActorCodeID: sa6verifreg.Actor{},
+		sa6builtin.AccountActorCodeID:          sa6account.Actor{},
+		sa6builtin.CronActorCodeID:             sa6cron.Actor{},
+		sa6builtin.SystemActorCodeID:           sa6system.Actor{},
 	}
 
 	for code, table := range messageParamTable {
