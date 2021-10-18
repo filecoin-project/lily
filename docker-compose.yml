@@ -80,3 +80,4 @@ volumes:
   timescaledb: {}
   prometheus_data: {}
   grafana_data: {}
+  lily_data: {}
