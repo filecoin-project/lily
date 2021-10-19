@@ -13,6 +13,7 @@ import (
 	metricsprom "github.com/ipfs/go-metrics-prometheus"
 	_ "github.com/lib/pq"
 	prom "github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/zpages"
 	"go.opentelemetry.io/otel/exporters/trace/jaeger"
@@ -109,8 +110,8 @@ func setupLogging(flags VisorLogOpts) error {
 func setupMetrics(flags VisorMetricOpts) error {
 	// setup Prometheus
 	registry := prom.NewRegistry()
-	goCollector := prom.NewGoCollector()
-	procCollector := prom.NewProcessCollector(prom.ProcessCollectorOpts{})
+	goCollector := collectors.NewGoCollector()
+	procCollector := collectors.NewProcessCollector(collectors.ProcessCollectorOpts{})
 	registry.MustRegister(goCollector, procCollector)
 	pe, err := prometheus.NewExporter(prometheus.Options{
 		Namespace: "visor",
