@@ -81,34 +81,6 @@ func NewJaegerTraceProvider(flags VisorTracingOpts) (*sdktrace.TracerProvider, e
 	return tp, nil
 }
 
-type jaegerConfig struct {
-	ServiceName   string
-	AgentEndpoint string
-	Sampler       sdktrace.Sampler
-}
-
-func jaegerConfigFromCliContext(flags VisorTracingOpts) (*jaegerConfig, error) {
-	cfg := jaegerConfig{
-		ServiceName:   flags.JaegerName,
-		AgentEndpoint: fmt.Sprintf("%s:%d", flags.JaegerHost, flags.JaegerPort),
-	}
-
-	switch flags.JaegerSampleType {
-	case "probabilistic":
-		cfg.Sampler = sdktrace.ParentBased(sdktrace.TraceIDRatioBased(flags.JaegerSamplerParam))
-	case "const":
-		if flags.JaegerSamplerParam == 1 {
-			cfg.Sampler = sdktrace.AlwaysSample()
-		} else {
-			cfg.Sampler = sdktrace.NeverSample()
-		}
-	default:
-		return nil, fmt.Errorf("unsupported jaeger-sampler-type option: %s", flags.JaegerSampleType)
-	}
-
-	return &cfg, nil
-}
-
 func setupLogging(flags VisorLogOpts) error {
 	ll := flags.LogLevel
 	if err := logging.SetLogLevel("*", ll); err != nil {
