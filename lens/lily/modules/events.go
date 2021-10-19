@@ -10,7 +10,7 @@ import (
 	"github.com/filecoin-project/lily/storage"
 )
 
-func NewEvents(mctx helpers.MetricsCtx, lc fx.Lifecycle, chainAPI full.ChainModuleAPI, stateAPI full.StateModuleAPI) *events.Events {
+func NewEvents(mctx helpers.MetricsCtx, lc fx.Lifecycle, chainAPI full.ChainModuleAPI, stateAPI full.StateModuleAPI) (*events.Events, error) {
 	api := struct {
 		full.ChainModuleAPI
 		full.StateModuleAPI

@@ -17,7 +17,6 @@ var log = logging.Logger("lily/config")
 type Conf struct {
 	config.Common
 	Client     config.Client
-	Metrics    config.Metrics
 	Chainstore config.Chainstore
 	Storage    StorageConf
 }
@@ -69,7 +68,8 @@ func DefaultConf() *Conf {
 			},
 		},
 		Client: config.Client{
-			SimultaneousTransfers: config.DefaultSimultaneousTransfers,
+			SimultaneousTransfersForStorage:   config.DefaultSimultaneousTransfers,
+			SimultaneousTransfersForRetrieval: config.DefaultSimultaneousTransfers,
 		},
 	}
 }
