@@ -53,6 +53,8 @@ type LilyAPIStruct struct {
 		ChainGetParentReceipts    func(context.Context, cid.Cid) ([]*types.MessageReceipt, error)               `perm:"read"`
 		ChainGetParentMessages    func(context.Context, cid.Cid) ([]api.Message, error)                         `perm:"read"`
 		ChainGetTipSetAfterHeight func(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error) `perm:"read"`
+		ChainSetHead              func(context.Context, types.TipSetKey) error                                  `perm:"read"`
+		ChainGetGenesis           func(context.Context) (*types.TipSet, error)                                  `perm:"read"`
 
 		LogList     func(context.Context) ([]string, error)     `perm:"read"`
 		LogSetLevel func(context.Context, string, string) error `perm:"read"`
@@ -101,6 +103,14 @@ func (s *LilyAPIStruct) ChainGetParentReceipts(ctx context.Context, blockCid cid
 
 func (s *LilyAPIStruct) ChainGetParentMessages(ctx context.Context, blockCid cid.Cid) ([]api.Message, error) {
 	return s.Internal.ChainGetParentMessages(ctx, blockCid)
+}
+
+func (s *LilyAPIStruct) ChainSetHead(ctx context.Context, key types.TipSetKey) error {
+	return s.Internal.ChainSetHead(ctx, key)
+}
+
+func (s *LilyAPIStruct) ChainGetGenesis(ctx context.Context) (*types.TipSet, error) {
+	return s.Internal.ChainGetGenesis(ctx)
 }
 
 func (s *LilyAPIStruct) Store() adt.Store {
