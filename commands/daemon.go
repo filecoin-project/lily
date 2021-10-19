@@ -245,8 +245,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 
 			node.ApplyIf(func(s *node.Settings) bool { return c.IsSet("api") },
 				node.Override(node.SetApiEndpointKey, func(lr repo.LockedRepo) error {
-					apima, err := multiaddr.NewMultiaddr("/ip4/127.0.0.1/tcp/" +
-						c.String("api"))
+					apima, err := multiaddr.NewMultiaddr(clientAPIFlags.apiAddr)
 					if err != nil {
 						return err
 					}
