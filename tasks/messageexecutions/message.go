@@ -11,8 +11,8 @@ import (
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks/messages"
 	"github.com/filecoin-project/lotus/chain/types"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 )
 
@@ -28,9 +28,9 @@ func (p *Task) Close() error {
 }
 
 func (p *Task) ProcessMessageExecutions(ctx context.Context, store adt.Store, ts *types.TipSet, pts *types.TipSet, mex []*lens.MessageExecution) (model.Persistable, *visormodel.ProcessingReport, error) {
-	ctx, span := global.Tracer("").Start(ctx, "ProcessMessageExecutions")
+	ctx, span := otel.Tracer("").Start(ctx, "ProcessMessageExecutions")
 	if span.IsRecording() {
-		span.SetAttributes(label.String("tipset", ts.String()), label.Int64("height", int64(ts.Height())))
+		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))
 	}
 	defer span.End()
 

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -24,7 +24,7 @@ type MinerCurrentDeadlineInfo struct {
 }
 
 func (m *MinerCurrentDeadlineInfo) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerCurrentDeadlineInfo.Persist")
+	ctx, span := otel.Tracer("").Start(ctx, "MinerCurrentDeadlineInfo.Persist")
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_current_deadline_infos"))
@@ -38,7 +38,7 @@ func (m *MinerCurrentDeadlineInfo) Persist(ctx context.Context, s model.StorageB
 type MinerCurrentDeadlineInfoList []*MinerCurrentDeadlineInfo
 
 func (ml MinerCurrentDeadlineInfoList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerCurrentDeadlineInfoList.Persist")
+	ctx, span := otel.Tracer("").Start(ctx, "MinerCurrentDeadlineInfoList.Persist")
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_current_deadline_infos"))

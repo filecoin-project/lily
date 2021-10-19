@@ -9,8 +9,8 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
@@ -36,9 +36,9 @@ func NewTask(node lens.API, extracterMap ActorExtractorMap) *Task {
 }
 
 func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates map[string]lens.ActorStateChange, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
-	ctx, span := global.Tracer("").Start(ctx, "ProcessActors")
+	ctx, span := otel.Tracer("").Start(ctx, "ProcessActors")
 	if span.IsRecording() {
-		span.SetAttributes(label.String("tipset", ts.String()), label.String("parent_tipset", pts.String()), label.Int64("height", int64(ts.Height())))
+		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.String("parent_tipset", pts.String()), attribute.Int64("height", int64(ts.Height())))
 	}
 	defer span.End()
 	log.Debugw("processing actor state changes", "height", ts.Height(), "parent_height", pts.Height())

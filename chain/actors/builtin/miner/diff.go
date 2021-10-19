@@ -4,7 +4,8 @@ import (
 	"context"
 
 	cbg "github.com/whyrusleeping/cbor-gen"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-amt-ipld/v3"
@@ -19,7 +20,7 @@ import (
 )
 
 func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreCommitChanges, error) {
-	ctx, span := global.Tracer("").Start(ctx, "DiffPreCommits")
+	ctx, span := otel.Tracer("").Start(ctx, "DiffPreCommits")
 	defer span.End()
 	prep, err := pre.precommits()
 	if err != nil {
@@ -43,7 +44,7 @@ func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreC
 	diffContainer := NewPreCommitDiffContainer(pre, cur)
 	if mapRequiresLegacyDiffing(pre, cur, preOpts, curOpts) {
 		if span.IsRecording() {
-			span.SetAttribute("diff", "legacy")
+			span.SetAttributes(attribute.String("diff", "slow"))
 		}
 		err = diff.CompareMap(prep, curp, diffContainer)
 		if err != nil {
@@ -52,7 +53,7 @@ func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreC
 		return diffContainer.Results, nil
 	}
 	if span.IsRecording() {
-		span.SetAttribute("diff", "fast")
+		span.SetAttributes(attribute.String("diff", "fast"))
 	}
 
 	changes, err := diff.Hamt(ctx, prep, curp, store, store, hamt.UseHashFunction(hamt.HashFunc(preOpts.HashFunc)), hamt.UseTreeBitWidth(preOpts.Bitwidth))
@@ -123,7 +124,7 @@ func (m *preCommitDiffContainer) Remove(key string, val *cbg.Deferred) error {
 }
 
 func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorChanges, error) {
-	ctx, span := global.Tracer("").Start(ctx, "DiffSectors")
+	ctx, span := otel.Tracer("").Start(ctx, "DiffSectors")
 	defer span.End()
 	pres, err := pre.sectors()
 	if err != nil {
@@ -140,7 +141,7 @@ func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorC
 	diffContainer := NewSectorDiffContainer(pre, cur)
 	if arrayRequiresLegacyDiffing(pre, cur, preBw, curBw) {
 		if span.IsRecording() {
-			span.SetAttribute("diff", "legacy")
+			span.SetAttributes(attribute.String("diff", "slow"))
 		}
 		err = diff.CompareArray(pres, curs, diffContainer)
 		if err != nil {
@@ -153,7 +154,7 @@ func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorC
 		return nil, err
 	}
 	if span.IsRecording() {
-		span.SetAttribute("diff", "fast")
+		span.SetAttributes(attribute.String("diff", "fast"))
 	}
 
 	for _, change := range changes {

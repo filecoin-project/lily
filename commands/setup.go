@@ -15,10 +15,10 @@ import (
 	prom "github.com/prometheus/client_golang/prometheus"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/zpages"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/exporters/trace/jaeger"
+	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/semconv"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
@@ -51,28 +51,34 @@ type VisorMetricOpts struct {
 
 var VisorMetricFlags VisorMetricOpts
 
-func setupTracing(flags VisorTracingOpts) (func(), error) {
-	if !flags.Tracing {
-		global.SetTracerProvider(trace.NoopTracerProvider())
+func NewJaegerTraceProvider(flags VisorTracingOpts) (*sdktrace.TracerProvider, error) {
+	serviceName := flags.JaegerName
+	sampleRatio := flags.JaegerSamplerParam
+	agentEndpoint := fmt.Sprintf("http://%s:%d/api/traces", flags.JaegerHost, flags.JaegerPort)
+
+	log.Infow("creating jaeger trace provider", "name", serviceName, "ratio", sampleRatio, "endpoint", agentEndpoint)
+	var sampler sdktrace.Sampler
+	if sampleRatio < 1 && sampleRatio > 0 {
+		sampler = sdktrace.ParentBased(sdktrace.TraceIDRatioBased(sampleRatio))
+	} else if sampleRatio == 1 {
+		sampler = sdktrace.AlwaysSample()
+	} else {
+		sampler = sdktrace.NeverSample()
 	}
 
-	jcfg, err := jaegerConfigFromCliContext(flags)
+	exp, err := jaeger.NewRawExporter(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(agentEndpoint)))
 	if err != nil {
-		return nil, xerrors.Errorf("read jeager config: %w", err)
+		return nil, err
 	}
-
-	closer, err := jaeger.InstallNewPipeline(
-		jaeger.WithAgentEndpoint(jcfg.AgentEndpoint),
-		jaeger.WithProcess(jaeger.Process{
-			ServiceName: jcfg.ServiceName,
-		}),
-		jaeger.WithSDK(&sdktrace.Config{DefaultSampler: jcfg.Sampler}),
+	tp := sdktrace.NewTracerProvider(
+		// Always be sure to batch in production.
+		sdktrace.WithBatcher(exp),
+		sdktrace.WithSampler(sampler),
+		sdktrace.WithResource(resource.NewWithAttributes(
+			semconv.ServiceNameKey.String(serviceName),
+		)),
 	)
-	if err != nil {
-		return nil, xerrors.Errorf("install jaeger pipeline: %w", err)
-	}
-
-	return closer, nil
+	return tp, nil
 }
 
 type jaegerConfig struct {
