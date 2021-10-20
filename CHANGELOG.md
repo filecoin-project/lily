@@ -5,6 +5,35 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.8.2"></a>
+## [v0.8.2] - 2021-10-25
+
+### Feat
+- add observe command with peer agents task (#755)
+- implement TipSetCache warming (#739)
+- lily chain export command (#744)
+
+### Fix
+- watcher respects window timeout value (#710)
+- job list sorted order (#731)
+- return non-zero exit code on cli error (#732)
+- normalize output upon job creation (#733)
+- ensure all tasks are in task list (#736)
+- daemon api uses full flag value (#748)
+- populate event field of VerifiedRegistryVerifiedClient (#757)
+
+### Chore
+- wrap error from failed execution traces (#725)
+- Create latest tags when pushing semver docker images (#728)
+- Include jq in docker images; Fix dev entrypoint (#729)
+- lotus 1.13 (#734)
+- update readme linking to the documentation website. (#746)
+- add lily stub/options for docker-compose (#747)
+- update otel v0.20.0 and pg/v10 v10.10.6 (#749)
+- implement chain set head (#750)
+- update message parsing to use latest statediff generator (#756)
+- improve logging around gapfill (#758)
+
 <a name="v0.8.1"></a>
 ## [v0.8.1] - 2021-09-23
 
