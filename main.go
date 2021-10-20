@@ -138,6 +138,7 @@ func main() {
 		Commands: []*cli.Command{
 			commands.ChainCmd,
 			commands.DaemonCmd,
+			commands.ExportChainCmd,
 			commands.GapCmd,
 			commands.HelpCmd,
 			commands.InitCmd,
