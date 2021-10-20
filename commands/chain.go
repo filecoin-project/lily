@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
+	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lotus/api"
 	lotusbuild "github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -27,6 +29,7 @@ var ChainCmd = &cli.Command{
 		ChainStatObjCmd,
 		ChainGetMsgCmd,
 		ChainListCmd,
+		ChainSetHeadCmd,
 	},
 }
 
@@ -406,6 +409,57 @@ var ChainListCmd = &cli.Command{
 	},
 }
 
+var ChainSetHeadCmd = &cli.Command{
+	Name:      "sethead",
+	Usage:     "manually set the local nodes head tipset (Caution: normally only used for recovery)",
+	ArgsUsage: "[tipsetkey]",
+	Flags: flagSet(
+		clientAPIFlagSet,
+		[]cli.Flag{
+			&cli.BoolFlag{
+				Name:  "genesis",
+				Usage: "reset head to genesis",
+			},
+			&cli.Uint64Flag{
+				Name:  "epoch",
+				Usage: "reset head to given epoch",
+			},
+		}),
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		var ts *types.TipSet
+
+		if cctx.Bool("genesis") {
+			ts, err = lapi.ChainGetGenesis(ctx)
+		}
+		if ts == nil && cctx.IsSet("epoch") {
+			ts, err = lapi.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(cctx.Uint64("epoch")), types.EmptyTSK)
+		}
+		if ts == nil {
+			ts, err = parseTipSet(ctx, lapi, cctx.Args().Slice())
+		}
+		if err != nil {
+			return err
+		}
+
+		if ts == nil {
+			return fmt.Errorf("must pass cids for tipset to set as head")
+		}
+
+		if err := lapi.ChainSetHead(ctx, ts.Key()); err != nil {
+			return err
+		}
+
+		return nil
+	},
+}
+
 func printTipSet(format string, ts *types.TipSet) {
 	format = strings.ReplaceAll(format, "<height>", fmt.Sprint(ts.Height()))
 	format = strings.ReplaceAll(format, "<time>", time.Unix(int64(ts.MinTimestamp()), 0).Format(time.Stamp))
@@ -426,4 +480,23 @@ func printTipSet(format string, ts *types.TipSet) {
 	format = strings.ReplaceAll(format, "<weight>", fmt.Sprint(ts.Blocks()[0].ParentWeight))
 
 	fmt.Println(format)
+}
+
+func parseTipSet(ctx context.Context, api lily.LilyAPI, vals []string) (*types.TipSet, error) {
+	var headers []*types.BlockHeader
+	for _, c := range vals {
+		blkc, err := cid.Decode(c)
+		if err != nil {
+			return nil, err
+		}
+
+		bh, err := api.ChainGetBlock(ctx, blkc)
+		if err != nil {
+			return nil, err
+		}
+
+		headers = append(headers, bh)
+	}
+
+	return types.NewTipSet(headers)
 }
