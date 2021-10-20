@@ -9,6 +9,7 @@ import (
 	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	sa5builtin "github.com/filecoin-project/specs-actors/v5/actors/builtin"
+	sa6builtin "github.com/filecoin-project/specs-actors/v6/actors/builtin"
 	"github.com/ipfs/go-cid"
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/codec/dagcbor"
@@ -232,6 +233,19 @@ var messageParamTable = map[cid.Cid]methodtable{
 	sa5builtin.StoragePowerActorCodeID:     powerTable,
 	sa5builtin.SystemActorCodeID:           {},
 	sa5builtin.VerifiedRegistryActorCodeID: verifregTable,
+
+	// v6
+	sa6builtin.AccountActorCodeID:          accountTable,
+	sa6builtin.CronActorCodeID:             cronTable,
+	sa6builtin.InitActorCodeID:             initTable,
+	sa6builtin.MultisigActorCodeID:         multisigTable,
+	sa6builtin.PaymentChannelActorCodeID:   paychTable,
+	sa6builtin.RewardActorCodeID:           rewardTable,
+	sa6builtin.StorageMarketActorCodeID:    marketV5Table,
+	sa6builtin.StorageMinerActorCodeID:     minerTable,
+	sa6builtin.StoragePowerActorCodeID:     powerTable,
+	sa6builtin.SystemActorCodeID:           {},
+	sa6builtin.VerifiedRegistryActorCodeID: verifregTable,
 }
 
 func ParseParams(params []byte, method int64, destType cid.Cid) (ipld.Node, string, error) {
@@ -254,7 +268,7 @@ func ParseParams(params []byte, method int64, destType cid.Cid) (ipld.Node, stri
 	}
 
 	builder := proto.NewBuilder()
-	if err := dagcbor.Decoder(builder, bytes.NewBuffer(params)); err != nil {
+	if err := dagcbor.Decode(builder, bytes.NewBuffer(params)); err != nil {
 		return nil, name, fmt.Errorf("cbor decode into %s (%s.%d) failed: %v", name, destType, method, err)
 	}
 

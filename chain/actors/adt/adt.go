@@ -7,6 +7,7 @@ import (
 	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
+	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
 	"github.com/ipfs/go-cid"
 	sha256simd "github.com/minio/sha256-simd"
 	"golang.org/x/xerrors"
@@ -95,6 +96,14 @@ func MapOptsForActorCode(c cid.Cid) (*MapOpts, error) {
 	case builtin5.InitActorCodeID, builtin5.StorageMarketActorCodeID, builtin5.StorageMinerActorCodeID, builtin5.MultisigActorCodeID, builtin5.StoragePowerActorCodeID, builtin5.VerifiedRegistryActorCodeID:
 		return &MapOpts{
 			Bitwidth: builtin5.DefaultHamtBitwidth,
+			HashFunc: Map2ShaHashFunc,
+		}, nil
+
+		// v6
+		// https://github.com/filecoin-project/specs-actors/blob/v6/actors/util/adt/map.go#L17
+	case builtin6.InitActorCodeID, builtin6.StorageMarketActorCodeID, builtin6.StorageMinerActorCodeID, builtin6.MultisigActorCodeID, builtin6.StoragePowerActorCodeID, builtin6.VerifiedRegistryActorCodeID:
+		return &MapOpts{
+			Bitwidth: builtin6.DefaultHamtBitwidth,
 			HashFunc: Map2ShaHashFunc,
 		}, nil
 	}

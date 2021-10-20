@@ -9,7 +9,7 @@ import (
 	"syscall"
 
 	"github.com/filecoin-project/lotus/build"
-	"github.com/filecoin-project/lotus/chain/stmgr"
+	"github.com/filecoin-project/lotus/chain/consensus/filcns"
 	"github.com/filecoin-project/lotus/node/repo"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
@@ -61,7 +61,7 @@ func main() {
 	}
 
 	var up UpScheduleList
-	for _, u := range stmgr.DefaultUpgradeSchedule() {
+	for _, u := range filcns.DefaultUpgradeSchedule() {
 		up = append(up, &UpSchedule{
 			Height:    int64(u.Height),
 			Network:   uint(u.Network),

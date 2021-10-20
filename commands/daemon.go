@@ -238,7 +238,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 
 			node.Override(new(dtypes.Bootstrapper), isBootstrapper),
 			node.Override(new(dtypes.ShutdownChan), shutdown),
-			node.Online(),
+			node.Base(),
 			node.Repo(r),
 
 			// Inject a custom StateManager, must be done after the node.Online() call as we are

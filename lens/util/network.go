@@ -6,11 +6,12 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/lotus/build"
+	"github.com/filecoin-project/lotus/chain/consensus/filcns"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 )
 
 // DefaultNetwork is the filecoing network this version of lily has been built against
-var DefaultNetwork = NewNetwork(stmgr.DefaultUpgradeSchedule(), build.NewestNetworkVersion)
+var DefaultNetwork = NewNetwork(filcns.DefaultUpgradeSchedule(), build.NewestNetworkVersion)
 
 // Network holds properties of the filecoin network
 type Network struct {
