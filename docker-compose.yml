@@ -54,7 +54,30 @@ services:
       - ./build/grafana/config.monitoring
     restart: always
 
+  #lily:
+    #container_name: lily
+    ## Select (only one) image
+    #image: filecoin/lily:v0.8.0
+    #image: filecoin/lily:v0.8.0-calibnet
+    #image: filecoin/lily:v0.8.0-calibnet-dev
+    #env_file:
+      ## Check envvars for configurable options
+      #- ./build/lily/docker.env
+    #depends_on:
+      #- prometheus
+      #- timescaledb
+      #- jaeger
+    #ports:
+      #- 1234:1234
+    #volumes:
+      #- lily_data:/var/lib/lily
+      #- ./build/lily/docker_init.sh:/usr/bin/docker_init.sh
+    #entrypoint: /usr/bin/docker_init.sh
+    #command:
+      #- daemon
+
 volumes:
   timescaledb: {}
   prometheus_data: {}
   grafana_data: {}
+  lily_data: {}
