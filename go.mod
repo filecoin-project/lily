@@ -23,9 +23,7 @@ require (
 	github.com/filecoin-project/specs-actors/v5 v5.0.1
 	github.com/gammazero/workerpool v1.1.2
 	github.com/go-pg/migrations/v8 v8.0.1
-	github.com/go-pg/pg/v10 v10.3.1
-	github.com/go-pg/pgext v0.1.4
-	github.com/google/go-cmp v0.5.4 // indirect
+	github.com/go-pg/pg/v10 v10.10.6
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/ipfs/go-block-format v0.0.3
 	github.com/ipfs/go-cid v0.0.7
@@ -42,7 +40,6 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/multiformats/go-multihash v0.0.15
-	github.com/onsi/ginkgo v1.14.2 // indirect
 	github.com/onsi/gomega v1.10.4 // indirect
 	github.com/polydawn/refmt v0.0.0-20201211092308-30ac6d18308e
 	github.com/prometheus/client_golang v1.6.0
@@ -53,9 +50,10 @@ require (
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/whyrusleeping/cbor-gen v0.0.0-20210303213153-67a261a1d291
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/otel v0.12.0
-	go.opentelemetry.io/otel/exporters/trace/jaeger v0.12.0
-	go.opentelemetry.io/otel/sdk v0.12.0
+	go.opentelemetry.io/otel v0.20.0
+	go.opentelemetry.io/otel/exporters/trace/jaeger v0.20.0
+	go.opentelemetry.io/otel/sdk v0.20.0
+	go.opentelemetry.io/otel/trace v0.20.0
 	go.uber.org/fx v1.9.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/exp v0.0.0-20200924195034-c827fd4f18b9 // indirect

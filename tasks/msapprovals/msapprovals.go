@@ -13,8 +13,8 @@ import (
 	multisig3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/multisig"
 	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	"github.com/ipfs/go-cid"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/lens"
@@ -39,9 +39,9 @@ func NewTask(node lens.API) *Task {
 }
 
 func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage, _ []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error) {
-	ctx, span := global.Tracer("").Start(ctx, "ProcessMultisigApprovals")
+	ctx, span := otel.Tracer("").Start(ctx, "ProcessMultisigApprovals")
 	if span.IsRecording() {
-		span.SetAttributes(label.String("tipset", ts.String()), label.Int64("height", int64(ts.Height())))
+		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))
 	}
 	defer span.End()
 

@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -28,7 +28,7 @@ func (a *Actor) Persist(ctx context.Context, s model.StorageBatch, version model
 		return nil
 	}
 
-	ctx, span := global.Tracer("").Start(ctx, "Actor.Persist")
+	ctx, span := otel.Tracer("").Start(ctx, "Actor.Persist")
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actors"))
@@ -43,7 +43,7 @@ func (a *Actor) Persist(ctx context.Context, s model.StorageBatch, version model
 type ActorList []*Actor
 
 func (actors ActorList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := global.Tracer("").Start(ctx, "ActorList.Persist", trace.WithAttributes(label.Int("count", len(actors))))
+	ctx, span := otel.Tracer("").Start(ctx, "ActorList.Persist", trace.WithAttributes(attribute.Int("count", len(actors))))
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actors"))
@@ -70,7 +70,7 @@ func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, version
 		return nil
 	}
 
-	ctx, span := global.Tracer("").Start(ctx, "ActorState.Persist")
+	ctx, span := otel.Tracer("").Start(ctx, "ActorState.Persist")
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_states"))
@@ -85,7 +85,7 @@ func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, version
 type ActorStateList []*ActorState
 
 func (states ActorStateList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := global.Tracer("").Start(ctx, "ActorStateList.Persist", trace.WithAttributes(label.Int("count", len(states))))
+	ctx, span := otel.Tracer("").Start(ctx, "ActorStateList.Persist", trace.WithAttributes(attribute.Int("count", len(states))))
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_states"))

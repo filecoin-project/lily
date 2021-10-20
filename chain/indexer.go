@@ -10,25 +10,13 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/lily/chain/actors/adt"
-	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
-	"github.com/filecoin-project/lily/tasks/consensus"
-	"github.com/filecoin-project/lily/tasks/messageexecutions"
-	"github.com/filecoin-project/lotus/chain/state"
-	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/ipfs/go-cid"
-	logging "github.com/ipfs/go-log/v2"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/label"
-	"golang.org/x/xerrors"
-
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
 	"github.com/filecoin-project/lily/chain/actors/builtin/power"
 	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
+	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -36,8 +24,19 @@ import (
 	"github.com/filecoin-project/lily/tasks/actorstate"
 	"github.com/filecoin-project/lily/tasks/blocks"
 	"github.com/filecoin-project/lily/tasks/chaineconomics"
+	"github.com/filecoin-project/lily/tasks/consensus"
+	"github.com/filecoin-project/lily/tasks/messageexecutions"
 	"github.com/filecoin-project/lily/tasks/messages"
 	"github.com/filecoin-project/lily/tasks/msapprovals"
+	"github.com/filecoin-project/lotus/chain/state"
+	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/xerrors"
 )
 
 const (
@@ -159,9 +158,9 @@ func NewTipSetIndexer(node lens.API, d model.Storage, window time.Duration, name
 
 // TipSet is called when a new tipset has been discovered
 func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
-	ctx, span := global.Tracer("").Start(ctx, "Indexer.TipSet")
+	ctx, span := otel.Tracer("").Start(ctx, "Indexer.TipSet")
 	if span.IsRecording() {
-		span.SetAttributes(label.String("tipset", ts.String()), label.Int64("height", int64(ts.Height())))
+		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))
 	}
 	defer span.End()
 
@@ -541,9 +540,9 @@ func (t *TipSetIndexer) getGenesisActors(ctx context.Context) (map[string]lens.A
 // and applies it to versions of state tress supporting it. These include Version 2 and 3 of the lotus state tree implementation.
 // stateChangedActors will fall back to the lotus API method when the optimized diffing cannot be applied.
 func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid) (map[string]lens.ActorStateChange, error) {
-	ctx, span := global.Tracer("").Start(ctx, "StateChangedActors")
+	ctx, span := otel.Tracer("").Start(ctx, "StateChangedActors")
 	if span.IsRecording() {
-		span.SetAttributes(label.String("old", old.String()), label.String("new", new.String()))
+		span.SetAttributes(attribute.String("old", old.String()), attribute.String("new", new.String()))
 	}
 	defer span.End()
 
@@ -563,7 +562,7 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 
 	if newVersion == oldVersion && (newVersion != types.StateTreeVersion0 && newVersion != types.StateTreeVersion1) {
 		if span.IsRecording() {
-			span.SetAttribute("diff", "fast")
+			span.SetAttributes(attribute.String("diff", "fast"))
 		}
 		// TODO: replace hamt.UseTreeBitWidth and hamt.UseHashFunction with values based on network version
 		changes, err := hamt.Diff(ctx, t.node.Store(), t.node.Store(), oldRoot, newRoot, hamt.UseTreeBitWidth(5), hamt.UseHashFunction(func(input []byte) []byte {
@@ -573,9 +572,6 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 		if err != nil {
 			log.Errorw("failed to diff state tree efficiently, falling back to slow method", "error", err)
 		} else {
-			if span.IsRecording() {
-				span.SetAttribute("diff", "fast")
-			}
 			for _, change := range changes {
 				addr, err := address.NewFromBytes([]byte(change.Key))
 				if err != nil {

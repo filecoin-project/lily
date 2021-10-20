@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
@@ -51,7 +51,7 @@ func (p *PowerActorClaim) AsVersion(version model.Version) (interface{}, bool) {
 }
 
 func (p *PowerActorClaim) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := global.Tracer("").Start(ctx, "PowerActorClaim.Persist")
+	ctx, span := otel.Tracer("").Start(ctx, "PowerActorClaim.Persist")
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "power_actor_claims"))
@@ -70,7 +70,7 @@ func (p *PowerActorClaim) Persist(ctx context.Context, s model.StorageBatch, ver
 type PowerActorClaimList []*PowerActorClaim
 
 func (pl PowerActorClaimList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := global.Tracer("").Start(ctx, "PowerActorClaimList.Persist")
+	ctx, span := otel.Tracer("").Start(ctx, "PowerActorClaimList.Persist")
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "power_actor_claims"))

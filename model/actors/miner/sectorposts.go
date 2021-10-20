@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -32,7 +32,7 @@ func (msp *MinerSectorPost) Persist(ctx context.Context, s model.StorageBatch, v
 }
 
 func (ml MinerSectorPostList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerSectorPostList.Persist", trace.WithAttributes(label.Int("count", len(ml))))
+	ctx, span := otel.Tracer("").Start(ctx, "MinerSectorPostList.Persist", trace.WithAttributes(attribute.Int("count", len(ml))))
 	defer span.End()
 	if len(ml) == 0 {
 		return nil

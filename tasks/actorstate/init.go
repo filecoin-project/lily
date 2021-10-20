@@ -6,7 +6,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/specs-actors/actors/builtin"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel"
 	"golang.org/x/xerrors"
 
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
@@ -28,7 +28,7 @@ func init() {
 }
 
 func (InitExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
-	ctx, span := global.Tracer("").Start(ctx, "InitExtractor")
+	ctx, span := otel.Tracer("").Start(ctx, "InitExtractor")
 	defer span.End()
 
 	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)

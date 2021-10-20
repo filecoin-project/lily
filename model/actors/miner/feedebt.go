@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
@@ -50,7 +50,7 @@ func (m *MinerFeeDebt) AsVersion(version model.Version) (interface{}, bool) {
 }
 
 func (m *MinerFeeDebt) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerFeeDebt.Persist")
+	ctx, span := otel.Tracer("").Start(ctx, "MinerFeeDebt.Persist")
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_fee_debts"))
@@ -69,7 +69,7 @@ func (m *MinerFeeDebt) Persist(ctx context.Context, s model.StorageBatch, versio
 type MinerFeeDebtList []*MinerFeeDebt
 
 func (ml MinerFeeDebtList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := global.Tracer("").Start(ctx, "MinerFeeDebtList.Persist")
+	ctx, span := otel.Tracer("").Start(ctx, "MinerFeeDebtList.Persist")
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_fee_debts"))

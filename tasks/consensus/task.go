@@ -7,8 +7,8 @@ import (
 	"github.com/filecoin-project/lily/model/chain"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lotus/chain/types"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type Task struct{}
@@ -18,10 +18,10 @@ func NewTask() *Task {
 }
 
 func (t *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error) {
-	_, span := global.Tracer("").Start(ctx, "ProcessTipSets")
+	_, span := otel.Tracer("").Start(ctx, "ProcessTipSets")
 	if span.IsRecording() {
-		span.SetAttributes(label.String("child", child.String()), label.Int64("height", int64(child.Height())))
-		span.SetAttributes(label.String("parent", parent.String()), label.Int64("height", int64(parent.Height())))
+		span.SetAttributes(attribute.String("child", child.String()), attribute.Int64("height", int64(child.Height())))
+		span.SetAttributes(attribute.String("parent", parent.String()), attribute.Int64("height", int64(parent.Height())))
 	}
 	defer span.End()
 
