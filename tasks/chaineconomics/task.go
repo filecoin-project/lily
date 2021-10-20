@@ -3,10 +3,10 @@ package chaineconomics
 import (
 	"context"
 
+	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
 
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 )
@@ -14,12 +14,12 @@ import (
 var log = logging.Logger("lily/task/chaineconomics")
 
 type Task struct {
-	node lens.API
+	api tasks.TaskAPI
 }
 
-func NewTask(node lens.API) *Task {
+func NewTask(api tasks.TaskAPI) *Task {
 	return &Task{
-		node: node,
+		api: api,
 	}
 }
 
@@ -29,7 +29,7 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 		StateRoot: ts.ParentState().String(),
 	}
 
-	ce, err := ExtractChainEconomicsModel(ctx, p.node, ts)
+	ce, err := ExtractChainEconomicsModel(ctx, p.api, ts)
 	if err != nil {
 		log.Errorw("error received while extracting chain economics, closing lens", "error", err)
 		return nil, nil, err

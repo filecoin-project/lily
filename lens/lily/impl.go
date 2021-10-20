@@ -8,6 +8,7 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/lens/lily/modules"
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -51,8 +52,12 @@ func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.C
 	return m.ChainAPI.Chain.GetTipsetByHeight(ctx, epoch, ts, false)
 }
 
-func (m *LilyNodeAPI) Daemonized() bool {
-	return true
+func (m *LilyNodeAPI) ChainBlockstore() blockstore.Blockstore {
+	return m.ChainAPI.Chain.ChainBlockstore()
+}
+
+func (m *LilyNodeAPI) StateBlockstore() blockstore.Blockstore {
+	return m.ChainAPI.Chain.StateBlockstore()
 }
 
 func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*schedule.JobSubmitResult, error) {

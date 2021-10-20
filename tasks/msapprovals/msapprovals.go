@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
+	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lotus/chain/types"
 	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
 	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
@@ -29,12 +30,12 @@ const (
 )
 
 type Task struct {
-	node lens.API
+	api tasks.TaskAPI
 }
 
-func NewTask(node lens.API) *Task {
+func NewTask(api tasks.TaskAPI) *Task {
 	return &Task{
-		node: node,
+		api: api,
 	}
 }
 
@@ -104,7 +105,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 
 		// Get state of actor after the message has been applied
-		act, err := p.node.StateGetActor(ctx, m.Message.To, ts.Key())
+		act, err := p.api.StateGetActor(ctx, m.Message.To, ts.Key())
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
@@ -113,7 +114,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			continue
 		}
 
-		actorState, err := multisig.Load(p.node.Store(), act)
+		actorState, err := multisig.Load(p.api.Store(), act)
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
@@ -236,12 +237,12 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		// Get state of actor before the message was applied
 		// pts is the tipset containing the messages, so we need the state as seen at the start of message processing
 		// for that tipset
-		act, err := p.node.StateGetActor(ctx, msg.To, pts.Parents())
+		act, err := p.api.StateGetActor(ctx, msg.To, pts.Parents())
 		if err != nil {
 			return false, nil, xerrors.Errorf("failed to load previous actor: %w", err)
 		}
 
-		prevActorState, err := multisig.Load(p.node.Store(), act)
+		prevActorState, err := multisig.Load(p.api.Store(), act)
 		if err != nil {
 			return false, nil, xerrors.Errorf("failed to load previous actor state: %w", err)
 		}

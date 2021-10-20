@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/lily/lens/util"
+	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	"go.opencensus.io/tag"
@@ -22,20 +24,20 @@ import (
 
 // A Task processes the extraction of actor state according the allowed types in its extracter map.
 type Task struct {
-	node lens.API
+	api tasks.TaskAPI
 
 	extracterMap ActorExtractorMap
 }
 
-func NewTask(node lens.API, extracterMap ActorExtractorMap) *Task {
+func NewTask(api tasks.TaskAPI, extracterMap ActorExtractorMap) *Task {
 	p := &Task{
-		node:         node,
+		api:          api,
 		extracterMap: extracterMap,
 	}
 	return p
 }
 
-func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates map[string]lens.ActorStateChange, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates util.ActorStateChangeDiff, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := global.Tracer("").Start(ctx, "ProcessActors")
 	if span.IsRecording() {
 		span.SetAttributes(label.String("tipset", ts.String()), label.String("parent_tipset", pts.String()), label.Int64("height", int64(ts.Height())))
@@ -52,7 +54,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	ll := log.With("height", int64(ts.Height()))
 
 	// Filter to just allowed actors
-	actors := map[string]lens.ActorStateChange{}
+	actors := map[string]util.ActorStateChange{}
 	for addr, ch := range candidates {
 		if t.extracterMap.Allow(ch.Actor.Code) {
 			actors[addr] = ch
@@ -117,7 +119,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	return data, report, nil
 }
 
-func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pts *types.TipSet, addrStr string, ch lens.ActorStateChange, emsgs []*lens.ExecutedMessage, results chan *ActorStateResult) {
+func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pts *types.TipSet, addrStr string, ch util.ActorStateChange, emsgs []*lens.ExecutedMessage, results chan *ActorStateResult) {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ActorCode, builtin.ActorNameByCode(ch.Actor.Code)))
 
 	res := &ActorStateResult{
@@ -150,7 +152,7 @@ func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pt
 		res.SkippedParse = true
 	} else {
 		// Parse state
-		data, err := extracter.Extract(ctx, info, emsgs, t.node)
+		data, err := extracter.Extract(ctx, info, emsgs, t.api)
 		if err != nil {
 			res.Error = xerrors.Errorf("failed to extract parsed actor state: %w", err)
 			return

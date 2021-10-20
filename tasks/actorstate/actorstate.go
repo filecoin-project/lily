@@ -6,9 +6,10 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 
@@ -20,7 +21,7 @@ var log = logging.Logger("lily/task/actorstate")
 
 type ActorInfo struct {
 	Actor           types.Actor
-	ChangeType      lens.ChangeType
+	ChangeType      util.ChangeType
 	Address         address.Address
 	ParentStateRoot cid.Cid
 	Epoch           abi.ChainEpoch

@@ -3,6 +3,7 @@ package lens
 import (
 	"context"
 
+	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/node/modules/dtypes"
 
 	"github.com/filecoin-project/go-address"
@@ -43,6 +44,7 @@ type ChainAPI interface {
 	ChainGetBlockMessages(ctx context.Context, msg cid.Cid) (*api.BlockMessages, error)
 	ChainGetParentMessages(ctx context.Context, blockCid cid.Cid) ([]api.Message, error)
 	ChainGetParentReceipts(ctx context.Context, blockCid cid.Cid) ([]*types.MessageReceipt, error)
+	ChainBlockstore() blockstore.Blockstore
 }
 
 type StateAPI interface {
@@ -58,6 +60,7 @@ type StateAPI interface {
 	StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error)
 	StateVMCirculatingSupplyInternal(context.Context, types.TipSetKey) (api.CirculatingSupply, error)
 	StateNetworkName(context.Context) (dtypes.NetworkName, error)
+	StateBlockstore() blockstore.Blockstore
 }
 
 type TipSetMessages struct {
@@ -96,19 +99,4 @@ type BlockMessages struct {
 	Block        *types.BlockHeader     // block messages appeared in
 	BlsMessages  []*types.Message       // BLS messages in block `Block`
 	SecpMessages []*types.SignedMessage // SECP messages in block `Block`
-}
-
-// ChangeType denotes type of state change
-type ChangeType int
-
-const (
-	ChangeTypeUnknown = 0
-	ChangeTypeAdd     = 1
-	ChangeTypeRemove  = 2
-	ChangeTypeModify  = 3
-)
-
-type ActorStateChange struct {
-	Actor      types.Actor
-	ChangeType ChangeType
 }

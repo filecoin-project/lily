@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/filecoin-project/lily/lens/util"
 	"go.opentelemetry.io/otel/api/global"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
@@ -34,7 +35,7 @@ func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.Ex
 	}
 
 	// Don't attempt to read state if the actor has been deleted
-	if a.ChangeType == lens.ChangeTypeRemove {
+	if a.ChangeType == util.ChangeTypeRemove {
 		return result, nil
 	}
 
