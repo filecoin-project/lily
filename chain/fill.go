@@ -3,6 +3,7 @@ package chain
 import (
 	"context"
 	"sort"
+	"time"
 
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/visor"
@@ -35,11 +36,18 @@ func (g *GapFiller) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	fillLog := log.With("type", "fill")
-	fillLog.Infow("run", "count", len(gaps))
+	fillLog := log.With("type", "gap_fill")
+	fillStart := time.Now()
+	fillLog.Infow("gap fill start", "start", fillStart.String(), "total_epoch_gaps", len(gaps), "from", g.minHeight, "to", g.maxHeight, "task", g.tasks)
 
 	idx := 0
 	for _, height := range heights {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+		runStart := time.Now()
 		indexer, err := NewTipSetIndexer(g.node, g.DB, 0, g.name, gaps[height])
 		if err != nil {
 			return err
@@ -47,18 +55,19 @@ func (g *GapFiller) Run(ctx context.Context) error {
 
 		// walk a single height at a time since there is no guarantee neighboring heights share the same missing tasks.
 		if err := NewWalker(indexer, g.node, height, height).Run(ctx); err != nil {
-			log.Errorw("fill failed", "height", height, "error", err.Error())
+			log.Errorw("fill failed", "height", height, "error", err.Error(), "tasks", gaps[height])
 			// TODO we could add an error to the gap report in a follow on if needed, but the actualy error should
 			// exist in the processing report if this fails.
 			continue
 		}
-		fillLog.Infow("fill success", "height", height, "remaining", len(gaps)-idx)
+		fillLog.Infow("fill success", "epoch", height, "epochs_remaining", len(gaps)-idx, "tasks_filled", gaps[height], "duration", time.Since(runStart))
 
 		if err := g.setGapsFilled(ctx, height, gaps[height]...); err != nil {
 			return err
 		}
 		idx += 1
 	}
+	fillLog.Infow("gap fill complete", "duration", time.Since(fillStart), "total_epoch_gaps", len(gaps), "epoch_gaps_filled", idx, "from", g.minHeight, "to", g.maxHeight, "task", g.tasks)
 	return nil
 }
 
