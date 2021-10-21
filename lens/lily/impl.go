@@ -344,9 +344,12 @@ func (m *LilyNodeAPI) LilySurvey(_ context.Context, cfg *LilySurveyConfig) (*sch
 	}
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
-		Name:                cfg.Name,
-		Tasks:               cfg.Tasks,
-		Job:                 surv,
+		Name:  cfg.Name,
+		Tasks: cfg.Tasks,
+		Job:   surv,
+		Params: map[string]string{
+			"interval": cfg.Interval.String(),
+		},
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
