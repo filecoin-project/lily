@@ -192,6 +192,7 @@ func ExtractVerifiedClients(ctx context.Context, ec *VerifiedRegistryExtractionC
 			StateRoot: ec.CurrTs.ParentState().String(),
 			Address:   change.Address.String(),
 			DataCap:   change.DataCap.String(),
+			Event:     verifregmodel.Added,
 		})
 	}
 	for _, change := range changes.Modified {
@@ -200,6 +201,7 @@ func ExtractVerifiedClients(ctx context.Context, ec *VerifiedRegistryExtractionC
 			StateRoot: ec.CurrTs.ParentState().String(),
 			Address:   change.After.Address.String(),
 			DataCap:   change.After.DataCap.String(),
+			Event:     verifregmodel.Modified,
 		})
 	}
 	for _, change := range changes.Removed {
