@@ -18,6 +18,7 @@ var log = logging.Logger("visor/task/peeragents")
 type API interface {
 	NetPeers(context.Context) ([]peer.AddrInfo, error)
 	NetAgentVersion(context.Context, peer.ID) (string, error)
+	ID(context.Context) (peer.ID, error)
 }
 
 func NewTask(api API) *Task {
@@ -31,6 +32,11 @@ type Task struct {
 }
 
 func (t *Task) Process(ctx context.Context) (model.Persistable, error) {
+	observer, err := t.api.ID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	peers, err := t.api.NetPeers(ctx)
 	if err != nil {
 		return nil, xerrors.Errorf("get peers: %w", err)
@@ -39,8 +45,8 @@ func (t *Task) Process(ctx context.Context) (model.Persistable, error) {
 	start := time.Now()
 	agents := map[string]int64{}
 
-	for _, peer := range peers {
-		agent, err := t.api.NetAgentVersion(ctx, peer.ID)
+	for _, p := range peers {
+		agent, err := t.api.NetAgentVersion(ctx, p.ID)
 		if err != nil {
 			log.Debugw("failed to get agent version", "error", err)
 			continue
@@ -53,6 +59,7 @@ func (t *Task) Process(ctx context.Context) (model.Persistable, error) {
 	for agent, count := range agents {
 		pa := &observed.PeerAgent{
 			ObservedAt:      start,
+			SurveyerPeerID:  observer.String(),
 			RawAgent:        agent,
 			NormalizedAgent: NormalizeAgent(agent),
 			Count:           count,

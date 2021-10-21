@@ -348,9 +348,12 @@ func (m *LilyNodeAPI) LilyObserve(_ context.Context, cfg *LilyObserveConfig) (*s
 	}
 
 	id := m.Scheduler.Submit(&schedule.JobConfig{
-		Name:                cfg.Name,
-		Tasks:               cfg.Tasks,
-		Job:                 obs,
+		Name:  cfg.Name,
+		Tasks: cfg.Tasks,
+		Job:   obs,
+		Params: map[string]string{
+			"interval": cfg.Interval.String(),
+		},
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,

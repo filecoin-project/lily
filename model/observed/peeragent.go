@@ -17,6 +17,9 @@ type PeerAgent struct {
 	//lint:ignore U1000 tableName is a convention used by go-pg
 	tableName struct{} `pg:"observed_peer_agents"`
 
+	// Observer is the peer making the observation (peer ID of lily node)
+	SurveyerPeerID string `pg:",pk,notnull"`
+
 	// ObservedAt is the time the observation was made
 	ObservedAt time.Time `pg:",notnull"`
 

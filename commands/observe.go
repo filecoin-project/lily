@@ -35,7 +35,7 @@ var ObserveCmd = &cli.Command{
 			&cli.DurationFlag{
 				Name:        "interval",
 				Usage:       "Duration after which any indexing work not completed will be marked incomplete",
-				Value:       600 * time.Second,
+				Value:       10 * time.Minute,
 				Destination: &observeFlags.interval,
 			},
 			&cli.StringFlag{
