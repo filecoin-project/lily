@@ -422,6 +422,7 @@ func (h *HeadNotifier) SetCurrent(ctx context.Context, ts *types.TipSet) error {
 		log.Warnw("head notifier buffer at capacity", "queued", len(ev))
 	}
 
+	log.Debugw("head notifier setting head", "tipset", ts.Key().String())
 	ev <- &chain.HeadEvent{
 		Type:   chain.HeadEventCurrent,
 		TipSet: ts,
@@ -445,6 +446,7 @@ func (h *HeadNotifier) Apply(ctx context.Context, from, to *types.TipSet) error 
 		log.Warnw("head notifier buffer at capacity", "queued", len(ev))
 	}
 
+	log.Debugw("head notifier apply", "to", to.Key().String(), "from", from.Key().String())
 	ev <- &chain.HeadEvent{
 		Type:   chain.HeadEventApply,
 		TipSet: to,
@@ -468,9 +470,10 @@ func (h *HeadNotifier) Revert(ctx context.Context, from, to *types.TipSet) error
 		log.Warnw("head notifier buffer at capacity", "queued", len(ev))
 	}
 
+	log.Debugw("head notifier revert", "to", to.Key().String(), "from", from.Key().String())
 	ev <- &chain.HeadEvent{
 		Type:   chain.HeadEventRevert,
-		TipSet: to,
+		TipSet: from,
 	}
 	return nil
 }
