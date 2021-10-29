@@ -157,10 +157,12 @@ type MessageBuilder interface {
 	Cancel(msig address.Address, txID uint64, hash *ProposalHashData) (*types.Message, error)
 }
 
-// this type is the same between v0 and v2
+// these types are the same between v0 and v6
 type ProposalHashData = msig6.ProposalHashData
 type ProposeReturn = msig6.ProposeReturn
 type ProposeParams = msig6.ProposeParams
+type ApproveReturn = msig6.ApproveReturn
+type TxnIDParams = msig6.TxnIDParams
 
 func txnParams(id uint64, data *ProposalHashData) ([]byte, error) {
 	params := msig6.TxnIDParams{ID: msig6.TxnID(id)}
