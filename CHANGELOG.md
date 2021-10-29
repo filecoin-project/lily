@@ -5,6 +5,12 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.8.4"></a>
+## [v0.8.4] - 2021-10-29
+
+### Fix
+- msapprovals task supports actors v5 and above (#763)
+
 <a name="v0.8.3"></a>
 ## [v0.8.3] - 2021-10-25
 
