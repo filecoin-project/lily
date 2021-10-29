@@ -6,13 +6,8 @@ import (
 	"context"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
+	"github.com/filecoin-project/lotus/chain/actors/builtin"
 	"github.com/filecoin-project/lotus/chain/types"
-	sa0builtin "github.com/filecoin-project/specs-actors/actors/builtin"
-	sa2builtin "github.com/filecoin-project/specs-actors/v2/actors/builtin"
-	sa3builtin "github.com/filecoin-project/specs-actors/v3/actors/builtin"
-	multisig3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/multisig"
-	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
-	"github.com/ipfs/go-cid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
@@ -62,7 +57,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 
 		// Only interested in messages to multisig actors
-		if !isMultisigActor(m.ToActorCode) {
+		if !builtin.IsMultisigActor(m.ToActorCode) {
 			continue
 		}
 
@@ -164,10 +159,6 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 	return results, report, nil
 }
 
-func isMultisigActor(code cid.Cid) bool {
-	return code == sa0builtin.MultisigActorCodeID || code == sa2builtin.MultisigActorCodeID || code == sa3builtin.MultisigActorCodeID || code == sa4builtin.MultisigActorCodeID
-}
-
 type MultisigError struct {
 	Addr  string
 	Error string
@@ -198,8 +189,8 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 			return false, nil, nil
 		}
 
-		// this type is the same between v0 and v3
-		var params multisig3.ProposeParams
+		// this type is the same between v0 and v6
+		var params multisig.ProposeParams
 		err = params.UnmarshalCBOR(bytes.NewReader(msg.Params))
 		if err != nil {
 			return false, nil, xerrors.Errorf("failed to decode message params: %w", err)
@@ -214,8 +205,8 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 	case ApproveMethodNum:
 		// If the message is an approve then the params will contain the id of a pending transaction
 
-		// this type is the same between v0 and v3
-		var ret multisig3.ApproveReturn
+		// this type is the same between v0 and v6
+		var ret multisig.ApproveReturn
 		err := ret.UnmarshalCBOR(bytes.NewReader(rcpt.Return))
 		if err != nil {
 			return false, nil, xerrors.Errorf("failed to decode return value: %w", err)
@@ -226,8 +217,8 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 			return false, nil, nil
 		}
 
-		// this type is the same between v0 and v3
-		var params multisig3.TxnIDParams
+		// this type is the same between v0 and v6
+		var params multisig.TxnIDParams
 		err = params.UnmarshalCBOR(bytes.NewReader(msg.Params))
 		if err != nil {
 			return false, nil, xerrors.Errorf("failed to decode message params: %w", err)
