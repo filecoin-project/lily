@@ -132,6 +132,18 @@ func main() {
 				Value:       ":9991",
 				Destination: &commands.VisorMetricFlags.PrometheusPort,
 			},
+			&cli.IntFlag{
+				Name:        "blockstore-cache-size",
+				EnvVars:     []string{"LILY_BLOCKSTORE_CACHE_SIZE"},
+				Value:       0,
+				Destination: &commands.CacheFlags.BlockstoreCacheSize,
+			},
+			&cli.IntFlag{
+				Name:        "statestore-cache-size",
+				EnvVars:     []string{"LILY_STATESTORE_CACHE_SIZE"},
+				Value:       0,
+				Destination: &commands.CacheFlags.StatestoreCacheSize,
+			},
 		},
 		HideHelp: true,
 		Metadata: commands.Metadata(),

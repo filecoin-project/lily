@@ -27,6 +27,7 @@ import (
 	"github.com/filecoin-project/lily/config"
 	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lily/lens/lily/modules"
+	lutil "github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 )
@@ -66,6 +67,11 @@ type daemonOpts struct {
 }
 
 var daemonFlags daemonOpts
+
+var CacheFlags struct {
+	BlockstoreCacheSize int // number of raw blocks to cache in memory
+	StatestoreCacheSize int // number of decoded actor states to cache in memory
+}
 
 var DaemonCmd = &cli.Command{
 	Name:  "daemon",
@@ -229,17 +235,20 @@ Note that jobs are not persisted between restarts of the daemon. See
 		var api lily.LilyAPI
 		stop, err := node.New(ctx,
 			// Start Sentinel Dep injection
-			LilyNodeAPIOption(&api),
+			LilyNodeAPIOption(&api, CacheFlags.StatestoreCacheSize),
 			node.Override(new(*config.Conf), modules.LoadConf(daemonFlags.config)),
 			node.Override(new(*events.Events), modules.NewEvents),
 			node.Override(new(*schedule.Scheduler), schedule.NewSchedulerDaemon),
 			node.Override(new(*storage.Catalog), modules.NewStorageCatalog),
+			node.Override(new(*lutil.CacheConfig), modules.CacheConfig(CacheFlags.BlockstoreCacheSize, CacheFlags.StatestoreCacheSize)),
 			// End Injection
 
 			node.Override(new(dtypes.Bootstrapper), isBootstrapper),
 			node.Override(new(dtypes.ShutdownChan), shutdown),
 			node.Base(),
 			node.Repo(r),
+
+			node.Override(new(dtypes.UniversalBlockstore), modules.CachingUniversalBlockstore(CacheFlags.BlockstoreCacheSize)),
 
 			// Inject a custom StateManager, must be done after the node.Online() call as we are
 			// overriding the OG lotus StateManager.
