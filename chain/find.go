@@ -212,32 +212,43 @@ func (g *GapIndexer) findTaskEpochGaps(ctx context.Context) (visor.GapReportList
 		ctx,
 		&result,
 		`
+with
+all_heights_and_tasks as (
+	select height, task
+    from visor_processing_reports
+    where height between ? and ?
+	group by 1, 2
+)
+, incomplete_heights as (
+	select height, count(task)
+	from all_heights_and_tasks
+	group by 1
+	having count(task) != ?
+)
+, incomplete_heights_and_their_completed_tasks as (
+	select ih.height, pr.task, pr.status_information
+	from incomplete_heights ih
+	left join visor_processing_reports pr using (height)
+	-- this condition excludes NULL_ROUND tasks
+	-- which are completed and should be included
+	where pr.status_information != ?
+	-- what is this filter for?
+	-- this will accidentally include rows `ih`
+	-- which don't have a joined row on `pr` (which
+	-- happens when there's no task history on those heights)
+	-- creating heights with no completed tasks at all
+	or pr.status_information is null
+	group by 1, 2, 3
+)
 select height, task
-from (
-         select distinct vpr.task, vpr.height, vpr.status_information
-         from visor_processing_reports vpr
-                  right join(
-             select height
-             from (
-                      select task_height_count.height, count(task_height_count.height) cheight
-                      from (
-                               select distinct(task) as task, height
-                               from visor_processing_reports
-                               group by height, task
-                               order by height desc
-                           ) task_height_count
-                      group by task_height_count.height
-                  ) task_count_per_height
-             where task_count_per_height.cheight != ?
-         ) incomplete
-                            on vpr.height = incomplete.height
-         where vpr.status_information != ?
-            or vpr.status_information is null
-     ) incomplete_heights_and_their_completed_tasks
-where height >= ? and height <= ?
+from incomplete_heights_and_their_completed_tasks
 order by height desc
+;
 `,
-		len(AllTasks), visor.ProcessingStatusInformationNullRound, g.minHeight, g.maxHeight,
+		g.minHeight,
+		g.maxHeight,
+		len(AllTasks),
+		visor.ProcessingStatusInformationNullRound,
 	)
 	if err != nil {
 		return nil, err
