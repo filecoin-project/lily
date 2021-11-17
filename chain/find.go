@@ -2,9 +2,11 @@ package chain
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
-	"github.com/deckarep/golang-set"
+	mapset "github.com/deckarep/golang-set"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/visor"
@@ -197,101 +199,132 @@ type TaskHeight struct {
 	Status string
 }
 
-// TODO rather than use the length of `tasks` to determine where gaps are, use the contents to look for
-// gaps in specific task. Forrest' SQL-Foo isn't good enough for this yet.
 func (g *GapIndexer) findTaskEpochGaps(ctx context.Context) (visor.GapReportList, error) {
 	log.Debug("finding task epoch gaps")
 	start := time.Now()
 	var result []TaskHeight
 	var out visor.GapReportList
-	// returns a list of tasks and heights for all incomplete heights
-	// and incomplete height is a height with less than len(tasks) entries, the tasks returned
-	// are the completed tasks for the height, we can diff them against all known tasks to find the
-	// missing ones.
+	var sqlFmtTaskValues []string
+	for t := range g.taskSet.Iter() {
+		sqlFmtTaskValues = append(sqlFmtTaskValues, fmt.Sprintf("('%s')", t))
+	}
+
+	// returns a list of tasks and heights for all incomplete heights and incomplete height
+	// is a height without an 'OK' or 'NULL_ROUND' for g.tasks. Returned values indicate
+	// heights and tasks which need to be filled.
+	query := fmt.Sprintf(`
+with
+
+-- generate all heights in range
+interesting_heights as (
+	select *
+	from generate_series(
+		?0,
+		?1
+	)
+	as x(height)
+)
+,
+
+-- enum all tasks for which we want to find gaps
+interesting_tasks as (
+	select *
+	from (values %s
+		-- example values in sqlFmtTasks:
+		-- ('actorstatesraw'),
+		-- ('actorstatespower'),
+		-- ('actorstatesreward'),
+		-- ('actorstatesminer'),
+		-- ('actorstatesinit'),
+		-- ('actorstatesmarket'),
+		-- ('actorstatesmultisig'),
+		-- ('actorstatesverifreg'),
+		-- ('blocks'),
+		-- ('messages'),
+		-- ('chaineconomics'),
+		-- ('msapprovals'),
+		-- ('implicitmessage'),
+		-- ('consensus')
+	) as x(task)
+)
+,
+
+-- cross product of heights and tasks
+all_heights_and_tasks_in_range as (
+	select h.height, t.task
+	from interesting_heights h
+	cross join interesting_tasks t
+)
+,
+
+-- all heights from processing reports which were
+-- recorded (by gap_fill or consensus) that it is
+-- a null round with no data to index.
+-- then take cross product of these heights w tasks
+null_round_heights_and_tasks_in_range as (
+	select pr.height, t.task
+	from visor_processing_reports pr
+	cross join interesting_tasks t
+	where pr.status_information = ?3
+	and pr.height between ?0 and ?1
+	group by 1, 2
+)
+,
+
+-- all heights and tasks which need to be filled
+all_incomplete_heights_and_tasks as (
+
+	select height, task
+		-- starting from the set of all heights and tasks
+		-- in our range
+    from all_heights_and_tasks_in_range
+
+    -- remove all heights and tasks which have at least one OK
+    except
+    select height, task
+    from visor_processing_reports
+    where status = ?3
+		and height between ?0 and ?1
+
+    -- remove the null rounds by height and task
+    except
+    select height, task
+    from null_round_heights_and_tasks_in_range
+)
+
+-- ordering for tidy persistence
+select height, task
+from all_incomplete_heights_and_tasks
+order by 1 desc
+;
+`, strings.Join(sqlFmtTaskValues, ","))
 	res, err := g.DB.AsORM().QueryContext(
 		ctx,
 		&result,
-		`
-with
-all_heights_and_tasks as (
-	select height, task
-    from visor_processing_reports
-    where height between ? and ?
-	group by 1, 2
-)
-, incomplete_heights as (
-	select height, count(task)
-	from all_heights_and_tasks
-	group by 1
-	having count(task) != ?
-)
-, incomplete_heights_and_their_completed_tasks as (
-	select ih.height, pr.task, pr.status_information
-	from incomplete_heights ih
-	left join visor_processing_reports pr using (height)
-	-- this condition excludes NULL_ROUND tasks
-	-- which are completed and should be included
-	where pr.status_information != ?
-	-- what is this filter for?
-	-- this will accidentally include rows `ih`
-	-- which don't have a joined row on `pr` (which
-	-- happens when there's no task history on those heights)
-	-- creating heights with no completed tasks at all
-	or pr.status_information is null
-	group by 1, 2, 3
-)
-select height, task
-from incomplete_heights_and_their_completed_tasks
-order by height desc
-;
-`,
+		query,
 		g.minHeight,
 		g.maxHeight,
-		len(AllTasks),
 		visor.ProcessingStatusInformationNullRound,
+		visor.ProcessingStatusOK,
 	)
 	if err != nil {
 		return nil, err
 	}
-	log.Debugw("executed find task epoch gap query", "count", res.RowsReturned())
+	log.Debugw("executed find gap query and found epoch,task gaps", "count", res.RowsReturned())
 
-	// TODO the below could be replaced by creating a virtual table of all tasks and diffing
-	// the above results with the table to find missing tasks.
-
-	// result has all the tasks completed at each height, now we need to find what is missing
-	// at each height.
-	var CompletedTasksForHeight = make(map[uint64][]string)
-	for _, th := range result {
+	for _, r := range result {
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		default:
 		}
-		CompletedTasksForHeight[th.Height] = append(CompletedTasksForHeight[th.Height], th.Task)
-	}
-
-	for height, tasks := range CompletedTasksForHeight {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
-		completedTasks := mapset.NewSet()
-		for _, t := range tasks {
-			completedTasks.Add(t)
-		}
-		missingTasks := FullTaskSet.Difference(completedTasks).Intersect(g.taskSet)
-		log.Debugw("found tasks with gaps", "height", height, "missing", missingTasks.String())
-		for mt := range missingTasks.Iter() {
-			missing := mt.(string)
-			out = append(out, &visor.GapReport{
-				Height:     int64(height),
-				Task:       missing,
-				Status:     "GAP",
-				Reporter:   g.name,
-				ReportedAt: start,
-			})
-		}
+		out = append(out, &visor.GapReport{
+			Height:     int64(r.Height),
+			Task:       r.Task,
+			Status:     "GAP",
+			Reporter:   g.name,
+			ReportedAt: start,
+		})
 	}
 	return out, nil
 }
