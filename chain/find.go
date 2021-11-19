@@ -258,9 +258,9 @@ all_heights_and_tasks_in_range as (
 ,
 
 -- all heights from processing reports which were
--- recorded (by gap_fill or consensus) that it is
--- a null round with no data to index.
--- then take cross product of these heights w tasks
+-- recorded (by gap_fill or consensus) and are
+-- null rounds with no data to index.
+-- take cross product of these heights w tasks
 null_round_heights_and_tasks_in_range as (
 	select pr.height, t.task
 	from visor_processing_reports pr
@@ -274,22 +274,22 @@ null_round_heights_and_tasks_in_range as (
 -- all heights and tasks which need to be filled
 all_incomplete_heights_and_tasks as (
 
-	select height, task
 		-- starting from the set of all heights and tasks
 		-- in our range
-    from all_heights_and_tasks_in_range
+		select height, task
+		from all_heights_and_tasks_in_range
 
-    -- remove all heights and tasks which have at least one OK
-    except
-    select height, task
-    from visor_processing_reports
-    where status = ?3
+		-- remove all heights and tasks which have at least one OK
+		except
+		select height, task
+		from visor_processing_reports
+		where status = ?3
 		and height between ?0 and ?1
 
-    -- remove the null rounds by height and task
-    except
-    select height, task
-    from null_round_heights_and_tasks_in_range
+		-- remove the null rounds by height and task
+		except
+		select height, task
+		from null_round_heights_and_tasks_in_range
 )
 
 -- ordering for tidy persistence
