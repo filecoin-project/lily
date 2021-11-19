@@ -48,7 +48,7 @@ func NewGapIndexer(node lens.API, db *storage.Database, name string, minHeight, 
 }
 
 func (g *GapIndexer) Run(ctx context.Context) error {
-	startTime := time.Now()
+	log.With("type", "find")
 
 	head, err := g.node.ChainHead(ctx)
 	if err != nil {
@@ -58,139 +58,19 @@ func (g *GapIndexer) Run(ctx context.Context) error {
 		return xerrors.Errorf("cannot look for gaps beyond chain head height %d", head.Height())
 	}
 
-	findLog := log.With("type", "find")
-
-	// looks for incomplete epochs. An incomplete epoch has some, but not all tasks in the processing report table.
-	taskGaps, err := g.findTaskEpochGaps(ctx)
+	// looks for incomplete or missing epochs. An incomplete epoch has some, but
+	// not all tasks in the processing report table. A missing epoch are heights
+	// which do not exist at all in the processing report table.
+	taskGaps, err := g.findMissingTasksAndEpochs(ctx)
 	if err != nil {
 		return xerrors.Errorf("finding task epoch gaps: %w", err)
 	}
-	findLog.Infow("found gaps in tasks", "count", len(taskGaps))
 
-	// looks for missing epochs and null rounds. A missing epoch is a non-null-round height missing from the processing report table
-	heightGaps, nulls, err := g.findEpochGapsAndNullRounds(ctx, g.node)
-	if err != nil {
-		return xerrors.Errorf("finding epoch gaps: %w", err)
-	}
-	findLog.Infow("found gaps in epochs", "count", len(heightGaps))
-	findLog.Infow("found null rounds", "count", len(nulls))
-
-	// looks for entriest in the lily processing report table that have been skipped.
-	skipGaps, err := g.findEpochSkips(ctx)
-	if err != nil {
-		return xerrors.Errorf("detecting skipped gaps: %w", err)
-	}
-	findLog.Infow("found skipped epochs", "count", len(skipGaps))
-
-	var nullRounds visor.ProcessingReportList
-	for _, epoch := range nulls {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-		nullRounds = append(nullRounds, &visor.ProcessingReport{
-			Height:            int64(epoch),
-			StateRoot:         "NULL_ROUND", // let gap fill add the correct state root for this epoch when it runs the consensus task.
-			Reporter:          g.name,
-			Task:              "gap_find",
-			StartedAt:         startTime,
-			CompletedAt:       time.Now(),
-			Status:            visor.ProcessingStatusInfo,
-			StatusInformation: visor.ProcessingStatusInformationNullRound, // the gap finding logic uses this value to exclude null rounds from gap report.
-		})
-	}
-
-	return g.DB.PersistBatch(ctx, skipGaps, heightGaps, taskGaps, nullRounds)
+	return g.DB.PersistBatch(ctx, taskGaps)
 }
 
 type GapIndexerLens interface {
 	ChainGetTipSetByHeight(ctx context.Context, epoch abi.ChainEpoch, tsk types.TipSetKey) (*types.TipSet, error)
-}
-
-func (g *GapIndexer) findEpochSkips(ctx context.Context) (visor.GapReportList, error) {
-	log.Debug("finding skipped epochs")
-	reportTime := time.Now()
-
-	var skippedReports []visor.ProcessingReport
-	if err := g.DB.AsORM().ModelContext(ctx, &skippedReports).
-		Order("height desc").
-		Where("status = ?", visor.ProcessingStatusSkip).
-		Where("height >= ?", g.minHeight).
-		Where("height <= ?", g.maxHeight).
-		Select(); err != nil {
-		return nil, xerrors.Errorf("query processing report skips: %w", err)
-	}
-	log.Debugw("executed find skipped epoch query", "count", len(skippedReports))
-
-	gapReport := make([]*visor.GapReport, len(skippedReports))
-	for idx, r := range skippedReports {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
-		gapReport[idx] = &visor.GapReport{
-			Height:     r.Height,
-			Task:       r.Task,
-			Status:     "GAP",
-			Reporter:   g.name,
-			ReportedAt: reportTime,
-		}
-	}
-	return gapReport, nil
-}
-
-func (g *GapIndexer) findEpochGapsAndNullRounds(ctx context.Context, node GapIndexerLens) (visor.GapReportList, []abi.ChainEpoch, error) {
-	log.Debug("finding epoch gaps and null rounds")
-	reportTime := time.Now()
-
-	var nullRounds []abi.ChainEpoch
-	var missingHeights []uint64
-	res, err := g.DB.AsORM().QueryContext(
-		ctx,
-		&missingHeights,
-		`
-		SELECT s.i AS missing_epoch
-		FROM generate_series(?, ?) s(i)
-		WHERE NOT EXISTS (SELECT 1 FROM visor_processing_reports WHERE height = s.i);
-		`,
-		g.minHeight, g.maxHeight)
-	if err != nil {
-		return nil, nil, err
-	}
-	log.Debugw("executed find epoch gap query", "count", res.RowsReturned())
-
-	gapReport := make([]*visor.GapReport, 0, len(missingHeights))
-	// walk the possible gaps and query lotus to determine if gap was a null round or missed epoch.
-	for _, gap := range missingHeights {
-		select {
-		case <-ctx.Done():
-			return nil, nil, ctx.Err()
-		default:
-		}
-		gh := abi.ChainEpoch(gap)
-		tsgap, err := node.ChainGetTipSetByHeight(ctx, gh, types.EmptyTSK)
-		if err != nil {
-			return nil, nil, xerrors.Errorf("getting tipset by height %d: %w", gh, err)
-		}
-		if tsgap.Height() == gh {
-			log.Debugw("found gap", "height", gh)
-			for _, task := range AllTasks {
-				gapReport = append(gapReport, &visor.GapReport{
-					Height:     int64(tsgap.Height()),
-					Task:       task,
-					Status:     "GAP",
-					Reporter:   g.name,
-					ReportedAt: reportTime,
-				})
-			}
-		} else {
-			log.Debugw("found null round", "height", gh)
-			nullRounds = append(nullRounds, gh)
-		}
-	}
-	return gapReport, nullRounds, nil
 }
 
 type TaskHeight struct {
@@ -199,12 +79,16 @@ type TaskHeight struct {
 	Status string
 }
 
-func (g *GapIndexer) findTaskEpochGaps(ctx context.Context) (visor.GapReportList, error) {
-	log.Debug("finding task epoch gaps")
+func (g *GapIndexer) findMissingTasksAndEpochs(ctx context.Context) (visor.GapReportList, error) {
+	log.Debug("finding task epoch gaps for heights", g.minHeight, "through", g.maxHeight)
 	start := time.Now()
-	var result []TaskHeight
-	var out visor.GapReportList
-	var sqlFmtTaskValues []string
+
+	var (
+		result           []TaskHeight
+		out              visor.GapReportList
+		sqlFmtTaskValues []string
+	)
+
 	for t := range g.taskSet.Iter() {
 		sqlFmtTaskValues = append(sqlFmtTaskValues, fmt.Sprintf("('%s')", t))
 	}
@@ -298,6 +182,7 @@ from all_incomplete_heights_and_tasks
 order by 1 desc
 ;
 `, strings.Join(sqlFmtTaskValues, ","))
+
 	res, err := g.DB.AsORM().QueryContext(
 		ctx,
 		&result,
