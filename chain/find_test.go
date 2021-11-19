@@ -216,11 +216,12 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
 			Return(tsh2, nil)
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
+		checkTasks := []string{ActorStatesMinerTask, ActorStatesInitTask}
+		actual, err := NewGapIndexer(nil, strg, t.Name(), uint64(2), uint64(2), checkTasks).
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
+		expected := makeGapReportList(tsh2, checkTasks...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
@@ -242,11 +243,12 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
 			Return(tsh2, nil)
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
+		checkTasks := []string{ActorStatesMinerTask, ActorStatesInitTask}
+		actual, err := NewGapIndexer(nil, strg, t.Name(), uint64(2), uint64(2), checkTasks).
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
+		expected := makeGapReportList(tsh2, checkTasks...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
@@ -268,11 +270,12 @@ func TestFind(t *testing.T) {
 		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
 			Return(tsh2, nil)
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
+		checkTasks := []string{ActorStatesMinerTask, ActorStatesInitTask}
+		actual, err := NewGapIndexer(nil, strg, t.Name(), uint64(2), uint64(2), checkTasks).
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
+		expected := makeGapReportList(tsh2, checkTasks...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
@@ -329,7 +332,7 @@ type assertFields struct {
 func assertGapReportsEqual(t testing.TB, expected, actual visor.GapReportList) {
 	assert.Equal(t, len(expected), len(actual))
 	exp := make(map[int64][]assertFields, len(expected))
-	act := make(map[int64][]assertFields, len(expected))
+	act := make(map[int64][]assertFields, len(actual))
 
 	for _, e := range expected {
 		exp[e.Height] = append(exp[e.Height], assertFields{
