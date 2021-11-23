@@ -21,7 +21,7 @@ func TestWalker(t *testing.T) {
 		t.Skip("short testing requested")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
 	defer cancel()
 
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
