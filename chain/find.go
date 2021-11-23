@@ -45,6 +45,30 @@ func NewGapIndexer(node lens.API, db *storage.Database, name string, minHeight, 
 	}
 }
 
+func (g *GapIndexer) findGapsAndNullRounds(ctx context.Context) (visor.GapReportList, []abi.ChainEpoch, error) {
+	findLog := log.With("type", "find")
+
+	var gaps []*visor.GapReport
+	// looks for incomplete epochs. An incomplete epoch has some, but not all tasks in the processing report table.
+	taskGaps, err := g.findTaskEpochGaps(ctx)
+	if err != nil {
+		return nil, nil, xerrors.Errorf("finding task epoch gaps: %w", err)
+	}
+	findLog.Infow("found gaps in tasks", "count", len(taskGaps))
+	gaps = append(gaps, taskGaps...)
+
+	// looks for missing epochs and null rounds. A missing epoch is a non-null-round height missing from the processing report table
+	heightGaps, nulls, err := g.findEpochGapsAndNullRounds(ctx, g.node)
+	if err != nil {
+		return nil, nil, xerrors.Errorf("finding epoch gaps: %w", err)
+	}
+	findLog.Infow("found gaps in epochs", "count", len(heightGaps))
+	findLog.Infow("found null rounds", "count", len(nulls))
+	gaps = append(gaps, heightGaps...)
+
+	return gaps, nulls, nil
+}
+
 func (g *GapIndexer) Run(ctx context.Context) error {
 	startTime := time.Now()
 
@@ -56,29 +80,10 @@ func (g *GapIndexer) Run(ctx context.Context) error {
 		return xerrors.Errorf("cannot look for gaps beyond chain head height %d", head.Height())
 	}
 
-	findLog := log.With("type", "find")
-
-	// looks for incomplete epochs. An incomplete epoch has some, but not all tasks in the processing report table.
-	taskGaps, err := g.findTaskEpochGaps(ctx)
+	gaps, nulls, err := g.findGapsAndNullRounds(ctx)
 	if err != nil {
-		return xerrors.Errorf("finding task epoch gaps: %w", err)
+		return err
 	}
-	findLog.Infow("found gaps in tasks", "count", len(taskGaps))
-
-	// looks for missing epochs and null rounds. A missing epoch is a non-null-round height missing from the processing report table
-	heightGaps, nulls, err := g.findEpochGapsAndNullRounds(ctx, g.node)
-	if err != nil {
-		return xerrors.Errorf("finding epoch gaps: %w", err)
-	}
-	findLog.Infow("found gaps in epochs", "count", len(heightGaps))
-	findLog.Infow("found null rounds", "count", len(nulls))
-
-	// looks for entriest in the lily processing report table that have been skipped.
-	skipGaps, err := g.findEpochSkips(ctx)
-	if err != nil {
-		return xerrors.Errorf("detecting skipped gaps: %w", err)
-	}
-	findLog.Infow("found skipped epochs", "count", len(skipGaps))
 
 	var nullRounds visor.ProcessingReportList
 	for _, epoch := range nulls {
@@ -99,7 +104,7 @@ func (g *GapIndexer) Run(ctx context.Context) error {
 		})
 	}
 
-	return g.DB.PersistBatch(ctx, skipGaps, heightGaps, taskGaps, nullRounds)
+	return g.DB.PersistBatch(ctx, gaps, nullRounds)
 }
 
 type GapIndexerLens interface {
@@ -139,7 +144,7 @@ func (g *GapIndexer) findEpochSkips(ctx context.Context) (visor.GapReportList, e
 	return gapReport, nil
 }
 
-func (g *GapIndexer) findEpochGapsAndNullRounds(ctx context.Context, node GapIndexerLens) (visor.GapReportList, []abi.ChainEpoch, error) {
+func (g *GapIndexer) findEpochGapsAndNullRounds(ctx context.Context, node GapIndexerLens) ([]*visor.GapReport, []abi.ChainEpoch, error) {
 	log.Debug("finding epoch gaps and null rounds")
 	reportTime := time.Now()
 
@@ -199,7 +204,7 @@ type TaskHeight struct {
 
 // TODO rather than use the length of `tasks` to determine where gaps are, use the contents to look for
 // gaps in specific task. Forrest' SQL-Foo isn't good enough for this yet.
-func (g *GapIndexer) findTaskEpochGaps(ctx context.Context) (visor.GapReportList, error) {
+func (g *GapIndexer) findTaskEpochGaps(ctx context.Context) ([]*visor.GapReport, error) {
 	log.Debug("finding task epoch gaps")
 	start := time.Now()
 	var result []TaskHeight
