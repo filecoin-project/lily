@@ -181,7 +181,6 @@ order by 1 desc
 		g.maxHeight,
 		visor.ProcessingStatusInformationNullRound,
 		visor.ProcessingStatusOK,
-		visor.ProcessingStatusError,
 	)
 	if err != nil {
 		return nil, err
