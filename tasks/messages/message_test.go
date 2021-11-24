@@ -125,6 +125,17 @@ func TestParseMessageParams(t *testing.T) {
 			wantEncoded: `""`,
 			wantErr:     false,
 		},
+		{
+			// Derived from message bafy2bzaceaoyvylhmpn6foboyajbbcjvczszyjs4do7mgp4vuutbgrk5z42fu
+			// Account actor methods may receive unexpect params
+			name:        "issue-772",
+			method:      2,
+			params:      mustDecodeBase64(t, "dHJhbnNmZXI="),
+			actorCode:   builtin3.AccountActorCodeID,
+			wantMethod:  "PubkeyAddress",
+			wantEncoded: `"dHJhbnNmZXI="`,
+			wantErr:     false,
+		},
 	}
 
 	for _, tc := range testCases {
