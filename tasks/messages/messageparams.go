@@ -262,7 +262,8 @@ func ParseParams(params []byte, method int64, destType cid.Cid) (ipld.Node, stri
 		name = mthd.Name
 	}
 
-	if len(params) == 0 {
+	// if the method expects empty params or the params are empty.
+	if mthd.NodePrototype == types.Type.Any__Repr || len(params) == 0 {
 		b, err := types.Type.Bytes__Repr.FromBytes(params)
 		return b, name, err
 	}
