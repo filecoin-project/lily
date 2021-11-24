@@ -334,6 +334,27 @@ func TestFind(t *testing.T) {
 		// no gaps should be found since the epoch has OK's for all tasks; the SKIPS are ignored.
 		require.Len(t, actual, 0)
 	})
+
+	t.Run("(#775) for each task at epoch 2 there exists an ERROR", func(t *testing.T) {
+		truncateVPR(t, db)
+		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
+		errorEpochTasksVPR(t, db, 2, AllTasks...)
+
+		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
+		require.NoError(t, err, "NewDatabaseFromDB")
+
+		tsh2 := fakeTipset(t, 2)
+		mlens := new(MockedFindLens)
+		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
+			Return(tsh2, nil)
+
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
+			findMissingEpochsAndTasks(ctx)
+		require.NoError(t, err)
+
+		expected := makeGapReportList(tsh2, AllTasks...)
+		assertGapReportsEqual(t, expected, actual)
+	})
 }
 
 type assertFields struct {

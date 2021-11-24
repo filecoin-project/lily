@@ -165,14 +165,6 @@ all_incomplete_heights_and_tasks as (
 	-- remove the null rounds by height and task
 	select height, task
 	from null_round_heights_and_tasks_in_range
-
-		except
-
-	-- remove all errors (to match the original behavior)
-	select height, task
-	from visor_processing_reports
-	where status = ?4
-	and height between ?0 and ?1
 )
 
 -- ordering for tidy persistence
