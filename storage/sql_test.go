@@ -18,7 +18,7 @@ import (
 	"github.com/filecoin-project/lily/testutil"
 )
 
-const defaultDatabaseWaitTime = time.Minute * 1
+const defaultDatabaseWaitTime = time.Minute * 5
 
 func TestConsistentSchemaMigrationSequence(t *testing.T) {
 	latestVersion := LatestSchemaVersion()
