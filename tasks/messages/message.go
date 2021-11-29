@@ -233,7 +233,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			}
 			parsedMessageResults = append(parsedMessageResults, pm)
 		} else {
-			if rcpt.ExitCode == int64(exitcode.ErrSerialization) || rcpt.ExitCode == int64(exitcode.ErrIllegalArgument) {
+			if rcpt.ExitCode == int64(exitcode.ErrSerialization) || rcpt.ExitCode == int64(exitcode.ErrIllegalArgument) || rcpt.ExitCode == int64(exitcode.SysErrInvalidMethod) {
 				// ignore the parse error since the params are probably malformed, as reported by the vm
 			} else {
 				errorsDetected = append(errorsDetected, &MessageError{
