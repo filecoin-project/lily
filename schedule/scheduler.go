@@ -26,6 +26,7 @@ type Job interface {
 	// retry the job so implemententions must ensure that Run resets any
 	// necessary state.
 	Run(context.Context) error
+	Done() <-chan struct{}
 }
 
 type JobConfig struct {
@@ -247,12 +248,9 @@ func (s *Scheduler) Run(ctx context.Context) error {
 }
 
 func (s *Scheduler) StartJob(id JobID) error {
-	s.jobsMu.Lock()
-	defer s.jobsMu.Unlock()
-
-	job, ok := s.jobs[id]
-	if !ok {
-		return xerrors.Errorf("starting worker ID: %d not found", id)
+	job, err := s.getJob(id)
+	if err != nil {
+		return xerrors.Errorf("start job: %w", err)
 	}
 
 	job.lk.Lock()
@@ -270,24 +268,61 @@ func (s *Scheduler) StartJob(id JobID) error {
 }
 
 func (s *Scheduler) StopJob(id JobID) error {
-	s.jobsMu.Lock()
-	defer s.jobsMu.Unlock()
-
-	job, ok := s.jobs[id]
-	if !ok {
-		return xerrors.Errorf("starting worker ID: %d not found", id)
+	job, err := s.getJob(id)
+	if err != nil {
+		return xerrors.Errorf("stop job: %w", err)
 	}
 
 	job.lk.Lock()
 	defer job.lk.Unlock()
 
 	if !job.running {
-		return xerrors.Errorf("starting worker ID: %d already stopped", id)
+		return xerrors.Errorf("stopping job ID: %d already stopped", id)
 	}
 
-	job.log.Info("stopping job")
+	job.log.Infow("stopping job", "id", job)
 	job.cancel()
 	return nil
+}
+
+func (s *Scheduler) WaitJob(id JobID) (*JobListResult, error) {
+	job, err := s.getJob(id)
+	if err != nil {
+		return nil, xerrors.Errorf("wait job: %w", err)
+	}
+
+	// wait on the job to complete
+	<-job.Job.Done()
+
+	// fetch the job to get the latest results (EndedAt and Running will have changed)
+	job, err = s.getJob(id)
+	if err != nil {
+		return nil, xerrors.Errorf("wait job: %w", err)
+	}
+	return &JobListResult{
+		ID:                  job.id,
+		Name:                job.Name,
+		Type:                job.Type,
+		Error:               job.errorMsg,
+		Tasks:               job.Tasks,
+		Running:             job.running,
+		RestartOnFailure:    job.RestartOnFailure,
+		RestartOnCompletion: job.RestartOnCompletion,
+		RestartDelay:        job.RestartDelay,
+		Params:              job.Params,
+		StartedAt:           job.StartedAt,
+		EndedAt:             job.EndedAt,
+	}, nil
+}
+
+func (s *Scheduler) getJob(id JobID) (*JobConfig, error) {
+	s.jobsMu.Lock()
+	job, ok := s.jobs[id]
+	s.jobsMu.Unlock()
+	if !ok {
+		return nil, xerrors.Errorf("job id: %d not found", id)
+	}
+	return job, nil
 }
 
 type JobListResult struct {

@@ -28,12 +28,15 @@ type Walker struct {
 	obs       TipSetObserver
 	minHeight int64 // limit persisting to tipsets equal to or above this height
 	maxHeight int64 // limit persisting to tipsets equal to or below this height}
+	done      chan struct{}
 }
 
 // Run starts walking the chain history and continues until the context is done or
 // the start of the chain is reached.
 func (c *Walker) Run(ctx context.Context) error {
+	c.done = make(chan struct{})
 	defer func() {
+		close(c.done)
 		if err := c.obs.Close(); err != nil {
 			log.Errorw("walker failed to close TipSetObserver", "error", err)
 		}
@@ -62,6 +65,10 @@ func (c *Walker) Run(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (c *Walker) Done() <-chan struct{} {
+	return c.done
 }
 
 func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet) error {

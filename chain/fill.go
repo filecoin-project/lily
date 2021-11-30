@@ -18,6 +18,7 @@ type GapFiller struct {
 	name                 string
 	minHeight, maxHeight uint64
 	tasks                []string
+	done                 chan struct{}
 }
 
 func NewGapFiller(node lens.API, db *storage.Database, name string, minHeight, maxHeight uint64, tasks []string) *GapFiller {
@@ -32,6 +33,10 @@ func NewGapFiller(node lens.API, db *storage.Database, name string, minHeight, m
 }
 
 func (g *GapFiller) Run(ctx context.Context) error {
+	// init the done channel for each run since jobs may be started and stopped.
+	g.done = make(chan struct{})
+	defer close(g.done)
+
 	gaps, heights, err := g.consolidateGaps(ctx)
 	if err != nil {
 		return err
@@ -69,6 +74,10 @@ func (g *GapFiller) Run(ctx context.Context) error {
 	}
 	fillLog.Infow("gap fill complete", "duration", time.Since(fillStart), "total_epoch_gaps", len(gaps), "epoch_gaps_filled", idx, "from", g.minHeight, "to", g.maxHeight, "task", g.tasks)
 	return nil
+}
+
+func (g *GapFiller) Done() <-chan struct{} {
+	return g.done
 }
 
 // returns a map of heights to missing tasks, and a list of heights to iterate the map in order with.

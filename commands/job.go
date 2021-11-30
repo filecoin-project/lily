@@ -17,6 +17,7 @@ var JobCmd = &cli.Command{
 	Subcommands: []*cli.Command{
 		JobStartCmd,
 		JobStopCmd,
+		JobWaitCmd,
 		JobListCmd,
 	},
 }
@@ -100,6 +101,43 @@ var JobListCmd = &cli.Command{
 			return err
 		}
 		if _, err := fmt.Fprintf(os.Stdout, "%s\n", prettyJobs); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
+var JobWaitCmd = &cli.Command{
+	Name:  "wait",
+	Usage: "wait on a job to complete.",
+	Flags: flagSet(
+		clientAPIFlagSet,
+		[]cli.Flag{
+			&cli.IntFlag{
+				Name:        "id",
+				Usage:       "Identifier of job to wait on",
+				Required:    true,
+				Destination: &jobControlFlags.ID,
+			},
+		},
+	),
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+		api, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		res, err := api.LilyJobWait(ctx, schedule.JobID(jobControlFlags.ID))
+		if err != nil {
+			return err
+		}
+		prettyJob, err := json.MarshalIndent(res, "", "\t")
+		if err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(os.Stdout, "%s\n", prettyJob); err != nil {
 			return err
 		}
 		return nil

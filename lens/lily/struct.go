@@ -33,9 +33,10 @@ type LilyAPIStruct struct {
 		LilyWalk   func(context.Context, *LilyWalkConfig) (*schedule.JobSubmitResult, error)   `perm:"read"`
 		LilySurvey func(context.Context, *LilySurveyConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
 
-		LilyJobStart func(ctx context.Context, ID schedule.JobID) error          `perm:"read"`
-		LilyJobStop  func(ctx context.Context, ID schedule.JobID) error          `perm:"read"`
-		LilyJobList  func(ctx context.Context) ([]schedule.JobListResult, error) `perm:"read"`
+		LilyJobStart func(ctx context.Context, ID schedule.JobID) error                            `perm:"read"`
+		LilyJobStop  func(ctx context.Context, ID schedule.JobID) error                            `perm:"read"`
+		LilyJobWait  func(ctx context.Context, ID schedule.JobID) (*schedule.JobListResult, error) `perm:"read"`
+		LilyJobList  func(ctx context.Context) ([]schedule.JobListResult, error)                   `perm:"read"`
 
 		LilyGapFind func(ctx context.Context, cfg *LilyGapFindConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
 		LilyGapFill func(ctx context.Context, cfg *LilyGapFillConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
@@ -136,6 +137,10 @@ func (s *LilyAPIStruct) LilyJobStart(ctx context.Context, ID schedule.JobID) err
 
 func (s *LilyAPIStruct) LilyJobStop(ctx context.Context, ID schedule.JobID) error {
 	return s.Internal.LilyJobStop(ctx, ID)
+}
+
+func (s *LilyAPIStruct) LilyJobWait(ctx context.Context, ID schedule.JobID) (*schedule.JobListResult, error) {
+	return s.Internal.LilyJobWait(ctx, ID)
 }
 
 func (s *LilyAPIStruct) LilyJobList(ctx context.Context) ([]schedule.JobListResult, error) {

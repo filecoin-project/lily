@@ -3,181 +3,220 @@ package schedule_test
 import (
 	"context"
 	"errors"
-	"testing"
-
+	logging "github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/fx/fxtest"
+	"testing"
+	"time"
 
 	"github.com/filecoin-project/lily/schedule"
 )
 
-func newTestJob() *testJob {
+func newTestJob(fn func(ctx context.Context) error) *testJob {
 	return &testJob{
-		errChan: make(chan error),
-		started: make(chan struct{}),
-		stopped: make(chan struct{}),
+		fn: fn,
 	}
 }
 
 type testJob struct {
-	// for causing the Run method to retrun an err
-	errChan chan error
-	// for blocking until the job is running
-	started chan struct{}
-	// for blocking until the job is stopped
-	stopped chan struct{}
+	// for injecting a job
+	fn   func(ctx context.Context) error
+	done chan struct{}
 }
 
 func (r *testJob) Run(ctx context.Context) error {
-	r.started <- struct{}{}
-	defer func() {
-		r.stopped <- struct{}{}
-	}()
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case chanErr := <-r.errChan:
-			return chanErr
-		}
-	}
+	r.done = make(chan struct{})
+	defer close(r.done)
+	return r.fn(ctx)
+}
+
+func (r *testJob) Done() <-chan struct{} {
+	return r.done
 }
 
 func TestScheduler(t *testing.T) {
-	t.Run("Scheduler List Jobs", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		tJob := newTestJob()
-
-		s := schedule.NewScheduler(0, &schedule.JobConfig{
-			Name:                t.Name(),
-			Job:                 tJob,
-			RestartOnFailure:    false,
-			RestartOnCompletion: false,
-			RestartDelay:        0,
-		})
-
-		go func() {
-			err := s.Run(ctx)
-			assert.Equal(t, context.Canceled, err)
-		}()
-
-		// wait for it to start
-		<-tJob.started
-
-		jobs := s.Jobs()
-		assert.Len(t, jobs, 1)
-		assert.True(t, jobs[0].Running)
-		assert.Equal(t, schedule.JobID(1), jobs[0].ID)
-		assert.Equal(t, jobs[0].Name, t.Name())
-	})
-
-	t.Run("Scheduler Daemon Submit and List Jobs", func(t *testing.T) {
+	t.Run("Job Submit", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		s := schedule.NewSchedulerDaemon(ctx, fxtest.NewLifecycle(t))
 
-		// should be no jobs on start
-		jobs := s.Jobs()
-		assert.Len(t, jobs, 0)
-
-		tJob := newTestJob()
-		jobRes := s.Submit(&schedule.JobConfig{
-			Name:                t.Name(),
-			Job:                 tJob,
-			RestartOnFailure:    false,
-			RestartOnCompletion: false,
-			RestartDelay:        0,
-		})
-
-		// wait for it to start
-		<-tJob.started
-
-		jobs = s.Jobs()
-		assert.Len(t, jobs, 1)
-		assert.Equal(t, jobs[0].ID, jobRes.ID)
-		assert.True(t, jobs[0].Running, true)
-		assert.Equal(t, jobs[0].Name, t.Name())
-	})
-
-	t.Run("Scheduler Daemon start and stop job", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		s := schedule.NewSchedulerDaemon(ctx, fxtest.NewLifecycle(t))
-
-		// Stopping a job that Dne should fail with error
-		assert.Error(t, s.StopJob(schedule.InvalidJobID))
-		// Starting a job that Dne should fail with error
-		assert.Error(t, s.StartJob(schedule.InvalidJobID))
-
-		tJob := newTestJob()
-		jobRes := s.Submit(&schedule.JobConfig{
-			Name:                t.Name(),
-			Job:                 tJob,
-			RestartOnFailure:    false,
-			RestartOnCompletion: false,
-			RestartDelay:        0,
-		})
-		// wait for job to start an assert it started correctly
-		<-tJob.started
-		jobs := s.Jobs()
-		assert.Len(t, jobs, 1)
-		assert.Equal(t, jobs[0].ID, jobRes.ID)
-		assert.True(t, jobs[0].Running)
-		assert.Equal(t, jobs[0].Name, t.Name())
-
-		// wait for the job to stop and assert it is no longer running
-		assert.NoError(t, s.StopJob(jobRes.ID))
-		<-tJob.stopped
-
-		jobs = s.Jobs()
-		assert.Len(t, jobs, 1)
-		assert.Equal(t, jobs[0].ID, jobRes.ID)
-		assert.False(t, jobs[0].Running)
-		assert.Equal(t, jobs[0].Name, t.Name())
-
-		// stopping a job that is already stopped should fail
-		assert.Error(t, s.StopJob(jobRes.ID))
-
-		// ensure the job can be started again
-		assert.NoError(t, s.StartJob(jobRes.ID))
-		<-tJob.started
-
-		jobs = s.Jobs()
-		assert.Len(t, jobs, 1)
-		assert.Equal(t, jobs[0].ID, jobRes.ID)
-		assert.True(t, jobs[0].Running)
-		assert.Equal(t, jobs[0].Name, t.Name())
-
-		// starting a job twice should error
-		assert.Error(t, s.StartJob(jobRes.ID))
-	})
-
-	t.Run("Job restarts on failure", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		s := schedule.NewSchedulerDaemon(ctx, fxtest.NewLifecycle(t))
-
-		tJob := newTestJob()
+		done := make(chan struct{})
 		_ = s.Submit(&schedule.JobConfig{
-			Name:                t.Name(),
-			Job:                 tJob,
-			RestartOnFailure:    true,
-			RestartOnCompletion: false,
-			RestartDelay:        0,
+			Job: newTestJob(func(ctx context.Context) error {
+				time.Sleep(100 * time.Millisecond)
+				close(done)
+				return nil
+			}),
+			Name: t.Name(),
 		})
-		// wait for job to start
-		<-tJob.started
+		select {
+		case <-done:
+			t.Fatal("Submit did not return immediately")
+		default:
+		}
+	})
 
+	t.Run("Job Submit and wait", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		s := schedule.NewSchedulerDaemon(ctx, fxtest.NewLifecycle(t))
+
+		stop := make(chan struct{})
+		job := newTestJob(func(ctx context.Context) error {
+			<-stop
+			return nil
+		})
+		s.Submit(&schedule.JobConfig{
+			Job:  job,
+			Name: t.Name(),
+		})
+		// wait for job to execute
+		time.Sleep(100 * time.Millisecond)
 		// ensure the job is running
 		jobs := s.Jobs()
 		assert.True(t, jobs[0].Running)
 
-		// cause the job to return an error
-		tJob.errChan <- errors.New("FAIL")
+		// stop the job
+		close(stop)
+		select {
+		case <-time.Tick(time.Millisecond * 500):
+			t.Fatal("job is not done")
+		case <-job.Done():
+		}
+		// wait for scheduler to clean up
+		time.Sleep(100 * time.Millisecond)
+		// job is not running
+		jobs = s.Jobs()
+		assert.False(t, jobs[0].Running)
 
-		// the job should remain running
+	})
+
+	t.Run("Job start and stop", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		s := schedule.NewSchedulerDaemon(ctx, fxtest.NewLifecycle(t))
+
+		s.Submit(&schedule.JobConfig{
+			Job: newTestJob(func(ctx context.Context) error {
+				<-ctx.Done()
+				return nil
+			}),
+		})
+		for i := 0; i < 10; i++ {
+			// ensure the job is running
+			time.Sleep(100 * time.Millisecond)
+			jobs := s.Jobs()
+			assert.True(t, jobs[0].Running)
+
+			// starting a running job errors
+			assert.Error(t, s.StartJob(1))
+
+			// ensure the job is stopped
+			assert.NoError(t, s.StopJob(1))
+			time.Sleep(100 * time.Millisecond)
+			jobs = s.Jobs()
+			assert.False(t, jobs[0].Running)
+
+			// stopping a stopped job errors
+			assert.Error(t, s.StopJob(1))
+
+			// ensure the job is running
+			assert.NoError(t, s.StartJob(1))
+			time.Sleep(100 * time.Millisecond)
+			jobs = s.Jobs()
+			assert.True(t, jobs[0].Running)
+		}
+	})
+
+	t.Run("Job start, list:running=true, stop, list:running=false", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		s := schedule.NewSchedulerDaemon(ctx, fxtest.NewLifecycle(t))
+
+		stop := make(chan struct{})
+		s.Submit(&schedule.JobConfig{
+			Job: newTestJob(func(ctx context.Context) error {
+				<-stop
+				return nil
+			}),
+			Name: t.Name(),
+		})
+		// wait for job to execute
+		time.Sleep(100 * time.Millisecond)
+		// ensure the job is running
+		jobs := s.Jobs()
+		assert.True(t, jobs[0].Running)
+
+		// stop the job
+		close(stop)
+		// wait for scheduler to clean up
+		time.Sleep(100 * time.Millisecond)
+		// job is not running
+		jobs = s.Jobs()
+		assert.False(t, jobs[0].Running)
+
+	})
+
+	t.Run("Job restart on success success, list:running=true, stop, list:running=true", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		s := schedule.NewSchedulerDaemon(ctx, fxtest.NewLifecycle(t))
+
+		stop := make(chan struct{})
+		s.Submit(&schedule.JobConfig{
+			Job: newTestJob(func(ctx context.Context) error {
+				<-stop
+				return nil
+			}),
+			Name:                t.Name(),
+			RestartOnCompletion: true,
+		})
+		// wait for job to execute
+		time.Sleep(100 * time.Millisecond)
+		// ensure the job is running
+		jobs := s.Jobs()
+		assert.True(t, jobs[0].Running)
+
+		// stop the job
+		close(stop)
+		// wait for scheduler to clean up
+		time.Sleep(100 * time.Millisecond)
+		// job is running
 		jobs = s.Jobs()
 		assert.True(t, jobs[0].Running)
+
+	})
+
+	t.Run("Job restart on error success, list:running=true, stop, list:running=true", func(t *testing.T) {
+		// scheduler logs are noisy when job returns an error
+		logging.SetAllLoggers(logging.LevelFatal)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		s := schedule.NewSchedulerDaemon(ctx, fxtest.NewLifecycle(t))
+
+		stop := make(chan struct{})
+		s.Submit(&schedule.JobConfig{
+			Job: newTestJob(func(ctx context.Context) error {
+				<-stop
+				return errors.New("error")
+			}),
+			Name:             t.Name(),
+			RestartOnFailure: true,
+		})
+		// wait for job to execute
+		time.Sleep(100 * time.Millisecond)
+		// ensure the job is running
+		jobs := s.Jobs()
+		assert.True(t, jobs[0].Running)
+
+		// stop the job
+		close(stop)
+		// wait for scheduler to clean up
+		time.Sleep(100 * time.Millisecond)
+		// job is running
+		jobs = s.Jobs()
+		assert.True(t, jobs[0].Running)
+
 	})
 }

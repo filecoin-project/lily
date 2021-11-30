@@ -25,6 +25,7 @@ type LilyAPI interface {
 
 	LilyJobStart(ctx context.Context, ID schedule.JobID) error
 	LilyJobStop(ctx context.Context, ID schedule.JobID) error
+	LilyJobWait(ctx context.Context, ID schedule.JobID) (*schedule.JobListResult, error)
 	LilyJobList(ctx context.Context) ([]schedule.JobListResult, error)
 
 	LilyGapFind(ctx context.Context, cfg *LilyGapFindConfig) (*schedule.JobSubmitResult, error)

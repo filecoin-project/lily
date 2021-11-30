@@ -19,6 +19,7 @@ type GapIndexer struct {
 	name                 string
 	minHeight, maxHeight uint64
 	taskSet              mapset.Set
+	done                 chan struct{}
 }
 
 var FullTaskSet mapset.Set
@@ -46,6 +47,10 @@ func NewGapIndexer(node lens.API, db *storage.Database, name string, minHeight, 
 }
 
 func (g *GapIndexer) Run(ctx context.Context) error {
+	// init the done channel for each run since jobs may be started and stopped.
+	g.done = make(chan struct{})
+	defer close(g.done)
+
 	startTime := time.Now()
 
 	head, err := g.node.ChainHead(ctx)
@@ -100,6 +105,10 @@ func (g *GapIndexer) Run(ctx context.Context) error {
 	}
 
 	return g.DB.PersistBatch(ctx, skipGaps, heightGaps, taskGaps, nullRounds)
+}
+
+func (g *GapIndexer) Done() <-chan struct{} {
+	return g.done
 }
 
 type GapIndexerLens interface {

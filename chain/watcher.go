@@ -33,11 +33,16 @@ type Watcher struct {
 	cache      *TipSetCache  // caches tipsets for possible reversion
 	indexSlot  chan struct{} // filled with a token when a goroutine is indexing a tipset
 	wp         *workerpool.WorkerPool
+	done       chan struct{}
 }
 
 // Run starts following the chain head and blocks until the context is done or
 // an error occurs.
 func (c *Watcher) Run(ctx context.Context) error {
+	// init the done channel for each run since jobs may be started and stopped.
+	c.done = make(chan struct{})
+	defer close(c.done)
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -55,6 +60,10 @@ func (c *Watcher) Run(ctx context.Context) error {
 			}
 		}
 	}
+}
+
+func (c *Watcher) Done() <-chan struct{} {
+	return c.done
 }
 
 func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {

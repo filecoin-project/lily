@@ -230,6 +230,14 @@ func (m *LilyNodeAPI) LilyJobStop(_ context.Context, ID schedule.JobID) error {
 	return nil
 }
 
+func (m *LilyNodeAPI) LilyJobWait(ctx context.Context, ID schedule.JobID) (*schedule.JobListResult, error) {
+	res, err := m.Scheduler.WaitJob(ID)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func (m *LilyNodeAPI) LilyJobList(_ context.Context) ([]schedule.JobListResult, error) {
 	return m.Scheduler.Jobs(), nil
 }

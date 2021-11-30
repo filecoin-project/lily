@@ -55,11 +55,16 @@ type Surveyer struct {
 	storage  model.Storage
 	name     string
 	tasks    map[string]Task
+	done     chan struct{}
 }
 
 // Run starts observing the filecoin netwoirk and continues until the context is done or
 // a fatal error occurs.
 func (s *Surveyer) Run(ctx context.Context) error {
+	// init the done channel for each run since jobs may be started and stopped.
+	s.done = make(chan struct{})
+	defer close(s.done)
+
 	// Perform an initial tick before waiting
 	s.Tick(ctx)
 
@@ -74,6 +79,10 @@ func (s *Surveyer) Run(ctx context.Context) error {
 			s.Tick(ctx)
 		}
 	}
+}
+
+func (s *Surveyer) Done() <-chan struct{} {
+	return s.done
 }
 
 func (s *Surveyer) Details() (string, map[string]interface{}) {
