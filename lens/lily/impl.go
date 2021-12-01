@@ -305,14 +305,12 @@ func (m *LilyNodeAPI) Store() adt.Store {
 		if m.CacheConfig.StatestoreCacheSize > 0 {
 			var err error
 			log.Infof("creating caching statestore with size=%d", m.CacheConfig.StatestoreCacheSize)
-			m.actorStore, err = util.NewCachingStateStore(m.ChainAPI.Chain.StateBlockstore(), m.CacheConfig.StatestoreCacheSize)
-			if err != nil {
-				log.Errorf("failed to create caching statestore: %v", err)
-			} else {
+			m.actorStore, err = util.NewCachingStateStore(m.ChainAPI.Chain.StateBlockstore(), int(m.CacheConfig.StatestoreCacheSize))
+			if err == nil {
 				return // done
 			}
-		} else {
-			log.Infof("not creating caching statestore (size=%d)", m.CacheConfig.StatestoreCacheSize)
+
+			log.Errorf("failed to create caching statestore: %v", err)
 		}
 
 		m.actorStore = m.ChainAPI.Chain.ActorStore(context.TODO())

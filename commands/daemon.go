@@ -68,9 +68,9 @@ type daemonOpts struct {
 
 var daemonFlags daemonOpts
 
-var CacheFlags struct {
-	BlockstoreCacheSize int // number of raw blocks to cache in memory
-	StatestoreCacheSize int // number of decoded actor states to cache in memory
+var cacheFlags struct {
+	BlockstoreCacheSize uint // number of raw blocks to cache in memory
+	StatestoreCacheSize uint // number of decoded actor states to cache in memory
 }
 
 var DaemonCmd = &cli.Command{
@@ -154,6 +154,18 @@ Note that jobs are not persisted between restarts of the daemon. See
 			EnvVars:     []string{"LILY_GENESIS"},
 			Destination: &daemonFlags.genesis,
 		},
+		&cli.UintFlag{
+			Name:        "blockstore-cache-size",
+			EnvVars:     []string{"LILY_BLOCKSTORE_CACHE_SIZE"},
+			Value:       0,
+			Destination: &cacheFlags.BlockstoreCacheSize,
+		},
+		&cli.UintFlag{
+			Name:        "statestore-cache-size",
+			EnvVars:     []string{"LILY_STATESTORE_CACHE_SIZE"},
+			Value:       0,
+			Destination: &cacheFlags.StatestoreCacheSize,
+		},
 	},
 	Action: func(c *cli.Context) error {
 		lotuslog.SetupLogLevels()
@@ -235,12 +247,12 @@ Note that jobs are not persisted between restarts of the daemon. See
 		var api lily.LilyAPI
 		stop, err := node.New(ctx,
 			// Start Sentinel Dep injection
-			LilyNodeAPIOption(&api, CacheFlags.StatestoreCacheSize),
+			LilyNodeAPIOption(&api),
 			node.Override(new(*config.Conf), modules.LoadConf(daemonFlags.config)),
 			node.Override(new(*events.Events), modules.NewEvents),
 			node.Override(new(*schedule.Scheduler), schedule.NewSchedulerDaemon),
 			node.Override(new(*storage.Catalog), modules.NewStorageCatalog),
-			node.Override(new(*lutil.CacheConfig), modules.CacheConfig(CacheFlags.BlockstoreCacheSize, CacheFlags.StatestoreCacheSize)),
+			node.Override(new(*lutil.CacheConfig), modules.CacheConfig(cacheFlags.BlockstoreCacheSize, cacheFlags.StatestoreCacheSize)),
 			// End Injection
 
 			node.Override(new(dtypes.Bootstrapper), isBootstrapper),
@@ -248,7 +260,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 			node.Base(),
 			node.Repo(r),
 
-			node.Override(new(dtypes.UniversalBlockstore), modules.CachingUniversalBlockstore(CacheFlags.BlockstoreCacheSize)),
+			node.Override(new(dtypes.UniversalBlockstore), modules.NewCachingUniversalBlockstore),
 
 			// Inject a custom StateManager, must be done after the node.Online() call as we are
 			// overriding the OG lotus StateManager.

@@ -17,8 +17,8 @@ import (
 )
 
 type CacheConfig struct {
-	BlockstoreCacheSize int
-	StatestoreCacheSize int
+	BlockstoreCacheSize uint
+	StatestoreCacheSize uint
 }
 
 func NewCachingStore(backing blockstore.Blockstore) *ProxyingBlockstore {

@@ -39,7 +39,7 @@ func NewSentinelNodeRPC(ctx context.Context, addr string, requestHeader http.Hea
 }
 
 // Lily Node settings for injection into lotus node.
-func LilyNodeAPIOption(out *lily.LilyAPI, statestoreCacheSize int, fopts ...node.Option) node.Option {
+func LilyNodeAPIOption(out *lily.LilyAPI, fopts ...node.Option) node.Option {
 	resAPI := &lily.LilyNodeAPI{}
 	opts := node.Options(
 		node.WithRepoType(repo.FullNode),
