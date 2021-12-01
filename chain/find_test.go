@@ -247,6 +247,7 @@ func TestFind(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
+		expected = append(expected, makeGapReportList(fakeTipset(t, 8), ActorStatesMinerTask)...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
@@ -317,6 +318,24 @@ func TestFind(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := makeGapReportList(tsh2, MessagesTask, ActorStatesInitTask)
+		assertGapReportsEqual(t, expected, actual)
+	})
+
+	t.Run("(#775) for each task at epoch 2 there exists an ERROR _and_ an OK on some tasks", func(t *testing.T) {
+		truncateVPR(t, db)
+		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
+		// error on some tasks
+		errorEpochTasksVPR(t, db, 2, ActorStatesInitTask, ActorStatesMinerTask)
+
+		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
+		require.NoError(t, err, "NewDatabaseFromDB")
+
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
+			findTaskEpochGaps(ctx)
+		require.NoError(t, err)
+
+		// only expect gaps at height 2
+		expected := makeGapReportList(fakeTipset(t, 2), ActorStatesInitTask, ActorStatesMinerTask)
 		assertGapReportsEqual(t, expected, actual)
 	})
 }
