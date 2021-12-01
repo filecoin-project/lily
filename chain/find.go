@@ -215,30 +215,39 @@ func (g *GapIndexer) findTaskEpochGaps(ctx context.Context) (visor.GapReportList
 		`
 select height, task
 	from (
+
+	-- incomplete_heights_and_their_completed_tasks: for every incomplete
+	-- heightin incomplete_task_counts we will take all processing_reports
+	-- with the same height and return height,tasks which are 'OK'
+	-- which provides all incomplete heights and their completed tasks
 	select distinct vpr.task, vpr.height
 	from visor_processing_reports vpr
 	right join(
-		select height, cheight
+
+		-- incomplete_task_counts: count of all tasks by height,status
+		-- and filter for status = 'OK' and all task counts which
+		-- don't equal len(AllTasks)
+		select incomplete_task_counts.height, status, count(incomplete_task_counts.height) cheight
 		from (
-			select task_height_count.height, status, count(task_height_count.height) cheight
-			from (
-				select task, height, status
-				from visor_processing_reports
-				where height >= ?2 and height <= ?3
-				group by height, task, status
-				order by height desc, task
-			) task_height_count
-			where status = ?5
-			group by task_height_count.height, task_height_count.status
-		) task_count_per_height
-		where task_count_per_height.cheight != ?0
-		and status = ?5
-	) incomplete
-	on vpr.height = incomplete.height
+
+			-- all unique height,tasks,status within range of interest
+			select task, height, status
+			from visor_processing_reports
+			where height >= ?2 and height <= ?3
+			group by height, task, status
+			order by height desc, task
+
+		) incomplete_task_counts
+		where status = ?4
+		group by incomplete_task_counts.height, incomplete_task_counts.status
+		having count(incomplete_task_counts.height) != ?0
+
+	) incomplete_heights
+
+	on vpr.height = incomplete_heights.height
 	where (vpr.status_information != ?1
 	or vpr.status_information is null)
-	and vpr.status = ?5
-	and vpr.height >= ?2 and vpr.height <= ?3
+	and status = ?4
 ) incomplete_heights_and_their_completed_tasks
 order by height desc
 ;
@@ -247,8 +256,7 @@ order by height desc
 		visor.ProcessingStatusInformationNullRound, // arg 1
 		g.minHeight, // arg 2
 		g.maxHeight, // arg 3
-		visor.ProcessingStatusError, // arg 4
-		visor.ProcessingStatusOK,  //arg 5
+		visor.ProcessingStatusOK,  //arg 4
 	)
 	if err != nil {
 		return nil, err
