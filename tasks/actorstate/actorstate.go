@@ -16,7 +16,7 @@ import (
 	"github.com/filecoin-project/lily/model"
 )
 
-var log = logging.Logger("lily/task/actorstate")
+var log = logging.Logger("lily/tasks")
 
 type ActorInfo struct {
 	Actor           types.Actor

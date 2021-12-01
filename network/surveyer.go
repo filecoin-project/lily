@@ -19,7 +19,7 @@ const (
 	PeerAgentsTask = "peeragents" // task that observes connected peer agents
 )
 
-var log = logging.Logger("visor/network")
+var log = logging.Logger("lily/network")
 
 type API interface {
 	peeragents.API

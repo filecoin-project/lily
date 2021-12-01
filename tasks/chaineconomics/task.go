@@ -11,7 +11,7 @@ import (
 	visormodel "github.com/filecoin-project/lily/model/visor"
 )
 
-var log = logging.Logger("lily/task/chaineconomics")
+var log = logging.Logger("lily/tasks")
 
 type Task struct {
 	node lens.API
