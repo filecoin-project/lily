@@ -151,9 +151,10 @@ func (g *GapIndexer) findEpochGapsAndNullRounds(ctx context.Context, node GapInd
 		`
 		SELECT s.i AS missing_epoch
 		FROM generate_series(?, ?) s(i)
-		WHERE NOT EXISTS (SELECT 1 FROM visor_processing_reports WHERE height = s.i);
+		WHERE NOT EXISTS (SELECT 1 FROM visor_processing_reports WHERE height = s.i AND status = ?)
+		;
 		`,
-		g.minHeight, g.maxHeight)
+		g.minHeight, g.maxHeight, visor.ProcessingStatusOK)
 	if err != nil {
 		return nil, nil, err
 	}
