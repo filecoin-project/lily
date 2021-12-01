@@ -33,7 +33,7 @@ func TestWalker(t *testing.T) {
 	require.NoError(t, err, "truncating tables")
 
 	t.Logf("preparing chain")
-	full, miner, _ := itestkit.EnsembleMinimal(t)
+	full, miner, _ := itestkit.EnsembleMinimal(t, itestkit.MockProofs())
 
 	nodeAPI := testutil.NewAPIWrapper(full)
 
