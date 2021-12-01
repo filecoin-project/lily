@@ -6,10 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/deckarep/golang-set"
+	mapset "github.com/deckarep/golang-set"
 	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/storage"
+	"github.com/filecoin-project/go-state-types/abi"
 	"golang.org/x/xerrors"
 )
 
@@ -57,12 +59,12 @@ func (g *GapIndexer) Run(ctx context.Context) error {
 	findLog := log.With("type", "find")
 
 	// looks for tasks within epochs which haven't sucessfully completed (at least 1 OK or NULL_ROUND)
-	taskGaps, err := g.findMissingEpochsAndTasks(ctx)
+	taskGaps, epochNulls, err := g.findMissingEpochsAndTasks(ctx, g.node)
 	if err != nil {
 		return xerrors.Errorf("finding task epoch gaps: %w", err)
 	}
 	findLog.Infow("found gaps in tasks", "count", len(taskGaps))
-	return g.DB.PersistBatch(ctx, taskGaps)
+	return g.DB.PersistBatch(ctx, taskGaps, epochNulls)
 }
 
 type taskHeight struct {
@@ -71,11 +73,14 @@ type taskHeight struct {
 	Status string
 }
 
-func (g *GapIndexer) findMissingEpochsAndTasks(ctx context.Context) (visor.GapReportList, error) {
+type GapIndexerLens interface {
+	ChainGetTipSetByHeight(ctx context.Context, epoch abi.ChainEpoch, tsk types.TipSetKey) (*types.TipSet, error)
+}
+
+func (g *GapIndexer) findMissingEpochsAndTasks(ctx context.Context, node GapIndexerLens) (visor.GapReportList, visor.ProcessingReportList, error) {
 	log.Debug("finding task epoch gaps")
 	start := time.Now()
 	var result []taskHeight
-	var out visor.GapReportList
 
 	var sqlFmtTaskValues []string
 	for t := range g.taskSet.Iter() {
@@ -183,23 +188,66 @@ order by 1 desc
 		visor.ProcessingStatusOK,
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	log.Debugw("executed find gap query and found epoch,task gaps", "count", res.RowsReturned())
 
+	nullEpochs := make([]*visor.ProcessingReport, 0)
+	gapRounds := make(visor.GapReportList, 0)
+	cachedTipsetLookups := make(map[uint64]*types.TipSet)
 	for _, r := range result {
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, nil, ctx.Err()
 		default:
 		}
-		out = append(out, &visor.GapReport{
-			Height:     int64(r.Height),
-			Task:       r.Task,
-			Status:     "GAP",
-			Reporter:   g.name,
-			ReportedAt: start,
-		})
+
+		gh := abi.ChainEpoch(r.Height)
+
+		// let's not call the API more than necessary
+		var resultTS *types.TipSet
+		if cachedTS, ok := cachedTipsetLookups[r.Height]; ok {
+			resultTS = cachedTS
+		} else {
+			tsgap, err := node.ChainGetTipSetByHeight(ctx, gh, types.EmptyTSK)
+			if err != nil {
+				return nil, nil, err
+			}
+			cachedTipsetLookups[r.Height] = tsgap
+			resultTS = tsgap
+		}
+
+		if resultTS.Height() == gh {
+			// gap is just a gap
+			gapRounds = append(gapRounds, g.buildGapReport(r.Height, r.Task, start))
+		} else {
+			// gap is a null round
+			log.Debugw("found null round", "height", gh)
+			nullEpochs = append(nullEpochs, g.buildNullReport(r.Height, start))
+		}
 	}
-	return out, nil
+	return gapRounds, nullEpochs, nil
+}
+
+func (g *GapIndexer) buildNullReport(height uint64, start time.Time) *visor.ProcessingReport {
+	return &visor.ProcessingReport{
+		Height:            int64(height),
+		StateRoot:         "NULL_ROUND", // let gap fill add the correct state root for this epoch when it runs the consensus task.
+		Reporter:          g.name,
+		Task:              "gap_find",
+		StartedAt:         start,
+		CompletedAt:       time.Now(),
+		Status:            visor.ProcessingStatusInfo,
+		StatusInformation: visor.ProcessingStatusInformationNullRound, // the gap finding logic uses this value to exclude null rounds from gap report.
+	}
+}
+
+func (g *GapIndexer) buildGapReport(height uint64, task string, start time.Time) *visor.GapReport {
+	return &visor.GapReport{
+		Height:     int64(height),
+		Task:       task,
+		Status:     "GAP",
+		Reporter:   g.name,
+		ReportedAt: start,
+	}
 }
