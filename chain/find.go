@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/deckarep/golang-set"
+	mapset "github.com/deckarep/golang-set"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/visor"
@@ -247,16 +247,16 @@ select height, task
 	on vpr.height = incomplete_heights.height
 	where (vpr.status_information != ?1
 	or vpr.status_information is null)
-	and status = ?4
+	and vpr.status = ?4
 ) incomplete_heights_and_their_completed_tasks
 order by height desc
 ;
 `,
 		len(AllTasks), // arg 0
 		visor.ProcessingStatusInformationNullRound, // arg 1
-		g.minHeight, // arg 2
-		g.maxHeight, // arg 3
-		visor.ProcessingStatusOK,  //arg 4
+		g.minHeight,              // arg 2
+		g.maxHeight,              // arg 3
+		visor.ProcessingStatusOK, // arg 4
 	)
 	if err != nil {
 		return nil, err
