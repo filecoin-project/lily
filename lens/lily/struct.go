@@ -16,7 +16,7 @@ import (
 	"github.com/filecoin-project/lily/schedule"
 )
 
-var log = logging.Logger("lily/lens/lily")
+var log = logging.Logger("lily/lens")
 
 var _ LilyAPI = (*LilyAPIStruct)(nil)
 

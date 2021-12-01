@@ -17,7 +17,7 @@ import (
 	"gopkg.in/cheggaaa/pb.v1"
 )
 
-var log = logging.Logger("lily/chain/export")
+var log = logging.Logger("lily/chain")
 
 type ChainExporter struct {
 	store blockstore.Blockstore // blockstore chain is exported from

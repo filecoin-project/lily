@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	log                = logging.Logger("util")
+	log                = logging.Logger("lily/commands")
 	Endpoint, _        = tag.NewKey("endpoint")
 	APIRequestDuration = stats.Float64("api/request_duration_ms", "Duration of API requests", stats.UnitMilliseconds)
 )

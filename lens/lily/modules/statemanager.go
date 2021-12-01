@@ -17,7 +17,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-var log = logging.Logger("modules/statemanager")
+var log = logging.Logger("lily/lens")
 
 var ExecutionTraceNotFound = xerrors.Errorf("failed to find execution trace")
 

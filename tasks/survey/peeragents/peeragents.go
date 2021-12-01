@@ -13,7 +13,7 @@ import (
 	"github.com/filecoin-project/lily/model/surveyed"
 )
 
-var log = logging.Logger("visor/task/peeragents")
+var log = logging.Logger("visor/tasks")
 
 type API interface {
 	ID(ctx context.Context) (peer.ID, error)

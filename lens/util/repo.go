@@ -23,7 +23,7 @@ import (
 	"github.com/filecoin-project/lily/tasks/messages/fcjson"
 )
 
-var log = logging.Logger("lens/util")
+var log = logging.Logger("lily/lens")
 
 // GetMessagesForTipset returns a list of messages sent as part of pts (parent) with receipts found in ts (child).
 // No attempt at deduplication of messages is made. A list of blocks with their corresponding messages is also returned - it contains all messages
