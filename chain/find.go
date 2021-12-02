@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/deckarep/golang-set"
+	mapset "github.com/deckarep/golang-set"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/visor"
@@ -151,9 +151,10 @@ func (g *GapIndexer) findEpochGapsAndNullRounds(ctx context.Context, node GapInd
 		`
 		SELECT s.i AS missing_epoch
 		FROM generate_series(?, ?) s(i)
-		WHERE NOT EXISTS (SELECT 1 FROM visor_processing_reports WHERE height = s.i);
+		WHERE NOT EXISTS (SELECT 1 FROM visor_processing_reports WHERE height = s.i AND status = ?)
+		;
 		`,
-		g.minHeight, g.maxHeight)
+		g.minHeight, g.maxHeight, visor.ProcessingStatusOK)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -213,31 +214,49 @@ func (g *GapIndexer) findTaskEpochGaps(ctx context.Context) (visor.GapReportList
 		&result,
 		`
 select height, task
-from (
-         select distinct vpr.task, vpr.height, vpr.status_information
-         from visor_processing_reports vpr
-                  right join(
-             select height
-             from (
-                      select task_height_count.height, count(task_height_count.height) cheight
-                      from (
-                               select distinct(task) as task, height
-                               from visor_processing_reports
-                               group by height, task
-                               order by height desc
-                           ) task_height_count
-                      group by task_height_count.height
-                  ) task_count_per_height
-             where task_count_per_height.cheight != ?
-         ) incomplete
-                            on vpr.height = incomplete.height
-         where vpr.status_information != ?
-            or vpr.status_information is null
-     ) incomplete_heights_and_their_completed_tasks
-where height >= ? and height <= ?
+	from (
+
+	-- incomplete_heights_and_their_completed_tasks: for every incomplete
+	-- heightin incomplete_task_counts we will take all processing_reports
+	-- with the same height and return height,tasks which are 'OK'
+	-- which provides all incomplete heights and their completed tasks
+	select distinct vpr.task, vpr.height
+	from visor_processing_reports vpr
+	right join(
+
+		-- incomplete_task_counts: count of all tasks by height,status
+		-- and filter for status = 'OK' and all task counts which
+		-- don't equal len(AllTasks)
+		select incomplete_task_counts.height, status, count(incomplete_task_counts.height) cheight
+		from (
+
+			-- all unique height,tasks,status within range of interest
+			select task, height, status
+			from visor_processing_reports
+			where height >= ?2 and height <= ?3
+			group by height, task, status
+			order by height desc, task
+
+		) incomplete_task_counts
+		where status = ?4
+		group by incomplete_task_counts.height, incomplete_task_counts.status
+		having count(incomplete_task_counts.height) != ?0
+
+	) incomplete_heights
+
+	on vpr.height = incomplete_heights.height
+	where (vpr.status_information != ?1
+	or vpr.status_information is null)
+	and vpr.status = ?4
+) incomplete_heights_and_their_completed_tasks
 order by height desc
+;
 `,
-		len(AllTasks), visor.ProcessingStatusInformationNullRound, g.minHeight, g.maxHeight,
+		len(AllTasks), // arg 0
+		visor.ProcessingStatusInformationNullRound, // arg 1
+		g.minHeight,              // arg 2
+		g.maxHeight,              // arg 3
+		visor.ProcessingStatusOK, // arg 4
 	)
 	if err != nil {
 		return nil, err

@@ -247,6 +247,7 @@ func TestFind(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
+		expected = append(expected, makeGapReportList(fakeTipset(t, 8), ActorStatesMinerTask)...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
@@ -318,6 +319,62 @@ func TestFind(t *testing.T) {
 
 		expected := makeGapReportList(tsh2, MessagesTask, ActorStatesInitTask)
 		assertGapReportsEqual(t, expected, actual)
+	})
+
+	t.Run("(#775) for each task at epoch 2 there exists an ERROR", func(t *testing.T) {
+		truncateVPR(t, db)
+		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
+		errorEpochTasksVPR(t, db, 2, AllTasks...)
+
+		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
+		require.NoError(t, err, "NewDatabaseFromDB")
+
+		tsh2 := fakeTipset(t, 2)
+		mlens := new(MockedFindLens)
+		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
+			Return(tsh2, nil)
+
+		actual, _, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
+			findEpochGapsAndNullRounds(ctx, mlens)
+		require.NoError(t, err)
+
+		expected := makeGapReportList(tsh2, AllTasks...)
+		assertGapReportsEqual(t, expected, actual)
+	})
+
+	t.Run("(#775) for each task at epoch 2 there exists an ERROR _and_ an OK on some tasks", func(t *testing.T) {
+		truncateVPR(t, db)
+		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
+		// error on some tasks
+		errorEpochTasksVPR(t, db, 2, ActorStatesInitTask, ActorStatesMinerTask)
+
+		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
+		require.NoError(t, err, "NewDatabaseFromDB")
+
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
+			findTaskEpochGaps(ctx)
+		require.NoError(t, err)
+
+		// only expect gaps at height 2
+		expected := makeGapReportList(fakeTipset(t, 2), ActorStatesInitTask, ActorStatesMinerTask)
+		assertGapReportsEqual(t, expected, actual)
+	})
+
+	t.Run("(#773) for each task at epoch 2 there exists a SKIP and an OK", func(t *testing.T) {
+		truncateVPR(t, db)
+		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
+		skipEpochSkippedVRP(t, db, 2, AllTasks...)
+		appendOKAtEpochVPR(t, db, 2, AllTasks...)
+
+		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
+		require.NoError(t, err, "NewDatabaseFromDB")
+
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
+			findTaskEpochGaps(ctx)
+		require.NoError(t, err)
+
+		// no gaps should be found since the epoch has OK's for all tasks; the SKIPS are ignored.
+		require.Len(t, actual, 0)
 	})
 }
 
@@ -417,6 +474,17 @@ func skipEpochSkippedVRP(tb testing.TB, db *pg.DB, epoch int, tasks ...string) {
 	where height = ? and task = ?
 `,
 			epoch, task)
+		require.NoError(tb, err)
+	}
+}
+
+func appendOKAtEpochVPR(tb testing.TB, db *pg.DB, epoch int, tasks ...string) {
+	for _, task := range tasks {
+		qsrt := fmt.Sprintf(`
+	insert into public.visor_processing_reports(height, state_root, reporter, task, started_at, completed_at, status, status_information, errors_detected)
+	values(%d, concat(%d, '_state_root'), '%s_appendok', '%s', '2021-01-01 00:00:00.000000 +00:00', '2021-01-21 00:00:00.000000 +00:00', 'OK',null, null);
+			`, epoch, epoch, tb.Name(), task)
+		_, err := db.Exec(qsrt)
 		require.NoError(tb, err)
 	}
 }
