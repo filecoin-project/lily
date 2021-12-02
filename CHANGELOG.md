@@ -5,6 +5,20 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.8.5"></a>
+## [v0.8.5] - 2021-12-02
+
+### Fix
+- ci and testing deadlines (#776)
+- message task tolerates unexpected params (#780)
+- don't report errors for messages with invalid method (#784)
+- ensembleminimal requires mocker proofs (#790)
+- consider partially completed heights w ERRORs and SKIPs (#791)
+
+### Chore
+- bump go and timescale versions for CI tasks (#777)
+- consolidate logger names (#789)
+
 <a name="v0.8.4"></a>
 ## [v0.8.4] - 2021-10-29
 
