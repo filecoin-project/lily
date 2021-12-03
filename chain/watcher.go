@@ -3,6 +3,9 @@ package chain
 import (
 	"context"
 	"errors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/gammazero/workerpool"
@@ -115,6 +118,11 @@ func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {
 
 // maybeIndexTipSet is called when a new tipset has been discovered
 func (c *Watcher) maybeIndexTipSet(ctx context.Context, ts *types.TipSet) error {
+	ctx, span := otel.Tracer("").Start(ctx, "Watcher.maybeIndexTipSet", trace.WithAttributes(
+		attribute.String("tipset", ts.String()),
+		attribute.Int64("tipset_height", int64(ts.Height())),
+	))
+	defer span.End()
 	// Process the tipset if we can, otherwise skip it so we don't block if indexing is too slow
 	select {
 	case <-ctx.Done():
