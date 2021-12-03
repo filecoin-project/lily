@@ -500,6 +500,9 @@ persist:
 }
 
 func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, name string, ts *types.TipSet, results chan *TaskResult) {
+	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.%s", name))
+	defer span.End()
+
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
@@ -643,6 +646,9 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 }
 
 func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProcessor, name string, ts, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages, results chan *TaskResult) {
+	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.%s", name))
+	defer span.End()
+
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
@@ -670,6 +676,9 @@ func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProces
 }
 
 func (t *TipSetIndexer) runConsensusProcessor(ctx context.Context, p TipSetsProcessor, name string, ts, pts *types.TipSet, results chan *TaskResult) {
+	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.%s", name))
+	defer span.End()
+
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
@@ -697,6 +706,9 @@ func (t *TipSetIndexer) runConsensusProcessor(ctx context.Context, p TipSetsProc
 }
 
 func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor, name string, ts, pts *types.TipSet, actors map[string]lens.ActorStateChange, emsgs []*lens.ExecutedMessage, results chan *TaskResult) {
+	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.%s", name))
+	defer span.End()
+
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
@@ -724,6 +736,9 @@ func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor,
 }
 
 func (t *TipSetIndexer) runMessageExecutionProcessor(ctx context.Context, p MessageExecutionProcessor, name string, ts, pts *types.TipSet, imsgs []*lens.MessageExecution, results chan *TaskResult) {
+	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.%s", name))
+	defer span.End()
+
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
