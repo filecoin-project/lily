@@ -19,8 +19,6 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/urfave/cli/v2"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/commands/util"
@@ -178,14 +176,8 @@ Note that jobs are not persisted between restarts of the daemon. See
 			return xerrors.Errorf("setup metrics: %w", err)
 		}
 
-		if VisorTracingFlags.Tracing {
-			tp, err := NewJaegerTraceProvider(VisorTracingFlags)
-			if err != nil {
-				return xerrors.Errorf("setup tracing: %w", err)
-			}
-			otel.SetTracerProvider(tp)
-		} else {
-			otel.SetTracerProvider(trace.NewNoopTracerProvider())
+		if err := setupTracing(VisorTracingFlags); err != nil {
+			return xerrors.Errorf("setup tracing: %w", err)
 		}
 
 		ctx := context.Background()
