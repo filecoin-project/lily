@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"fmt"
 	"sync"
 	"time"
 
@@ -36,6 +37,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/xerrors"
 )
 
@@ -158,10 +160,13 @@ func NewTipSetIndexer(node lens.API, d model.Storage, window time.Duration, name
 
 // TipSet is called when a new tipset has been discovered
 func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
-	ctx, span := otel.Tracer("").Start(ctx, "Indexer.TipSet")
-	if span.IsRecording() {
-		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))
-	}
+	ctx, span := otel.Tracer("").Start(ctx, "TipSetIndexer.TipSet", trace.WithAttributes(
+		attribute.String("tipset", ts.String()),
+		attribute.Int64("height", int64(ts.Height())),
+		attribute.String("name", t.name),
+		attribute.String("window", t.window.String()),
+		attribute.StringSlice("tasks", t.tasks),
+	))
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Name, t.name))
@@ -210,6 +215,13 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	if current == nil {
 		return nil
 	}
+
+	span.SetAttributes(
+		attribute.String("next_tipset", next.String()),
+		attribute.Int64("next_height", int64(next.Height())),
+		attribute.String("current_tipset", current.String()),
+		attribute.Int64("current_height", int64(current.Height())),
+	)
 
 	ll := log.With("current", int64(current.Height()), "next", int64(next.Height()))
 	ll.Debugw("indexing tipset")
@@ -386,12 +398,14 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 				if _, complete := completed[name]; !complete {
 					taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, "indexer not ready")}
 					ll.Infow("task skipped", "task", name, "reason", "indexer not ready")
+					span.AddEvent(fmt.Sprintf("skipped task: %s", res.Task))
 				}
 			}
 			stats.Record(ctx, metrics.TipSetSkip.M(1))
 			goto persist
 		case res = <-results:
 		}
+		span.AddEvent(fmt.Sprintf("completed task: %s", res.Task))
 		inFlight--
 
 		llt := ll.With("task", res.Task)
@@ -450,8 +464,13 @@ persist:
 
 	// Persist all results
 	go func() {
+		ctx, persistSpan := otel.Tracer("").Start(ctx, "TipSetIndexer.Persist", trace.WithAttributes(
+			attribute.String("tipset", ts.String()),
+			attribute.Int64("height", int64(ts.Height())),
+		))
 		// free up the slot when done
 		defer func() {
+			persistSpan.End()
 			<-t.persistSlot
 		}()
 
@@ -477,7 +496,6 @@ persist:
 		wg.Wait()
 		ll.Infow("tasks complete", "total_time", time.Since(start))
 	}()
-
 	return nil
 }
 
@@ -540,10 +558,10 @@ func (t *TipSetIndexer) getGenesisActors(ctx context.Context) (map[string]lens.A
 // and applies it to versions of state tress supporting it. These include Version 2 and 3 of the lotus state tree implementation.
 // stateChangedActors will fall back to the lotus API method when the optimized diffing cannot be applied.
 func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid) (map[string]lens.ActorStateChange, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "StateChangedActors")
-	if span.IsRecording() {
-		span.SetAttributes(attribute.String("old", old.String()), attribute.String("new", new.String()))
-	}
+	ctx, span := otel.Tracer("").Start(ctx, "TipSetIndexer.StateChangedActors", trace.WithAttributes(
+		attribute.String("old", old.String()),
+		attribute.String("new", new.String()),
+	))
 	defer span.End()
 
 	var (
@@ -561,9 +579,7 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 	}
 
 	if newVersion == oldVersion && (newVersion != types.StateTreeVersion0 && newVersion != types.StateTreeVersion1) {
-		if span.IsRecording() {
-			span.SetAttributes(attribute.String("diff", "fast"))
-		}
+		span.SetAttributes(attribute.String("diff", "fast"))
 		// TODO: replace hamt.UseTreeBitWidth and hamt.UseHashFunction with values based on network version
 		changes, err := hamt.Diff(ctx, t.node.Store(), t.node.Store(), oldRoot, newRoot, hamt.UseTreeBitWidth(5), hamt.UseHashFunction(func(input []byte) []byte {
 			res := sha256.Sum256(input)
@@ -609,6 +625,7 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 			return out, nil
 		}
 	}
+	span.SetAttributes(attribute.String("diff", "slow"))
 	log.Debug("using slow state diff")
 	actors, err := t.node.StateChangedActors(ctx, old, new)
 	if err != nil {
