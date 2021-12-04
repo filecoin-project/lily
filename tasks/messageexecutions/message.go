@@ -2,6 +2,8 @@ package messageexecutions
 
 import (
 	"context"
+	"github.com/filecoin-project/go-state-types/exitcode"
+	"time"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/lens"
@@ -44,6 +46,11 @@ func (p *Task) ProcessMessageExecutions(ctx context.Context, store adt.Store, ts
 		internalParsedResult = make(messagemodel.InternalParsedMessageList, 0, len(mex))
 		errorsDetected       = make([]*messages.MessageError, 0) // we don't know the cap since mex is recursive in nature.
 	)
+
+	getActorCode, err := util.MakeGetActorCodeFunc(ctx, store, ts, pts)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	for _, m := range mex {
 		select {
@@ -97,64 +104,59 @@ func (p *Task) ProcessMessageExecutions(ctx context.Context, store adt.Store, ts
 		// Currently there does not exist a need for message analysis at this granularity.
 		// Before enabling this, some type of filtering will need to be implemented such that only
 		// the internal sends we are interested in can be extracted.
-		/*
-			getActorCode, err := util.MakeGetActorCodeFunc(ctx, store, ts, pts)
-			if err != nil {
-				return nil, nil, err
-			}
+		// some messages will cause internal messages to be sent between the actors, gather and record them here.
 
-			// some messages will cause internal messages to be sent between the actors, gather and record them here.
-			subCalls := getChildMessagesOf(m)
-			for _, sub := range subCalls {
-				subToActorCode, found := getActorCode(sub.Message.To)
-				var subToName, subToFamily string
-				if found {
-					subToName, subToFamily, err = util.ActorNameAndFamilyFromCode(subToActorCode)
-					if err != nil {
-						errorsDetected = append(errorsDetected, &messages.MessageError{
-							Cid:   sub.Message.Cid(),
-							Error: xerrors.Errorf("failed to get sub-message to actor name and family: %w", err).Error(),
-						})
-					}
-					// if the message aborted execution while creating an actor due to lack of gas then this is expected as the actors don't exist
-				} else {
-					subToName = "<unknown>"
-					subToFamily = "<unknown>"
-				}
-				internalResult = append(internalResult, &messagemodel.InternalMessage{
-					Height:        int64(m.Height),
-					Cid:           sub.Message.Cid().String(), // pity we have to calculate this here
-					StateRoot:     m.StateRoot.String(),       // state root of the parent message
-					SourceMessage: m.Cid.String(),
-					From:          sub.Message.From.String(),
-					To:            sub.Message.To.String(),
-					Value:         sub.Message.Value.String(),
-					Method:        uint64(sub.Message.Method),
-					ActorName:     subToName,
-					ActorFamily:   subToFamily,
-					ExitCode:      int64(sub.Receipt.ExitCode),
-					GasUsed:       sub.Receipt.GasUsed,
-				})
-
-				subMethod, subParams, err := util.MethodAndParamsForMessage(sub.Message, subToActorCode)
+		subCalls := getChildMessagesOf(m)
+		for _, sub := range subCalls {
+			subToActorCode, found := getActorCode(sub.Message.To)
+			var subToName, subToFamily string
+			if found {
+				subToName, subToFamily, err = util.ActorNameAndFamilyFromCode(subToActorCode)
 				if err != nil {
 					errorsDetected = append(errorsDetected, &messages.MessageError{
 						Cid:   sub.Message.Cid(),
-						Error: xerrors.Errorf("failed parse method and params for sub-message: %w", err).Error(),
+						Error: xerrors.Errorf("failed to get sub-message to actor name and family: %w", err).Error(),
 					})
 				}
-				internalParsedResult = append(internalParsedResult, &messagemodel.InternalParsedMessage{
-					Height: int64(m.Height),
-					Cid:    m.Cid.String(),
-					From:   m.Message.From.String(),
-					To:     m.Message.To.String(),
-					Value:  m.Message.Value.String(),
-					Method: subMethod,
-					Params: subParams,
+				// if the message aborted execution while creating an actor due to lack of gas then this is expected as the actors don't exist
+			} else {
+				subToName = "<unknown>"
+				subToFamily = "<unknown>"
+			}
+			internalResult = append(internalResult, &messagemodel.InternalMessage{
+				Height:        int64(m.Height),
+				Cid:           sub.Message.Cid().String(), // pity we have to calculate this here
+				StateRoot:     m.StateRoot.String(),       // state root of the parent message
+				SourceMessage: m.Cid.String(),
+				From:          sub.Message.From.String(),
+				To:            sub.Message.To.String(),
+				Value:         sub.Message.Value.String(),
+				Method:        uint64(sub.Message.Method),
+				ActorName:     subToName,
+				ActorFamily:   subToFamily,
+				ExitCode:      int64(sub.Receipt.ExitCode),
+				GasUsed:       sub.Receipt.GasUsed,
+			})
+
+			subMethod, subParams, err := util.MethodAndParamsForMessage(sub.Message, subToActorCode)
+			if err != nil && sub.Receipt.ExitCode == exitcode.Ok {
+				errorsDetected = append(errorsDetected, &messages.MessageError{
+					Cid:   sub.Message.Cid(),
+					Error: xerrors.Errorf("failed parse method and params for sub-message: %w", err).Error(),
 				})
 			}
-		*/
+			internalParsedResult = append(internalParsedResult, &messagemodel.InternalParsedMessage{
+				Height: int64(m.Height),
+				Cid:    sub.Message.Cid().String(),
+				From:   sub.Message.From.String(),
+				To:     sub.Message.To.String(),
+				Value:  sub.Message.Value.String(),
+				Method: subMethod,
+				Params: subParams,
+			})
+		}
 	}
+
 	if len(errorsDetected) != 0 {
 		report.ErrorsDetected = errorsDetected
 	}
@@ -165,7 +167,6 @@ func (p *Task) ProcessMessageExecutions(ctx context.Context, store adt.Store, ts
 	}, report, nil
 }
 
-/*
 func walkExecutionTrace(et *types.ExecutionTrace, trace *[]*MessageTrace) {
 	for _, sub := range et.Subcalls {
 		*trace = append(*trace, &MessageTrace{
@@ -192,4 +193,3 @@ func getChildMessagesOf(m *lens.MessageExecution) []*MessageTrace {
 	walkExecutionTrace(&m.Ret.ExecutionTrace, &out)
 	return out
 }
-*/
