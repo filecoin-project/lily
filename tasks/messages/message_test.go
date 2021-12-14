@@ -48,7 +48,7 @@ func TestParseMessageParams(t *testing.T) {
 			method:      2,
 			params:      mustDecodeBase64(t, "gm5maWwvMi9tdWx0aXNpZ1hFhVUBVZOiUErA4tz2x5Zz9iV/aBZBdHxVARJCEmhAYnLXQYa/1IScyah3BRgEVQE3/ahkH/xoK6Xpa0ZbDxkY/oPxiAIA"),
 			actorCode:   builtin5.InitActorCodeID,
-			wantMethod:  "InitExecParams",
+			wantMethod:  "Exec",
 			wantEncoded: "",
 			wantErr:     true,
 		},
@@ -58,7 +58,7 @@ func TestParseMessageParams(t *testing.T) {
 			method:      2,
 			params:      mustDecodeBase64(t, "glgkAXEAIKIYsG+CNkex11XGSGd1TapZ7E3Pnv/QS+HCi5f8FgI/WERYPwFVk6JQSsDi3PbHlnP2JX9oFkF0fAESQhJoQGJy10GGv9SEnMmodwUYBAE3/ahkH/xoK6Xpa0ZbDxkY/oPxiAAAAA=="),
 			actorCode:   builtin5.InitActorCodeID,
-			wantMethod:  "InitExecParams",
+			wantMethod:  "Exec",
 			wantEncoded: "",
 			wantErr:     true,
 		},
@@ -68,7 +68,7 @@ func TestParseMessageParams(t *testing.T) {
 			method:      2,
 			params:      mustDecodeBase64(t, "WCcBcaDkAiAzgZ+v0x2W+uoEsJxtRrsaX365EEcIgSCz/gbOPO8fIoQ="),
 			actorCode:   builtin5.InitActorCodeID,
-			wantMethod:  "InitExecParams",
+			wantMethod:  "Exec",
 			wantEncoded: "",
 			wantErr:     true,
 		},
@@ -78,7 +78,7 @@ func TestParseMessageParams(t *testing.T) {
 			method:      2,
 			params:      mustDecodeBase64(t, "gtgqomZzaWduZXL1ZG5hbWVOZmlsLzUvbXVsdGlzaWdYW4SCeClmMXVldnZsdzdqeG9nc2NmZW42Y2N1dGFtbGRjdmMzZ2hwaG9zM3FkYXgpZjFheTJueXo2bm16dXlzeG9tdWp5NWc3bmF5YjQ1M2doZ2hycW55Y3kCAAA="),
 			actorCode:   builtin5.InitActorCodeID,
-			wantMethod:  "InitExecParams",
+			wantMethod:  "Exec",
 			wantEncoded: "",
 			wantErr:     true,
 		},
@@ -89,7 +89,7 @@ func TestParseMessageParams(t *testing.T) {
 			params:      mustDecodeBase64(t, "ghIB"),
 			actorCode:   builtin4.StorageMinerActorCodeID,
 			wantMethod:  "DisputeWindowedPoSt",
-			wantEncoded: "{\n\t\"Deadline\": 18,\n\t\"PoStIndex\": 1\n}\n",
+			wantEncoded: "{\"Deadline\":18,\"PoStIndex\":1}",
 			wantErr:     false,
 		},
 		{
@@ -106,13 +106,15 @@ func TestParseMessageParams(t *testing.T) {
 		{
 			// Derived from message bafy2bzacebpiuu7tgya6yz56sfllpqc3rqbo5s5xl7353xeuavc53qlpb4sqw
 			// Account actor is supported for parameter parsing it the constructor method.
+			// expect error since parameters we not passed but expected:
+			// https://filfox.info/en/message/bafy2bzacebpiuu7tgya6yz56sfllpqc3rqbo5s5xl7353xeuavc53qlpb4sqw
 			name:        "issue-709",
 			method:      1,
 			params:      nil,
 			actorCode:   builtin3.AccountActorCodeID,
 			wantMethod:  "Constructor",
-			wantEncoded: `""`,
-			wantErr:     false,
+			wantEncoded: ``,
+			wantErr:     true,
 		},
 		{
 			// Derived from message bafy2bzacedzfkgkgwmyhnrty3nenkmxuhlkfhskywb3olqolhxln3yeb2cklu
@@ -122,18 +124,18 @@ func TestParseMessageParams(t *testing.T) {
 			params:      nil,
 			actorCode:   builtin3.AccountActorCodeID,
 			wantMethod:  "PubkeyAddress",
-			wantEncoded: `""`,
+			wantEncoded: ``,
 			wantErr:     false,
 		},
 		{
 			// Derived from message bafy2bzaceaoyvylhmpn6foboyajbbcjvczszyjs4do7mgp4vuutbgrk5z42fu
-			// Account actor methods may receive unexpect params
+			// Account actor methods may receive unexpect params, they should not be parsed as they will result in invalid json.
 			name:        "issue-772",
 			method:      2,
 			params:      mustDecodeBase64(t, "dHJhbnNmZXI="),
 			actorCode:   builtin3.AccountActorCodeID,
 			wantMethod:  "PubkeyAddress",
-			wantEncoded: `"dHJhbnNmZXI="`,
+			wantEncoded: ``,
 			wantErr:     false,
 		},
 	}
