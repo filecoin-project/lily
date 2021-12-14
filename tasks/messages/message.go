@@ -1,21 +1,18 @@
 package messages
 
 import (
-	"bytes"
 	"context"
-	"math"
-	"math/big"
-
 	"github.com/filecoin-project/go-state-types/exitcode"
+	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
-	logging "github.com/ipfs/go-log/v2"
-	"github.com/ipld/go-ipld-prime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
+	"math"
+	"math/big"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/lens"
@@ -23,10 +20,7 @@ import (
 	derivedmodel "github.com/filecoin-project/lily/model/derived"
 	messagemodel "github.com/filecoin-project/lily/model/messages"
 	visormodel "github.com/filecoin-project/lily/model/visor"
-	"github.com/filecoin-project/lily/tasks/messages/fcjson"
 )
-
-var log = logging.Logger("lily/tasks")
 
 type Task struct{}
 
@@ -292,40 +286,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 }
 
 func (p *Task) parseMessageParams(m *types.Message, destCode cid.Cid) (string, string, error) {
-	// Method is optional, zero means a plain value transfer
-	if m.Method == 0 {
-		return "Send", "", nil
-	}
-
-	if !destCode.Defined() {
-		return "Unknown", "", xerrors.Errorf("missing actor code")
-	}
-
-	var params ipld.Node
-	var method string
-	var err error
-
-	params, method, err = ParseParams(m.Params, int64(m.Method), destCode)
-	if method == "Unknown" {
-		return "", "", xerrors.Errorf("unknown method for actor type %s: %d", destCode.String(), int64(m.Method))
-	}
-	if err != nil {
-		log.Warnf("failed to parse parameters of message %s: %v", m.Cid, err)
-		// this can occur when the message is not valid cbor
-		return method, "", err
-	}
-	if params == nil {
-		return method, "", nil
-	}
-
-	buf := bytes.NewBuffer(nil)
-	if err := fcjson.Encoder(params, buf); err != nil {
-		return "", "", xerrors.Errorf("json encode: %w", err)
-	}
-
-	encoded := string(bytes.ReplaceAll(bytes.ToValidUTF8(buf.Bytes(), []byte{}), []byte{0x00}, []byte{}))
-
-	return method, encoded, nil
+	return util.MethodAndParamsForMessage(m, destCode)
 }
 
 type MessageError struct {

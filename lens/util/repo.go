@@ -3,26 +3,36 @@ package util
 import (
 	"bytes"
 	"context"
-	"go.opentelemetry.io/otel"
+	"encoding/json"
+	"fmt"
+	"reflect"
 	"strings"
 
+	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
+	cbg "github.com/whyrusleeping/cbor-gen"
+	"go.opentelemetry.io/otel"
+	"golang.org/x/xerrors"
+
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-state-types/abi"
 	builtin "github.com/filecoin-project/lotus/chain/actors/builtin"
+	"github.com/filecoin-project/lotus/chain/consensus/filcns"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
-	"github.com/ipfs/go-cid"
-	logging "github.com/ipfs/go-log/v2"
-	"github.com/ipld/go-ipld-prime"
-	"golang.org/x/xerrors"
 
 	builtininit "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/lens"
-	"github.com/filecoin-project/lily/tasks/messages"
-	"github.com/filecoin-project/lily/tasks/messages/fcjson"
 )
+
+var ActorRegistry *vm.ActorRegistry
+
+func init() {
+	ActorRegistry = filcns.NewActorRegistry()
+}
 
 var log = logging.Logger("lily/lens")
 
@@ -205,31 +215,52 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 	}, nil
 }
 
-func MethodAndParamsForMessage(m *types.Message, destCode cid.Cid) (string, string, error) {
-	var params ipld.Node
-	var method string
-	var err error
+func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (string, string, error) {
+	m, found := ActorRegistry.Methods[actCode][method]
+	if !found {
+		return "", "", fmt.Errorf("unknown method %d for actor %s", method, actCode)
+	}
 
-	// fall back to generic cbor->json conversion.
-	params, method, err = messages.ParseParams(m.Params, int64(m.Method), destCode)
+	// if the actor method doesn't expect params don't parse them
+	// messages can contain unexpected params and remain valid, we need to ignore this case for parsing.
+	if m.Params == reflect.TypeOf(new(abi.EmptyValue)) {
+		return "", m.Name, nil
+	}
+
+	p := reflect.New(m.Params.Elem()).Interface().(cbg.CBORUnmarshaler)
+	if err := p.UnmarshalCBOR(bytes.NewReader(params)); err != nil {
+		actorName := builtin.ActorNameByCode(actCode)
+		return "", m.Name, fmt.Errorf("cbor decode into %s %s:(%s.%d) failed: %v", m.Name, actorName, actCode, method, err)
+	}
+
+	b, err := json.Marshal(p)
+	return string(b), m.Name, err
+}
+
+func MethodAndParamsForMessage(m *types.Message, destCode cid.Cid) (string, string, error) {
+	// Method is optional, zero means a plain value transfer
+	if m.Method == 0 {
+		return "Send", "", nil
+	}
+
+	if !destCode.Defined() {
+		return "Unknown", "", xerrors.Errorf("missing actor code")
+	}
+
+	params, method, err := ParseParams(m.Params, m.Method, destCode)
 	if method == "Unknown" {
 		return "", "", xerrors.Errorf("unknown method for actor type %s: %d", destCode.String(), int64(m.Method))
 	}
 	if err != nil {
-		log.Warnf("failed to parse parameters of message %s: %v", m.Cid(), err)
+		log.Warnf("failed to parse parameters of message %s: %v", m.Cid, err)
 		// this can occur when the message is not valid cbor
-		return method, "", xerrors.Errorf("failed to parse parameters of message %s: %w", m.Cid(), err)
+		return method, "", err
 	}
-	if params == nil {
+	if params == "" {
 		return method, "", nil
 	}
 
-	buf := bytes.NewBuffer(nil)
-	if err := fcjson.Encoder(params, buf); err != nil {
-		return "", "", xerrors.Errorf("json encode message params: %w", err)
-	}
-
-	encoded := string(bytes.ReplaceAll(bytes.ToValidUTF8(buf.Bytes(), []byte{}), []byte{0x00}, []byte{}))
+	encoded := strings.ReplaceAll(strings.ToValidUTF8(params, ""), string([]byte{0x00}), "")
 
 	return method, encoded, nil
 }
