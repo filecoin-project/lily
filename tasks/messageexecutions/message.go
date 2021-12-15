@@ -3,6 +3,7 @@ package messageexecutions
 import (
 	"context"
 	"github.com/filecoin-project/go-state-types/exitcode"
+	logging "github.com/ipfs/go-log/v2"
 	"time"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
@@ -17,6 +18,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 )
+
+var log = logging.Logger("tasks/messageexecution")
 
 func NewTask() *Task {
 	return &Task{}
@@ -100,11 +103,10 @@ func (p *Task) ProcessMessageExecutions(ctx context.Context, store adt.Store, ts
 			})
 		}
 
-		// TODO(frrist): this code is commented out as it collects all internal message sent through the VM.
-		// Currently there does not exist a need for message analysis at this granularity.
-		// Before enabling this, some type of filtering will need to be implemented such that only
-		// the internal sends we are interested in can be extracted.
-		// some messages will cause internal messages to be sent between the actors, gather and record them here.
+		// abort tracking internal messages if the top-level message failed to apply.
+		if m.Ret.ExitCode != exitcode.Ok {
+			continue
+		}
 
 		subCalls := getChildMessagesOf(m)
 		for _, sub := range subCalls {

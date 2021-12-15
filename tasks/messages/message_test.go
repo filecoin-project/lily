@@ -10,6 +10,7 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
 	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
+	"github.com/filecoin-project/lily/lens/util"
 	market0 "github.com/filecoin-project/specs-actors/actors/builtin/market"
 	"reflect"
 	"testing"
@@ -219,7 +220,6 @@ func TestParseMessageParams(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask()
 
 			to, _ := address.NewIDAddress(1)
 			from, _ := address.NewIDAddress(2)
@@ -232,7 +232,7 @@ func TestParseMessageParams(t *testing.T) {
 				Params: tc.params,
 			}
 
-			method, encoded, err := task.parseMessageParams(msg, tc.actorCode)
+			method, encoded, err := util.MethodAndParamsForMessage(msg, tc.actorCode)
 			switch {
 			case tc.wantErr && err == nil:
 				t.Errorf("got no error but wanted one")

@@ -216,7 +216,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		gasOutputsResults = append(gasOutputsResults, gasOutput)
 
 		if m.ToActorCode.Defined() {
-			method, params, err := p.parseMessageParams(m.Message, m.ToActorCode)
+			method, params, err := util.MethodAndParamsForMessage(m.Message, m.ToActorCode)
 			if err == nil {
 				pm := &messagemodel.ParsedMessage{
 					Height: int64(m.Height),
@@ -284,10 +284,6 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		gasOutputsResults,
 		messageGasEconomyResult,
 	}, report, nil
-}
-
-func (p *Task) parseMessageParams(m *types.Message, destCode cid.Cid) (string, string, error) {
-	return util.MethodAndParamsForMessage(m, destCode)
 }
 
 type MessageError struct {
