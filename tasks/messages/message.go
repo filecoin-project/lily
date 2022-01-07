@@ -220,25 +220,39 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 		gasOutputsResults = append(gasOutputsResults, gasOutput)
 
-		method, params, err := p.parseMessageParams(m.Message, m.ToActorCode)
-		if err == nil {
-			pm := &messagemodel.ParsedMessage{
-				Height: int64(m.Height),
-				Cid:    m.Cid.String(),
-				From:   m.Message.From.String(),
-				To:     m.Message.To.String(),
-				Value:  m.Message.Value.String(),
-				Method: method,
-				Params: params,
-			}
-			parsedMessageResults = append(parsedMessageResults, pm)
-		} else {
-			if rcpt.ExitCode == int64(exitcode.ErrSerialization) || rcpt.ExitCode == int64(exitcode.ErrIllegalArgument) || rcpt.ExitCode == int64(exitcode.SysErrInvalidMethod) {
-				// ignore the parse error since the params are probably malformed, as reported by the vm
+		if m.ToActorCode.Defined() {
+			method, params, err := p.parseMessageParams(m.Message, m.ToActorCode)
+			if err == nil {
+				pm := &messagemodel.ParsedMessage{
+					Height: int64(m.Height),
+					Cid:    m.Cid.String(),
+					From:   m.Message.From.String(),
+					To:     m.Message.To.String(),
+					Value:  m.Message.Value.String(),
+					Method: method,
+					Params: params,
+				}
+				parsedMessageResults = append(parsedMessageResults, pm)
 			} else {
+				if rcpt.ExitCode == int64(exitcode.ErrSerialization) || rcpt.ExitCode == int64(exitcode.ErrIllegalArgument) || rcpt.ExitCode == int64(exitcode.SysErrInvalidMethod) {
+					// ignore the parse error since the params are probably malformed, as reported by the vm
+				} else {
+					errorsDetected = append(errorsDetected, &MessageError{
+						Cid:   m.Cid,
+						Error: xerrors.Errorf("failed to parse message params: %w", err).Error(),
+					})
+				}
+			}
+		} else {
+			// No destination actor code. Normally Lotus will create an account actor for unknown addresses but if the
+			// message fails then Lotus will not allow the actor to be created and we are left with an address of an
+			// unknown type.
+			// If the message was executed it means we are out of step with Lotus behaviour somehow. This probably
+			// indicates that Lily actor type detection is out of date.
+			if rcpt.ExitCode == 0 {
 				errorsDetected = append(errorsDetected, &MessageError{
 					Cid:   m.Cid,
-					Error: xerrors.Errorf("failed to parse message params: %w", err).Error(),
+					Error: xerrors.Errorf("failed to parse message params: missing to actor code").Error(),
 				})
 			}
 		}
