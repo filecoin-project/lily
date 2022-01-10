@@ -6,7 +6,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/lens"
@@ -71,12 +70,15 @@ func (c *Walker) Done() <-chan struct{} {
 }
 
 func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet) error {
-	ctx, span := otel.Tracer("").Start(ctx, "Walker.WalkChain", trace.WithAttributes(
-		attribute.Int64("tipset_height", int64(ts.Height())),
-		attribute.String("tipset", ts.String()),
-		attribute.Int64("min_height", c.minHeight),
-		attribute.Int64("max_height", c.maxHeight),
-	))
+	ctx, span := otel.Tracer("").Start(ctx, "Walker.WalkChain")
+	if span.IsRecording() {
+		span.SetAttributes(
+			attribute.Int64("height", int64(ts.Height())),
+			attribute.String("tipset", ts.String()),
+			attribute.Int64("min_height", c.minHeight),
+			attribute.Int64("max_height", c.maxHeight),
+		)
+	}
 	defer span.End()
 
 	log.Debugw("found tipset", "height", ts.Height())

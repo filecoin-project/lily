@@ -3,13 +3,11 @@ package messages
 import (
 	"context"
 
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
-
-	"github.com/filecoin-project/lily/metrics"
-	"github.com/filecoin-project/lily/model"
 )
 
 type InternalMessage struct {
@@ -44,7 +42,10 @@ func (l InternalMessageList) Persist(ctx context.Context, s model.StorageBatch, 
 	if len(l) == 0 {
 		return nil
 	}
-	ctx, span := otel.Tracer("").Start(ctx, "InternalMessageList.Persist", trace.WithAttributes(attribute.Int("count", len(l))))
+	ctx, span := otel.Tracer("").Start(ctx, "InternalMessageList.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(l)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "internal_messages"))
@@ -82,7 +83,10 @@ func (l InternalParsedMessageList) Persist(ctx context.Context, s model.StorageB
 	if len(l) == 0 {
 		return nil
 	}
-	ctx, span := otel.Tracer("").Start(ctx, "InternalParsedMessageList.Persist", trace.WithAttributes(attribute.Int("count", len(l))))
+	ctx, span := otel.Tracer("").Start(ctx, "InternalParsedMessageList.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(l)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "internal_parsed_messages"))

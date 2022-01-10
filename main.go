@@ -92,21 +92,25 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name:        "jaeger-tracing",
+				EnvVars:     []string{"LILY_JAEGER_TRACING"},
 				Value:       false,
 				Destination: &commands.VisorTracingFlags.Enabled,
 			},
 			&cli.StringFlag{
 				Name:        "jaeger-service-name",
+				EnvVars:     []string{"LILY_JAEGER_SERVICE_NAME"},
 				Value:       "lily",
 				Destination: &commands.VisorTracingFlags.ServiceName,
 			},
 			&cli.StringFlag{
 				Name:        "jaeger-provider-url",
+				EnvVars:     []string{"LILY_JAEGER_PROVIDER_URL"},
 				Value:       "http://localhost:14268/api/traces",
 				Destination: &commands.VisorTracingFlags.ProviderURL,
 			},
 			&cli.Float64Flag{
 				Name:        "jaeger-sampler-ratio",
+				EnvVars:     []string{"LILY_JAEGER_SAMPLER_RATIO"},
 				Usage:       "If less than 1 probabilistic metrics will be used.",
 				Value:       1,
 				Destination: &commands.VisorTracingFlags.JaegerSamplerParam,

@@ -9,7 +9,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type GapReport struct {
@@ -40,7 +39,10 @@ func (pl GapReportList) Persist(ctx context.Context, s model.StorageBatch, versi
 	if len(pl) == 0 {
 		return nil
 	}
-	ctx, span := otel.Tracer("").Start(ctx, "GapReportList.Persist", trace.WithAttributes(attribute.Int("count", len(pl))))
+	ctx, span := otel.Tracer("").Start(ctx, "GapReportList.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(pl)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "visor_gap_reports"))

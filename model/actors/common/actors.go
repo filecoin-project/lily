@@ -3,13 +3,11 @@ package common
 import (
 	"context"
 
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
-
-	"github.com/filecoin-project/lily/metrics"
-	"github.com/filecoin-project/lily/model"
 )
 
 type Actor struct {
@@ -43,7 +41,10 @@ func (a *Actor) Persist(ctx context.Context, s model.StorageBatch, version model
 type ActorList []*Actor
 
 func (actors ActorList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := otel.Tracer("").Start(ctx, "ActorList.Persist", trace.WithAttributes(attribute.Int("count", len(actors))))
+	ctx, span := otel.Tracer("").Start(ctx, "ActorList.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(actors)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actors"))
@@ -85,7 +86,10 @@ func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, version
 type ActorStateList []*ActorState
 
 func (states ActorStateList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := otel.Tracer("").Start(ctx, "ActorStateList.Persist", trace.WithAttributes(attribute.Int("count", len(states))))
+	ctx, span := otel.Tracer("").Start(ctx, "ActorStateList.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(states)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_states"))

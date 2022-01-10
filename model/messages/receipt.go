@@ -3,13 +3,11 @@ package messages
 import (
 	"context"
 
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
-
-	"github.com/filecoin-project/lily/metrics"
-	"github.com/filecoin-project/lily/model"
 )
 
 type Receipt struct {
@@ -37,7 +35,10 @@ func (rs Receipts) Persist(ctx context.Context, s model.StorageBatch, version mo
 	if len(rs) == 0 {
 		return nil
 	}
-	ctx, span := otel.Tracer("").Start(ctx, "Receipts.Persist", trace.WithAttributes(attribute.Int("count", len(rs))))
+	ctx, span := otel.Tracer("").Start(ctx, "Receipts.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(rs)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "receipts"))

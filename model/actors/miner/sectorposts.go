@@ -3,13 +3,11 @@ package miner
 import (
 	"context"
 
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
-
-	"github.com/filecoin-project/lily/metrics"
-	"github.com/filecoin-project/lily/model"
 )
 
 type MinerSectorPost struct {
@@ -32,7 +30,10 @@ func (msp *MinerSectorPost) Persist(ctx context.Context, s model.StorageBatch, v
 }
 
 func (ml MinerSectorPostList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := otel.Tracer("").Start(ctx, "MinerSectorPostList.Persist", trace.WithAttributes(attribute.Int("count", len(ml))))
+	ctx, span := otel.Tracer("").Start(ctx, "MinerSectorPostList.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(ml)))
+	}
 	defer span.End()
 	if len(ml) == 0 {
 		return nil
