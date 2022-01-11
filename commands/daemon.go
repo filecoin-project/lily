@@ -27,6 +27,7 @@ import (
 	"github.com/filecoin-project/lily/config"
 	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lily/lens/lily/modules"
+	lutil "github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 )
@@ -66,6 +67,11 @@ type daemonOpts struct {
 }
 
 var daemonFlags daemonOpts
+
+var cacheFlags struct {
+	BlockstoreCacheSize uint // number of raw blocks to cache in memory
+	StatestoreCacheSize uint // number of decoded actor states to cache in memory
+}
 
 var DaemonCmd = &cli.Command{
 	Name:  "daemon",
@@ -147,6 +153,18 @@ Note that jobs are not persisted between restarts of the daemon. See
 			Usage:       "Genesis file to use for first node run.",
 			EnvVars:     []string{"LILY_GENESIS"},
 			Destination: &daemonFlags.genesis,
+		},
+		&cli.UintFlag{
+			Name:        "blockstore-cache-size",
+			EnvVars:     []string{"LILY_BLOCKSTORE_CACHE_SIZE"},
+			Value:       0,
+			Destination: &cacheFlags.BlockstoreCacheSize,
+		},
+		&cli.UintFlag{
+			Name:        "statestore-cache-size",
+			EnvVars:     []string{"LILY_STATESTORE_CACHE_SIZE"},
+			Value:       0,
+			Destination: &cacheFlags.StatestoreCacheSize,
 		},
 	},
 	Action: func(c *cli.Context) error {
@@ -234,12 +252,15 @@ Note that jobs are not persisted between restarts of the daemon. See
 			node.Override(new(*events.Events), modules.NewEvents),
 			node.Override(new(*schedule.Scheduler), schedule.NewSchedulerDaemon),
 			node.Override(new(*storage.Catalog), modules.NewStorageCatalog),
+			node.Override(new(*lutil.CacheConfig), modules.CacheConfig(cacheFlags.BlockstoreCacheSize, cacheFlags.StatestoreCacheSize)),
 			// End Injection
 
 			node.Override(new(dtypes.Bootstrapper), isBootstrapper),
 			node.Override(new(dtypes.ShutdownChan), shutdown),
 			node.Base(),
 			node.Repo(r),
+
+			node.Override(new(dtypes.UniversalBlockstore), modules.NewCachingUniversalBlockstore),
 
 			// Inject a custom StateManager, must be done after the node.Online() call as we are
 			// overriding the OG lotus StateManager.

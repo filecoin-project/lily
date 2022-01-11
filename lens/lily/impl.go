@@ -32,7 +32,7 @@ import (
 var _ LilyAPI = (*LilyNodeAPI)(nil)
 
 type LilyNodeAPI struct {
-	fx.In
+	fx.In `ignore-unexported:"true"`
 
 	net.NetAPI
 	full.ChainAPI
@@ -43,6 +43,9 @@ type LilyNodeAPI struct {
 	Scheduler      *schedule.Scheduler
 	StorageCatalog *storage.Catalog
 	ExecMonitor    stmgr.ExecMonitor
+	CacheConfig    *util.CacheConfig
+	actorStore     adt.Store
+	actorStoreInit sync.Once
 }
 
 func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {
@@ -306,7 +309,22 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, next *t
 }
 
 func (m *LilyNodeAPI) Store() adt.Store {
-	return m.ChainAPI.Chain.ActorStore(context.TODO())
+	m.actorStoreInit.Do(func() {
+		if m.CacheConfig.StatestoreCacheSize > 0 {
+			var err error
+			log.Infof("creating caching statestore with size=%d", m.CacheConfig.StatestoreCacheSize)
+			m.actorStore, err = util.NewCachingStateStore(m.ChainAPI.Chain.StateBlockstore(), int(m.CacheConfig.StatestoreCacheSize))
+			if err == nil {
+				return // done
+			}
+
+			log.Errorf("failed to create caching statestore: %v", err)
+		}
+
+		m.actorStore = m.ChainAPI.Chain.ActorStore(context.TODO())
+	})
+
+	return m.actorStore
 }
 
 func (m *LilyNodeAPI) StateGetReceipt(ctx context.Context, msg cid.Cid, from types.TipSetKey) (*types.MessageReceipt, error) {
