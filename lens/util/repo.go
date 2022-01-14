@@ -41,7 +41,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 	// Build a lookup of which blocks each message appears in
 	messageBlocks := map[cid.Cid][]cid.Cid{}
 	for blockIdx, bh := range current.Blocks() {
-		blscids, secpkcids, err := cs.ReadMsgMetaCids(bh.Messages)
+		blscids, secpkcids, err := cs.ReadMsgMetaCids(ctx, bh.Messages)
 		if err != nil {
 			return nil, xerrors.Errorf("read messages for block: %w", err)
 		}
@@ -56,7 +56,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 
 	}
 
-	bmsgs, err := cs.BlockMsgsForTipset(current)
+	bmsgs, err := cs.BlockMsgsForTipset(ctx, current)
 	if err != nil {
 		return nil, xerrors.Errorf("block messages for tipset: %w", err)
 	}
@@ -177,7 +177,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 	}
 	blkMsgs := make([]*lens.BlockMessages, len(next.Blocks()))
 	for idx, blk := range next.Blocks() {
-		msgs, smsgs, err := cs.MessagesForBlock(blk)
+		msgs, smsgs, err := cs.MessagesForBlock(ctx, blk)
 		if err != nil {
 			return nil, err
 		}
