@@ -260,9 +260,7 @@ func MethodAndParamsForMessage(m *types.Message, destCode cid.Cid) (string, stri
 		return method, "", nil
 	}
 
-	encoded := strings.ReplaceAll(strings.ToValidUTF8(params, ""), string([]byte{0x00}), "")
-
-	return method, encoded, nil
+	return method, params, nil
 }
 
 func ActorNameAndFamilyFromCode(c cid.Cid) (name string, family string, err error) {
