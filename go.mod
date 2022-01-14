@@ -23,6 +23,7 @@ require (
 	github.com/filecoin-project/specs-actors/v4 v4.0.1
 	github.com/filecoin-project/specs-actors/v5 v5.0.4
 	github.com/filecoin-project/specs-actors/v6 v6.0.1
+	github.com/filecoin-project/specs-actors/v7 v7.0.0-rc1
 	github.com/gammazero/workerpool v1.1.2
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.10.6
