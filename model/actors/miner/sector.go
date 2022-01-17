@@ -6,7 +6,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
@@ -100,7 +99,10 @@ type (
 )
 
 func (ml MinerSectorInfoList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := otel.Tracer("").Start(ctx, "MinerSectorInfoList.Persist", trace.WithAttributes(attribute.Int("count", len(ml))))
+	ctx, span := otel.Tracer("").Start(ctx, "MinerSectorInfoList.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(ml)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_sector_infos"))

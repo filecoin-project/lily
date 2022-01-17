@@ -3,14 +3,12 @@ package blocks
 import (
 	"context"
 
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
-
-	"github.com/filecoin-project/lily/metrics"
-	"github.com/filecoin-project/lily/model"
 )
 
 type BlockParent struct {
@@ -46,7 +44,10 @@ func (bps BlockParents) Persist(ctx context.Context, s model.StorageBatch, versi
 	if len(bps) == 0 {
 		return nil
 	}
-	ctx, span := otel.Tracer("").Start(ctx, "BlockParents.Persist", trace.WithAttributes(attribute.Int("count", len(bps))))
+	ctx, span := otel.Tracer("").Start(ctx, "BlockParents.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(bps)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "block_parents"))

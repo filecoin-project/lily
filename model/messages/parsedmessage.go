@@ -6,7 +6,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
@@ -78,7 +77,10 @@ func (pms ParsedMessages) Persist(ctx context.Context, s model.StorageBatch, ver
 	if len(pms) == 0 {
 		return nil
 	}
-	ctx, span := otel.Tracer("").Start(ctx, "ParsedMessages.Persist", trace.WithAttributes(attribute.Int("count", len(pms))))
+	ctx, span := otel.Tracer("").Start(ctx, "ParsedMessages.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(pms)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "parsed_messages"))

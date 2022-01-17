@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"context"
+	"go.opentelemetry.io/otel"
 	"strings"
 
 	"github.com/filecoin-project/go-address"
@@ -29,6 +30,8 @@ var log = logging.Logger("lily/lens")
 // No attempt at deduplication of messages is made. A list of blocks with their corresponding messages is also returned - it contains all messages
 // in the block regardless if they were applied during the state change.
 func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainStore, next, current *types.TipSet) (*lens.TipSetMessages, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "GetExecutedAndBlockMessagesForTipSet")
+	defer span.End()
 	if !types.CidArrsEqual(next.Parents().Cids(), current.Cids()) {
 		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", next.Key(), current.Key())
 	}
@@ -53,13 +56,15 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		for _, c := range secpkcids {
 			messageBlocks[c] = append(messageBlocks[c], current.Cids()[blockIdx])
 		}
-
 	}
+	span.AddEvent("read block message metadata")
 
 	bmsgs, err := cs.BlockMsgsForTipset(current)
 	if err != nil {
 		return nil, xerrors.Errorf("block messages for tipset: %w", err)
 	}
+
+	span.AddEvent("read block messages for tipset")
 
 	pblocks := current.Blocks()
 	if len(bmsgs) != len(pblocks) {
@@ -129,6 +134,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		}
 
 	}
+	span.AddEvent("built executed message list")
 
 	// Retrieve receipts using a block from the child tipset
 	rs, err := adt.AsArray(cs.ActorStore(ctx), next.Blocks()[0].ParentMessageReceipts)
@@ -156,6 +162,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 	if err != nil {
 		return nil, xerrors.Errorf("load state tree: %w", err)
 	}
+	span.AddEvent("loaded parent state tree")
 
 	// Receipts are in same order as BlockMsgsForTipset
 	for _, em := range emsgs {
@@ -175,6 +182,8 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		em.GasOutputs = vm.ComputeGasOutputs(em.Receipt.GasUsed, em.Message.GasLimit, em.BlockHeader.ParentBaseFee, em.Message.GasFeeCap, em.Message.GasPremium, burn)
 
 	}
+	span.AddEvent("computed executed message gas usage")
+
 	blkMsgs := make([]*lens.BlockMessages, len(next.Blocks()))
 	for idx, blk := range next.Blocks() {
 		msgs, smsgs, err := cs.MessagesForBlock(blk)
@@ -187,6 +196,8 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 			SecpMessages: smsgs,
 		}
 	}
+
+	span.AddEvent("read messages for next block")
 
 	return &lens.TipSetMessages{
 		Executed: emsgs,

@@ -3,13 +3,11 @@ package market
 import (
 	"context"
 
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
-
-	"github.com/filecoin-project/lily/metrics"
-	"github.com/filecoin-project/lily/model"
 )
 
 type MarketDealState struct {
@@ -34,7 +32,10 @@ func (ds *MarketDealState) Persist(ctx context.Context, s model.StorageBatch, ve
 type MarketDealStates []*MarketDealState
 
 func (dss MarketDealStates) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := otel.Tracer("").Start(ctx, "MarketDealStates.PersistWithTx", trace.WithAttributes(attribute.Int("count", len(dss))))
+	ctx, span := otel.Tracer("").Start(ctx, "MarketDealStates.PersistWithTx")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(dss)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "market_deal_states"))

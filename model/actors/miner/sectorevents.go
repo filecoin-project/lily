@@ -3,13 +3,11 @@ package miner
 import (
 	"context"
 
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
-
-	"github.com/filecoin-project/lily/metrics"
-	"github.com/filecoin-project/lily/model"
 )
 
 const (
@@ -52,7 +50,10 @@ func (mse *MinerSectorEvent) Persist(ctx context.Context, s model.StorageBatch, 
 type MinerSectorEventList []*MinerSectorEvent
 
 func (l MinerSectorEventList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := otel.Tracer("").Start(ctx, "MinerSectorEventList.Persist", trace.WithAttributes(attribute.Int("count", len(l))))
+	ctx, span := otel.Tracer("").Start(ctx, "MinerSectorEventList.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(l)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_sector_events"))

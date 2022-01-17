@@ -2,11 +2,9 @@ package messages
 
 import (
 	"context"
-
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
@@ -94,7 +92,10 @@ func (ms Messages) Persist(ctx context.Context, s model.StorageBatch, version mo
 	if len(ms) == 0 {
 		return nil
 	}
-	ctx, span := otel.Tracer("").Start(ctx, "Messages.Persist", trace.WithAttributes(attribute.Int("count", len(ms))))
+	ctx, span := otel.Tracer("").Start(ctx, "Messages.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(ms)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "messages"))
