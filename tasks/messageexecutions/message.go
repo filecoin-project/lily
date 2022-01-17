@@ -3,7 +3,6 @@ package messageexecutions
 import (
 	"context"
 	"github.com/filecoin-project/go-state-types/exitcode"
-	logging "github.com/ipfs/go-log/v2"
 	"time"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
@@ -18,8 +17,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 )
-
-var log = logging.Logger("tasks/messageexecution")
 
 func NewTask() *Task {
 	return &Task{}
