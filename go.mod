@@ -34,7 +34,6 @@ require (
 	github.com/ipfs/go-log/v2 v2.3.0
 	github.com/ipfs/go-metrics-prometheus v0.0.2
 	github.com/ipld/go-car v0.3.2-0.20211001225732-32d0d9933823
-	github.com/ipld/go-ipld-prime v0.12.3
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.9.0
 	github.com/libp2p/go-libp2p-core v0.9.0
