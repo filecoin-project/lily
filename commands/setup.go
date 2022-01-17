@@ -1,7 +1,9 @@
 package commands
 
 import (
-	"fmt"
+	octrace "go.opencensus.io/trace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/bridge/opencensus"
 	"net/http"
 	"net/http/pprof"
 	"strings"
@@ -16,10 +18,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/zpages"
-	"go.opentelemetry.io/otel/exporters/trace/jaeger"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
@@ -36,11 +34,9 @@ type VisorLogOpts struct {
 var VisorLogFlags VisorLogOpts
 
 type VisorTracingOpts struct {
-	Tracing            bool
-	JaegerHost         string
-	JaegerPort         int
-	JaegerName         string
-	JaegerSampleType   string
+	Enabled            bool
+	ServiceName        string
+	ProviderURL        string
 	JaegerSamplerParam float64
 }
 
@@ -51,36 +47,6 @@ type VisorMetricOpts struct {
 }
 
 var VisorMetricFlags VisorMetricOpts
-
-func NewJaegerTraceProvider(flags VisorTracingOpts) (*sdktrace.TracerProvider, error) {
-	serviceName := flags.JaegerName
-	sampleRatio := flags.JaegerSamplerParam
-	agentEndpoint := fmt.Sprintf("http://%s:%d/api/traces", flags.JaegerHost, flags.JaegerPort)
-
-	log.Infow("creating jaeger trace provider", "name", serviceName, "ratio", sampleRatio, "endpoint", agentEndpoint)
-	var sampler sdktrace.Sampler
-	if sampleRatio < 1 && sampleRatio > 0 {
-		sampler = sdktrace.ParentBased(sdktrace.TraceIDRatioBased(sampleRatio))
-	} else if sampleRatio == 1 {
-		sampler = sdktrace.AlwaysSample()
-	} else {
-		sampler = sdktrace.NeverSample()
-	}
-
-	exp, err := jaeger.NewRawExporter(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(agentEndpoint)))
-	if err != nil {
-		return nil, err
-	}
-	tp := sdktrace.NewTracerProvider(
-		// Always be sure to batch in production.
-		sdktrace.WithBatcher(exp),
-		sdktrace.WithSampler(sampler),
-		sdktrace.WithResource(resource.NewWithAttributes(
-			semconv.ServiceNameKey.String(serviceName),
-		)),
-	)
-	return tp, nil
-}
 
 func setupLogging(flags VisorLogOpts) error {
 	ll := flags.LogLevel
@@ -159,5 +125,22 @@ func setupMetrics(flags VisorMetricOpts) error {
 			log.Fatalf("Failed to run Prometheus /metrics endpoint: %v", err)
 		}
 	}()
+	return nil
+}
+
+func setupTracing(flags VisorTracingOpts) error {
+	if !flags.Enabled {
+		return nil
+	}
+
+	tp, err := metrics.NewJaegerTraceProvider(VisorTracingFlags.ServiceName, VisorTracingFlags.ProviderURL, VisorTracingFlags.JaegerSamplerParam)
+	if err != nil {
+		return xerrors.Errorf("setup tracing: %w", err)
+	}
+	otel.SetTracerProvider(tp)
+	// upgrades libraries (lotus) that use OpenCensus to OpenTelemetry to facilitate a migration.
+	tracer := tp.Tracer(VisorTracingFlags.ServiceName)
+	octrace.DefaultTracer = opencensus.NewTracer(tracer)
+
 	return nil
 }

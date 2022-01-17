@@ -2,12 +2,10 @@ package chain
 
 import (
 	"context"
-
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/lens"
@@ -72,11 +70,20 @@ func (c *Walker) Done() <-chan struct{} {
 }
 
 func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet) error {
-	ctx, span := otel.Tracer("").Start(ctx, "Walker.WalkChain", trace.WithAttributes(attribute.Int64("height", c.maxHeight)))
+	ctx, span := otel.Tracer("").Start(ctx, "Walker.WalkChain")
+	if span.IsRecording() {
+		span.SetAttributes(
+			attribute.Int64("height", int64(ts.Height())),
+			attribute.String("tipset", ts.String()),
+			attribute.Int64("min_height", c.minHeight),
+			attribute.Int64("max_height", c.maxHeight),
+		)
+	}
 	defer span.End()
 
 	log.Debugw("found tipset", "height", ts.Height())
 	if err := c.obs.TipSet(ctx, ts); err != nil {
+		span.RecordError(err)
 		return xerrors.Errorf("notify tipset: %w", err)
 	}
 
@@ -90,6 +97,7 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 
 		ts, err = node.ChainGetTipSet(ctx, ts.Parents())
 		if err != nil {
+			span.RecordError(err)
 			return xerrors.Errorf("get tipset: %w", err)
 		}
 
@@ -99,6 +107,7 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 
 		log.Debugw("found tipset", "height", ts.Height())
 		if err := c.obs.TipSet(ctx, ts); err != nil {
+			span.RecordError(err)
 			return xerrors.Errorf("notify tipset: %w", err)
 		}
 

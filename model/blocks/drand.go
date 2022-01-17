@@ -2,15 +2,13 @@ package blocks
 
 import (
 	"context"
-
-	"github.com/filecoin-project/lotus/chain/types"
-	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lotus/chain/types"
+	"go.opencensus.io/tag"
+	"go.opentelemetry.io/otel"
 )
 
 func NewDrandBlockEntries(header *types.BlockHeader) DrandBlockEntries {
@@ -44,7 +42,10 @@ func (dbes DrandBlockEntries) Persist(ctx context.Context, s model.StorageBatch,
 	if len(dbes) == 0 {
 		return nil
 	}
-	ctx, span := otel.Tracer("").Start(ctx, "DrandBlockEntries.Persist", trace.WithAttributes(attribute.Int("count", len(dbes))))
+	ctx, span := otel.Tracer("").Start(ctx, "DrandBlockEntries.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(dbes)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "drand_block_entries"))

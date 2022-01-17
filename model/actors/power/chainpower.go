@@ -6,7 +6,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
@@ -103,7 +102,10 @@ type ChainPowerList []*ChainPower
 // PersistWithTx makes a batch insertion of the list using the given
 // transaction.
 func (cpl ChainPowerList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := otel.Tracer("").Start(ctx, "ChainPowerList.PersistWithTx", trace.WithAttributes(attribute.Int("count", len(cpl))))
+	ctx, span := otel.Tracer("").Start(ctx, "ChainPowerList.PersistWithTx")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(cpl)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_powers"))

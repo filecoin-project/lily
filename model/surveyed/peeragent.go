@@ -2,15 +2,13 @@ package observed
 
 import (
 	"context"
-	"time"
-
-	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
+	"time"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
+	"go.opencensus.io/tag"
+	"go.opentelemetry.io/otel"
 )
 
 type PeerAgent struct {
@@ -47,7 +45,10 @@ func (l PeerAgentList) Persist(ctx context.Context, s model.StorageBatch, versio
 	if len(l) == 0 {
 		return nil
 	}
-	ctx, span := otel.Tracer("").Start(ctx, "PeerAgentList.Persist", trace.WithAttributes(attribute.Int("count", len(l))))
+	ctx, span := otel.Tracer("").Start(ctx, "PeerAgentList.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(l)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "surveyed_peer_agents"))

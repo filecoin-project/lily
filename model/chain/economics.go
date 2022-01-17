@@ -6,7 +6,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
@@ -79,7 +78,10 @@ func (l ChainEconomicsList) Persist(ctx context.Context, s model.StorageBatch, v
 	if len(l) == 0 {
 		return nil
 	}
-	ctx, span := otel.Tracer("").Start(ctx, "ChainEconomicsList.Persist", trace.WithAttributes(attribute.Int("count", len(l))))
+	ctx, span := otel.Tracer("").Start(ctx, "ChainEconomicsList.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(l)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_economics"))

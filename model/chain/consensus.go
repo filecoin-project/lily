@@ -2,13 +2,11 @@ package chain
 
 import (
 	"context"
-
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type ChainConsensus struct {
@@ -33,7 +31,10 @@ func (c ChainConsensus) Persist(ctx context.Context, s model.StorageBatch, versi
 type ChainConsensusList []*ChainConsensus
 
 func (c ChainConsensusList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := otel.Tracer("").Start(ctx, "ChainConsensusList.Persist", trace.WithAttributes(attribute.Int("count", len(c))))
+	ctx, span := otel.Tracer("").Start(ctx, "ChainConsensusList.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(c)))
+	}
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_consensus"))

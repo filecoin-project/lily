@@ -6,7 +6,6 @@ import (
 	"github.com/filecoin-project/lily/model"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type MinerTaskResult struct {
@@ -74,7 +73,10 @@ func (res *MinerTaskResult) Persist(ctx context.Context, s model.StorageBatch, v
 type MinerTaskResultList []*MinerTaskResult
 
 func (ml MinerTaskResultList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := otel.Tracer("").Start(ctx, "MinerTaskResultList.Persist", trace.WithAttributes(attribute.Int("count", len(ml))))
+	ctx, span := otel.Tracer("").Start(ctx, "MinerTaskResultList.Persist")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.Int("count", len(ml)))
+	}
 	defer span.End()
 
 	for _, res := range ml {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"fmt"
 	"sync"
 	"time"
 
@@ -158,9 +159,15 @@ func NewTipSetIndexer(node lens.API, d model.Storage, window time.Duration, name
 
 // TipSet is called when a new tipset has been discovered
 func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
-	ctx, span := otel.Tracer("").Start(ctx, "Indexer.TipSet")
+	ctx, span := otel.Tracer("").Start(ctx, "TipSetIndexer.TipSet")
 	if span.IsRecording() {
-		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))
+		span.SetAttributes(
+			attribute.String("tipset", ts.String()),
+			attribute.Int64("height", int64(ts.Height())),
+			attribute.String("name", t.name),
+			attribute.String("window", t.window.String()),
+			attribute.StringSlice("tasks", t.tasks),
+		)
 	}
 	defer span.End()
 
@@ -209,6 +216,15 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	// current is nil when we have only seen the first tipset in our sequence. we should wait for the next one.
 	if current == nil {
 		return nil
+	}
+
+	if span.IsRecording() {
+		span.SetAttributes(
+			attribute.String("next_tipset", next.String()),
+			attribute.Int64("next_height", int64(next.Height())),
+			attribute.String("current_tipset", current.String()),
+			attribute.Int64("current_height", int64(current.Height())),
+		)
 	}
 
 	ll := log.With("current", int64(current.Height()), "next", int64(next.Height()))
@@ -386,12 +402,14 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 				if _, complete := completed[name]; !complete {
 					taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, "indexer not ready")}
 					ll.Infow("task skipped", "task", name, "reason", "indexer not ready")
+					span.AddEvent(fmt.Sprintf("skipped task: %s", res.Task))
 				}
 			}
 			stats.Record(ctx, metrics.TipSetSkip.M(1))
 			goto persist
 		case res = <-results:
 		}
+		span.AddEvent(fmt.Sprintf("completed task: %s", res.Task))
 		inFlight--
 
 		llt := ll.With("task", res.Task)
@@ -450,8 +468,16 @@ persist:
 
 	// Persist all results
 	go func() {
+		ctx, persistSpan := otel.Tracer("").Start(ctx, "TipSetIndexer.Persist")
+		if persistSpan.IsRecording() {
+			persistSpan.SetAttributes(
+				attribute.String("tipset", ts.String()),
+				attribute.Int64("height", int64(ts.Height())),
+			)
+		}
 		// free up the slot when done
 		defer func() {
+			persistSpan.End()
 			<-t.persistSlot
 		}()
 
@@ -477,11 +503,13 @@ persist:
 		wg.Wait()
 		ll.Infow("tasks complete", "total_time", time.Since(start))
 	}()
-
 	return nil
 }
 
 func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, name string, ts *types.TipSet, results chan *TaskResult) {
+	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.Processor.%s", name))
+	defer span.End()
+
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
@@ -540,9 +568,12 @@ func (t *TipSetIndexer) getGenesisActors(ctx context.Context) (map[string]lens.A
 // and applies it to versions of state tress supporting it. These include Version 2 and 3 of the lotus state tree implementation.
 // stateChangedActors will fall back to the lotus API method when the optimized diffing cannot be applied.
 func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid) (map[string]lens.ActorStateChange, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "StateChangedActors")
+	ctx, span := otel.Tracer("").Start(ctx, "TipSetIndexer.StateChangedActors")
 	if span.IsRecording() {
-		span.SetAttributes(attribute.String("old", old.String()), attribute.String("new", new.String()))
+		span.SetAttributes(
+			attribute.String("old", old.String()),
+			attribute.String("new", new.String()),
+		)
 	}
 	defer span.End()
 
@@ -561,9 +592,7 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 	}
 
 	if newVersion == oldVersion && (newVersion != types.StateTreeVersion0 && newVersion != types.StateTreeVersion1) {
-		if span.IsRecording() {
-			span.SetAttributes(attribute.String("diff", "fast"))
-		}
+		span.SetAttributes(attribute.String("diff", "fast"))
 		// TODO: replace hamt.UseTreeBitWidth and hamt.UseHashFunction with values based on network version
 		changes, err := hamt.Diff(ctx, t.node.Store(), t.node.Store(), oldRoot, newRoot, hamt.UseTreeBitWidth(5), hamt.UseHashFunction(func(input []byte) []byte {
 			res := sha256.Sum256(input)
@@ -609,6 +638,7 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 			return out, nil
 		}
 	}
+	span.SetAttributes(attribute.String("diff", "slow"))
 	log.Debug("using slow state diff")
 	actors, err := t.node.StateChangedActors(ctx, old, new)
 	if err != nil {
@@ -626,6 +656,9 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 }
 
 func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProcessor, name string, ts, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages, results chan *TaskResult) {
+	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.MessageProcessor.%s", name))
+	defer span.End()
+
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
@@ -653,6 +686,9 @@ func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProces
 }
 
 func (t *TipSetIndexer) runConsensusProcessor(ctx context.Context, p TipSetsProcessor, name string, ts, pts *types.TipSet, results chan *TaskResult) {
+	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.ConsensusProcessor.%s", name))
+	defer span.End()
+
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
@@ -680,6 +716,9 @@ func (t *TipSetIndexer) runConsensusProcessor(ctx context.Context, p TipSetsProc
 }
 
 func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor, name string, ts, pts *types.TipSet, actors map[string]lens.ActorStateChange, emsgs []*lens.ExecutedMessage, results chan *TaskResult) {
+	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.ActorProcessor.%s", name))
+	defer span.End()
+
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
@@ -707,6 +746,9 @@ func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor,
 }
 
 func (t *TipSetIndexer) runMessageExecutionProcessor(ctx context.Context, p MessageExecutionProcessor, name string, ts, pts *types.TipSet, imsgs []*lens.MessageExecution, results chan *TaskResult) {
+	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.MessageExecutionProcessor.%s", name))
+	defer span.End()
+
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
 	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
 	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
