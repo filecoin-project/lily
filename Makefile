@@ -116,11 +116,6 @@ $(toolspath)/bin/golangci-lint: $(toolspath)/go.mod
 	@mkdir -p $(dir $@)
 	(cd $(toolspath); go build -tags tools -o $(@:$(toolspath)/%=%) github.com/golangci/golangci-lint/cmd/golangci-lint)
 
-$(toolspath)/bin/gen: $(toolspath)/go.mod
-	@mkdir -p $(dir $@)
-	(cd $(toolspath); go build -tags tools -o $(@:$(toolspath)/%=%) github.com/filecoin-project/statediff/types/gen)
-
-
 .PHONY: lint
 lint: $(toolspath)/bin/golangci-lint
 	$(toolspath)/bin/golangci-lint run ./...
@@ -130,11 +125,6 @@ actors-gen:
 	go run ./chain/actors/agen
 	go fmt ./...
 
-
-.PHONY: types-gen
-types-gen: $(toolspath)/bin/gen
-	$(toolspath)/bin/gen ./tasks/messages/types
-	go fmt ./tasks/messages/types/...
 
 # dev-nets
 2k: GOFLAGS+=-tags=2k
