@@ -91,6 +91,10 @@ testfull: build
 testshort:
 	go test -short ./... -v
 
+.PHONY: itest-calibnet
+itest-calibnet:
+	LILY_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test -tags=calibnet ./itests/vectors/calibnet/
+
 .PHONY: lily
 lily:
 	rm -f lily
