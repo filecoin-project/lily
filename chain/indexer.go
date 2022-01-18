@@ -402,7 +402,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 				if _, complete := completed[name]; !complete {
 					taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, "indexer not ready")}
 					ll.Infow("task skipped", "task", name, "reason", "indexer not ready")
-					span.AddEvent(fmt.Sprintf("skipped task: %s", res.Task))
+					span.AddEvent(fmt.Sprintf("skipped task: %s", name))
 				}
 			}
 			stats.Record(ctx, metrics.TipSetSkip.M(1))
