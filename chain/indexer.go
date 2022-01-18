@@ -120,7 +120,7 @@ func NewTipSetIndexer(node lens.API, d model.Storage, window time.Duration, name
 		case BlocksTask:
 			tsi.processors[BlocksTask] = blocks.NewTask()
 		case MessagesTask:
-			tsi.messageProcessors[MessagesTask] = messages.NewTask()
+			tsi.messageProcessors[MessagesTask] = messages.NewTask(node)
 		case ChainEconomicsTask:
 			tsi.processors[ChainEconomicsTask] = chaineconomics.NewTask(node)
 		case ActorStatesRawTask:
@@ -144,7 +144,7 @@ func NewTipSetIndexer(node lens.API, d model.Storage, window time.Duration, name
 		case ChainConsensusTask:
 			tsi.consensusProcessor[ChainConsensusTask] = consensus.NewTask()
 		case ImplicitMessageTask:
-			tsi.messageExecutionProcessors[ImplicitMessageTask] = messageexecutions.NewTask()
+			tsi.messageExecutionProcessors[ImplicitMessageTask] = messageexecutions.NewTask(node)
 		default:
 			return nil, xerrors.Errorf("unknown task: %s", task)
 		}

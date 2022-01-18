@@ -15,10 +15,16 @@ import (
 type Task struct {
 }
 
+func (p *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error) {
+	data, report, err := p.ProcessTipSet(ctx, child)
+	return data, visormodel.ProcessingReportList{report}, err
+}
+
 func NewTask() *Task {
 	return &Task{}
 }
 
+// ProcessTipSet is DEPRECATED
 func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ProcessBlocks")
 	if span.IsRecording() {

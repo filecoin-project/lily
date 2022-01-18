@@ -28,10 +28,27 @@ import (
 
 var log = logging.Logger("lily/tasks")
 
-type Task struct{}
+type Task struct {
+	node lens.API
+}
 
-func NewTask() *Task {
-	return &Task{}
+func (p *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error) {
+	tsMsgs, err := p.node.GetExecutedAndBlockMessagesForTipset(ctx, child, parent)
+	if err != nil {
+		// TODO is returning this right?
+		return nil, nil, err
+	}
+	data, report, err := p.ProcessMessages(ctx, child, parent, tsMsgs.Executed, tsMsgs.Block)
+	if err != nil {
+		return nil, nil, err
+	}
+	return data, visormodel.ProcessingReportList{report}, err
+}
+
+func NewTask(node lens.API) *Task {
+	return &Task{
+		node: node,
+	}
 }
 
 // Note that pts is the parent tipset containing the messages, ts is the following tipset containing the receipts

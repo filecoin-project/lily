@@ -17,6 +17,14 @@ type Task struct {
 	node lens.API
 }
 
+func (p *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error) {
+	data, report, err := p.ProcessTipSet(ctx, child)
+	if err != nil {
+		return nil, nil, err
+	}
+	return data, visormodel.ProcessingReportList{report}, err
+}
+
 func NewTask(node lens.API) *Task {
 	return &Task{
 		node: node,

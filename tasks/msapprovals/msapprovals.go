@@ -27,6 +27,11 @@ type Task struct {
 	node lens.API
 }
 
+func (p *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func NewTask(node lens.API) *Task {
 	return &Task{
 		node: node,

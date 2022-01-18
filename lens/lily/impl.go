@@ -131,7 +131,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	indexer, err := chain.NewTipSetIndexer(m, strg, cfg.Window, cfg.Name, cfg.Tasks)
+	indexer, err := chain.NewV2TipSetIndexer(m, strg, cfg.Name, cfg.Tasks)
 	if err != nil {
 		return nil, err
 	}

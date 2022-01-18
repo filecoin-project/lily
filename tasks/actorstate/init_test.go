@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/lily/lens"
 	initmodel "github.com/filecoin-project/lily/model/actors/init"
 	"github.com/filecoin-project/lily/tasks/actorstate"
 )
@@ -78,7 +77,7 @@ func TestInitExtractorV0(t *testing.T) {
 		}
 
 		ex := actorstate.InitExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		is, ok := res.(initmodel.IdAddressList)
@@ -132,7 +131,7 @@ func TestInitExtractorV0(t *testing.T) {
 		}
 
 		ex := actorstate.InitExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		is, ok := res.(initmodel.IdAddressList)
@@ -188,7 +187,7 @@ func TestInitExtractorV2(t *testing.T) {
 		}
 
 		ex := actorstate.InitExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		is, ok := res.(initmodel.IdAddressList)
@@ -242,7 +241,7 @@ func TestInitExtractorV2(t *testing.T) {
 		}
 
 		ex := actorstate.InitExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		is, ok := res.(initmodel.IdAddressList)
@@ -298,7 +297,7 @@ func TestInitExtractorV3(t *testing.T) {
 		}
 
 		ex := actorstate.InitExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		is, ok := res.(initmodel.IdAddressList)
@@ -352,7 +351,7 @@ func TestInitExtractorV3(t *testing.T) {
 		}
 
 		ex := actorstate.InitExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		is, ok := res.(initmodel.IdAddressList)
@@ -408,7 +407,7 @@ func TestInitExtractorV4(t *testing.T) {
 		}
 
 		ex := actorstate.InitExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		is, ok := res.(initmodel.IdAddressList)
@@ -462,7 +461,7 @@ func TestInitExtractorV4(t *testing.T) {
 		}
 
 		ex := actorstate.InitExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		is, ok := res.(initmodel.IdAddressList)

@@ -6,7 +6,6 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	"go.opentelemetry.io/otel"
 
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	rewardmodel "github.com/filecoin-project/lily/model/actors/reward"
@@ -23,7 +22,7 @@ func init() {
 	}
 }
 
-func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
+func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "RewardExtractor")
 	defer span.End()
 

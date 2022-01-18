@@ -25,6 +25,11 @@ type Task struct {
 	extracterMap ActorExtractorMap
 }
 
+func (t *Task) ProcessActorChanges(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors map[string]lens.ActorStateChange) (model.Persistable, *visormodel.ProcessingReport, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func NewTask(node lens.API, extracterMap ActorExtractorMap) *Task {
 	p := &Task{
 		node:         node,
@@ -143,7 +148,7 @@ func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pt
 		res.SkippedParse = true
 	} else {
 		// Parse state
-		data, err := extracter.Extract(ctx, info, emsgs, t.node)
+		data, err := extracter.Extract(ctx, info, t.node)
 		if err != nil {
 			res.Error = xerrors.Errorf("failed to extract parsed actor state: %w", err)
 			return

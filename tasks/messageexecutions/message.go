@@ -16,11 +16,26 @@ import (
 	"golang.org/x/xerrors"
 )
 
-func NewTask() *Task {
-	return &Task{}
+func NewTask(node lens.API) *Task {
+	return &Task{
+		node: node,
+	}
 }
 
 type Task struct {
+	node lens.API
+}
+
+func (p *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error) {
+	mex, err := p.node.GetMessageExecutionsForTipSet(ctx, child, parent)
+	if err != nil {
+		return nil, nil, err
+	}
+	data, report, err := p.ProcessMessageExecutions(ctx, p.node.Store(), child, parent, mex)
+	if err != nil {
+		return nil, nil, err
+	}
+	return data, visormodel.ProcessingReportList{report}, err
 }
 
 func (p *Task) Close() error {

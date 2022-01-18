@@ -32,7 +32,7 @@ func init() {
 	}
 }
 
-func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
+func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "StorageMinerExtractor")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.String("actor", a.Address.String()))
@@ -72,7 +72,7 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, emsgs [
 		return nil, xerrors.Errorf("extracting miner sector changes: %w", err)
 	}
 
-	posts, err := ExtractMinerPoSts(ctx, &a, ec, emsgs, node)
+	posts, err := ExtractMinerPoSts(ctx, &a, ec, node)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner posts: %v", err)
 	}
@@ -419,7 +419,7 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 	return preCommitModel, sectorModel, sectorDealsModel, sectorEventModel, nil
 }
 
-func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtractionContext, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (minermodel.MinerSectorPostList, error) {
+func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtractionContext, node ActorStateAPI) (minermodel.MinerSectorPostList, error) {
 	_, span := otel.Tracer("").Start(ctx, "ExtractMinerPoSts")
 	defer span.End()
 	// short circuit genesis state, no PoSt messages in genesis blocks.
@@ -497,7 +497,11 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 		return nil
 	}
 
-	for _, msg := range emsgs {
+	emsgs, err := node.GetExecutedAndBlockMessagesForTipset(ctx, ec.CurrTs, ec.PrevTs)
+	if err != nil {
+		return nil, err
+	}
+	for _, msg := range emsgs.Executed {
 		if msg.Message.To == actor.Address && msg.Message.Method == 5 /* miner.SubmitWindowedPoSt */ {
 			if err := processPostMsg(msg); err != nil {
 				return nil, xerrors.Errorf("process post msg: %w", err)

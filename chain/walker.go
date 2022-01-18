@@ -51,11 +51,9 @@ func (c *Walker) Run(ctx context.Context) error {
 
 	// Start at maxHeight+1 so that the tipset at maxHeight becomes the parent for any tasks that need to make a diff between two tipsets.
 	// A walk where min==max must still process two tipsets to be sure of extracting data.
-	if int64(ts.Height()) > c.maxHeight+1 {
-		ts, err = c.node.ChainGetTipSetAfterHeight(ctx, abi.ChainEpoch(c.maxHeight+1), types.EmptyTSK)
-		if err != nil {
-			return xerrors.Errorf("get tipset by height: %w", err)
-		}
+	ts, err = c.node.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(c.maxHeight), types.EmptyTSK)
+	if err != nil {
+		return err
 	}
 
 	if err := c.WalkChain(ctx, c.node, ts); err != nil {
