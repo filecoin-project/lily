@@ -43,7 +43,6 @@ type V2TipSetIndexer struct {
 	actExtractors []ActorStateExtractor
 }
 
-// Passes TestLilyVectorWalkExtraction
 func NewV2TipSetIndexer(node lens.API, d model.Storage, name string, tasks []string) (*V2TipSetIndexer, error) {
 	tsi := &V2TipSetIndexer{
 		storage:     d,
@@ -61,10 +60,10 @@ func NewV2TipSetIndexer(node lens.API, d model.Storage, name string, tasks []str
 
 		switch exType {
 		case TipSetStateExtractorType:
-			ex := TipSetExtractorForModel(extractableModel)
+			ex := model.TipSetExtractorForModel(extractableModel)
 			tsi.tsExtractors = append(tsi.tsExtractors, ex)
 		case ActorStateExtractorType:
-			ex := ActorStateExtractorForModel(extractableModel)
+			ex := model.ActorStateExtractorForModel(extractableModel)
 			tsi.actExtractors = append(tsi.actExtractors, ex)
 		}
 	}

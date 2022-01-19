@@ -2,6 +2,7 @@ package actorstate
 
 import (
 	"context"
+	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
@@ -20,13 +21,28 @@ import (
 // InitExtractor extracts init actor state
 type InitExtractor struct{}
 
-func init() {
+// TODO lazy, use a map
+func (e InitExtractor) Allow(code cid.Cid) bool {
 	for _, c := range init_.AllCodes() {
-		Register(c, InitExtractor{})
+		if c.Equals(code) {
+			return true
+		}
 	}
+	return false
 }
 
-func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
+func (e InitExtractor) Name() string {
+	return "id_addresses"
+}
+
+func init() {
+	//for _, c := range init_.AllCodes() {
+	//Register(c, InitExtractor{})
+	model.RegisterActorModelExtractor(&initmodel.IdAddress{}, InitExtractor{})
+	//}
+}
+
+func (InitExtractor) Extract(ctx context.Context, a model.ActorInfo, node model.ActorStateAPI) (model.Persistable, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "InitExtractor")
 	defer span.End()
 

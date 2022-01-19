@@ -5,11 +5,16 @@ import (
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/actors/common"
 	"github.com/filecoin-project/lily/model/blocks"
-	"github.com/filecoin-project/lily/tasks/actorstate"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	"golang.org/x/xerrors"
 )
+
+// TODO hacl
+func init() {
+	model.RegisterActorModelExtractor(&common.Actor{}, &ActorExtractor{})
+	model.RegisterTipSetModelExtractor(&blocks.BlockHeader{}, &BlockHeaderExtractor{})
+}
 
 func StringToModelTypeAndExtractor(name string) (model.Persistable, ExtractorType, error) {
 	switch name {
@@ -40,7 +45,7 @@ type TipSetStateExtractor interface {
 }
 
 type ActorStateExtractor interface {
-	Extract(ctx context.Context, actor actorstate.ActorInfo, api actorstate.ActorStateAPI) (model.Persistable, error)
+	Extract(ctx context.Context, actor model.ActorInfo, api model.ActorStateAPI) (model.Persistable, error)
 	Allow(code cid.Cid) bool
 	Name() string
 }
@@ -65,7 +70,7 @@ func ActorStateExtractorForModel(m model.Persistable) ActorStateExtractor {
 
 type ActorExtractor struct{}
 
-func (ae *ActorExtractor) Extract(ctx context.Context, act actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
+func (ae *ActorExtractor) Extract(ctx context.Context, act model.ActorInfo, node model.ActorStateAPI) (model.Persistable, error) {
 	a := new(common.Actor)
 	a.Height = int64(act.TipSet.Height())
 	a.ID = act.Address.String()

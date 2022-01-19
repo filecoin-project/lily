@@ -122,7 +122,7 @@ func (a *ActorExtractorProcessorImpl) ProcessActorExtractors(ctx context.Context
 }
 
 func (a *ActorExtractorProcessorImpl) runActorExtractor(ctx context.Context, current, previous *types.TipSet, state ActorStateForExtraction, extractors []ActorStateExtractor, results chan *actorstate.ActorStateResult) {
-	info := actorstate.ActorInfo{
+	info := model.ActorInfo{
 		Actor:           state.change.Actor,
 		ChangeType:      state.change.ChangeType,
 		Address:         state.addr,
