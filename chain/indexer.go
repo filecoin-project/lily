@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"github.com/filecoin-project/lily/chain/taskapi"
 	"sync"
 	"time"
 
@@ -101,6 +102,10 @@ type TipSetIndexerOpt func(t *TipSetIndexer)
 // being persisted. The indexer may be given a time window in which to complete data extraction. The name of the
 // indexer is used as the reporter in the visor_processing_reports table.
 func NewTipSetIndexer(node lens.API, d model.Storage, window time.Duration, name string, tasks []string, options ...TipSetIndexerOpt) (*TipSetIndexer, error) {
+	tapi, err := taskapi.NewTaskAPI(node)
+	if err != nil {
+		return nil, err
+	}
 	tsi := &TipSetIndexer{
 		storage:                    d,
 		window:                     window,
@@ -120,31 +125,31 @@ func NewTipSetIndexer(node lens.API, d model.Storage, window time.Duration, name
 		case BlocksTask:
 			tsi.processors[BlocksTask] = blocks.NewTask()
 		case MessagesTask:
-			tsi.messageProcessors[MessagesTask] = messages.NewTask(node)
+			tsi.messageProcessors[MessagesTask] = messages.NewTask(tapi)
 		case ChainEconomicsTask:
-			tsi.processors[ChainEconomicsTask] = chaineconomics.NewTask(node)
+			tsi.processors[ChainEconomicsTask] = chaineconomics.NewTask(tapi)
 		case ActorStatesRawTask:
-			tsi.actorProcessors[ActorStatesRawTask] = actorstate.NewTask(node, &actorstate.RawActorExtractorMap{})
+			tsi.actorProcessors[ActorStatesRawTask] = actorstate.NewTask(tapi, &actorstate.RawActorExtractorMap{})
 		case ActorStatesPowerTask:
-			tsi.actorProcessors[ActorStatesPowerTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(power.AllCodes()))
+			tsi.actorProcessors[ActorStatesPowerTask] = actorstate.NewTask(tapi, actorstate.NewTypedActorExtractorMap(power.AllCodes()))
 		case ActorStatesRewardTask:
-			tsi.actorProcessors[ActorStatesRewardTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(reward.AllCodes()))
+			tsi.actorProcessors[ActorStatesRewardTask] = actorstate.NewTask(tapi, actorstate.NewTypedActorExtractorMap(reward.AllCodes()))
 		case ActorStatesMinerTask:
-			tsi.actorProcessors[ActorStatesMinerTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(miner.AllCodes()))
+			tsi.actorProcessors[ActorStatesMinerTask] = actorstate.NewTask(tapi, actorstate.NewTypedActorExtractorMap(miner.AllCodes()))
 		case ActorStatesInitTask:
-			tsi.actorProcessors[ActorStatesInitTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(init_.AllCodes()))
+			tsi.actorProcessors[ActorStatesInitTask] = actorstate.NewTask(tapi, actorstate.NewTypedActorExtractorMap(init_.AllCodes()))
 		case ActorStatesMarketTask:
-			tsi.actorProcessors[ActorStatesMarketTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(market.AllCodes()))
+			tsi.actorProcessors[ActorStatesMarketTask] = actorstate.NewTask(tapi, actorstate.NewTypedActorExtractorMap(market.AllCodes()))
 		case ActorStatesMultisigTask:
-			tsi.actorProcessors[ActorStatesMultisigTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(multisig.AllCodes()))
+			tsi.actorProcessors[ActorStatesMultisigTask] = actorstate.NewTask(tapi, actorstate.NewTypedActorExtractorMap(multisig.AllCodes()))
 		case ActorStatesVerifreg:
-			tsi.actorProcessors[ActorStatesVerifreg] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes()))
+			tsi.actorProcessors[ActorStatesVerifreg] = actorstate.NewTask(tapi, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes()))
 		case MultisigApprovalsTask:
-			tsi.messageProcessors[MultisigApprovalsTask] = msapprovals.NewTask(node)
+			tsi.messageProcessors[MultisigApprovalsTask] = msapprovals.NewTask(tapi)
 		case ChainConsensusTask:
 			tsi.consensusProcessor[ChainConsensusTask] = consensus.NewTask()
 		case ImplicitMessageTask:
-			tsi.messageExecutionProcessors[ImplicitMessageTask] = messageexecutions.NewTask(node)
+			tsi.messageExecutionProcessors[ImplicitMessageTask] = messageexecutions.NewTask(tapi)
 		default:
 			return nil, xerrors.Errorf("unknown task: %s", task)
 		}

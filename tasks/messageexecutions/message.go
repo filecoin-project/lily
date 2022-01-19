@@ -2,8 +2,8 @@ package messageexecutions
 
 import (
 	"context"
-
 	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/taskapi"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model"
@@ -16,14 +16,14 @@ import (
 	"golang.org/x/xerrors"
 )
 
-func NewTask(node lens.API) *Task {
+func NewTask(node taskapi.TaskAPI) *Task {
 	return &Task{
 		node: node,
 	}
 }
 
 type Task struct {
-	node lens.API
+	node taskapi.TaskAPI
 }
 
 func (p *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error) {

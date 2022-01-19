@@ -13,6 +13,7 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin/power"
 	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
+	"github.com/filecoin-project/lily/chain/taskapi"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -70,6 +71,11 @@ func NewV2TipSetIndexer(node lens.API, d model.Storage, name string, tasks []str
 		tasks:           tasks,
 	}
 
+	taskAPI, err := taskapi.NewTaskAPI(node)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, task := range tasks {
 		switch task {
 		case BlocksTask:
@@ -77,29 +83,29 @@ func NewV2TipSetIndexer(node lens.API, d model.Storage, name string, tasks []str
 		case ChainConsensusTask:
 			tsi.processors[ChainConsensusTask] = consensus.NewTask()
 		case MessagesTask:
-			tsi.processors[MessagesTask] = messages.NewTask(node)
+			tsi.processors[MessagesTask] = messages.NewTask(taskAPI)
 		case ChainEconomicsTask:
-			tsi.processors[ChainEconomicsTask] = chaineconomics.NewTask(node)
+			tsi.processors[ChainEconomicsTask] = chaineconomics.NewTask(taskAPI)
 		case MultisigApprovalsTask:
-			tsi.processors[MultisigApprovalsTask] = msapprovals.NewTask(node)
+			tsi.processors[MultisigApprovalsTask] = msapprovals.NewTask(taskAPI)
 		case ImplicitMessageTask:
-			tsi.processors[ImplicitMessageTask] = messageexecutions.NewTask(node)
+			tsi.processors[ImplicitMessageTask] = messageexecutions.NewTask(taskAPI)
 		case ActorStatesRawTask:
-			tsi.actorProcessors[ActorStatesRawTask] = actorstate.NewTask(node, &actorstate.RawActorExtractorMap{})
+			tsi.actorProcessors[ActorStatesRawTask] = actorstate.NewTask(taskAPI, &actorstate.RawActorExtractorMap{})
 		case ActorStatesPowerTask:
-			tsi.actorProcessors[ActorStatesPowerTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(power.AllCodes()))
+			tsi.actorProcessors[ActorStatesPowerTask] = actorstate.NewTask(taskAPI, actorstate.NewTypedActorExtractorMap(power.AllCodes()))
 		case ActorStatesRewardTask:
-			tsi.actorProcessors[ActorStatesRewardTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(reward.AllCodes()))
+			tsi.actorProcessors[ActorStatesRewardTask] = actorstate.NewTask(taskAPI, actorstate.NewTypedActorExtractorMap(reward.AllCodes()))
 		case ActorStatesMinerTask:
-			tsi.actorProcessors[ActorStatesMinerTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(miner.AllCodes()))
+			tsi.actorProcessors[ActorStatesMinerTask] = actorstate.NewTask(taskAPI, actorstate.NewTypedActorExtractorMap(miner.AllCodes()))
 		case ActorStatesInitTask:
-			tsi.actorProcessors[ActorStatesInitTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(init_.AllCodes()))
+			tsi.actorProcessors[ActorStatesInitTask] = actorstate.NewTask(taskAPI, actorstate.NewTypedActorExtractorMap(init_.AllCodes()))
 		case ActorStatesMarketTask:
-			tsi.actorProcessors[ActorStatesMarketTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(market.AllCodes()))
+			tsi.actorProcessors[ActorStatesMarketTask] = actorstate.NewTask(taskAPI, actorstate.NewTypedActorExtractorMap(market.AllCodes()))
 		case ActorStatesMultisigTask:
-			tsi.actorProcessors[ActorStatesMultisigTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(multisig.AllCodes()))
+			tsi.actorProcessors[ActorStatesMultisigTask] = actorstate.NewTask(taskAPI, actorstate.NewTypedActorExtractorMap(multisig.AllCodes()))
 		case ActorStatesVerifreg:
-			tsi.actorProcessors[ActorStatesVerifreg] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes()))
+			tsi.actorProcessors[ActorStatesVerifreg] = actorstate.NewTask(taskAPI, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes()))
 		default:
 			return nil, xerrors.Errorf("unknown task: %s", task)
 		}

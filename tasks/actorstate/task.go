@@ -3,6 +3,7 @@ package actorstate
 import (
 	"context"
 	"fmt"
+	"github.com/filecoin-project/lily/chain/taskapi"
 	"time"
 
 	"github.com/filecoin-project/go-address"
@@ -20,12 +21,12 @@ import (
 
 // A Task processes the extraction of actor state according the allowed types in its extracter map.
 type Task struct {
-	node lens.API
+	node taskapi.TaskAPI
 
 	extracterMap ActorExtractorMap
 }
 
-func NewTask(node lens.API, extracterMap ActorExtractorMap) *Task {
+func NewTask(node taskapi.TaskAPI, extracterMap ActorExtractorMap) *Task {
 	p := &Task{
 		node:         node,
 		extracterMap: extracterMap,

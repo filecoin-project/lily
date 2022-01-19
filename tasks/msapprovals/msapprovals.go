@@ -4,8 +4,8 @@ package msapprovals
 import (
 	"bytes"
 	"context"
-
 	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
+	"github.com/filecoin-project/lily/chain/taskapi"
 	"github.com/filecoin-project/lotus/chain/actors/builtin"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
@@ -24,7 +24,7 @@ const (
 )
 
 type Task struct {
-	node lens.API
+	node taskapi.TaskAPI
 }
 
 func (p *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error) {
@@ -32,7 +32,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) 
 	panic("implement me")
 }
 
-func NewTask(node lens.API) *Task {
+func NewTask(node taskapi.TaskAPI) *Task {
 	return &Task{
 		node: node,
 	}

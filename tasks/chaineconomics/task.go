@@ -2,11 +2,10 @@ package chaineconomics
 
 import (
 	"context"
-
+	"github.com/filecoin-project/lily/chain/taskapi"
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
 
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 )
@@ -14,7 +13,7 @@ import (
 var log = logging.Logger("lily/tasks")
 
 type Task struct {
-	node lens.API
+	node taskapi.TaskAPI
 }
 
 func (p *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error) {
@@ -25,7 +24,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) 
 	return data, visormodel.ProcessingReportList{report}, err
 }
 
-func NewTask(node lens.API) *Task {
+func NewTask(node taskapi.TaskAPI) *Task {
 	return &Task{
 		node: node,
 	}

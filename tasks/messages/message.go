@@ -3,6 +3,7 @@ package messages
 import (
 	"bytes"
 	"context"
+	"github.com/filecoin-project/lily/chain/taskapi"
 	"math"
 	"math/big"
 
@@ -29,7 +30,7 @@ import (
 var log = logging.Logger("lily/tasks")
 
 type Task struct {
-	node lens.API
+	node taskapi.TaskAPI
 }
 
 func (p *Task) ProcessTipSets(ctx context.Context, current, previous *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error) {
@@ -45,7 +46,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current, previous *types.TipS
 	return data, visormodel.ProcessingReportList{report}, err
 }
 
-func NewTask(node lens.API) *Task {
+func NewTask(node taskapi.TaskAPI) *Task {
 	return &Task{
 		node: node,
 	}
