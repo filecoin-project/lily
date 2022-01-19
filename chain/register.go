@@ -34,26 +34,24 @@ var UnknownStateExtractorType ExtractorType = "Unknown"
 var TipSetStateExtractorType ExtractorType = "TipSetStateExtractor"
 var ActorStateExtractorType ExtractorType = "ActorStateExtractor"
 
-type ExtractableModel interface {
-	Type() ExtractorType
-}
-
-type TipSetStateExtractorFactory interface {
-	NewExtractor() TipSetStateExtractor
-}
-
 type TipSetStateExtractor interface {
 	Extract(ctx context.Context, current, previous *types.TipSet) (model.Persistable, error)
-}
-
-type ActorStateExtractorFactory interface {
-	NewExtractor() ActorStateExtractor
+	Name() string
 }
 
 type ActorStateExtractor interface {
 	Extract(ctx context.Context, actor actorstate.ActorInfo, api actorstate.ActorStateAPI) (model.Persistable, error)
 	Allow(code cid.Cid) bool
 	Name() string
+}
+
+func TipSetExtractorForModel(m model.Persistable) TipSetStateExtractor {
+	switch m.(type) {
+	case *blocks.BlockHeader:
+		return &BlockHeaderExtractor{}
+	default:
+		panic("here")
+	}
 }
 
 func ActorStateExtractorForModel(m model.Persistable) ActorStateExtractor {
@@ -63,10 +61,6 @@ func ActorStateExtractorForModel(m model.Persistable) ActorStateExtractor {
 	default:
 		panic("here")
 	}
-}
-
-func TipSetExtractorForModel(m model.Persistable) TipSetStateExtractor {
-	return nil
 }
 
 type ActorExtractor struct{}
@@ -90,4 +84,25 @@ func (aw *ActorExtractor) Allow(code cid.Cid) bool {
 
 func (aw *ActorExtractor) Name() string {
 	return "actors"
+}
+
+type BlockHeaderExtractor struct{}
+
+func (b *BlockHeaderExtractor) Name() string {
+	return "block_headers"
+}
+
+func (b *BlockHeaderExtractor) Extract(ctx context.Context, current, previous *types.TipSet) (model.Persistable, error) {
+	var pl model.PersistableList
+	for _, bh := range current.Blocks() {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
+		pl = append(pl, blocks.NewBlockHeader(bh))
+	}
+
+	return pl, nil
 }

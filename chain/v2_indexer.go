@@ -20,31 +20,24 @@ import (
 	"time"
 )
 
-type V2TipSetsProcessor interface {
-	// ProcessTipSets processes a parent and child tipset. If error is non-nil then the processor encountered a fatal error.
-	// Any data returned must be accompanied by a processing report.
-	ProcessTipSets(ctx context.Context, current, previous *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error)
+type ActorExtractorProcessor interface {
+	ProcessActorExtractors(ctx context.Context, current *types.TipSet, previous *types.TipSet, actors map[address.Address]lens.ActorStateChange, extractors ActorStateExtractor) (model.Persistable, *visormodel.ProcessingReport, error)
+	Run(ctx context.Context, extractor ActorStateExtractor, results chan *TaskResult)
 }
 
-type V2ActorProcessor interface {
-	// ProcessActors processes a set of actors. If error is non-nil then the processor encountered a fatal error.
-	// Any data returned must be accompanied by a processing report.
-	ProcessActors(ctx context.Context, current *types.TipSet, previous *types.TipSet, actors map[string]lens.ActorStateChange) (model.Persistable, *visormodel.ProcessingReport, error)
-}
-type ActorExtractorProcessor interface {
-	ProcessActorExtractors(ctx context.Context, current *types.TipSet, previous *types.TipSet, actors map[address.Address]lens.ActorStateChange, extractors []ActorStateExtractor) (model.Persistable, *visormodel.ProcessingReport, error)
+type TipSetStateExtractorProcessor interface {
+	ProcessTipSetExtractors(ctx context.Context, current *types.TipSet, previous *types.TipSet, extractors TipSetStateExtractor) (model.Persistable, *visormodel.ProcessingReport, error)
+	Run(ctx context.Context, extractor TipSetStateExtractor, results chan *TaskResult)
 }
 
 type V2TipSetIndexer struct {
-	window          time.Duration
-	storage         model.Storage
-	processors      map[string]V2TipSetsProcessor
-	actorProcessors map[string]V2ActorProcessor
-	name            string
-	persistSlot     chan struct{} // filled with a token when a goroutine is persisting data
-	lastTipSet      *types.TipSet
-	node            lens.API
-	tasks           []string
+	window      time.Duration
+	storage     model.Storage
+	name        string
+	persistSlot chan struct{} // filled with a token when a goroutine is persisting data
+	lastTipSet  *types.TipSet
+	node        lens.API
+	tasks       []string
 
 	tsExtractors  []TipSetStateExtractor
 	actExtractors []ActorStateExtractor
@@ -53,16 +46,14 @@ type V2TipSetIndexer struct {
 // Passes TestLilyVectorWalkExtraction
 func NewV2TipSetIndexer(node lens.API, d model.Storage, name string, tasks []string) (*V2TipSetIndexer, error) {
 	tsi := &V2TipSetIndexer{
-		storage:         d,
-		name:            name,
-		persistSlot:     make(chan struct{}, 1), // allow one concurrent persistence job
-		processors:      map[string]V2TipSetsProcessor{},
-		actorProcessors: map[string]V2ActorProcessor{},
-		node:            node,
-		tasks:           tasks,
+		storage:     d,
+		name:        name,
+		persistSlot: make(chan struct{}, 1), // allow one concurrent persistence job
+		node:        node,
+		tasks:       tasks,
 	}
 
-	for _, modelName := range []string{"actors"} {
+	for _, modelName := range []string{"actors", "block_headers"} {
 		extractableModel, exType, err := StringToModelTypeAndExtractor(modelName)
 		if err != nil {
 			return nil, err
@@ -91,7 +82,7 @@ func (t *V2TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	var (
 		current  = ts
 		previous = pts
-		results  = make(chan *TaskResult, len(t.processors)+len(t.actorProcessors))
+		results  = make(chan *TaskResult, len(t.tsExtractors)+len(t.actExtractors))
 	)
 
 	start := time.Now()
@@ -137,6 +128,12 @@ func (t *V2TipSetIndexer) Close() error {
 }
 
 func (t *V2TipSetIndexer) index(ctx context.Context, current, previous *types.TipSet, results chan *TaskResult) error {
+
+	tipsetProcessor := NewTipSetExtractorProcessorImpl(t.node, current, previous)
+	for _, te := range t.tsExtractors {
+		go tipsetProcessor.Run(ctx, te, results)
+	}
+
 	if len(t.actExtractors) > 0 {
 		var (
 			changes map[address.Address]lens.ActorStateChange
@@ -153,15 +150,17 @@ func (t *V2TipSetIndexer) index(ctx context.Context, current, previous *types.Ti
 			}
 		}
 
-		actorProcessor := NewActorExtractorProcessorImpl(t.node)
-		go t.runActorExtractorProcessor(ctx, actorProcessor, current, previous, changes, results)
+		actorProcessor := NewActorExtractorProcessorImpl(t.node, current, previous, changes)
+		for _, ae := range t.actExtractors {
+			go actorProcessor.Run(ctx, ae, results)
+		}
 	}
 
 	return nil
 }
 
 func (t *V2TipSetIndexer) persist(ctx context.Context, results chan *TaskResult) error {
-	inFlightTasks := len(t.actExtractors)
+	inFlightTasks := len(t.actExtractors) + len(t.tsExtractors)
 	taskOutputs := make(map[string]model.PersistableList, inFlightTasks)
 	// Wait for all tasks to complete
 	for inFlightTasks > 0 {
@@ -241,75 +240,6 @@ func (t *V2TipSetIndexer) persist(ctx context.Context, results chan *TaskResult)
 		wg.Wait()
 	}()
 	return nil
-}
-
-func (t *V2TipSetIndexer) runProcessors(ctx context.Context, p V2TipSetsProcessor, name string, current, previous *types.TipSet, results chan *TaskResult) {
-	start := time.Now()
-
-	data, report, err := p.ProcessTipSets(ctx, current, previous)
-	if err != nil {
-		stats.Record(ctx, metrics.ProcessingFailure.M(1))
-		results <- &TaskResult{
-			Task:        name,
-			Error:       err,
-			StartedAt:   start,
-			CompletedAt: time.Now(),
-		}
-		return
-	}
-	results <- &TaskResult{
-		Task:        name,
-		Report:      report,
-		Data:        data,
-		StartedAt:   start,
-		CompletedAt: time.Now(),
-	}
-}
-
-func (t *V2TipSetIndexer) runActorExtractorProcessor(ctx context.Context, p ActorExtractorProcessor, current, previous *types.TipSet, actors map[address.Address]lens.ActorStateChange, results chan *TaskResult) {
-	start := time.Now()
-
-	data, report, err := p.ProcessActorExtractors(ctx, current, previous, actors, t.actExtractors)
-	if err != nil {
-		stats.Record(ctx, metrics.ProcessingFailure.M(1))
-		results <- &TaskResult{
-			Task:        "thing", // TODO
-			Error:       err,
-			StartedAt:   start,
-			CompletedAt: time.Now(),
-		}
-		return
-	}
-	results <- &TaskResult{
-		Task:        "thing", // TODO
-		Report:      visormodel.ProcessingReportList{report},
-		Data:        data,
-		StartedAt:   start,
-		CompletedAt: time.Now(),
-	}
-}
-
-func (t *V2TipSetIndexer) runActorProcessor(ctx context.Context, p V2ActorProcessor, name string, current, previous *types.TipSet, actors map[string]lens.ActorStateChange, results chan *TaskResult) {
-	start := time.Now()
-
-	data, report, err := p.ProcessActors(ctx, current, previous, actors)
-	if err != nil {
-		stats.Record(ctx, metrics.ProcessingFailure.M(1))
-		results <- &TaskResult{
-			Task:        name,
-			Error:       err,
-			StartedAt:   start,
-			CompletedAt: time.Now(),
-		}
-		return
-	}
-	results <- &TaskResult{
-		Task:        name,
-		Report:      visormodel.ProcessingReportList{report},
-		Data:        data,
-		StartedAt:   start,
-		CompletedAt: time.Now(),
-	}
 }
 
 // stateChangedActors is an optimized version of the lotus API method StateChangedActors. This method takes advantage of the efficient hamt/v3 diffing logic

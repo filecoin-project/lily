@@ -160,9 +160,6 @@ type ActorStateResult struct {
 	Error        error
 	SkippedParse bool
 	Data         model.Persistable
-	Type         string
-	StartedAt    time.Time
-	CompletedAt  time.Time
 }
 
 type ActorStateError struct {

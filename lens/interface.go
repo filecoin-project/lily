@@ -107,6 +107,19 @@ const (
 	ChangeTypeModify  = 3
 )
 
+func (c ChangeType) String() string {
+	switch c {
+	case ChangeTypeAdd:
+		return "Add"
+	case ChangeTypeRemove:
+		return "remove"
+	case ChangeTypeModify:
+		return "modify"
+	default:
+		return "unknown"
+	}
+}
+
 type ActorStateChange struct {
 	Actor      types.Actor
 	ChangeType ChangeType
