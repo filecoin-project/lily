@@ -168,9 +168,9 @@ const (
 	// HeadEventRevert indicates that the event signals a reversion of a tipset from the chain
 	HeadEventRevert = "revert"
 
-	// HeadEventRevert indicates that the event signals the application of a tipset to the chain
+	// HeadEventApply indicates that the event signals the application of a tipset to the chain
 	HeadEventApply = "apply"
 
-	// HeadEventRevert indicates that the event signals the current known head tipset
+	// HeadEventCurrent indicates that the event signals the current known head tipset
 	HeadEventCurrent = "current"
 )

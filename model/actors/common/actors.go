@@ -2,7 +2,6 @@ package common
 
 import (
 	"context"
-
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	"go.opencensus.io/tag"

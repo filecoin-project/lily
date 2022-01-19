@@ -62,12 +62,6 @@ func TestLilyVectorWalkExtraction(t *testing.T) {
 		}
 
 		t.Run(fmt.Sprintf("processing_reports-height_%d", ts.Height()), func(t *testing.T) {
-			/*
-				if ts.Height() == 1000 {
-					t.Skipf("Skipping height 1000 due to off by one-ness of tipset indexer.")
-				}
-
-			*/
 			// validate the processing reports for all models walked.
 			for _, tc := range vectorWalkTestCases {
 				var m *visor.ProcessingReport
@@ -294,7 +288,8 @@ func PerformTestVectorWalk(ctx context.Context, t testing.TB, vectorPath string,
 	// when true all sql statements will be printed
 	debugLogs := true
 	if debugLogs {
-		logging.SetAllLoggers(logging.LevelDebug)
+		err := logging.SetLogLevelRegex("lily/", "debug")
+		require.NoError(t, err)
 	}
 
 	// TODO the t.Cleanups can cause flaks, added a sleep but need a better solution here, maybe return a function that's call after all assertions are made?

@@ -5,7 +5,6 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/lens"
-	"github.com/filecoin-project/lily/lens/util/diff"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
 	lru "github.com/hashicorp/golang-lru"
@@ -16,7 +15,6 @@ type TaskAPI interface {
 	StateGetActor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error)
 	StateMinerPower(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.MinerPower, error)
 	StateReadState(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.ActorState, error)
-	StateChangedActors(ctx context.Context, store adt.Store, ts, pts *types.TipSet) (diff.ActorStateChangeDiff, error)
 	Store() adt.Store
 
 	StateVMCirculatingSupplyInternal(context.Context, types.TipSetKey) (api.CirculatingSupply, error)
@@ -73,10 +71,6 @@ func (t *TaskAPIImpl) StateMinerPower(ctx context.Context, addr address.Address,
 
 func (t *TaskAPIImpl) StateReadState(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.ActorState, error) {
 	return t.node.StateReadState(ctx, addr, tsk)
-}
-
-func (t *TaskAPIImpl) StateChangedActors(ctx context.Context, store adt.Store, ts, pts *types.TipSet) (diff.ActorStateChangeDiff, error) {
-	return diff.GetActorStateChanges(ctx, store, ts, pts)
 }
 
 func (t *TaskAPIImpl) StateVMCirculatingSupplyInternal(ctx context.Context, key types.TipSetKey) (api.CirculatingSupply, error) {

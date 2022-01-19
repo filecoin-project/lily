@@ -3,9 +3,9 @@ package lily
 import (
 	"context"
 	"fmt"
+	"github.com/filecoin-project/lily/chain/actors/adt"
 	"sync"
 
-	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/lens/lily/modules"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/events"
@@ -14,7 +14,6 @@ import (
 	"github.com/filecoin-project/lotus/node/impl/common"
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/lotus/node/impl/net"
-	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -46,19 +45,6 @@ type LilyNodeAPI struct {
 	CacheConfig    *util.CacheConfig
 	actorStore     adt.Store
 	actorStoreInit sync.Once
-}
-
-func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {
-	// TODO (Frrist): I copied this from lotus, I need it now to handle gap filling edge cases.
-	ts, err := m.ChainAPI.Chain.GetTipSetFromKey(key)
-	if err != nil {
-		return nil, xerrors.Errorf("loading tipset %s: %w", key, err)
-	}
-	return m.ChainAPI.Chain.GetTipsetByHeight(ctx, epoch, ts, false)
-}
-
-func (m *LilyNodeAPI) Daemonized() bool {
-	return true
 }
 
 func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*schedule.JobSubmitResult, error) {

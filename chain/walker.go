@@ -49,8 +49,6 @@ func (c *Walker) Run(ctx context.Context) error {
 		return xerrors.Errorf("cannot walk history, chain head (%d) is earlier than minimum height (%d)", int64(ts.Height()), c.minHeight)
 	}
 
-	// Start at maxHeight+1 so that the tipset at maxHeight becomes the parent for any tasks that need to make a diff between two tipsets.
-	// A walk where min==max must still process two tipsets to be sure of extracting data.
 	ts, err = c.node.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(c.maxHeight), types.EmptyTSK)
 	if err != nil {
 		return err
@@ -79,7 +77,7 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 	}
 	defer span.End()
 
-	log.Debugw("found tipset", "height", ts.Height())
+	log.Debugw("found tipset", "height", ts.Height(), "key", ts.Key().String())
 	if err := c.obs.TipSet(ctx, ts); err != nil {
 		span.RecordError(err)
 		return xerrors.Errorf("notify tipset: %w", err)
@@ -103,7 +101,7 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 			break
 		}
 
-		log.Debugw("found tipset", "height", ts.Height())
+		log.Debugw("found tipset", "height", ts.Height(), "key", ts.Key().String())
 		if err := c.obs.TipSet(ctx, ts); err != nil {
 			span.RecordError(err)
 			return xerrors.Errorf("notify tipset: %w", err)

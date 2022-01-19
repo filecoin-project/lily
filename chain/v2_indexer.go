@@ -6,25 +6,10 @@ import (
 	"crypto/sha256"
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
-	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
-	"github.com/filecoin-project/lily/chain/actors/builtin/market"
-	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
-	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
-	"github.com/filecoin-project/lily/chain/actors/builtin/power"
-	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
-	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
-	"github.com/filecoin-project/lily/chain/taskapi"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
-	"github.com/filecoin-project/lily/tasks/actorstate"
-	"github.com/filecoin-project/lily/tasks/blocks"
-	"github.com/filecoin-project/lily/tasks/chaineconomics"
-	"github.com/filecoin-project/lily/tasks/consensus"
-	"github.com/filecoin-project/lily/tasks/messageexecutions"
-	"github.com/filecoin-project/lily/tasks/messages"
-	"github.com/filecoin-project/lily/tasks/msapprovals"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
@@ -42,9 +27,12 @@ type V2TipSetsProcessor interface {
 }
 
 type V2ActorProcessor interface {
-	// ProcessActorChanges processes a set of actors. If error is non-nil then the processor encountered a fatal error.
+	// ProcessActors processes a set of actors. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
 	ProcessActors(ctx context.Context, current *types.TipSet, previous *types.TipSet, actors map[string]lens.ActorStateChange) (model.Persistable, *visormodel.ProcessingReport, error)
+}
+type ActorExtractorProcessor interface {
+	ProcessActorExtractors(ctx context.Context, current *types.TipSet, previous *types.TipSet, actors map[address.Address]lens.ActorStateChange, extractors []ActorStateExtractor) (model.Persistable, *visormodel.ProcessingReport, error)
 }
 
 type V2TipSetIndexer struct {
@@ -57,6 +45,9 @@ type V2TipSetIndexer struct {
 	lastTipSet      *types.TipSet
 	node            lens.API
 	tasks           []string
+
+	tsExtractors  []TipSetStateExtractor
+	actExtractors []ActorStateExtractor
 }
 
 // Passes TestLilyVectorWalkExtraction
@@ -71,43 +62,19 @@ func NewV2TipSetIndexer(node lens.API, d model.Storage, name string, tasks []str
 		tasks:           tasks,
 	}
 
-	taskAPI, err := taskapi.NewTaskAPI(node)
-	if err != nil {
-		return nil, err
-	}
+	for _, modelName := range []string{"actors"} {
+		extractableModel, exType, err := StringToModelTypeAndExtractor(modelName)
+		if err != nil {
+			return nil, err
+		}
 
-	for _, task := range tasks {
-		switch task {
-		case BlocksTask:
-			tsi.processors[BlocksTask] = blocks.NewTask()
-		case ChainConsensusTask:
-			tsi.processors[ChainConsensusTask] = consensus.NewTask()
-		case MessagesTask:
-			tsi.processors[MessagesTask] = messages.NewTask(taskAPI)
-		case ChainEconomicsTask:
-			tsi.processors[ChainEconomicsTask] = chaineconomics.NewTask(taskAPI)
-		case MultisigApprovalsTask:
-			tsi.processors[MultisigApprovalsTask] = msapprovals.NewTask(taskAPI)
-		case ImplicitMessageTask:
-			tsi.processors[ImplicitMessageTask] = messageexecutions.NewTask(taskAPI)
-		case ActorStatesRawTask:
-			tsi.actorProcessors[ActorStatesRawTask] = actorstate.NewTask(taskAPI, &actorstate.RawActorExtractorMap{})
-		case ActorStatesPowerTask:
-			tsi.actorProcessors[ActorStatesPowerTask] = actorstate.NewTask(taskAPI, actorstate.NewTypedActorExtractorMap(power.AllCodes()))
-		case ActorStatesRewardTask:
-			tsi.actorProcessors[ActorStatesRewardTask] = actorstate.NewTask(taskAPI, actorstate.NewTypedActorExtractorMap(reward.AllCodes()))
-		case ActorStatesMinerTask:
-			tsi.actorProcessors[ActorStatesMinerTask] = actorstate.NewTask(taskAPI, actorstate.NewTypedActorExtractorMap(miner.AllCodes()))
-		case ActorStatesInitTask:
-			tsi.actorProcessors[ActorStatesInitTask] = actorstate.NewTask(taskAPI, actorstate.NewTypedActorExtractorMap(init_.AllCodes()))
-		case ActorStatesMarketTask:
-			tsi.actorProcessors[ActorStatesMarketTask] = actorstate.NewTask(taskAPI, actorstate.NewTypedActorExtractorMap(market.AllCodes()))
-		case ActorStatesMultisigTask:
-			tsi.actorProcessors[ActorStatesMultisigTask] = actorstate.NewTask(taskAPI, actorstate.NewTypedActorExtractorMap(multisig.AllCodes()))
-		case ActorStatesVerifreg:
-			tsi.actorProcessors[ActorStatesVerifreg] = actorstate.NewTask(taskAPI, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes()))
-		default:
-			return nil, xerrors.Errorf("unknown task: %s", task)
+		switch exType {
+		case TipSetStateExtractorType:
+			ex := TipSetExtractorForModel(extractableModel)
+			tsi.tsExtractors = append(tsi.tsExtractors, ex)
+		case ActorStateExtractorType:
+			ex := ActorStateExtractorForModel(extractableModel)
+			tsi.actExtractors = append(tsi.actExtractors, ex)
 		}
 	}
 
@@ -124,21 +91,55 @@ func (t *V2TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	var (
 		current  = ts
 		previous = pts
-		inFlight = 0
-		// TODO should these be allocated to the size of message and message execution processors
-		results = make(chan *TaskResult, len(t.processors)+len(t.actorProcessors))
-		// A map to gather the persistable outputs from each task
-		taskOutputs = make(map[string]model.PersistableList, len(t.processors)+len(t.actorProcessors))
+		results  = make(chan *TaskResult, len(t.processors)+len(t.actorProcessors))
 	)
 
-	for name, p := range t.processors {
-		inFlight++
-		go t.runProcessors(ctx, p, name, current, previous, results)
+	start := time.Now()
+	log.Infow("processing", "current", current.Height(), "previous", previous.Height())
+
+	if err := t.index(ctx, current, previous, results); err != nil {
+		return err
 	}
 
-	if len(t.actorProcessors) > 0 {
+	log.Infow("indexed", "current", current.Height(), "previous", previous.Height(), "duration", time.Since(start))
+
+	if err := t.persist(ctx, results); err != nil {
+		return err
+	}
+
+	log.Infow("persisted", "current", current.Height(), "previous", previous.Height(), "duration", time.Since(start))
+
+	return nil
+}
+
+func (t *V2TipSetIndexer) Close() error {
+	log.Debug("closing tipset indexer")
+
+	// We need to ensure that any persistence goroutine has completed. Since the channel has capacity 1 we can detect
+	// when the persistence goroutine is running by attempting to send a probe value on the channel. When the channel
+	// contains a token then we are still persisting and we should wait for that to be done.
+	select {
+	case t.persistSlot <- struct{}{}:
+		// no token was in channel so there was no persistence goroutine running
+	default:
+		// channel contained a token so persistence goroutine is running
+		// wait for the persistence to finish, which is when the channel can be sent on
+		log.Debug("waiting for persistence to complete")
+		t.persistSlot <- struct{}{}
+		log.Debug("persistence completed")
+	}
+
+	// When we reach here there will always be a single token in the channel (our probe) which needs to be drained so
+	// the channel is empty for reuse.
+	<-t.persistSlot
+
+	return nil
+}
+
+func (t *V2TipSetIndexer) index(ctx context.Context, current, previous *types.TipSet, results chan *TaskResult) error {
+	if len(t.actExtractors) > 0 {
 		var (
-			changes map[string]lens.ActorStateChange
+			changes map[address.Address]lens.ActorStateChange
 			err     error
 		)
 		// the diff between the first tipset mined and genesis is nil, this is becasue the actors haven't changed, but they
@@ -152,25 +153,28 @@ func (t *V2TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 			}
 		}
 
-		for name, p := range t.actorProcessors {
-			inFlight++
-			go t.runActorProcessor(ctx, p, name, current, previous, changes, results)
-		}
+		actorProcessor := NewActorExtractorProcessorImpl(t.node)
+		go t.runActorExtractorProcessor(ctx, actorProcessor, current, previous, changes, results)
 	}
 
+	return nil
+}
+
+func (t *V2TipSetIndexer) persist(ctx context.Context, results chan *TaskResult) error {
+	inFlightTasks := len(t.actExtractors)
+	taskOutputs := make(map[string]model.PersistableList, inFlightTasks)
 	// Wait for all tasks to complete
-	for inFlight > 0 {
+	for inFlightTasks > 0 {
 		var res *TaskResult
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case res = <-results:
 		}
-		inFlight--
+		inFlightTasks--
 
 		// Was there a fatal error?
 		if res.Error != nil {
-			// tell all the processors to close their connections to the lens, they can reopen when needed
 			return res.Error
 		}
 
@@ -237,31 +241,6 @@ func (t *V2TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		wg.Wait()
 	}()
 	return nil
-
-}
-
-func (t *V2TipSetIndexer) Close() error {
-	log.Debug("closing tipset indexer")
-
-	// We need to ensure that any persistence goroutine has completed. Since the channel has capacity 1 we can detect
-	// when the persistence goroutine is running by attempting to send a probe value on the channel. When the channel
-	// contains a token then we are still persisting and we should wait for that to be done.
-	select {
-	case t.persistSlot <- struct{}{}:
-		// no token was in channel so there was no persistence goroutine running
-	default:
-		// channel contained a token so persistence goroutine is running
-		// wait for the persistence to finish, which is when the channel can be sent on
-		log.Debug("waiting for persistence to complete")
-		t.persistSlot <- struct{}{}
-		log.Debug("persistence completed")
-	}
-
-	// When we reach here there will always be a single token in the channel (our probe) which needs to be drained so
-	// the channel is empty for reuse.
-	<-t.persistSlot
-
-	return nil
 }
 
 func (t *V2TipSetIndexer) runProcessors(ctx context.Context, p V2TipSetsProcessor, name string, current, previous *types.TipSet, results chan *TaskResult) {
@@ -281,6 +260,29 @@ func (t *V2TipSetIndexer) runProcessors(ctx context.Context, p V2TipSetsProcesso
 	results <- &TaskResult{
 		Task:        name,
 		Report:      report,
+		Data:        data,
+		StartedAt:   start,
+		CompletedAt: time.Now(),
+	}
+}
+
+func (t *V2TipSetIndexer) runActorExtractorProcessor(ctx context.Context, p ActorExtractorProcessor, current, previous *types.TipSet, actors map[address.Address]lens.ActorStateChange, results chan *TaskResult) {
+	start := time.Now()
+
+	data, report, err := p.ProcessActorExtractors(ctx, current, previous, actors, t.actExtractors)
+	if err != nil {
+		stats.Record(ctx, metrics.ProcessingFailure.M(1))
+		results <- &TaskResult{
+			Task:        "thing", // TODO
+			Error:       err,
+			StartedAt:   start,
+			CompletedAt: time.Now(),
+		}
+		return
+	}
+	results <- &TaskResult{
+		Task:        "thing", // TODO
+		Report:      visormodel.ProcessingReportList{report},
 		Data:        data,
 		StartedAt:   start,
 		CompletedAt: time.Now(),
@@ -313,10 +315,10 @@ func (t *V2TipSetIndexer) runActorProcessor(ctx context.Context, p V2ActorProces
 // stateChangedActors is an optimized version of the lotus API method StateChangedActors. This method takes advantage of the efficient hamt/v3 diffing logic
 // and applies it to versions of state tress supporting it. These include Version 2 and 3 of the lotus state tree implementation.
 // stateChangedActors will fall back to the lotus API method when the optimized diffing cannot be applied.
-func (t *V2TipSetIndexer) stateChangedActors(ctx context.Context, current, previous cid.Cid) (map[string]lens.ActorStateChange, error) {
+func (t *V2TipSetIndexer) stateChangedActors(ctx context.Context, current, previous cid.Cid) (map[address.Address]lens.ActorStateChange, error) {
 	var (
 		buf = bytes.NewReader(nil)
-		out = map[string]lens.ActorStateChange{}
+		out = map[address.Address]lens.ActorStateChange{}
 	)
 
 	previousRood, previousVersion, err := getStateTreeMapCIDAndVersion(ctx, t.node.Store(), previous)
@@ -371,7 +373,7 @@ func (t *V2TipSetIndexer) stateChangedActors(ctx context.Context, current, previ
 						return nil, err
 					}
 				}
-				out[addr.String()] = ch
+				out[addr] = ch
 			}
 			return out, nil
 		}
@@ -382,7 +384,11 @@ func (t *V2TipSetIndexer) stateChangedActors(ctx context.Context, current, previ
 		return nil, err
 	}
 
-	for addr, act := range actors {
+	for addrStr, act := range actors {
+		addr, err := address.NewFromString(addrStr)
+		if err != nil {
+			return nil, err
+		}
 		out[addr] = lens.ActorStateChange{
 			Actor:      act,
 			ChangeType: lens.ChangeTypeUnknown,
@@ -393,8 +399,8 @@ func (t *V2TipSetIndexer) stateChangedActors(ctx context.Context, current, previ
 }
 
 // getGenesisActors returns a map of all actors contained in the genesis block.
-func (t *V2TipSetIndexer) getGenesisActors(ctx context.Context) (map[string]lens.ActorStateChange, error) {
-	out := map[string]lens.ActorStateChange{}
+func (t *V2TipSetIndexer) getGenesisActors(ctx context.Context) (map[address.Address]lens.ActorStateChange, error) {
+	out := map[address.Address]lens.ActorStateChange{}
 
 	genesis, err := t.node.ChainGetGenesis(ctx)
 	if err != nil {
@@ -409,7 +415,7 @@ func (t *V2TipSetIndexer) getGenesisActors(ctx context.Context) (map[string]lens
 		return nil, err
 	}
 	if err := tree.ForEach(func(addr address.Address, act *types.Actor) error {
-		out[addr.String()] = lens.ActorStateChange{
+		out[addr] = lens.ActorStateChange{
 			Actor:      *act,
 			ChangeType: lens.ChangeTypeAdd,
 		}
