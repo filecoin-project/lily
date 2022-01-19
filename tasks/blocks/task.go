@@ -15,8 +15,8 @@ import (
 type Task struct {
 }
 
-func (p *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error) {
-	data, report, err := p.ProcessTipSet(ctx, child)
+func (p *Task) ProcessTipSets(ctx context.Context, current, previous *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error) {
+	data, report, err := p.ProcessTipSet(ctx, current)
 	return data, visormodel.ProcessingReportList{report}, err
 }
 

@@ -62,9 +62,12 @@ func TestLilyVectorWalkExtraction(t *testing.T) {
 		}
 
 		t.Run(fmt.Sprintf("processing_reports-height_%d", ts.Height()), func(t *testing.T) {
-			if ts.Height() == 1000 {
-				t.Skipf("Skipping height 1000 due to off by one-ness of tipset indexer.")
-			}
+			/*
+				if ts.Height() == 1000 {
+					t.Skipf("Skipping height 1000 due to off by one-ness of tipset indexer.")
+				}
+
+			*/
 			// validate the processing reports for all models walked.
 			for _, tc := range vectorWalkTestCases {
 				var m *visor.ProcessingReport
@@ -138,10 +141,6 @@ var vectorWalkTestCases = []testCase{
 		modeType:  &blocks.BlockHeader{},
 		task:      chain.BlocksTask,
 		test: func(ts *types.TipSet, state *TipSetState, strg *storage.Database, model interface{}, t *testing.T) {
-			// TODO fixme
-			if ts.Height() == 1000 {
-				t.Skipf("Skipping height 1000 due to off by one-ness of tipset indexer.")
-			}
 			for _, bh := range ts.Blocks() {
 				var m *blocks.BlockHeader
 				exists, err := strg.AsORM().Model(m).
@@ -185,14 +184,35 @@ var vectorWalkTestCases = []testCase{
 		},
 	},
 	{
+		modelName: "messages",
+		modeType:  &messages.Messages{},
+		task:      chain.MessagesTask,
+		test: func(ts *types.TipSet, state *TipSetState, strg *storage.Database, model interface{}, t *testing.T) {
+			var msgCount int
+			for blk, msgs := range state.blockMsgs {
+				msgCount += len(msgs.Cids)
+				for _, msg := range msgs.Cids {
+					var m *messages.Message
+					exists, err := strg.AsORM().Model(m).
+						Where("height = ?", blk.Height).
+						Where("cid = ?", msg.String()).
+						Exists()
+					require.NoError(t, err)
+					assert.Truef(t, exists, "expected model with height %d, block %s, messages %s", blk.Height, blk.Cid(), msg)
+				}
+			}
+
+			var count int
+			_, err := strg.AsORM().QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM block_messages WHERE height = ?`, ts.Height())
+			require.NoError(t, err)
+			assert.Equal(t, msgCount, count, "expect model with height = %d", ts.Height())
+		},
+	},
+	{
 		modelName: "block_parents",
 		modeType:  &blocks.BlockParents{},
 		task:      chain.BlocksTask,
 		test: func(ts *types.TipSet, state *TipSetState, strg *storage.Database, model interface{}, t *testing.T) {
-			// TODO fixme
-			if ts.Height() == 1000 {
-				t.Skipf("Skipping height 1000 due to off by one-ness of tipset indexer.")
-			}
 			totalBlockParents := 0
 			for _, blk := range state.blocks {
 				for _, parent := range blk.Parents {
@@ -220,10 +240,6 @@ var vectorWalkTestCases = []testCase{
 		modeType:  &chain2.ChainConsensus{},
 		task:      chain.ChainConsensusTask,
 		test: func(ts *types.TipSet, state *TipSetState, strg *storage.Database, model interface{}, t *testing.T) {
-			// TODO fixme
-			if ts.Height() == 1000 {
-				t.Skipf("Skipping height 1000 due to off by one-ness of tipset indexer.")
-			}
 			var m *chain2.ChainConsensus
 			exists, err := strg.AsORM().Model(m).
 				Where("height = ?", ts.Height()).
@@ -276,7 +292,7 @@ func PerformTestVectorWalk(ctx context.Context, t testing.TB, vectorPath string,
 
 	logging.SetAllLoggers(logging.LevelError)
 	// when true all sql statements will be printed
-	debugLogs := false
+	debugLogs := true
 	if debugLogs {
 		logging.SetAllLoggers(logging.LevelDebug)
 	}
@@ -318,7 +334,7 @@ func PerformTestVectorWalk(ctx context.Context, t testing.TB, vectorPath string,
 	// TODO fix this models thing when you refactor lily
 	// since some models fall under same task name...
 	tasks := make(map[string]struct{})
-	var models []string
+	models := []string{"visor_processing_reports"}
 	for _, tc := range vectorTestCases {
 		// processing reports doesn't have a task, ignore it since it always runs
 		if tc.task == "" {

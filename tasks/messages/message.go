@@ -32,13 +32,13 @@ type Task struct {
 	node lens.API
 }
 
-func (p *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error) {
-	tsMsgs, err := p.node.GetExecutedAndBlockMessagesForTipset(ctx, child, parent)
+func (p *Task) ProcessTipSets(ctx context.Context, current, previous *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error) {
+	tsMsgs, err := p.node.GetExecutedAndBlockMessagesForTipset(ctx, current, previous)
 	if err != nil {
 		// TODO is returning this right?
 		return nil, nil, err
 	}
-	data, report, err := p.ProcessMessages(ctx, child, parent, tsMsgs.Executed, tsMsgs.Block)
+	data, report, err := p.ProcessMessages(ctx, current, previous, tsMsgs.Executed, tsMsgs.Block)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -52,16 +52,16 @@ func NewTask(node lens.API) *Task {
 }
 
 // Note that pts is the parent tipset containing the messages, ts is the following tipset containing the receipts
-func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (p *Task) ProcessMessages(ctx context.Context, current *types.TipSet, previous *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ProcessMessages")
 	if span.IsRecording() {
-		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))
+		span.SetAttributes(attribute.String("tipset", current.String()), attribute.Int64("height", int64(current.Height())))
 	}
 	defer span.End()
 
 	report := &visormodel.ProcessingReport{
-		Height:    int64(pts.Height()),
-		StateRoot: pts.ParentState().String(),
+		Height:    int64(current.Height()),
+		StateRoot: current.ParentState().String(),
 	}
 
 	var (
@@ -199,9 +199,9 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 
 		rcpt := &messagemodel.Receipt{
-			Height:    int64(ts.Height()),
+			Height:    int64(current.Height()),
 			Message:   m.Cid.String(),
-			StateRoot: ts.ParentState().String(),
+			StateRoot: current.ParentState().String(),
 			Idx:       int(m.Index),
 			ExitCode:  int64(m.Receipt.ExitCode),
 			GasUsed:   m.Receipt.GasUsed,
@@ -275,23 +275,23 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 	}
 
-	newBaseFee := store.ComputeNextBaseFee(pts.Blocks()[0].ParentBaseFee, totalUniqGasLimit, len(pts.Blocks()), pts.Height())
+	newBaseFee := store.ComputeNextBaseFee(previous.Blocks()[0].ParentBaseFee, totalUniqGasLimit, len(previous.Blocks()), previous.Height())
 	baseFeeRat := new(big.Rat).SetFrac(newBaseFee.Int, new(big.Int).SetUint64(build.FilecoinPrecision))
 	baseFee, _ := baseFeeRat.Float64()
 
-	baseFeeChange := new(big.Rat).SetFrac(newBaseFee.Int, pts.Blocks()[0].ParentBaseFee.Int)
+	baseFeeChange := new(big.Rat).SetFrac(newBaseFee.Int, previous.Blocks()[0].ParentBaseFee.Int)
 	baseFeeChangeF, _ := baseFeeChange.Float64()
 
 	messageGasEconomyResult := &messagemodel.MessageGasEconomy{
-		Height:              int64(pts.Height()),
-		StateRoot:           pts.ParentState().String(),
+		Height:              int64(previous.Height()),
+		StateRoot:           previous.ParentState().String(),
 		GasLimitTotal:       totalGasLimit,
 		GasLimitUniqueTotal: totalUniqGasLimit,
 		BaseFee:             baseFee,
 		BaseFeeChangeLog:    math.Log(baseFeeChangeF) / math.Log(1.125),
-		GasFillRatio:        float64(totalGasLimit) / float64(len(pts.Blocks())*build.BlockGasTarget),
-		GasCapacityRatio:    float64(totalUniqGasLimit) / float64(len(pts.Blocks())*build.BlockGasTarget),
-		GasWasteRatio:       float64(totalGasLimit-totalUniqGasLimit) / float64(len(pts.Blocks())*build.BlockGasTarget),
+		GasFillRatio:        float64(totalGasLimit) / float64(len(previous.Blocks())*build.BlockGasTarget),
+		GasCapacityRatio:    float64(totalUniqGasLimit) / float64(len(previous.Blocks())*build.BlockGasTarget),
+		GasWasteRatio:       float64(totalGasLimit-totalUniqGasLimit) / float64(len(previous.Blocks())*build.BlockGasTarget),
 	}
 
 	if len(errorsDetected) != 0 {

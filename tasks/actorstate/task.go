@@ -25,11 +25,6 @@ type Task struct {
 	extracterMap ActorExtractorMap
 }
 
-func (t *Task) ProcessActorChanges(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors map[string]lens.ActorStateChange) (model.Persistable, *visormodel.ProcessingReport, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func NewTask(node lens.API, extracterMap ActorExtractorMap) *Task {
 	p := &Task{
 		node:         node,
@@ -38,16 +33,16 @@ func NewTask(node lens.API, extracterMap ActorExtractorMap) *Task {
 	return p
 }
 
-func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates map[string]lens.ActorStateChange, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
-	log.Debugw("processing actor state changes", "height", ts.Height(), "parent_height", pts.Height())
+func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, previous *types.TipSet, candidates map[string]lens.ActorStateChange) (model.Persistable, *visormodel.ProcessingReport, error) {
+	log.Debugw("processing actor state changes", "height", current.Height(), "parent_height", previous.Height())
 
 	report := &visormodel.ProcessingReport{
-		Height:    int64(pts.Height()),
-		StateRoot: pts.ParentState().String(),
+		Height:    int64(current.Height()),
+		StateRoot: current.ParentState().String(),
 		Status:    visormodel.ProcessingStatusOK,
 	}
 
-	ll := log.With("height", int64(ts.Height()))
+	ll := log.With("height", int64(current.Height()))
 
 	// Filter to just allowed actors
 	actors := map[string]lens.ActorStateChange{}
@@ -72,7 +67,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	// Run each task concurrently
 	results := make(chan *ActorStateResult, len(actors))
 	for addr, ch := range actors {
-		go t.runActorStateExtraction(ctx, ts, pts, addr, ch, emsgs, results)
+		go t.runActorStateExtraction(ctx, current, previous, addr, ch, results)
 	}
 
 	// Gather results
@@ -80,7 +75,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	for inFlight > 0 {
 		res := <-results
 		inFlight--
-		lla := log.With("height", int64(ts.Height()), "actor", builtin.ActorNameByCode(res.Code), "address", res.Address)
+		lla := log.With("height", int64(current.Height()), "actor", builtin.ActorNameByCode(res.Code), "address", res.Address)
 
 		if res.Error != nil {
 			lla.Errorw("actor returned with error", "error", res.Error.Error())
@@ -102,7 +97,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 		data = append(data, res.Data)
 	}
 
-	log.Debugw("completed processing actor state changes", "height", ts.Height(), "success", len(actors)-len(errorsDetected)-skippedActors, "errors", len(errorsDetected), "skipped", skippedActors, "time", time.Since(start))
+	log.Debugw("completed processing actor state changes", "height", current.Height(), "success", len(actors)-len(errorsDetected)-skippedActors, "errors", len(errorsDetected), "skipped", skippedActors, "time", time.Since(start))
 
 	if skippedActors > 0 {
 		report.StatusInformation = fmt.Sprintf("did not parse %d actors", skippedActors)
@@ -115,7 +110,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	return data, report, nil
 }
 
-func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pts *types.TipSet, addrStr string, ch lens.ActorStateChange, emsgs []*lens.ExecutedMessage, results chan *ActorStateResult) {
+func (t *Task) runActorStateExtraction(ctx context.Context, current *types.TipSet, previous *types.TipSet, addrStr string, ch lens.ActorStateChange, results chan *ActorStateResult) {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ActorCode, builtin.ActorNameByCode(ch.Actor.Code)))
 
 	res := &ActorStateResult{
@@ -137,10 +132,10 @@ func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pt
 		Actor:           ch.Actor,
 		ChangeType:      ch.ChangeType,
 		Address:         addr,
-		ParentStateRoot: ts.ParentState(),
-		Epoch:           ts.Height(),
-		TipSet:          ts,
-		ParentTipSet:    pts,
+		ParentStateRoot: current.ParentState(),
+		Epoch:           current.Height(),
+		TipSet:          current,
+		ParentTipSet:    previous,
 	}
 
 	extracter, ok := t.extracterMap.GetExtractor(ch.Actor.Code)

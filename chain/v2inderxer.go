@@ -24,6 +24,7 @@ import (
 	"github.com/filecoin-project/lily/tasks/messageexecutions"
 	"github.com/filecoin-project/lily/tasks/messages"
 	"github.com/filecoin-project/lily/tasks/msapprovals"
+	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	"go.opencensus.io/stats"
@@ -36,13 +37,13 @@ import (
 type V2TipSetsProcessor interface {
 	// ProcessTipSets processes a parent and child tipset. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
-	ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error)
+	ProcessTipSets(ctx context.Context, current, previous *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error)
 }
 
 type V2ActorProcessor interface {
 	// ProcessActorChanges processes a set of actors. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
-	ProcessActorChanges(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors map[string]lens.ActorStateChange) (model.Persistable, *visormodel.ProcessingReport, error)
+	ProcessActors(ctx context.Context, current *types.TipSet, previous *types.TipSet, actors map[string]lens.ActorStateChange) (model.Persistable, *visormodel.ProcessingReport, error)
 }
 
 type V2TipSetIndexer struct {
@@ -57,6 +58,7 @@ type V2TipSetIndexer struct {
 	tasks           []string
 }
 
+// Passes TestLilyVectorWalkExtraction
 func NewV2TipSetIndexer(node lens.API, d model.Storage, name string, tasks []string) (*V2TipSetIndexer, error) {
 	tsi := &V2TipSetIndexer{
 		storage:         d,
@@ -106,7 +108,6 @@ func NewV2TipSetIndexer(node lens.API, d model.Storage, name string, tasks []str
 	return tsi, nil
 }
 
-// Differences
 // - Window was removed. Callers of this are responsible for setting the window.
 func (t *V2TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	pts, err := t.node.ChainGetTipSet(ctx, ts.Parents())
@@ -115,8 +116,8 @@ func (t *V2TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	}
 
 	var (
-		current  = pts
-		next     = ts
+		current  = ts
+		previous = pts
 		inFlight = 0
 		// TODO should these be allocated to the size of message and message execution processors
 		results = make(chan *TaskResult, len(t.processors)+len(t.actorProcessors))
@@ -126,23 +127,32 @@ func (t *V2TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 	for name, p := range t.processors {
 		inFlight++
-		go t.runProcessors(ctx, p, name, current, next, results)
+		go t.runProcessors(ctx, p, name, current, previous, results)
 	}
 
 	if len(t.actorProcessors) > 0 {
-		changes, err := t.stateChangedActors(ctx, current.ParentState(), next.ParentState())
-		if err != nil {
-			return err
+		var (
+			changes map[string]lens.ActorStateChange
+			err     error
+		)
+		// the diff between the first tipset mined and genesis is nil, this is becasue the actors haven't changed, but they
+		// _do_ have state, we list it here instead of diff it.
+		if current.Height() == 1 {
+			changes, err = t.getGenesisActors(ctx)
+		} else {
+			changes, err = t.stateChangedActors(ctx, current.ParentState(), previous.ParentState())
+			if err != nil {
+				return err
+			}
 		}
 
 		for name, p := range t.actorProcessors {
 			inFlight++
-			go t.runActorProcessor(ctx, p, name, current, next, changes, results)
+			go t.runActorProcessor(ctx, p, name, current, previous, changes, results)
 		}
 	}
 
 	// Wait for all tasks to complete
-	completed := map[string]struct{}{}
 	for inFlight > 0 {
 		var res *TaskResult
 		select {
@@ -181,7 +191,6 @@ func (t *V2TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 		// Persist the processing report and the data in a single transaction
 		taskOutputs[res.Task] = model.PersistableList{res.Report, res.Data}
-		completed[res.Task] = struct{}{}
 	}
 
 	if len(taskOutputs) == 0 {
@@ -249,10 +258,10 @@ func (t *V2TipSetIndexer) Close() error {
 	return nil
 }
 
-func (t *V2TipSetIndexer) runProcessors(ctx context.Context, p V2TipSetsProcessor, name string, ts, pts *types.TipSet, results chan *TaskResult) {
+func (t *V2TipSetIndexer) runProcessors(ctx context.Context, p V2TipSetsProcessor, name string, current, previous *types.TipSet, results chan *TaskResult) {
 	start := time.Now()
 
-	data, report, err := p.ProcessTipSets(ctx, ts, pts)
+	data, report, err := p.ProcessTipSets(ctx, current, previous)
 	if err != nil {
 		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
@@ -272,10 +281,10 @@ func (t *V2TipSetIndexer) runProcessors(ctx context.Context, p V2TipSetsProcesso
 	}
 }
 
-func (t *V2TipSetIndexer) runActorProcessor(ctx context.Context, p V2ActorProcessor, name string, ts, pts *types.TipSet, actors map[string]lens.ActorStateChange, results chan *TaskResult) {
+func (t *V2TipSetIndexer) runActorProcessor(ctx context.Context, p V2ActorProcessor, name string, current, previous *types.TipSet, actors map[string]lens.ActorStateChange, results chan *TaskResult) {
 	start := time.Now()
 
-	data, report, err := p.ProcessActorChanges(ctx, ts, pts, actors)
+	data, report, err := p.ProcessActors(ctx, current, previous, actors)
 	if err != nil {
 		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
@@ -298,24 +307,24 @@ func (t *V2TipSetIndexer) runActorProcessor(ctx context.Context, p V2ActorProces
 // stateChangedActors is an optimized version of the lotus API method StateChangedActors. This method takes advantage of the efficient hamt/v3 diffing logic
 // and applies it to versions of state tress supporting it. These include Version 2 and 3 of the lotus state tree implementation.
 // stateChangedActors will fall back to the lotus API method when the optimized diffing cannot be applied.
-func (t *V2TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid) (map[string]lens.ActorStateChange, error) {
+func (t *V2TipSetIndexer) stateChangedActors(ctx context.Context, current, previous cid.Cid) (map[string]lens.ActorStateChange, error) {
 	var (
 		buf = bytes.NewReader(nil)
 		out = map[string]lens.ActorStateChange{}
 	)
 
-	oldRoot, oldVersion, err := getStateTreeMapCIDAndVersion(ctx, t.node.Store(), old)
+	previousRood, previousVersion, err := getStateTreeMapCIDAndVersion(ctx, t.node.Store(), previous)
 	if err != nil {
 		return nil, err
 	}
-	newRoot, newVersion, err := getStateTreeMapCIDAndVersion(ctx, t.node.Store(), new)
+	currentRoot, currentVersion, err := getStateTreeMapCIDAndVersion(ctx, t.node.Store(), current)
 	if err != nil {
 		return nil, err
 	}
 
-	if newVersion == oldVersion && (newVersion != types.StateTreeVersion0 && newVersion != types.StateTreeVersion1) {
+	if currentVersion == previousVersion && (currentVersion != types.StateTreeVersion0 && currentVersion != types.StateTreeVersion1) {
 		// TODO: replace hamt.UseTreeBitWidth and hamt.UseHashFunction with values based on network version
-		changes, err := hamt.Diff(ctx, t.node.Store(), t.node.Store(), oldRoot, newRoot,
+		changes, err := hamt.Diff(ctx, t.node.Store(), t.node.Store(), previousRood, currentRoot,
 			hamt.UseTreeBitWidth(5),
 			hamt.UseHashFunction(func(input []byte) []byte {
 				res := sha256.Sum256(input)
@@ -362,7 +371,7 @@ func (t *V2TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.C
 		}
 	}
 	log.Debug("using slow state diff")
-	actors, err := t.node.StateChangedActors(ctx, old, new)
+	actors, err := t.node.StateChangedActors(ctx, previous, current)
 	if err != nil {
 		return nil, err
 	}
@@ -374,5 +383,33 @@ func (t *V2TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.C
 		}
 	}
 
+	return out, nil
+}
+
+// getGenesisActors returns a map of all actors contained in the genesis block.
+func (t *V2TipSetIndexer) getGenesisActors(ctx context.Context) (map[string]lens.ActorStateChange, error) {
+	out := map[string]lens.ActorStateChange{}
+
+	genesis, err := t.node.ChainGetGenesis(ctx)
+	if err != nil {
+		return nil, err
+	}
+	root, _, err := getStateTreeMapCIDAndVersion(ctx, t.node.Store(), genesis.ParentState())
+	if err != nil {
+		return nil, err
+	}
+	tree, err := state.LoadStateTree(t.node.Store(), root)
+	if err != nil {
+		return nil, err
+	}
+	if err := tree.ForEach(func(addr address.Address, act *types.Actor) error {
+		out[addr.String()] = lens.ActorStateChange{
+			Actor:      *act,
+			ChangeType: lens.ChangeTypeAdd,
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
 	return out, nil
 }

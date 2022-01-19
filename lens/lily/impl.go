@@ -245,8 +245,8 @@ func (m *LilyNodeAPI) LilyJobList(_ context.Context) ([]schedule.JobListResult, 
 	return m.Scheduler.Jobs(), nil
 }
 
-func (m *LilyNodeAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
-	return util.GetExecutedAndBlockMessagesForTipset(ctx, m.ChainAPI.Chain, ts, pts)
+func (m *LilyNodeAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, current, previous *types.TipSet) (*lens.TipSetMessages, error) {
+	return util.GetExecutedAndBlockMessagesForTipset(ctx, m.ChainAPI.Chain, current, previous)
 }
 
 func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, next *types.TipSet, current *types.TipSet) ([]*lens.MessageExecution, error) {

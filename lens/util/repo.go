@@ -29,44 +29,44 @@ var log = logging.Logger("lily/lens")
 // GetMessagesForTipset returns a list of messages sent as part of pts (parent) with receipts found in ts (child).
 // No attempt at deduplication of messages is made. A list of blocks with their corresponding messages is also returned - it contains all messages
 // in the block regardless if they were applied during the state change.
-func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainStore, next, current *types.TipSet) (*lens.TipSetMessages, error) {
+func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainStore, current, previous *types.TipSet) (*lens.TipSetMessages, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "GetExecutedAndBlockMessagesForTipSet")
 	defer span.End()
-	if !types.CidArrsEqual(next.Parents().Cids(), current.Cids()) {
-		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", next.Key(), current.Key())
+	if !types.CidArrsEqual(current.Parents().Cids(), previous.Cids()) {
+		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", current.Key(), previous.Key())
 	}
 
-	getActorCode, err := MakeGetActorCodeFunc(ctx, cs.ActorStore(ctx), next, current)
+	getActorCode, err := MakeGetActorCodeFunc(ctx, cs.ActorStore(ctx), current, previous)
 	if err != nil {
 		return nil, err
 	}
 
 	// Build a lookup of which blocks each message appears in
 	messageBlocks := map[cid.Cid][]cid.Cid{}
-	for blockIdx, bh := range current.Blocks() {
+	for blockIdx, bh := range previous.Blocks() {
 		blscids, secpkcids, err := cs.ReadMsgMetaCids(bh.Messages)
 		if err != nil {
 			return nil, xerrors.Errorf("read messages for block: %w", err)
 		}
 
 		for _, c := range blscids {
-			messageBlocks[c] = append(messageBlocks[c], current.Cids()[blockIdx])
+			messageBlocks[c] = append(messageBlocks[c], previous.Cids()[blockIdx])
 		}
 
 		for _, c := range secpkcids {
-			messageBlocks[c] = append(messageBlocks[c], current.Cids()[blockIdx])
+			messageBlocks[c] = append(messageBlocks[c], previous.Cids()[blockIdx])
 		}
 	}
 	span.AddEvent("read block message metadata")
 
-	bmsgs, err := cs.BlockMsgsForTipset(current)
+	bmsgs, err := cs.BlockMsgsForTipset(previous)
 	if err != nil {
 		return nil, xerrors.Errorf("block messages for tipset: %w", err)
 	}
 
 	span.AddEvent("read block messages for tipset")
 
-	pblocks := current.Blocks()
+	pblocks := previous.Blocks()
 	if len(bmsgs) != len(pblocks) {
 		// logic error somewhere
 		return nil, xerrors.Errorf("mismatching number of blocks returned from block messages, got %d wanted %d", len(bmsgs), len(pblocks))
@@ -88,16 +88,16 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 			// if a message ran out of gas while executing this is expected.
 			toCode, found := getActorCode(msg.To)
 			if !found {
-				log.Warnw("failed to find TO actor", "height", next.Height().String(), "message", msg.Cid().String(), "actor", msg.To.String())
+				log.Warnw("failed to find TO actor", "height", current.Height().String(), "message", msg.Cid().String(), "actor", msg.To.String())
 			}
 			// we must always be able to find the sender, else there is a logic error somewhere.
 			fromCode, found := getActorCode(msg.From)
 			if !found {
-				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, next.Height(), msg.Cid())
+				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, current.Height(), msg.Cid())
 			}
 			emsgs = append(emsgs, &lens.ExecutedMessage{
 				Cid:           blsm.Cid(),
-				Height:        current.Height(),
+				Height:        previous.Height(),
 				Message:       msg,
 				BlockHeader:   pblocks[blockIdx],
 				Blocks:        messageBlocks[blsm.Cid()],
@@ -113,16 +113,16 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 			toCode, found := getActorCode(msg.To)
 			// if a message ran out of gas while executing this is expected.
 			if !found {
-				log.Warnw("failed to find TO actor", "height", next.Height().String(), "message", msg.Cid().String(), "actor", msg.To.String())
+				log.Warnw("failed to find TO actor", "height", current.Height().String(), "message", msg.Cid().String(), "actor", msg.To.String())
 			}
 			// we must always be able to find the sender, else there is a logic error somewhere.
 			fromCode, found := getActorCode(msg.From)
 			if !found {
-				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, next.Height(), msg.Cid())
+				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, current.Height(), msg.Cid())
 			}
 			emsgs = append(emsgs, &lens.ExecutedMessage{
 				Cid:           secm.Cid(),
-				Height:        current.Height(),
+				Height:        previous.Height(),
 				Message:       secm.VMMessage(),
 				BlockHeader:   pblocks[blockIdx],
 				Blocks:        messageBlocks[secm.Cid()],
@@ -137,7 +137,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 	span.AddEvent("built executed message list")
 
 	// Retrieve receipts using a block from the child tipset
-	rs, err := adt.AsArray(cs.ActorStore(ctx), next.Blocks()[0].ParentMessageReceipts)
+	rs, err := adt.AsArray(cs.ActorStore(ctx), current.Blocks()[0].ParentMessageReceipts)
 	if err != nil {
 		return nil, xerrors.Errorf("amt load: %w", err)
 	}
@@ -149,8 +149,8 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 
 	// Create a skeleton vm just for calling ShouldBurn
 	vmi, err := vm.NewVM(ctx, &vm.VMOpts{
-		StateBase:   current.ParentState(),
-		Epoch:       current.Height(),
+		StateBase:   previous.ParentState(),
+		Epoch:       previous.Height(),
 		Bstore:      cs.StateBlockstore(),
 		NtwkVersion: DefaultNetwork.Version,
 	})
@@ -158,7 +158,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		return nil, xerrors.Errorf("creating temporary vm: %w", err)
 	}
 
-	parentStateTree, err := state.LoadStateTree(cs.ActorStore(ctx), current.ParentState())
+	parentStateTree, err := state.LoadStateTree(cs.ActorStore(ctx), previous.ParentState())
 	if err != nil {
 		return nil, xerrors.Errorf("load state tree: %w", err)
 	}
@@ -184,8 +184,8 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 	}
 	span.AddEvent("computed executed message gas usage")
 
-	blkMsgs := make([]*lens.BlockMessages, len(next.Blocks()))
-	for idx, blk := range next.Blocks() {
+	blkMsgs := make([]*lens.BlockMessages, len(current.Blocks()))
+	for idx, blk := range current.Blocks() {
 		msgs, smsgs, err := cs.MessagesForBlock(blk)
 		if err != nil {
 			return nil, err
@@ -197,7 +197,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		}
 	}
 
-	span.AddEvent("read messages for next block")
+	span.AddEvent("read messages for current block")
 
 	return &lens.TipSetMessages{
 		Executed: emsgs,

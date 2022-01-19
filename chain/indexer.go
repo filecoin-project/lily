@@ -197,10 +197,12 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	// next adds additional context such as outcomes of message execution.
 	var current, next *types.TipSet
 	if t.lastTipSet != nil {
+		// walk
 		if t.lastTipSet.Height() > ts.Height() {
 			// last tipset seen was the child
 			next = t.lastTipSet
 			current = ts
+			//watch
 		} else if t.lastTipSet.Height() < ts.Height() {
 			// last tipset seen was the parent
 			next = ts
@@ -725,7 +727,7 @@ func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor,
 	defer stop()
 	start := time.Now()
 
-	data, report, err := p.ProcessActors(ctx, ts, pts, actors, emsgs)
+	data, report, err := p.ProcessActors(ctx, ts, pts, actors)
 	if err != nil {
 		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
@@ -881,5 +883,5 @@ type MessageExecutionProcessor interface {
 type ActorProcessor interface {
 	// ProcessActors processes a set of actors. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
-	ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors map[string]lens.ActorStateChange, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error)
+	ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors map[string]lens.ActorStateChange) (model.Persistable, *visormodel.ProcessingReport, error)
 }
