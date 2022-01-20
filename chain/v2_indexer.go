@@ -52,7 +52,7 @@ func NewV2TipSetIndexer(node lens.API, d model.Storage, name string, tasks []str
 		tasks:       tasks,
 	}
 
-	for _, modelName := range []string{"actors", "block_headers"} {
+	for _, modelName := range []string{"actors", "actor_states", "block_headers", "block_parents", "block_messages", "messages", "parsed_messages", "id_addresses", "receipts", "internal_messages", "miner_sector_events", "chain_consensus", "chain_powers", "power_actor_claims", "miner_infos", "chain_powers", "chain_rewards", "derived_gas_outputs"} {
 		extractableModel, exType, err := StringToModelTypeAndExtractor(modelName)
 		if err != nil {
 			return nil, err
@@ -127,7 +127,6 @@ func (t *V2TipSetIndexer) Close() error {
 }
 
 func (t *V2TipSetIndexer) index(ctx context.Context, current, previous *types.TipSet, results chan *TaskResult) error {
-
 	tipsetProcessor := NewTipSetExtractorProcessorImpl(t.node, current, previous)
 	for _, te := range t.tsExtractors {
 		go tipsetProcessor.Run(ctx, te, results)

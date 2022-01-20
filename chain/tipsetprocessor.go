@@ -32,7 +32,7 @@ func (t TipSetExtractorProcessorImpl) ProcessTipSetExtractors(ctx context.Contex
 	}
 
 	start := time.Now()
-	data, err := extractor.Extract(ctx, current, previous)
+	data, err := extractor.Extract(ctx, current, previous, t.api)
 	log.Infow("tiptset extracted", "name", extractor.Name(), "current", current.Height(), "previous", previous.Height(), "duration", time.Since(start).String())
 	return data, report, err
 }

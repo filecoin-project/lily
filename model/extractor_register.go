@@ -35,6 +35,12 @@ type ActorStateAPI interface {
 	Store() adt.Store
 }
 
+type TipSetStateAPI interface {
+	StateVMCirculatingSupplyInternal(ctx context.Context, ts types.TipSetKey) (api.CirculatingSupply, error)
+	GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error)
+	GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error)
+}
+
 var (
 	tsExtractorMu sync.Mutex
 	tsExctractors = map[reflect.Type]TipSetStateExtractor{}
@@ -44,7 +50,7 @@ var (
 )
 
 type TipSetStateExtractor interface {
-	Extract(ctx context.Context, current, previous *types.TipSet) (Persistable, error)
+	Extract(ctx context.Context, current, previous *types.TipSet, api TipSetStateAPI) (Persistable, error)
 	Name() string
 }
 
