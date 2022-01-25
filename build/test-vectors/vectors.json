@@ -1,0 +1,16 @@
+{
+  "calibration-0-1000-fullstate.car": {
+    "cid": "bafybeih2qz4g7twt5jhvokcggbq47gunkepeeealy7ydfpks2k4cga4qiy",
+    "network": "calibnet",
+    "digest": "1bcc960e24a1d7b89640163a0b67d7e7aa6421f150ded348bd6bf982045f3528",
+    "from": 0,
+    "to": 1000
+  },
+  "calibration-2001-3000-fullstate.car": {
+    "cid": "bafybeigu6yogvansi5vhzinyujlhqpsu7wczycc7awfbo24hhlpl25kule",
+    "network": "calibnet",
+    "digest":"1324f5e1847629e43d5d14fbe81d1b398d142d5fc63d2a3ce5aff63ec3525e62",
+    "from": 2001,
+    "to": 3000
+  }
+}
