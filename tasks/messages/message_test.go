@@ -197,7 +197,7 @@ func TestParseMessageParams(t *testing.T) {
 				ChainCommitEpoch: 1287345,
 			}),
 			wantMethod:  "SubmitWindowedPoSt",
-			wantEncoded: "{\"Partitions\":[{\"Index\":0,\"Skipped\":[0]}],\"Proofs\":[{\"PoStProof\":9,\"ProofBytes\":\"j67Zt7FnIDTt+WZ+JicmOvZJWNShtEUKQp2djqEamrWFJlJ5WWGfhpTmYSimapHhjnSJoQYddySoqKHw6klIY6INz0A4aHmF2xveYKLYcqKxaB6Izis7zWyw4CMLTc3GE93wBuajQ32V1qH5qBsTw3ELzUdlFNgClUhHWushxg7kvmqvtmh9lipXzGnPnrG9p68KnBp40dvhiMBVedNch/pP7cxMH5piwGIQxsn99sQVrZxfVy1+y0SN30t03yjc\"}],\"ChainCommitEpoch\":1287345,\"ChainCommitRand\":\"VyY9gIC10V8w8C1ltrpjqNN6mkk3xgW3Stpnp2ThNW4=\",\"Deadline\":38}",
+			wantEncoded: "{\"Partitions\":[{\"Index\":0,\"Skipped\":{\"Count\":0,\"RLE\":[0]}}],\"Proofs\":[{\"PoStProof\":9,\"ProofBytes\":\"j67Zt7FnIDTt+WZ+JicmOvZJWNShtEUKQp2djqEamrWFJlJ5WWGfhpTmYSimapHhjnSJoQYddySoqKHw6klIY6INz0A4aHmF2xveYKLYcqKxaB6Izis7zWyw4CMLTc3GE93wBuajQ32V1qH5qBsTw3ELzUdlFNgClUhHWushxg7kvmqvtmh9lipXzGnPnrG9p68KnBp40dvhiMBVedNch/pP7cxMH5piwGIQxsn99sQVrZxfVy1+y0SN30t03yjc\"}],\"ChainCommitEpoch\":1287345,\"ChainCommitRand\":\"VyY9gIC10V8w8C1ltrpjqNN6mkk3xgW3Stpnp2ThNW4=\",\"Deadline\":38}",
 			wantErr:     false,
 			deepEqual:   true,
 		},
