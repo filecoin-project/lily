@@ -156,6 +156,44 @@ jobs:
           file: /tmp/artifacts/coverage.out
       - store_artifacts:
           path: lily
+  integration-test:
+    resource_class: large
+    docker:
+      - image: cimg/go:1.16.6
+      - image: timescale/timescaledb:2.5.0-pg13
+        environment:
+          POSTGRES_PASSWORD: password
+    steps:
+      - checkout
+      - prepare
+      - run: # dep for DB wait script
+          name: install dockerize
+          command: wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && sudo tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
+          environment:
+            DOCKERIZE_VERSION: v0.3.0
+      - run: sudo apt-get update
+      - run: make deps
+      - run: make build
+      - run:
+          name: waiting for db
+          command: dockerize -wait tcp://localhost:5432 -timeout 1m
+      - run:
+          name: installing schema
+          command: ./lily migrate --latest
+          environment:
+            LILY_DB: postgres://postgres:password@localhost:5432/postgres?sslmode=disable
+      - restore_cache:
+          name: restore test vectors cache
+          key: lily-test-vectors-{{ checksum "./build/test-vectors/vectors.json" }}
+          paths:
+            - /var/tmp/lily-test-vectors/
+      - run:
+          command: make itest-calibnet
+      - save_cache:
+          name: save test vectors cache
+          key: lily-test-vectors-{{ checksum "./build/test-vectors/vectors.json" }}
+          paths:
+            - /var/tmp/lily-test-vectors/
   lint: &lint
     description: |
       Run golangci-lint.
@@ -252,6 +290,7 @@ workflows:
       - mod-tidy-check
       - lint-all
       - test
+      - integration-test
       - test-docker-mainnet
       - test-docker-mainnet-dev
       - test-docker-calibnet

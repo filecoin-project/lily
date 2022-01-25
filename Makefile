@@ -91,6 +91,7 @@ testfull: build
 testshort:
 	go test -short ./... -v
 
+
 .PHONY: lily
 lily:
 	rm -f lily
@@ -125,6 +126,9 @@ actors-gen:
 	go run ./chain/actors/agen
 	go fmt ./...
 
+.PHONY: itest-calibnet
+itest-calibnet:
+	LILY_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test -tags=calibnet ./itests/
 
 # dev-nets
 2k: GOFLAGS+=-tags=2k
