@@ -22,6 +22,8 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 )
 
+// Ported from github.com/filecoin-project/go-paramfetch
+
 var log = logging.Logger("lily/vectors")
 
 const gateway = "https://dweb.link/ipfs/"
