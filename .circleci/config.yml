@@ -6,12 +6,12 @@ orbs:
 executors:
   dockerizer:
     docker:
-      - image: cimg/go:1.16.6
+      - image: cimg/go:1.17.6
     environment:
       IMAGE_NAME: filecoin/lily
   golang:
     docker:
-      - image: circleci/golang:1.16.6
+      - image: circleci/golang:1.17.6
 
 commands:
   install-deps:
@@ -124,7 +124,7 @@ jobs:
   test:
     resource_class: large
     docker:
-      - image: cimg/go:1.16.6
+      - image: cimg/go:1.17.6
       - image: timescale/timescaledb:2.5.0-pg13
         environment:
           POSTGRES_PASSWORD: password
