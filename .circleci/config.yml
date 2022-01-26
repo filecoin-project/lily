@@ -11,7 +11,7 @@ executors:
       IMAGE_NAME: filecoin/lily
   golang:
     docker:
-      - image: circleci/golang:1.17.6
+      - image: cimg/go:1.17.6
 
 commands:
   install-deps:
