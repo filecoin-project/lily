@@ -234,12 +234,10 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (string, 
 		return "", m.Name, fmt.Errorf("cbor decode into %s %s:(%s.%d) failed: %v", m.Name, actorName, actCode, method, err)
 	}
 
-	wt := paramWraperType{
-		obj:     p,
-		replace: bitFieldParamMarshaller,
-	}
+	b, err := MarshalWithOverrides(p, map[reflect.Type]marshaller{
+		reflect.TypeOf(bitfield.BitField{}): bitfieldCountMarshaller,
+	})
 
-	b, err := wt.MarshalJSON()
 	return string(b), m.Name, err
 }
 
@@ -347,20 +345,30 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 	}, nil
 }
 
-// wrapper type for overloading json marshal methods
-type paramWraperType struct {
-	obj     interface{}
-	replace map[reflect.Type]func(interface{}) interface{}
+type marshaller func(interface{}) ([]byte, error)
+
+func MarshalWithOverrides(v interface{}, overrides map[reflect.Type]marshaller) ([]byte, error) {
+	pwt := paramWrapperType{
+		obj:     v,
+		replace: overrides,
+	}
+	return pwt.MarshalJSON()
 }
 
-func (wt *paramWraperType) MarshalJSON() ([]byte, error) {
+// wrapper type for overloading json marshal methods
+type paramWrapperType struct {
+	obj     interface{}
+	replace map[reflect.Type]marshaller
+}
+
+func (wt *paramWrapperType) MarshalJSON() ([]byte, error) {
 	v := reflect.ValueOf(wt.obj)
 	t := v.Type()
 
-	// if this is the type we want to overload marshalling for, do the thing.
+	// if this is the type we want to override marshalling for, do the thing.
 	rf, ok := wt.replace[t]
 	if ok {
-		return json.Marshal(rf(wt.obj))
+		return rf(wt.obj)
 	}
 
 	// if the type has its own marshaller use that
@@ -380,7 +388,7 @@ func (wt *paramWraperType) MarshalJSON() ([]byte, error) {
 		m := make(map[string]interface{})
 		for i := 0; i < v.NumField(); i++ {
 			if t.Field(i).IsExported() {
-				m[t.Field(i).Name] = &paramWraperType{
+				m[t.Field(i).Name] = &paramWrapperType{
 					obj:     v.Field(i).Interface(),
 					replace: wt.replace,
 				}
@@ -403,11 +411,10 @@ func (wt *paramWraperType) MarshalJSON() ([]byte, error) {
 				reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 				return json.Marshal(v.Interface())
 			default:
-
 			}
 		}
 		for i := 0; i < v.Len(); i++ {
-			out = append(out, &paramWraperType{
+			out = append(out, &paramWrapperType{
 				obj:     v.Index(i).Interface(),
 				replace: wt.replace,
 			})
@@ -420,44 +427,42 @@ func (wt *paramWraperType) MarshalJSON() ([]byte, error) {
 }
 
 // marshal go-bitfield to json with count value included.
-var bitFieldParamMarshaller = map[reflect.Type]func(i interface{}) interface{}{
-	reflect.TypeOf(bitfield.BitField{}): func(i interface{}) interface{} {
-		rle := i.(bitfield.BitField)
-		r, err := rle.RunIterator()
-		if err != nil {
-			panic(err)
-		}
-		count, err := rle.Count()
-		if err != nil {
-			panic(err)
-		}
+var bitfieldCountMarshaller = func(v interface{}) ([]byte, error) {
+	rle := v.(bitfield.BitField)
+	r, err := rle.RunIterator()
+	if err != nil {
+		return nil, err
+	}
+	count, err := rle.Count()
+	if err != nil {
+		return nil, err
+	}
 
-		var ret = struct {
-			Count uint64
-			RLE   []uint64
-		}{}
-		if r.HasNext() {
-			first, err := r.NextRun()
+	var ret = struct {
+		Count uint64
+		RLE   []uint64
+	}{}
+	if r.HasNext() {
+		first, err := r.NextRun()
+		if err != nil {
+			return nil, err
+		}
+		if first.Val {
+			ret.RLE = append(ret.RLE, 0)
+		}
+		ret.RLE = append(ret.RLE, first.Len)
+
+		for r.HasNext() {
+			next, err := r.NextRun()
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
-			if first.Val {
-				ret.RLE = append(ret.RLE, 0)
-			}
-			ret.RLE = append(ret.RLE, first.Len)
 
-			for r.HasNext() {
-				next, err := r.NextRun()
-				if err != nil {
-					panic(err)
-				}
-
-				ret.RLE = append(ret.RLE, next.Len)
-			}
-		} else {
-			ret.RLE = []uint64{0}
+			ret.RLE = append(ret.RLE, next.Len)
 		}
-		ret.Count = count
-		return ret
-	},
+	} else {
+		ret.RLE = []uint64{0}
+	}
+	ret.Count = count
+	return json.Marshal(ret)
 }
