@@ -103,7 +103,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "18.09.3"
+          version: "20.10.6"
       - publish-docker-from-branch-dev
       - publish-docker-from-branch-production
   publish-docker-from-tag:
@@ -112,7 +112,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "18.09.3"
+          version: "20.10.6"
       - publish-docker-semver-dev
       - publish-docker-semver-production
   mod-tidy-check:
@@ -247,7 +247,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "18.09.3"
+          version: "20.10.6"
       - run:
           name: Build Production Mainnet Docker image
           command: make docker-mainnet
@@ -257,7 +257,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "18.09.3"
+          version: "20.10.6"
       - run:
           name: Build Dev Mainnet Docker image
           command: make docker-mainnet-dev
@@ -267,7 +267,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "18.09.3"
+          version: "20.10.6"
       - run:
           name: Build Production Calibnet Docker image
           command: make docker-calibnet
@@ -277,7 +277,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "18.09.3"
+          version: "20.10.6"
       - run:
           name: Build Dev Calibnet Docker image
           command: make docker-calibnet-dev
