@@ -156,7 +156,7 @@ func (ft *fetch) wait(ctx context.Context) error {
 	case <-ctx.Done():
 		log.Infof("context closed... shutting down")
 	case <-waitChan:
-		log.Infof("parameter and key-fetching complete")
+		log.Infof("test vector fetching complete")
 	}
 
 	return multierr.Combine(ft.errs...)
@@ -193,7 +193,7 @@ func (ft *fetch) checkFile(path string, info VectorFile) error {
 		return nil
 	}
 
-	return xerrors.Errorf("checksum mismatch in param file %s, %s != %s", path, strSum, info.Digest)
+	return xerrors.Errorf("checksum mismatch in test vector file %s, %s != %s", path, strSum, info.Digest)
 }
 
 func doFetch(ctx context.Context, out string, info VectorFile) error {

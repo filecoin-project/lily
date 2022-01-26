@@ -17,7 +17,7 @@ import (
 func TestCalibrationVector(t *testing.T) {
 	logging.SetAllLoggers(logging.LevelInfo)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*10)
 	defer cancel()
 
 	strg, strgCleanup := tstorage.WaitForExclusiveMigratedStorage(ctx, t, false)
