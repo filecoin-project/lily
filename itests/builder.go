@@ -17,19 +17,18 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/xerrors"
-	"io/fs"
 	"testing"
 	"time"
 )
 
 type VectorWalkValidatorBuilder struct {
 	options []func(tv *VectorWalkValidator)
-	vector  fs.File
+	vector  *TestVector
 }
 
-func NewVectorWalkValidatorBuilder(fs fs.File) VectorWalkValidatorBuilder {
+func NewVectorWalkValidatorBuilder(tv *TestVector) VectorWalkValidatorBuilder {
 	var b VectorWalkValidatorBuilder
-	b.vector = fs
+	b.vector = tv
 	return b
 }
 
@@ -89,14 +88,14 @@ func (b VectorWalkValidatorBuilder) Build(ctx context.Context, t testing.TB) *Ve
 			StatestoreCacheSize: 0,
 		},
 		RepoPath:    t.TempDir(),
-		Snapshot:    b.vector,
+		Snapshot:    b.vector.Snapshot,
+		Genesis:     b.vector.Genesis,
 		ApiEndpoint: "/ip4/127.0.0.1/tcp/4321",
 	}
 
 	vw := &VectorWalkValidator{
 		ctx:     ctx,
 		t:       t,
-		vector:  b.vector,
 		strg:    nil,
 		from:    0,
 		to:      0,
@@ -133,7 +132,6 @@ func (b VectorWalkValidatorBuilder) Build(ctx context.Context, t testing.TB) *Ve
 type VectorWalkValidator struct {
 	ctx      context.Context
 	t        testing.TB
-	vector   fs.File
 	strg     *storage.Database
 	from, to int64
 	tasks    []string

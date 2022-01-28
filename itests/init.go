@@ -1,11 +1,15 @@
 package itests
 
 import (
+	"archive/tar"
 	"context"
 	"encoding/json"
 	"github.com/filecoin-project/lily/build"
 	"github.com/filecoin-project/lily/itests/fetch"
 	logging "github.com/ipfs/go-log/v2"
+	"go.uber.org/multierr"
+	"golang.org/x/xerrors"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -21,6 +25,19 @@ const (
 type TestVector struct {
 	From, To int64
 	File     *os.File
+	Snapshot *os.File
+	Genesis  *os.File
+}
+
+func (tv *TestVector) Close() error {
+	var errs []error
+	if err := tv.Genesis.Close(); err != nil {
+		errs = append(errs, err)
+	}
+	if err := tv.Snapshot.Close(); err != nil {
+		errs = append(errs, err)
+	}
+	return multierr.Combine(errs...)
 }
 
 var CalibnetTestVectors []*TestVector
@@ -69,15 +86,58 @@ func init() {
 }
 
 func vectorsForNetwork(fileName string, meta fetch.VectorFile) (*TestVector, error) {
-	ntwkDir := filepath.Join(fetch.GetVectorDir(), meta.Network)
+	vd := filepath.Base(fileName)
+	vd = vd[0 : len(vd)-len(filepath.Ext(vd))]
+	vectorDir := filepath.Join(fetch.GetVectorDir(), meta.Network, vd)
 
-	f, err := os.Open(filepath.Join(ntwkDir, fileName))
+	vectorTar := filepath.Join(vectorDir, fileName)
+
+	f, err := os.Open(vectorTar)
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
+
+	tareader := tar.NewReader(f)
+	var genesis, snapshot *os.File
+	for {
+		t, err := tareader.Next()
+		if err == io.EOF {
+			break
+		}
+		switch t.Name {
+		case "snapshot.car":
+			snapshot, err = os.Create(filepath.Join(vectorDir, t.Name))
+			if err != nil {
+				return nil, err
+			}
+			if _, err := io.Copy(snapshot, tareader); err != nil {
+				return nil, err
+			}
+			if _, err := snapshot.Seek(0, io.SeekStart); err != nil {
+				return nil, err
+			}
+		case "genesis.car":
+			genesis, err = os.Create(filepath.Join(vectorDir, t.Name))
+			if err != nil {
+				return nil, err
+			}
+			if _, err := io.Copy(genesis, tareader); err != nil {
+				return nil, err
+			}
+			if _, err := genesis.Seek(0, io.SeekStart); err != nil {
+				return nil, err
+			}
+		default:
+			return nil, xerrors.Errorf("unexpected file: %v", t.Name)
+		}
+	}
+
 	return &TestVector{
-		From: meta.From,
-		To:   meta.To,
-		File: f,
+		From:     meta.From,
+		To:       meta.To,
+		File:     f,
+		Genesis:  genesis,
+		Snapshot: snapshot,
 	}, nil
 }

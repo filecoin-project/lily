@@ -10,7 +10,6 @@ import (
 	lutil "github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
-	lotusbuild "github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/lib/peermgr"
@@ -21,6 +20,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
 	"io/fs"
+	"io/ioutil"
 	"testing"
 )
 
@@ -29,6 +29,7 @@ type TestNodeConfig struct {
 	CacheConfig *lutil.CacheConfig
 	RepoPath    string
 	Snapshot    fs.File
+	Genesis     fs.File
 	ApiEndpoint string
 }
 
@@ -42,7 +43,8 @@ func NewTestNode(t testing.TB, ctx context.Context, cfg *TestNodeConfig) (lily.L
 	err = util.ImportFromFsFile(ctx, r, cfg.Snapshot, true)
 	require.NoError(t, err)
 
-	genBytes := lotusbuild.MaybeGenesis()
+	genBytes, err := ioutil.ReadAll(cfg.Genesis)
+	require.NoError(t, err)
 
 	genesis := node.Options()
 	if len(genBytes) > 0 {

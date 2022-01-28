@@ -188,7 +188,7 @@ jobs:
           paths:
             - /var/tmp/lily-test-vectors/
       - run:
-          command: make itest-calibnet
+          command: make itest
       - save_cache:
           name: save test vectors cache
           key: lily-test-vectors-{{ checksum "./build/test-vectors/vectors.json" }}

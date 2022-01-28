@@ -1,6 +1,3 @@
-//go:build calibnet
-// +build calibnet
-
 package itests
 
 import (
@@ -28,7 +25,7 @@ func TestCalibrationVector(t *testing.T) {
 
 	for _, vf := range CalibnetTestVectors {
 		t.Run(filepath.Base(vf.File.Name()), func(t *testing.T) {
-			tvb := NewVectorWalkValidatorBuilder(vf.File).
+			tvb := NewVectorWalkValidatorBuilder(vf).
 				WithDatabase(strg).
 				WithRange(vf.From, vf.To-1). // TODO file bug
 				WithTasks(chain.ActorStatesRawTask, chain.BlocksTask, chain.MessagesTask, chain.ChainConsensusTask)
@@ -37,6 +34,7 @@ func TestCalibrationVector(t *testing.T) {
 			stop := vw.Run(ctx)
 			vw.Validate(t)
 			require.NoError(t, stop(ctx))
+			require.NoError(t, vf.Close())
 		})
 	}
 }

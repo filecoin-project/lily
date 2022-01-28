@@ -62,11 +62,16 @@ func GetVectors(ctx context.Context, vectorBytes []byte) error {
 	}
 
 	ft := &fetch{}
-	for name, info := range testVectors {
-		if err := os.Mkdir(filepath.Join(GetVectorDir(), info.Network), 0755); err != nil && !os.IsExist(err) {
+	for vectorTar, info := range testVectors {
+		// fetch each vector into its own directory,  I am sorry for the complexity here. This was added as a result of
+		// chain snapshots needing to include a genesis file in addition to the snapshot since lotus lacks a long-lived testnet.
+		vd := filepath.Base(vectorTar)
+		vd = vd[0 : len(vd)-len(filepath.Ext(vd))]
+		vectorDir := filepath.Join(GetVectorDir(), info.Network, vd)
+		if err := os.MkdirAll(vectorDir, 0755); err != nil && !os.IsExist(err) {
 			return err
 		}
-		ft.fetchAsync(ctx, name, info)
+		ft.fetchAsync(ctx, vectorTar, vectorDir, info)
 	}
 
 	return ft.wait(ctx)
@@ -79,13 +84,13 @@ type fetch struct {
 	errs []error
 }
 
-func (ft *fetch) fetchAsync(ctx context.Context, name string, info VectorFile) {
+func (ft *fetch) fetchAsync(ctx context.Context, vectorTar, vectorDir string, info VectorFile) {
 	ft.wg.Add(1)
 
 	go func() {
 		defer ft.wg.Done()
 
-		path := filepath.Join(GetVectorDir(), filepath.Join(info.Network, name))
+		path := filepath.Join(vectorDir, vectorTar)
 
 		err := ft.checkFile(path, info)
 		if !os.IsNotExist(err) && err != nil {
@@ -125,7 +130,7 @@ func (ft *fetch) fetchAsync(ctx context.Context, name string, info VectorFile) {
 		}()
 		if lockfail {
 			// we've managed to get the lock, but we need to re-check file contents - maybe it's fetched now
-			ft.fetchAsync(ctx, name, info)
+			ft.fetchAsync(ctx, vectorTar, vectorDir, info)
 			return
 		}
 
