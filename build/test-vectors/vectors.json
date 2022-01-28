@@ -1,0 +1,16 @@
+{
+  "calibration-0-1000-fullstate.tar": {
+    "cid": "bafybeic36tvrem2pybcp6ksmwmpb4r6rth66cdnqbmssuiyjdkgnv2c2he",
+    "network": "calibnet",
+    "digest": "c7b29ce1451c40db56e5e88bbdb0ab197a4f85e566473abf576fcd954a8136fa",
+    "from": 0,
+    "to": 1000
+  },
+  "calibration-2001-3000-fullstate.tar": {
+    "cid": "bafybeihbsanrvwtrcecycmjry7lvh3fbrjvxltncxj2g7l3bnwuhvzpwwy",
+    "network": "calibnet",
+    "digest":"461fb317550d9bc2fcb24cc76a432f5df3697dd69dfb021e1982077fd03baa0e",
+    "from": 2001,
+    "to": 3000
+  }
+}
