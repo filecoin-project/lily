@@ -128,7 +128,7 @@ actors-gen:
 
 .PHONY: itest
 itest:
-	LILY_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test ./itests/
+	LILY_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test --tags=integration ./itests/
 
 # dev-nets
 2k: GOFLAGS+=-tags=2k
