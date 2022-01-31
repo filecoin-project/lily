@@ -159,7 +159,7 @@ jobs:
   integration-test:
     resource_class: large
     docker:
-      - image: cimg/go:1.16.6
+      - image: cimg/go:1.17.6
       - image: timescale/timescaledb:2.5.0-pg13
         environment:
           POSTGRES_PASSWORD: password
