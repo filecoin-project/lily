@@ -114,7 +114,6 @@ require (
 	github.com/filecoin-project/go-statemachine v1.0.1 // indirect
 	github.com/filecoin-project/go-statestore v0.1.1 // indirect
 	github.com/filecoin-project/go-storedcounter v0.0.0-20200421200003-1c99c62e8a5b // indirect
-	github.com/filecoin-project/specs-actors/v7 v7.0.0-20211117170924-fd07a4c7dff9 // indirect
 	github.com/filecoin-project/specs-storage v0.1.1-0.20201105051918-5188d9774506 // indirect
 	github.com/flynn/noise v1.0.0 // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect
