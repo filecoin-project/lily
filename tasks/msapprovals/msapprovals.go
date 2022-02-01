@@ -71,7 +71,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			continue
 		}
 
-		applied, tx, err := p.getTransactionIfApplied(ctx, m.Message, m.Receipt, pts)
+		applied, tx, err := p.getTransactionIfApplied(ctx, m.Message, m.Receipt, ts)
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
