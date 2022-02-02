@@ -213,6 +213,13 @@ func (c *CSVStorage) PersistBatch(ctx context.Context, ps ...model.Persistable) 
 	return nil
 }
 
+// ModelHeaders returns the column headers used for csv output of the type of model held in v
+func (c *CSVStorage) ModelHeaders(v interface{}) ([]string, error) {
+	t := getCSVModelTable(v, c.version)
+
+	return t.columns, nil
+}
+
 type CSVBatch struct {
 	data    map[string][][]string
 	version model.Version // schema version used when persisting the batch
