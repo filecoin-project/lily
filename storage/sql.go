@@ -57,6 +57,7 @@ var models = []interface{}{
 	(*messages.MessageGasEconomy)(nil),
 	(*messages.ParsedMessage)(nil),
 	(*messages.InternalMessage)(nil),
+	(*messages.InternalParsedMessage)(nil),
 
 	(*multisig.MultisigTransaction)(nil),
 
