@@ -42,13 +42,13 @@ commands:
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix} make docker-mainnet-push
+            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix} make docker-mainnet-push
       - run:
           name: Publish Calibnet Production Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-calibnet make docker-calibnet-push
+            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-calibnet make docker-calibnet-push
   publish-docker-from-branch-dev:
     steps:
       - run:
@@ -56,32 +56,32 @@ commands:
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-dev make docker-mainnet-dev-push
+            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-dev make docker-mainnet-dev-push
       - run:
           name: Publish Calibnet Dev Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-calibnet-dev make docker-calibnet-dev-push
+            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-calibnet-dev make docker-calibnet-dev-push
   publish-docker-semver-production:
     steps:
       - run:
           name: Publish Mainnet Production Semver Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            LILY_IMAGE_TAG=${CIRCLE_TAG//\//-} make docker-mainnet-push
+            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_TAG//\//-} make docker-mainnet-push
             # omit release candidates from pushing latest
             if [[ ! "$CIRCLE_TAG" =~ -rc[0-9]+$ ]]; then
-              LILY_IMAGE_TAG=latest make docker-mainnet-push
+              LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=latest make docker-mainnet-push
             fi
       - run:
           name: Publish Calibnet Production Semver Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-calibnet make docker-calibnet-push
+            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-calibnet make docker-calibnet-push
             # omit release candidates from pushing calibnet-latest
             if [[ ! "$CIRCLE_TAG" =~ -rc[0-9]+$ ]]; then
-              LILY_IMAGE_TAG=calibnet-latest make docker-calibnet-push
+              LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=calibnet-latest make docker-calibnet-push
             fi
   publish-docker-semver-dev:
     steps:
@@ -89,12 +89,12 @@ commands:
           name: Publish Mainnet Dev Semver Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-dev make docker-mainnet-dev-push
+            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-dev make docker-mainnet-dev-push
       - run:
           name: Publish Calibnet Dev Semver Docker Image to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-calibnet-dev make docker-calibnet-dev-push
+            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-calibnet-dev make docker-calibnet-dev-push
 
 jobs:
   publish-docker-from-master:

@@ -1,7 +1,12 @@
+/.codecov.yml
+/.gitignore
 /.circleci
 /.github
+/*.md
 /build/*
 /extern/filecoin-ffi
+/extern/fil-blst
 /Dockerfile*
 /docker-compose*
-/sentinel-visor
+/itests/*
+/scripts/*
