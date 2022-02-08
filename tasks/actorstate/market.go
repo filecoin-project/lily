@@ -2,11 +2,13 @@ package actorstate
 
 import (
 	"context"
+	"unicode/utf8"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
+	"golang.org/x/text/runes"
 	"golang.org/x/xerrors"
 
 	market "github.com/filecoin-project/lily/chain/actors/builtin/market"
@@ -127,7 +129,7 @@ func ExtractMarketDealProposals(ctx context.Context, ec *MarketStateExtractionCo
 				StoragePricePerEpoch: dp.StoragePricePerEpoch.String(),
 				PieceCID:             dp.PieceCID.String(),
 				IsVerified:           dp.VerifiedDeal,
-				Label:                dp.Label,
+				Label:                SanitizeLabel(dp.Label),
 			})
 			return nil
 		}); err != nil {
@@ -168,7 +170,7 @@ func ExtractMarketDealProposals(ctx context.Context, ec *MarketStateExtractionCo
 			StoragePricePerEpoch: add.Proposal.StoragePricePerEpoch.String(),
 			PieceCID:             add.Proposal.PieceCID.String(),
 			IsVerified:           add.Proposal.VerifiedDeal,
-			Label:                add.Proposal.Label,
+			Label:                SanitizeLabel(add.Proposal.Label),
 		}
 	}
 	return out, nil
@@ -237,4 +239,14 @@ func ExtractMarketDealStates(ctx context.Context, ec *MarketStateExtractionConte
 		idx++
 	}
 	return out, nil
+}
+
+// SanitizeLabel ensures that s is a valid utf8 string by replacing any ill formed bytes with a replacement character.
+func SanitizeLabel(s string) string {
+	if utf8.ValidString(s) {
+		return s
+	}
+
+	tr := runes.ReplaceIllFormed()
+	return tr.String(s)
 }

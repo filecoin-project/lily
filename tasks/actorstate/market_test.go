@@ -190,3 +190,41 @@ func TestMarketPredicates(t *testing.T) {
 		assert.EqualValues(t, newStateTs.ParentState().String(), mtr.States[1].StateRoot, "StateRoot")
 	})
 }
+
+func TestSanitizeLabel(t *testing.T) {
+	testCases := []struct {
+		in   string
+		want string
+	}{
+		{
+			in:   "this is ok",
+			want: "this is ok",
+		},
+
+		// Example from https://github.com/filecoin-project/lily/issues/843
+		{
+			in: string([]byte{
+				0xa1, 0x65, 0x70, 0x63, 0x69, 0x64,
+				0x73, 0x81, 0xd8, 0x2a, 0x58, 0x23,
+				0x00, 0x12, 0x20, 0x7a, 0x95, 0xa5,
+				0x59, 0x2a, 0xac, 0x47, 0x35, 0x0e,
+				0x80, 0x5b, 0x09, 0xe4, 0xba, 0xbd,
+				0x16, 0xf0, 0xff, 0xee, 0x24, 0xc7,
+				0x17, 0x00, 0x7a, 0x58, 0x8c, 0x22,
+				0x22, 0x7c, 0x7d, 0xe5, 0xd6, 0x9d,
+				0x22,
+			}),
+			want: "\ufffdepcids\ufffd\ufffd*X#\x00\x12 z\ufffd\ufffdY*\ufffdG5\x0e\ufffd[\t\u4ebd\x16\ufffd\ufffd\ufffd$\ufffd\x17\x00zX\ufffd\"\"|}\ufffd\u059d\"",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run("", func(t *testing.T) {
+			got := actorstate.SanitizeLabel(tc.in)
+
+			if got != tc.want {
+				t.Errorf("got %+q, wanted %q", got, tc.want)
+			}
+		})
+	}
+}
