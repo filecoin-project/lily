@@ -14,7 +14,6 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
 	"github.com/filecoin-project/lily/tasks"
 
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/msapprovals"
 	visormodel "github.com/filecoin-project/lily/model/visor"
@@ -35,7 +34,7 @@ func NewTask(node tasks.DataSource) *Task {
 	}
 }
 
-func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage, _ []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ProcessMultisigApprovals")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))
@@ -46,6 +45,13 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		Height:    int64(pts.Height()),
 		StateRoot: pts.ParentState().String(),
 	}
+
+	tsMsgs, err := p.node.ExecutedAndBlockMessages(ctx, ts, pts)
+	if err != nil {
+		report.ErrorsDetected = xerrors.Errorf("getting executed and block messages: %w", err)
+		return nil, report, nil
+	}
+	emsgs := tsMsgs.Executed
 
 	errorsDetected := make([]*MultisigError, 0, len(emsgs))
 	results := make(msapprovals.MultisigApprovalList, 0) // no initial size capacity since approvals are rare

@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/lily/lens"
 	commonmodel "github.com/filecoin-project/lily/model/actors/common"
 	"github.com/filecoin-project/lily/tasks/actorstate"
 )
@@ -49,7 +48,7 @@ func TestActorExtractor(t *testing.T) {
 	}
 
 	ex := actorstate.ActorExtractor{}
-	res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+	res, err := ex.Extract(ctx, info, mapi)
 	assert.NoError(t, err)
 
 	actualState, ok := res.(*commonmodel.ActorTaskResult)
