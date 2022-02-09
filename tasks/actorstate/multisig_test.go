@@ -23,7 +23,6 @@ import (
 	adt3 "github.com/filecoin-project/specs-actors/v3/actors/util/adt"
 	sa4builtin "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 
-	"github.com/filecoin-project/lily/lens"
 	multisigmodel "github.com/filecoin-project/lily/model/actors/multisig"
 	"github.com/filecoin-project/lily/tasks/actorstate"
 )
@@ -93,7 +92,7 @@ func TestMultisigExtractorV0(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -179,7 +178,7 @@ func TestMultisigExtractorV0(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -238,7 +237,7 @@ func TestMultisigExtractorV0(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -321,7 +320,7 @@ func TestMultisigExtractorV2(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -407,7 +406,7 @@ func TestMultisigExtractorV2(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -466,7 +465,7 @@ func TestMultisigExtractorV2(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -552,7 +551,7 @@ func TestMultisigExtractorV3(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -638,7 +637,7 @@ func TestMultisigExtractorV3(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -697,7 +696,7 @@ func TestMultisigExtractorV3(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -783,7 +782,7 @@ func TestMultisigExtractorV4(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -869,7 +868,7 @@ func TestMultisigExtractorV4(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)
@@ -928,7 +927,7 @@ func TestMultisigExtractorV4(t *testing.T) {
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
-		res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+		res, err := ex.Extract(ctx, info, mapi)
 		require.NoError(t, err)
 
 		ms, ok := res.(*multisigmodel.MultisigTaskResult)

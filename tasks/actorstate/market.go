@@ -14,7 +14,6 @@ import (
 
 	market "github.com/filecoin-project/lily/chain/actors/builtin/market"
 
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	marketmodel "github.com/filecoin-project/lily/model/actors/market"
@@ -78,7 +77,7 @@ func (m *MarketStateExtractionContext) IsGenesis() bool {
 	return m.CurrTs.Height() == 0
 }
 
-func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
+func (m StorageMarketExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "StorageMarketExtractor")
 	defer span.End()
 

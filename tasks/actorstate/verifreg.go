@@ -13,7 +13,6 @@ import (
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 )
@@ -75,7 +74,7 @@ func NewVerifiedRegistryExtractorContext(ctx context.Context, a ActorInfo, node 
 	}, nil
 }
 
-func (VerifiedRegistryExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
+func (VerifiedRegistryExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "VerifiedRegistryExtractor")
 	defer span.End()
 
