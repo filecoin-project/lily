@@ -55,6 +55,7 @@ require (
 	go.uber.org/fx v1.15.0
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
@@ -321,7 +322,6 @@ require (
 	golang.org/x/exp v0.0.0-20210715201039-d37aa40e8013 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20211209171907-798191bca915 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/tools v0.1.7 // indirect

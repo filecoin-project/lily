@@ -5,11 +5,12 @@ import (
 	"unicode/utf8"
 
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/text/runes"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lily/chain/actors/adt"
 
 	market "github.com/filecoin-project/lily/chain/actors/builtin/market"
 
@@ -52,7 +53,7 @@ func NewMarketStateExtractionContext(ctx context.Context, a ActorInfo, node Acto
 	if a.Epoch != 0 {
 		prevTipset = a.ParentTipSet
 
-		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
+		prevActor, err := node.Actor(ctx, a.Address, a.ParentTipSet.Key())
 		if err != nil {
 			return nil, xerrors.Errorf("loading previous market actor state at tipset %s epoch %d: %w", a.ParentTipSet.Key(), a.Epoch, err)
 		}
