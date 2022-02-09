@@ -120,6 +120,7 @@ func (t *TaskAPIImpl) GetMessageExecutionsForTipSet(ctx context.Context, ts, pts
 	return value.([]*lens.MessageExecution), nil
 }
 
+// TODO(frrist): instrument this method with logs for tracking its duration and cache hits v misses
 func (t *TaskAPIImpl) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
 	key := ts.Key().String() + pts.Key().String()
 	value, found := t.executedBlkMsgCache.Get(key)

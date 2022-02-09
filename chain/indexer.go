@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/lily/chain/actors/adt"
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -22,7 +21,6 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin/power"
 	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/lens/task"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -76,18 +74,17 @@ var _ TipSetObserver = (*TipSetIndexer)(nil)
 
 // TipSetIndexer waits for tipsets and persists their block data into a database.
 type TipSetIndexer struct {
-	window                     time.Duration
-	storage                    model.Storage
-	processors                 map[string]TipSetProcessor
-	messageProcessors          map[string]MessageProcessor
-	messageExecutionProcessors map[string]MessageExecutionProcessor
-	actorProcessors            map[string]ActorProcessor
-	consensusProcessor         map[string]TipSetsProcessor
-	name                       string
-	persistSlot                chan struct{} // filled with a token when a goroutine is persisting data
-	lastTipSet                 *types.TipSet
-	node                       task.TaskAPI
-	tasks                      []string
+	window             time.Duration
+	storage            model.Storage
+	processors         map[string]TipSetProcessor
+	messageProcessors  map[string]MessageProcessor
+	actorProcessors    map[string]ActorProcessor
+	consensusProcessor map[string]TipSetsProcessor
+	name               string
+	persistSlot        chan struct{} // filled with a token when a goroutine is persisting data
+	lastTipSet         *types.TipSet
+	node               task.TaskAPI
+	tasks              []string
 }
 
 type TipSetIndexerOpt func(t *TipSetIndexer)
@@ -98,17 +95,16 @@ type TipSetIndexerOpt func(t *TipSetIndexer)
 // indexer is used as the reporter in the visor_processing_reports table.
 func NewTipSetIndexer(node task.TaskAPI, d model.Storage, window time.Duration, name string, tasks []string, options ...TipSetIndexerOpt) (*TipSetIndexer, error) {
 	tsi := &TipSetIndexer{
-		storage:                    d,
-		window:                     window,
-		name:                       name,
-		persistSlot:                make(chan struct{}, 1), // allow one concurrent persistence job
-		processors:                 map[string]TipSetProcessor{},
-		messageProcessors:          map[string]MessageProcessor{},
-		messageExecutionProcessors: map[string]MessageExecutionProcessor{},
-		consensusProcessor:         map[string]TipSetsProcessor{},
-		actorProcessors:            map[string]ActorProcessor{},
-		node:                       node,
-		tasks:                      tasks,
+		storage:            d,
+		window:             window,
+		name:               name,
+		persistSlot:        make(chan struct{}, 1), // allow one concurrent persistence job
+		processors:         map[string]TipSetProcessor{},
+		messageProcessors:  map[string]MessageProcessor{},
+		consensusProcessor: map[string]TipSetsProcessor{},
+		actorProcessors:    map[string]ActorProcessor{},
+		node:               node,
+		tasks:              tasks,
 	}
 
 	for _, task := range tasks {
@@ -140,7 +136,7 @@ func NewTipSetIndexer(node task.TaskAPI, d model.Storage, window time.Duration, 
 		case ChainConsensusTask:
 			tsi.consensusProcessor[ChainConsensusTask] = consensus.NewTask()
 		case ImplicitMessageTask:
-			tsi.messageExecutionProcessors[ImplicitMessageTask] = messageexecutions.NewTask()
+			tsi.messageProcessors[ImplicitMessageTask] = messageexecutions.NewTask(node)
 		default:
 			return nil, xerrors.Errorf("unknown task: %s", task)
 		}
@@ -185,9 +181,9 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 	inFlight := 0
 	// TODO should these be allocated to the size of message and message execution processors
-	results := make(chan *TaskResult, len(t.processors)+len(t.actorProcessors)+len(t.messageExecutionProcessors)+len(t.consensusProcessor)+len(t.messageProcessors))
+	results := make(chan *TaskResult, len(t.processors)+len(t.actorProcessors)+len(t.consensusProcessor)+len(t.messageProcessors))
 	// A map to gather the persistable outputs from each task
-	taskOutputs := make(map[string]model.PersistableList, len(t.processors)+len(t.actorProcessors)+len(t.messageExecutionProcessors)+len(t.consensusProcessor)+len(t.messageProcessors))
+	taskOutputs := make(map[string]model.PersistableList, len(t.processors)+len(t.actorProcessors)+len(t.consensusProcessor)+len(t.messageProcessors))
 
 	// current is the primary tipset that tasks act upon.
 	// next adds additional context such as outcomes of message execution.
@@ -281,38 +277,6 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 			}
 
 		}
-
-		// If we have messages execution processors then extract internal messages
-		if len(t.messageExecutionProcessors) > 0 {
-			execMessagesStart := time.Now()
-			iMsgs, err := t.node.GetMessageExecutionsForTipSet(ctx, next, current)
-			if err == nil {
-				ll.Debugw("found message execution results", "count", len(iMsgs), "time", time.Since(execMessagesStart))
-				// Start all the message processors
-				for name, p := range t.messageExecutionProcessors {
-					inFlight++
-					go t.runMessageExecutionProcessor(tctx, p, name, next, current, iMsgs, results)
-				}
-			} else {
-				ll.Errorw("failed to extract messages", "error", err)
-				terr := xerrors.Errorf("failed to extract messages: %w", err)
-				// We need to report that all message tasks failed
-				for name := range t.messageExecutionProcessors {
-					report := &visormodel.ProcessingReport{
-						Height:         int64(current.Height()),
-						StateRoot:      current.ParentState().String(),
-						Reporter:       t.name,
-						Task:           name,
-						StartedAt:      start,
-						CompletedAt:    time.Now(),
-						Status:         visormodel.ProcessingStatusError,
-						ErrorsDetected: terr,
-					}
-					taskOutputs[name] = model.PersistableList{report}
-				}
-			}
-		}
-
 	} else {
 		// TODO: we could fetch the parent stateroot and proceed to index this tipset. However this will be
 		// slower and increases the likelihood that we exceed the processing window and cause the next
@@ -322,10 +286,6 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		// We need to report that all message and actor tasks were skipped
 		reason := "tipset did not have expected parent or child"
 		for name := range t.messageProcessors {
-			taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, reason)}
-			ll.Infow("task skipped", "task", name, "reason", reason)
-		}
-		for name := range t.messageExecutionProcessors {
 			taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, reason)}
 			ll.Infow("task skipped", "task", name, "reason", reason)
 		}
@@ -578,36 +538,6 @@ func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor,
 	}
 }
 
-func (t *TipSetIndexer) runMessageExecutionProcessor(ctx context.Context, p MessageExecutionProcessor, name string, ts, pts *types.TipSet, imsgs []*lens.MessageExecution, results chan *TaskResult) {
-	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.MessageExecutionProcessor.%s", name))
-	defer span.End()
-
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
-	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
-	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
-	defer stop()
-	start := time.Now()
-
-	data, report, err := p.ProcessMessageExecutions(ctx, t.node.Store(), ts, pts, imsgs)
-	if err != nil {
-		stats.Record(ctx, metrics.ProcessingFailure.M(1))
-		results <- &TaskResult{
-			Task:        name,
-			Error:       err,
-			StartedAt:   start,
-			CompletedAt: time.Now(),
-		}
-		return
-	}
-	results <- &TaskResult{
-		Task:        name,
-		Report:      visormodel.ProcessingReportList{report},
-		Data:        data,
-		StartedAt:   start,
-		CompletedAt: time.Now(),
-	}
-}
-
 func (t *TipSetIndexer) Close() error {
 	log.Debug("closing tipset indexer")
 
@@ -643,10 +573,6 @@ func (t *TipSetIndexer) SkipTipSet(ctx context.Context, ts *types.TipSet, reason
 	}
 
 	for name := range t.messageProcessors {
-		reports = append(reports, t.buildSkippedTipsetReport(ts, name, timestamp, reason))
-	}
-
-	for name := range t.messageExecutionProcessors {
 		reports = append(reports, t.buildSkippedTipsetReport(ts, name, timestamp, reason))
 	}
 
@@ -705,10 +631,6 @@ type MessageProcessor interface {
 	// pts is the tipset containing the messages, ts is the tipset containing the receipts
 	// Any data returned must be accompanied by a processing report.
 	ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
-}
-
-type MessageExecutionProcessor interface {
-	ProcessMessageExecutions(ctx context.Context, store adt.Store, ts *types.TipSet, pts *types.TipSet, imsgs []*lens.MessageExecution) (model.Persistable, *visormodel.ProcessingReport, error)
 }
 
 type ActorProcessor interface {

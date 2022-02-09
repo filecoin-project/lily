@@ -3,31 +3,30 @@ package messageexecutions
 import (
 	"context"
 
-	"github.com/filecoin-project/lily/chain/actors/adt"
-	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lotus/chain/types"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lily/lens/task"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model"
 	messagemodel "github.com/filecoin-project/lily/model/messages"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks/messages"
-	"github.com/filecoin-project/lotus/chain/types"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
 )
 
-func NewTask() *Task {
-	return &Task{}
-}
-
 type Task struct {
+	node task.TaskAPI
 }
 
-func (p *Task) Close() error {
-	return nil
+func NewTask(node task.TaskAPI) *Task {
+	return &Task{
+		node: node,
+	}
 }
 
-func (p *Task) ProcessMessageExecutions(ctx context.Context, store adt.Store, ts *types.TipSet, pts *types.TipSet, mex []*lens.MessageExecution) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ProcessMessageExecutions")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))
@@ -37,6 +36,12 @@ func (p *Task) ProcessMessageExecutions(ctx context.Context, store adt.Store, ts
 	report := &visormodel.ProcessingReport{
 		Height:    int64(pts.Height()),
 		StateRoot: pts.ParentState().String(),
+	}
+
+	mex, err := p.node.GetMessageExecutionsForTipSet(ctx, ts, pts)
+	if err != nil {
+		report.ErrorsDetected = xerrors.Errorf("getting messages executions for tipset: %w", err)
+		return nil, report, nil
 	}
 
 	var (
@@ -93,73 +98,11 @@ func (p *Task) ProcessMessageExecutions(ctx context.Context, store adt.Store, ts
 			})
 		}
 
-		// TODO(frrist): this code is commented out as it collects all internal message sent through the VM.
-		// Currently there does not exist a need for message analysis at this granularity.
-		// Before enabling this, some type of filtering will need to be implemented such that only
-		// the internal sends we are interested in can be extracted.
-		/*
-			getActorCode, err := util.MakeGetActorCodeFunc(ctx, store, ts, pts)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			// some messages will cause internal messages to be sent between the actors, gather and record them here.
-			subCalls := getChildMessagesOf(m)
-			for _, sub := range subCalls {
-				subToActorCode, found := getActorCode(sub.Message.To)
-				var subToName, subToFamily string
-				if found {
-					subToName, subToFamily, err = util.ActorNameAndFamilyFromCode(subToActorCode)
-					if err != nil {
-						errorsDetected = append(errorsDetected, &messages.MessageError{
-							Cid:   sub.Message.Cid(),
-							Error: xerrors.Errorf("failed to get sub-message to actor name and family: %w", err).Error(),
-						})
-					}
-					// if the message aborted execution while creating an actor due to lack of gas then this is expected as the actors don't exist
-				} else {
-					subToName = "<unknown>"
-					subToFamily = "<unknown>"
-				}
-				internalResult = append(internalResult, &messagemodel.InternalMessage{
-					Height:        int64(m.Height),
-					Cid:           sub.Message.Cid().String(), // pity we have to calculate this here
-					StateRoot:     m.StateRoot.String(),       // state root of the parent message
-					SourceMessage: m.Cid.String(),
-					From:          sub.Message.From.String(),
-					To:            sub.Message.To.String(),
-					Value:         sub.Message.Value.String(),
-					Method:        uint64(sub.Message.Method),
-					ActorName:     subToName,
-					ActorFamily:   subToFamily,
-					ExitCode:      int64(sub.Receipt.ExitCode),
-					GasUsed:       sub.Receipt.GasUsed,
-				})
-
-				subMethod, subParams, err := util.MethodAndParamsForMessage(sub.Message, subToActorCode)
-				if err != nil {
-					errorsDetected = append(errorsDetected, &messages.MessageError{
-						Cid:   sub.Message.Cid(),
-						Error: xerrors.Errorf("failed parse method and params for sub-message: %w", err).Error(),
-					})
-				}
-				internalParsedResult = append(internalParsedResult, &messagemodel.InternalParsedMessage{
-					Height: int64(m.Height),
-					Cid:    m.Cid.String(),
-					From:   m.Message.From.String(),
-					To:     m.Message.To.String(),
-					Value:  m.Message.Value.String(),
-					Method: subMethod,
-					Params: subParams,
-				})
-			}
-		*/
 	}
 	if len(errorsDetected) != 0 {
 		report.ErrorsDetected = errorsDetected
 	}
 	return model.PersistableList{
-
 		internalResult,
 		internalParsedResult,
 	}, report, nil
