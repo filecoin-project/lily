@@ -2,6 +2,7 @@ package chain
 
 import (
 	"context"
+	"github.com/filecoin-project/lily/lens/task"
 	"testing"
 	"time"
 
@@ -57,7 +58,9 @@ func TestWalker(t *testing.T) {
 	strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 	require.NoError(t, err, "NewDatabaseFromDB")
 
-	tsIndexer, err := NewTipSetIndexer(nodeAPI, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
+	taskAPI, err := task.NewTaskAPI(nodeAPI)
+	require.NoError(t, err)
+	tsIndexer, err := NewTipSetIndexer(taskAPI, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
 	require.NoError(t, err, "NewTipSetIndexer")
 	t.Logf("initializing indexer")
 	idx := NewWalker(tsIndexer, nodeAPI, 0, int64(beforeHead.Height()))

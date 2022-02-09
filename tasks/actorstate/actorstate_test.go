@@ -2,6 +2,7 @@ package actorstate_test
 
 import (
 	"context"
+	"github.com/filecoin-project/lily/chain/actors/adt"
 	"testing"
 
 	"github.com/filecoin-project/go-address"
@@ -18,7 +19,6 @@ import (
 	samarket "github.com/filecoin-project/specs-actors/actors/builtin/market"
 	sa0power "github.com/filecoin-project/specs-actors/actors/builtin/power"
 	sa0reward "github.com/filecoin-project/specs-actors/actors/builtin/reward"
-	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	sa2init "github.com/filecoin-project/specs-actors/v2/actors/builtin/init"
 	sa2power "github.com/filecoin-project/specs-actors/v2/actors/builtin/power"
 	sa2reward "github.com/filecoin-project/specs-actors/v2/actors/builtin/reward"
@@ -183,17 +183,17 @@ func (m *MockAPI) mustCreateMarketState(ctx context.Context, deals map[abi.DealI
 }
 
 func (m *MockAPI) mustCreateEmptyMarketState() *samarket.State {
-	emptyArrayCid, err := adt.MakeEmptyArray(m.store).Root()
+	emptyArrayCid, err := adt2.MakeEmptyArray(m.store).Root()
 	require.NoError(m.t, err)
 
-	emptyMap, err := adt.MakeEmptyMap(m.store).Root()
+	emptyMap, err := adt2.MakeEmptyMap(m.store).Root()
 	require.NoError(m.t, err)
 
 	return samarket.ConstructState(emptyArrayCid, emptyMap, emptyMap)
 }
 
 func (m *MockAPI) mustCreateDealAMT(deals map[abi.DealID]*samarket.DealState) cid.Cid {
-	root := adt.MakeEmptyArray(m.store)
+	root := adt2.MakeEmptyArray(m.store)
 	for dealID, dealState := range deals {
 		err := root.Set(uint64(dealID), dealState)
 		require.NoError(m.t, err)
@@ -205,7 +205,7 @@ func (m *MockAPI) mustCreateDealAMT(deals map[abi.DealID]*samarket.DealState) ci
 }
 
 func (m *MockAPI) mustCreateProposalAMT(props map[abi.DealID]*samarket.DealProposal) cid.Cid {
-	root := adt.MakeEmptyArray(m.store)
+	root := adt2.MakeEmptyArray(m.store)
 	for dealID, prop := range props {
 		err := root.Set(uint64(dealID), prop)
 		require.NoError(m.t, err)
@@ -217,18 +217,18 @@ func (m *MockAPI) mustCreateProposalAMT(props map[abi.DealID]*samarket.DealPropo
 }
 
 func (m *MockAPI) mustCreateBalanceTable(balances map[address.Address]balance) [2]cid.Cid {
-	escrowMapRoot := adt.MakeEmptyMap(m.store)
+	escrowMapRoot := adt2.MakeEmptyMap(m.store)
 	escrowMapRootCid, err := escrowMapRoot.Root()
 	require.NoError(m.t, err)
 
-	escrowRoot, err := adt.AsBalanceTable(m.store, escrowMapRootCid)
+	escrowRoot, err := adt2.AsBalanceTable(m.store, escrowMapRootCid)
 	require.NoError(m.t, err)
 
-	lockedMapRoot := adt.MakeEmptyMap(m.store)
+	lockedMapRoot := adt2.MakeEmptyMap(m.store)
 	lockedMapRootCid, err := lockedMapRoot.Root()
 	require.NoError(m.t, err)
 
-	lockedRoot, err := adt.AsBalanceTable(m.store, lockedMapRootCid)
+	lockedRoot, err := adt2.AsBalanceTable(m.store, lockedMapRootCid)
 	require.NoError(m.t, err)
 
 	for addr, balance := range balances {
@@ -249,20 +249,20 @@ func (m *MockAPI) mustCreateBalanceTable(balances map[address.Address]balance) [
 }
 
 func (m *MockAPI) mustCreateEmptyPowerStateV0() *sa0power.State {
-	emptyClaimsMap, err := adt.MakeEmptyMap(m.store).Root()
+	emptyClaimsMap, err := adt2.MakeEmptyMap(m.store).Root()
 	require.NoError(m.t, err)
 
-	cronEventQueueMMap, err := adt.MakeEmptyMultimap(m.store).Root()
+	cronEventQueueMMap, err := adt2.MakeEmptyMultimap(m.store).Root()
 	require.NoError(m.t, err)
 
 	return sa0power.ConstructState(emptyClaimsMap, cronEventQueueMMap)
 }
 
 func (m *MockAPI) mustCreateEmptyPowerStateV2() *sa2power.State {
-	emptyClaimsMap, err := adt.MakeEmptyMap(m.store).Root()
+	emptyClaimsMap, err := adt2.MakeEmptyMap(m.store).Root()
 	require.NoError(m.t, err)
 
-	cronEventQueueMMap, err := adt.MakeEmptyMultimap(m.store).Root()
+	cronEventQueueMMap, err := adt2.MakeEmptyMultimap(m.store).Root()
 	require.NoError(m.t, err)
 
 	return sa2power.ConstructState(emptyClaimsMap, cronEventQueueMMap)
@@ -297,7 +297,7 @@ func (m *MockAPI) mustCreateEmptyRewardStateV4(currRealizedPower abi.StoragePowe
 }
 
 func (m *MockAPI) mustCreateEmptyInitStateV0() *sa0init.State {
-	emptyMap, err := adt.MakeEmptyMap(m.store).Root()
+	emptyMap, err := adt2.MakeEmptyMap(m.store).Root()
 	require.NoError(m.t, err)
 
 	return sa0init.ConstructState(emptyMap, "visor-testing")
