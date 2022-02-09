@@ -2,6 +2,7 @@ package chain
 
 import (
 	"context"
+	"github.com/filecoin-project/lily/lens/task"
 	"sort"
 	"time"
 
@@ -52,8 +53,12 @@ func (g *GapFiller) Run(ctx context.Context) error {
 			return ctx.Err()
 		default:
 		}
+		taskAPI, err := task.NewTaskAPI(g.node)
+		if err != nil {
+			return err
+		}
 		runStart := time.Now()
-		indexer, err := NewTipSetIndexer(g.node, g.DB, 0, g.name, gaps[height])
+		indexer, err := NewTipSetIndexer(taskAPI, g.DB, 0, g.name, gaps[height])
 		if err != nil {
 			return err
 		}

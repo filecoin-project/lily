@@ -2,11 +2,11 @@ package chaineconomics
 
 import (
 	"context"
+	"github.com/filecoin-project/lily/lens/task"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
 
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 )
@@ -14,10 +14,10 @@ import (
 var log = logging.Logger("lily/tasks")
 
 type Task struct {
-	node lens.API
+	node task.TaskAPI
 }
 
-func NewTask(node lens.API) *Task {
+func NewTask(node task.TaskAPI) *Task {
 	return &Task{
 		node: node,
 	}

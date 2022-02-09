@@ -3,6 +3,7 @@ package lily
 import (
 	"context"
 	"fmt"
+	"github.com/filecoin-project/lily/lens/task"
 	"sync"
 
 	"github.com/filecoin-project/go-state-types/abi"
@@ -75,8 +76,12 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		return nil, err
 	}
 
+	taskAPI, err := task.NewTaskAPI(m)
+	if err != nil {
+		return nil, err
+	}
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	indexer, err := chain.NewTipSetIndexer(m, strg, cfg.Window, cfg.Name, cfg.Tasks)
+	indexer, err := chain.NewTipSetIndexer(taskAPI, strg, cfg.Window, cfg.Name, cfg.Tasks)
 	if err != nil {
 		return nil, err
 	}
@@ -130,8 +135,13 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		return nil, err
 	}
 
+	taskAPI, err := task.NewTaskAPI(m)
+	if err != nil {
+		return nil, err
+	}
+
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	indexer, err := chain.NewTipSetIndexer(m, strg, cfg.Window, cfg.Name, cfg.Tasks)
+	indexer, err := chain.NewTipSetIndexer(taskAPI, strg, cfg.Window, cfg.Name, cfg.Tasks)
 	if err != nil {
 		return nil, err
 	}

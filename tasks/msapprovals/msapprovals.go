@@ -4,6 +4,7 @@ package msapprovals
 import (
 	"bytes"
 	"context"
+	"github.com/filecoin-project/lily/lens/task"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
 	"github.com/filecoin-project/lotus/chain/actors/builtin"
@@ -24,10 +25,10 @@ const (
 )
 
 type Task struct {
-	node lens.API
+	node task.TaskAPI
 }
 
-func NewTask(node lens.API) *Task {
+func NewTask(node task.TaskAPI) *Task {
 	return &Task{
 		node: node,
 	}

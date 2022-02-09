@@ -1,15 +1,12 @@
 package chain
 
 import (
-	"bytes"
 	"context"
-	"crypto/sha256"
 	"fmt"
+	"github.com/filecoin-project/lily/lens/task"
 	"sync"
 	"time"
 
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
@@ -29,9 +26,7 @@ import (
 	"github.com/filecoin-project/lily/tasks/messageexecutions"
 	"github.com/filecoin-project/lily/tasks/messages"
 	"github.com/filecoin-project/lily/tasks/msapprovals"
-	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -90,7 +85,7 @@ type TipSetIndexer struct {
 	name                       string
 	persistSlot                chan struct{} // filled with a token when a goroutine is persisting data
 	lastTipSet                 *types.TipSet
-	node                       lens.API
+	node                       task.TaskAPI
 	tasks                      []string
 }
 
@@ -100,7 +95,7 @@ type TipSetIndexerOpt func(t *TipSetIndexer)
 // and persistence are concurrent. Extraction of the a tipset can proceed while data from the previous extraction is
 // being persisted. The indexer may be given a time window in which to complete data extraction. The name of the
 // indexer is used as the reporter in the visor_processing_reports table.
-func NewTipSetIndexer(node lens.API, d model.Storage, window time.Duration, name string, tasks []string, options ...TipSetIndexerOpt) (*TipSetIndexer, error) {
+func NewTipSetIndexer(node task.TaskAPI, d model.Storage, window time.Duration, name string, tasks []string, options ...TipSetIndexerOpt) (*TipSetIndexer, error) {
 	tsi := &TipSetIndexer{
 		storage:                    d,
 		window:                     window,
@@ -261,14 +256,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 				// If we have actor processors then find actors that have changed state
 				if len(t.actorProcessors) > 0 {
 					changesStart := time.Now()
-					var err error
-					var changes map[string]lens.ActorStateChange
-					// special case, we want to extract all actor states from the genesis block.
-					if current.Height() == 0 {
-						changes, err = t.getGenesisActors(ctx)
-					} else {
-						changes, err = t.stateChangedActors(tctx, current.ParentState(), next.ParentState())
-					}
+					changes, err := t.node.StateChangedActors(ctx, t.node.Store(), current, next)
 					if err == nil {
 						ll.Debugw("found actor state changes", "count", len(changes), "time", time.Since(changesStart))
 						for name, p := range t.actorProcessors {
@@ -536,125 +524,6 @@ func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, nam
 	}
 }
 
-// getGenesisActors returns a map of all actors contained in the genesis block.
-func (t *TipSetIndexer) getGenesisActors(ctx context.Context) (map[string]lens.ActorStateChange, error) {
-	out := map[string]lens.ActorStateChange{}
-
-	genesis, err := t.node.ChainGetGenesis(ctx)
-	if err != nil {
-		return nil, err
-	}
-	root, _, err := getStateTreeMapCIDAndVersion(ctx, t.node.Store(), genesis.ParentState())
-	if err != nil {
-		return nil, err
-	}
-	tree, err := state.LoadStateTree(t.node.Store(), root)
-	if err != nil {
-		return nil, err
-	}
-	if err := tree.ForEach(func(addr address.Address, act *types.Actor) error {
-		out[addr.String()] = lens.ActorStateChange{
-			Actor:      *act,
-			ChangeType: lens.ChangeTypeAdd,
-		}
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// stateChangedActors is an optimized version of the lotus API method StateChangedActors. This method takes advantage of the efficient hamt/v3 diffing logic
-// and applies it to versions of state tress supporting it. These include Version 2 and 3 of the lotus state tree implementation.
-// stateChangedActors will fall back to the lotus API method when the optimized diffing cannot be applied.
-func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid) (map[string]lens.ActorStateChange, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "TipSetIndexer.StateChangedActors")
-	if span.IsRecording() {
-		span.SetAttributes(
-			attribute.String("old", old.String()),
-			attribute.String("new", new.String()),
-		)
-	}
-	defer span.End()
-
-	var (
-		buf = bytes.NewReader(nil)
-		out = map[string]lens.ActorStateChange{}
-	)
-
-	oldRoot, oldVersion, err := getStateTreeMapCIDAndVersion(ctx, t.node.Store(), old)
-	if err != nil {
-		return nil, err
-	}
-	newRoot, newVersion, err := getStateTreeMapCIDAndVersion(ctx, t.node.Store(), new)
-	if err != nil {
-		return nil, err
-	}
-
-	if newVersion == oldVersion && (newVersion != types.StateTreeVersion0 && newVersion != types.StateTreeVersion1) {
-		span.SetAttributes(attribute.String("diff", "fast"))
-		// TODO: replace hamt.UseTreeBitWidth and hamt.UseHashFunction with values based on network version
-		changes, err := hamt.Diff(ctx, t.node.Store(), t.node.Store(), oldRoot, newRoot, hamt.UseTreeBitWidth(5), hamt.UseHashFunction(func(input []byte) []byte {
-			res := sha256.Sum256(input)
-			return res[:]
-		}))
-		if err != nil {
-			log.Errorw("failed to diff state tree efficiently, falling back to slow method", "error", err)
-		} else {
-			for _, change := range changes {
-				addr, err := address.NewFromBytes([]byte(change.Key))
-				if err != nil {
-					return nil, xerrors.Errorf("address in state tree was not valid: %w", err)
-				}
-				var ch lens.ActorStateChange
-				switch change.Type {
-				case hamt.Add:
-					ch.ChangeType = lens.ChangeTypeAdd
-					buf.Reset(change.After.Raw)
-					err = ch.Actor.UnmarshalCBOR(buf)
-					buf.Reset(nil)
-					if err != nil {
-						return nil, err
-					}
-				case hamt.Remove:
-					ch.ChangeType = lens.ChangeTypeRemove
-					buf.Reset(change.Before.Raw)
-					err = ch.Actor.UnmarshalCBOR(buf)
-					buf.Reset(nil)
-					if err != nil {
-						return nil, err
-					}
-				case hamt.Modify:
-					ch.ChangeType = lens.ChangeTypeModify
-					buf.Reset(change.After.Raw)
-					err = ch.Actor.UnmarshalCBOR(buf)
-					buf.Reset(nil)
-					if err != nil {
-						return nil, err
-					}
-				}
-				out[addr.String()] = ch
-			}
-			return out, nil
-		}
-	}
-	span.SetAttributes(attribute.String("diff", "slow"))
-	log.Debug("using slow state diff")
-	actors, err := t.node.StateChangedActors(ctx, old, new)
-	if err != nil {
-		return nil, err
-	}
-
-	for addr, act := range actors {
-		out[addr] = lens.ActorStateChange{
-			Actor:      act,
-			ChangeType: lens.ChangeTypeUnknown,
-		}
-	}
-
-	return out, nil
-}
-
 func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProcessor, name string, ts, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages, results chan *TaskResult) {
 	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.MessageProcessor.%s", name))
 	defer span.End()
@@ -715,7 +584,7 @@ func (t *TipSetIndexer) runConsensusProcessor(ctx context.Context, p TipSetsProc
 	}
 }
 
-func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor, name string, ts, pts *types.TipSet, actors map[string]lens.ActorStateChange, emsgs []*lens.ExecutedMessage, results chan *TaskResult) {
+func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor, name string, ts, pts *types.TipSet, actors task.ActorStateChangeDiff, emsgs []*lens.ExecutedMessage, results chan *TaskResult) {
 	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.ActorProcessor.%s", name))
 	defer span.End()
 
@@ -881,5 +750,5 @@ type MessageExecutionProcessor interface {
 type ActorProcessor interface {
 	// ProcessActors processes a set of actors. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
-	ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors map[string]lens.ActorStateChange, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error)
+	ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors task.ActorStateChangeDiff, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error)
 }

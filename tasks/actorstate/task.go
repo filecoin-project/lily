@@ -3,6 +3,7 @@ package actorstate
 import (
 	"context"
 	"fmt"
+	"github.com/filecoin-project/lily/lens/task"
 	"time"
 
 	"github.com/filecoin-project/go-address"
@@ -20,12 +21,12 @@ import (
 
 // A Task processes the extraction of actor state according the allowed types in its extracter map.
 type Task struct {
-	node lens.API
+	node task.TaskAPI
 
 	extracterMap ActorExtractorMap
 }
 
-func NewTask(node lens.API, extracterMap ActorExtractorMap) *Task {
+func NewTask(node task.TaskAPI, extracterMap ActorExtractorMap) *Task {
 	p := &Task{
 		node:         node,
 		extracterMap: extracterMap,
@@ -33,7 +34,7 @@ func NewTask(node lens.API, extracterMap ActorExtractorMap) *Task {
 	return p
 }
 
-func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates map[string]lens.ActorStateChange, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates task.ActorStateChangeDiff, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
 	log.Debugw("processing actor state changes", "height", ts.Height(), "parent_height", pts.Height())
 
 	report := &visormodel.ProcessingReport{
@@ -45,7 +46,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	ll := log.With("height", int64(ts.Height()))
 
 	// Filter to just allowed actors
-	actors := map[string]lens.ActorStateChange{}
+	actors := make(map[string]task.ActorStateChange)
 	for addr, ch := range candidates {
 		if t.extracterMap.Allow(ch.Actor.Code) {
 			actors[addr] = ch
@@ -110,7 +111,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	return data, report, nil
 }
 
-func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pts *types.TipSet, addrStr string, ch lens.ActorStateChange, emsgs []*lens.ExecutedMessage, results chan *ActorStateResult) {
+func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pts *types.TipSet, addrStr string, ch task.ActorStateChange, emsgs []*lens.ExecutedMessage, results chan *ActorStateResult) {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ActorCode, builtin.ActorNameByCode(ch.Actor.Code)))
 
 	res := &ActorStateResult{
