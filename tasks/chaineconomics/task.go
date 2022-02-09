@@ -6,18 +6,18 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
 
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
+	"github.com/filecoin-project/lily/tasks"
 )
 
 var log = logging.Logger("lily/tasks")
 
 type Task struct {
-	node lens.API
+	node tasks.DataSource
 }
 
-func NewTask(node lens.API) *Task {
+func NewTask(node tasks.DataSource) *Task {
 	return &Task{
 		node: node,
 	}

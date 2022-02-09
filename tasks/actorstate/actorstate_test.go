@@ -9,31 +9,32 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/go-state-types/crypto"
-	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/api"
 	bstore "github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/ipfs/go-cid"
+	cbornode "github.com/ipfs/go-ipld-cbor"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/xerrors"
+
 	sa0account "github.com/filecoin-project/specs-actors/actors/builtin/account"
 	sa0init "github.com/filecoin-project/specs-actors/actors/builtin/init"
 	samarket "github.com/filecoin-project/specs-actors/actors/builtin/market"
 	sa0power "github.com/filecoin-project/specs-actors/actors/builtin/power"
 	sa0reward "github.com/filecoin-project/specs-actors/actors/builtin/reward"
-	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	sa2init "github.com/filecoin-project/specs-actors/v2/actors/builtin/init"
 	sa2power "github.com/filecoin-project/specs-actors/v2/actors/builtin/power"
 	sa2reward "github.com/filecoin-project/specs-actors/v2/actors/builtin/reward"
-	adt2 "github.com/filecoin-project/specs-actors/v2/actors/util/adt"
+	sa_adt "github.com/filecoin-project/specs-actors/v2/actors/util/adt"
 	sa3init "github.com/filecoin-project/specs-actors/v3/actors/builtin/init"
 	sa3power "github.com/filecoin-project/specs-actors/v3/actors/builtin/power"
 	sa3reward "github.com/filecoin-project/specs-actors/v3/actors/builtin/reward"
 	sa4init "github.com/filecoin-project/specs-actors/v4/actors/builtin/init"
 	sa4power "github.com/filecoin-project/specs-actors/v4/actors/builtin/power"
 	sa4reward "github.com/filecoin-project/specs-actors/v4/actors/builtin/reward"
-	"github.com/ipfs/go-cid"
-	cbornode "github.com/ipfs/go-ipld-cbor"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/tasks/actorstate"
 	"github.com/filecoin-project/lily/testutil"
 )
@@ -81,8 +82,8 @@ func (m *MockAPI) ChainGetParentMessages(ctx context.Context, msg cid.Cid) ([]ap
 	return []api.Message{}, nil
 }
 
-func (m *MockAPI) StateReadState(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*api.ActorState, error) {
-	act, err := m.StateGetActor(ctx, actor, tsk)
+func (m *MockAPI) ActorState(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.ActorState, error) {
+	act, err := m.Actor(ctx, addr, ts.Key())
 	if err != nil {
 		return nil, xerrors.Errorf("getting actor: %w", err)
 	}
@@ -98,7 +99,7 @@ func (m *MockAPI) StateReadState(ctx context.Context, actor address.Address, tsk
 	}, nil
 }
 
-func (m *MockAPI) StateGetActor(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
+func (m *MockAPI) Actor(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*types.Actor, error) {
 	key := actorKey{
 		tsk:  tsk,
 		addr: actor,
@@ -114,7 +115,7 @@ func (m *MockAPI) StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.T
 	panic("not implemented")
 }
 
-func (m *MockAPI) StateMinerPower(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.MinerPower, error) {
+func (m *MockAPI) MinerPower(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.MinerPower, error) {
 	panic("not implemented yet")
 }
 
@@ -183,17 +184,17 @@ func (m *MockAPI) mustCreateMarketState(ctx context.Context, deals map[abi.DealI
 }
 
 func (m *MockAPI) mustCreateEmptyMarketState() *samarket.State {
-	emptyArrayCid, err := adt.MakeEmptyArray(m.store).Root()
+	emptyArrayCid, err := sa_adt.MakeEmptyArray(m.store).Root()
 	require.NoError(m.t, err)
 
-	emptyMap, err := adt.MakeEmptyMap(m.store).Root()
+	emptyMap, err := sa_adt.MakeEmptyMap(m.store).Root()
 	require.NoError(m.t, err)
 
 	return samarket.ConstructState(emptyArrayCid, emptyMap, emptyMap)
 }
 
 func (m *MockAPI) mustCreateDealAMT(deals map[abi.DealID]*samarket.DealState) cid.Cid {
-	root := adt.MakeEmptyArray(m.store)
+	root := sa_adt.MakeEmptyArray(m.store)
 	for dealID, dealState := range deals {
 		err := root.Set(uint64(dealID), dealState)
 		require.NoError(m.t, err)
@@ -205,7 +206,7 @@ func (m *MockAPI) mustCreateDealAMT(deals map[abi.DealID]*samarket.DealState) ci
 }
 
 func (m *MockAPI) mustCreateProposalAMT(props map[abi.DealID]*samarket.DealProposal) cid.Cid {
-	root := adt.MakeEmptyArray(m.store)
+	root := sa_adt.MakeEmptyArray(m.store)
 	for dealID, prop := range props {
 		err := root.Set(uint64(dealID), prop)
 		require.NoError(m.t, err)
@@ -217,18 +218,18 @@ func (m *MockAPI) mustCreateProposalAMT(props map[abi.DealID]*samarket.DealPropo
 }
 
 func (m *MockAPI) mustCreateBalanceTable(balances map[address.Address]balance) [2]cid.Cid {
-	escrowMapRoot := adt.MakeEmptyMap(m.store)
+	escrowMapRoot := sa_adt.MakeEmptyMap(m.store)
 	escrowMapRootCid, err := escrowMapRoot.Root()
 	require.NoError(m.t, err)
 
-	escrowRoot, err := adt.AsBalanceTable(m.store, escrowMapRootCid)
+	escrowRoot, err := sa_adt.AsBalanceTable(m.store, escrowMapRootCid)
 	require.NoError(m.t, err)
 
-	lockedMapRoot := adt.MakeEmptyMap(m.store)
+	lockedMapRoot := sa_adt.MakeEmptyMap(m.store)
 	lockedMapRootCid, err := lockedMapRoot.Root()
 	require.NoError(m.t, err)
 
-	lockedRoot, err := adt.AsBalanceTable(m.store, lockedMapRootCid)
+	lockedRoot, err := sa_adt.AsBalanceTable(m.store, lockedMapRootCid)
 	require.NoError(m.t, err)
 
 	for addr, balance := range balances {
@@ -249,20 +250,20 @@ func (m *MockAPI) mustCreateBalanceTable(balances map[address.Address]balance) [
 }
 
 func (m *MockAPI) mustCreateEmptyPowerStateV0() *sa0power.State {
-	emptyClaimsMap, err := adt.MakeEmptyMap(m.store).Root()
+	emptyClaimsMap, err := sa_adt.MakeEmptyMap(m.store).Root()
 	require.NoError(m.t, err)
 
-	cronEventQueueMMap, err := adt.MakeEmptyMultimap(m.store).Root()
+	cronEventQueueMMap, err := sa_adt.MakeEmptyMultimap(m.store).Root()
 	require.NoError(m.t, err)
 
 	return sa0power.ConstructState(emptyClaimsMap, cronEventQueueMMap)
 }
 
 func (m *MockAPI) mustCreateEmptyPowerStateV2() *sa2power.State {
-	emptyClaimsMap, err := adt.MakeEmptyMap(m.store).Root()
+	emptyClaimsMap, err := sa_adt.MakeEmptyMap(m.store).Root()
 	require.NoError(m.t, err)
 
-	cronEventQueueMMap, err := adt.MakeEmptyMultimap(m.store).Root()
+	cronEventQueueMMap, err := sa_adt.MakeEmptyMultimap(m.store).Root()
 	require.NoError(m.t, err)
 
 	return sa2power.ConstructState(emptyClaimsMap, cronEventQueueMMap)
@@ -297,14 +298,14 @@ func (m *MockAPI) mustCreateEmptyRewardStateV4(currRealizedPower abi.StoragePowe
 }
 
 func (m *MockAPI) mustCreateEmptyInitStateV0() *sa0init.State {
-	emptyMap, err := adt.MakeEmptyMap(m.store).Root()
+	emptyMap, err := sa_adt.MakeEmptyMap(m.store).Root()
 	require.NoError(m.t, err)
 
 	return sa0init.ConstructState(emptyMap, "visor-testing")
 }
 
 func (m *MockAPI) mustCreateEmptyInitStateV2() *sa2init.State {
-	emptyMap, err := adt2.MakeEmptyMap(m.store).Root()
+	emptyMap, err := sa_adt.MakeEmptyMap(m.store).Root()
 	require.NoError(m.t, err)
 
 	return sa2init.ConstructState(emptyMap, "visor-testing")

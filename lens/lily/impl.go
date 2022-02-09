@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/lens/lily/modules"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/stmgr"
@@ -20,6 +19,8 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lily/lens/lily/modules"
 
 	"github.com/filecoin-project/lily/chain"
 	"github.com/filecoin-project/lily/lens"
@@ -46,6 +47,10 @@ type LilyNodeAPI struct {
 	CacheConfig    *util.CacheConfig
 	actorStore     adt.Store
 	actorStoreInit sync.Once
+}
+
+func (m *LilyNodeAPI) CirculatingSupply(ctx context.Context, key types.TipSetKey) (api.CirculatingSupply, error) {
+	return m.StateAPI.StateVMCirculatingSupplyInternal(ctx, key)
 }
 
 func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {
@@ -75,8 +80,12 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		return nil, err
 	}
 
+	taskAPI, err := chain.NewDataSource(m)
+	if err != nil {
+		return nil, err
+	}
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	indexer, err := chain.NewTipSetIndexer(m, strg, cfg.Window, cfg.Name, cfg.Tasks)
+	indexer, err := chain.NewTipSetIndexer(taskAPI, strg, cfg.Window, cfg.Name, cfg.Tasks)
 	if err != nil {
 		return nil, err
 	}
@@ -130,8 +139,13 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		return nil, err
 	}
 
+	taskAPI, err := chain.NewDataSource(m)
+	if err != nil {
+		return nil, err
+	}
+
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	indexer, err := chain.NewTipSetIndexer(m, strg, cfg.Window, cfg.Name, cfg.Tasks)
+	indexer, err := chain.NewTipSetIndexer(taskAPI, strg, cfg.Window, cfg.Name, cfg.Tasks)
 	if err != nil {
 		return nil, err
 	}
