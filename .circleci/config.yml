@@ -39,7 +39,7 @@ commands:
     steps:
       - run:
           name: Run lily within the docker image
-          command: docker run --rm filecoin/lily:latest
+          command: docker run --rm filecoin/lily:latest --version
   publish-docker-from-branch-production:
     steps:
       - run:
