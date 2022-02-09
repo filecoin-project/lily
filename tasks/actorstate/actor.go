@@ -17,7 +17,7 @@ import (
 // ActorExtractor extracts common actor state
 type ActorExtractor struct{}
 
-func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
+func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ActorExtractor")
 	defer span.End()
 
