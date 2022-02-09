@@ -12,8 +12,9 @@ import (
 
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
-	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
+
+	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/metrics"
@@ -105,7 +106,7 @@ func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 	if a.Epoch != 1 {
 		prevTipset = a.ParentTipSet
 
-		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
+		prevActor, err := node.Actor(ctx, a.Address, a.ParentTipSet.Key())
 		if err != nil {
 			// if the actor exists in the current state and not in the parent state then the
 			// actor was created in the current state.

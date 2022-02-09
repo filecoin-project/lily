@@ -5,12 +5,14 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
 	"github.com/filecoin-project/lotus/chain/actors/builtin"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
+	"github.com/filecoin-project/lily/tasks"
 
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model"
@@ -24,10 +26,10 @@ const (
 )
 
 type Task struct {
-	node lens.API
+	node tasks.DataSource
 }
 
-func NewTask(node lens.API) *Task {
+func NewTask(node tasks.DataSource) *Task {
 	return &Task{
 		node: node,
 	}
@@ -99,7 +101,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 
 		// Get state of actor after the message has been applied
-		act, err := p.node.StateGetActor(ctx, m.Message.To, ts.Key())
+		act, err := p.node.Actor(ctx, m.Message.To, ts.Key())
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
@@ -227,7 +229,7 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		// Get state of actor before the message was applied
 		// pts is the tipset containing the messages, so we need the state as seen at the start of message processing
 		// for that tipset
-		act, err := p.node.StateGetActor(ctx, msg.To, pts.Parents())
+		act, err := p.node.Actor(ctx, msg.To, pts.Parents())
 		if err != nil {
 			return false, nil, xerrors.Errorf("failed to load previous actor: %w", err)
 		}

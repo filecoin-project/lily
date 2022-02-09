@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 
+	"go.opentelemetry.io/otel"
+
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model"
 	commonmodel "github.com/filecoin-project/lily/model/actors/common"
-	"go.opentelemetry.io/otel"
 )
 
 // was services/processor/tasks/common/actor.go
@@ -37,7 +38,7 @@ func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.Ex
 		return result, nil
 	}
 
-	ast, err := node.StateReadState(ctx, a.Address, a.TipSet.Key())
+	ast, err := node.ActorState(ctx, a.Address, a.TipSet)
 	if err != nil {
 		return nil, err
 	}
