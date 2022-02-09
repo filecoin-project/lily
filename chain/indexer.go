@@ -3,9 +3,16 @@ package chain
 import (
 	"context"
 	"fmt"
-	"github.com/filecoin-project/lily/lens/task"
 	"sync"
 	"time"
+
+	"github.com/filecoin-project/lotus/chain/types"
+	logging "github.com/ipfs/go-log/v2"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
@@ -16,6 +23,7 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/lens/task"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
@@ -26,13 +34,6 @@ import (
 	"github.com/filecoin-project/lily/tasks/messageexecutions"
 	"github.com/filecoin-project/lily/tasks/messages"
 	"github.com/filecoin-project/lily/tasks/msapprovals"
-	"github.com/filecoin-project/lotus/chain/types"
-	logging "github.com/ipfs/go-log/v2"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
 )
 
 const (

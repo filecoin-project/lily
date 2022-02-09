@@ -3,7 +3,6 @@ package actorstate
 import (
 	"context"
 	"fmt"
-	"github.com/filecoin-project/lily/lens/task"
 	"time"
 
 	"github.com/filecoin-project/go-address"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/lens/task"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"

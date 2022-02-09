@@ -2,12 +2,9 @@ package chain
 
 import (
 	"context"
-	"github.com/filecoin-project/lily/lens/task"
 	"os"
 	"testing"
 	"time"
-
-	"github.com/filecoin-project/lily/chain/actors/builtin"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
@@ -22,7 +19,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/lens/task"
 	"github.com/filecoin-project/lily/model/blocks"
 	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lily/testutil"

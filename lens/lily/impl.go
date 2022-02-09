@@ -3,11 +3,9 @@ package lily
 import (
 	"context"
 	"fmt"
-	"github.com/filecoin-project/lily/lens/task"
 	"sync"
 
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/lens/lily/modules"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/stmgr"
@@ -22,8 +20,11 @@ import (
 	"go.uber.org/fx"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/lily/lens/lily/modules"
+
 	"github.com/filecoin-project/lily/chain"
 	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/lens/task"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/network"
 	"github.com/filecoin-project/lily/schedule"

@@ -2,15 +2,16 @@ package chain
 
 import (
 	"context"
-	"github.com/filecoin-project/lily/lens/task"
 	"sort"
 	"time"
 
-	"github.com/filecoin-project/lily/lens"
-	"github.com/filecoin-project/lily/model/visor"
-	"github.com/filecoin-project/lily/storage"
 	"github.com/go-pg/pg/v10"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/lens/task"
+	"github.com/filecoin-project/lily/model/visor"
+	"github.com/filecoin-project/lily/storage"
 )
 
 type GapFiller struct {

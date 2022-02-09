@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
-	"github.com/filecoin-project/lily/chain/actors/adt"
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -16,6 +15,9 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/sync/singleflight"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/lens"
 )
 
 var log = logging.Logger("lily/lens")

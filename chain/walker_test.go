@@ -2,7 +2,6 @@ package chain
 
 import (
 	"context"
-	"github.com/filecoin-project/lily/lens/task"
 	"testing"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/lens/task"
 	"github.com/filecoin-project/lily/model/blocks"
 	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lily/testutil"
