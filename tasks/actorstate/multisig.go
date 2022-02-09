@@ -10,7 +10,6 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
 
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	multisigmodel "github.com/filecoin-project/lily/model/actors/multisig"
@@ -24,7 +23,7 @@ func init() {
 
 type MultiSigActorExtractor struct{}
 
-func (m MultiSigActorExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
+func (m MultiSigActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "MultiSigActor")
 	defer span.End()
 

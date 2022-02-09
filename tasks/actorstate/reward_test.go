@@ -6,12 +6,12 @@ import (
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
-	"github.com/filecoin-project/lily/chain/actors/builtin/power"
-	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	"github.com/filecoin-project/lotus/chain/types"
 	tutils "github.com/filecoin-project/specs-actors/support/testing"
 
-	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/chain/actors/builtin/power"
+	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
+
 	rewardmodel "github.com/filecoin-project/lily/model/actors/reward"
 	"github.com/filecoin-project/lily/tasks/actorstate"
 
@@ -57,7 +57,7 @@ func TestRewardExtractV0(t *testing.T) {
 	}
 
 	ex := actorstate.RewardExtractor{}
-	res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+	res, err := ex.Extract(ctx, info, mapi)
 	require.NoError(t, err)
 
 	cr, ok := res.(*rewardmodel.ChainReward)
@@ -106,7 +106,7 @@ func TestRewardExtractV2(t *testing.T) {
 	}
 
 	ex := actorstate.RewardExtractor{}
-	res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+	res, err := ex.Extract(ctx, info, mapi)
 	require.NoError(t, err)
 
 	cr, ok := res.(*rewardmodel.ChainReward)
@@ -155,7 +155,7 @@ func TestRewardExtractV3(t *testing.T) {
 	}
 
 	ex := actorstate.RewardExtractor{}
-	res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+	res, err := ex.Extract(ctx, info, mapi)
 	require.NoError(t, err)
 
 	cr, ok := res.(*rewardmodel.ChainReward)
@@ -204,7 +204,7 @@ func TestRewardExtractV4(t *testing.T) {
 	}
 
 	ex := actorstate.RewardExtractor{}
-	res, err := ex.Extract(ctx, info, []*lens.ExecutedMessage{}, mapi)
+	res, err := ex.Extract(ctx, info, mapi)
 	require.NoError(t, err)
 
 	cr, ok := res.(*rewardmodel.ChainReward)
