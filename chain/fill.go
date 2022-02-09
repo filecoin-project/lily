@@ -5,11 +5,12 @@ import (
 	"sort"
 	"time"
 
+	"github.com/go-pg/pg/v10"
+	"golang.org/x/xerrors"
+
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/storage"
-	"github.com/go-pg/pg/v10"
-	"golang.org/x/xerrors"
 )
 
 type GapFiller struct {
@@ -52,8 +53,12 @@ func (g *GapFiller) Run(ctx context.Context) error {
 			return ctx.Err()
 		default:
 		}
+		taskAPI, err := NewDataSource(g.node)
+		if err != nil {
+			return err
+		}
 		runStart := time.Now()
-		indexer, err := NewTipSetIndexer(g.node, g.DB, 0, g.name, gaps[height])
+		indexer, err := NewTipSetIndexer(taskAPI, g.DB, 0, g.name, gaps[height])
 		if err != nil {
 			return err
 		}

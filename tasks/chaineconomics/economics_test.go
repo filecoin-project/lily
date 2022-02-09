@@ -17,8 +17,8 @@ type MockedChainEconomicsLens struct {
 	mock.Mock
 }
 
-func (m *MockedChainEconomicsLens) StateVMCirculatingSupplyInternal(ctx context.Context, key types.TipSetKey) (api.CirculatingSupply, error) {
-	args := m.Called(ctx, key)
+func (m *MockedChainEconomicsLens) CirculatingSupply(ctx context.Context, ts *types.TipSet) (api.CirculatingSupply, error) {
+	args := m.Called(ctx, ts)
 	return args.Get(0).(api.CirculatingSupply), args.Error(1)
 }
 
@@ -36,7 +36,7 @@ func TestEconomicsModelExtraction(t *testing.T) {
 	}
 
 	mockedLens := new(MockedChainEconomicsLens)
-	mockedLens.On("StateVMCirculatingSupplyInternal", mock.Anything, expectedTs.Key()).Return(expectedCircSupply, nil)
+	mockedLens.On("CirculatingSupply", mock.Anything, expectedTs).Return(expectedCircSupply, nil)
 
 	em, err := ExtractChainEconomicsModel(ctx, mockedLens, expectedTs)
 	assert.NoError(t, err)

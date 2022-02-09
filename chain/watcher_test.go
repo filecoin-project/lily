@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/filecoin-project/lily/chain/actors/builtin"
-
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/lotus/build"
@@ -21,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/blocks"
 	"github.com/filecoin-project/lily/storage"
@@ -67,7 +66,9 @@ func TestWatcher(t *testing.T) {
 	strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 	require.NoError(t, err, "NewDatabaseFromDB")
 
-	tsIndexer, err := NewTipSetIndexer(nodeAPI, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
+	taskAPI, err := NewDataSource(nodeAPI)
+	require.NoError(t, err)
+	tsIndexer, err := NewTipSetIndexer(taskAPI, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
 	require.NoError(t, err, "NewTipSetIndexer")
 	t.Logf("initializing indexer")
 	idx := NewWatcher(tsIndexer, NullHeadNotifier{}, NewTipSetCache(0))

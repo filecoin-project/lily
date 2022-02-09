@@ -143,7 +143,7 @@ func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 	if a.Epoch != 1 {
 		prevTipset = a.ParentTipSet
 
-		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
+		prevActor, err := node.Actor(ctx, a.Address, a.ParentTipSet.Key())
 		if err != nil {
 			// if the actor exists in the current state and not in the parent state then the
 			// actor was created in the current state.

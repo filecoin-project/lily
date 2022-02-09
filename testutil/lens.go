@@ -25,6 +25,10 @@ type APIWrapper struct {
 	ctx context.Context
 }
 
+func (aw *APIWrapper) CirculatingSupply(ctx context.Context, key types.TipSetKey) (api.CirculatingSupply, error) {
+	return aw.StateVMCirculatingSupplyInternal(ctx, key)
+}
+
 func (aw *APIWrapper) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {
 	panic("implement me")
 }
@@ -34,11 +38,11 @@ func (aw *APIWrapper) Store() adt.Store {
 }
 
 func (aw *APIWrapper) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
-	return nil, xerrors.Errorf("GetExecutedAndBlockMessagesForTipset is not implemented")
+	return nil, xerrors.Errorf("ExecutedAndBlockMessages is not implemented")
 }
 
 func (aw *APIWrapper) GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {
-	return nil, xerrors.Errorf("GetMessageExecutionsForTipSet is not implemented")
+	return nil, xerrors.Errorf("MessageExecutions is not implemented")
 }
 
 func (aw *APIWrapper) Get(ctx context.Context, c cid.Cid, out interface{}) error {
