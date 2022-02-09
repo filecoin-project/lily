@@ -11,7 +11,6 @@ import (
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/power"
 
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	powermodel "github.com/filecoin-project/lily/model/actors/power"
@@ -76,7 +75,7 @@ func (p *PowerStateExtractionContext) HasPreviousState() bool {
 	return !(p.CurrTs.Height() == 1 || p.PrevState == p.CurrState)
 }
 
-func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
+func (StoragePowerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "StoragePowerExtractor")
 	defer span.End()
 

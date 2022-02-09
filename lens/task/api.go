@@ -23,6 +23,8 @@ import (
 var log = logging.Logger("lily/lens")
 
 type TaskAPI interface {
+	ChainGetTipSet(context.Context, types.TipSetKey) (*types.TipSet, error)
+
 	StateGetActor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error)
 	StateMinerPower(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.MinerPower, error)
 	StateReadState(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.ActorState, error)
@@ -71,6 +73,10 @@ func NewTaskAPI(node lens.API) (*TaskAPIImpl, error) {
 
 func (t *TaskAPIImpl) Store() adt.Store {
 	return t.node.Store()
+}
+
+func (t *TaskAPIImpl) ChainGetTipSet(ctx context.Context, key types.TipSetKey) (*types.TipSet, error) {
+	return t.node.ChainGetTipSet(ctx, key)
 }
 
 func (t *TaskAPIImpl) StateGetActor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error) {

@@ -5,14 +5,14 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
-	verifregmodel "github.com/filecoin-project/lily/model/actors/verifreg"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/xerrors"
 
+	verifregmodel "github.com/filecoin-project/lily/model/actors/verifreg"
+
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 )
@@ -74,7 +74,7 @@ func NewVerifiedRegistryExtractorContext(ctx context.Context, a ActorInfo, node 
 	}, nil
 }
 
-func (VerifiedRegistryExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
+func (VerifiedRegistryExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "VerifiedRegistryExtractor")
 	defer span.End()
 

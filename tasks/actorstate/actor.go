@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 
+	"go.opentelemetry.io/otel"
+
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model"
 	commonmodel "github.com/filecoin-project/lily/model/actors/common"
-	"go.opentelemetry.io/otel"
 )
 
 // was services/processor/tasks/common/actor.go
@@ -16,7 +17,7 @@ import (
 // ActorExtractor extracts common actor state
 type ActorExtractor struct{}
 
-func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
+func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ActorExtractor")
 	defer span.End()
 

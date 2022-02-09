@@ -116,7 +116,7 @@ func NewTipSetIndexer(node task.TaskAPI, d model.Storage, window time.Duration, 
 		case BlocksTask:
 			tsi.processors[BlocksTask] = blocks.NewTask()
 		case MessagesTask:
-			tsi.messageProcessors[MessagesTask] = messages.NewTask()
+			tsi.messageProcessors[MessagesTask] = messages.NewTask(node)
 		case ChainEconomicsTask:
 			tsi.processors[ChainEconomicsTask] = chaineconomics.NewTask(node)
 		case ActorStatesRawTask:
@@ -239,84 +239,47 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 				go t.runConsensusProcessor(ctx, p, name, next, current, results)
 			}
 		}
+
 		// If we have message or actor processors then extract the messages and receipts
 		if len(t.messageProcessors) > 0 || len(t.actorProcessors) > 0 {
-			execMessagesStart := time.Now()
-			tsMsgs, err := t.node.GetExecutedAndBlockMessagesForTipset(ctx, next, current)
-			if err == nil {
-				ll.Debugw("found executed messages", "count", len(tsMsgs.Executed), "time", time.Since(execMessagesStart))
-
-				if len(t.messageProcessors) > 0 {
-					// Start all the message processors
-					for name, p := range t.messageProcessors {
-						inFlight++
-						go t.runMessageProcessor(tctx, p, name, next, current, tsMsgs.Executed, tsMsgs.Block, results)
-					}
+			if len(t.messageProcessors) > 0 {
+				// Start all the message processors
+				for name, p := range t.messageProcessors {
+					inFlight++
+					go t.runMessageProcessor(tctx, p, name, next, current, results)
 				}
-
-				// If we have actor processors then find actors that have changed state
-				if len(t.actorProcessors) > 0 {
-					changesStart := time.Now()
-					changes, err := t.node.StateChangedActors(ctx, t.node.Store(), current, next)
-					if err == nil {
-						ll.Debugw("found actor state changes", "count", len(changes), "time", time.Since(changesStart))
-						for name, p := range t.actorProcessors {
-							inFlight++
-							go t.runActorProcessor(tctx, p, name, next, current, changes, tsMsgs.Executed, results)
-						}
-					} else {
-						ll.Errorw("failed to extract actor changes", "error", err)
-						terr := xerrors.Errorf("failed to extract actor changes: %w", err)
-						// We need to report that all actor tasks failed
-						for name := range t.actorProcessors {
-							report := &visormodel.ProcessingReport{
-								Height:         int64(current.Height()),
-								StateRoot:      current.ParentState().String(),
-								Reporter:       t.name,
-								Task:           name,
-								StartedAt:      start,
-								CompletedAt:    time.Now(),
-								Status:         visormodel.ProcessingStatusError,
-								ErrorsDetected: terr,
-							}
-							taskOutputs[name] = model.PersistableList{report}
-						}
-					}
-				}
-
-			} else {
-				ll.Errorw("failed to extract messages", "error", err)
-				terr := xerrors.Errorf("failed to extract messages: %w", err)
-				// We need to report that all message tasks failed
-				for name := range t.messageProcessors {
-					report := &visormodel.ProcessingReport{
-						Height:         int64(current.Height()),
-						StateRoot:      current.ParentState().String(),
-						Reporter:       t.name,
-						Task:           name,
-						StartedAt:      start,
-						CompletedAt:    time.Now(),
-						Status:         visormodel.ProcessingStatusError,
-						ErrorsDetected: terr,
-					}
-					taskOutputs[name] = model.PersistableList{report}
-				}
-				// We also need to report that all actor tasks failed
-				for name := range t.actorProcessors {
-					report := &visormodel.ProcessingReport{
-						Height:         int64(current.Height()),
-						StateRoot:      current.ParentState().String(),
-						Reporter:       t.name,
-						Task:           name,
-						StartedAt:      start,
-						CompletedAt:    time.Now(),
-						Status:         visormodel.ProcessingStatusError,
-						ErrorsDetected: terr,
-					}
-					taskOutputs[name] = model.PersistableList{report}
-				}
-
 			}
+
+			// If we have actor processors then find actors that have changed state
+			if len(t.actorProcessors) > 0 {
+				changesStart := time.Now()
+				changes, err := t.node.StateChangedActors(ctx, t.node.Store(), current, next)
+				if err == nil {
+					ll.Debugw("found actor state changes", "count", len(changes), "time", time.Since(changesStart))
+					for name, p := range t.actorProcessors {
+						inFlight++
+						go t.runActorProcessor(tctx, p, name, next, current, changes, results)
+					}
+				} else {
+					ll.Errorw("failed to extract actor changes", "error", err)
+					terr := xerrors.Errorf("failed to extract actor changes: %w", err)
+					// We need to report that all actor tasks failed
+					for name := range t.actorProcessors {
+						report := &visormodel.ProcessingReport{
+							Height:         int64(current.Height()),
+							StateRoot:      current.ParentState().String(),
+							Reporter:       t.name,
+							Task:           name,
+							StartedAt:      start,
+							CompletedAt:    time.Now(),
+							Status:         visormodel.ProcessingStatusError,
+							ErrorsDetected: terr,
+						}
+						taskOutputs[name] = model.PersistableList{report}
+					}
+				}
+			}
+
 		}
 
 		// If we have messages execution processors then extract internal messages
@@ -525,7 +488,7 @@ func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, nam
 	}
 }
 
-func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProcessor, name string, ts, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages, results chan *TaskResult) {
+func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProcessor, name string, ts, pts *types.TipSet, results chan *TaskResult) {
 	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.MessageProcessor.%s", name))
 	defer span.End()
 
@@ -535,7 +498,7 @@ func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p MessageProces
 	defer stop()
 	start := time.Now()
 
-	data, report, err := p.ProcessMessages(ctx, ts, pts, emsgs, blkMsgs)
+	data, report, err := p.ProcessMessages(ctx, ts, pts)
 	if err != nil {
 		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
@@ -585,7 +548,7 @@ func (t *TipSetIndexer) runConsensusProcessor(ctx context.Context, p TipSetsProc
 	}
 }
 
-func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor, name string, ts, pts *types.TipSet, actors task.ActorStateChangeDiff, emsgs []*lens.ExecutedMessage, results chan *TaskResult) {
+func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor, name string, ts, pts *types.TipSet, actors task.ActorStateChangeDiff, results chan *TaskResult) {
 	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.ActorProcessor.%s", name))
 	defer span.End()
 
@@ -595,7 +558,7 @@ func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor,
 	defer stop()
 	start := time.Now()
 
-	data, report, err := p.ProcessActors(ctx, ts, pts, actors, emsgs)
+	data, report, err := p.ProcessActors(ctx, ts, pts, actors)
 	if err != nil {
 		stats.Record(ctx, metrics.ProcessingFailure.M(1))
 		results <- &TaskResult{
@@ -741,7 +704,7 @@ type MessageProcessor interface {
 	// ProcessMessages processes messages contained within a tipset. If error is non-nil then the processor encountered a fatal error.
 	// pts is the tipset containing the messages, ts is the tipset containing the receipts
 	// Any data returned must be accompanied by a processing report.
-	ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error)
+	ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
 }
 
 type MessageExecutionProcessor interface {
@@ -751,5 +714,5 @@ type MessageExecutionProcessor interface {
 type ActorProcessor interface {
 	// ProcessActors processes a set of actors. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
-	ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors task.ActorStateChangeDiff, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error)
+	ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors task.ActorStateChangeDiff) (model.Persistable, *visormodel.ProcessingReport, error)
 }

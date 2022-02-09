@@ -4,13 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model"
 )
 
 func TestAccountExtract(t *testing.T) {
 	ae := AccountExtractor{}
-	d, err := ae.Extract(context.Background(), ActorInfo{}, []*lens.ExecutedMessage{}, nil)
+	d, err := ae.Extract(context.Background(), ActorInfo{}, nil)
 	if d != model.NoData {
 		t.Fatal("expected not to extract any extra data")
 	}

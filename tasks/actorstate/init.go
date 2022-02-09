@@ -10,7 +10,6 @@ import (
 	"golang.org/x/xerrors"
 
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	initmodel "github.com/filecoin-project/lily/model/actors/init"
@@ -27,7 +26,7 @@ func init() {
 	}
 }
 
-func (InitExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
+func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "InitExtractor")
 	defer span.End()
 

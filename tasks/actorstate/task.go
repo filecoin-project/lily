@@ -12,7 +12,6 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/lens/task"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -34,7 +33,7 @@ func NewTask(node task.TaskAPI, extracterMap ActorExtractorMap) *Task {
 	return p
 }
 
-func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates task.ActorStateChangeDiff, emsgs []*lens.ExecutedMessage) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates task.ActorStateChangeDiff) (model.Persistable, *visormodel.ProcessingReport, error) {
 	log.Debugw("processing actor state changes", "height", ts.Height(), "parent_height", pts.Height())
 
 	report := &visormodel.ProcessingReport{
@@ -68,7 +67,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	// Run each task concurrently
 	results := make(chan *ActorStateResult, len(actors))
 	for addr, ch := range actors {
-		go t.runActorStateExtraction(ctx, ts, pts, addr, ch, emsgs, results)
+		go t.runActorStateExtraction(ctx, ts, pts, addr, ch, results)
 	}
 
 	// Gather results
@@ -111,7 +110,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	return data, report, nil
 }
 
-func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pts *types.TipSet, addrStr string, ch task.ActorStateChange, emsgs []*lens.ExecutedMessage, results chan *ActorStateResult) {
+func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pts *types.TipSet, addrStr string, ch task.ActorStateChange, results chan *ActorStateResult) {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ActorCode, builtin.ActorNameByCode(ch.Actor.Code)))
 
 	res := &ActorStateResult{
@@ -144,7 +143,7 @@ func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pt
 		res.SkippedParse = true
 	} else {
 		// Parse state
-		data, err := extracter.Extract(ctx, info, emsgs, t.node)
+		data, err := extracter.Extract(ctx, info, t.node)
 		if err != nil {
 			res.Error = xerrors.Errorf("failed to extract parsed actor state: %w", err)
 			return

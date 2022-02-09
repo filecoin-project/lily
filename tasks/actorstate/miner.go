@@ -12,8 +12,9 @@ import (
 
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
-	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
+
+	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/metrics"
@@ -32,7 +33,7 @@ func init() {
 	}
 }
 
-func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
+func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "StorageMinerExtractor")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.String("actor", a.Address.String()))
@@ -72,7 +73,7 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, emsgs [
 		return nil, xerrors.Errorf("extracting miner sector changes: %w", err)
 	}
 
-	posts, err := ExtractMinerPoSts(ctx, &a, ec, emsgs, node)
+	posts, err := ExtractMinerPoSts(ctx, &a, ec, node)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner posts: %v", err)
 	}
@@ -419,7 +420,7 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 	return preCommitModel, sectorModel, sectorDealsModel, sectorEventModel, nil
 }
 
-func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtractionContext, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (minermodel.MinerSectorPostList, error) {
+func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtractionContext, node ActorStateAPI) (minermodel.MinerSectorPostList, error) {
 	_, span := otel.Tracer("").Start(ctx, "ExtractMinerPoSts")
 	defer span.End()
 	// short circuit genesis state, no PoSt messages in genesis blocks.
@@ -497,7 +498,12 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 		return nil
 	}
 
-	for _, msg := range emsgs {
+	tsMsgs, err := node.GetExecutedAndBlockMessagesForTipset(ctx, actor.TipSet, actor.ParentTipSet)
+	if err != nil {
+		return nil, xerrors.Errorf("getting executed and block messages: %w", err)
+	}
+
+	for _, msg := range tsMsgs.Executed {
 		if msg.Message.To == actor.Address && msg.Message.Method == 5 /* miner.SubmitWindowedPoSt */ {
 			if err := processPostMsg(msg); err != nil {
 				return nil, xerrors.Errorf("process post msg: %w", err)

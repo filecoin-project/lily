@@ -43,11 +43,13 @@ type ActorStateAPI interface {
 	// TODO(remove): StateMinerSectors loads the actor and then calls miner.Load which StorageMinerExtractor already has available
 	// StateMinerSectors(ctx context.Context, addr address.Address, bf *bitfield.BitField, tsk types.TipSetKey) ([]*miner.SectorOnChainInfo, error)
 	Store() adt.Store
+
+	GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error)
 }
 
 // An ActorStateExtractor extracts actor state into a persistable format
 type ActorStateExtractor interface {
-	Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error)
+	Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error)
 }
 
 // All supported actor state extractors

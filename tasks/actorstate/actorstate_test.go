@@ -34,6 +34,7 @@ import (
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
+	"github.com/filecoin-project/lily/lens"
 
 	"github.com/filecoin-project/lily/tasks/actorstate"
 	"github.com/filecoin-project/lily/testutil"
@@ -121,6 +122,11 @@ func (m *MockAPI) StateMinerPower(ctx context.Context, addr address.Address, tsk
 
 func (m *MockAPI) StateMinerSectors(ctx context.Context, a address.Address, field *bitfield.BitField, key types.TipSetKey) ([]*miner.SectorOnChainInfo, error) {
 	panic("not implemented yet")
+}
+
+func (m *MockAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 // ----------------- MockAPI Helpers ----------------------------

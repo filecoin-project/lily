@@ -2,8 +2,10 @@ package messages
 
 import (
 	"context"
+	"math"
+	"math/big"
+
 	"github.com/filecoin-project/go-state-types/exitcode"
-	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -11,25 +13,29 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
-	"math"
-	"math/big"
+
+	"github.com/filecoin-project/lily/lens/task"
+	"github.com/filecoin-project/lily/lens/util"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model"
 	derivedmodel "github.com/filecoin-project/lily/model/derived"
 	messagemodel "github.com/filecoin-project/lily/model/messages"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 )
 
-type Task struct{}
+type Task struct {
+	node task.TaskAPI
+}
 
-func NewTask() *Task {
-	return &Task{}
+func NewTask(node task.TaskAPI) *Task {
+	return &Task{
+		node: node,
+	}
 }
 
 // Note that pts is the parent tipset containing the messages, ts is the following tipset containing the receipts
-func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage, blkMsgs []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ProcessMessages")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))
@@ -40,6 +46,14 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		Height:    int64(pts.Height()),
 		StateRoot: pts.ParentState().String(),
 	}
+
+	tsMsgs, err := p.node.GetExecutedAndBlockMessagesForTipset(ctx, ts, pts)
+	if err != nil {
+		report.ErrorsDetected = xerrors.Errorf("getting executed and block messages: %w", err)
+		return nil, report, nil
+	}
+	emsgs := tsMsgs.Executed
+	blkMsgs := tsMsgs.Block
 
 	var (
 		messageResults       = make(messagemodel.Messages, 0, len(emsgs))
