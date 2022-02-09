@@ -35,6 +35,11 @@ commands:
       - run: git submodule sync
       - run: sudo apt-get install gcc libc-dev
       - run: git submodule update --init
+  validate-docker-executeable:
+    steps:
+      - run:
+          name: Run lily within the docker image
+          command: docker run --rm filecoin/lily:latest
   publish-docker-from-branch-production:
     steps:
       - run:
@@ -251,6 +256,7 @@ jobs:
       - run:
           name: Build Production Mainnet Docker image
           command: make docker-mainnet
+      - validate-docker-executeable
   test-docker-mainnet-dev:
     executor: dockerizer
     steps:
@@ -261,6 +267,7 @@ jobs:
       - run:
           name: Build Dev Mainnet Docker image
           command: make docker-mainnet-dev
+      - validate-docker-executeable
   test-docker-calibnet:
     executor: dockerizer
     steps:
@@ -271,6 +278,7 @@ jobs:
       - run:
           name: Build Production Calibnet Docker image
           command: make docker-calibnet
+      - validate-docker-executeable
   test-docker-calibnet-dev:
     executor: dockerizer
     steps:
@@ -281,6 +289,7 @@ jobs:
       - run:
           name: Build Dev Calibnet Docker image
           command: make docker-calibnet-dev
+      - validate-docker-executeable
 
 workflows:
   version: 2
