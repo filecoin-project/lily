@@ -71,7 +71,7 @@ func (InitExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.Exe
 		}
 		return out, nil
 	}
-	prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
+	prevActor, err := node.Actor(ctx, a.Address, a.ParentTipSet.Key())
 	if err != nil {
 		return nil, xerrors.Errorf("loading previous init actor: %w", err)
 	}
