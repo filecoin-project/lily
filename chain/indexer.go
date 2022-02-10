@@ -81,7 +81,6 @@ type TipSetIndexer struct {
 	consensusProcessor map[string]TipSetsProcessor
 	name               string
 	persistSlot        chan struct{} // filled with a token when a goroutine is persisting data
-	lastTipSet         *types.TipSet
 	node               task.TaskAPI
 	tasks              []string
 	inFlightTasks      int
