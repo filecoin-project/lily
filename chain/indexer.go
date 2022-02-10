@@ -3,7 +3,6 @@ package chain
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
@@ -85,6 +84,7 @@ type TipSetIndexer struct {
 	lastTipSet         *types.TipSet
 	node               task.TaskAPI
 	tasks              []string
+	inFlightTasks      int
 }
 
 type TipSetIndexerOpt func(t *TipSetIndexer)
@@ -107,8 +107,8 @@ func NewTipSetIndexer(node task.TaskAPI, d model.Storage, window time.Duration, 
 		tasks:              tasks,
 	}
 
-	for _, task := range tasks {
-		switch task {
+	for _, t := range tasks {
+		switch t {
 		case BlocksTask:
 			tsi.processors[BlocksTask] = blocks.NewTask()
 		case MessagesTask:
@@ -138,7 +138,7 @@ func NewTipSetIndexer(node task.TaskAPI, d model.Storage, window time.Duration, 
 		case ImplicitMessageTask:
 			tsi.messageProcessors[ImplicitMessageTask] = messageexecutions.NewTask(node)
 		default:
-			return nil, xerrors.Errorf("unknown task: %s", task)
+			return nil, xerrors.Errorf("unknown task: %s", t)
 		}
 	}
 
@@ -151,6 +151,7 @@ func NewTipSetIndexer(node task.TaskAPI, d model.Storage, window time.Duration, 
 
 // TipSet is called when a new tipset has been discovered
 func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Name, t.name))
 	ctx, span := otel.Tracer("").Start(ctx, "TipSetIndexer.TipSet")
 	if span.IsRecording() {
 		span.SetAttributes(
@@ -162,8 +163,6 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		)
 	}
 	defer span.End()
-
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Name, t.name))
 
 	if ts.Height() == 0 {
 		// bail, the parent of genesis is itself, there is no diff
@@ -187,9 +186,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		)
 	}
 
-	ll := log.With("current", int64(current.Height()), "next", int64(next.Height()))
-	ll.Debugw("indexing tipset")
-
+	// TODO this should be controlled by the caller of TipSet
 	var cancel func()
 	var tctx context.Context // cancellable context for the task
 	if t.window > 0 {
@@ -202,175 +199,202 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	}
 	defer cancel()
 
-	start := time.Now()
-
-	results := make(chan *TaskResult, len(t.processors)+len(t.actorProcessors)+len(t.consensusProcessor)+len(t.messageProcessors))
-	// A map to gather the persistable outputs from each task
-	taskOutputs := make(map[string]model.PersistableList, len(t.processors)+len(t.actorProcessors)+len(t.consensusProcessor)+len(t.messageProcessors))
-
-	inFlight := 0
-	for name, p := range t.processors {
-		inFlight++
-		go t.runProcessor(tctx, p, name, current, results)
-	}
-
-	for name, p := range t.consensusProcessor {
-		inFlight++
-		go t.runConsensusProcessor(ctx, p, name, next, current, results)
-	}
-
-	for name, p := range t.messageProcessors {
-		inFlight++
-		go t.runMessageProcessor(tctx, p, name, next, current, results)
-	}
-
-	// If we have actor processors then find actors that have changed state
-	if len(t.actorProcessors) > 0 {
-		changesStart := time.Now()
-		changes, err := t.node.StateChangedActors(ctx, t.node.Store(), current, next)
-		if err == nil {
-			ll.Debugw("found actor state changes", "count", len(changes), "time", time.Since(changesStart))
-			for name, p := range t.actorProcessors {
-				inFlight++
-				go t.runActorProcessor(tctx, p, name, next, current, changes, results)
-			}
-		} else {
-			ll.Errorw("failed to extract actor changes", "error", err)
-			terr := xerrors.Errorf("failed to extract actor changes: %w", err)
-			// We need to report that all actor tasks failed
-			for name := range t.actorProcessors {
-				report := &visormodel.ProcessingReport{
-					Height:         int64(current.Height()),
-					StateRoot:      current.ParentState().String(),
-					Reporter:       t.name,
-					Task:           name,
-					StartedAt:      start,
-					CompletedAt:    time.Now(),
-					Status:         visormodel.ProcessingStatusError,
-					ErrorsDetected: terr,
-				}
-				taskOutputs[name] = model.PersistableList{report}
-			}
-		}
-	}
-
-	// Wait for all tasks to complete
-	completed := map[string]struct{}{}
-	for inFlight > 0 {
-		var res *TaskResult
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-tctx.Done():
-			// if the indexers timeout (window) context is done then we have run out of time.
-			// loop over all tasks expected to complete, if they have not been completed mark them as skipped
-			// then goto persistence routine.
-			for _, name := range t.tasks {
-				if _, complete := completed[name]; !complete {
-					taskOutputs[name] = model.PersistableList{t.buildSkippedTipsetReport(ts, name, start, "indexer not ready")}
-					ll.Infow("task skipped", "task", name, "reason", "indexer not ready")
-					span.AddEvent(fmt.Sprintf("skipped task: %s", name))
-				}
-			}
-			stats.Record(ctx, metrics.TipSetSkip.M(1))
-			goto persist
-		case res = <-results:
-		}
-		span.AddEvent(fmt.Sprintf("completed task: %s", res.Task))
-		inFlight--
-
-		llt := ll.With("task", res.Task)
-
-		// Was there a fatal error?
-		if res.Error != nil {
-			llt.Errorw("task returned with error", "error", res.Error.Error())
-			// tell all the processors to close their connections to the lens, they can reopen when needed
-			return res.Error
-		}
-
-		if res.Report == nil || len(res.Report) == 0 {
-			// Nothing was done for this tipset
-			llt.Debugw("task returned with no report")
-			continue
-		}
-
-		for idx := range res.Report {
-			// Fill in some report metadata
-			res.Report[idx].Reporter = t.name
-			res.Report[idx].Task = res.Task
-			res.Report[idx].StartedAt = res.StartedAt
-			res.Report[idx].CompletedAt = res.CompletedAt
-
-			if res.Report[idx].ErrorsDetected != nil {
-				res.Report[idx].Status = visormodel.ProcessingStatusError
-			} else if res.Report[idx].StatusInformation != "" {
-				res.Report[idx].Status = visormodel.ProcessingStatusInfo
-			} else {
-				res.Report[idx].Status = visormodel.ProcessingStatusOK
-			}
-
-			llt.Debugw("task report", "status", res.Report[idx].Status, "time", res.Report[idx].CompletedAt.Sub(res.Report[idx].StartedAt))
-		}
-
-		// Persist the processing report and the data in a single transaction
-		taskOutputs[res.Task] = model.PersistableList{res.Report, res.Data}
-		completed[res.Task] = struct{}{}
-	}
-	ll.Debugw("data extracted", "time", time.Since(start))
-
-	if len(taskOutputs) == 0 {
-		// Nothing to persist
-		ll.Infow("tasks complete, nothing to persist", "total_time", time.Since(start))
-		return nil
-	}
-
-persist:
-	// wait until there is an empty slot before persisting
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case t.persistSlot <- struct{}{}:
-		// Slot was free so we can continue. Slot is now taken.
+	default:
 	}
 
-	// Persist all results
+	start := time.Now()
+
+	// "Extract" state form the chain.
+	taskResults := t.index(tctx, current, next)
+
+	// "Transform" extracted state to models.
+	modelResults := t.process(tctx, current, taskResults)
+
+	// "Load" the models into storage.
+	if err := t.persist(tctx, modelResults); err != nil {
+		return err
+	}
+	log.Infow("indexed tipsets", "duration", time.Since(start), "current", int64(current.Height()), "next", int64(next.Height()), "tipset", ts.Key().String())
+	return nil
+}
+
+func (t *TipSetIndexer) index(ctx context.Context, current, next *types.TipSet) chan *TaskResult {
+	results := make(chan *TaskResult, len(t.processors)+len(t.actorProcessors)+len(t.consensusProcessor)+len(t.messageProcessors))
+	t.startProcessors(ctx, t.processors, current, results)
+	t.inFlightTasks += len(t.processors)
+
+	t.startConsensusProcessors(ctx, t.consensusProcessor, current, next, results)
+	t.inFlightTasks += len(t.consensusProcessor)
+
+	t.startMessageProcessors(ctx, t.messageProcessors, current, next, results)
+	t.inFlightTasks += len(t.messageProcessors)
+
+	t.startActorProcessors(ctx, t.actorProcessors, current, next, results)
+	t.inFlightTasks += len(t.actorProcessors)
+
+	return results
+}
+
+type ModelResults struct {
+	Name  string
+	Model model.PersistableList
+}
+
+func (t *TipSetIndexer) process(ctx context.Context, ts *types.TipSet, results chan *TaskResult) chan *ModelResults {
+	var (
+		out       = make(chan *ModelResults, len(t.processors)+len(t.actorProcessors)+len(t.consensusProcessor)+len(t.messageProcessors))
+		completed = map[string]struct{}{}
+	)
+
 	go func() {
-		ctx, persistSpan := otel.Tracer("").Start(ctx, "TipSetIndexer.Persist")
-		if persistSpan.IsRecording() {
-			persistSpan.SetAttributes(
-				attribute.String("tipset", ts.String()),
-				attribute.Int64("height", int64(ts.Height())),
-			)
-		}
-		// free up the slot when done
-		defer func() {
-			persistSpan.End()
-			<-t.persistSlot
-		}()
+		defer close(out)
+		for t.inFlightTasks > 0 {
+			var res *TaskResult
+			select {
+			case <-ctx.Done():
+				// if the indexers timeout (window) context is done then we have run out of time.
+				// loop over all tasks expected to complete, if they have not been completed mark them as skipped.
+				skipTime := time.Now()
+				for _, name := range t.tasks {
+					if _, complete := completed[name]; !complete {
+						log.Debugw("task skipped", "task", name, "reason", "indexer not ready")
+						out <- &ModelResults{
+							Name:  name,
+							Model: model.PersistableList{t.buildSkippedTipsetReport(ts, name, skipTime, "indexer not ready")},
+						}
+					}
+				}
+				stats.Record(ctx, metrics.TipSetSkip.M(1))
+				return
+			case res = <-results:
+				t.inFlightTasks--
 
-		ll.Debugw("persisting data", "time", time.Since(start))
-		var wg sync.WaitGroup
-		wg.Add(len(taskOutputs))
+				llt := log.With("task", res.Task)
 
-		// Persist each processor's data concurrently since they don't overlap
-		for task, p := range taskOutputs {
-			go func(task string, p model.Persistable) {
-				defer wg.Done()
-				start := time.Now()
-				ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, task))
-
-				if err := t.storage.PersistBatch(ctx, p); err != nil {
-					stats.Record(ctx, metrics.PersistFailure.M(1))
-					ll.Errorw("persistence failed", "task", task, "error", err)
+				// Was there a fatal error?
+				if res.Error != nil {
+					llt.Errorw("task returned with error", "error", res.Error.Error())
 					return
 				}
-				ll.Debugw("task data persisted", "task", task, "time", time.Since(start))
-			}(task, p)
+
+				if res.Report == nil || len(res.Report) == 0 {
+					// Nothing was done for this tipset
+					llt.Debugw("task returned with no report")
+					continue
+				}
+
+				for idx := range res.Report {
+					// Fill in some report metadata
+					res.Report[idx].Reporter = t.name
+					res.Report[idx].Task = res.Task
+					res.Report[idx].StartedAt = res.StartedAt
+					res.Report[idx].CompletedAt = res.CompletedAt
+
+					if res.Report[idx].ErrorsDetected != nil {
+						res.Report[idx].Status = visormodel.ProcessingStatusError
+					} else if res.Report[idx].StatusInformation != "" {
+						res.Report[idx].Status = visormodel.ProcessingStatusInfo
+					} else {
+						res.Report[idx].Status = visormodel.ProcessingStatusOK
+					}
+
+					llt.Debugw("task report", "status", res.Report[idx].Status, "duration", res.Report[idx].CompletedAt.Sub(res.Report[idx].StartedAt))
+				}
+
+				// Persist the processing report and the data in a single transaction
+				out <- &ModelResults{
+					Name:  res.Task,
+					Model: model.PersistableList{res.Report, res.Data},
+				}
+				completed[res.Task] = struct{}{}
+			}
 		}
-		wg.Wait()
-		ll.Infow("tasks complete", "total_time", time.Since(start))
 	}()
+
+	return out
+}
+
+func (t *TipSetIndexer) persist(ctx context.Context, models chan *ModelResults) error {
+	for res := range models {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case t.persistSlot <- struct{}{}:
+		}
+		// wait until there is an empty slot before persisting
+		start := time.Now()
+		ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, res.Name))
+
+		if err := t.storage.PersistBatch(ctx, res.Model); err != nil {
+			stats.Record(ctx, metrics.PersistFailure.M(1))
+			log.Errorw("persistence failed", "task", res.Name, "error", err)
+			return err
+		}
+		log.Debugw("task data persisted", "task", res.Model, "duration", time.Since(start))
+		<-t.persistSlot
+	}
+
 	return nil
+}
+
+func (t *TipSetIndexer) startProcessors(ctx context.Context, processors map[string]TipSetProcessor, current *types.TipSet, results chan *TaskResult) {
+	for name, p := range processors {
+		log.Debugw("starting processor", "name", name)
+		go t.runProcessor(ctx, p, name, current, results)
+	}
+}
+
+func (t *TipSetIndexer) startConsensusProcessors(ctx context.Context, processors map[string]TipSetsProcessor, current, next *types.TipSet, results chan *TaskResult) {
+	for name, p := range processors {
+		log.Debugw("starting processor", "name", name)
+		go t.runConsensusProcessor(ctx, p, name, next, current, results)
+	}
+}
+
+func (t *TipSetIndexer) startMessageProcessors(ctx context.Context, processors map[string]MessageProcessor, current, next *types.TipSet, results chan *TaskResult) {
+	for name, p := range processors {
+		log.Debugw("starting processor", "name", name)
+		go t.runMessageProcessor(ctx, p, name, next, current, results)
+	}
+}
+
+func (t *TipSetIndexer) startActorProcessors(ctx context.Context, processors map[string]ActorProcessor, current, next *types.TipSet, results chan *TaskResult) {
+	// If we have actor processors then find actors that have changed state
+	if len(processors) > 0 {
+		changesStart := time.Now()
+		changes, err := t.node.StateChangedActors(ctx, t.node.Store(), current, next)
+		if err != nil {
+			// report all processor tasks as failed
+			for name := range processors {
+				results <- &TaskResult{
+					Task:  name,
+					Error: nil,
+					Report: visormodel.ProcessingReportList{&visormodel.ProcessingReport{
+						Height:         int64(current.Height()),
+						StateRoot:      current.ParentState().String(),
+						Reporter:       t.name,
+						Task:           name,
+						StartedAt:      changesStart,
+						CompletedAt:    time.Now(),
+						Status:         visormodel.ProcessingStatusError,
+						ErrorsDetected: err,
+					}},
+					Data:        nil,
+					StartedAt:   changesStart,
+					CompletedAt: time.Now(),
+				}
+			}
+			return
+		}
+
+		log.Debugw("found actor state changes", "count", len(changes), "time", time.Since(changesStart))
+		for name, p := range t.actorProcessors {
+			go t.runActorProcessor(ctx, p, name, next, current, changes, results)
+		}
+	}
 }
 
 func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, name string, ts *types.TipSet, results chan *TaskResult) {
