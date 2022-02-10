@@ -82,7 +82,9 @@ func TestWatcher(t *testing.T) {
 
 	first := <-newHeads
 
+	firstParent, err := nodeAPI.ChainGetTipSet(ctx, first[0].Val.Parents())
 	var bhs blockHeaderList
+	bhs = append(bhs, firstParent.Blocks()...)
 	for _, head := range first {
 		bhs = append(bhs, head.Val.Blocks()...)
 	}
@@ -90,7 +92,9 @@ func TestWatcher(t *testing.T) {
 	cids := bhs.Cids()
 	rounds := bhs.Rounds()
 
+	// the `current` tipset being indexed is always the parent of the passed tipset.
 	t.Logf("indexing first tipset")
+	// here we will index first parents
 	for _, hc := range first {
 		he := &HeadEvent{Type: hc.Type, TipSet: hc.Val}
 		err = idx.index(ctx, he)
@@ -102,6 +106,7 @@ func TestWatcher(t *testing.T) {
 
 	second := <-newHeads
 	t.Logf("indexing second tipset")
+	// here we will index second parents (so first)
 	for _, hc := range second {
 		he := &HeadEvent{Type: hc.Type, TipSet: hc.Val}
 		err = idx.index(ctx, he)
