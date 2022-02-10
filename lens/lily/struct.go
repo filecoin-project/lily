@@ -29,6 +29,7 @@ type LilyAPIStruct struct {
 		Store                                func() adt.Store                                                                  `perm:"read"`
 		GetExecutedAndBlockMessagesForTipset func(context.Context, *types.TipSet, *types.TipSet) (*lens.TipSetMessages, error) `perm:"read"`
 
+		LilyIndex  func(ctx context.Context, config *LilyIndexConfig) (interface{}, error)     `perm:"read"`
 		LilyWatch  func(context.Context, *LilyWatchConfig) (*schedule.JobSubmitResult, error)  `perm:"read"`
 		LilyWalk   func(context.Context, *LilyWalkConfig) (*schedule.JobSubmitResult, error)   `perm:"read"`
 		LilySurvey func(context.Context, *LilySurveyConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
@@ -117,6 +118,10 @@ func (s *LilyAPIStruct) ChainGetGenesis(ctx context.Context) (*types.TipSet, err
 
 func (s *LilyAPIStruct) Store() adt.Store {
 	return s.Internal.Store()
+}
+
+func (s *LilyAPIStruct) LilyIndex(ctx context.Context, cfg *LilyIndexConfig) (interface{}, error) {
+	return s.Internal.LilyIndex(ctx, cfg)
 }
 
 func (s *LilyAPIStruct) LilyWatch(ctx context.Context, cfg *LilyWatchConfig) (*schedule.JobSubmitResult, error) {
