@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
@@ -64,6 +65,43 @@ func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.C
 
 func (m *LilyNodeAPI) Daemonized() bool {
 	return true
+}
+
+func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interface{}, error) {
+	md := storage.Metadata{
+		JobName: cfg.Name,
+	}
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx := context.Background()
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
+	if err != nil {
+		return nil, err
+	}
+
+	taskAPI, err := task.NewTaskAPI(m)
+	if err != nil {
+		return nil, err
+	}
+
+	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+	indexer, err := chain.NewTipSetIndexer(taskAPI, strg, time.Second*10, cfg.Name, cfg.Tasks)
+	if err != nil {
+		return nil, err
+	}
+
+	ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := indexer.TipSet(ctx, ts); err != nil {
+		return nil, err
+	}
+
+	return nil, err
+
 }
 
 func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*schedule.JobSubmitResult, error) {
