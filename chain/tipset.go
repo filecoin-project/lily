@@ -12,7 +12,6 @@ import (
 // A TipSetObserver waits for notifications of new tipsets.
 type TipSetObserver interface {
 	TipSet(ctx context.Context, ts *types.TipSet) error
-	SkipTipSet(ctx context.Context, ts *types.TipSet, reason string) error
 	Close() error
 }
 

@@ -168,20 +168,20 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		return nil
 	}
 
-	var current, next *types.TipSet
+	var executed, current *types.TipSet
 	pts, err := t.node.ChainGetTipSet(ctx, ts.Parents())
 	if err != nil {
 		return err
 	}
-	next = ts
-	current = pts
+	current = ts
+	executed = pts
 
 	if span.IsRecording() {
 		span.SetAttributes(
-			attribute.String("next_tipset", next.String()),
-			attribute.Int64("next_height", int64(next.Height())),
 			attribute.String("current_tipset", current.String()),
 			attribute.Int64("current_height", int64(current.Height())),
+			attribute.String("executed_tipset", executed.String()),
+			attribute.Int64("executed_height", int64(executed.Height())),
 		)
 	}
 
@@ -207,31 +207,31 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	start := time.Now()
 
 	// "Extract" state form the chain.
-	taskResults := t.index(tctx, current, next)
+	taskResults := t.index(tctx, executed, current)
 
 	// "Transform" extracted state to models.
-	modelResults := t.process(tctx, current, taskResults)
+	modelResults := t.process(tctx, executed, taskResults)
 
 	// "Load" the models into storage.
 	if err := t.persist(tctx, modelResults); err != nil {
 		return err
 	}
-	log.Infow("indexed tipsets", "duration", time.Since(start), "current", int64(current.Height()), "next", int64(next.Height()), "tipset", ts.Key().String())
+	log.Infow("indexed tipsets", "duration", time.Since(start), "executed", int64(executed.Height()), "current", int64(current.Height()), "tipset", ts.Key().String())
 	return nil
 }
 
-func (t *TipSetIndexer) index(ctx context.Context, current, next *types.TipSet) chan *TaskResult {
+func (t *TipSetIndexer) index(ctx context.Context, executed, current *types.TipSet) chan *TaskResult {
 	results := make(chan *TaskResult, len(t.processors)+len(t.actorProcessors)+len(t.consensusProcessor)+len(t.messageProcessors))
-	t.startProcessors(ctx, t.processors, current, results)
+	t.startProcessors(ctx, t.processors, executed, results)
 	t.inFlightTasks += len(t.processors)
 
-	t.startConsensusProcessors(ctx, t.consensusProcessor, current, next, results)
+	t.startConsensusProcessors(ctx, t.consensusProcessor, executed, current, results)
 	t.inFlightTasks += len(t.consensusProcessor)
 
-	t.startMessageProcessors(ctx, t.messageProcessors, current, next, results)
+	t.startMessageProcessors(ctx, t.messageProcessors, executed, current, results)
 	t.inFlightTasks += len(t.messageProcessors)
 
-	t.startActorProcessors(ctx, t.actorProcessors, current, next, results)
+	t.startActorProcessors(ctx, t.actorProcessors, executed, current, results)
 	t.inFlightTasks += len(t.actorProcessors)
 
 	return results
@@ -339,32 +339,32 @@ func (t *TipSetIndexer) persist(ctx context.Context, models chan *ModelResults) 
 	return nil
 }
 
-func (t *TipSetIndexer) startProcessors(ctx context.Context, processors map[string]TipSetProcessor, current *types.TipSet, results chan *TaskResult) {
+func (t *TipSetIndexer) startProcessors(ctx context.Context, processors map[string]TipSetProcessor, executed *types.TipSet, results chan *TaskResult) {
 	for name, p := range processors {
 		log.Debugw("starting processor", "name", name)
-		go t.runProcessor(ctx, p, name, current, results)
+		go t.runProcessor(ctx, p, name, executed, results)
 	}
 }
 
-func (t *TipSetIndexer) startConsensusProcessors(ctx context.Context, processors map[string]TipSetsProcessor, current, next *types.TipSet, results chan *TaskResult) {
+func (t *TipSetIndexer) startConsensusProcessors(ctx context.Context, processors map[string]TipSetsProcessor, executed, current *types.TipSet, results chan *TaskResult) {
 	for name, p := range processors {
 		log.Debugw("starting processor", "name", name)
-		go t.runConsensusProcessor(ctx, p, name, next, current, results)
+		go t.runConsensusProcessor(ctx, p, name, current, executed, results)
 	}
 }
 
-func (t *TipSetIndexer) startMessageProcessors(ctx context.Context, processors map[string]MessageProcessor, current, next *types.TipSet, results chan *TaskResult) {
+func (t *TipSetIndexer) startMessageProcessors(ctx context.Context, processors map[string]MessageProcessor, executed, current *types.TipSet, results chan *TaskResult) {
 	for name, p := range processors {
 		log.Debugw("starting processor", "name", name)
-		go t.runMessageProcessor(ctx, p, name, next, current, results)
+		go t.runMessageProcessor(ctx, p, name, current, executed, results)
 	}
 }
 
-func (t *TipSetIndexer) startActorProcessors(ctx context.Context, processors map[string]ActorProcessor, current, next *types.TipSet, results chan *TaskResult) {
+func (t *TipSetIndexer) startActorProcessors(ctx context.Context, processors map[string]ActorProcessor, executed, current *types.TipSet, results chan *TaskResult) {
 	// If we have actor processors then find actors that have changed state
 	if len(processors) > 0 {
 		changesStart := time.Now()
-		changes, err := t.node.StateChangedActors(ctx, t.node.Store(), current, next)
+		changes, err := t.node.StateChangedActors(ctx, t.node.Store(), executed, current)
 		if err != nil {
 			// report all processor tasks as failed
 			for name := range processors {
@@ -372,8 +372,8 @@ func (t *TipSetIndexer) startActorProcessors(ctx context.Context, processors map
 					Task:  name,
 					Error: nil,
 					Report: visormodel.ProcessingReportList{&visormodel.ProcessingReport{
-						Height:         int64(current.Height()),
-						StateRoot:      current.ParentState().String(),
+						Height:         int64(executed.Height()),
+						StateRoot:      executed.ParentState().String(),
 						Reporter:       t.name,
 						Task:           name,
 						StartedAt:      changesStart,
@@ -391,7 +391,7 @@ func (t *TipSetIndexer) startActorProcessors(ctx context.Context, processors map
 
 		log.Debugw("found actor state changes", "count", len(changes), "time", time.Since(changesStart))
 		for name, p := range t.actorProcessors {
-			go t.runActorProcessor(ctx, p, name, next, current, changes, results)
+			go t.runActorProcessor(ctx, p, name, current, executed, changes, results)
 		}
 	}
 }
@@ -540,34 +540,6 @@ func (t *TipSetIndexer) Close() error {
 	return nil
 }
 
-// SkipTipSet writes a processing report to storage for each indexer task to indicate that the entire tipset
-// was not processed.
-func (t *TipSetIndexer) SkipTipSet(ctx context.Context, ts *types.TipSet, reason string) error {
-	var reports model.PersistableList
-
-	timestamp := time.Now()
-	for name := range t.processors {
-		reports = append(reports, t.buildSkippedTipsetReport(ts, name, timestamp, reason))
-	}
-
-	for name := range t.messageProcessors {
-		reports = append(reports, t.buildSkippedTipsetReport(ts, name, timestamp, reason))
-	}
-
-	for name := range t.actorProcessors {
-		reports = append(reports, t.buildSkippedTipsetReport(ts, name, timestamp, reason))
-	}
-
-	for name := range t.consensusProcessor {
-		reports = append(reports, t.buildSkippedTipsetReport(ts, name, timestamp, reason))
-	}
-
-	if err := t.storage.PersistBatch(ctx, reports...); err != nil {
-		return xerrors.Errorf("persist reports: %w", err)
-	}
-	return nil
-}
-
 func (t *TipSetIndexer) buildSkippedTipsetReport(ts *types.TipSet, taskName string, timestamp time.Time, reason string) *visormodel.ProcessingReport {
 	return &visormodel.ProcessingReport{
 		Height:            int64(ts.Height()),
@@ -595,24 +567,24 @@ type TaskResult struct {
 type TipSetProcessor interface {
 	// ProcessTipSet processes a tipset. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
-	ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
+	ProcessTipSet(ctx context.Context, current *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
 }
 
 type TipSetsProcessor interface {
 	// ProcessTipSets processes a parent and child tipset. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
-	ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error)
+	ProcessTipSets(ctx context.Context, current, executed *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error)
 }
 
 type MessageProcessor interface {
 	// ProcessMessages processes messages contained within a tipset. If error is non-nil then the processor encountered a fatal error.
 	// pts is the tipset containing the messages, ts is the tipset containing the receipts
 	// Any data returned must be accompanied by a processing report.
-	ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
+	ProcessMessages(ctx context.Context, current *types.TipSet, executed *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
 }
 
 type ActorProcessor interface {
 	// ProcessActors processes a set of actors. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
-	ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, actors task.ActorStateChangeDiff) (model.Persistable, *visormodel.ProcessingReport, error)
+	ProcessActors(ctx context.Context, current *types.TipSet, executed *types.TipSet, actors task.ActorStateChangeDiff) (model.Persistable, *visormodel.ProcessingReport, error)
 }
