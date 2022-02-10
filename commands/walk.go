@@ -6,10 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/filecoin-project/lily/chain/actors/builtin"
-	"github.com/filecoin-project/lily/lens/lily"
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
+
+	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/lens/lily"
 
 	"github.com/filecoin-project/lily/chain"
 )
@@ -96,9 +97,14 @@ var WalkCmd = &cli.Command{
 			walkName = walkFlags.name
 		}
 
+		tasks := strings.Split(walkFlags.tasks, ",")
+		if walkFlags.tasks == "*" {
+			tasks = chain.AllTasks
+		}
+
 		cfg := &lily.LilyWalkConfig{
 			Name:                walkName,
-			Tasks:               strings.Split(walkFlags.tasks, ","),
+			Tasks:               tasks,
 			Window:              walkFlags.window,
 			From:                walkFlags.from,
 			To:                  walkFlags.to,
