@@ -83,6 +83,8 @@ func TestWatcher(t *testing.T) {
 	first := <-newHeads
 
 	firstParent, err := nodeAPI.ChainGetTipSet(ctx, first[0].Val.Parents())
+	require.NoError(t, err)
+
 	var bhs blockHeaderList
 	bhs = append(bhs, firstParent.Blocks()...)
 	for _, head := range first {

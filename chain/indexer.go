@@ -81,7 +81,6 @@ type TipSetIndexer struct {
 	consensusProcessor map[string]TipSetsProcessor
 	name               string
 	persistSlot        chan struct{} // filled with a token when a goroutine is persisting data
-	lastTipSet         *types.TipSet
 	node               tasks.DataSource
 	tasks              []string
 	inFlightTasks      int
@@ -226,32 +225,6 @@ func (t *TipSetIndexer) index(ctx context.Context, current, next *types.TipSet) 
 	t.startProcessors(ctx, t.processors, current, results)
 	t.inFlightTasks += len(t.processors)
 
-<<<<<<< HEAD
-	// If we have actor processors then find actors that have changed state
-	if len(t.actorProcessors) > 0 {
-		changesStart := time.Now()
-		changes, err := t.node.ActorStateChanges(ctx, current, next)
-		if err == nil {
-			ll.Debugw("found actor state changes", "count", len(changes), "time", time.Since(changesStart))
-			for name, p := range t.actorProcessors {
-				inFlight++
-				go t.runActorProcessor(tctx, p, name, next, current, changes, results)
-			}
-		} else {
-			ll.Errorw("failed to extract actor changes", "error", err)
-			terr := xerrors.Errorf("failed to extract actor changes: %w", err)
-			// We need to report that all actor tasks failed
-			for name := range t.actorProcessors {
-				report := &visormodel.ProcessingReport{
-					Height:         int64(current.Height()),
-					StateRoot:      current.ParentState().String(),
-					Reporter:       t.name,
-					Task:           name,
-					StartedAt:      start,
-					CompletedAt:    time.Now(),
-					Status:         visormodel.ProcessingStatusError,
-					ErrorsDetected: terr,
-=======
 	t.startConsensusProcessors(ctx, t.consensusProcessor, current, next, results)
 	t.inFlightTasks += len(t.consensusProcessor)
 
@@ -292,7 +265,6 @@ func (t *TipSetIndexer) process(ctx context.Context, ts *types.TipSet, results c
 							Model: model.PersistableList{t.buildSkippedTipsetReport(ts, name, skipTime, "indexer not ready")},
 						}
 					}
->>>>>>> 5188183 (ETL indexer pipeline pattern)
 				}
 				stats.Record(ctx, metrics.TipSetSkip.M(1))
 				return
@@ -341,33 +313,8 @@ func (t *TipSetIndexer) process(ctx context.Context, ts *types.TipSet, results c
 		}
 	}()
 
-<<<<<<< HEAD
-		for idx := range res.Report {
-			// Fill in some report metadata
-			res.Report[idx].Reporter = t.name
-			res.Report[idx].Task = res.Task
-			res.Report[idx].StartedAt = res.StartedAt
-			res.Report[idx].CompletedAt = res.CompletedAt
-
-			if err := res.Report[idx].ErrorsDetected; err != nil {
-				// because error is just an interface it may hold a value of any concrete type that implements it, and if
-				// said type has unexported fields json marshaling will fail when persisting.
-				e, ok := err.(error)
-				if ok {
-					res.Report[idx].ErrorsDetected = &struct {
-						Error string
-					}{Error: e.Error()}
-				}
-				res.Report[idx].Status = visormodel.ProcessingStatusError
-			} else if res.Report[idx].StatusInformation != "" {
-				res.Report[idx].Status = visormodel.ProcessingStatusInfo
-			} else {
-				res.Report[idx].Status = visormodel.ProcessingStatusOK
-			}
-=======
 	return out
 }
->>>>>>> 5188183 (ETL indexer pipeline pattern)
 
 func (t *TipSetIndexer) persist(ctx context.Context, models chan *ModelResults) error {
 	for res := range models {
