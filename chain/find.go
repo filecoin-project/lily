@@ -6,11 +6,12 @@ import (
 
 	mapset "github.com/deckarep/golang-set"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lotus/chain/types"
+	"golang.org/x/xerrors"
+
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/storage"
-	"github.com/filecoin-project/lotus/chain/types"
-	"golang.org/x/xerrors"
 )
 
 type GapIndexer struct {
@@ -85,6 +86,7 @@ func (g *GapIndexer) Run(ctx context.Context) error {
 	}
 	findLog.Infow("found skipped epochs", "count", len(skipGaps))
 
+	// TODO you can probably remove this in favor of the builtin processor
 	var nullRounds visor.ProcessingReportList
 	for _, epoch := range nulls {
 		select {

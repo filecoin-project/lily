@@ -28,6 +28,7 @@ import (
 	"github.com/filecoin-project/lily/tasks/blocks"
 	"github.com/filecoin-project/lily/tasks/chaineconomics"
 	"github.com/filecoin-project/lily/tasks/consensus"
+	"github.com/filecoin-project/lily/tasks/indexer"
 	"github.com/filecoin-project/lily/tasks/messageexecutions"
 	"github.com/filecoin-project/lily/tasks/messages"
 	"github.com/filecoin-project/lily/tasks/msapprovals"
@@ -75,6 +76,7 @@ var _ TipSetObserver = (*TipSetIndexer)(nil)
 type TipSetIndexer struct {
 	window            time.Duration
 	storage           model.Storage
+	builtinProcessors map[string]BuiltinProcessor
 	tipsetProcessors  map[string]TipSetProcessor
 	tipsetsProcessors map[string]TipSetsProcessor
 	actorProcessors   map[string]ActorProcessor
@@ -97,12 +99,17 @@ func NewTipSetIndexer(node task.TaskAPI, d model.Storage, window time.Duration, 
 		window:            window,
 		name:              name,
 		persistSlot:       make(chan struct{}, 1), // allow one concurrent persistence job
+		builtinProcessors: map[string]BuiltinProcessor{},
 		tipsetProcessors:  map[string]TipSetProcessor{},
 		tipsetsProcessors: map[string]TipSetsProcessor{},
 		actorProcessors:   map[string]ActorProcessor{},
 		node:              node,
 		tasks:             tasks,
 	}
+
+	// add the builtin processors
+	// TODO you can be more specific and call this the null round processor or something.
+	tsi.builtinProcessors["builtin"] = indexer.NewTask(node)
 
 	for _, t := range tasks {
 		switch t {
@@ -221,15 +228,16 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 }
 
 func (t *TipSetIndexer) index(ctx context.Context, executed, current *types.TipSet) chan *TaskResult {
-	results := make(chan *TaskResult, len(t.tipsetProcessors)+len(t.actorProcessors)+len(t.tipsetsProcessors))
+	t.inFlightTasks = len(t.tipsetProcessors) + len(t.actorProcessors) + len(t.tipsetsProcessors) + len(t.builtinProcessors)
+	results := make(chan *TaskResult, t.inFlightTasks)
+
+	t.startBuiltinProcessors(ctx, t.builtinProcessors, current, results)
+
 	t.startProcessors(ctx, t.tipsetProcessors, current, results)
-	t.inFlightTasks += len(t.tipsetProcessors)
 
 	t.startMessageProcessors(ctx, t.tipsetsProcessors, executed, current, results)
-	t.inFlightTasks += len(t.tipsetsProcessors)
 
 	t.startActorProcessors(ctx, t.actorProcessors, executed, current, results)
-	t.inFlightTasks += len(t.actorProcessors)
 
 	return results
 }
@@ -386,6 +394,43 @@ func (t *TipSetIndexer) startActorProcessors(ctx context.Context, processors map
 	}
 }
 
+func (t *TipSetIndexer) startBuiltinProcessors(ctx context.Context, processors map[string]BuiltinProcessor, current *types.TipSet, results chan *TaskResult) {
+	for name, p := range processors {
+		log.Debugw("starting processor", "name", name)
+		go t.runBuiltinProcessor(ctx, p, name, current, results)
+	}
+}
+
+func (t *TipSetIndexer) runBuiltinProcessor(ctx context.Context, p BuiltinProcessor, name string, ts *types.TipSet, results chan *TaskResult) {
+	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.Processor.%s", name))
+	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
+	stats.Record(ctx, metrics.TipsetHeight.M(int64(ts.Height())))
+	stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+	defer stop()
+	start := time.Now()
+
+	report, err := p.ProcessTipSet(ctx, ts)
+	if err != nil {
+		stats.Record(ctx, metrics.ProcessingFailure.M(1))
+		results <- &TaskResult{
+			Task:        name,
+			Error:       err,
+			StartedAt:   start,
+			CompletedAt: time.Now(),
+		}
+		return
+	}
+	results <- &TaskResult{
+		Task:        name,
+		Report:      report,
+		StartedAt:   start,
+		CompletedAt: time.Now(),
+	}
+
+}
+
 func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, name string, ts *types.TipSet, results chan *TaskResult) {
 	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("TipSetIndexer.Processor.%s", name))
 	defer span.End()
@@ -540,4 +585,9 @@ type ActorProcessor interface {
 	// ProcessActors processes a set of actors. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
 	ProcessActors(ctx context.Context, current *types.TipSet, executed *types.TipSet, actors task.ActorStateChangeDiff) (model.Persistable, *visormodel.ProcessingReport, error)
+}
+
+// Other names could be: SystemProcessor, ReportProcessor, IndexProcessor, this is basically a TipSetProcessor with no models
+type BuiltinProcessor interface {
+	ProcessTipSet(ctx context.Context, current *types.TipSet) (visormodel.ProcessingReportList, error)
 }
