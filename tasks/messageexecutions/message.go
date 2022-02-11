@@ -26,7 +26,7 @@ func NewTask(node task.TaskAPI) *Task {
 	}
 }
 
-func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (p *Task) ProcessTipSets(ctx context.Context, ts *types.TipSet, pts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ProcessMessageExecutions")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))

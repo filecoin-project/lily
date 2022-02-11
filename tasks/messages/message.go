@@ -35,8 +35,8 @@ func NewTask(node task.TaskAPI) *Task {
 }
 
 // Note that pts is the parent tipset containing the messages, ts is the following tipset containing the receipts
-func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "ProcessMessages")
+func (p *Task) ProcessTipSets(ctx context.Context, ts *types.TipSet, pts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "ProcessTipSets")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))
 	}
