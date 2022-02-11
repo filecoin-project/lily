@@ -10,6 +10,16 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
+	"github.com/filecoin-project/lotus/chain/state"
+	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/xerrors"
+
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
@@ -29,15 +39,6 @@ import (
 	"github.com/filecoin-project/lily/tasks/messageexecutions"
 	"github.com/filecoin-project/lily/tasks/messages"
 	"github.com/filecoin-project/lily/tasks/msapprovals"
-	"github.com/filecoin-project/lotus/chain/state"
-	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/ipfs/go-cid"
-	logging "github.com/ipfs/go-log/v2"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
 )
 
 const (
@@ -434,7 +435,15 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 			res.Report[idx].StartedAt = res.StartedAt
 			res.Report[idx].CompletedAt = res.CompletedAt
 
-			if res.Report[idx].ErrorsDetected != nil {
+			if err := res.Report[idx].ErrorsDetected; err != nil {
+				// because error is just an interface it may hold a value of any concrete type that implements it, and if
+				// said type has unexported fields json marshaling will fail when persisting.
+				e, ok := err.(error)
+				if ok {
+					res.Report[idx].ErrorsDetected = &struct {
+						Error string
+					}{Error: e.Error()}
+				}
 				res.Report[idx].Status = visormodel.ProcessingStatusError
 			} else if res.Report[idx].StatusInformation != "" {
 				res.Report[idx].Status = visormodel.ProcessingStatusInfo
