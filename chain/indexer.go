@@ -3,6 +3,7 @@ package chain
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
@@ -84,7 +85,7 @@ type TipSetIndexer struct {
 	persistSlot       chan struct{} // filled with a token when a goroutine is persisting data
 	node              task.TaskAPI
 	tasks             []string
-	inFlightTasks     int
+	wg                sync.WaitGroup
 }
 
 type TipSetIndexerOpt func(t *TipSetIndexer)
@@ -227,9 +228,10 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	return nil
 }
 
+// index runs all processors then closes the channel when they are complete. The caller must drain the channel.
 func (t *TipSetIndexer) index(ctx context.Context, executed, current *types.TipSet) chan *TaskResult {
-	t.inFlightTasks = len(t.tipsetProcessors) + len(t.actorProcessors) + len(t.tipsetsProcessors) + len(t.builtinProcessors)
-	results := make(chan *TaskResult, t.inFlightTasks)
+	rs := len(t.tipsetProcessors) + len(t.actorProcessors) + len(t.tipsetsProcessors) + len(t.builtinProcessors)
+	results := make(chan *TaskResult, rs)
 
 	t.startBuiltinProcessors(ctx, t.builtinProcessors, current, results)
 
@@ -239,6 +241,11 @@ func (t *TipSetIndexer) index(ctx context.Context, executed, current *types.TipS
 
 	t.startActorProcessors(ctx, t.actorProcessors, executed, current, results)
 
+	// wait for all processors to complete, then close the channel
+	go func() {
+		t.wg.Wait()
+		close(results)
+	}()
 	return results
 }
 
@@ -247,6 +254,7 @@ type ModelResults struct {
 	Model model.PersistableList
 }
 
+// process processes and writes all models to the returned channel, closing when complete.
 func (t *TipSetIndexer) process(ctx context.Context, ts *types.TipSet, results chan *TaskResult) chan *ModelResults {
 	var (
 		out       = make(chan *ModelResults, len(t.tipsetProcessors)+len(t.actorProcessors)+len(t.tipsetsProcessors))
@@ -255,8 +263,7 @@ func (t *TipSetIndexer) process(ctx context.Context, ts *types.TipSet, results c
 
 	go func() {
 		defer close(out)
-		for t.inFlightTasks > 0 {
-			var res *TaskResult
+		for res := range results {
 			select {
 			case <-ctx.Done():
 				// if the indexers timeout (window) context is done then we have run out of time.
@@ -273,48 +280,47 @@ func (t *TipSetIndexer) process(ctx context.Context, ts *types.TipSet, results c
 				}
 				stats.Record(ctx, metrics.TipSetSkip.M(1))
 				return
-			case res = <-results:
-				t.inFlightTasks--
-
-				llt := log.With("task", res.Task)
-
-				// Was there a fatal error?
-				if res.Error != nil {
-					llt.Errorw("task returned with error", "error", res.Error.Error())
-					return
-				}
-
-				if res.Report == nil || len(res.Report) == 0 {
-					// Nothing was done for this tipset
-					llt.Debugw("task returned with no report")
-					continue
-				}
-
-				for idx := range res.Report {
-					// Fill in some report metadata
-					res.Report[idx].Reporter = t.name
-					res.Report[idx].Task = res.Task
-					res.Report[idx].StartedAt = res.StartedAt
-					res.Report[idx].CompletedAt = res.CompletedAt
-
-					if res.Report[idx].ErrorsDetected != nil {
-						res.Report[idx].Status = visormodel.ProcessingStatusError
-					} else if res.Report[idx].StatusInformation != "" {
-						res.Report[idx].Status = visormodel.ProcessingStatusInfo
-					} else {
-						res.Report[idx].Status = visormodel.ProcessingStatusOK
-					}
-
-					llt.Debugw("task report", "status", res.Report[idx].Status, "duration", res.Report[idx].CompletedAt.Sub(res.Report[idx].StartedAt))
-				}
-
-				// Persist the processing report and the data in a single transaction
-				out <- &ModelResults{
-					Name:  res.Task,
-					Model: model.PersistableList{res.Report, res.Data},
-				}
-				completed[res.Task] = struct{}{}
+			default:
 			}
+
+			llt := log.With("task", res.Task)
+
+			// Was there a fatal error?
+			if res.Error != nil {
+				llt.Errorw("task returned with error", "error", res.Error.Error())
+				return
+			}
+
+			if res.Report == nil || len(res.Report) == 0 {
+				// Nothing was done for this tipset
+				llt.Debugw("task returned with no report")
+				continue
+			}
+
+			for idx := range res.Report {
+				// Fill in some report metadata
+				res.Report[idx].Reporter = t.name
+				res.Report[idx].Task = res.Task
+				res.Report[idx].StartedAt = res.StartedAt
+				res.Report[idx].CompletedAt = res.CompletedAt
+
+				if res.Report[idx].ErrorsDetected != nil {
+					res.Report[idx].Status = visormodel.ProcessingStatusError
+				} else if res.Report[idx].StatusInformation != "" {
+					res.Report[idx].Status = visormodel.ProcessingStatusInfo
+				} else {
+					res.Report[idx].Status = visormodel.ProcessingStatusOK
+				}
+
+				llt.Debugw("task report", "status", res.Report[idx].Status, "duration", res.Report[idx].CompletedAt.Sub(res.Report[idx].StartedAt))
+			}
+
+			// Persist the processing report and the data in a single transaction
+			out <- &ModelResults{
+				Name:  res.Task,
+				Model: model.PersistableList{res.Report, res.Data},
+			}
+			completed[res.Task] = struct{}{}
 		}
 	}()
 
@@ -346,15 +352,15 @@ func (t *TipSetIndexer) persist(ctx context.Context, models chan *ModelResults) 
 
 func (t *TipSetIndexer) startProcessors(ctx context.Context, processors map[string]TipSetProcessor, current *types.TipSet, results chan *TaskResult) {
 	for name, p := range processors {
-		log.Debugw("starting processor", "name", name)
-		go t.runProcessor(ctx, p, name, current, results)
+		log.Infow("starting processor", "name", name)
+		t.runProcessor(ctx, p, name, current, results)
 	}
 }
 
 func (t *TipSetIndexer) startMessageProcessors(ctx context.Context, processors map[string]TipSetsProcessor, executed, current *types.TipSet, results chan *TaskResult) {
 	for name, p := range processors {
-		log.Debugw("starting processor", "name", name)
-		go t.runMessageProcessor(ctx, p, name, current, executed, results)
+		log.Infow("starting processor", "name", name)
+		t.runMessageProcessor(ctx, p, name, current, executed, results)
 	}
 }
 
@@ -389,15 +395,16 @@ func (t *TipSetIndexer) startActorProcessors(ctx context.Context, processors map
 
 		log.Debugw("found actor state changes", "count", len(changes), "time", time.Since(changesStart))
 		for name, p := range t.actorProcessors {
-			go t.runActorProcessor(ctx, p, name, current, executed, changes, results)
+			log.Infow("starting processor", "name", name)
+			t.runActorProcessor(ctx, p, name, current, executed, changes, results)
 		}
 	}
 }
 
 func (t *TipSetIndexer) startBuiltinProcessors(ctx context.Context, processors map[string]BuiltinProcessor, current *types.TipSet, results chan *TaskResult) {
 	for name, p := range processors {
-		log.Debugw("starting processor", "name", name)
-		go t.runBuiltinProcessor(ctx, p, name, current, results)
+		log.Infow("starting processor", "name", name)
+		t.runBuiltinProcessor(ctx, p, name, current, results)
 	}
 }
 
@@ -411,24 +418,28 @@ func (t *TipSetIndexer) runBuiltinProcessor(ctx context.Context, p BuiltinProces
 	defer stop()
 	start := time.Now()
 
-	report, err := p.ProcessTipSet(ctx, ts)
-	if err != nil {
-		stats.Record(ctx, metrics.ProcessingFailure.M(1))
+	t.wg.Add(1)
+	go func() {
+		defer t.wg.Done()
+
+		report, err := p.ProcessTipSet(ctx, ts)
+		if err != nil {
+			stats.Record(ctx, metrics.ProcessingFailure.M(1))
+			results <- &TaskResult{
+				Task:        name,
+				Error:       err,
+				StartedAt:   start,
+				CompletedAt: time.Now(),
+			}
+			return
+		}
 		results <- &TaskResult{
 			Task:        name,
-			Error:       err,
+			Report:      report,
 			StartedAt:   start,
 			CompletedAt: time.Now(),
 		}
-		return
-	}
-	results <- &TaskResult{
-		Task:        name,
-		Report:      report,
-		StartedAt:   start,
-		CompletedAt: time.Now(),
-	}
-
+	}()
 }
 
 func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, name string, ts *types.TipSet, results chan *TaskResult) {
@@ -441,24 +452,29 @@ func (t *TipSetIndexer) runProcessor(ctx context.Context, p TipSetProcessor, nam
 	defer stop()
 	start := time.Now()
 
-	data, report, err := p.ProcessTipSet(ctx, ts)
-	if err != nil {
-		stats.Record(ctx, metrics.ProcessingFailure.M(1))
+	t.wg.Add(1)
+	go func() {
+		defer t.wg.Done()
+
+		data, report, err := p.ProcessTipSet(ctx, ts)
+		if err != nil {
+			stats.Record(ctx, metrics.ProcessingFailure.M(1))
+			results <- &TaskResult{
+				Task:        name,
+				Error:       err,
+				StartedAt:   start,
+				CompletedAt: time.Now(),
+			}
+			return
+		}
 		results <- &TaskResult{
 			Task:        name,
-			Error:       err,
+			Report:      visormodel.ProcessingReportList{report},
+			Data:        data,
 			StartedAt:   start,
 			CompletedAt: time.Now(),
 		}
-		return
-	}
-	results <- &TaskResult{
-		Task:        name,
-		Report:      visormodel.ProcessingReportList{report},
-		Data:        data,
-		StartedAt:   start,
-		CompletedAt: time.Now(),
-	}
+	}()
 }
 
 func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p TipSetsProcessor, name string, ts, pts *types.TipSet, results chan *TaskResult) {
@@ -471,24 +487,29 @@ func (t *TipSetIndexer) runMessageProcessor(ctx context.Context, p TipSetsProces
 	defer stop()
 	start := time.Now()
 
-	data, report, err := p.ProcessTipSets(ctx, ts, pts)
-	if err != nil {
-		stats.Record(ctx, metrics.ProcessingFailure.M(1))
+	t.wg.Add(1)
+	go func() {
+		defer t.wg.Done()
+
+		data, report, err := p.ProcessTipSets(ctx, ts, pts)
+		if err != nil {
+			stats.Record(ctx, metrics.ProcessingFailure.M(1))
+			results <- &TaskResult{
+				Task:        name,
+				Error:       err,
+				StartedAt:   start,
+				CompletedAt: time.Now(),
+			}
+			return
+		}
 		results <- &TaskResult{
 			Task:        name,
-			Error:       err,
+			Report:      visormodel.ProcessingReportList{report},
+			Data:        data,
 			StartedAt:   start,
 			CompletedAt: time.Now(),
 		}
-		return
-	}
-	results <- &TaskResult{
-		Task:        name,
-		Report:      visormodel.ProcessingReportList{report},
-		Data:        data,
-		StartedAt:   start,
-		CompletedAt: time.Now(),
-	}
+	}()
 }
 
 func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor, name string, ts, pts *types.TipSet, actors task.ActorStateChangeDiff, results chan *TaskResult) {
@@ -501,24 +522,29 @@ func (t *TipSetIndexer) runActorProcessor(ctx context.Context, p ActorProcessor,
 	defer stop()
 	start := time.Now()
 
-	data, report, err := p.ProcessActors(ctx, ts, pts, actors)
-	if err != nil {
-		stats.Record(ctx, metrics.ProcessingFailure.M(1))
+	t.wg.Add(1)
+	go func() {
+		defer t.wg.Done()
+
+		data, report, err := p.ProcessActors(ctx, ts, pts, actors)
+		if err != nil {
+			stats.Record(ctx, metrics.ProcessingFailure.M(1))
+			results <- &TaskResult{
+				Task:        name,
+				Error:       err,
+				StartedAt:   start,
+				CompletedAt: time.Now(),
+			}
+			return
+		}
 		results <- &TaskResult{
 			Task:        name,
-			Error:       err,
+			Report:      visormodel.ProcessingReportList{report},
+			Data:        data,
 			StartedAt:   start,
 			CompletedAt: time.Now(),
 		}
-		return
-	}
-	results <- &TaskResult{
-		Task:        name,
-		Report:      visormodel.ProcessingReportList{report},
-		Data:        data,
-		StartedAt:   start,
-		CompletedAt: time.Now(),
-	}
+	}()
 }
 
 func (t *TipSetIndexer) Close() error {
