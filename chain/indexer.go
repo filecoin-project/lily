@@ -22,11 +22,11 @@ import (
 	"github.com/filecoin-project/lily/lens/task"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
+	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks/actorstate"
 	"github.com/filecoin-project/lily/tasks/blocks"
 	"github.com/filecoin-project/lily/tasks/chaineconomics"
 	"github.com/filecoin-project/lily/tasks/consensus"
-	"github.com/filecoin-project/lily/tasks/indexer"
 	"github.com/filecoin-project/lily/tasks/messageexecutions"
 	"github.com/filecoin-project/lily/tasks/messages"
 	"github.com/filecoin-project/lily/tasks/msapprovals"
@@ -98,14 +98,9 @@ func NewTipSetIndexer(node task.TaskAPI, d model.Storage, window time.Duration, 
 		tasks:   tasks,
 	}
 
-	builtinProcessors := map[string]BuiltinProcessor{}
 	tipsetProcessors := map[string]TipSetProcessor{}
 	tipsetsProcessors := map[string]TipSetsProcessor{}
 	actorProcessors := map[string]ActorProcessor{}
-
-	// add the builtin processors
-	// TODO you can be more specific and call this the null round processor or something.
-	builtinProcessors["builtin"] = indexer.NewTask(node)
 
 	for _, t := range tasks {
 		switch t {
@@ -230,4 +225,27 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 func (t *TipSetIndexer) Close() error {
 	return t.exporter.Close()
+}
+
+type TipSetProcessor interface {
+	// ProcessTipSet processes a tipset. If error is non-nil then the processor encountered a fatal error.
+	// Any data returned must be accompanied by a processing report.
+	ProcessTipSet(ctx context.Context, current *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
+}
+
+type TipSetsProcessor interface {
+	// ProcessTipSets processes sequential tipsts (a parent and a child, or an executed and a current). If error is non-nil then the processor encountered a fatal error.
+	// Any data returned must be accompanied by a processing report.
+	ProcessTipSets(ctx context.Context, current *types.TipSet, executed *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
+}
+
+type ActorProcessor interface {
+	// ProcessActors processes a set of actors. If error is non-nil then the processor encountered a fatal error.
+	// Any data returned must be accompanied by a processing report.
+	ProcessActors(ctx context.Context, current *types.TipSet, executed *types.TipSet, actors task.ActorStateChangeDiff) (model.Persistable, *visormodel.ProcessingReport, error)
+}
+
+// Other names could be: SystemProcessor, ReportProcessor, IndexProcessor, this is basically a TipSetProcessor with no models
+type BuiltinProcessor interface {
+	ProcessTipSet(ctx context.Context, current *types.TipSet) (visormodel.ProcessingReportList, error)
 }
