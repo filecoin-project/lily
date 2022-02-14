@@ -144,7 +144,6 @@ func TestMarketPredicates(t *testing.T) {
 		Address:      market.Address,
 		TipSet:       newStateTs,
 		ParentTipSet: oldStateTs,
-		Epoch:        1, // must be greater than zero else this has special handling for genesis block.
 	}
 
 	ex := actorstate.StorageMarketExtractor{}

@@ -43,7 +43,7 @@ func NewVerifiedRegistryExtractorContext(ctx context.Context, a ActorInfo, node 
 	}
 
 	prevState := curState
-	if a.Epoch != 0 {
+	if a.TipSet.Height() != 0 {
 		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
 		if err != nil {
 			// if the actor exists in the current state and not in the parent state then the
@@ -57,7 +57,7 @@ func NewVerifiedRegistryExtractorContext(ctx context.Context, a ActorInfo, node 
 					Store:     node.Store(),
 				}, nil
 			}
-			return nil, xerrors.Errorf("loading previous verified registry actor at tipset %s epoch %d: %w", a.ParentTipSet.Key(), a.Epoch, err)
+			return nil, xerrors.Errorf("loading previous verified registry actor at tipset %s epoch %d: %w", a.ParentTipSet.Key(), a.TipSet.Height(), err)
 		}
 
 		prevState, err = verifreg.Load(node.Store(), prevActor)

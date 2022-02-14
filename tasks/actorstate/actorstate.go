@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
@@ -20,13 +19,11 @@ import (
 var log = logging.Logger("lily/tasks")
 
 type ActorInfo struct {
-	Actor           types.Actor
-	ChangeType      task.ChangeType
-	Address         address.Address
-	ParentStateRoot cid.Cid
-	Epoch           abi.ChainEpoch
-	TipSet          *types.TipSet
-	ParentTipSet    *types.TipSet
+	Actor        types.Actor
+	ChangeType   task.ChangeType
+	Address      address.Address
+	TipSet       *types.TipSet
+	ParentTipSet *types.TipSet
 }
 
 // ActorStateAPI is the minimal subset of lens.API that is needed for actor state extraction

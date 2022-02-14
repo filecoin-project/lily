@@ -81,7 +81,7 @@ func ExtractMultisigTransactions(ctx context.Context, a ActorInfo, ec *MsigExtra
 		}
 		out = append(out, &multisigmodel.MultisigTransaction{
 			MultisigID:    a.Address.String(),
-			StateRoot:     a.ParentStateRoot.String(),
+			StateRoot:     a.TipSet.ParentState().String(),
 			Height:        int64(ec.CurrTs.Height()),
 			TransactionID: added.TxID,
 			To:            added.Tx.To.String(),
@@ -99,7 +99,7 @@ func ExtractMultisigTransactions(ctx context.Context, a ActorInfo, ec *MsigExtra
 		}
 		out = append(out, &multisigmodel.MultisigTransaction{
 			MultisigID:    a.Address.String(),
-			StateRoot:     a.ParentStateRoot.String(),
+			StateRoot:     a.TipSet.ParentState().String(),
 			Height:        int64(ec.CurrTs.Height()),
 			TransactionID: modded.TxID,
 			To:            modded.To.To.String(),
@@ -134,7 +134,7 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 	}
 
 	prevState := curState
-	if a.Epoch != 1 {
+	if a.TipSet.Height() != 1 {
 		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
 		if err != nil {
 			// if the actor exists in the current state and not in the parent state then the
@@ -148,7 +148,7 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 					Store:     node.Store(),
 				}, nil
 			}
-			return nil, xerrors.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet.Key(), a.Epoch, err)
+			return nil, xerrors.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet.Key(), a.TipSet.Height(), err)
 		}
 
 		prevState, err = multisig.Load(node.Store(), prevActor)

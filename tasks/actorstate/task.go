@@ -3,6 +3,7 @@ package actorstate
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/filecoin-project/go-address"
@@ -23,6 +24,8 @@ type Task struct {
 	node task.TaskAPI
 
 	extracterMap ActorExtractorMap
+
+	apwg sync.WaitGroup
 }
 
 func NewTask(node task.TaskAPI, extracterMap ActorExtractorMap) *Task {
@@ -33,19 +36,21 @@ func NewTask(node task.TaskAPI, extracterMap ActorExtractorMap) *Task {
 	return p
 }
 
-func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.TipSet, candidates task.ActorStateChangeDiff) (model.Persistable, *visormodel.ProcessingReport, error) {
-	log.Debugw("processing actor state changes", "height", ts.Height(), "parent_height", pts.Height())
+func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, executed *types.TipSet, candidates task.ActorStateChangeDiff) (model.Persistable, *visormodel.ProcessingReport, error) {
+	log.Debugw("processing actor state changes", "height", current.Height(), "parent_height", executed.Height())
 
+	// TODO this is the wrong height and stateroot
+	// actors state exists in current and was produced by executing messages in executed
 	report := &visormodel.ProcessingReport{
-		Height:    int64(pts.Height()),
-		StateRoot: pts.ParentState().String(),
+		Height:    int64(current.Height()),
+		StateRoot: current.ParentState().String(),
 		Status:    visormodel.ProcessingStatusOK,
 	}
 
-	ll := log.With("height", int64(ts.Height()))
+	ll := log.With("height", int64(current.Height()))
 
 	// Filter to just allowed actors
-	actors := make(map[string]task.ActorStateChange)
+	actors := make(map[address.Address]task.ActorStateChange)
 	for addr, ch := range candidates {
 		if t.extracterMap.Allow(ch.Actor.Code) {
 			actors[addr] = ch
@@ -64,18 +69,18 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	start := time.Now()
 	ll.Debugw("found actor state changes", "count", len(actors))
 
-	// Run each task concurrently
 	results := make(chan *ActorStateResult, len(actors))
-	for addr, ch := range actors {
-		go t.runActorStateExtraction(ctx, ts, pts, addr, ch, results)
-	}
+	// closes result when done, runs extraction for each actor in actors concurrently.
+	t.startActorStateExtraction(ctx, current, executed, actors, results)
 
 	// Gather results
-	inFlight := len(actors)
-	for inFlight > 0 {
-		res := <-results
-		inFlight--
-		lla := log.With("height", int64(ts.Height()), "actor", builtin.ActorNameByCode(res.Code), "address", res.Address)
+	for res := range results {
+		select {
+		case <-ctx.Done():
+			return data, report, ctx.Err()
+		default:
+		}
+		lla := log.With("height", int64(current.Height()), "actor", builtin.ActorNameByCode(res.Code), "address", res.Address)
 
 		if res.Error != nil {
 			lla.Errorw("actor returned with error", "error", res.Error.Error())
@@ -83,7 +88,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 				Code:    res.Code.String(),
 				Name:    builtin.ActorNameByCode(res.Code),
 				Head:    res.Head.String(),
-				Address: res.Address,
+				Address: res.Address.String(),
 				Error:   res.Error.Error(),
 			})
 			continue
@@ -97,7 +102,7 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 		data = append(data, res.Data)
 	}
 
-	log.Debugw("completed processing actor state changes", "height", ts.Height(), "success", len(actors)-len(errorsDetected)-skippedActors, "errors", len(errorsDetected), "skipped", skippedActors, "time", time.Since(start))
+	log.Debugw("completed processing actor state changes", "height", current.Height(), "success", len(actors)-len(errorsDetected)-skippedActors, "errors", len(errorsDetected), "skipped", skippedActors, "time", time.Since(start))
 
 	if skippedActors > 0 {
 		report.StatusInformation = fmt.Sprintf("did not parse %d actors", skippedActors)
@@ -110,52 +115,54 @@ func (t *Task) ProcessActors(ctx context.Context, ts *types.TipSet, pts *types.T
 	return data, report, nil
 }
 
-func (t *Task) runActorStateExtraction(ctx context.Context, ts *types.TipSet, pts *types.TipSet, addrStr string, ch task.ActorStateChange, results chan *ActorStateResult) {
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.ActorCode, builtin.ActorNameByCode(ch.Actor.Code)))
+func (t *Task) startActorStateExtraction(ctx context.Context, current, executed *types.TipSet, actors task.ActorStateChangeDiff, results chan *ActorStateResult) {
+	for addr, ac := range actors {
+		addr := addr
+		ac := ac
 
-	res := &ActorStateResult{
-		Code:    ch.Actor.Code,
-		Head:    ch.Actor.Head,
-		Address: addrStr,
+		t.apwg.Add(1)
+		go func() {
+			defer t.apwg.Done()
+
+			ctx, _ = tag.New(ctx, tag.Upsert(metrics.ActorCode, builtin.ActorNameByCode(ac.Actor.Code)))
+
+			res := &ActorStateResult{
+				Code:    ac.Actor.Code,
+				Head:    ac.Actor.Head,
+				Address: addr,
+			}
+
+			info := ActorInfo{
+				Actor:        ac.Actor,
+				ChangeType:   ac.ChangeType,
+				Address:      addr,
+				TipSet:       current,
+				ParentTipSet: executed,
+			}
+			extracter, ok := t.extracterMap.GetExtractor(info.Actor.Code)
+			if !ok {
+				res.SkippedParse = true
+			} else {
+				// Parse state
+				data, err := extracter.Extract(ctx, info, t.node)
+				if err != nil {
+					res.Error = xerrors.Errorf("failed to extract parsed actor state: %w", err)
+				}
+				res.Data = data
+			}
+			results <- res
+		}()
 	}
-	defer func() {
-		results <- res
+	go func() {
+		t.apwg.Wait()
+		close(results)
 	}()
-
-	addr, err := address.NewFromString(addrStr)
-	if err != nil {
-		res.Error = xerrors.Errorf("failed to parse address: %w", err)
-		return
-	}
-
-	info := ActorInfo{
-		Actor:           ch.Actor,
-		ChangeType:      ch.ChangeType,
-		Address:         addr,
-		ParentStateRoot: ts.ParentState(),
-		Epoch:           ts.Height(),
-		TipSet:          ts,
-		ParentTipSet:    pts,
-	}
-
-	extracter, ok := t.extracterMap.GetExtractor(ch.Actor.Code)
-	if !ok {
-		res.SkippedParse = true
-	} else {
-		// Parse state
-		data, err := extracter.Extract(ctx, info, t.node)
-		if err != nil {
-			res.Error = xerrors.Errorf("failed to extract parsed actor state: %w", err)
-			return
-		}
-		res.Data = data
-	}
 }
 
 type ActorStateResult struct {
 	Code         cid.Cid
 	Head         cid.Cid
-	Address      string
+	Address      address.Address
 	Error        error
 	SkippedParse bool
 	Data         model.Persistable

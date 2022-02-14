@@ -49,12 +49,12 @@ func NewMarketStateExtractionContext(ctx context.Context, a ActorInfo, node Acto
 
 	prevTipset := a.TipSet
 	prevState := curState
-	if a.Epoch != 0 {
+	if a.TipSet.Height() != 0 {
 		prevTipset = a.ParentTipSet
 
 		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
 		if err != nil {
-			return nil, xerrors.Errorf("loading previous market actor state at tipset %s epoch %d: %w", a.ParentTipSet.Key(), a.Epoch, err)
+			return nil, xerrors.Errorf("loading previous market actor state at tipset %s epoch %d: %w", a.ParentTipSet.Key(), a.TipSet.Height(), err)
 		}
 
 		prevState, err = market.Load(node.Store(), prevActor)

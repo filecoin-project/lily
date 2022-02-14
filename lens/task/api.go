@@ -157,7 +157,7 @@ type ActorStateChange struct {
 	ChangeType ChangeType
 }
 
-type ActorStateChangeDiff map[string]ActorStateChange
+type ActorStateChangeDiff map[address.Address]ActorStateChange
 
 func GetActorStateChanges(ctx context.Context, store adt.Store, current, next *types.TipSet) (ActorStateChangeDiff, error) {
 	if current.Height() == 0 {
@@ -194,8 +194,12 @@ func GetActorStateChanges(ctx context.Context, store adt.Store, current, next *t
 		return nil, err
 	}
 
-	out := map[string]ActorStateChange{}
-	for addr, act := range actors {
+	out := map[address.Address]ActorStateChange{}
+	for addrStr, act := range actors {
+		addr, err := address.NewFromString(addrStr)
+		if err != nil {
+			return nil, err
+		}
 		out[addr] = ActorStateChange{
 			Actor:      act,
 			ChangeType: ChangeTypeUnknown,
@@ -205,13 +209,13 @@ func GetActorStateChanges(ctx context.Context, store adt.Store, current, next *t
 }
 
 func GetGenesisActors(ctx context.Context, store adt.Store, genesis *types.TipSet) (ActorStateChangeDiff, error) {
-	out := map[string]ActorStateChange{}
+	out := map[address.Address]ActorStateChange{}
 	tree, err := state.LoadStateTree(store, genesis.ParentState())
 	if err != nil {
 		return nil, err
 	}
 	if err := tree.ForEach(func(addr address.Address, act *types.Actor) error {
-		out[addr.String()] = ActorStateChange{
+		out[addr] = ActorStateChange{
 			Actor:      *act,
 			ChangeType: ChangeTypeAdd,
 		}
@@ -230,7 +234,7 @@ func fastDiff(ctx context.Context, store adt.Store, oldR, newR cid.Cid) (ActorSt
 	}))
 	if err == nil {
 		buf := bytes.NewReader(nil)
-		out := map[string]ActorStateChange{}
+		out := map[address.Address]ActorStateChange{}
 		for _, change := range changes {
 			addr, err := address.NewFromBytes([]byte(change.Key))
 			if err != nil {
@@ -263,7 +267,7 @@ func fastDiff(ctx context.Context, store adt.Store, oldR, newR cid.Cid) (ActorSt
 					return nil, err
 				}
 			}
-			out[addr.String()] = ch
+			out[addr] = ch
 		}
 		return out, nil
 	}

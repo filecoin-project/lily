@@ -40,11 +40,9 @@ func TestActorExtractor(t *testing.T) {
 
 	expectedHieght := abi.ChainEpoch(1)
 	info := actorstate.ActorInfo{
-		Actor:           act,
-		Address:         expectedAddress,
-		ParentStateRoot: tipset.ParentState(),
-		Epoch:           expectedHieght,
-		TipSet:          tipset,
+		Actor:   act,
+		Address: expectedAddress,
+		TipSet:  tipset,
 	}
 
 	ex := actorstate.ActorExtractor{}

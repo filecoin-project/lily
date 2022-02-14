@@ -64,7 +64,7 @@ func TestRewardExtractV0(t *testing.T) {
 	require.True(t, ok)
 	require.NotNil(t, cr)
 
-	assert.EqualValues(t, info.ParentStateRoot.String(), cr.StateRoot, "StateRoot")
+	assert.EqualValues(t, info.TipSet.ParentState().String(), cr.StateRoot, "StateRoot")
 	assert.EqualValues(t, state.CumsumBaseline.String(), cr.CumSumBaseline, "CumSumBaseline")
 	assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
 	assert.EqualValues(t, state.EffectiveBaselinePower.String(), cr.EffectiveBaselinePower, "EffectiveBaselinePower")
@@ -113,7 +113,7 @@ func TestRewardExtractV2(t *testing.T) {
 	require.True(t, ok)
 	require.NotNil(t, cr)
 
-	assert.EqualValues(t, info.ParentStateRoot.String(), cr.StateRoot, "StateRoot")
+	assert.EqualValues(t, info.TipSet.ParentState().String(), cr.StateRoot, "StateRoot")
 	assert.EqualValues(t, state.CumsumBaseline.String(), cr.CumSumBaseline, "CumSumBaseline")
 	assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
 	assert.EqualValues(t, state.EffectiveBaselinePower.String(), cr.EffectiveBaselinePower, "EffectiveBaselinePower")
@@ -162,7 +162,7 @@ func TestRewardExtractV3(t *testing.T) {
 	require.True(t, ok)
 	require.NotNil(t, cr)
 
-	assert.EqualValues(t, info.ParentStateRoot.String(), cr.StateRoot, "StateRoot")
+	assert.EqualValues(t, info.TipSet.ParentState().String(), cr.StateRoot, "StateRoot")
 	assert.EqualValues(t, state.CumsumBaseline.String(), cr.CumSumBaseline, "CumSumBaseline")
 	assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
 	assert.EqualValues(t, state.EffectiveBaselinePower.String(), cr.EffectiveBaselinePower, "EffectiveBaselinePower")
@@ -211,7 +211,7 @@ func TestRewardExtractV4(t *testing.T) {
 	require.True(t, ok)
 	require.NotNil(t, cr)
 
-	assert.EqualValues(t, info.ParentStateRoot.String(), cr.StateRoot, "StateRoot")
+	assert.EqualValues(t, info.TipSet.ParentState().String(), cr.StateRoot, "StateRoot")
 	assert.EqualValues(t, state.CumsumBaseline.String(), cr.CumSumBaseline, "CumSumBaseline")
 	assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
 	assert.EqualValues(t, state.EffectiveBaselinePower.String(), cr.EffectiveBaselinePower, "EffectiveBaselinePower")

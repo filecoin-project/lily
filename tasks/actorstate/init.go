@@ -34,7 +34,7 @@ func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAP
 	defer stop()
 
 	// genesis state.
-	if a.Epoch == 1 {
+	if a.TipSet.Height() == 1 {
 		initActorState, err := init_.Load(node.Store(), &a.Actor)
 		if err != nil {
 			return nil, err
@@ -59,10 +59,10 @@ func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAP
 				return err
 			}
 			out = append(out, &initmodel.IdAddress{
-				Height:    int64(a.Epoch),
+				Height:    int64(a.TipSet.Height()),
 				ID:        idAddr.String(),
 				Address:   addr.String(),
-				StateRoot: a.ParentStateRoot.String(),
+				StateRoot: a.TipSet.ParentState().String(),
 			})
 			return nil
 		}); err != nil {
@@ -93,16 +93,16 @@ func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAP
 	out := make(initmodel.IdAddressList, 0, len(addressChanges.Added)+len(addressChanges.Modified))
 	for _, newAddr := range addressChanges.Added {
 		out = append(out, &initmodel.IdAddress{
-			Height:    int64(a.Epoch),
-			StateRoot: a.ParentStateRoot.String(),
+			Height:    int64(a.TipSet.Height()),
+			StateRoot: a.TipSet.ParentState().String(),
 			ID:        newAddr.ID.String(),
 			Address:   newAddr.PK.String(),
 		})
 	}
 	for _, modAddr := range addressChanges.Modified {
 		out = append(out, &initmodel.IdAddress{
-			Height:    int64(a.Epoch),
-			StateRoot: a.ParentStateRoot.String(),
+			Height:    int64(a.TipSet.Height()),
+			StateRoot: a.TipSet.ParentState().String(),
 			ID:        modAddr.To.ID.String(),
 			Address:   modAddr.To.PK.String(),
 		})
