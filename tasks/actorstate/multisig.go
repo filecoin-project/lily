@@ -81,7 +81,7 @@ func ExtractMultisigTransactions(ctx context.Context, a ActorInfo, ec *MsigExtra
 		}
 		out = append(out, &multisigmodel.MultisigTransaction{
 			MultisigID:    a.Address.String(),
-			StateRoot:     a.TipSet.ParentState().String(),
+			StateRoot:     a.Current.ParentState().String(),
 			Height:        int64(ec.CurrTs.Height()),
 			TransactionID: added.TxID,
 			To:            added.Tx.To.String(),
@@ -99,7 +99,7 @@ func ExtractMultisigTransactions(ctx context.Context, a ActorInfo, ec *MsigExtra
 		}
 		out = append(out, &multisigmodel.MultisigTransaction{
 			MultisigID:    a.Address.String(),
-			StateRoot:     a.TipSet.ParentState().String(),
+			StateRoot:     a.Current.ParentState().String(),
 			Height:        int64(ec.CurrTs.Height()),
 			TransactionID: modded.TxID,
 			To:            modded.To.To.String(),
@@ -134,8 +134,8 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 	}
 
 	prevState := curState
-	if a.TipSet.Height() != 1 {
-		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
+	if a.Current.Height() != 1 {
+		prevActor, err := node.StateGetActor(ctx, a.Address, a.Executed.Key())
 		if err != nil {
 			// if the actor exists in the current state and not in the parent state then the
 			// actor was created in the current state.
@@ -144,11 +144,11 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 					PrevState: prevState,
 					CurrActor: &a.Actor,
 					CurrState: curState,
-					CurrTs:    a.TipSet,
+					CurrTs:    a.Current,
 					Store:     node.Store(),
 				}, nil
 			}
-			return nil, xerrors.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet.Key(), a.TipSet.Height(), err)
+			return nil, xerrors.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.Executed.Key(), a.Current.Height(), err)
 		}
 
 		prevState, err = multisig.Load(node.Store(), prevActor)
@@ -161,7 +161,7 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 		PrevState: prevState,
 		CurrActor: &a.Actor,
 		CurrState: curState,
-		CurrTs:    a.TipSet,
+		CurrTs:    a.Current,
 		Store:     node.Store(),
 	}, nil
 }

@@ -34,8 +34,8 @@ func NewPowerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 	}
 
 	prevState := curState
-	if a.TipSet.Height() != 1 {
-		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
+	if a.Current.Height() != 1 {
+		prevActor, err := node.StateGetActor(ctx, a.Address, a.Executed.Key())
 		if err != nil {
 			// if the actor exists in the current state and not in the parent state then the
 			// actor was created in the current state.
@@ -43,11 +43,11 @@ func NewPowerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 				return &PowerStateExtractionContext{
 					PrevState: prevState,
 					CurrState: curState,
-					CurrTs:    a.TipSet,
+					CurrTs:    a.Current,
 					Store:     node.Store(),
 				}, nil
 			}
-			return nil, xerrors.Errorf("loading previous power actor at tipset %s epoch %d: %w", a.ParentTipSet.Key(), a.TipSet.Height(), err)
+			return nil, xerrors.Errorf("loading previous power actor at tipset %s epoch %d: %w", a.Executed.Key(), a.Current.Height(), err)
 		}
 
 		prevState, err = power.Load(node.Store(), prevActor)
@@ -58,7 +58,7 @@ func NewPowerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 	return &PowerStateExtractionContext{
 		PrevState: prevState,
 		CurrState: curState,
-		CurrTs:    a.TipSet,
+		CurrTs:    a.Current,
 		Store:     node.Store(),
 	}, nil
 }

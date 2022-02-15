@@ -23,9 +23,9 @@ func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateA
 
 	result := &commonmodel.ActorTaskResult{
 		Actor: &commonmodel.Actor{
-			Height:    int64(a.TipSet.Height()),
+			Height:    int64(a.Current.Height()),
 			ID:        a.Address.String(),
-			StateRoot: a.TipSet.ParentState().String(),
+			StateRoot: a.Current.ParentState().String(),
 			Code:      builtin.ActorNameByCode(a.Actor.Code),
 			Head:      a.Actor.Head.String(),
 			Balance:   a.Actor.Balance.String(),
@@ -38,7 +38,7 @@ func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateA
 		return result, nil
 	}
 
-	ast, err := node.StateReadState(ctx, a.Address, a.TipSet.Key())
+	ast, err := node.StateReadState(ctx, a.Address, a.Current.Key())
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (ActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateA
 	}
 
 	result.State = &commonmodel.ActorState{
-		Height: int64(a.TipSet.Height()),
+		Height: int64(a.Current.Height()),
 		Head:   a.Actor.Head.String(),
 		Code:   a.Actor.Code.String(),
 		State:  string(state),

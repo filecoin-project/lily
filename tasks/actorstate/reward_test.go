@@ -53,7 +53,7 @@ func TestRewardExtractV0(t *testing.T) {
 	info := actorstate.ActorInfo{
 		Actor:   types.Actor{Code: sa0builtin.RewardActorCodeID, Head: stateCid},
 		Address: power.Address,
-		TipSet:  stateTs,
+		Current: stateTs,
 	}
 
 	ex := actorstate.RewardExtractor{}
@@ -64,7 +64,7 @@ func TestRewardExtractV0(t *testing.T) {
 	require.True(t, ok)
 	require.NotNil(t, cr)
 
-	assert.EqualValues(t, info.TipSet.ParentState().String(), cr.StateRoot, "StateRoot")
+	assert.EqualValues(t, info.Current.ParentState().String(), cr.StateRoot, "StateRoot")
 	assert.EqualValues(t, state.CumsumBaseline.String(), cr.CumSumBaseline, "CumSumBaseline")
 	assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
 	assert.EqualValues(t, state.EffectiveBaselinePower.String(), cr.EffectiveBaselinePower, "EffectiveBaselinePower")
@@ -102,7 +102,7 @@ func TestRewardExtractV2(t *testing.T) {
 	info := actorstate.ActorInfo{
 		Actor:   types.Actor{Code: sa2builtin.RewardActorCodeID, Head: stateCid},
 		Address: power.Address,
-		TipSet:  stateTs,
+		Current: stateTs,
 	}
 
 	ex := actorstate.RewardExtractor{}
@@ -113,7 +113,7 @@ func TestRewardExtractV2(t *testing.T) {
 	require.True(t, ok)
 	require.NotNil(t, cr)
 
-	assert.EqualValues(t, info.TipSet.ParentState().String(), cr.StateRoot, "StateRoot")
+	assert.EqualValues(t, info.Current.ParentState().String(), cr.StateRoot, "StateRoot")
 	assert.EqualValues(t, state.CumsumBaseline.String(), cr.CumSumBaseline, "CumSumBaseline")
 	assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
 	assert.EqualValues(t, state.EffectiveBaselinePower.String(), cr.EffectiveBaselinePower, "EffectiveBaselinePower")
@@ -151,7 +151,7 @@ func TestRewardExtractV3(t *testing.T) {
 	info := actorstate.ActorInfo{
 		Actor:   types.Actor{Code: sa3builtin.RewardActorCodeID, Head: stateCid},
 		Address: power.Address,
-		TipSet:  stateTs,
+		Current: stateTs,
 	}
 
 	ex := actorstate.RewardExtractor{}
@@ -162,7 +162,7 @@ func TestRewardExtractV3(t *testing.T) {
 	require.True(t, ok)
 	require.NotNil(t, cr)
 
-	assert.EqualValues(t, info.TipSet.ParentState().String(), cr.StateRoot, "StateRoot")
+	assert.EqualValues(t, info.Current.ParentState().String(), cr.StateRoot, "StateRoot")
 	assert.EqualValues(t, state.CumsumBaseline.String(), cr.CumSumBaseline, "CumSumBaseline")
 	assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
 	assert.EqualValues(t, state.EffectiveBaselinePower.String(), cr.EffectiveBaselinePower, "EffectiveBaselinePower")
@@ -200,7 +200,7 @@ func TestRewardExtractV4(t *testing.T) {
 	info := actorstate.ActorInfo{
 		Actor:   types.Actor{Code: sa4builtin.RewardActorCodeID, Head: stateCid},
 		Address: power.Address,
-		TipSet:  stateTs,
+		Current: stateTs,
 	}
 
 	ex := actorstate.RewardExtractor{}
@@ -211,7 +211,7 @@ func TestRewardExtractV4(t *testing.T) {
 	require.True(t, ok)
 	require.NotNil(t, cr)
 
-	assert.EqualValues(t, info.TipSet.ParentState().String(), cr.StateRoot, "StateRoot")
+	assert.EqualValues(t, info.Current.ParentState().String(), cr.StateRoot, "StateRoot")
 	assert.EqualValues(t, state.CumsumBaseline.String(), cr.CumSumBaseline, "CumSumBaseline")
 	assert.EqualValues(t, state.CumsumRealized.String(), cr.CumSumRealized, "CumSumRealized")
 	assert.EqualValues(t, state.EffectiveBaselinePower.String(), cr.EffectiveBaselinePower, "EffectiveBaselinePower")

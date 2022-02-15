@@ -140,10 +140,10 @@ func TestMarketPredicates(t *testing.T) {
 	mapi.setActor(newStateTs.Key(), market.Address, &types.Actor{Code: sabuiltin.StorageMarketActorCodeID, Head: newStateCid})
 
 	info := actorstate.ActorInfo{
-		Actor:        types.Actor{Code: sabuiltin.StorageMarketActorCodeID, Head: newStateCid},
-		Address:      market.Address,
-		TipSet:       newStateTs,
-		ParentTipSet: oldStateTs,
+		Actor:    types.Actor{Code: sabuiltin.StorageMarketActorCodeID, Head: newStateCid},
+		Address:  market.Address,
+		Current:  newStateTs,
+		Executed: oldStateTs,
 	}
 
 	ex := actorstate.StorageMarketExtractor{}

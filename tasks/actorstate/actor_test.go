@@ -42,7 +42,7 @@ func TestActorExtractor(t *testing.T) {
 	info := actorstate.ActorInfo{
 		Actor:   act,
 		Address: expectedAddress,
-		TipSet:  tipset,
+		Current: tipset,
 	}
 
 	ex := actorstate.ActorExtractor{}

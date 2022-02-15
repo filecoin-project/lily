@@ -69,10 +69,10 @@ func TestInitExtractorV0(t *testing.T) {
 		mapi.setActor(stateTs.Key(), init_.Address, &types.Actor{Code: sa0builtin.InitActorCodeID, Head: stateCid})
 
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa0builtin.InitActorCodeID, Head: stateCid},
-			Address:      init_.Address,
-			TipSet:       stateTs,
-			ParentTipSet: mapi.fakeTipset(minerAddr, 2, WithHeight(1)),
+			Actor:    types.Actor{Code: sa0builtin.InitActorCodeID, Head: stateCid},
+			Address:  init_.Address,
+			Current:  stateTs,
+			Executed: mapi.fakeTipset(minerAddr, 2, WithHeight(1)),
 		}
 
 		ex := actorstate.InitExtractor{}
@@ -121,10 +121,10 @@ func TestInitExtractorV0(t *testing.T) {
 		mapi.setActor(stateTs.Key(), init_.Address, &types.Actor{Code: sa0builtin.InitActorCodeID, Head: stateCid})
 
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa0builtin.InitActorCodeID, Head: stateCid},
-			Address:      init_.Address,
-			ParentTipSet: baseTs,
-			TipSet:       stateTs,
+			Actor:    types.Actor{Code: sa0builtin.InitActorCodeID, Head: stateCid},
+			Address:  init_.Address,
+			Executed: baseTs,
+			Current:  stateTs,
 		}
 
 		ex := actorstate.InitExtractor{}
@@ -175,10 +175,10 @@ func TestInitExtractorV2(t *testing.T) {
 		mapi.setActor(stateTs.Key(), init_.Address, &types.Actor{Code: sa2builtin.InitActorCodeID, Head: stateCid})
 
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa2builtin.InitActorCodeID, Head: stateCid},
-			Address:      init_.Address,
-			TipSet:       stateTs,
-			ParentTipSet: mapi.fakeTipset(minerAddr, 2, WithHeight(1)),
+			Actor:    types.Actor{Code: sa2builtin.InitActorCodeID, Head: stateCid},
+			Address:  init_.Address,
+			Current:  stateTs,
+			Executed: mapi.fakeTipset(minerAddr, 2, WithHeight(1)),
 		}
 
 		ex := actorstate.InitExtractor{}
@@ -227,10 +227,10 @@ func TestInitExtractorV2(t *testing.T) {
 		mapi.setActor(stateTs.Key(), init_.Address, &types.Actor{Code: sa2builtin.InitActorCodeID, Head: stateCid})
 
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa2builtin.InitActorCodeID, Head: stateCid},
-			Address:      init_.Address,
-			ParentTipSet: baseTs,
-			TipSet:       stateTs,
+			Actor:    types.Actor{Code: sa2builtin.InitActorCodeID, Head: stateCid},
+			Address:  init_.Address,
+			Executed: baseTs,
+			Current:  stateTs,
 		}
 
 		ex := actorstate.InitExtractor{}
@@ -281,10 +281,10 @@ func TestInitExtractorV3(t *testing.T) {
 		mapi.setActor(stateTs.Key(), init_.Address, &types.Actor{Code: sa3builtin.InitActorCodeID, Head: stateCid})
 
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa3builtin.InitActorCodeID, Head: stateCid},
-			Address:      init_.Address,
-			TipSet:       stateTs,
-			ParentTipSet: mapi.fakeTipset(minerAddr, 2, WithHeight(1)),
+			Actor:    types.Actor{Code: sa3builtin.InitActorCodeID, Head: stateCid},
+			Address:  init_.Address,
+			Current:  stateTs,
+			Executed: mapi.fakeTipset(minerAddr, 2, WithHeight(1)),
 		}
 
 		ex := actorstate.InitExtractor{}
@@ -333,10 +333,10 @@ func TestInitExtractorV3(t *testing.T) {
 		mapi.setActor(stateTs.Key(), init_.Address, &types.Actor{Code: sa3builtin.InitActorCodeID, Head: stateCid})
 
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa3builtin.InitActorCodeID, Head: stateCid},
-			Address:      init_.Address,
-			ParentTipSet: baseTs,
-			TipSet:       stateTs,
+			Actor:    types.Actor{Code: sa3builtin.InitActorCodeID, Head: stateCid},
+			Address:  init_.Address,
+			Executed: baseTs,
+			Current:  stateTs,
 		}
 
 		ex := actorstate.InitExtractor{}
@@ -387,10 +387,10 @@ func TestInitExtractorV4(t *testing.T) {
 		mapi.setActor(stateTs.Key(), init_.Address, &types.Actor{Code: sa4builtin.InitActorCodeID, Head: stateCid})
 
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa4builtin.InitActorCodeID, Head: stateCid},
-			Address:      init_.Address,
-			TipSet:       stateTs,
-			ParentTipSet: mapi.fakeTipset(minerAddr, 2, WithHeight(1)),
+			Actor:    types.Actor{Code: sa4builtin.InitActorCodeID, Head: stateCid},
+			Address:  init_.Address,
+			Current:  stateTs,
+			Executed: mapi.fakeTipset(minerAddr, 2, WithHeight(1)),
 		}
 
 		ex := actorstate.InitExtractor{}
@@ -439,10 +439,10 @@ func TestInitExtractorV4(t *testing.T) {
 		mapi.setActor(stateTs.Key(), init_.Address, &types.Actor{Code: sa4builtin.InitActorCodeID, Head: stateCid})
 
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa4builtin.InitActorCodeID, Head: stateCid},
-			Address:      init_.Address,
-			ParentTipSet: baseTs,
-			TipSet:       stateTs,
+			Actor:    types.Actor{Code: sa4builtin.InitActorCodeID, Head: stateCid},
+			Address:  init_.Address,
+			Executed: baseTs,
+			Current:  stateTs,
 		}
 
 		ex := actorstate.InitExtractor{}

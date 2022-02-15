@@ -39,15 +39,11 @@ func NewTask(node task.TaskAPI, extracterMap ActorExtractorMap) *Task {
 func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, executed *types.TipSet, candidates task.ActorStateChangeDiff) (model.Persistable, *visormodel.ProcessingReport, error) {
 	log.Debugw("processing actor state changes", "height", current.Height(), "parent_height", executed.Height())
 
-	// TODO this is the wrong height and stateroot
-	// actors state exists in current and was produced by executing messages in executed
 	report := &visormodel.ProcessingReport{
 		Height:    int64(current.Height()),
 		StateRoot: current.ParentState().String(),
 		Status:    visormodel.ProcessingStatusOK,
 	}
-
-	ll := log.With("height", int64(current.Height()))
 
 	// Filter to just allowed actors
 	actors := make(map[address.Address]task.ActorStateChange)
@@ -60,6 +56,7 @@ func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, execute
 	data := make(model.PersistableList, 0, len(actors))
 	errorsDetected := make([]*ActorStateError, 0, len(actors))
 	skippedActors := 0
+	ll := log.With("height", int64(current.Height()))
 
 	if len(actors) == 0 {
 		ll.Debugw("no actor state changes found")
@@ -95,7 +92,7 @@ func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, execute
 		}
 
 		if res.SkippedParse {
-			lla.Debugw("skipped actor without extracter")
+			lla.Debugw("skipped actor without extractor")
 			skippedActors++
 		}
 
@@ -133,18 +130,18 @@ func (t *Task) startActorStateExtraction(ctx context.Context, current, executed 
 			}
 
 			info := ActorInfo{
-				Actor:        ac.Actor,
-				ChangeType:   ac.ChangeType,
-				Address:      addr,
-				TipSet:       current,
-				ParentTipSet: executed,
+				Actor:      ac.Actor,
+				ChangeType: ac.ChangeType,
+				Address:    addr,
+				Current:    current,
+				Executed:   executed,
 			}
-			extracter, ok := t.extracterMap.GetExtractor(info.Actor.Code)
+			extractor, ok := t.extracterMap.GetExtractor(info.Actor.Code)
 			if !ok {
 				res.SkippedParse = true
 			} else {
 				// Parse state
-				data, err := extracter.Extract(ctx, info, t.node)
+				data, err := extractor.Extract(ctx, info, t.node)
 				if err != nil {
 					res.Error = xerrors.Errorf("failed to extract parsed actor state: %w", err)
 				}

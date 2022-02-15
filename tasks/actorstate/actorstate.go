@@ -19,11 +19,11 @@ import (
 var log = logging.Logger("lily/tasks")
 
 type ActorInfo struct {
-	Actor        types.Actor
-	ChangeType   task.ChangeType
-	Address      address.Address
-	TipSet       *types.TipSet
-	ParentTipSet *types.TipSet
+	Actor      types.Actor
+	ChangeType task.ChangeType
+	Address    address.Address
+	Current    *types.TipSet
+	Executed   *types.TipSet
 }
 
 // ActorStateAPI is the minimal subset of lens.API that is needed for actor state extraction

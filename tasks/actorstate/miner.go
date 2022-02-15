@@ -101,12 +101,12 @@ func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 		return nil, xerrors.Errorf("loading current miner state: %w", err)
 	}
 
-	prevTipset := a.TipSet
+	prevTipset := a.Current
 	prevState := curState
-	if a.TipSet.Height() != 1 {
-		prevTipset = a.ParentTipSet
+	if a.Current.Height() != 1 {
+		prevTipset = a.Executed
 
-		prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
+		prevActor, err := node.StateGetActor(ctx, a.Address, a.Executed.Key())
 		if err != nil {
 			// if the actor exists in the current state and not in the parent state then the
 			// actor was created in the current state.
@@ -116,10 +116,10 @@ func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 					PrevTs:    prevTipset,
 					CurrActor: &a.Actor,
 					CurrState: curState,
-					CurrTs:    a.TipSet,
+					CurrTs:    a.Current,
 				}, nil
 			}
-			return nil, xerrors.Errorf("loading previous miner %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet.Key(), a.TipSet.Height(), err)
+			return nil, xerrors.Errorf("loading previous miner %s at tipset %s epoch %d: %w", a.Address, a.Executed.Key(), a.Current.Height(), err)
 		}
 
 		prevState, err = miner.Load(node.Store(), prevActor)
@@ -133,7 +133,7 @@ func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node Actor
 		PrevTs:    prevTipset,
 		CurrActor: &a.Actor,
 		CurrState: curState,
-		CurrTs:    a.TipSet,
+		CurrTs:    a.Current,
 	}, nil
 }
 
@@ -190,7 +190,7 @@ func ExtractMinerInfo(ctx context.Context, a ActorInfo, ec *MinerStateExtraction
 	mi := &minermodel.MinerInfo{
 		Height:                  int64(ec.CurrTs.Height()),
 		MinerID:                 a.Address.String(),
-		StateRoot:               a.TipSet.ParentState().String(),
+		StateRoot:               a.Current.ParentState().String(),
 		OwnerID:                 newInfo.Owner.String(),
 		WorkerID:                newInfo.Worker.String(),
 		NewWorker:               newWorker,
@@ -229,7 +229,7 @@ func ExtractMinerLockedFunds(ctx context.Context, a ActorInfo, ec *MinerStateExt
 	return &minermodel.MinerLockedFund{
 		Height:            int64(ec.CurrTs.Height()),
 		MinerID:           a.Address.String(),
-		StateRoot:         a.TipSet.ParentState().String(),
+		StateRoot:         a.Current.ParentState().String(),
 		LockedFunds:       currLocked.VestingFunds.String(),
 		InitialPledge:     currLocked.InitialPledgeRequirement.String(),
 		PreCommitDeposits: currLocked.PreCommitDeposits.String(),
@@ -258,7 +258,7 @@ func ExtractMinerFeeDebt(ctx context.Context, a ActorInfo, ec *MinerStateExtract
 	return &minermodel.MinerFeeDebt{
 		Height:    int64(ec.CurrTs.Height()),
 		MinerID:   a.Address.String(),
-		StateRoot: a.TipSet.ParentState().String(),
+		StateRoot: a.Current.ParentState().String(),
 		FeeDebt:   currDebt.String(),
 	}, nil
 }
@@ -284,7 +284,7 @@ func ExtractMinerCurrentDeadlineInfo(ctx context.Context, a ActorInfo, ec *Miner
 	return &minermodel.MinerCurrentDeadlineInfo{
 		Height:        int64(ec.CurrTs.Height()),
 		MinerID:       a.Address.String(),
-		StateRoot:     a.TipSet.ParentState().String(),
+		StateRoot:     a.Current.ParentState().String(),
 		DeadlineIndex: currDeadlineInfo.Index,
 		PeriodStart:   int64(currDeadlineInfo.PeriodStart),
 		Open:          int64(currDeadlineInfo.Open),
@@ -359,7 +359,7 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 			Height:    int64(ec.CurrTs.Height()),
 			MinerID:   a.Address.String(),
 			SectorID:  uint64(added.Info.SectorNumber),
-			StateRoot: a.TipSet.ParentState().String(),
+			StateRoot: a.Current.ParentState().String(),
 
 			SealedCID:       added.Info.SealedCID.String(),
 			SealRandEpoch:   int64(added.Info.SealRandEpoch),
@@ -385,7 +385,7 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 			Height:                int64(ec.CurrTs.Height()),
 			MinerID:               a.Address.String(),
 			SectorID:              uint64(added.SectorNumber),
-			StateRoot:             a.TipSet.ParentState().String(),
+			StateRoot:             a.Current.ParentState().String(),
 			SealedCID:             added.SealedCID.String(),
 			ActivationEpoch:       int64(added.Activation),
 			ExpirationEpoch:       int64(added.Expiration),
@@ -404,7 +404,7 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 			Height:                int64(ec.CurrTs.Height()),
 			MinerID:               a.Address.String(),
 			SectorID:              uint64(extended.To.SectorNumber),
-			StateRoot:             a.TipSet.ParentState().String(),
+			StateRoot:             a.Current.ParentState().String(),
 			SealedCID:             extended.To.SealedCID.String(),
 			ActivationEpoch:       int64(extended.To.Activation),
 			ExpirationEpoch:       int64(extended.To.Expiration),
@@ -498,7 +498,7 @@ func ExtractMinerPoSts(ctx context.Context, actor *ActorInfo, ec *MinerStateExtr
 		return nil
 	}
 
-	tsMsgs, err := node.GetExecutedAndBlockMessagesForTipset(ctx, actor.TipSet, actor.ParentTipSet)
+	tsMsgs, err := node.GetExecutedAndBlockMessagesForTipset(ctx, actor.Current, actor.Executed)
 	if err != nil {
 		return nil, xerrors.Errorf("getting executed and block messages: %w", err)
 	}
@@ -542,13 +542,13 @@ func extractMinerSectorEvents(ctx context.Context, node ActorStateAPI, a ActorIn
 		if err := ps.Removed.ForEach(func(u uint64) error {
 			event := minermodel.SectorTerminated
 			expiration := rmExpireIndex[u]
-			if expiration == a.TipSet.Height() {
+			if expiration == a.Current.Height() {
 				event = minermodel.SectorExpired
 			}
 			out = append(out, &minermodel.MinerSectorEvent{
-				Height:    int64(a.TipSet.Height()),
+				Height:    int64(a.Current.Height()),
 				MinerID:   a.Address.String(),
-				StateRoot: a.TipSet.ParentState().String(),
+				StateRoot: a.Current.ParentState().String(),
 				SectorID:  u,
 				Event:     event,
 			})
@@ -560,9 +560,9 @@ func extractMinerSectorEvents(ctx context.Context, node ActorStateAPI, a ActorIn
 		// track recovering sectors
 		if err := ps.Recovering.ForEach(func(u uint64) error {
 			out = append(out, &minermodel.MinerSectorEvent{
-				Height:    int64(a.TipSet.Height()),
+				Height:    int64(a.Current.Height()),
 				MinerID:   a.Address.String(),
-				StateRoot: a.TipSet.ParentState().String(),
+				StateRoot: a.Current.ParentState().String(),
 				SectorID:  u,
 				Event:     minermodel.SectorRecovering,
 			})
@@ -574,9 +574,9 @@ func extractMinerSectorEvents(ctx context.Context, node ActorStateAPI, a ActorIn
 		// track faulted sectors
 		if err := ps.Faulted.ForEach(func(u uint64) error {
 			out = append(out, &minermodel.MinerSectorEvent{
-				Height:    int64(a.TipSet.Height()),
+				Height:    int64(a.Current.Height()),
 				MinerID:   a.Address.String(),
-				StateRoot: a.TipSet.ParentState().String(),
+				StateRoot: a.Current.ParentState().String(),
 				SectorID:  u,
 				Event:     minermodel.SectorFaulted,
 			})
@@ -588,9 +588,9 @@ func extractMinerSectorEvents(ctx context.Context, node ActorStateAPI, a ActorIn
 		// track recovered sectors
 		if err := ps.Recovered.ForEach(func(u uint64) error {
 			out = append(out, &minermodel.MinerSectorEvent{
-				Height:    int64(a.TipSet.Height()),
+				Height:    int64(a.Current.Height()),
 				MinerID:   a.Address.String(),
-				StateRoot: a.TipSet.ParentState().String(),
+				StateRoot: a.Current.ParentState().String(),
 				SectorID:  u,
 				Event:     minermodel.SectorRecovered,
 			})
@@ -609,9 +609,9 @@ func extractMinerSectorEvents(ctx context.Context, node ActorStateAPI, a ActorIn
 				event = minermodel.CommitCapacityAdded
 			}
 			out = append(out, &minermodel.MinerSectorEvent{
-				Height:    int64(a.TipSet.Height()),
+				Height:    int64(a.Current.Height()),
 				MinerID:   a.Address.String(),
-				StateRoot: a.TipSet.ParentState().String(),
+				StateRoot: a.Current.ParentState().String(),
 				SectorID:  uint64(add.SectorNumber),
 				Event:     event,
 			})
@@ -621,9 +621,9 @@ func extractMinerSectorEvents(ctx context.Context, node ActorStateAPI, a ActorIn
 		// track sector extensions
 		for _, mod := range sc.Extended {
 			out = append(out, &minermodel.MinerSectorEvent{
-				Height:    int64(a.TipSet.Height()),
+				Height:    int64(a.Current.Height()),
 				MinerID:   a.Address.String(),
-				StateRoot: a.TipSet.ParentState().String(),
+				StateRoot: a.Current.ParentState().String(),
 				SectorID:  uint64(mod.To.SectorNumber),
 				Event:     minermodel.SectorExtended,
 			})
@@ -636,9 +636,9 @@ func extractMinerSectorEvents(ctx context.Context, node ActorStateAPI, a ActorIn
 		// track precommit addition
 		for _, add := range pc.Added {
 			out = append(out, &minermodel.MinerSectorEvent{
-				Height:    int64(a.TipSet.Height()),
+				Height:    int64(a.Current.Height()),
 				MinerID:   a.Address.String(),
-				StateRoot: a.TipSet.ParentState().String(),
+				StateRoot: a.Current.ParentState().String(),
 				SectorID:  uint64(add.Info.SectorNumber),
 				Event:     minermodel.PreCommitAdded,
 			})

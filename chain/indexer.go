@@ -158,7 +158,7 @@ func NewTipSetIndexer(node task.TaskAPI, d model.Storage, window time.Duration, 
 // TipSet is called when a new tipset has been discovered
 func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Name, t.name))
-	ctx, span := otel.Tracer("").Start(ctx, "TipSetIndexer.TipSet")
+	ctx, span := otel.Tracer("").Start(ctx, "TipSetIndexer.Current")
 	if span.IsRecording() {
 		span.SetAttributes(
 			attribute.String("tipset", ts.String()),

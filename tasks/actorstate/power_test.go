@@ -63,7 +63,7 @@ func TestPowerExtractV0(t *testing.T) {
 		info := actorstate.ActorInfo{
 			Actor:   types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: stateCid},
 			Address: power.Address,
-			TipSet:  stateTs,
+			Current: stateTs,
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
@@ -74,7 +74,7 @@ func TestPowerExtractV0(t *testing.T) {
 		require.True(t, ok)
 		require.NotNil(t, cp)
 
-		assert.EqualValues(t, info.TipSet.ParentState().String(), cp.ChainPowerModel.StateRoot, "StateRoot")
+		assert.EqualValues(t, info.Current.ParentState().String(), cp.ChainPowerModel.StateRoot, "StateRoot")
 		assert.EqualValues(t, state.TotalRawBytePower.String(), cp.ChainPowerModel.TotalRawBytesPower, "TotalRawBytesPower")
 		assert.EqualValues(t, state.TotalQualityAdjPower.String(), cp.ChainPowerModel.TotalQABytesPower, "TotalQABytesPower")
 		assert.EqualValues(t, state.TotalBytesCommitted.String(), cp.ChainPowerModel.TotalRawBytesCommitted, "TotalRawBytesCommitted")
@@ -113,10 +113,10 @@ func TestPowerExtractV0(t *testing.T) {
 		mapi.setActor(newStateTs.Key(), power.Address, &types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: newStateCid})
 
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: newStateCid},
-			Address:      power.Address,
-			ParentTipSet: oldStateTs,
-			TipSet:       newStateTs,
+			Actor:    types.Actor{Code: sa0builtin.StoragePowerActorCodeID, Head: newStateCid},
+			Address:  power.Address,
+			Executed: oldStateTs,
+			Current:  newStateTs,
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
@@ -163,7 +163,7 @@ func TestPowerExtractV2(t *testing.T) {
 		info := actorstate.ActorInfo{
 			Actor:   types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: stateCid},
 			Address: power.Address,
-			TipSet:  stateTs,
+			Current: stateTs,
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
@@ -174,7 +174,7 @@ func TestPowerExtractV2(t *testing.T) {
 		require.True(t, ok)
 		require.NotNil(t, cp)
 
-		assert.EqualValues(t, info.TipSet.ParentState().String(), cp.ChainPowerModel.StateRoot, "StateRoot")
+		assert.EqualValues(t, info.Current.ParentState().String(), cp.ChainPowerModel.StateRoot, "StateRoot")
 		assert.EqualValues(t, state.TotalRawBytePower.String(), cp.ChainPowerModel.TotalRawBytesPower, "TotalRawBytesPower")
 		assert.EqualValues(t, state.TotalQualityAdjPower.String(), cp.ChainPowerModel.TotalQABytesPower, "TotalQABytesPower")
 		assert.EqualValues(t, state.TotalBytesCommitted.String(), cp.ChainPowerModel.TotalRawBytesCommitted, "TotalRawBytesCommitted")
@@ -214,10 +214,10 @@ func TestPowerExtractV2(t *testing.T) {
 		mapi.setActor(newStateTs.Key(), power.Address, &types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: newStateCid})
 
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: newStateCid},
-			Address:      power.Address,
-			ParentTipSet: oldStateTs,
-			TipSet:       newStateTs,
+			Actor:    types.Actor{Code: sa2builtin.StoragePowerActorCodeID, Head: newStateCid},
+			Address:  power.Address,
+			Executed: oldStateTs,
+			Current:  newStateTs,
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
@@ -264,7 +264,7 @@ func TestPowerExtractV3(t *testing.T) {
 		info := actorstate.ActorInfo{
 			Actor:   types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: stateCid},
 			Address: power.Address,
-			TipSet:  stateTs,
+			Current: stateTs,
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
@@ -275,7 +275,7 @@ func TestPowerExtractV3(t *testing.T) {
 		require.True(t, ok)
 		require.NotNil(t, cp)
 
-		assert.EqualValues(t, info.TipSet.ParentState().String(), cp.ChainPowerModel.StateRoot, "StateRoot")
+		assert.EqualValues(t, info.Current.ParentState().String(), cp.ChainPowerModel.StateRoot, "StateRoot")
 		assert.EqualValues(t, state.TotalRawBytePower.String(), cp.ChainPowerModel.TotalRawBytesPower, "TotalRawBytesPower")
 		assert.EqualValues(t, state.TotalQualityAdjPower.String(), cp.ChainPowerModel.TotalQABytesPower, "TotalQABytesPower")
 		assert.EqualValues(t, state.TotalBytesCommitted.String(), cp.ChainPowerModel.TotalRawBytesCommitted, "TotalRawBytesCommitted")
@@ -315,10 +315,10 @@ func TestPowerExtractV3(t *testing.T) {
 		mapi.setActor(newStateTs.Key(), power.Address, &types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: newStateCid})
 
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: newStateCid},
-			Address:      power.Address,
-			ParentTipSet: oldStateTs,
-			TipSet:       newStateTs,
+			Actor:    types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: newStateCid},
+			Address:  power.Address,
+			Executed: oldStateTs,
+			Current:  newStateTs,
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
@@ -365,7 +365,7 @@ func TestPowerExtractV4(t *testing.T) {
 		info := actorstate.ActorInfo{
 			Actor:   types.Actor{Code: sa3builtin.StoragePowerActorCodeID, Head: stateCid},
 			Address: power.Address,
-			TipSet:  stateTs,
+			Current: stateTs,
 		}
 
 		ex := actorstate.StoragePowerExtractor{}
@@ -376,7 +376,7 @@ func TestPowerExtractV4(t *testing.T) {
 		require.True(t, ok)
 		require.NotNil(t, cp)
 
-		assert.EqualValues(t, info.TipSet.ParentState().String(), cp.ChainPowerModel.StateRoot, "StateRoot")
+		assert.EqualValues(t, info.Current.ParentState().String(), cp.ChainPowerModel.StateRoot, "StateRoot")
 		assert.EqualValues(t, state.TotalRawBytePower.String(), cp.ChainPowerModel.TotalRawBytesPower, "TotalRawBytesPower")
 		assert.EqualValues(t, state.TotalQualityAdjPower.String(), cp.ChainPowerModel.TotalQABytesPower, "TotalQABytesPower")
 		assert.EqualValues(t, state.TotalBytesCommitted.String(), cp.ChainPowerModel.TotalRawBytesCommitted, "TotalRawBytesCommitted")
@@ -416,10 +416,10 @@ func TestPowerExtractV4(t *testing.T) {
 		mapi.setActor(newStateTs.Key(), power.Address, &types.Actor{Code: sa4builtin.StoragePowerActorCodeID, Head: newStateCid})
 
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa4builtin.StoragePowerActorCodeID, Head: newStateCid},
-			Address:      power.Address,
-			ParentTipSet: oldStateTs,
-			TipSet:       newStateTs,
+			Actor:    types.Actor{Code: sa4builtin.StoragePowerActorCodeID, Head: newStateCid},
+			Address:  power.Address,
+			Executed: oldStateTs,
+			Current:  newStateTs,
 		}
 
 		ex := actorstate.StoragePowerExtractor{}

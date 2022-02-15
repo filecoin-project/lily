@@ -84,10 +84,10 @@ func TestMultisigExtractorV0(t *testing.T) {
 		//
 		// create actor info, previous state has no transaction, current state has a single transaction
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: txStateCid},
-			Address:      multiSigAddress,
-			TipSet:       txStateTs,
-			ParentTipSet: emptyTxStateTs,
+			Actor:    types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: txStateCid},
+			Address:  multiSigAddress,
+			Current:  txStateTs,
+			Executed: emptyTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -169,10 +169,10 @@ func TestMultisigExtractorV0(t *testing.T) {
 		//
 		// create actor info, previous state has single tx, current state has a new tx and modified tx.
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: secondTxStateCid},
-			Address:      multiSigAddress,
-			TipSet:       secondTxStateTs,
-			ParentTipSet: singleTxStateTs,
+			Actor:    types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: secondTxStateCid},
+			Address:  multiSigAddress,
+			Current:  secondTxStateTs,
+			Executed: singleTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -230,7 +230,7 @@ func TestMultisigExtractorV0(t *testing.T) {
 		info := actorstate.ActorInfo{
 			Actor:   types.Actor{Code: sa0builtin.MultisigActorCodeID, Head: singleTxStateCid},
 			Address: multiSigAddress,
-			TipSet:  genesisTs,
+			Current: genesisTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -309,10 +309,10 @@ func TestMultisigExtractorV2(t *testing.T) {
 		//
 		// create actor info, previous state has no transaction, current state has a single transaction
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: txStateCid},
-			Address:      multiSigAddress,
-			TipSet:       txStateTs,
-			ParentTipSet: emptyTxStateTs,
+			Actor:    types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: txStateCid},
+			Address:  multiSigAddress,
+			Current:  txStateTs,
+			Executed: emptyTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -394,10 +394,10 @@ func TestMultisigExtractorV2(t *testing.T) {
 		//
 		// create actor info, previous state has single tx, current state has a new tx and modified tx.
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: secondTxStateCid},
-			Address:      multiSigAddress,
-			TipSet:       secondTxStateTs,
-			ParentTipSet: singleTxStateTs,
+			Actor:    types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: secondTxStateCid},
+			Address:  multiSigAddress,
+			Current:  secondTxStateTs,
+			Executed: singleTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -455,7 +455,7 @@ func TestMultisigExtractorV2(t *testing.T) {
 		info := actorstate.ActorInfo{
 			Actor:   types.Actor{Code: sa2builtin.MultisigActorCodeID, Head: singleTxStateCid},
 			Address: multiSigAddress,
-			TipSet:  genesisTs,
+			Current: genesisTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -537,10 +537,10 @@ func TestMultisigExtractorV3(t *testing.T) {
 		//
 		// create actor info, previous state has no transaction, current state has a single transaction
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa3builtin.MultisigActorCodeID, Head: txStateCid},
-			Address:      multiSigAddress,
-			TipSet:       txStateTs,
-			ParentTipSet: emptyTxStateTs,
+			Actor:    types.Actor{Code: sa3builtin.MultisigActorCodeID, Head: txStateCid},
+			Address:  multiSigAddress,
+			Current:  txStateTs,
+			Executed: emptyTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -622,10 +622,10 @@ func TestMultisigExtractorV3(t *testing.T) {
 		//
 		// create actor info, previous state has single tx, current state has a new tx and modified tx.
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa3builtin.MultisigActorCodeID, Head: secondTxStateCid},
-			Address:      multiSigAddress,
-			TipSet:       secondTxStateTs,
-			ParentTipSet: singleTxStateTs,
+			Actor:    types.Actor{Code: sa3builtin.MultisigActorCodeID, Head: secondTxStateCid},
+			Address:  multiSigAddress,
+			Current:  secondTxStateTs,
+			Executed: singleTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -683,7 +683,7 @@ func TestMultisigExtractorV3(t *testing.T) {
 		info := actorstate.ActorInfo{
 			Actor:   types.Actor{Code: sa3builtin.MultisigActorCodeID, Head: singleTxStateCid},
 			Address: multiSigAddress,
-			TipSet:  genesisTs,
+			Current: genesisTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -765,10 +765,10 @@ func TestMultisigExtractorV4(t *testing.T) {
 		//
 		// create actor info, previous state has no transaction, current state has a single transaction
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa4builtin.MultisigActorCodeID, Head: txStateCid},
-			Address:      multiSigAddress,
-			TipSet:       txStateTs,
-			ParentTipSet: emptyTxStateTs,
+			Actor:    types.Actor{Code: sa4builtin.MultisigActorCodeID, Head: txStateCid},
+			Address:  multiSigAddress,
+			Current:  txStateTs,
+			Executed: emptyTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -850,10 +850,10 @@ func TestMultisigExtractorV4(t *testing.T) {
 		//
 		// create actor info, previous state has single tx, current state has a new tx and modified tx.
 		info := actorstate.ActorInfo{
-			Actor:        types.Actor{Code: sa4builtin.MultisigActorCodeID, Head: secondTxStateCid},
-			Address:      multiSigAddress,
-			TipSet:       secondTxStateTs,
-			ParentTipSet: singleTxStateTs,
+			Actor:    types.Actor{Code: sa4builtin.MultisigActorCodeID, Head: secondTxStateCid},
+			Address:  multiSigAddress,
+			Current:  secondTxStateTs,
+			Executed: singleTxStateTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}
@@ -911,7 +911,7 @@ func TestMultisigExtractorV4(t *testing.T) {
 		info := actorstate.ActorInfo{
 			Actor:   types.Actor{Code: sa4builtin.MultisigActorCodeID, Head: singleTxStateCid},
 			Address: multiSigAddress,
-			TipSet:  genesisTs,
+			Current: genesisTs,
 		}
 
 		ex := actorstate.MultiSigActorExtractor{}

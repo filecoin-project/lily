@@ -34,7 +34,7 @@ func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAP
 	defer stop()
 
 	// genesis state.
-	if a.TipSet.Height() == 1 {
+	if a.Current.Height() == 1 {
 		initActorState, err := init_.Load(node.Store(), &a.Actor)
 		if err != nil {
 			return nil, err
@@ -50,7 +50,7 @@ func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAP
 				Height:    0,
 				ID:        builtinAddress.String(),
 				Address:   builtinAddress.String(),
-				StateRoot: a.ParentTipSet.ParentState().String(),
+				StateRoot: a.Executed.ParentState().String(),
 			})
 		}
 		if err := initActorState.ForEachActor(func(id abi.ActorID, addr address.Address) error {
@@ -59,10 +59,10 @@ func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAP
 				return err
 			}
 			out = append(out, &initmodel.IdAddress{
-				Height:    int64(a.TipSet.Height()),
+				Height:    int64(a.Current.Height()),
 				ID:        idAddr.String(),
 				Address:   addr.String(),
-				StateRoot: a.TipSet.ParentState().String(),
+				StateRoot: a.Current.ParentState().String(),
 			})
 			return nil
 		}); err != nil {
@@ -70,7 +70,7 @@ func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAP
 		}
 		return out, nil
 	}
-	prevActor, err := node.StateGetActor(ctx, a.Address, a.ParentTipSet.Key())
+	prevActor, err := node.StateGetActor(ctx, a.Address, a.Executed.Key())
 	if err != nil {
 		return nil, xerrors.Errorf("loading previous init actor: %w", err)
 	}
@@ -93,16 +93,16 @@ func (InitExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAP
 	out := make(initmodel.IdAddressList, 0, len(addressChanges.Added)+len(addressChanges.Modified))
 	for _, newAddr := range addressChanges.Added {
 		out = append(out, &initmodel.IdAddress{
-			Height:    int64(a.TipSet.Height()),
-			StateRoot: a.TipSet.ParentState().String(),
+			Height:    int64(a.Current.Height()),
+			StateRoot: a.Current.ParentState().String(),
 			ID:        newAddr.ID.String(),
 			Address:   newAddr.PK.String(),
 		})
 	}
 	for _, modAddr := range addressChanges.Modified {
 		out = append(out, &initmodel.IdAddress{
-			Height:    int64(a.TipSet.Height()),
-			StateRoot: a.TipSet.ParentState().String(),
+			Height:    int64(a.Current.Height()),
+			StateRoot: a.Current.ParentState().String(),
 			ID:        modAddr.To.ID.String(),
 			Address:   modAddr.To.PK.String(),
 		})
