@@ -26,9 +26,10 @@ type ActorStateChange struct {
 	ChangeType ChangeType
 }
 
-type ActorStateChangeDiff map[string]ActorStateChange
+type ActorStateChangeDiff map[address.Address]ActorStateChange
 
 type DataSource interface {
+	TipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error)
 	Actor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error)
 	ActorState(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.ActorState, error)
 	CirculatingSupply(ctx context.Context, ts *types.TipSet) (api.CirculatingSupply, error)
