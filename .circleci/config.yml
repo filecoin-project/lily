@@ -35,6 +35,22 @@ commands:
       - run: git submodule sync
       - run: sudo apt-get install gcc libc-dev
       - run: git submodule update --init
+  trigger-deployment:
+    steps:
+      - run:
+          name: Trigger deployment for filecoin-project/lily
+          command: |
+            # derive docker image deploy-tag according to the publish-* steps in this config
+            tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
+            deploy_branch=${CIRCLE_BRANCH}-$tag_suffix
+            deploy_target=${CIRCLE_TAG:-deploy_branch}
+
+            # trigger deployment in sentinel-infra repo
+            curl --request POST \
+              --url https://circleci.com/api/v2/project/gh/filecoin-project/sentinel-infra/pipeline \
+              --header "Circle-Token: $SENTINEL_INFRA_CIRCLECI_API_TOKEN " \
+              --header "content-type: application/json" \
+              --data '{"branch":"master","parameters":{"trigger-deploy": true, "deploy-tag":"$deploy_target"}}'
   validate-docker-executeable:
     steps:
       - run:
@@ -102,7 +118,7 @@ commands:
             LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-calibnet-dev make docker-calibnet-dev-push
 
 jobs:
-  publish-docker-from-master:
+  publish-docker-from-branch:
     executor: dockerizer
     steps:
       - checkout
@@ -120,6 +136,10 @@ jobs:
           version: "20.10.6"
       - publish-docker-semver-dev
       - publish-docker-semver-production
+  trigger-deployment:
+    executor: dockerizer
+    steps:
+      - trigger-deployment
   mod-tidy-check:
     executor: golang
     steps:
@@ -305,14 +325,22 @@ workflows:
       - test-docker-calibnet
       - test-docker-calibnet-dev
   build-docker-images:
-    # `build-push-*` runs on master or main branches and tags that look like semver
-    # see: https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
     jobs:
-      - publish-docker-from-master:
-          # build and push latest master docker image
+      - publish-docker-from-branch:
+          # build and push docker image from branch
           filters:
             branches:
-              only: /^(master|main)$/
+              only: /^(master|main|deploy)$/
+            tags:
+              ignore: /.*/
+      - trigger-deployment:
+          requires:
+            - publish-docker-from-branch
+          filters:
+            branches:
+              # this filters which branches get deployed
+              # should be within the set of the dependent (required) publish step
+              only: /^(master|main|deploy)$/
             tags:
               ignore: /.*/
       - publish-docker-from-tag:
@@ -321,5 +349,15 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)*/  # incl v0.0.0 or v0.0.0-rc0
+              only: /^(v[0-9]+\.[0-9]+\.[0-9]+|.*dev.*)(-rc[0-9]+)*$/  # incl v0.0.0 or v0.0.0-rc0 or containing w `dev`
+      - trigger-deployment:
+          requires:
+            - publish-docker-from-tag
+          filters:
+            branches:
+              ignore: /.*/
+            # this filters which tags get deployed
+            # should be within the set of dependent (required) publish step
+            tags:
+              only: /.*dev.*/ # any tag containing `dev`
 
