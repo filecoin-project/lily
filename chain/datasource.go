@@ -53,6 +53,10 @@ func NewDataSource(node lens.API) (*DataSource, error) {
 	return t, nil
 }
 
+func (t *DataSource) TipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error) {
+	return t.node.ChainGetTipSet(ctx, tsk)
+}
+
 func (t *DataSource) Store() adt.Store {
 	return t.node.Store()
 }
@@ -119,12 +123,12 @@ func (t *DataSource) ExecutedAndBlockMessages(ctx context.Context, ts, pts *type
 	return value.(*lens.TipSetMessages), nil
 }
 
-func GetActorStateChanges(ctx context.Context, store adt.Store, current, next *types.TipSet) (tasks.ActorStateChangeDiff, error) {
-	if current.Height() == 0 {
-		return GetGenesisActors(ctx, store, current)
+func GetActorStateChanges(ctx context.Context, store adt.Store, current, executed *types.TipSet) (tasks.ActorStateChangeDiff, error) {
+	if executed.Height() == 0 {
+		return GetGenesisActors(ctx, store, executed)
 	}
 
-	oldTree, err := state.LoadStateTree(store, current.ParentState())
+	oldTree, err := state.LoadStateTree(store, executed.ParentState())
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +137,7 @@ func GetActorStateChanges(ctx context.Context, store adt.Store, current, next *t
 		return nil, err
 	}
 
-	newTree, err := state.LoadStateTree(store, next.ParentState())
+	newTree, err := state.LoadStateTree(store, current.ParentState())
 	if err != nil {
 		return nil, err
 	}
@@ -147,15 +151,19 @@ func GetActorStateChanges(ctx context.Context, store adt.Store, current, next *t
 		if err == nil {
 			return changes, nil
 		}
-		log.Warnw("failed to diff state tree efficiently, falling back to slow method", "error", err)
+		//log.Warnw("failed to diff state tree efficiently, falling back to slow method", "error", err)
 	}
 	actors, err := state.Diff(ctx, oldTree, newTree)
 	if err != nil {
 		return nil, err
 	}
 
-	out := map[string]tasks.ActorStateChange{}
-	for addr, act := range actors {
+	out := map[address.Address]tasks.ActorStateChange{}
+	for addrStr, act := range actors {
+		addr, err := address.NewFromString(addrStr)
+		if err != nil {
+			return nil, err
+		}
 		out[addr] = tasks.ActorStateChange{
 			Actor:      act,
 			ChangeType: tasks.ChangeTypeUnknown,
@@ -165,13 +173,13 @@ func GetActorStateChanges(ctx context.Context, store adt.Store, current, next *t
 }
 
 func GetGenesisActors(ctx context.Context, store adt.Store, genesis *types.TipSet) (tasks.ActorStateChangeDiff, error) {
-	out := map[string]tasks.ActorStateChange{}
+	out := map[address.Address]tasks.ActorStateChange{}
 	tree, err := state.LoadStateTree(store, genesis.ParentState())
 	if err != nil {
 		return nil, err
 	}
 	if err := tree.ForEach(func(addr address.Address, act *types.Actor) error {
-		out[addr.String()] = tasks.ActorStateChange{
+		out[addr] = tasks.ActorStateChange{
 			Actor:      *act,
 			ChangeType: tasks.ChangeTypeAdd,
 		}
@@ -190,7 +198,7 @@ func fastDiff(ctx context.Context, store adt.Store, oldR, newR cid.Cid) (tasks.A
 	}))
 	if err == nil {
 		buf := bytes.NewReader(nil)
-		out := map[string]tasks.ActorStateChange{}
+		out := map[address.Address]tasks.ActorStateChange{}
 		for _, change := range changes {
 			addr, err := address.NewFromBytes([]byte(change.Key))
 			if err != nil {
@@ -223,7 +231,7 @@ func fastDiff(ctx context.Context, store adt.Store, oldR, newR cid.Cid) (tasks.A
 					return nil, err
 				}
 			}
-			out[addr.String()] = ch
+			out[addr] = ch
 		}
 		return out, nil
 	}
