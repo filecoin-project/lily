@@ -3,13 +3,13 @@ package chain
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/atomic"
 	"golang.org/x/xerrors"
 
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
@@ -68,19 +68,15 @@ var AllTasks = []string{
 
 var log = logging.Logger("lily/chain")
 
-var _ TipSetObserver = (*TipSetIndexer)(nil)
-
 // TipSetIndexer waits for tipsets and persists their block data into a database.
 type TipSetIndexer struct {
-	window  time.Duration
-	storage model.Storage
-	name    string
-	node    task.TaskAPI
-	tasks   []string
-	wg      sync.WaitGroup
+	name  string
+	node  task.TaskAPI
+	tasks []string
+	wg    sync.WaitGroup
+	ready atomic.Bool
 
 	processor *StateProcessor
-	exporter  *ModelExporter
 }
 
 type TipSetIndexerOpt func(t *TipSetIndexer)
@@ -89,13 +85,11 @@ type TipSetIndexerOpt func(t *TipSetIndexer)
 // and persistence are concurrent. Extraction of the a tipset can proceed while data from the previous extraction is
 // being persisted. The indexer may be given a time window in which to complete data extraction. The name of the
 // indexer is used as the reporter in the visor_processing_reports table.
-func NewTipSetIndexer(node task.TaskAPI, d model.Storage, window time.Duration, name string, tasks []string, options ...TipSetIndexerOpt) (*TipSetIndexer, error) {
+func NewTipSetIndexer(node task.TaskAPI, name string, tasks []string, options ...TipSetIndexerOpt) (*TipSetIndexer, error) {
 	tsi := &TipSetIndexer{
-		storage: d,
-		window:  window,
-		name:    name,
-		node:    node,
-		tasks:   tasks,
+		name:  name,
+		node:  node,
+		tasks: tasks,
 	}
 
 	tipsetProcessors := map[string]TipSetProcessor{}
@@ -150,13 +144,20 @@ func NewTipSetIndexer(node task.TaskAPI, d model.Storage, window time.Duration, 
 	}
 
 	tsi.processor = sp
-	tsi.exporter = NewModelExporter(1)
 
+	tsi.ready.Store(true)
 	return tsi, nil
 }
 
+func (t *TipSetIndexer) Ready() bool {
+	return t.ready.Load()
+}
+
 // TipSet is called when a new tipset has been discovered
-func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
+func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *IndexResult, chan error, error) {
+	t.ready.Store(false)
+	defer t.ready.Store(true)
+
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Name, t.name))
 	ctx, span := otel.Tracer("").Start(ctx, "TipSetIndexer.Current")
 	if span.IsRecording() {
@@ -164,7 +165,6 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 			attribute.String("tipset", ts.String()),
 			attribute.Int64("height", int64(ts.Height())),
 			attribute.String("name", t.name),
-			attribute.String("window", t.window.String()),
 			attribute.StringSlice("tasks", t.tasks),
 		)
 	}
@@ -172,13 +172,13 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 
 	if ts.Height() == 0 {
 		// bail, the parent of genesis is itself, there is no diff
-		return nil
+		return nil, nil, nil
 	}
 
 	var executed, current *types.TipSet
 	pts, err := t.node.ChainGetTipSet(ctx, ts.Parents())
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 	current = ts
 	executed = pts
@@ -192,39 +192,70 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 		)
 	}
 
-	// TODO this should be controlled by the caller of TipSet
-	var cancel func()
-	var tctx context.Context // cancellable context for the task
-	if t.window > 0 {
-		// Do as much indexing as possible in the specified time window (usually one epoch when following head of chain)
-		// Anything not completed in that time will be marked as incomplete
-		tctx, cancel = context.WithTimeout(ctx, t.window)
-	} else {
-		// Ensure all goroutines are stopped when we exit
-		tctx, cancel = context.WithCancel(ctx)
-	}
-	defer cancel()
+	taskResults := t.processor.ProcessState(ctx, current, executed)
+	var (
+		completed = map[string]struct{}{}
+		outCh     = make(chan *IndexResult, len(taskResults))
+		errCh     = make(chan error)
+	)
+	go func() {
+		defer close(outCh)
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
+		for res := range taskResults {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+			completed[res.Task] = struct{}{}
 
-	start := time.Now()
+			llt := log.With("task", res.Task)
 
-	modelResults := t.processor.ProcessState(tctx, current, executed)
+			// Was there a fatal error?
+			if res.Error != nil {
+				llt.Errorw("task returned with error", "error", res.Error.Error())
+				errCh <- res.Error
+				return
+			}
 
-	if err := t.exporter.Export(tctx, t.storage, modelResults); err != nil {
-		return err
-	}
+			if res.Report == nil || len(res.Report) == 0 {
+				// Nothing was done for this tipset
+				llt.Debugw("task returned with no report")
+				continue
+			}
 
-	log.Infow("indexed tipsets", "duration", time.Since(start), "executed", int64(executed.Height()), "current", int64(current.Height()), "tipset", ts.Key().String())
-	return nil
+			for idx := range res.Report {
+				// Fill in some report metadata
+				res.Report[idx].Reporter = t.name
+				res.Report[idx].Task = res.Task
+				res.Report[idx].StartedAt = res.StartedAt
+				res.Report[idx].CompletedAt = res.CompletedAt
+
+				if res.Report[idx].ErrorsDetected != nil {
+					res.Report[idx].Status = visormodel.ProcessingStatusError
+				} else if res.Report[idx].StatusInformation != "" {
+					res.Report[idx].Status = visormodel.ProcessingStatusInfo
+				} else {
+					res.Report[idx].Status = visormodel.ProcessingStatusOK
+				}
+
+				llt.Debugw("task report", "status", res.Report[idx].Status, "duration", res.Report[idx].CompletedAt.Sub(res.Report[idx].StartedAt))
+			}
+
+			// Persist the processing report and the data in a single transaction
+			outCh <- &IndexResult{
+				Name:   res.Task,
+				Data:   res.Data,
+				Report: res.Report,
+			}
+		}
+	}()
+
+	return outCh, errCh, nil
 }
 
 func (t *TipSetIndexer) Close() error {
-	return t.exporter.Close()
+	return nil
 }
 
 type TipSetProcessor interface {

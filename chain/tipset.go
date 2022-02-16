@@ -11,7 +11,9 @@ import (
 
 // A TipSetObserver waits for notifications of new tipsets.
 type TipSetObserver interface {
-	TipSet(ctx context.Context, ts *types.TipSet) error
+	TipSet(ctx context.Context, ts *types.TipSet) (bool, error)
+	SkipUnprocessedTipSets(ctx context.Context, ts *types.TipSet) error
+	Ready() bool
 	Close() error
 }
 

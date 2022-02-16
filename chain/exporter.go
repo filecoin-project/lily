@@ -9,6 +9,7 @@ import (
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
+	visormodel "github.com/filecoin-project/lily/model/visor"
 )
 
 func NewModelExporter(concurrency int) *ModelExporter {
@@ -19,30 +20,47 @@ type ModelExporter struct {
 	persistSlot chan struct{} // filled with a token when a goroutine is persisting data
 }
 
-type ModelResults struct {
-	Name  string
-	Model model.PersistableList
+type IndexResult struct {
+	Name   string
+	Data   model.Persistable
+	Report visormodel.ProcessingReportList
 }
 
-func (me *ModelExporter) Export(ctx context.Context, strg model.Storage, models chan *ModelResults) error {
+type ModelResult struct {
+	Name  string
+	Model model.Persistable
+}
+
+func (me *ModelExporter) ExportChan(ctx context.Context, strg model.Storage, models chan *ModelResult) error {
 	for res := range models {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case me.persistSlot <- struct{}{}:
+			// wait until there is an empty slot before persisting
 		}
-		// wait until there is an empty slot before persisting
-		start := time.Now()
-		ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, res.Name))
-
-		if err := strg.PersistBatch(ctx, res.Model); err != nil {
-			stats.Record(ctx, metrics.PersistFailure.M(1))
-			log.Errorw("persistence failed", "task", res.Name, "error", err)
-			return err
-		}
-		log.Debugw("model data persisted", "task", res.Model, "duration", time.Since(start))
-		<-me.persistSlot
+		res := res
+		go func() {
+			defer func() {
+				<-me.persistSlot
+			}()
+			if err := me.ExportResult(ctx, strg, res); err != nil {
+				log.Errorw("persistence failed", "task", res.Name, "error", err)
+			}
+		}()
 	}
+	return nil
+}
+
+func (me *ModelExporter) ExportResult(ctx context.Context, strg model.Storage, res *ModelResult) error {
+	start := time.Now()
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, res.Name))
+
+	if err := strg.PersistBatch(ctx, res.Model); err != nil {
+		stats.Record(ctx, metrics.PersistFailure.M(1))
+		return err
+	}
+	log.Debugw("model data persisted", "task", res.Model, "duration", time.Since(start))
 	return nil
 }
 

@@ -83,7 +83,7 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	indexer, err := chain.NewTipSetIndexer(taskAPI, strg, time.Second*10, cfg.Name, cfg.Tasks)
+	im, err := chain.NewIndexManager(taskAPI, strg, cfg.Name, cfg.Tasks, chain.NewModelExporter(1), time.Second*10)
 	if err != nil {
 		return nil, err
 	}
@@ -93,11 +93,9 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 		return nil, err
 	}
 
-	if err := indexer.TipSet(ctx, ts); err != nil {
-		return nil, err
-	}
+	success, err := im.TipSet(ctx, ts)
 
-	return nil, err
+	return success, err
 
 }
 
@@ -115,19 +113,19 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		return nil, err
 	}
 
+	// HeadNotifier bridges between the event system and the watcher
+	obs := &HeadNotifier{
+		bufferSize: 5,
+	}
+
 	taskAPI, err := task.NewTaskAPI(m)
 	if err != nil {
 		return nil, err
 	}
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	indexer, err := chain.NewTipSetIndexer(taskAPI, strg, cfg.Window, cfg.Name, cfg.Tasks)
+	im, err := chain.NewIndexManager(taskAPI, strg, cfg.Name, cfg.Tasks, chain.NewModelExporter(1), time.Second*10)
 	if err != nil {
 		return nil, err
-	}
-
-	// HeadNotifier bridges between the event system and the watcher
-	obs := &HeadNotifier{
-		bufferSize: 5,
 	}
 
 	// Hook up the notifier to the event system
@@ -151,7 +149,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 			"storage":    cfg.Storage,
 		},
 		Tasks:               cfg.Tasks,
-		Job:                 chain.NewWatcher(indexer, obs, tsCache),
+		Job:                 chain.NewWatcher(im, obs, tsCache),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
@@ -180,7 +178,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	indexer, err := chain.NewTipSetIndexer(taskAPI, strg, cfg.Window, cfg.Name, cfg.Tasks)
+	im, err := chain.NewIndexManager(taskAPI, strg, cfg.Name, cfg.Tasks, chain.NewModelExporter(1), time.Second*10)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +193,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 			"storage":   cfg.Storage,
 		},
 		Tasks:               cfg.Tasks,
-		Job:                 chain.NewWalker(indexer, m, cfg.From, cfg.To),
+		Job:                 chain.NewWalker(im, m, cfg.From, cfg.To),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,

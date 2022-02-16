@@ -2,6 +2,7 @@ package chain
 
 import (
 	"context"
+
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
@@ -82,9 +83,11 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 	defer span.End()
 
 	log.Debugw("found tipset", "height", ts.Height())
-	if err := c.obs.TipSet(ctx, ts); err != nil {
+	if success, err := c.obs.TipSet(ctx, ts); err != nil {
 		span.RecordError(err)
 		return xerrors.Errorf("notify tipset: %w", err)
+	} else if !success {
+		log.Errorw("indexing incomplete")
 	}
 
 	var err error
@@ -106,9 +109,11 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 		}
 
 		log.Debugw("found tipset", "height", ts.Height())
-		if err := c.obs.TipSet(ctx, ts); err != nil {
+		if success, err := c.obs.TipSet(ctx, ts); err != nil {
 			span.RecordError(err)
 			return xerrors.Errorf("notify tipset: %w", err)
+		} else if !success {
+			log.Errorw("indexing incomplete")
 		}
 
 	}

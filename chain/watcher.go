@@ -3,6 +3,7 @@ package chain
 import (
 	"context"
 	"errors"
+
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/gammazero/workerpool"
 	"go.opentelemetry.io/otel"
@@ -77,8 +78,10 @@ func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {
 
 		// If we have a zero confidence window then we need to notify every tipset we see
 		if c.confidence == 0 {
-			if err := c.obs.TipSet(ctx, he.TipSet); err != nil {
+			if success, err := c.obs.TipSet(ctx, he.TipSet); err != nil {
 				return xerrors.Errorf("notify tipset: %w", err)
+			} else if !success {
+				log.Errorw("indexing incomplete")
 			}
 		}
 	case HeadEventApply:
@@ -129,17 +132,14 @@ func (c *Watcher) maybeIndexTipSet(ctx context.Context, ts *types.TipSet) error 
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
-		// record how many workers are currently waiting to execute
-		metrics.RecordCount(ctx, metrics.WatcherWaitingWorkers, c.wp.WaitingQueueSize())
-		c.wp.Submit(func() {
-			// record a new worker starting
-			metrics.RecordInc(ctx, metrics.WatcherActiveWorkers)
-			if err := c.obs.TipSet(ctx, ts); err != nil {
-				log.Errorw("failed to index tipset", "error", err, "height", ts.Height())
-			}
-			// record a worker completing.
-			metrics.RecordDec(ctx, metrics.WatcherActiveWorkers)
-		})
+		if !c.obs.Ready() {
+			return c.obs.SkipUnprocessedTipSets(ctx, ts)
+		}
+		if success, err := c.obs.TipSet(ctx, ts); err != nil {
+			log.Errorw("failed to index tipset", "error", err, "height", ts.Height())
+		} else if !success {
+			log.Errorw("indexing incomplete", "height", ts.Height())
+		}
 	}
 
 	return nil // only fatal errors should be returned

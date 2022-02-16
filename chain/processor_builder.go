@@ -48,25 +48,13 @@ func (spb *StateProcessorBuilder) Build() *StateProcessor {
 		builtinProcessors: map[string]BuiltinProcessor{
 			"builtin": indexer.NewTask(api),
 		},
-		api: spb.api,
+		api:      spb.api,
+		complete: map[string]bool{},
 	}
 
 	for _, opt := range spb.options {
 		opt(sp)
 	}
 
-	// build the taskName list
-	for name := range sp.builtinProcessors {
-		sp.taskNames = append(sp.taskNames, name)
-	}
-	for name := range sp.tipsetProcessors {
-		sp.taskNames = append(sp.taskNames, name)
-	}
-	for name := range sp.tipsetsProcessors {
-		sp.taskNames = append(sp.taskNames, name)
-	}
-	for name := range sp.actorProcessors {
-		sp.taskNames = append(sp.taskNames, name)
-	}
 	return sp
 }
