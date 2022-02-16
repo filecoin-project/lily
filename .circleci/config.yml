@@ -14,6 +14,34 @@ executors:
       - image: cimg/go:1.17.6
 
 commands:
+  restore-docker-cache:
+    steps:
+      - restore_cache:
+          keys:
+            - v1-{{ checksum Dockerfile }}-{{ checksum Dockerfile.dev }}
+      - run:
+          name: Load Docker image layer cache
+          command: |
+            set +o pipefail
+            if [ -f /caches/${CIRCLE_PROJECT_REPONAME}.tar.gz ]; then gunzip -c /caches/${CIRCLE_PROJECT_REPONAME}.tar.gz | docker load; docker images; fi
+
+  save-docker-cache:
+    steps:
+      - run:
+          name: Save Docker image layer cache
+          command: |
+            mkdir -p /caches
+            # See here: https://github.com/mozmeao/snippets-service/pull/208/files
+            # and here: https://stackoverflow.com/q/49965396
+            # The build commands here will be completely cached, and so very quick
+            #
+            docker build --tag ${CIRCLE_PROJECT_REPONAME} . | grep '\-\-\->' | grep -v 'Using cache' | sed -e 's/[ >-]//g' > /tmp/layers.txt
+            docker save $(cat /tmp/layers.txt) | gzip < /caches/${CIRCLE_PROJECT_REPONAME}.tar.gz
+      - save_cache:
+          keys:
+            - v1-{{ checksum Dockerfile }}-{{ checksum Dockerfile.dev }}
+          paths:
+            - /caches/
   install-deps:
     steps:
       - go/install-ssh
@@ -25,16 +53,27 @@ commands:
         description: is a linux build environment?
         type: boolean
     steps:
-      - checkout
       - when:
           condition: << parameters.linux >>
           steps:
+            - restore_cache:
+                key: preparation-{{ checksum ./.circleci/config.yml }}
             - run: sudo apt-get update
             - run: sudo apt-get install -y ocl-icd-opencl-dev libhwloc-dev
             - run: sudo apt-get install -y pkg-config jq
+            - save_cache:
+                key: preparation-{{ checksum ./.circleci/config.yml }}
+                path:
+                  - /
+      - checkout
+      - restore_cache:
+          key: submodules-{{ checksum go.sum }}
       - run: git submodule sync
       - run: sudo apt-get install gcc libc-dev
       - run: git submodule update --init
+      - save_cache:
+          key: submodules-{{ checksum go.sum }}
+          path: ./
   trigger-deployment:
     steps:
       - checkout
@@ -82,6 +121,7 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
           version: "20.10.6"
+      - restore-docker-cache
       - run:
           name: Publish Mainnet Production Docker Image from Lily branch to Docker Hub
           command: |
@@ -89,6 +129,7 @@ jobs:
             sanitized_branch=`echo $CIRCLE_BRANCH | sed 's:/:-:g'`
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
             make docker-mainnet-push LILY_IMAGE_TAG=${sanitized_branch}-${tag_suffix}
+      - save-docker-cache
   publish-production-image-from-branch-for-calibnet:
     executor: dockerizer
     steps:
@@ -96,6 +137,7 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
           version: "20.10.6"
+      - restore-docker-cache
       - run:
           name: Publish Calibnet Production Docker Image from Lily branch to Docker Hub
           command: |
@@ -103,6 +145,7 @@ jobs:
             sanitized_branch=`echo $CIRCLE_BRANCH | sed 's:/:-:g'`
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
             make docker-calibnet-push LILY_IMAGE_TAG=${sanitized_branch}-${tag_suffix}-calibnet
+      - save-docker-cache
   publish-production-image-from-branch-for-butterflynet:
     executor: dockerizer
     steps:
@@ -110,6 +153,7 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
           version: "20.10.6"
+      - restore-docker-cache
       - run:
           name: Publish Butterflynet Production Docker Image from Lily branch to Docker Hub
           command: |
@@ -117,6 +161,7 @@ jobs:
             sanitized_branch=`echo $CIRCLE_BRANCH | sed 's:/:-:g'`
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
             LILY_IMAGE_TAG=${sanitized_branch}-${tag_suffix}-butterflynet make docker-butterflynet-push
+      - save-docker-cache
   publish-production-image-from-semver-tag-for-mainnet:
     executor: dockerizer
     steps:
@@ -124,6 +169,7 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
           version: "20.10.6"
+      - restore-docker-cache
       - run:
           name: Publish Mainnet Production Docker Image from Lily semver tag to Docker Hub
           command: |
@@ -134,6 +180,7 @@ jobs:
             if [[ ! "$CIRCLE_TAG" =~ -rc[0-9]+$ ]]; then
               LILY_IMAGE_TAG=latest make docker-mainnet-push
             fi
+      - save-docker-cache
   publish-production-image-from-semver-tag-for-calibnet:
     executor: dockerizer
     steps:
@@ -141,6 +188,7 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
           version: "20.10.6"
+      - restore-docker-cache
       - run:
           name: Publish Calibnet Production Docker Image from Lily semver tag to Docker Hub
           command: |
@@ -151,6 +199,7 @@ jobs:
             if [[ ! "$CIRCLE_TAG" =~ -rc[0-9]+$ ]]; then
               LILY_IMAGE_TAG=calibnet-latest make docker-calibnet-push
             fi
+      - save-docker-cache
   publish-production-image-from-semver-tag-for-butterflynet:
     executor: dockerizer
     steps:
@@ -158,6 +207,7 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
           version: "20.10.6"
+      - restore-docker-cache
       - run:
           name: Publish Butterflynet Production Docker Image from Lily semver tag to Docker Hub
           command: |
@@ -168,6 +218,7 @@ jobs:
             if [[ ! "$CIRCLE_TAG" =~ -rc[0-9]+$ ]]; then
               LILY_IMAGE_TAG=butterflynet-latest make docker-butterflynet-push
             fi
+      - save-docker-cache
   # duplicated jobs are for making these jobs' descriptions
   # in the pipelines within the CircleCI less confusing
   trigger-branch-deployment-for-all-networks:
