@@ -70,6 +70,12 @@ commands:
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
             LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-calibnet make docker-calibnet-push
+      - run:
+          name: Publish Butterflynet Dev Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
+            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-butterflynet-dev make docker-butterflynet-dev-push
   publish-docker-from-branch-dev:
     steps:
       - run:
@@ -84,6 +90,12 @@ commands:
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
             LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-calibnet-dev make docker-calibnet-dev-push
+      - run:
+          name: Publish Butterflynet Dev Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
+            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-butterflynet-dev make docker-butterflynet-dev-push
   publish-docker-semver-production:
     steps:
       - run:
@@ -104,6 +116,15 @@ commands:
             if [[ ! "$CIRCLE_TAG" =~ -rc[0-9]+$ ]]; then
               LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=calibnet-latest make docker-calibnet-push
             fi
+      - run:
+          name: Publish Butterflynet Production Semver Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-butterfly make docker-butterfly-push
+            # omit release candidates from pushing butterfly-latest
+            if [[ ! "$CIRCLE_TAG" =~ -rc[0-9]+$ ]]; then
+              LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=butterfly-latest make docker-butterfly-push
+            fi
   publish-docker-semver-dev:
     steps:
       - run:
@@ -116,6 +137,11 @@ commands:
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-calibnet-dev make docker-calibnet-dev-push
+      - run:
+          name: Publish Butterflynet Dev Semver Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-butterflynet-dev make docker-butterflynet-dev-push
 
 jobs:
   publish-docker-from-branch:
@@ -136,7 +162,13 @@ jobs:
           version: "20.10.6"
       - publish-docker-semver-dev
       - publish-docker-semver-production
-  trigger-deployment:
+  # duplicated jobs are for making these jobs' descriptions
+  # in the pipelines within the CircleCI less confusing
+  trigger-tag-deployment:
+    executor: dockerizer
+    steps:
+      - trigger-deployment
+  trigger-branch-deployment:
     executor: dockerizer
     steps:
       - trigger-deployment
@@ -333,7 +365,7 @@ workflows:
               only: /^(master|main|deploy)$/
             tags:
               ignore: /.*/
-      - trigger-deployment:
+      - trigger-branch-deployment:
           requires:
             - publish-docker-from-branch
           filters:
@@ -350,7 +382,7 @@ workflows:
               ignore: /.*/
             tags:
               only: /^(v[0-9]+\.[0-9]+\.[0-9]+|.*dev.*)(-rc[0-9]+)*$/  # incl v0.0.0 or v0.0.0-rc0 or containing w `dev`
-      - trigger-deployment:
+      - trigger-tag-deployment:
           requires:
             - publish-docker-from-tag
           filters:
