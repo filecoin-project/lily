@@ -37,20 +37,37 @@ commands:
       - run: git submodule update --init
   trigger-deployment:
     steps:
+      - checkout
       - run:
           name: Trigger deployment for filecoin-project/lily
           command: |
             # derive docker image deploy-tag according to the publish-* steps in this config
-            tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            deploy_branch=${CIRCLE_BRANCH}-$tag_suffix
-            deploy_target=${CIRCLE_TAG:-deploy_branch}
+            branch_tag_suffix=`echo "$CIRCLE_SHA1" | cut -c 1-8`
+            sanitized_branch=`echo $CIRCLE_BRANCH | sed 's:/:-:g'`
+            deploy_branch=${sanitized_branch}-${branch_tag_suffix}
+            sanitized_tag=`echo $CIRCLE_TAG | sed 's:/:-:g'`
+
+            # if $sanitized_tag is empty, default to $sanitized_branch
+            deploy_target=${sanitized_tag:-$deploy_branch}
+
+            # curlf fails with a non-zero exit code when the status code is not 2XX
+            curlf() {
+              OUTPUT_FILE=$(mktemp)
+              HTTP_CODE=$(curl --silent --output $OUTPUT_FILE --write-out "%{http_code}" "$@")
+              if [[ ${HTTP_CODE} -lt 200 || ${HTTP_CODE} -gt 299 ]] ; then
+                >&2 cat $OUTPUT_FILE && echo ""
+                return 22
+              fi
+              cat $OUTPUT_FILE
+              rm $OUTPUT_FILE
+            }
 
             # trigger deployment in sentinel-infra repo
-            curl --request POST \
+            curlf --request POST \
               --url https://circleci.com/api/v2/project/gh/filecoin-project/sentinel-infra/pipeline \
-              --header "Circle-Token: $SENTINEL_INFRA_CIRCLECI_API_TOKEN " \
+              --header "Circle-Token: $SENTINEL_INFRA_CIRCLECI_API_TOKEN" \
               --header "content-type: application/json" \
-              --data '{"branch":"master","parameters":{"trigger-deploy": true, "deploy-tag":"$deploy_target"}}'
+              --data "{'branch':'master','parameters':{'trigger-deploy': true, 'deploy-tag':'$(deploy_target)'}}"
   validate-docker-executeable:
     steps:
       - run:
@@ -69,8 +86,9 @@ jobs:
           name: Publish Mainnet Production Docker Image from Lily branch to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            sanitized_branch=`echo $CIRCLE_BRANCH | sed 's:/:-:g'`
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix} make docker-mainnet-push
+            make docker-mainnet-push LILY_IMAGE_TAG=${sanitized_branch}-${tag_suffix}
   publish-production-image-from-branch-for-calibnet:
     executor: dockerizer
     steps:
@@ -82,8 +100,9 @@ jobs:
           name: Publish Calibnet Production Docker Image from Lily branch to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            sanitized_branch=`echo $CIRCLE_BRANCH | sed 's:/:-:g'`
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-calibnet make docker-calibnet-push
+            make docker-calibnet-push LILY_IMAGE_TAG=${sanitized_branch}-${tag_suffix}-calibnet
   publish-production-image-from-branch-for-butterflynet:
     executor: dockerizer
     steps:
@@ -95,8 +114,9 @@ jobs:
           name: Publish Butterflynet Production Docker Image from Lily branch to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            sanitized_branch=`echo $CIRCLE_BRANCH | sed 's:/:-:g'`
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-butterflynet make docker-butterflynet-push
+            LILY_IMAGE_TAG=${sanitized_branch}-${tag_suffix}-butterflynet make docker-butterflynet-push
   publish-production-image-from-semver-tag-for-mainnet:
     executor: dockerizer
     steps:
@@ -108,10 +128,11 @@ jobs:
           name: Publish Mainnet Production Docker Image from Lily semver tag to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_TAG//\//-} make docker-mainnet-push
+            sanitized_tag=`echo $CIRCLE_TAG | sed 's:/:-:g'`
+            LILY_IMAGE_TAG=$sanitized_tag make docker-mainnet-push
             # omit release candidates from pushing latest
             if [[ ! "$CIRCLE_TAG" =~ -rc[0-9]+$ ]]; then
-              LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=latest make docker-mainnet-push
+              LILY_IMAGE_TAG=latest make docker-mainnet-push
             fi
   publish-production-image-from-semver-tag-for-calibnet:
     executor: dockerizer
@@ -124,10 +145,11 @@ jobs:
           name: Publish Calibnet Production Docker Image from Lily semver tag to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-calibnet make docker-calibnet-push
+            sanitized_tag=`echo $CIRCLE_TAG | sed 's:/:-:g'`
+            LILY_IMAGE_TAG=$sanitized_tag make docker-calibnet-push
             # omit release candidates from pushing calibnet-latest
             if [[ ! "$CIRCLE_TAG" =~ -rc[0-9]+$ ]]; then
-              LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=calibnet-latest make docker-calibnet-push
+              LILY_IMAGE_TAG=calibnet-latest make docker-calibnet-push
             fi
   publish-production-image-from-semver-tag-for-butterflynet:
     executor: dockerizer
@@ -140,10 +162,11 @@ jobs:
           name: Publish Butterflynet Production Docker Image from Lily semver tag to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-butterfly make docker-butterfly-push
-            # omit release candidates from pushing butterfly-latest
+            sanitized_tag=`echo $CIRCLE_TAG | sed 's:/:-:g'`
+            LILY_IMAGE_TAG=$sanitized_tag-butterfly make docker-butterflynet-push
+            # omit release candidates from pushing butterflynet-latest
             if [[ ! "$CIRCLE_TAG" =~ -rc[0-9]+$ ]]; then
-              LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=butterfly-latest make docker-butterfly-push
+              LILY_IMAGE_TAG=butterflynet-latest make docker-butterflynet-push
             fi
   # duplicated jobs are for making these jobs' descriptions
   # in the pipelines within the CircleCI less confusing
