@@ -79,7 +79,7 @@ func main() {
 			&cli.StringFlag{
 				Name:        "log-level",
 				EnvVars:     []string{"GOLOG_LOG_LEVEL"},
-				Value:       "debug",
+				Value:       "info",
 				Usage:       "Set the default log level for all loggers to `LEVEL`",
 				Destination: &commands.VisorLogFlags.LogLevel,
 			},
