@@ -80,7 +80,7 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 		return nil, err
 	}
 
-	taskAPI, err := task.NewTaskAPI(m)
+	taskAPI, err := chain.NewDataSource(m)
 	if err != nil {
 		return nil, err
 	}

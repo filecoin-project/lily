@@ -169,7 +169,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) error {
 	}
 
 	var current, next *types.TipSet
-	pts, err := t.node.ChainGetTipSet(ctx, ts.Parents())
+	pts, err := t.node.TipSet(ctx, ts.Parents())
 	if err != nil {
 		return err
 	}
@@ -364,7 +364,7 @@ func (t *TipSetIndexer) startActorProcessors(ctx context.Context, processors map
 	// If we have actor processors then find actors that have changed state
 	if len(processors) > 0 {
 		changesStart := time.Now()
-		changes, err := t.node.StateChangedActors(ctx, t.node.Store(), current, next)
+		changes, err := t.node.ActorStateChanges(ctx, current, next)
 		if err != nil {
 			// report all processor tasks as failed
 			for name := range processors {

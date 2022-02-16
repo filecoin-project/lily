@@ -36,5 +36,6 @@ type DataSource interface {
 	ActorStateChanges(ctx context.Context, ts, pts *types.TipSet) (ActorStateChangeDiff, error)
 	MessageExecutions(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error)
 	ExecutedAndBlockMessages(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error)
+	TipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error)
 	Store() adt.Store
 }

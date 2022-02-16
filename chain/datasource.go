@@ -53,6 +53,10 @@ func NewDataSource(node lens.API) (*DataSource, error) {
 	return t, nil
 }
 
+func (t *DataSource) TipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error) {
+	return t.node.ChainGetTipSet(ctx, tsk)
+}
+
 func (t *DataSource) Store() adt.Store {
 	return t.node.Store()
 }
