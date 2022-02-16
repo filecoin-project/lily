@@ -10,6 +10,7 @@ import (
 	"github.com/filecoin-project/lily/lens/lily"
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain"
 )
@@ -87,6 +88,14 @@ var WalkCmd = &cli.Command{
 			Value:       "",
 			Destination: &walkFlags.name,
 		},
+	},
+	Before: func(cctx *cli.Context) error {
+		from, to := walkFlags.from, walkFlags.to
+		if to < from {
+			xerrors.Errorf("value of --to (%d) should be >= --from (%d)", to, from)
+		}
+
+		return nil
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)

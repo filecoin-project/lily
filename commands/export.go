@@ -106,6 +106,14 @@ Some examples:
 			Destination: &chainExportFlags.progress,
 		},
 	},
+	Before: func(cctx *cli.Context) error {
+		from, to := chainExportFlags.from, chainExportFlags.to
+		if to < from {
+			xerrors.Errorf("value of --to (%d) should be >= --from (%d)", to, from)
+		}
+
+		return nil
+	},
 	Action: func(cctx *cli.Context) error {
 		// use command context to allowing killing export at any point via ctrl+c
 		ctx := cctx.Context
