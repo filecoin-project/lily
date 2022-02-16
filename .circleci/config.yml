@@ -132,7 +132,8 @@ jobs:
             sanitized_tag=`echo $CIRCLE_TAG | sed 's:/:-:g'`
             LILY_IMAGE_TAG=$sanitized_tag make docker-mainnet-push
             # omit release candidates from pushing latest
-            if [[ ! "$CIRCLE_TAG" =~ -rc[0-9]+$ ]]; then
+            # only semver releases are pushing mainnet-latest
+            if [[ "$CIRCLE_TAG" =~ ^(v[0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
               LILY_IMAGE_TAG=latest make docker-mainnet-push
             fi
   publish-production-image-from-semver-tag-for-calibnet:
@@ -147,9 +148,9 @@ jobs:
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             sanitized_tag=`echo $CIRCLE_TAG | sed 's:/:-:g'`
-            LILY_IMAGE_TAG=$sanitized_tag make docker-calibnet-push
-            # omit release candidates from pushing calibnet-latest
-            if [[ ! "$CIRCLE_TAG" =~ -rc[0-9]+$ ]]; then
+            LILY_IMAGE_TAG=$sanitized_tag-calibnet make docker-calibnet-push
+            # only semver releases are pushing calibnet-latest
+            if [[ "$CIRCLE_TAG" =~ ^(v[0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
               LILY_IMAGE_TAG=calibnet-latest make docker-calibnet-push
             fi
   publish-production-image-from-semver-tag-for-butterflynet:
@@ -164,9 +165,9 @@ jobs:
           command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             sanitized_tag=`echo $CIRCLE_TAG | sed 's:/:-:g'`
-            LILY_IMAGE_TAG=$sanitized_tag-butterfly make docker-butterflynet-push
-            # omit release candidates from pushing butterflynet-latest
-            if [[ ! "$CIRCLE_TAG" =~ -rc[0-9]+$ ]]; then
+            LILY_IMAGE_TAG=$sanitized_tag-butterflynet make docker-butterflynet-push
+            # only semver releases are pushing butterflynet-latest
+            if [[ "$CIRCLE_TAG" =~ ^(v[0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
               LILY_IMAGE_TAG=butterflynet-latest make docker-butterflynet-push
             fi
   # duplicated jobs are for making these jobs' descriptions
