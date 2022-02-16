@@ -133,12 +133,11 @@ Note that jobs are not persisted between restarts of the daemon. See
 			Destination: &daemonFlags.repo,
 		},
 		&cli.BoolFlag{
-			Name: "bootstrap",
-			// TODO: usage description
+			Name:        "bootstrap",
+			Usage:       "Specify whether to act as a bootstrapper, the initial point of contact for other lily daemons to find peers. If set to `false` lily will not sync to the network. This is useful for troubleshooting.",
 			EnvVars:     []string{"LILY_BOOTSTRAP"},
 			Value:       true,
 			Destination: &daemonFlags.bootstrap,
-			Hidden:      true, // hide until we decide if we want to keep this.
 		},
 		&cli.StringFlag{
 			Name:        "config",
