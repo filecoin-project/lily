@@ -3,9 +3,10 @@ package diff
 import (
 	"context"
 
-	"github.com/filecoin-project/go-amt-ipld/v3"
-	adt2 "github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/go-amt-ipld/v4"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
+
+	adt2 "github.com/filecoin-project/lily/chain/actors/adt"
 )
 
 // Amt returns a set of changes that transform `preArr` into `curArr`. opts are applied to both `preArr` and `curArr`.
@@ -20,5 +21,5 @@ func Amt(ctx context.Context, preArr, curArr adt2.Array, preStore, curStore adt.
 		return nil, err
 	}
 
-	return amt.Diff(ctx, preStore, curStore, preRoot, curRoot, amtOpts...)
+	return amt.ParallelDiff(ctx, preStore, curStore, preRoot, curRoot, amtOpts...)
 }
