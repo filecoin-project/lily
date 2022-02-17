@@ -7,7 +7,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/deckarep/golang-set v1.7.1
 	github.com/filecoin-project/go-address v0.0.5
-	github.com/filecoin-project/go-amt-ipld/v4 v4.0.1-0.20220217210736-82706f729fd5
+	github.com/filecoin-project/go-amt-ipld/v4 v4.0.1-0.20220217221528-00b8d0416c1b
 	github.com/filecoin-project/go-bitfield v0.2.4
 	github.com/filecoin-project/go-hamt-ipld/v3 v3.1.0
 	github.com/filecoin-project/go-jsonrpc v0.1.4-0.20210217175800-45ea43ac2bec
