@@ -291,6 +291,8 @@ github.com/filecoin-project/go-amt-ipld/v4 v4.0.1-0.20220217221528-00b8d0416c1b 
 github.com/filecoin-project/go-amt-ipld/v4 v4.0.1-0.20220217221528-00b8d0416c1b/go.mod h1:VZJ3X/2uo2GnHfTx/McjsY7OAxVEFATu4eHOKUQCwMI=
 github.com/filecoin-project/go-amt-ipld/v4 v4.0.1-0.20220218173507-24a540da60e1 h1:ObG9hime5Nf1HqzC8ekNFG80CDNQEwe59ZUz9MK8ufI=
 github.com/filecoin-project/go-amt-ipld/v4 v4.0.1-0.20220218173507-24a540da60e1/go.mod h1:tMQcJbEMrOp+1nh0EH0NknykNLhUBQRjiqWlZZFisbk=
+github.com/filecoin-project/go-amt-ipld/v4 v4.0.1-0.20220218192059-e6f3ce3e7821 h1:QCH98KN/8xrpSqDNIm5XddA8POcuYLVPd6hIaQc/XK8=
+github.com/filecoin-project/go-amt-ipld/v4 v4.0.1-0.20220218192059-e6f3ce3e7821/go.mod h1:tMQcJbEMrOp+1nh0EH0NknykNLhUBQRjiqWlZZFisbk=
 github.com/filecoin-project/go-bitfield v0.2.0/go.mod h1:CNl9WG8hgR5mttCnUErjcQjGvuiZjRqK9rHVBsQF4oM=
 github.com/filecoin-project/go-bitfield v0.2.3/go.mod h1:CNl9WG8hgR5mttCnUErjcQjGvuiZjRqK9rHVBsQF4oM=
 github.com/filecoin-project/go-bitfield v0.2.4 h1:uZ7MeE+XfM5lqrHJZ93OnhQKc/rveW8p9au0C68JPgk=
@@ -326,6 +328,8 @@ github.com/filecoin-project/go-hamt-ipld/v3 v3.1.1-0.20220218183912-31658ba73f61
 github.com/filecoin-project/go-hamt-ipld/v3 v3.1.1-0.20220218183912-31658ba73f61/go.mod h1:oGV8xBR94Rn/Fg9SiF5Uboj+EgiH/ae2OUciSNUk96U=
 github.com/filecoin-project/go-hamt-ipld/v3 v3.1.1-0.20220218190713-c359e7c2b927 h1:3u0HbZbVOlfi8picRIeG1SWx/8XZhJsQWf7G8GCNBt4=
 github.com/filecoin-project/go-hamt-ipld/v3 v3.1.1-0.20220218190713-c359e7c2b927/go.mod h1:oGV8xBR94Rn/Fg9SiF5Uboj+EgiH/ae2OUciSNUk96U=
+github.com/filecoin-project/go-hamt-ipld/v3 v3.1.1-0.20220218192134-ff52c0c24b11 h1:HfkHHvWSaFGxtfILZWIcoIIEY426NBTVPMB9N7tc/jc=
+github.com/filecoin-project/go-hamt-ipld/v3 v3.1.1-0.20220218192134-ff52c0c24b11/go.mod h1:7OHE1C+OZo+GlOMHKNGIU6IAOxXTx6xqDbXvhVdQ0hY=
 github.com/filecoin-project/go-jsonrpc v0.1.4-0.20210217175800-45ea43ac2bec h1:rGI5I7fdU4viManxmDdbk5deZO7afe6L1Wc04dAmlOM=
 github.com/filecoin-project/go-jsonrpc v0.1.4-0.20210217175800-45ea43ac2bec/go.mod h1:XBBpuKIMaXIIzeqzO1iucq4GvbF8CxmXRFoezRh+Cx4=
 github.com/filecoin-project/go-multistore v0.0.3/go.mod h1:kaNqCC4IhU4B1uyr7YWFHd23TL4KM32aChS0jNkyUvQ=
