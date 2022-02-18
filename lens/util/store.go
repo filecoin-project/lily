@@ -277,7 +277,7 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 	}
 
 	v, hit := cas.cache.Get(c)
-	if hit && v != nil {
+	if hit {
 		atomic.AddInt64(&cas.hits, 1)
 
 		o := reflect.ValueOf(out).Elem()
@@ -286,19 +286,12 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 		}
 
 		if !v.(reflect.Value).Type().AssignableTo(o.Type()) {
-			log.Errorw("value", "type", v.(reflect.Value).IsZero())
-			buf := new(bytes.Buffer)
-			merr := v.(cbg.CBORMarshaler).MarshalCBOR(buf)
-			uerr := out.(cbg.CBORUnmarshaler).UnmarshalCBOR(buf)
-			if uerr != nil || merr != nil {
-				return xerrors.Errorf("out parameter (%v) cannot be assigned cached value (%v)", "o", o.Type(), v.(reflect.Value).Type())
-			} else {
-				return nil
-			}
+			log.Warnf("out parameter (%v) cannot be assigned cached value (%v)", o.Type(), v.(reflect.Value).Type())
+			//return xerrors.Errorf("out parameter (%v) cannot be assigned cached value (%v)", "o", o.Type(), v.(reflect.Value).Type())
+		} else {
+			o.Set(v.(reflect.Value))
+			return nil
 		}
-
-		o.Set(v.(reflect.Value))
-		return nil
 	}
 
 	blk, err := cas.blocks.Get(c)
