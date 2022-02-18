@@ -355,15 +355,19 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 		}
 
 		if sectorChanges != nil {
-			for _, newSector := range sectorChanges.Added {
-				for _, dealID := range newSector.DealIDs {
-					sectorDealsModel = append(sectorDealsModel, &minermodel.MinerSectorDeal{
-						Height:   int64(ec.CurrTs.Height()),
-						MinerID:  a.Address.String(),
-						SectorID: uint64(newSector.SectorNumber),
-						DealID:   uint64(dealID),
-					})
-				}
+			sectorChanges := new(miner.SectorChanges)
+			sectorChanges.Added = make([]miner.SectorOnChainInfo, 0)
+			sectorChanges.Removed = make([]miner.SectorOnChainInfo, 0)
+			sectorChanges.Extended = make([]miner.SectorExtensions, 0)
+		}
+		for _, newSector := range sectorChanges.Added {
+			for _, dealID := range newSector.DealIDs {
+				sectorDealsModel = append(sectorDealsModel, &minermodel.MinerSectorDeal{
+					Height:   int64(ec.CurrTs.Height()),
+					MinerID:  a.Address.String(),
+					SectorID: uint64(newSector.SectorNumber),
+					DealID:   uint64(dealID),
+				})
 			}
 		}
 	}
