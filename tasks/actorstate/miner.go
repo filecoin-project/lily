@@ -354,7 +354,7 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 			return nil, nil, nil, nil, xerrors.Errorf("diffing miner precommits and sectors: %w", err)
 		}
 
-		if sectorChanges != nil {
+		if sectorChanges == nil {
 			sectorChanges := new(miner.SectorChanges)
 			sectorChanges.Added = make([]miner.SectorOnChainInfo, 0)
 			sectorChanges.Removed = make([]miner.SectorOnChainInfo, 0)
