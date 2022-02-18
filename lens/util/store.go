@@ -286,7 +286,7 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 		}
 
 		if !v.(reflect.Value).Type().AssignableTo(o.Type()) {
-			log.Errorw("value", "type", v.(reflect.Value))
+			log.Errorw("value", "type", v.(reflect.Value).IsZero())
 			buf := new(bytes.Buffer)
 			merr := v.(cbg.CBORMarshaler).MarshalCBOR(buf)
 			uerr := out.(cbg.CBORUnmarshaler).UnmarshalCBOR(buf)
