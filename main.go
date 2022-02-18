@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"strings"
 	"syscall"
 
@@ -146,7 +147,7 @@ func main() {
 	app.Setup()
 	app.Metadata["repoType"] = repo.FullNode
 	app.Metadata["traceContext"] = ctx
-
+	fmt.Println(runtime.NumCPU())
 	if err := app.RunContext(ctx, os.Args); err != nil {
 		fmt.Fprintln(os.Stdout, err.Error())
 		os.Exit(1)

@@ -9,6 +9,7 @@ import (
 	maddr "github.com/multiformats/go-multiaddr"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-bitfield"
@@ -333,14 +334,21 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 		}
 	} else { // not genesis state, need to diff with previous state to compute changes.
 		var err error
-		preCommitChanges, err = miner.DiffPreCommits(ctx, node.Store(), a.Address, ec.PrevState, ec.CurrState)
-		if err != nil {
-			return nil, nil, nil, nil, xerrors.Errorf("diffing miner precommits: %w", err)
-		}
+		grp, ctx := errgroup.WithContext(ctx)
+		grp.Go(func() error {
+			preCommitChanges, err = miner.DiffPreCommits(ctx, node.Store(), a.Address, ec.PrevState, ec.CurrState)
+			if err != nil {
+				return nil
+			}
 
-		sectorChanges, err = miner.DiffSectors(ctx, node.Store(), a.Address, ec.PrevState, ec.CurrState)
-		if err != nil {
-			return nil, nil, nil, nil, xerrors.Errorf("diffing miner sectors: %w", err)
+			sectorChanges, err = miner.DiffSectors(ctx, node.Store(), a.Address, ec.PrevState, ec.CurrState)
+			if err != nil {
+				return nil
+			}
+			return nil
+		})
+		if err := grp.Wait(); err != nil {
+			return nil, nil, nil, nil, xerrors.Errorf("diffing miner precommits and sectors: %w", err)
 		}
 
 		for _, newSector := range sectorChanges.Added {
