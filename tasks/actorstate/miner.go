@@ -3,7 +3,6 @@ package actorstate
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/filecoin-project/go-address"
@@ -339,14 +338,14 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 		grp.Go(func() error {
 			preCommitChanges, err = miner.DiffPreCommits(ctx, node.Store(), a.Address, ec.PrevState, ec.CurrState)
 			if err != nil {
-				return nil
+				return err
 			}
 			return nil
 		})
 		grp.Go(func() error {
 			sectorChanges, err = miner.DiffSectors(ctx, node.Store(), a.Address, ec.PrevState, ec.CurrState)
 			if err != nil {
-				return nil
+				return err
 			}
 			return nil
 		})
@@ -355,7 +354,6 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 			return nil, nil, nil, nil, xerrors.Errorf("diffing miner precommits and sectors: %w", err)
 		}
 
-		fmt.Println("%v", sectorChanges)
 		for _, newSector := range sectorChanges.Added {
 			for _, dealID := range newSector.DealIDs {
 				sectorDealsModel = append(sectorDealsModel, &minermodel.MinerSectorDeal{
