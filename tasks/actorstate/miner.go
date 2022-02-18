@@ -354,14 +354,16 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 			return nil, nil, nil, nil, xerrors.Errorf("diffing miner precommits and sectors: %w", err)
 		}
 
-		for _, newSector := range sectorChanges.Added {
-			for _, dealID := range newSector.DealIDs {
-				sectorDealsModel = append(sectorDealsModel, &minermodel.MinerSectorDeal{
-					Height:   int64(ec.CurrTs.Height()),
-					MinerID:  a.Address.String(),
-					SectorID: uint64(newSector.SectorNumber),
-					DealID:   uint64(dealID),
-				})
+		if sectorChanges != nil {
+			for _, newSector := range sectorChanges.Added {
+				for _, dealID := range newSector.DealIDs {
+					sectorDealsModel = append(sectorDealsModel, &minermodel.MinerSectorDeal{
+						Height:   int64(ec.CurrTs.Height()),
+						MinerID:  a.Address.String(),
+						SectorID: uint64(newSector.SectorNumber),
+						DealID:   uint64(dealID),
+					})
+				}
 			}
 		}
 	}
