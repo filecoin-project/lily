@@ -286,7 +286,7 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 		}
 
 		if !v.(reflect.Value).Type().AssignableTo(o.Type()) {
-			return xerrors.Errorf("out parameter (%v) cannot be assigned cached value (%v)", o.Type(), v.(reflect.Value).Type())
+			panic(xerrors.Errorf("out parameter (%v) cannot be assigned cached value (%v)", o, v.(reflect.Value).Elem()).Error())
 		}
 
 		o.Set(v.(reflect.Value))
