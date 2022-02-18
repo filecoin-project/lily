@@ -340,13 +340,16 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 			if err != nil {
 				return nil
 			}
-
+			return nil
+		})
+		grp.Go(func() error {
 			sectorChanges, err = miner.DiffSectors(ctx, node.Store(), a.Address, ec.PrevState, ec.CurrState)
 			if err != nil {
 				return nil
 			}
 			return nil
 		})
+
 		if err := grp.Wait(); err != nil {
 			return nil, nil, nil, nil, xerrors.Errorf("diffing miner precommits and sectors: %w", err)
 		}
