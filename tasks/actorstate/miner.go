@@ -3,6 +3,7 @@ package actorstate
 import (
 	"bytes"
 	"context"
+	"time"
 
 	"github.com/filecoin-project/go-address"
 	maddr "github.com/multiformats/go-multiaddr"
@@ -12,8 +13,9 @@ import (
 
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
-	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
+
+	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/metrics"
@@ -33,6 +35,11 @@ func init() {
 }
 
 func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, emsgs []*lens.ExecutedMessage, node ActorStateAPI) (model.Persistable, error) {
+	start := time.Now()
+	lg := log.With("address", a.Address, "height", a.Epoch)
+	defer func() {
+		lg.Infow("completed miner extraction", "duration", time.Since(start))
+	}()
 	ctx, span := otel.Tracer("").Start(ctx, "StorageMinerExtractor")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.String("actor", a.Address.String()))
@@ -51,31 +58,37 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, emsgs [
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner info: %w", err)
 	}
+	lg.Infow("extracted miner info", "duration", time.Since(start))
 
 	lockedFundsModel, err := ExtractMinerLockedFunds(ctx, a, ec)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner locked funds: %w", err)
 	}
+	lg.Infow("extracted miner funds", "duration", time.Since(start))
 
 	feeDebtModel, err := ExtractMinerFeeDebt(ctx, a, ec)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner fee debt: %w", err)
 	}
+	lg.Infow("extracted miner debt", "duration", time.Since(start))
 
 	currDeadlineModel, err := ExtractMinerCurrentDeadlineInfo(ctx, a, ec)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner current deadline info: %w", err)
 	}
+	lg.Infow("extracted miner deadline", "duration", time.Since(start))
 
 	preCommitModel, sectorModel, sectorDealsModel, sectorEventsModel, err := ExtractMinerSectorData(ctx, ec, a, node)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner sector changes: %w", err)
 	}
+	lg.Infow("extracted miner sectors", "duration", time.Since(start))
 
 	posts, err := ExtractMinerPoSts(ctx, &a, ec, emsgs, node)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner posts: %v", err)
 	}
+	lg.Infow("extracted miner posts", "duration", time.Since(start))
 
 	return &minermodel.MinerTaskResult{
 		Posts: posts,

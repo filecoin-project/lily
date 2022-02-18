@@ -2,7 +2,9 @@ package miner
 
 import (
 	"context"
+	"time"
 
+	logging "github.com/ipfs/go-log/v2"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -17,9 +19,19 @@ import (
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/adt/diff"
+	"github.com/filecoin-project/lily/chain/actors/builtin"
 )
 
+var log = logging.Logger("lily/actors/diff")
+
 func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreCommitChanges, error) {
+	start := time.Now()
+	lg := log.With("cur_code", builtin.ActorNameByCode(cur.Code()), "pre_code", builtin.ActorNameByCode(pre.Code()))
+	fast := true
+	defer func() {
+		lg.Infow("completed sector diff", "duration", time.Since(start), "fast", fast)
+	}()
+
 	ctx, span := otel.Tracer("").Start(ctx, "DiffPreCommits")
 	defer span.End()
 	prep, err := pre.precommits()
@@ -43,6 +55,7 @@ func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreC
 
 	diffContainer := NewPreCommitDiffContainer(pre, cur)
 	if mapRequiresLegacyDiffing(pre, cur, preOpts, curOpts) {
+		fast = false
 		if span.IsRecording() {
 			span.SetAttributes(attribute.String("diff", "slow"))
 		}
@@ -77,6 +90,7 @@ func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreC
 		}
 	}
 
+	lg.Infow("completed precommit diff", "duration", time.Since(start))
 	return diffContainer.Results, nil
 }
 
@@ -124,6 +138,13 @@ func (m *preCommitDiffContainer) Remove(key string, val *cbg.Deferred) error {
 }
 
 func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorChanges, error) {
+	start := time.Now()
+	lg := log.With("cur_code", builtin.ActorNameByCode(cur.Code()), "pre_code", builtin.ActorNameByCode(pre.Code()))
+	fast := true
+	defer func() {
+		lg.Infow("completed sector diff", "duration", time.Since(start), "fast", fast)
+	}()
+
 	ctx, span := otel.Tracer("").Start(ctx, "DiffSectors")
 	defer span.End()
 	pres, err := pre.sectors()
@@ -140,6 +161,7 @@ func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorC
 	curBw := cur.SectorsAmtBitwidth()
 	diffContainer := NewSectorDiffContainer(pre, cur)
 	if arrayRequiresLegacyDiffing(pre, cur, preBw, curBw) {
+		fast = false
 		if span.IsRecording() {
 			span.SetAttributes(attribute.String("diff", "slow"))
 		}

@@ -7,7 +7,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/deckarep/golang-set v1.7.1
 	github.com/filecoin-project/go-address v0.0.5
-	github.com/filecoin-project/go-amt-ipld/v4 v4.0.1-0.20220217221528-00b8d0416c1b
+	github.com/filecoin-project/go-amt-ipld/v4 v4.0.1-0.20220218173507-24a540da60e1
 	github.com/filecoin-project/go-bitfield v0.2.4
 	github.com/filecoin-project/go-hamt-ipld/v3 v3.1.0
 	github.com/filecoin-project/go-jsonrpc v0.1.4-0.20210217175800-45ea43ac2bec
@@ -29,7 +29,7 @@ require (
 	github.com/ipfs/go-fs-lock v0.0.6
 	github.com/ipfs/go-ipfs-blockstore v1.0.4
 	github.com/ipfs/go-ipld-cbor v0.0.5
-	github.com/ipfs/go-log/v2 v2.3.0
+	github.com/ipfs/go-log/v2 v2.5.0
 	github.com/ipfs/go-metrics-prometheus v0.0.2
 	github.com/ipld/go-car v0.3.2-0.20211001225732-32d0d9933823
 	github.com/lib/pq v1.9.0
@@ -51,7 +51,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.2.0
 	go.uber.org/fx v1.15.0
 	go.uber.org/multierr v1.7.0
-	go.uber.org/zap v1.19.0
+	go.uber.org/zap v1.19.1
 	golang.org/x/text v0.3.7
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
@@ -248,7 +248,7 @@ require (
 	github.com/marten-seemann/qtls-go1-17 v0.1.0-rc.1 // indirect
 	github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
-	github.com/mattn/go-isatty v0.0.13 // indirect
+	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/miekg/dns v1.1.43 // indirect
