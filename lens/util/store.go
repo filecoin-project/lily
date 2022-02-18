@@ -277,7 +277,7 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 	}
 
 	v, hit := cas.cache.Get(c)
-	if hit {
+	if hit && v != nil {
 		atomic.AddInt64(&cas.hits, 1)
 
 		o := reflect.ValueOf(out).Elem()
@@ -286,6 +286,7 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 		}
 
 		if !v.(reflect.Value).Type().AssignableTo(o.Type()) {
+			log.Errorw("value", "type", v.(reflect.Value))
 			buf := new(bytes.Buffer)
 			merr := v.(cbg.CBORMarshaler).MarshalCBOR(buf)
 			uerr := out.(cbg.CBORUnmarshaler).UnmarshalCBOR(buf)
