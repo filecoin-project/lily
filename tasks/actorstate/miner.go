@@ -309,9 +309,9 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 	preCommitChanges.Removed = []miner.SectorPreCommitOnChainInfo{}
 
 	sectorChanges := new(miner.SectorChanges)
-	sectorChanges.Added = []miner.SectorOnChainInfo{}
-	sectorChanges.Removed = []miner.SectorOnChainInfo{}
-	sectorChanges.Extended = []miner.SectorExtensions{}
+	sectorChanges.Added = make([]miner.SectorOnChainInfo, 0)
+	sectorChanges.Removed = make([]miner.SectorOnChainInfo, 0)
+	sectorChanges.Extended = make([]miner.SectorExtensions, 0)
 
 	sectorDealsModel := minermodel.MinerSectorDealList{}
 	if !ec.HasPreviousState() {
