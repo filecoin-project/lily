@@ -286,12 +286,14 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 		}
 
 		if !v.(reflect.Value).Type().AssignableTo(o.Type()) {
-			if !v.(reflect.Value).Type().ConvertibleTo(o.Type()) {
-				return xerrors.Errorf("out parameter (%v) cannot be converted to cached value (%v)", o, v.(reflect.Value))
+			buf := new(bytes.Buffer)
+			merr := v.(cbg.CBORMarshaler).MarshalCBOR(buf)
+			uerr := out.(cbg.CBORUnmarshaler).UnmarshalCBOR(buf)
+			if uerr != nil || merr != nil {
+				return xerrors.Errorf("out parameter (%v) cannot be assigned cached value (%v)", "o", o.Type(), v.(reflect.Value).Type())
 			} else {
-				v = v.(reflect.Value).Convert(o.Type())
+				return nil
 			}
-			return xerrors.Errorf("out parameter (%v) cannot be assigned cached value (%v)", o, v.(reflect.Value))
 		}
 
 		o.Set(v.(reflect.Value))
