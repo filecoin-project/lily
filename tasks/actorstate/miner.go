@@ -58,37 +58,31 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, emsgs [
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner info: %w", err)
 	}
-	lg.Infow("extracted miner info", "duration", time.Since(start))
 
 	lockedFundsModel, err := ExtractMinerLockedFunds(ctx, a, ec)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner locked funds: %w", err)
 	}
-	lg.Infow("extracted miner funds", "duration", time.Since(start))
 
 	feeDebtModel, err := ExtractMinerFeeDebt(ctx, a, ec)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner fee debt: %w", err)
 	}
-	lg.Infow("extracted miner debt", "duration", time.Since(start))
 
 	currDeadlineModel, err := ExtractMinerCurrentDeadlineInfo(ctx, a, ec)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner current deadline info: %w", err)
 	}
-	lg.Infow("extracted miner deadline", "duration", time.Since(start))
 
 	preCommitModel, sectorModel, sectorDealsModel, sectorEventsModel, err := ExtractMinerSectorData(ctx, ec, a, node)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner sector changes: %w", err)
 	}
-	lg.Infow("extracted miner sectors", "duration", time.Since(start))
 
 	posts, err := ExtractMinerPoSts(ctx, &a, ec, emsgs, node)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner posts: %v", err)
 	}
-	lg.Infow("extracted miner posts", "duration", time.Since(start))
 
 	return &minermodel.MinerTaskResult{
 		Posts: posts,
@@ -339,12 +333,12 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 		}
 	} else { // not genesis state, need to diff with previous state to compute changes.
 		var err error
-		preCommitChanges, err = miner.DiffPreCommits(ctx, node.Store(), ec.PrevState, ec.CurrState)
+		preCommitChanges, err = miner.DiffPreCommits(ctx, node.Store(), a.Address, ec.PrevState, ec.CurrState)
 		if err != nil {
 			return nil, nil, nil, nil, xerrors.Errorf("diffing miner precommits: %w", err)
 		}
 
-		sectorChanges, err = miner.DiffSectors(ctx, node.Store(), ec.PrevState, ec.CurrState)
+		sectorChanges, err = miner.DiffSectors(ctx, node.Store(), a.Address, ec.PrevState, ec.CurrState)
 		if err != nil {
 			return nil, nil, nil, nil, xerrors.Errorf("diffing miner sectors: %w", err)
 		}

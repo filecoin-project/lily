@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/filecoin-project/go-address"
 	logging "github.com/ipfs/go-log/v2"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"go.opentelemetry.io/otel"
@@ -19,17 +20,16 @@ import (
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/adt/diff"
-	"github.com/filecoin-project/lily/chain/actors/builtin"
 )
 
 var log = logging.Logger("lily/actors/diff")
 
-func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreCommitChanges, error) {
+func DiffPreCommits(ctx context.Context, store adt.Store, addr address.Address, pre, cur State) (*PreCommitChanges, error) {
 	start := time.Now()
-	lg := log.With("cur_code", builtin.ActorNameByCode(cur.Code()), "pre_code", builtin.ActorNameByCode(pre.Code()))
+	lg := log.With("address", addr.String())
 	fast := true
 	defer func() {
-		lg.Infow("completed sector diff", "duration", time.Since(start), "fast", fast)
+		lg.Infow("completed precommit diff", "duration", time.Since(start), "fast", fast)
 	}()
 
 	ctx, span := otel.Tracer("").Start(ctx, "DiffPreCommits")
@@ -90,7 +90,6 @@ func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreC
 		}
 	}
 
-	lg.Infow("completed precommit diff", "duration", time.Since(start))
 	return diffContainer.Results, nil
 }
 
@@ -137,9 +136,9 @@ func (m *preCommitDiffContainer) Remove(key string, val *cbg.Deferred) error {
 	return nil
 }
 
-func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorChanges, error) {
+func DiffSectors(ctx context.Context, store adt.Store, addr address.Address, pre, cur State) (*SectorChanges, error) {
 	start := time.Now()
-	lg := log.With("cur_code", builtin.ActorNameByCode(cur.Code()), "pre_code", builtin.ActorNameByCode(pre.Code()))
+	lg := log.With("address", addr.String())
 	fast := true
 	defer func() {
 		lg.Infow("completed sector diff", "duration", time.Since(start), "fast", fast)
