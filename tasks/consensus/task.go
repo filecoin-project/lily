@@ -3,58 +3,76 @@ package consensus
 import (
 	"context"
 
-	"github.com/filecoin-project/lily/model"
-	"github.com/filecoin-project/lily/model/chain"
-	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/model/chain"
+	visormodel "github.com/filecoin-project/lily/model/visor"
+	"github.com/filecoin-project/lily/tasks"
 )
 
-type Task struct{}
-
-func NewTask() *Task {
-	return &Task{}
+type Task struct {
+	node tasks.DataSource
 }
 
-func (t *Task) ProcessTipSets(ctx context.Context, child, parent *types.TipSet) (model.Persistable, visormodel.ProcessingReportList, error) {
-	_, span := otel.Tracer("").Start(ctx, "ProcessTipSets")
-	if span.IsRecording() {
-		span.SetAttributes(attribute.String("child", child.String()), attribute.Int64("height", int64(child.Height())))
-		span.SetAttributes(attribute.String("parent", parent.String()), attribute.Int64("height", int64(parent.Height())))
+func NewTask(node tasks.DataSource) *Task {
+	return &Task{
+		node: node,
 	}
-	defer span.End()
+}
 
-	pl := make(chain.ChainConsensusList, child.Height()-parent.Height())
-	rp := make(visormodel.ProcessingReportList, child.Height()-parent.Height())
+func (t *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+	_, span := otel.Tracer("").Start(ctx, "ProcessTipSet")
+	if span.IsRecording() {
+		span.SetAttributes(
+			attribute.String("tipset", ts.Key().String()),
+			attribute.Int64("height", int64(ts.Height())),
+			attribute.String("processor", "consensus"),
+		)
+	}
+
+	defer span.End()
+	report := &visormodel.ProcessingReport{
+		Height:    int64(ts.Height()),
+		StateRoot: ts.ParentState().String(),
+	}
+
+	current := ts
+	executed, err := t.node.TipSet(ctx, ts.Parents())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	pl := make(chain.ChainConsensusList, current.Height()-executed.Height())
 	idx := 0
-	for epoch := parent.Height(); epoch < child.Height(); epoch++ {
-		if parent.Height() == epoch {
+	for epoch := current.Height(); epoch > executed.Height(); epoch-- {
+		if current.Height() == epoch {
 			pl[idx] = &chain.ChainConsensus{
 				Height:          int64(epoch),
-				ParentStateRoot: parent.ParentState().String(),
-				ParentTipSet:    parent.Parents().String(),
-				TipSet:          parent.Key().String(),
-			}
-			rp[idx] = &visormodel.ProcessingReport{
-				Height:    int64(epoch),
-				StateRoot: parent.ParentState().String(),
+				ParentStateRoot: current.ParentState().String(),
+				ParentTipSet:    current.Parents().String(),
+				TipSet:          current.Key().String(),
 			}
 		} else {
 			// null round no tipset
 			pl[idx] = &chain.ChainConsensus{
 				Height:          int64(epoch),
-				ParentStateRoot: parent.ParentState().String(),
-				ParentTipSet:    parent.Parents().String(),
+				ParentStateRoot: executed.ParentState().String(),
+				ParentTipSet:    executed.Parents().String(),
 				TipSet:          "",
-			}
-			rp[idx] = &visormodel.ProcessingReport{
-				Height:            int64(epoch),
-				StateRoot:         parent.ParentState().String(),
-				StatusInformation: visormodel.ProcessingStatusInformationNullRound,
 			}
 		}
 		idx += 1
 	}
-	return pl, rp, nil
+	if executed.Height() == 0 {
+		pl = append(pl, &chain.ChainConsensus{
+			Height:          int64(executed.Height()),
+			ParentStateRoot: executed.ParentState().String(),
+			ParentTipSet:    executed.Parents().String(),
+			TipSet:          executed.Key().String(),
+		})
+	}
+	return pl, report, nil
 }

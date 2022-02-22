@@ -26,19 +26,25 @@ func NewTask(node tasks.DataSource) *Task {
 	}
 }
 
-func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "ProcessMessageExecutions")
+func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, executed *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "ProcessTipSets")
 	if span.IsRecording() {
-		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))
+		span.SetAttributes(
+			attribute.String("current", current.String()),
+			attribute.Int64("current_height", int64(current.Height())),
+			attribute.String("executed", executed.String()),
+			attribute.Int64("executed_height", int64(executed.Height())),
+			attribute.String("processor", "message_executions"),
+		)
 	}
 	defer span.End()
 
 	report := &visormodel.ProcessingReport{
-		Height:    int64(pts.Height()),
-		StateRoot: pts.ParentState().String(),
+		Height:    int64(current.Height()),
+		StateRoot: current.ParentState().String(),
 	}
 
-	mex, err := p.node.MessageExecutions(ctx, ts, pts)
+	mex, err := p.node.MessageExecutions(ctx, current, executed)
 	if err != nil {
 		report.ErrorsDetected = xerrors.Errorf("getting messages executions for tipset: %w", err)
 		return nil, report, nil
