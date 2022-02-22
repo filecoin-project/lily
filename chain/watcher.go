@@ -3,37 +3,34 @@ package chain
 import (
 	"context"
 	"errors"
+
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/gammazero/workerpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/metrics"
 )
 
 // NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held
 // in a cache awaiting possible reversion. Tipsets will be written to the database when they are evicted from
 // the cache due to incoming later tipsets.
-func NewWatcher(obs TipSetObserver, hn HeadNotifier, cache *TipSetCache) *Watcher {
+func NewWatcher(obs *indexer.Manager, hn HeadNotifier, cache *TipSetCache) *Watcher {
 	return &Watcher{
 		notifier:   hn,
 		obs:        obs,
 		confidence: cache.Confidence(),
 		cache:      cache,
-		indexSlot:  make(chan struct{}, 1), // allow one concurrent indexing job
-		wp:         workerpool.New(8),      // TODO this value should be derived from the window duration passed to indexer
 	}
 }
 
 // Watcher is a task that indexes blocks by following the chain head.
 type Watcher struct {
 	notifier   HeadNotifier
-	obs        TipSetObserver
-	confidence int           // size of tipset cache
-	cache      *TipSetCache  // caches tipsets for possible reversion
-	indexSlot  chan struct{} // filled with a token when a goroutine is indexing a tipset
-	wp         *workerpool.WorkerPool
+	obs        *indexer.Manager
+	confidence int          // size of tipset cache
+	cache      *TipSetCache // caches tipsets for possible reversion
 	done       chan struct{}
 }
 
@@ -77,7 +74,7 @@ func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {
 
 		// If we have a zero confidence window then we need to notify every tipset we see
 		if c.confidence == 0 {
-			if err := c.obs.TipSet(ctx, he.TipSet); err != nil {
+			if err := c.maybeIndexTipSet(ctx, he.TipSet); err != nil {
 				return xerrors.Errorf("notify tipset: %w", err)
 			}
 		}
@@ -124,25 +121,9 @@ func (c *Watcher) maybeIndexTipSet(ctx context.Context, ts *types.TipSet) error 
 		)
 	}
 	defer span.End()
-	// Process the tipset if we can, otherwise skip it so we don't block if indexing is too slow
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-		// record how many workers are currently waiting to execute
-		metrics.RecordCount(ctx, metrics.WatcherWaitingWorkers, c.wp.WaitingQueueSize())
-		c.wp.Submit(func() {
-			// record a new worker starting
-			metrics.RecordInc(ctx, metrics.WatcherActiveWorkers)
-			if err := c.obs.TipSet(ctx, ts); err != nil {
-				log.Errorw("failed to index tipset", "error", err, "height", ts.Height())
-			}
-			// record a worker completing.
-			metrics.RecordDec(ctx, metrics.WatcherActiveWorkers)
-		})
-	}
 
-	return nil // only fatal errors should be returned
+	log.Infow("watch tipset", "height", ts.Height())
+	return c.obs.TipSetAsync(ctx, ts)
 }
 
 // A HeadNotifier reports tipset events that occur at the head of the chain

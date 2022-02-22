@@ -14,12 +14,15 @@ import (
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/lotus/node/impl/net"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	"github.com/gammazero/workerpool"
 	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/lily/chain/datasource"
+	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/lens/lily/modules"
 
 	"github.com/filecoin-project/lily/chain"
@@ -80,19 +83,26 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		return nil, err
 	}
 
-	taskAPI, err := chain.NewDataSource(m)
-	if err != nil {
-		return nil, err
+	// HeadNotifier bridges between the event system and the watcher
+	obs := &HeadNotifier{
+		bufferSize: 5,
 	}
-	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	indexer, err := chain.NewTipSetIndexer(taskAPI, strg, cfg.Window, cfg.Name, cfg.Tasks)
+
+	taskAPI, err := datasource.NewDataSource(m)
 	if err != nil {
 		return nil, err
 	}
 
-	// HeadNotifier bridges between the event system and the watcher
-	obs := &HeadNotifier{
-		bufferSize: 5,
+	imOpts := []indexer.ManagerOpt{indexer.WithWindow(cfg.Window)}
+	if cfg.Workers > 0 {
+		pool := workerpool.New(cfg.Workers)
+		imOpts = append(imOpts, indexer.WithWorkerPool(pool))
+	}
+
+	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
+	if err != nil {
+		return nil, err
 	}
 
 	// Hook up the notifier to the event system
@@ -116,7 +126,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 			"storage":    cfg.Storage,
 		},
 		Tasks:               cfg.Tasks,
-		Job:                 chain.NewWatcher(indexer, obs, tsCache),
+		Job:                 chain.NewWatcher(im, obs, tsCache),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
@@ -139,13 +149,23 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		return nil, err
 	}
 
-	taskAPI, err := chain.NewDataSource(m)
+	taskAPI, err := datasource.NewDataSource(m)
 	if err != nil {
 		return nil, err
 	}
 
+	imOpts := []indexer.ManagerOpt{indexer.WithWindow(cfg.Window)}
+	parallel := false
+	if cfg.Workers > 0 {
+		if cfg.Workers > 1 {
+			parallel = true
+		}
+		pool := workerpool.New(cfg.Workers)
+		imOpts = append(imOpts, indexer.WithWorkerPool(pool))
+	}
+
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	indexer, err := chain.NewTipSetIndexer(taskAPI, strg, cfg.Window, cfg.Name, cfg.Tasks)
+	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +180,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 			"storage":   cfg.Storage,
 		},
 		Tasks:               cfg.Tasks,
-		Job:                 chain.NewWalker(indexer, m, cfg.From, cfg.To),
+		Job:                 chain.NewWalker(im, m, cfg.From, cfg.To, parallel),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,

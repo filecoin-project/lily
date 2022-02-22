@@ -6,11 +6,13 @@ import (
 
 	mapset "github.com/deckarep/golang-set"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lotus/chain/types"
+	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/storage"
-	"github.com/filecoin-project/lotus/chain/types"
-	"golang.org/x/xerrors"
 )
 
 type GapIndexer struct {
@@ -26,7 +28,7 @@ var FullTaskSet mapset.Set
 
 func init() {
 	FullTaskSet = mapset.NewSet()
-	for _, t := range AllTasks {
+	for _, t := range indexer.AllTasks {
 		FullTaskSet.Add(t)
 	}
 }
@@ -85,6 +87,7 @@ func (g *GapIndexer) Run(ctx context.Context) error {
 	}
 	findLog.Infow("found skipped epochs", "count", len(skipGaps))
 
+	// TODO you can probably remove this in favor of the builtin processor
 	var nullRounds visor.ProcessingReportList
 	for _, epoch := range nulls {
 		select {
@@ -184,7 +187,7 @@ func (g *GapIndexer) findEpochGapsAndNullRounds(ctx context.Context, node GapInd
 		}
 		if tsgap.Height() == gh {
 			log.Debugw("found gap", "height", gh)
-			for _, task := range AllTasks {
+			for _, task := range indexer.AllTasks {
 				gapReport = append(gapReport, &visor.GapReport{
 					Height:     int64(tsgap.Height()),
 					Task:       task,
@@ -261,7 +264,7 @@ select height, task
 order by height desc
 ;
 `,
-		len(AllTasks), // arg 0
+		len(indexer.AllTasks),                      // arg 0
 		visor.ProcessingStatusInformationNullRound, // arg 1
 		g.minHeight,              // arg 2
 		g.maxHeight,              // arg 3
