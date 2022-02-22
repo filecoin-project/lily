@@ -1,31 +1,32 @@
-package actorstate
+package reward
 
 import (
 	"context"
 
+	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
+	"github.com/filecoin-project/lily/tasks/actorstate"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	rewardmodel "github.com/filecoin-project/lily/model/actors/reward"
 )
 
-// was services/processor/tasks/reward/reward.go
+var log = logging.Logger("lily/tasks/reward")
 
 // RewardExtractor extracts reward actor state
 type RewardExtractor struct{}
 
-func init() {
-	for _, c := range reward.AllCodes() {
-		Register(c, RewardExtractor{})
-	}
-}
-
-func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "RewardExtractor")
+func (RewardExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
+	log.Debugw("extract", zap.String("extractor", "RewardExtractor"), zap.Inline(a))
+	_, span := otel.Tracer("").Start(ctx, "RewardExtractor.Extract")
 	defer span.End()
+	if span.IsRecording() {
+		span.SetAttributes(a.Attributes()...)
+	}
 
 	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
 	defer stop()
@@ -75,8 +76,8 @@ func (RewardExtractor) Extract(ctx context.Context, a ActorInfo, node ActorState
 	}
 
 	return &rewardmodel.ChainReward{
-		Height:                            int64(a.Epoch),
-		StateRoot:                         a.ParentStateRoot.String(),
+		Height:                            int64(a.Current.Height()),
+		StateRoot:                         a.Current.ParentState().String(),
 		CumSumBaseline:                    csbaseline.String(),
 		CumSumRealized:                    csrealized.String(),
 		EffectiveBaselinePower:            effectiveBaselinePower.String(),

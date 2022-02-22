@@ -1,31 +1,34 @@
-package actorstate
+package multisig
 
 import (
 	"context"
 
 	"github.com/filecoin-project/lotus/chain/types"
+	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
+	"github.com/filecoin-project/lily/tasks/actorstate"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	multisigmodel "github.com/filecoin-project/lily/model/actors/multisig"
 )
 
-func init() {
-	for _, c := range multisig.AllCodes() {
-		Register(c, MultiSigActorExtractor{})
-	}
-}
+var log = logging.Logger("lily/tasks/multisig")
 
 type MultiSigActorExtractor struct{}
 
-func (m MultiSigActorExtractor) Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "MultiSigActor")
+func (MultiSigActorExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
+	log.Debugw("extract", zap.String("extractor", "MultiSigActorExtractor"), zap.Inline(a))
+	ctx, span := otel.Tracer("").Start(ctx, "MultiSigExtractor.Extract")
 	defer span.End()
+	if span.IsRecording() {
+		span.SetAttributes(a.Attributes()...)
+	}
 
 	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
 	defer stop()
@@ -42,7 +45,7 @@ func (m MultiSigActorExtractor) Extract(ctx context.Context, a ActorInfo, node A
 	return &multisigmodel.MultisigTaskResult{TransactionModel: transactionModels}, nil
 }
 
-func ExtractMultisigTransactions(ctx context.Context, a ActorInfo, ec *MsigExtractionContext) (multisigmodel.MultisigTransactionList, error) {
+func ExtractMultisigTransactions(ctx context.Context, a actorstate.ActorInfo, ec *MsigExtractionContext) (multisigmodel.MultisigTransactionList, error) {
 	var out multisigmodel.MultisigTransactionList
 	if !ec.HasPreviousState() {
 		if err := ec.CurrState.ForEachPendingTxn(func(id int64, txn multisig.Transaction) error {
@@ -81,7 +84,7 @@ func ExtractMultisigTransactions(ctx context.Context, a ActorInfo, ec *MsigExtra
 		}
 		out = append(out, &multisigmodel.MultisigTransaction{
 			MultisigID:    a.Address.String(),
-			StateRoot:     a.ParentStateRoot.String(),
+			StateRoot:     a.Current.ParentState().String(),
 			Height:        int64(ec.CurrTs.Height()),
 			TransactionID: added.TxID,
 			To:            added.Tx.To.String(),
@@ -99,7 +102,7 @@ func ExtractMultisigTransactions(ctx context.Context, a ActorInfo, ec *MsigExtra
 		}
 		out = append(out, &multisigmodel.MultisigTransaction{
 			MultisigID:    a.Address.String(),
-			StateRoot:     a.ParentStateRoot.String(),
+			StateRoot:     a.Current.ParentState().String(),
 			Height:        int64(ec.CurrTs.Height()),
 			TransactionID: modded.TxID,
 			To:            modded.To.To.String(),
@@ -127,15 +130,15 @@ func (m *MsigExtractionContext) HasPreviousState() bool {
 	return !(m.CurrTs.Height() == 1 || m.CurrState == m.PrevState)
 }
 
-func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorStateAPI) (*MsigExtractionContext, error) {
+func NewMultiSigExtractionContext(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (*MsigExtractionContext, error) {
 	curState, err := multisig.Load(node.Store(), &a.Actor)
 	if err != nil {
 		return nil, xerrors.Errorf("loading current multisig state at head %s: %w", a.Actor.Head, err)
 	}
 
 	prevState := curState
-	if a.Epoch != 1 {
-		prevActor, err := node.Actor(ctx, a.Address, a.ParentTipSet.Key())
+	if a.Current.Height() != 1 {
+		prevActor, err := node.Actor(ctx, a.Address, a.Executed.Key())
 		if err != nil {
 			// if the actor exists in the current state and not in the parent state then the
 			// actor was created in the current state.
@@ -144,11 +147,11 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 					PrevState: prevState,
 					CurrActor: &a.Actor,
 					CurrState: curState,
-					CurrTs:    a.TipSet,
+					CurrTs:    a.Current,
 					Store:     node.Store(),
 				}, nil
 			}
-			return nil, xerrors.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.ParentTipSet.Key(), a.Epoch, err)
+			return nil, xerrors.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.Executed.Key(), a.Current.Height(), err)
 		}
 
 		prevState, err = multisig.Load(node.Store(), prevActor)
@@ -161,7 +164,7 @@ func NewMultiSigExtractionContext(ctx context.Context, a ActorInfo, node ActorSt
 		PrevState: prevState,
 		CurrActor: &a.Actor,
 		CurrState: curState,
-		CurrTs:    a.TipSet,
+		CurrTs:    a.Current,
 		Store:     node.Store(),
 	}, nil
 }
