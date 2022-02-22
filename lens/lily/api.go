@@ -19,6 +19,7 @@ type LilyAPI interface {
 
 	AuthVerify(ctx context.Context, token string) ([]auth.Permission, error)
 
+	LilyIndex(ctx context.Context, cfg *LilyIndexConfig) (interface{}, error)
 	LilyWatch(ctx context.Context, cfg *LilyWatchConfig) (*schedule.JobSubmitResult, error)
 	LilyWalk(ctx context.Context, cfg *LilyWalkConfig) (*schedule.JobSubmitResult, error)
 	LilySurvey(ctx context.Context, cfg *LilySurveyConfig) (*schedule.JobSubmitResult, error)
@@ -63,6 +64,14 @@ type LilyAPI interface {
 	NetPubsubScores(context.Context) ([]api.PubsubScore, error)
 	NetAgentVersion(ctx context.Context, p peer.ID) (string, error)
 	NetPeerInfo(context.Context, peer.ID) (*api.ExtendedPeerInfo, error)
+}
+
+type LilyIndexConfig struct {
+	TipSet  types.TipSetKey
+	Name    string
+	Tasks   []string
+	Storage string // name of storage system to use, may be empty
+	Window  time.Duration
 }
 
 type LilyWatchConfig struct {
