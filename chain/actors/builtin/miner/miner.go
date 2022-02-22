@@ -165,12 +165,13 @@ type State interface {
 
 	SectorsAmtBitwidth() int
 
-	// Diff helpers. Used by Diff* functions internally.
-	sectors() (adt.Array, error)
-	decodeSectorOnChainInfo(*cbg.Deferred) (SectorOnChainInfo, error)
-	precommits() (adt.Map, error)
-	decodeSectorPreCommitOnChainInfo(*cbg.Deferred) (SectorPreCommitOnChainInfo, error)
 	GetState() interface{}
+
+	// Diff helpers. Used by Diff* functions internally.
+	SectorArray() (adt.Array, error)
+	DecodeSectorOnChainInfo(*cbg.Deferred) (SectorOnChainInfo, error)
+	PreCommitMap() (adt.Map, error)
+	DecodeSectorPreCommitOnChainInfo(*cbg.Deferred) (SectorPreCommitOnChainInfo, error)
 }
 
 type Deadline interface {
