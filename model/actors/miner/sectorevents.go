@@ -24,6 +24,9 @@ const (
 
 	SectorExpired    = "SECTOR_EXPIRED"
 	SectorTerminated = "SECTOR_TERMINATED"
+
+	// specs-actors v7
+	SectorSnapped = "SECTOR_SNAPPED"
 )
 
 type MinerSectorEvent struct {

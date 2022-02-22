@@ -39,7 +39,8 @@ var models = []interface{}{
 	(*blocks.DrandBlockEntrie)(nil),
 
 	(*miner.MinerSectorDeal)(nil),
-	(*miner.MinerSectorInfo)(nil),
+	(*miner.MinerSectorInfoV7)(nil),
+	(*miner.MinerSectorInfoV1_6)(nil),
 	(*miner.MinerSectorPost)(nil),
 	(*miner.MinerPreCommitInfo)(nil),
 	(*miner.MinerSectorEvent)(nil),
