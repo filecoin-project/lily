@@ -74,6 +74,7 @@ type LilyWatchConfig struct {
 	RestartOnCompletion bool
 	RestartDelay        time.Duration
 	Storage             string // name of storage system to use, may be empty
+	Workers             int    // number of indexing jobs that can run in parallel
 }
 
 type LilyWalkConfig struct {
@@ -86,6 +87,7 @@ type LilyWalkConfig struct {
 	RestartOnCompletion bool
 	RestartDelay        time.Duration
 	Storage             string // name of storage system to use, may be empty
+	Workers             int    // number of indexing jobs that can run in parallel
 }
 
 type LilyGapFindConfig struct {

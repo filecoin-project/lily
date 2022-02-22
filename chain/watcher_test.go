@@ -20,6 +20,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/chain/datasource"
+	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/blocks"
 	"github.com/filecoin-project/lily/storage"
@@ -66,12 +68,12 @@ func TestWatcher(t *testing.T) {
 	strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 	require.NoError(t, err, "NewDatabaseFromDB")
 
-	taskAPI, err := NewDataSource(nodeAPI)
+	taskAPI, err := datasource.NewDataSource(nodeAPI)
 	require.NoError(t, err)
-	tsIndexer, err := NewTipSetIndexer(taskAPI, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
-	require.NoError(t, err, "NewTipSetIndexer")
+	im, err := indexer.NewManager(taskAPI, strg, t.Name(), []string{indexer.BlocksTask}, indexer.WithWindow(builtin.EpochDurationSeconds*time.Second))
+	require.NoError(t, err, "NewManager")
 	t.Logf("initializing indexer")
-	idx := NewWatcher(tsIndexer, NullHeadNotifier{}, NewTipSetCache(0))
+	idx := NewWatcher(im, NullHeadNotifier{}, NewTipSetCache(0))
 
 	newHeads, err := full.ChainNotify(ctx)
 	require.NoError(t, err, "chain notify")
@@ -79,29 +81,33 @@ func TestWatcher(t *testing.T) {
 	bm := itestkit.NewBlockMiner(t, miner)
 	t.Logf("mining first block")
 	bm.MineUntilBlock(ctx, full, nil)
-
 	first := <-newHeads
-
 	var bhs blockHeaderList
 	for _, head := range first {
+		bhs = append(bhs, head.Val.Blocks()...)
+	}
+
+	t.Logf("mining second block")
+	bm.MineUntilBlock(ctx, full, nil)
+	second := <-newHeads
+	for _, head := range second {
 		bhs = append(bhs, head.Val.Blocks()...)
 	}
 
 	cids := bhs.Cids()
 	rounds := bhs.Rounds()
 
+	// the `current` tipset being indexed is always the parent of the passed tipset.
 	t.Logf("indexing first tipset")
+	// here we will index first parents
 	for _, hc := range first {
 		he := &HeadEvent{Type: hc.Type, TipSet: hc.Val}
 		err = idx.index(ctx, he)
 		require.NoError(t, err, "index")
 	}
 
-	t.Logf("mining second block")
-	bm.MineUntilBlock(ctx, full, nil)
-
-	second := <-newHeads
 	t.Logf("indexing second tipset")
+	// here we will index second parents (so first)
 	for _, hc := range second {
 		he := &HeadEvent{Type: hc.Type, TipSet: hc.Val}
 		err = idx.index(ctx, he)
@@ -181,7 +187,7 @@ func collectBlockHeaders(n lens.API, ts *types.TipSet) (blockHeaderList, error) 
 	blocks := ts.Blocks()
 
 	for _, bh := range ts.Blocks() {
-		if bh.Height == 0 {
+		if bh.Height < 2 {
 			continue
 		}
 
