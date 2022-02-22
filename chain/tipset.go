@@ -6,15 +6,11 @@ import (
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
+	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/xerrors"
 )
 
-// A TipSetObserver waits for notifications of new tipsets.
-type TipSetObserver interface {
-	TipSet(ctx context.Context, ts *types.TipSet) error
-	SkipTipSet(ctx context.Context, ts *types.TipSet, reason string) error
-	Close() error
-}
+var log = logging.Logger("lily/chain")
 
 var (
 	ErrCacheEmpty       = errors.New("cache empty")
