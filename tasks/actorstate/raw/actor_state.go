@@ -7,9 +7,9 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model"
 	commonmodel "github.com/filecoin-project/lily/model/actors/common"
+	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lily/tasks/actorstate"
 )
 
@@ -24,7 +24,7 @@ func (RawActorStateExtractor) Extract(ctx context.Context, a actorstate.ActorInf
 	}
 
 	// Don't attempt to read state if the actor has been deleted
-	if a.ChangeType == lens.ChangeTypeRemove {
+	if a.ChangeType == tasks.ChangeTypeRemove {
 		return nil, nil
 	}
 
