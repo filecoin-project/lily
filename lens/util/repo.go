@@ -5,10 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/filecoin-project/go-bitfield"
 	"reflect"
 	"strings"
 
+	"github.com/filecoin-project/go-bitfield"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -20,6 +20,7 @@ import (
 	builtin "github.com/filecoin-project/lotus/chain/actors/builtin"
 	"github.com/filecoin-project/lotus/chain/consensus/filcns"
 	"github.com/filecoin-project/lotus/chain/state"
+	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
@@ -40,7 +41,7 @@ var log = logging.Logger("lily/lens")
 // GetMessagesForTipset returns a list of messages sent as part of pts (parent) with receipts found in ts (child).
 // No attempt at deduplication of messages is made. A list of blocks with their corresponding messages is also returned - it contains all messages
 // in the block regardless if they were applied during the state change.
-func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainStore, next, current *types.TipSet) (*lens.TipSetMessages, error) {
+func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainStore, sm *stmgr.StateManager, next, current *types.TipSet) (*lens.TipSetMessages, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "GetExecutedAndBlockMessagesForTipSet")
 	defer span.End()
 	if !types.CidArrsEqual(next.Parents().Cids(), current.Cids()) {
@@ -160,10 +161,13 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 
 	// Create a skeleton vm just for calling ShouldBurn
 	vmi, err := vm.NewVM(ctx, &vm.VMOpts{
-		StateBase:   current.ParentState(),
-		Epoch:       current.Height(),
-		Bstore:      cs.StateBlockstore(),
-		NtwkVersion: DefaultNetwork.Version,
+		StateBase:      current.ParentState(),
+		Epoch:          current.Height(),
+		Bstore:         cs.StateBlockstore(),
+		NtwkVersion:    DefaultNetwork.Version,
+		Actors:         filcns.NewActorRegistry(),
+		Syscalls:       sm.Syscalls,
+		CircSupplyCalc: sm.GetVMCirculatingSupply,
 	})
 	if err != nil {
 		return nil, xerrors.Errorf("creating temporary vm: %w", err)

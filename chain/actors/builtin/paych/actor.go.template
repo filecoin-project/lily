@@ -26,6 +26,13 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 )
 
+func AllCodes() []cid.Cid {
+	return []cid.Cid{ {{range .versions}}
+        builtin{{.}}.PaymentChannelActorCodeID,
+    {{- end}}
+    }
+}
+
 func init() {
 {{range .versions}}
 	builtin.RegisterActorState(builtin{{.}}.PaymentChannelActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
@@ -42,6 +49,27 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 {{end}}
 	}
 	return nil, xerrors.Errorf("unknown actor code %s", act.Code)
+}
+
+func MakeState(store adt.Store, av actors.Version) (State, error) {
+	switch av {
+{{range .versions}}
+	case actors.Version{{.}}:
+		return make{{.}}(store)
+{{end}}
+}
+	return nil, xerrors.Errorf("unknown actor version %d", av)
+}
+
+func GetActorCodeID(av actors.Version) (cid.Cid, error) {
+	switch av {
+{{range .versions}}
+	case actors.Version{{.}}:
+		return builtin{{.}}.PaymentChannelActorCodeID, nil
+{{end}}
+	}
+
+	return cid.Undef, xerrors.Errorf("unknown actor version %d", av)
 }
 
 // State is an abstract version of payment channel state that works across
@@ -64,6 +92,8 @@ type State interface {
 
 	// Iterate lane states
 	ForEachLaneState(cb func(idx uint64, dl LaneState) error) error
+
+	GetState() interface{}
 }
 
 // LaneState is an abstract copy of the state of a single lane
@@ -91,13 +121,6 @@ func DecodeSignedVoucher(s string) (*SignedVoucher, error) {
 }
 
 var Methods = builtin{{.latestVersion}}.MethodsPaych
-
-func AllCodes() []cid.Cid {
-	return []cid.Cid{ {{range .versions}}
-        builtin{{.}}.PaymentChannelActorCodeID,
-    {{- end}}
-    }
-}
 
 func Message(version actors.Version, from address.Address) MessageBuilder {
 	switch version {

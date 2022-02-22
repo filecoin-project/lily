@@ -11,9 +11,9 @@ import (
 	"golang.org/x/xerrors"
 )
 
-var latestVersion = 6
+var latestVersion = 7
 
-var versions = []int{0, 2, 3, 4, 5, latestVersion}
+var versions = []int{0, 2, 3, 4, 5, 6, latestVersion}
 
 var versionImports = map[int]string{
 	0:             "/",
@@ -21,7 +21,8 @@ var versionImports = map[int]string{
 	3:             "/v3/",
 	4:             "/v4/",
 	5:             "/v5/",
-	latestVersion: "/v6/",
+	6:             "/v6/",
+	latestVersion: "/v7/",
 }
 
 var actors = map[string][]int{

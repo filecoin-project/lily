@@ -10,15 +10,14 @@ import (
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 
-	paych{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin/paych"
-	adt{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/util/adt"
+	paych7 "github.com/filecoin-project/specs-actors/v7/actors/builtin/paych"
+	adt7 "github.com/filecoin-project/specs-actors/v7/actors/util/adt"
 )
 
+var _ State = (*state7)(nil)
 
-var _ State = (*state{{.v}})(nil)
-
-func load{{.v}}(store adt.Store, root cid.Cid) (State, error) {
-	out := state{{.v}}{store: store}
+func load7(store adt.Store, root cid.Cid) (State, error) {
+	out := state7{store: store}
 	err := store.Get(store.Context(), root, &out)
 	if err != nil {
 		return nil, err
@@ -26,45 +25,45 @@ func load{{.v}}(store adt.Store, root cid.Cid) (State, error) {
 	return &out, nil
 }
 
-func make{{.v}}(store adt.Store) (State, error) {
-	out := state{{.v}}{store: store}
-	out.State = paych{{.v}}.State{}
+func make7(store adt.Store) (State, error) {
+	out := state7{store: store}
+	out.State = paych7.State{}
 	return &out, nil
 }
 
-type state{{.v}} struct {
-	paych{{.v}}.State
+type state7 struct {
+	paych7.State
 	store adt.Store
-	lsAmt *adt{{.v}}.Array
+	lsAmt *adt7.Array
 }
 
 // Channel owner, who has funded the actor
-func (s *state{{.v}}) From() (address.Address, error) {
+func (s *state7) From() (address.Address, error) {
 	return s.State.From, nil
 }
 
 // Recipient of payouts from channel
-func (s *state{{.v}}) To() (address.Address, error) {
+func (s *state7) To() (address.Address, error) {
 	return s.State.To, nil
 }
 
 // Height at which the channel can be `Collected`
-func (s *state{{.v}}) SettlingAt() (abi.ChainEpoch, error) {
+func (s *state7) SettlingAt() (abi.ChainEpoch, error) {
 	return s.State.SettlingAt, nil
 }
 
 // Amount successfully redeemed through the payment channel, paid out on `Collect()`
-func (s *state{{.v}}) ToSend() (abi.TokenAmount, error) {
+func (s *state7) ToSend() (abi.TokenAmount, error) {
 	return s.State.ToSend, nil
 }
 
-func (s *state{{.v}}) getOrLoadLsAmt() (*adt{{.v}}.Array, error) {
+func (s *state7) getOrLoadLsAmt() (*adt7.Array, error) {
 	if s.lsAmt != nil {
 		return s.lsAmt, nil
 	}
 
 	// Get the lane state from the chain
-	lsamt, err := adt{{.v}}.AsArray(s.store, s.State.LaneStates{{if (ge .v 3)}}, paych{{.v}}.LaneStatesAmtBitwidth{{end}})
+	lsamt, err := adt7.AsArray(s.store, s.State.LaneStates, paych7.LaneStatesAmtBitwidth)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +73,7 @@ func (s *state{{.v}}) getOrLoadLsAmt() (*adt{{.v}}.Array, error) {
 }
 
 // Get total number of lanes
-func (s *state{{.v}}) LaneCount() (uint64, error) {
+func (s *state7) LaneCount() (uint64, error) {
 	lsamt, err := s.getOrLoadLsAmt()
 	if err != nil {
 		return 0, err
@@ -82,12 +81,12 @@ func (s *state{{.v}}) LaneCount() (uint64, error) {
 	return lsamt.Length(), nil
 }
 
-func (s *state{{.v}}) GetState() interface{} {
+func (s *state7) GetState() interface{} {
 	return &s.State
 }
 
 // Iterate lane states
-func (s *state{{.v}}) ForEachLaneState(cb func(idx uint64, dl LaneState) error) error {
+func (s *state7) ForEachLaneState(cb func(idx uint64, dl LaneState) error) error {
 	// Get the lane state from the chain
 	lsamt, err := s.getOrLoadLsAmt()
 	if err != nil {
@@ -97,27 +96,26 @@ func (s *state{{.v}}) ForEachLaneState(cb func(idx uint64, dl LaneState) error) 
 	// Note: we use a map instead of an array to store laneStates because the
 	// client sets the lane ID (the index) and potentially they could use a
 	// very large index.
-	var ls paych{{.v}}.LaneState
+	var ls paych7.LaneState
 	return lsamt.ForEach(&ls, func(i int64) error {
-		return cb(uint64(i), &laneState{{.v}}{ls})
+		return cb(uint64(i), &laneState7{ls})
 	})
 }
 
-type laneState{{.v}} struct {
-	paych{{.v}}.LaneState
+type laneState7 struct {
+	paych7.LaneState
 }
 
-func (ls *laneState{{.v}}) Redeemed() (big.Int, error) {
+func (ls *laneState7) Redeemed() (big.Int, error) {
 	return ls.LaneState.Redeemed, nil
 }
 
-func (ls *laneState{{.v}}) Nonce() (uint64, error) {
+func (ls *laneState7) Nonce() (uint64, error) {
 	return ls.LaneState.Nonce, nil
 }
 
-{{if (ge .v 7)}}
-func toV{{.v}}SignedVoucher(sv SignedVoucher) paych{{.v}}.SignedVoucher {
-	return paych{{.v}}.SignedVoucher{
+func toV7SignedVoucher(sv SignedVoucher) paych7.SignedVoucher {
+	return paych7.SignedVoucher{
 		ChannelAddr:     sv.ChannelAddr,
 		TimeLockMin:     sv.TimeLockMin,
 		TimeLockMax:     sv.TimeLockMax,
@@ -131,4 +129,3 @@ func toV{{.v}}SignedVoucher(sv SignedVoucher) paych{{.v}}.SignedVoucher {
 		Signature:       sv.Signature,
 	}
 }
-{{end}}

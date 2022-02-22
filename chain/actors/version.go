@@ -15,6 +15,7 @@ const (
 	Version4 Version = 4
 	Version5 Version = 5
 	Version6 Version = 6
+	Version7 Version = 7
 )
 
 // Converts a network version into an actors adt version.

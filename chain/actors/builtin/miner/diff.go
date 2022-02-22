@@ -211,7 +211,16 @@ func (m *sectorDiffContainer) Modify(key uint64, from, to *cbg.Deferred) error {
 	}
 
 	if siFrom.Expiration != siTo.Expiration {
-		m.Results.Extended = append(m.Results.Extended, SectorExtensions{
+		m.Results.Extended = append(m.Results.Extended, SectorModification{
+			From: siFrom,
+			To:   siTo,
+		})
+	}
+
+	// nullable cid's.....gross
+	// if from is null and to isn't that means the sector was Snapped.
+	if siFrom.SectorKeyCID == nil && siTo.SectorKeyCID != nil {
+		m.Results.Snapped = append(m.Results.Snapped, SectorModification{
 			From: siFrom,
 			To:   siTo,
 		})
