@@ -22,12 +22,12 @@ import (
 func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreCommitChanges, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "DiffPreCommits")
 	defer span.End()
-	prep, err := pre.precommits()
+	prep, err := pre.PreCommitMap()
 	if err != nil {
 		return nil, err
 	}
 
-	curp, err := cur.precommits()
+	curp, err := cur.PreCommitMap()
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreC
 	}
 
 	diffContainer := NewPreCommitDiffContainer(pre, cur)
-	if mapRequiresLegacyDiffing(pre, cur, preOpts, curOpts) {
+	if MapRequiresLegacyDiffing(pre, cur, preOpts, curOpts) {
 		if span.IsRecording() {
 			span.SetAttributes(attribute.String("diff", "slow"))
 		}
@@ -102,7 +102,7 @@ func (m *preCommitDiffContainer) AsKey(key string) (abi.Keyer, error) {
 }
 
 func (m *preCommitDiffContainer) Add(key string, val *cbg.Deferred) error {
-	sp, err := m.after.decodeSectorPreCommitOnChainInfo(val)
+	sp, err := m.after.DecodeSectorPreCommitOnChainInfo(val)
 	if err != nil {
 		return xerrors.Errorf("pre commit diff container add: %w", err)
 	}
@@ -115,7 +115,7 @@ func (m *preCommitDiffContainer) Modify(key string, from, to *cbg.Deferred) erro
 }
 
 func (m *preCommitDiffContainer) Remove(key string, val *cbg.Deferred) error {
-	sp, err := m.pre.decodeSectorPreCommitOnChainInfo(val)
+	sp, err := m.pre.DecodeSectorPreCommitOnChainInfo(val)
 	if err != nil {
 		return xerrors.Errorf("pre commit diff container remove: %w", err)
 	}
@@ -126,12 +126,12 @@ func (m *preCommitDiffContainer) Remove(key string, val *cbg.Deferred) error {
 func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorChanges, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "DiffSectors")
 	defer span.End()
-	pres, err := pre.sectors()
+	pres, err := pre.SectorArray()
 	if err != nil {
 		return nil, err
 	}
 
-	curs, err := cur.sectors()
+	curs, err := cur.SectorArray()
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorC
 	preBw := pre.SectorsAmtBitwidth()
 	curBw := cur.SectorsAmtBitwidth()
 	diffContainer := NewSectorDiffContainer(pre, cur)
-	if arrayRequiresLegacyDiffing(pre, cur, preBw, curBw) {
+	if ArrayRequiresLegacyDiffing(pre, cur, preBw, curBw) {
 		if span.IsRecording() {
 			span.SetAttributes(attribute.String("diff", "slow"))
 		}
@@ -191,7 +191,7 @@ type sectorDiffContainer struct {
 }
 
 func (m *sectorDiffContainer) Add(key uint64, val *cbg.Deferred) error {
-	si, err := m.after.decodeSectorOnChainInfo(val)
+	si, err := m.after.DecodeSectorOnChainInfo(val)
 	if err != nil {
 		return xerrors.Errorf("sector diff container add: %w", err)
 	}
@@ -200,12 +200,12 @@ func (m *sectorDiffContainer) Add(key uint64, val *cbg.Deferred) error {
 }
 
 func (m *sectorDiffContainer) Modify(key uint64, from, to *cbg.Deferred) error {
-	siFrom, err := m.pre.decodeSectorOnChainInfo(from)
+	siFrom, err := m.pre.DecodeSectorOnChainInfo(from)
 	if err != nil {
 		return xerrors.Errorf("sector diff container modify from: %w", err)
 	}
 
-	siTo, err := m.after.decodeSectorOnChainInfo(to)
+	siTo, err := m.after.DecodeSectorOnChainInfo(to)
 	if err != nil {
 		return xerrors.Errorf("sector diff container modify to: %w", err)
 	}
@@ -229,7 +229,7 @@ func (m *sectorDiffContainer) Modify(key uint64, from, to *cbg.Deferred) error {
 }
 
 func (m *sectorDiffContainer) Remove(key uint64, val *cbg.Deferred) error {
-	si, err := m.pre.decodeSectorOnChainInfo(val)
+	si, err := m.pre.DecodeSectorOnChainInfo(val)
 	if err != nil {
 		return xerrors.Errorf("sector diff container remove: %w", err)
 	}
@@ -237,7 +237,7 @@ func (m *sectorDiffContainer) Remove(key uint64, val *cbg.Deferred) error {
 	return nil
 }
 
-func arrayRequiresLegacyDiffing(pre, cur State, pOpts, cOpts int) bool {
+func ArrayRequiresLegacyDiffing(pre, cur State, pOpts, cOpts int) bool {
 	// amt/v3 cannot read amt/v2 nodes. Their Pointers struct has changed cbor marshalers.
 	if pre.Code().Equals(builtin0.StorageMinerActorCodeID) {
 		return true
@@ -258,7 +258,7 @@ func arrayRequiresLegacyDiffing(pre, cur State, pOpts, cOpts int) bool {
 	return false
 }
 
-func mapRequiresLegacyDiffing(pre, cur State, pOpts, cOpts *adt.MapOpts) bool {
+func MapRequiresLegacyDiffing(pre, cur State, pOpts, cOpts *adt.MapOpts) bool {
 	// hamt/v3 cannot read hamt/v2 nodes. Their Pointers struct has changed cbor marshalers.
 	if pre.Code().Equals(builtin0.StorageMinerActorCodeID) {
 		return true
