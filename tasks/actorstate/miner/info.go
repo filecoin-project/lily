@@ -62,7 +62,6 @@ func (InfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 		if err == nil {
 			newMultiAddrs = append(newMultiAddrs, newMaddr.String())
 		} else {
-			// TODO(frrist)
 			log.Debugw("failed to decode miner multiaddr", "miner", a.Address, "multiaddress", addr, "error", err)
 		}
 	}
