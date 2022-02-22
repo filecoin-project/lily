@@ -65,8 +65,39 @@ func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.C
 	return m.ChainAPI.Chain.GetTipsetByHeight(ctx, epoch, ts, false)
 }
 
-func (m *LilyNodeAPI) Daemonized() bool {
-	return true
+func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interface{}, error) {
+	md := storage.Metadata{
+		JobName: cfg.Name,
+	}
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx := context.Background()
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
+	if err != nil {
+		return nil, err
+	}
+
+	taskAPI, err := datasource.NewDataSource(m)
+	if err != nil {
+		return nil, err
+	}
+
+	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, indexer.WithWindow(cfg.Window))
+	if err != nil {
+		return nil, err
+	}
+
+	ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
+	if err != nil {
+		return nil, err
+	}
+
+	success, err := im.TipSet(ctx, ts)
+
+	return success, err
+
 }
 
 func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*schedule.JobSubmitResult, error) {
@@ -267,6 +298,7 @@ func (m *LilyNodeAPI) LilyJobStop(_ context.Context, ID schedule.JobID) error {
 	return nil
 }
 
+// TODO pass context to fix wait
 func (m *LilyNodeAPI) LilyJobWait(ctx context.Context, ID schedule.JobID) (*schedule.JobListResult, error) {
 	res, err := m.Scheduler.WaitJob(ID)
 	if err != nil {
