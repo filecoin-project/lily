@@ -20,11 +20,14 @@ func NewTask() *Task {
 }
 
 func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "ProcessBlocks")
+	_, span := otel.Tracer("").Start(ctx, "ProcessTipSet")
 	if span.IsRecording() {
-		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))
+		span.SetAttributes(
+			attribute.String("tipset", ts.Key().String()),
+			attribute.Int64("height", int64(ts.Height())),
+			attribute.String("processor", "blocks"),
+		)
 	}
-	defer span.End()
 
 	var pl model.PersistableList
 	for _, bh := range ts.Blocks() {
