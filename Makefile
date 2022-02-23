@@ -8,6 +8,7 @@ LILY_IMAGE_NAME?=filecoin/lily
 # LILY_VERSION is the nearest tag plus number of commits and short form of
 # most recent commit since the tag, if any. It may be overriden by the environment.
 LILY_VERSION?=$(shell git describe --always --tag --dirty)
+docker_sanitized_lily_version=$(shell echo ${LILY_VERSION} | sed 's:/:-:g')
 
 unexport GOFLAGS
 
@@ -176,7 +177,7 @@ CLEAN+=Dockerfile.dev
 .PHONY: docker-mainnet
 docker-mainnet: LILY_DOCKER_FILE ?= Dockerfile
 docker-mainnet: LILY_NETWORK_TARGET ?= mainnet
-docker-mainnet: LILY_IMAGE_TAG ?= $(LILY_VERSION)
+docker-mainnet: LILY_IMAGE_TAG ?= $(docker_sanitized_lily_version)
 docker-mainnet: docker-build-image-template
 
 .PHONY: docker-mainnet-push
@@ -185,7 +186,7 @@ docker-mainnet-push: docker-mainnet docker-tag-and-push-template
 .PHONY: docker-mainnet-dev
 docker-mainnet-dev: LILY_DOCKER_FILE ?= Dockerfile.dev
 docker-mainnet-dev: LILY_NETWORK_TARGET ?= mainnet
-docker-mainnet-dev: LILY_IMAGE_TAG ?= $(LILY_VERSION)-dev
+docker-mainnet-dev: LILY_IMAGE_TAG ?= $(docker_sanitized_lily_version)-dev
 docker-mainnet-dev: docker-build-image-template
 
 .PHONY: docker-mainnet-dev-push
@@ -195,7 +196,7 @@ docker-mainnet-dev-push: docker-mainnet-dev docker-tag-and-push-template
 .PHONY: docker-calibnet
 docker-calibnet: LILY_DOCKER_FILE ?= Dockerfile
 docker-calibnet: LILY_NETWORK_TARGET ?= calibnet
-docker-calibnet: LILY_IMAGE_TAG ?= $(LILY_VERSION)-calibnet
+docker-calibnet: LILY_IMAGE_TAG ?= $(docker_sanitized_lily_version)-calibnet
 docker-calibnet: docker-build-image-template
 
 .PHONY: docker-calibnet-push
@@ -204,7 +205,7 @@ docker-calibnet-push: docker-calibnet docker-tag-and-push-template
 .PHONY: docker-calibnet-dev
 docker-calibnet-dev: LILY_DOCKER_FILE ?= Dockerfile.dev
 docker-calibnet-dev: LILY_NETWORK_TARGET ?= calibnet
-docker-calibnet-dev: LILY_IMAGE_TAG ?= $(LILY_VERSION)-calibnet-dev
+docker-calibnet-dev: LILY_IMAGE_TAG ?= $(docker_sanitized_lily_version)-calibnet-dev
 docker-calibnet-dev: docker-build-image-template
 
 .PHONY: docker-calibnet-dev-push
@@ -214,7 +215,7 @@ docker-calibnet-dev-push: docker-calibnet-dev docker-tag-and-push-template
 .PHONY: docker-interopnet
 docker-interopnet: LILY_DOCKER_FILE ?= Dockerfile
 docker-interopnet: LILY_NETWORK_TARGET ?= interopnet
-docker-interopnet: LILY_IMAGE_TAG ?= $(LILY_VERSION)-interopnet
+docker-interopnet: LILY_IMAGE_TAG ?= $(docker_sanitized_lily_version)-interopnet
 docker-interopnet: docker-build-image-template
 
 .PHONY: docker-interopnet-push
@@ -223,7 +224,7 @@ docker-interopnet-push: docker-interopnet docker-tag-and-push-template
 .PHONY: docker-interopnet-dev
 docker-interopnet-dev: LILY_DOCKER_FILE ?= Dockerfile.dev
 docker-interopnet-dev: LILY_NETWORK_TARGET ?= interopnet
-docker-interopnet-dev: LILY_IMAGE_TAG ?= $(LILY_VERSION)-interopnet-dev
+docker-interopnet-dev: LILY_IMAGE_TAG ?= $(docker_sanitized_lily_version)-interopnet-dev
 docker-interopnet-dev: docker-build-image-template
 
 .PHONY: docker-interopnet-dev-push
@@ -233,7 +234,7 @@ docker-interopnet-dev-push: docker-interopnet-dev docker-tag-and-push-template
 .PHONY: docker-butterflynet
 docker-butterflynet: LILY_DOCKER_FILE ?= Dockerfile
 docker-butterflynet: LILY_NETWORK_TARGET ?= butterflynet
-docker-butterflynet: LILY_IMAGE_TAG ?= $(LILY_VERSION)-butterflynet
+docker-butterflynet: LILY_IMAGE_TAG ?= $(docker_sanitized_lily_version)-butterflynet
 docker-butterflynet: docker-build-image-template
 
 .PHONY: docker-butterflynet-push
@@ -242,7 +243,7 @@ docker-butterflynet-push: docker-butterflynet docker-tag-and-push-template
 .PHONY: docker-butterflynet-dev
 docker-butterflynet-dev: LILY_DOCKER_FILE ?= Dockerfile.dev
 docker-butterflynet-dev: LILY_NETWORK_TARGET ?= butterflynet
-docker-butterflynet-dev: LILY_IMAGE_TAG ?= $(LILY_VERSION)-butterflynet-dev
+docker-butterflynet-dev: LILY_IMAGE_TAG ?= $(docker_sanitized_lily_version)-butterflynet-dev
 docker-butterflynet-dev: docker-build-image-template
 
 .PHONY: docker-butterflynet-dev-push
@@ -252,7 +253,7 @@ docker-butterflynet-dev-push: docker-butterflynet-dev docker-tag-and-push-templa
 .PHONY: docker-nerpanet
 docker-nerpanet: LILY_DOCKER_FILE ?= Dockerfile
 docker-nerpanet: LILY_NETWORK_TARGET ?= nerpanet
-docker-nerpanet: LILY_IMAGE_TAG ?= $(LILY_VERSION)-nerpanet
+docker-nerpanet: LILY_IMAGE_TAG ?= $(docker_sanitized_lily_version)-nerpanet
 docker-nerpanet: docker-build-image-template
 
 .PHONY: docker-nerpanet-push
@@ -261,7 +262,7 @@ docker-nerpanet-push: docker-nerpanet docker-tag-and-push-template
 .PHONY: docker-nerpanet-dev
 docker-nerpanet-dev: LILY_DOCKER_FILE ?= Dockerfile.dev
 docker-nerpanet-dev: LILY_NETWORK_TARGET ?= nerpanet
-docker-nerpanet-dev: LILY_IMAGE_TAG ?= $(LILY_VERSION)-nerpanet-dev
+docker-nerpanet-dev: LILY_IMAGE_TAG ?= $(docker_sanitized_lily_version)-nerpanet-dev
 docker-nerpanet-dev: docker-build-image-template
 
 .PHONY: docker-nerpanet-dev-push
@@ -271,7 +272,7 @@ docker-nerpanet-dev-push: docker-nerpanet-dev docker-tag-and-push-template
 .PHONY: docker-2k
 docker-2k: LILY_DOCKER_FILE ?= Dockerfile
 docker-2k: LILY_NETWORK_TARGET ?= 2k
-docker-2k: LILY_IMAGE_TAG ?= $(LILY_VERSION)-2k
+docker-2k: LILY_IMAGE_TAG ?= $(docker_sanitized_lily_version)-2k
 docker-2k: docker-build-image-template
 
 .PHONY: docker-2k-push
@@ -280,7 +281,7 @@ docker-2k-push: docker-2k docker-tag-and-push-template
 .PHONY: docker-2k-dev
 docker-2k-dev: LILY_DOCKER_FILE ?= Dockerfile.dev
 docker-2k-dev: LILY_NETWORK_TARGET ?= 2k
-docker-2k-dev: LILY_IMAGE_TAG ?= $(LILY_VERSION)-2k-dev
+docker-2k-dev: LILY_IMAGE_TAG ?= $(docker_sanitized_lily_version)-2k-dev
 docker-2k-dev: docker-build-image-template
 
 .PHONY: docker-2k-dev-push

@@ -35,91 +35,151 @@ commands:
       - run: git submodule sync
       - run: sudo apt-get install gcc libc-dev
       - run: git submodule update --init
+  trigger-deployment:
+    steps:
+      - checkout
+      - run:
+          name: Trigger deployment for filecoin-project/lily
+          command: |
+            # derive docker image deploy-tag according to the publish-* steps in this config
+            branch_tag_suffix=`echo "$CIRCLE_SHA1" | cut -c 1-8`
+            sanitized_branch=`echo $CIRCLE_BRANCH | sed 's:/:-:g'`
+            deploy_branch=${sanitized_branch}-${branch_tag_suffix}
+            sanitized_tag=`echo $CIRCLE_TAG | sed 's:/:-:g'`
+
+            # if $sanitized_tag is empty, default to $sanitized_branch
+            deploy_target=${sanitized_tag:-$deploy_branch}
+
+            # curlf fails with a non-zero exit code when the status code is not 2XX
+            curlf() {
+              OUTPUT_FILE=$(mktemp)
+              HTTP_CODE=$(curl --silent --output $OUTPUT_FILE --write-out "%{http_code}" "$@")
+              if [[ ${HTTP_CODE} -lt 200 || ${HTTP_CODE} -gt 299 ]] ; then
+                >&2 cat $OUTPUT_FILE
+                return 22
+              fi
+              cat $OUTPUT_FILE
+              rm $OUTPUT_FILE
+            }
+
+            # trigger deployment in sentinel-infra repo
+            curlf --request POST \
+              --url https://circleci.com/api/v2/project/gh/filecoin-project/sentinel-infra/pipeline \
+              --header "Circle-Token: $SENTINEL_INFRA_CIRCLECI_API_TOKEN" \
+              --header "content-type: application/json" \
+              --data "{\"branch\":\"master\",\"parameters\":{\"trigger-deploy\": true, \"deploy-tag\":\"$deploy_target\"}}"
+            echo ""
   validate-docker-executeable:
     steps:
       - run:
           name: Run lily within the docker image
           command: docker run --rm filecoin/lily:latest --version
-  publish-docker-from-branch-production:
-    steps:
-      - run:
-          name: Publish Mainnet Production Docker Image to Docker Hub
-          command: |
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix} make docker-mainnet-push
-      - run:
-          name: Publish Calibnet Production Docker Image to Docker Hub
-          command: |
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-calibnet make docker-calibnet-push
-  publish-docker-from-branch-dev:
-    steps:
-      - run:
-          name: Publish Mainnet Dev Docker Image to Docker Hub
-          command: |
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-dev make docker-mainnet-dev-push
-      - run:
-          name: Publish Calibnet Dev Docker Image to Docker Hub
-          command: |
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_BRANCH//\//-}-${tag_suffix}-calibnet-dev make docker-calibnet-dev-push
-  publish-docker-semver-production:
-    steps:
-      - run:
-          name: Publish Mainnet Production Semver Docker Image to Docker Hub
-          command: |
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_TAG//\//-} make docker-mainnet-push
-            # omit release candidates from pushing latest
-            if [[ ! "$CIRCLE_TAG" =~ -rc[0-9]+$ ]]; then
-              LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=latest make docker-mainnet-push
-            fi
-      - run:
-          name: Publish Calibnet Production Semver Docker Image to Docker Hub
-          command: |
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-calibnet make docker-calibnet-push
-            # omit release candidates from pushing calibnet-latest
-            if [[ ! "$CIRCLE_TAG" =~ -rc[0-9]+$ ]]; then
-              LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=calibnet-latest make docker-calibnet-push
-            fi
-  publish-docker-semver-dev:
-    steps:
-      - run:
-          name: Publish Mainnet Dev Semver Docker Image to Docker Hub
-          command: |
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-dev make docker-mainnet-dev-push
-      - run:
-          name: Publish Calibnet Dev Semver Docker Image to Docker Hub
-          command: |
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            LILY_VERSION=$(git describe --always --tag --dirty) LILY_IMAGE_TAG=${CIRCLE_TAG//\//-}-calibnet-dev make docker-calibnet-dev-push
 
 jobs:
-  publish-docker-from-master:
+  publish-production-image-from-branch-for-mainnet:
     executor: dockerizer
     steps:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
           version: "20.10.6"
-      - publish-docker-from-branch-dev
-      - publish-docker-from-branch-production
-  publish-docker-from-tag:
+      - run:
+          name: Publish Mainnet Production Docker Image from Lily branch to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            sanitized_branch=`echo $CIRCLE_BRANCH | sed 's:/:-:g'`
+            tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
+            make docker-mainnet-push LILY_IMAGE_TAG=${sanitized_branch}-${tag_suffix}
+  publish-production-image-from-branch-for-calibnet:
     executor: dockerizer
     steps:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
           version: "20.10.6"
-      - publish-docker-semver-dev
-      - publish-docker-semver-production
+      - run:
+          name: Publish Calibnet Production Docker Image from Lily branch to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            sanitized_branch=`echo $CIRCLE_BRANCH | sed 's:/:-:g'`
+            tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
+            make docker-calibnet-push LILY_IMAGE_TAG=${sanitized_branch}-${tag_suffix}-calibnet
+  publish-production-image-from-branch-for-butterflynet:
+    executor: dockerizer
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: "20.10.6"
+      - run:
+          name: Publish Butterflynet Production Docker Image from Lily branch to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            sanitized_branch=`echo $CIRCLE_BRANCH | sed 's:/:-:g'`
+            tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
+            LILY_IMAGE_TAG=${sanitized_branch}-${tag_suffix}-butterflynet make docker-butterflynet-push
+  publish-production-image-from-semver-tag-for-mainnet:
+    executor: dockerizer
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: "20.10.6"
+      - run:
+          name: Publish Mainnet Production Docker Image from Lily semver tag to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            sanitized_tag=`echo $CIRCLE_TAG | sed 's:/:-:g'`
+            LILY_IMAGE_TAG=$sanitized_tag make docker-mainnet-push
+            # omit release candidates from pushing latest
+            # only semver releases are pushing mainnet-latest
+            if [[ "$CIRCLE_TAG" =~ ^(v[0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+              LILY_IMAGE_TAG=latest make docker-mainnet-push
+            fi
+  publish-production-image-from-semver-tag-for-calibnet:
+    executor: dockerizer
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: "20.10.6"
+      - run:
+          name: Publish Calibnet Production Docker Image from Lily semver tag to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            sanitized_tag=`echo $CIRCLE_TAG | sed 's:/:-:g'`
+            LILY_IMAGE_TAG=$sanitized_tag-calibnet make docker-calibnet-push
+            # only semver releases are pushing calibnet-latest
+            if [[ "$CIRCLE_TAG" =~ ^(v[0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+              LILY_IMAGE_TAG=calibnet-latest make docker-calibnet-push
+            fi
+  publish-production-image-from-semver-tag-for-butterflynet:
+    executor: dockerizer
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+          version: "20.10.6"
+      - run:
+          name: Publish Butterflynet Production Docker Image from Lily semver tag to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            sanitized_tag=`echo $CIRCLE_TAG | sed 's:/:-:g'`
+            LILY_IMAGE_TAG=$sanitized_tag-butterflynet make docker-butterflynet-push
+            # only semver releases are pushing butterflynet-latest
+            if [[ "$CIRCLE_TAG" =~ ^(v[0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+              LILY_IMAGE_TAG=butterflynet-latest make docker-butterflynet-push
+            fi
+  # duplicated jobs are for making these jobs' descriptions
+  # in the pipelines within the CircleCI less confusing
+  trigger-branch-deployment-for-all-networks:
+    executor: dockerizer
+    steps:
+      - trigger-deployment
+  trigger-semver-tag-deployment-for-all-networks:
+    executor: dockerizer
+    steps:
+      - trigger-deployment
   mod-tidy-check:
     executor: golang
     steps:
@@ -291,6 +351,19 @@ jobs:
           command: make docker-calibnet-dev
       - validate-docker-executeable
 
+
+branch_filters: &branch_filters
+  branches:
+    only: /deploy/
+  tags:
+    ignore: /.*/
+
+tag_filters: &tag_filters
+  branches:
+    ignore: /.*/
+  tags:
+    only: /^(v[0-9]+\.[0-9]+\.[0-9]+|.*dev.*)(-rc[0-9]+)*$/  # incl v0.0.0 or v0.0.0-rc0 or containing w `dev`
+
 workflows:
   version: 2
   check:
@@ -305,21 +378,43 @@ workflows:
       - test-docker-calibnet
       - test-docker-calibnet-dev
   build-docker-images:
-    # `build-push-*` runs on master or main branches and tags that look like semver
-    # see: https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
     jobs:
-      - publish-docker-from-master:
-          # build and push latest master docker image
+      - publish-production-image-from-branch-for-mainnet:
+          filters:
+            <<: *branch_filters
+      - publish-production-image-from-branch-for-calibnet:
+          filters:
+            <<: *branch_filters
+      - publish-production-image-from-branch-for-butterflynet:
+          filters:
+            <<: *branch_filters
+      - trigger-branch-deployment-for-all-networks:
+          requires:
+            - publish-production-image-from-branch-for-mainnet
+            - publish-production-image-from-branch-for-calibnet
+            - publish-production-image-from-branch-for-butterflynet
+          filters:
+            <<: *branch_filters
+      - publish-production-image-from-semver-tag-for-mainnet:
+          filters:
+            <<: *tag_filters
+      - publish-production-image-from-semver-tag-for-calibnet:
+          filters:
+            <<: *tag_filters
+      - publish-production-image-from-semver-tag-for-butterflynet:
+          filters:
+            <<: *tag_filters
+      - trigger-semver-tag-deployment-for-all-networks:
+          requires:
+            - publish-production-image-from-semver-tag-for-mainnet
+            - publish-production-image-from-semver-tag-for-calibnet
+            - publish-production-image-from-semver-tag-for-butterflynet
           filters:
             branches:
-              only: /^(master|main)$/
-            tags:
               ignore: /.*/
-      - publish-docker-from-tag:
-          # build and push semver tags docker image
-          filters:
-            branches:
-              ignore: /.*/
+            # this filters which tags get deployed
+            # should be within the set of dependent (required) publish step
+            # ONLY deploy semver tags with `dev` in the name for now
             tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)*/  # incl v0.0.0 or v0.0.0-rc0
+              only: /.*dev.*/ # any tag containing `dev`
 
