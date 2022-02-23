@@ -23,6 +23,8 @@ import (
 	miner0 "github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	miner2 "github.com/filecoin-project/specs-actors/v2/actors/builtin/miner"
 	miner3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/miner"
+	miner5 "github.com/filecoin-project/specs-actors/v5/actors/builtin/miner"
+	miner7 "github.com/filecoin-project/specs-actors/v7/actors/builtin/miner"
 
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
@@ -30,6 +32,7 @@ import (
 	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
 	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
+	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
 )
 
 func init() {
@@ -58,9 +61,13 @@ func init() {
 		return load6(store, root)
 	})
 
+	builtin.RegisterActorState(builtin7.StorageMinerActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
+		return load7(store, root)
+	})
+
 }
 
-var Methods = builtin6.MethodsMiner
+var Methods = builtin7.MethodsMiner
 
 func AllCodes() []cid.Cid {
 	return []cid.Cid{
@@ -70,6 +77,7 @@ func AllCodes() []cid.Cid {
 		builtin4.StorageMinerActorCodeID,
 		builtin5.StorageMinerActorCodeID,
 		builtin6.StorageMinerActorCodeID,
+		builtin7.StorageMinerActorCodeID,
 	}
 }
 
@@ -108,6 +116,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 	case builtin6.StorageMinerActorCodeID:
 		return load6(store, act.Head)
 
+	case builtin7.StorageMinerActorCodeID:
+		return load7(store, act.Head)
+
 	}
 	return nil, xerrors.Errorf("unknown actor code %s", act.Code)
 }
@@ -129,9 +140,17 @@ type State interface {
 	FindSector(abi.SectorNumber) (*SectorLocation, error)
 	GetSectorExpiration(abi.SectorNumber) (*SectorExpiration, error)
 	GetPrecommittedSector(abi.SectorNumber) (*SectorPreCommitOnChainInfo, error)
+	ForEachPrecommittedSector(func(SectorPreCommitOnChainInfo) error) error
 	LoadSectors(sectorNos *bitfield.BitField) ([]*SectorOnChainInfo, error)
 	NumLiveSectors() (uint64, error)
 	IsAllocated(abi.SectorNumber) (bool, error)
+	// UnallocatedSectorNumbers returns up to count unallocated sector numbers (or less than
+	// count if there aren't enough).
+	UnallocatedSectorNumbers(count int) ([]abi.SectorNumber, error)
+	GetAllocatedSectors() (*bitfield.BitField, error)
+
+	// Note that ProvingPeriodStart is deprecated and will be renamed / removed in a future version of actors
+	GetProvingPeriodStart() (abi.ChainEpoch, error)
 
 	LoadDeadline(idx uint64) (Deadline, error)
 	ForEachDeadline(cb func(idx uint64, dl Deadline) error) error
@@ -151,6 +170,7 @@ type State interface {
 	decodeSectorOnChainInfo(*cbg.Deferred) (SectorOnChainInfo, error)
 	precommits() (adt.Map, error)
 	decodeSectorPreCommitOnChainInfo(*cbg.Deferred) (SectorPreCommitOnChainInfo, error)
+	GetState() interface{}
 }
 
 type Deadline interface {
@@ -163,11 +183,28 @@ type Deadline interface {
 }
 
 type Partition interface {
+	// AllSectors returns all sector numbers in this partition, including faulty, unproven, and terminated sectors
 	AllSectors() (bitfield.BitField, error)
+
+	// Subset of sectors detected/declared faulty and not yet recovered (excl. from PoSt).
+	// Faults ∩ Terminated = ∅
 	FaultySectors() (bitfield.BitField, error)
+
+	// Subset of faulty sectors expected to recover on next PoSt
+	// Recoveries ∩ Terminated = ∅
 	RecoveringSectors() (bitfield.BitField, error)
+
+	// Live sectors are those that are not terminated (but may be faulty).
 	LiveSectors() (bitfield.BitField, error)
+
+	// Active sectors are those that are neither terminated nor faulty nor unproven, i.e. actively contributing power.
 	ActiveSectors() (bitfield.BitField, error)
+
+	// Unproven sectors in this partition. This bitfield will be cleared on
+	// a successful window post (or at the end of the partition's next
+	// deadline). At that time, any still unproven sectors will be added to
+	// the faulty sector bitfield.
+	UnprovenSectors() (bitfield.BitField, error)
 }
 
 type SectorOnChainInfo struct {
@@ -182,6 +219,7 @@ type SectorOnChainInfo struct {
 	InitialPledge         abi.TokenAmount
 	ExpectedDayReward     abi.TokenAmount
 	ExpectedStoragePledge abi.TokenAmount
+	SectorKeyCID          *cid.Cid
 }
 
 type SectorPreCommitInfo = miner0.SectorPreCommitInfo
@@ -204,6 +242,8 @@ type DeclareFaultsRecoveredParams = miner0.DeclareFaultsRecoveredParams
 type SubmitWindowedPoStParams = miner0.SubmitWindowedPoStParams
 type ProveCommitSectorParams = miner0.ProveCommitSectorParams
 type DisputeWindowedPoStParams = miner3.DisputeWindowedPoStParams
+type ProveCommitAggregateParams = miner5.ProveCommitAggregateParams
+type ProveReplicaUpdatesParams = miner7.ProveReplicaUpdatesParams
 
 func PreferredSealProofTypeFromWindowPoStType(nver network.Version, proof abi.RegisteredPoStProof) (abi.RegisteredSealProof, error) {
 	// We added support for the new proofs in network version 7, and removed support for the old
@@ -301,11 +341,12 @@ type SectorLocation struct {
 
 type SectorChanges struct {
 	Added    []SectorOnChainInfo
-	Extended []SectorExtensions
+	Extended []SectorModification
+	Snapped  []SectorModification
 	Removed  []SectorOnChainInfo
 }
 
-type SectorExtensions struct {
+type SectorModification struct {
 	From SectorOnChainInfo
 	To   SectorOnChainInfo
 }

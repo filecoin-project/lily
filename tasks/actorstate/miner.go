@@ -5,6 +5,12 @@ import (
 	"context"
 
 	"github.com/filecoin-project/go-address"
+	miner0 "github.com/filecoin-project/specs-actors/actors/builtin/miner"
+	miner2 "github.com/filecoin-project/specs-actors/v2/actors/builtin/miner"
+	miner3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/miner"
+	miner4 "github.com/filecoin-project/specs-actors/v4/actors/builtin/miner"
+	miner5 "github.com/filecoin-project/specs-actors/v5/actors/builtin/miner"
+	miner6 "github.com/filecoin-project/specs-actors/v6/actors/builtin/miner"
 	maddr "github.com/multiformats/go-multiaddr"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -12,8 +18,9 @@ import (
 
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
-	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lotus/chain/types"
+
+	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/metrics"
@@ -67,7 +74,7 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, emsgs [
 		return nil, xerrors.Errorf("extracting miner current deadline info: %w", err)
 	}
 
-	preCommitModel, sectorModel, sectorDealsModel, sectorEventsModel, err := ExtractMinerSectorData(ctx, ec, a, node)
+	preCommitModel, sectorModelV7, sectorDealsModel, sectorEventsModel, err := ExtractMinerSectorData(ctx, ec, a, node)
 	if err != nil {
 		return nil, xerrors.Errorf("extracting miner sector changes: %w", err)
 	}
@@ -77,18 +84,48 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, emsgs [
 		return nil, xerrors.Errorf("extracting miner posts: %v", err)
 	}
 
-	return &minermodel.MinerTaskResult{
-		Posts: posts,
+	out := model.PersistableList{
+		minerInfoModel,
+		lockedFundsModel,
+		feeDebtModel,
+		currDeadlineModel,
+		preCommitModel,
+		sectorDealsModel,
+		sectorEventsModel,
+		posts,
+	}
 
-		MinerInfoModel:           minerInfoModel,
-		LockedFundsModel:         lockedFundsModel,
-		FeeDebtModel:             feeDebtModel,
-		CurrentDeadlineInfoModel: currDeadlineModel,
-		SectorDealsModel:         sectorDealsModel,
-		SectorEventsModel:        sectorEventsModel,
-		SectorsModel:             sectorModel,
-		PreCommitsModel:          preCommitModel,
-	}, nil
+	// if the miner actor is v1-6 persist its model to the miner_sector_infos table
+	var sectorModelV6Minus minermodel.MinerSectorInfoV1_6List
+	if a.Actor.Code.Equals(miner0.Actor{}.Code()) ||
+		a.Actor.Code.Equals(miner2.Actor{}.Code()) ||
+		a.Actor.Code.Equals(miner3.Actor{}.Code()) ||
+		a.Actor.Code.Equals(miner4.Actor{}.Code()) ||
+		a.Actor.Code.Equals(miner5.Actor{}.Code()) ||
+		a.Actor.Code.Equals(miner6.Actor{}.Code()) {
+		for _, sm := range sectorModelV7 {
+			sectorModelV6Minus = append(sectorModelV6Minus, &minermodel.MinerSectorInfoV1_6{
+				Height:                sm.Height,
+				MinerID:               sm.MinerID,
+				SectorID:              sm.SectorID,
+				StateRoot:             sm.StateRoot,
+				SealedCID:             sm.SealedCID,
+				ActivationEpoch:       sm.ActivationEpoch,
+				ExpirationEpoch:       sm.ExpirationEpoch,
+				DealWeight:            sm.DealWeight,
+				VerifiedDealWeight:    sm.VerifiedDealWeight,
+				InitialPledge:         sm.InitialPledge,
+				ExpectedDayReward:     sm.ExpectedDayReward,
+				ExpectedStoragePledge: sm.ExpectedStoragePledge,
+			})
+		}
+		out = append(out, sectorModelV6Minus)
+	} else {
+		// if the miner actor is v7 or newer persist its model the miner_sector_infos_v7 table
+		out = append(out, sectorModelV7)
+	}
+
+	return out, nil
 }
 
 func NewMinerStateExtractionContext(ctx context.Context, a ActorInfo, node ActorStateAPI) (*MinerStateExtractionContext, error) {
@@ -293,7 +330,7 @@ func ExtractMinerCurrentDeadlineInfo(ctx context.Context, a ActorInfo, ec *Miner
 	}, nil
 }
 
-func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext, a ActorInfo, node ActorStateAPI) (minermodel.MinerPreCommitInfoList, minermodel.MinerSectorInfoList, minermodel.MinerSectorDealList, minermodel.MinerSectorEventList, error) {
+func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext, a ActorInfo, node ActorStateAPI) (minermodel.MinerPreCommitInfoList, minermodel.MinerSectorInfoV7List, minermodel.MinerSectorDealList, minermodel.MinerSectorEventList, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ExtractMinerSectorData")
 	defer span.End()
 	preCommitChanges := new(miner.PreCommitChanges)
@@ -303,7 +340,8 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 	sectorChanges := new(miner.SectorChanges)
 	sectorChanges.Added = []miner.SectorOnChainInfo{}
 	sectorChanges.Removed = []miner.SectorOnChainInfo{}
-	sectorChanges.Extended = []miner.SectorExtensions{}
+	sectorChanges.Extended = []miner.SectorModification{}
+	sectorChanges.Snapped = []miner.SectorModification{}
 
 	sectorDealsModel := minermodel.MinerSectorDealList{}
 	if !ec.HasPreviousState() {
@@ -378,9 +416,13 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 	}
 
 	// transform sector changes to a model
-	sectorModel := minermodel.MinerSectorInfoList{}
+	sectorModel := minermodel.MinerSectorInfoV7List{}
 	for _, added := range sectorChanges.Added {
-		sm := &minermodel.MinerSectorInfo{
+		sectorKeyCID := ""
+		if added.SectorKeyCID != nil {
+			sectorKeyCID = added.SectorKeyCID.String()
+		}
+		sm := &minermodel.MinerSectorInfoV7{
 			Height:                int64(ec.CurrTs.Height()),
 			MinerID:               a.Address.String(),
 			SectorID:              uint64(added.SectorNumber),
@@ -393,13 +435,19 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 			InitialPledge:         added.InitialPledge.String(),
 			ExpectedDayReward:     added.ExpectedDayReward.String(),
 			ExpectedStoragePledge: added.ExpectedStoragePledge.String(),
+			// added in specs-actors v7
+			SectorKeyCID: sectorKeyCID,
 		}
 		sectorModel = append(sectorModel, sm)
 	}
 
 	// do the same for extended sectors, since they have a new deadline
 	for _, extended := range sectorChanges.Extended {
-		sm := &minermodel.MinerSectorInfo{
+		sectorKeyCID := ""
+		if extended.To.SectorKeyCID != nil {
+			sectorKeyCID = extended.To.SectorKeyCID.String()
+		}
+		sm := &minermodel.MinerSectorInfoV7{
 			Height:                int64(ec.CurrTs.Height()),
 			MinerID:               a.Address.String(),
 			SectorID:              uint64(extended.To.SectorNumber),
@@ -412,6 +460,34 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 			InitialPledge:         extended.To.InitialPledge.String(),
 			ExpectedDayReward:     extended.To.ExpectedDayReward.String(),
 			ExpectedStoragePledge: extended.To.ExpectedStoragePledge.String(),
+			// added in specs-actors v7
+			SectorKeyCID: sectorKeyCID,
+		}
+		sectorModel = append(sectorModel, sm)
+	}
+
+	// same for snapped sectors, since many fields will have changed:
+	// https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0019.md#provereplicaupdates-actor-method
+	for _, extended := range sectorChanges.Snapped {
+		sectorKeyCID := ""
+		if extended.To.SectorKeyCID != nil {
+			sectorKeyCID = extended.To.SectorKeyCID.String()
+		}
+		sm := &minermodel.MinerSectorInfoV7{
+			Height:                int64(ec.CurrTs.Height()),
+			MinerID:               a.Address.String(),
+			SectorID:              uint64(extended.To.SectorNumber),
+			StateRoot:             a.ParentStateRoot.String(),
+			SealedCID:             extended.To.SealedCID.String(),
+			ActivationEpoch:       int64(extended.To.Activation),
+			ExpirationEpoch:       int64(extended.To.Expiration),
+			DealWeight:            extended.To.DealWeight.String(),
+			VerifiedDealWeight:    extended.To.VerifiedDealWeight.String(),
+			InitialPledge:         extended.To.InitialPledge.String(),
+			ExpectedDayReward:     extended.To.ExpectedDayReward.String(),
+			ExpectedStoragePledge: extended.To.ExpectedStoragePledge.String(),
+			// added in specs-actors v7
+			SectorKeyCID: sectorKeyCID,
 		}
 		sectorModel = append(sectorModel, sm)
 	}
@@ -517,7 +593,6 @@ func extractMinerSectorEvents(ctx context.Context, node ActorStateAPI, a ActorIn
 	}
 
 	out := minermodel.MinerSectorEventList{}
-	sectorAdds := make(map[abi.SectorNumber]miner.SectorOnChainInfo)
 
 	// if there were changes made to the miners partition lists
 	if ps != nil {
@@ -609,7 +684,6 @@ func extractMinerSectorEvents(ctx context.Context, node ActorStateAPI, a ActorIn
 				SectorID:  uint64(add.SectorNumber),
 				Event:     event,
 			})
-			sectorAdds[add.SectorNumber] = add
 		}
 
 		// track sector extensions
@@ -620,6 +694,17 @@ func extractMinerSectorEvents(ctx context.Context, node ActorStateAPI, a ActorIn
 				StateRoot: a.ParentStateRoot.String(),
 				SectorID:  uint64(mod.To.SectorNumber),
 				Event:     minermodel.SectorExtended,
+			})
+		}
+
+		// track sectors snapped.
+		for _, mod := range sc.Snapped {
+			out = append(out, &minermodel.MinerSectorEvent{
+				Height:    int64(a.Epoch),
+				MinerID:   a.Address.String(),
+				StateRoot: a.ParentStateRoot.String(),
+				SectorID:  uint64(mod.To.SectorNumber),
+				Event:     minermodel.SectorSnapped,
 			})
 		}
 

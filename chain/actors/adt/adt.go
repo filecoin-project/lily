@@ -3,11 +3,11 @@ package adt
 import (
 	"bytes"
 	"crypto/sha256"
-
 	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
 	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
+	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
 	"github.com/ipfs/go-cid"
 	sha256simd "github.com/minio/sha256-simd"
 	"golang.org/x/xerrors"
@@ -104,6 +104,14 @@ func MapOptsForActorCode(c cid.Cid) (*MapOpts, error) {
 	case builtin6.InitActorCodeID, builtin6.StorageMarketActorCodeID, builtin6.StorageMinerActorCodeID, builtin6.MultisigActorCodeID, builtin6.StoragePowerActorCodeID, builtin6.VerifiedRegistryActorCodeID:
 		return &MapOpts{
 			Bitwidth: builtin6.DefaultHamtBitwidth,
+			HashFunc: Map2ShaHashFunc,
+		}, nil
+
+		// v7
+		// https://github.com/filecoin-project/specs-actors/blob/v7/actors/util/adt/map.go#L17
+	case builtin7.InitActorCodeID, builtin7.StorageMarketActorCodeID, builtin7.StorageMinerActorCodeID, builtin7.MultisigActorCodeID, builtin7.StoragePowerActorCodeID, builtin7.VerifiedRegistryActorCodeID:
+		return &MapOpts{
+			Bitwidth: builtin7.DefaultHamtBitwidth,
 			HashFunc: Map2ShaHashFunc,
 		}, nil
 	}
