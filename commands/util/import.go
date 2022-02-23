@@ -48,13 +48,13 @@ func ImportFromFsFile(ctx context.Context, r repo.Repo, fs fs.File, snapshot boo
 	cst := store.NewChainStore(bs, bs, mds, filcns.Weight, j)
 	defer cst.Close() //nolint:errcheck
 
-	ts, err := cst.Import(fs)
+	ts, err := cst.Import(ctx, fs)
 
 	if err != nil {
 		return xerrors.Errorf("importing chain failed: %w", err)
 	}
 
-	if err := cst.FlushValidationCache(); err != nil {
+	if err := cst.FlushValidationCache(ctx); err != nil {
 		return xerrors.Errorf("flushing validation cache failed: %w", err)
 	}
 
@@ -63,7 +63,7 @@ func ImportFromFsFile(ctx context.Context, r repo.Repo, fs fs.File, snapshot boo
 		return err
 	}
 
-	err = cst.SetGenesis(gb.Blocks()[0])
+	err = cst.SetGenesis(ctx, gb.Blocks()[0])
 	if err != nil {
 		return err
 	}
@@ -161,14 +161,14 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 	bar.Units = pb.U_BYTES
 
 	bar.Start()
-	ts, err := cst.Import(br)
+	ts, err := cst.Import(ctx, br)
 	bar.Finish()
 
 	if err != nil {
 		return xerrors.Errorf("importing chain failed: %w", err)
 	}
 
-	if err := cst.FlushValidationCache(); err != nil {
+	if err := cst.FlushValidationCache(ctx); err != nil {
 		return xerrors.Errorf("flushing validation cache failed: %w", err)
 	}
 
@@ -177,7 +177,7 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 		return err
 	}
 
-	err = cst.SetGenesis(gb.Blocks()[0])
+	err = cst.SetGenesis(ctx, gb.Blocks()[0])
 	if err != nil {
 		return err
 	}

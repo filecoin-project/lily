@@ -6,13 +6,14 @@ import (
 	"os"
 
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/chain/export"
 	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/node/repo"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lily/chain/export"
 )
 
 type chainExportOps struct {
@@ -192,7 +193,7 @@ func openChainAndBlockStores(ctx context.Context, path string) (*store.ChainStor
 	}
 
 	cs := store.NewChainStore(chainAndStateBs, chainAndStateBs, mds, nil, nil)
-	if err := cs.Load(); err != nil {
+	if err := cs.Load(ctx); err != nil {
 		return nil, nil, nil, xerrors.Errorf("loading repo (%s) chain store: %w", repoDir, err)
 	}
 

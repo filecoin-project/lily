@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/lens/lily/modules"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/stmgr"
@@ -20,6 +19,8 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lily/lens/lily/modules"
 
 	"github.com/filecoin-project/lily/chain"
 	"github.com/filecoin-project/lily/lens"
@@ -50,7 +51,7 @@ type LilyNodeAPI struct {
 
 func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {
 	// TODO (Frrist): I copied this from lotus, I need it now to handle gap filling edge cases.
-	ts, err := m.ChainAPI.Chain.GetTipSetFromKey(key)
+	ts, err := m.ChainAPI.Chain.GetTipSetFromKey(ctx, key)
 	if err != nil {
 		return nil, xerrors.Errorf("loading tipset %s: %w", key, err)
 	}
