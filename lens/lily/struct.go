@@ -58,8 +58,9 @@ type LilyAPIStruct struct {
 		ChainSetHead              func(context.Context, types.TipSetKey) error                                  `perm:"read"`
 		ChainGetGenesis           func(context.Context) (*types.TipSet, error)                                  `perm:"read"`
 
-		LogList     func(context.Context) ([]string, error)     `perm:"read"`
-		LogSetLevel func(context.Context, string, string) error `perm:"read"`
+		LogList          func(context.Context) ([]string, error)     `perm:"read"`
+		LogSetLevel      func(context.Context, string, string) error `perm:"read"`
+		LogSetLevelRegex func(context.Context, string, string) error `perm:"read"`
 
 		ID               func(context.Context) (peer.ID, error)                        `perm:"read"`
 		NetAutoNatStatus func(context.Context) (api.NatInfo, error)                    `perm:"read"`
@@ -181,6 +182,10 @@ func (s *LilyAPIStruct) LogList(ctx context.Context) ([]string, error) {
 
 func (s *LilyAPIStruct) LogSetLevel(ctx context.Context, subsystem, level string) error {
 	return s.Internal.LogSetLevel(ctx, subsystem, level)
+}
+
+func (s *LilyAPIStruct) LogSetLevelRegex(ctx context.Context, regex, level string) error {
+	return s.Internal.LogSetLevelRegex(ctx, regex, level)
 }
 
 func (s *LilyAPIStruct) NetAutoNatStatus(ctx context.Context) (api.NatInfo, error) {

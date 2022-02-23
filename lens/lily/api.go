@@ -51,8 +51,9 @@ type LilyAPI interface {
 	Shutdown(context.Context) error
 
 	// LogList returns a list of loggers
-	LogList(context.Context) ([]string, error)         //perm:write
-	LogSetLevel(context.Context, string, string) error //perm:write
+	LogList(context.Context) ([]string, error)                       //perm:write
+	LogSetLevel(context.Context, string, string) error               //perm:write
+	LogSetLevelRegex(ctx context.Context, regex, level string) error //perm:write
 
 	// ID returns peerID of libp2p node backing this API
 	ID(context.Context) (peer.ID, error) //perm:read

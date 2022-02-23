@@ -348,6 +348,10 @@ func (m *LilyNodeAPI) LogSetLevel(ctx context.Context, subsystem, level string) 
 	return logging.SetLogLevel(subsystem, level)
 }
 
+func (m *LilyNodeAPI) LogSetLevelRegex(ctx context.Context, regex, level string) error {
+	return logging.SetLogLevelRegex(regex, level)
+}
+
 func (m *LilyNodeAPI) Shutdown(ctx context.Context) error {
 	m.ShutdownChan <- struct{}{}
 	return nil
