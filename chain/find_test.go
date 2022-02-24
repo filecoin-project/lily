@@ -138,7 +138,7 @@ func TestFind(t *testing.T) {
 	t.Run("gap at epoch 2 for miner and init task", func(t *testing.T) {
 		truncateVPR(t, db)
 		initializeVPR(t, db, maxHeight, t.Name(), indexer.AllTasks...)
-		gapEpochVPR(t, db, 2, indexer.ActorStatesMinerTask, indexer.ActorStatesInitTask)
+		gapEpochVPR(t, db, 2, indexer.MinerInfoTask, indexer.IdAddressTask)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
@@ -152,15 +152,15 @@ func TestFind(t *testing.T) {
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, indexer.ActorStatesMinerTask, indexer.ActorStatesInitTask)
+		expected := makeGapReportList(tsh2, indexer.MinerInfoTask, indexer.IdAddressTask)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("gap at epoch 2 for miner and init task epoch 10 blocks messages market", func(t *testing.T) {
 		truncateVPR(t, db)
 		initializeVPR(t, db, maxHeight, t.Name(), indexer.AllTasks...)
-		gapEpochVPR(t, db, 2, indexer.ActorStatesMinerTask, indexer.ActorStatesInitTask)
-		gapEpochVPR(t, db, 10, indexer.BlocksTask, indexer.MessageTask, indexer.ActorStatesMarketTask)
+		gapEpochVPR(t, db, 2, indexer.MinerInfoTask, indexer.IdAddressTask)
+		gapEpochVPR(t, db, 10, indexer.BlocksTask, indexer.MessagesTask, indexer.MarketDealStatesTask)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
@@ -177,8 +177,8 @@ func TestFind(t *testing.T) {
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, indexer.ActorStatesMinerTask, indexer.ActorStatesInitTask)
-		expected = append(expected, makeGapReportList(tsh10, indexer.BlocksTask, indexer.MessageTask, indexer.ActorStatesMarketTask)...)
+		expected := makeGapReportList(tsh2, indexer.MinerInfoTask, indexer.IdAddressTask)
+		expected = append(expected, makeGapReportList(tsh10, indexer.BlocksTask, indexer.MessagesTask, indexer.MarketDealStatesTask)...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
@@ -186,7 +186,7 @@ func TestFind(t *testing.T) {
 		truncateVPR(t, db)
 		initializeVPR(t, db, maxHeight, t.Name(), indexer.AllTasks...)
 		skipEpochSkippedVRP(t, db, 1, indexer.AllTasks...)
-		skipEpochSkippedVRP(t, db, 5, indexer.ActorStatesMinerTask)
+		skipEpochSkippedVRP(t, db, 5, indexer.MinerInfoTask)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
@@ -198,14 +198,14 @@ func TestFind(t *testing.T) {
 		tsh1 := fakeTipset(t, 1)
 		tsh5 := fakeTipset(t, 5)
 		expected := makeGapReportList(tsh1, indexer.AllTasks...)
-		expected = append(expected, makeGapReportList(tsh5, indexer.ActorStatesMinerTask)...)
+		expected = append(expected, makeGapReportList(tsh5, indexer.MinerInfoTask)...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("gap at epoch 2 for miner and init task with null rounds 4,5,7", func(t *testing.T) {
 		truncateVPR(t, db)
 		initializeVPR(t, db, maxHeight, t.Name(), indexer.AllTasks...)
-		gapEpochVPR(t, db, 2, indexer.ActorStatesMinerTask, indexer.ActorStatesInitTask)
+		gapEpochVPR(t, db, 2, indexer.MinerInfoTask, indexer.IdAddressTask)
 		nullRoundEpochVPR(t, db, t.Name(), 4)
 		nullRoundEpochVPR(t, db, t.Name(), 5)
 		nullRoundEpochVPR(t, db, t.Name(), 7)
@@ -222,18 +222,18 @@ func TestFind(t *testing.T) {
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, indexer.ActorStatesMinerTask, indexer.ActorStatesInitTask)
+		expected := makeGapReportList(tsh2, indexer.MinerInfoTask, indexer.IdAddressTask)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("gap at epoch 2 for miner and init task with null rounds 4,5,7, miner errors in 8, all errors in 9", func(t *testing.T) {
 		truncateVPR(t, db)
 		initializeVPR(t, db, maxHeight, t.Name(), indexer.AllTasks...)
-		gapEpochVPR(t, db, 2, indexer.ActorStatesMinerTask, indexer.ActorStatesInitTask)
+		gapEpochVPR(t, db, 2, indexer.MinerInfoTask, indexer.IdAddressTask)
 		nullRoundEpochVPR(t, db, t.Name(), 4)
 		nullRoundEpochVPR(t, db, t.Name(), 5)
 		nullRoundEpochVPR(t, db, t.Name(), 7)
-		errorEpochTasksVPR(t, db, 8, indexer.ActorStatesMinerTask)
+		errorEpochTasksVPR(t, db, 8, indexer.MinerInfoTask)
 		errorEpochTasksVPR(t, db, 9, indexer.AllTasks...)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
@@ -248,8 +248,8 @@ func TestFind(t *testing.T) {
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, indexer.ActorStatesMinerTask, indexer.ActorStatesInitTask)
-		expected = append(expected, makeGapReportList(fakeTipset(t, 8), indexer.ActorStatesMinerTask)...)
+		expected := makeGapReportList(tsh2, indexer.MinerInfoTask, indexer.IdAddressTask)
+		expected = append(expected, makeGapReportList(fakeTipset(t, 8), indexer.MinerInfoTask)...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
@@ -258,7 +258,7 @@ func TestFind(t *testing.T) {
 		truncateVPR(t, db)
 		initializeVPR(t, db, maxHeight, t.Name(), indexer.AllTasks...)
 		initializeVPR(t, db, maxHeight, t.Name()+"_2", indexer.AllTasks...)
-		gapEpochVPR(t, db, 2, indexer.ActorStatesMinerTask, indexer.ActorStatesInitTask)
+		gapEpochVPR(t, db, 2, indexer.MinerInfoTask, indexer.IdAddressTask)
 		nullRoundEpochVPR(t, db, t.Name()+"_2", 4)
 		nullRoundEpochVPR(t, db, t.Name()+"_2", 5)
 		nullRoundEpochVPR(t, db, t.Name()+"_2", 7)
@@ -275,15 +275,15 @@ func TestFind(t *testing.T) {
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, indexer.ActorStatesMinerTask, indexer.ActorStatesInitTask)
+		expected := makeGapReportList(tsh2, indexer.MinerInfoTask, indexer.IdAddressTask)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("(sub task indexer, full reports table) gap at epoch 2 for messages and init task", func(t *testing.T) {
-		monitoringTasks := []string{indexer.BlocksTask, indexer.MessageTask, indexer.ChainEconomicsTask, indexer.ActorStatesInitTask}
+		monitoringTasks := []string{indexer.BlocksTask, indexer.MessagesTask, indexer.ChainEconomicsTask, indexer.IdAddressTask}
 		truncateVPR(t, db)
 		initializeVPR(t, db, maxHeight, t.Name(), indexer.AllTasks...)
-		gapEpochVPR(t, db, 2, indexer.MessageTask, indexer.ActorStatesInitTask)
+		gapEpochVPR(t, db, 2, indexer.MessagesTask, indexer.IdAddressTask)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
@@ -297,15 +297,15 @@ func TestFind(t *testing.T) {
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, indexer.MessageTask, indexer.ActorStatesInitTask)
+		expected := makeGapReportList(tsh2, indexer.MessagesTask, indexer.IdAddressTask)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("(sub task indexer partial reports table) gap at epoch 2 for messages and init task", func(t *testing.T) {
-		monitoringTasks := []string{indexer.BlocksTask, indexer.MessageTask, indexer.ChainEconomicsTask, indexer.ActorStatesInitTask}
+		monitoringTasks := []string{indexer.BlocksTask, indexer.MessagesTask, indexer.ChainEconomicsTask, indexer.IdAddressTask}
 		truncateVPR(t, db)
 		initializeVPR(t, db, maxHeight, t.Name(), monitoringTasks...)
-		gapEpochVPR(t, db, 2, indexer.MessageTask, indexer.ActorStatesInitTask)
+		gapEpochVPR(t, db, 2, indexer.MessagesTask, indexer.IdAddressTask)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
@@ -319,7 +319,7 @@ func TestFind(t *testing.T) {
 			findTaskEpochGaps(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, indexer.MessageTask, indexer.ActorStatesInitTask)
+		expected := makeGapReportList(tsh2, indexer.MessagesTask, indexer.IdAddressTask)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
@@ -348,7 +348,7 @@ func TestFind(t *testing.T) {
 		truncateVPR(t, db)
 		initializeVPR(t, db, maxHeight, t.Name(), indexer.AllTasks...)
 		// error on some tasks
-		errorEpochTasksVPR(t, db, 2, indexer.ActorStatesInitTask, indexer.ActorStatesMinerTask)
+		errorEpochTasksVPR(t, db, 2, indexer.IdAddressTask, indexer.MinerInfoTask)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
@@ -358,7 +358,7 @@ func TestFind(t *testing.T) {
 		require.NoError(t, err)
 
 		// only expect gaps at height 2
-		expected := makeGapReportList(fakeTipset(t, 2), indexer.ActorStatesInitTask, indexer.ActorStatesMinerTask)
+		expected := makeGapReportList(fakeTipset(t, 2), indexer.IdAddressTask, indexer.MinerInfoTask)
 		assertGapReportsEqual(t, expected, actual)
 	})
 

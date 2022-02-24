@@ -22,18 +22,20 @@ import (
 
 var TaskModels = map[string][]string{
 	indexer.ReceiptTask:        {"receipts"},
-	indexer.BlockMessageTask:   {"block_messages"},
+	indexer.BlockMessagesTask:  {"block_messages"},
 	indexer.BlocksTask:         {"block_headers", "block_parents", "drand_block_entries"},
 	indexer.ChainConsensusTask: {"chain_consensus"},
-	indexer.ActorStatesRawTask: {"actors", "actor_states"},
+	indexer.ActorStatesRawTask: {"actor_states"},
+	indexer.ActorRawTask:       {"actors"},
 }
 
 var TaskValidators = map[string][]interface{}{
-	indexer.BlockMessageTask:   {BlockMessagesValidator{}},
+	indexer.BlockMessagesTask:  {BlockMessagesValidator{}},
 	indexer.ReceiptTask:        {ReceiptsValidator{}},
 	indexer.BlocksTask:         {BlockHeaderValidator{}, BlockParentsValidator{}, DrandBlockEntriesValidator{}},
 	indexer.ChainConsensusTask: {ChainConsensusValidator{}},
-	indexer.ActorStatesRawTask: {ActorValidator{}, ActorStatesValidator{}},
+	indexer.ActorStatesRawTask: {ActorStatesValidator{}},
+	indexer.ActorRawTask:       {ActorValidator{}},
 }
 
 type TipSetStateValidator interface {
