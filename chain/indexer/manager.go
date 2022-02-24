@@ -8,8 +8,10 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/gammazero/workerpool"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opencensus.io/stats"
 	"go.opentelemetry.io/otel"
 
+	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
@@ -103,10 +105,11 @@ func (i *Manager) TipSetAsync(ctx context.Context, ts *types.TipSet) error {
 		return i.fatal
 	}
 
+	stats.Record(ctx, metrics.IndexManagerActiveWorkers.M(i.active))
+	stats.Record(ctx, metrics.IndexManagerWaitingWorkers.M(int64(i.pool.WaitingQueueSize())))
 	if i.pool.WaitingQueueSize() > i.pool.Size() {
 		log.Warnw("queuing worker in Manager pool", "waiting", i.pool.WaitingQueueSize())
 	}
-
 	log.Infow("submitting tipset for async indexing", "height", ts.Height(), "active", i.active)
 
 	ctx, span := otel.Tracer("").Start(ctx, "Manager.TipSetAsync")

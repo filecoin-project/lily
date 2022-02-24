@@ -8,6 +8,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 
 	"github.com/filecoin-project/lily/metrics"
@@ -108,6 +109,11 @@ func (sp *StateProcessor) startReport(ctx context.Context, current *types.TipSet
 
 		sp.pwg.Add(1)
 		go func() {
+			ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
+			stats.Record(ctx, metrics.TipsetHeight.M(int64(current.Height())))
+			stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+			defer stop()
+
 			pl := log.With("name", name, "height", current.Height())
 			pl.Infow("start processor")
 			defer func() {
@@ -150,6 +156,11 @@ func (sp *StateProcessor) startTipSet(ctx context.Context, current *types.TipSet
 
 		sp.pwg.Add(1)
 		go func() {
+			ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
+			stats.Record(ctx, metrics.TipsetHeight.M(int64(current.Height())))
+			stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+			defer stop()
+
 			pl := log.With("name", name, "height", current.Height())
 			pl.Infow("start processor")
 			defer func() {
@@ -193,6 +204,11 @@ func (sp *StateProcessor) startTipSets(ctx context.Context, current, executed *t
 
 		sp.pwg.Add(1)
 		go func() {
+			ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
+			stats.Record(ctx, metrics.TipsetHeight.M(int64(current.Height())))
+			stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+			defer stop()
+
 			pl := log.With("name", name, "height", current.Height())
 			pl.Infow("start processor")
 			defer func() {
@@ -272,6 +288,11 @@ func (sp *StateProcessor) startActor(ctx context.Context, current, executed *typ
 			p := proc
 
 			go func() {
+				ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
+				stats.Record(ctx, metrics.TipsetHeight.M(int64(current.Height())))
+				stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+				defer stop()
+
 				pl := log.With("name", name, "height", current.Height())
 				pl.Infow("start processor")
 				defer func() {
@@ -288,7 +309,7 @@ func (sp *StateProcessor) startActor(ctx context.Context, current, executed *typ
 						StartedAt:   start,
 						CompletedAt: time.Now(),
 					}
-					log.Warnw("processor error", "name")
+					log.Warnw("processor error", "name", name, "error", err)
 					return
 				}
 				results <- &Result{

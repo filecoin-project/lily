@@ -14,6 +14,7 @@ import (
 	saminer7 "github.com/filecoin-project/specs-actors/v7/actors/builtin/miner"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -56,44 +57,6 @@ import (
 )
 
 var tsLog = logging.Logger("lily/index/tipset")
-
-var AllModelTasks = []string{
-	"actor_states",
-	"actors",
-	"block_headers",
-	"block_messages",
-	"block_parents",
-	"chain_consensus",
-	"chain_economics",
-	"chain_powers",
-	"chain_rewards",
-	"derived_gas_outputs",
-	"drand_block_entries",
-	"id_addresses",
-	"internal_messages",
-	"internal_parsed_messages",
-	"market_deal_proposals",
-	"market_deal_states",
-	"message_gas_economy",
-	"messages",
-	"miner_current_deadline_infos",
-	"miner_fee_debts",
-	"miner_infos",
-	"miner_locked_funds",
-	"miner_pre_commit_infos",
-	"miner_sector_deals",
-	"miner_sector_events",
-	"miner_sector_infos",
-	"miner_sector_infos_v7",
-	"miner_sector_posts",
-	"multisig_approvals",
-	"multisig_transactions",
-	"parsed_messages",
-	"power_actor_claims",
-	"receipts",
-	"verified_registry_verified_clients",
-	"verified_registry_verifiers",
-}
 
 // TipSetIndexer waits for tipsets and persists their block data into a database.
 type TipSetIndexer struct {
@@ -367,6 +330,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Res
 					if complete {
 						continue
 					}
+					stats.Record(ctx, metrics.TipSetSkip.M(1))
 					outCh <- &Result{
 						Name: name,
 						Data: nil,

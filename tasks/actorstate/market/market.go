@@ -14,7 +14,6 @@ import (
 
 	market "github.com/filecoin-project/lily/chain/actors/builtin/market"
 
-	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 )
 
@@ -76,9 +75,6 @@ func (m StorageMarketExtractor) Extract(ctx context.Context, a actorstate.ActorI
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)
 	}
-
-	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
-	defer stop()
 
 	dealStateModel, err := DealStateExtractor{}.Extract(ctx, a, node)
 	if err != nil {

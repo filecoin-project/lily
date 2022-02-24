@@ -10,7 +10,6 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	"github.com/filecoin-project/lily/tasks/actorstate"
 
-	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	rewardmodel "github.com/filecoin-project/lily/model/actors/reward"
 )
@@ -27,9 +26,6 @@ func (RewardExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)
 	}
-
-	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
-	defer stop()
 
 	rstate, err := reward.Load(node.Store(), &a.Actor)
 	if err != nil {
