@@ -35,6 +35,10 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 	// transform sector changes to a model
 	sectorModel := minermodel.MinerSectorInfoV7List{}
 	for _, added := range sectorChanges.Added {
+		sectorKeyCID := ""
+		if added.SectorKeyCID != nil {
+			sectorKeyCID = added.SectorKeyCID.String()
+		}
 		sm := &minermodel.MinerSectorInfoV7{
 			Height:                int64(ec.CurrTs.Height()),
 			MinerID:               a.Address.String(),
@@ -48,14 +52,17 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			InitialPledge:         added.InitialPledge.String(),
 			ExpectedDayReward:     added.ExpectedDayReward.String(),
 			ExpectedStoragePledge: added.ExpectedStoragePledge.String(),
-			// TODO check nil first
-			SectorKeyCID: added.SectorKeyCID.String(),
+			SectorKeyCID:          sectorKeyCID,
 		}
 		sectorModel = append(sectorModel, sm)
 	}
 
 	// do the same for extended sectors, since they have a new deadline
 	for _, extended := range sectorChanges.Extended {
+		sectorKeyCID := ""
+		if extended.To.SectorKeyCID != nil {
+			sectorKeyCID = extended.To.SectorKeyCID.String()
+		}
 		sm := &minermodel.MinerSectorInfoV7{
 			Height:                int64(ec.CurrTs.Height()),
 			MinerID:               a.Address.String(),
@@ -69,13 +76,16 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			InitialPledge:         extended.To.InitialPledge.String(),
 			ExpectedDayReward:     extended.To.ExpectedDayReward.String(),
 			ExpectedStoragePledge: extended.To.ExpectedStoragePledge.String(),
-			// TODO check nil first
-			SectorKeyCID: extended.To.SectorKeyCID.String(),
+			SectorKeyCID:          sectorKeyCID,
 		}
 		sectorModel = append(sectorModel, sm)
 	}
 
 	for _, snapped := range sectorChanges.Snapped {
+		sectorKeyCID := ""
+		if snapped.To.SectorKeyCID != nil {
+			sectorKeyCID = snapped.To.SectorKeyCID.String()
+		}
 		sm := &minermodel.MinerSectorInfoV7{
 			Height:                int64(ec.CurrTs.Height()),
 			MinerID:               a.Address.String(),
@@ -89,11 +99,9 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			InitialPledge:         snapped.To.InitialPledge.String(),
 			ExpectedDayReward:     snapped.To.ExpectedDayReward.String(),
 			ExpectedStoragePledge: snapped.To.ExpectedStoragePledge.String(),
-			// TODO check nil first
-			SectorKeyCID: snapped.To.SectorKeyCID.String(),
+			SectorKeyCID:          sectorKeyCID,
 		}
 		sectorModel = append(sectorModel, sm)
-
 	}
 
 	return sectorModel, nil
