@@ -233,6 +233,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 			genesis = node.Override(new(lotusmodules.Genesis), lotusmodules.LoadGenesis(genBytes))
 		}
 
+		log.Info("test deployment")
 		isBootstrapper := false
 		shutdown := make(chan struct{})
 		liteModeDeps := node.Options()
