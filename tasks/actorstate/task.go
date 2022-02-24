@@ -216,10 +216,6 @@ func (r *RawActorExtractorMap) Allow(code cid.Cid) bool {
 	return true
 }
 
-type SpecialActorExtractorMap struct {
-	extractors map[cid.Cid]ActorStateExtractor
-}
-
 // A TypedActorExtractorMap extracts a single type of actor using full parsing of actor state
 type TypedActorExtractorMap struct {
 	codes      *cid.Set
