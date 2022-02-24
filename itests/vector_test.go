@@ -33,7 +33,7 @@ func TestCalibrationVector(t *testing.T) {
 			tvb := NewVectorWalkValidatorBuilder(vf).
 				WithDatabase(strg).
 				WithRange(vf.From, vf.To).
-				WithTasks(indexer.ActorStatesRawTask, indexer.BlocksTask, indexer.BlockMessageTask, indexer.ReceiptTask, indexer.ChainConsensusTask)
+				WithTasks(indexer.ActorStatesRawTask, indexer.ActorRawTask, indexer.BlocksTask, indexer.BlockMessagesTask, indexer.ReceiptTask, indexer.ChainConsensusTask)
 
 			vw := tvb.Build(ctx, t)
 			stop := vw.Run(ctx)

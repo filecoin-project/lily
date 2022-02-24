@@ -214,6 +214,10 @@ func (r *RawActorExtractorMap) Allow(code cid.Cid) bool {
 	return true
 }
 
+type SpecialActorExtractorMap struct {
+	extractors map[cid.Cid]ActorStateExtractor
+}
+
 // A TypedActorExtractorMap extracts a single type of actor using full parsing of actor state
 type TypedActorExtractorMap struct {
 	codes      *cid.Set
@@ -240,4 +244,33 @@ func (t *TypedActorExtractorMap) GetExtractors(code cid.Cid) ([]ActorStateExtrac
 		return nil, false
 	}
 	return t.extractors, true
+}
+
+// A CustomTypedActorExtractorMap extracts a single type of actor using full parsing of actor state
+type CustomTypedActorExtractorMap struct {
+	codes      *cid.Set
+	extractors map[cid.Cid][]ActorStateExtractor
+}
+
+func NewCustomTypedActorExtractorMap(extractors map[cid.Cid][]ActorStateExtractor) *CustomTypedActorExtractorMap {
+	t := &CustomTypedActorExtractorMap{
+		codes:      cid.NewSet(),
+		extractors: extractors,
+	}
+	for c := range extractors {
+		t.codes.Add(c)
+	}
+	return t
+}
+
+func (c *CustomTypedActorExtractorMap) Allow(code cid.Cid) bool {
+	return c.codes.Has(code)
+}
+
+func (c *CustomTypedActorExtractorMap) GetExtractors(code cid.Cid) ([]ActorStateExtractor, bool) {
+	ex, ok := c.extractors[code]
+	if !ok {
+		return nil, false
+	}
+	return ex, true
 }

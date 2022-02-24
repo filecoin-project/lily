@@ -5,6 +5,14 @@ import (
 	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
+	saminer1 "github.com/filecoin-project/specs-actors/actors/builtin/miner"
+	saminer2 "github.com/filecoin-project/specs-actors/v2/actors/builtin/miner"
+	saminer3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/miner"
+	saminer4 "github.com/filecoin-project/specs-actors/v4/actors/builtin/miner"
+	saminer5 "github.com/filecoin-project/specs-actors/v5/actors/builtin/miner"
+	saminer6 "github.com/filecoin-project/specs-actors/v6/actors/builtin/miner"
+	saminer7 "github.com/filecoin-project/specs-actors/v7/actors/builtin/miner"
+	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
@@ -36,8 +44,10 @@ import (
 	"github.com/filecoin-project/lily/tasks/chaineconomics"
 	"github.com/filecoin-project/lily/tasks/consensus"
 	"github.com/filecoin-project/lily/tasks/indexer"
-	"github.com/filecoin-project/lily/tasks/messageexecutions"
+	"github.com/filecoin-project/lily/tasks/messageexecutions/internal_message"
+	"github.com/filecoin-project/lily/tasks/messageexecutions/internal_parsed_message"
 	"github.com/filecoin-project/lily/tasks/messages/block_message"
+	"github.com/filecoin-project/lily/tasks/messages/gas_economy"
 	"github.com/filecoin-project/lily/tasks/messages/gas_output"
 	"github.com/filecoin-project/lily/tasks/messages/message"
 	"github.com/filecoin-project/lily/tasks/messages/parsed_message"
@@ -47,52 +57,42 @@ import (
 
 var tsLog = logging.Logger("lily/index/tipset")
 
-const (
-	ActorStatesRawTask      = "actorstatesraw"      // task that only extracts raw actor state
-	ActorStatesPowerTask    = "actorstatespower"    // task that only extracts power actor states (but not the raw state)
-	ActorStatesRewardTask   = "actorstatesreward"   // task that only extracts reward actor states (but not the raw state)
-	ActorStatesMinerTask    = "actorstatesminer"    // task that only extracts miner actor states (but not the raw state)
-	ActorStatesInitTask     = "actorstatesinit"     // task that only extracts init actor states (but not the raw state)
-	ActorStatesMarketTask   = "actorstatesmarket"   // task that only extracts market actor states (but not the raw state)
-	ActorStatesMultisigTask = "actorstatesmultisig" // task that only extracts multisig actor states (but not the raw state)
-	ActorStatesVerifreg     = "actorstatesverifreg" // task that only extracts verified registry actor states (but not the raw state)
-
-	BlocksTask = "blocks" // task that extracts block data
-
-	MessageTask       = "message"
-	BlockMessageTask  = "block_message"
-	GasOutputTask     = "gas_outputs"
-	ParsedMessageTask = "parsed_message"
-	ReceiptTask       = "receipt"
-
-	ChainEconomicsTask    = "chaineconomics"  // task that extracts chain economics data
-	MultisigApprovalsTask = "msapprovals"     // task that extracts multisig actor approvals
-	ImplicitMessageTask   = "implicitmessage" // task that extract implicitly executed messages: cron tick and block reward.
-	ChainConsensusTask    = "consensus"
-)
-
-var AllTasks = []string{
-	ActorStatesRawTask,
-	ActorStatesPowerTask,
-	ActorStatesRewardTask,
-	ActorStatesMinerTask,
-	ActorStatesInitTask,
-	ActorStatesMarketTask,
-	ActorStatesMultisigTask,
-	ActorStatesVerifreg,
-
-	BlocksTask,
-
-	MessageTask,
-	BlockMessageTask,
-	GasOutputTask,
-	ParsedMessageTask,
-	ReceiptTask,
-
-	ChainEconomicsTask,
-	MultisigApprovalsTask,
-	ImplicitMessageTask,
-	ChainConsensusTask,
+var AllModelTasks = []string{
+	"actor_states",
+	"actors",
+	"block_headers",
+	"block_messages",
+	"block_parents",
+	"chain_consensus",
+	"chain_economics",
+	"chain_powers",
+	"chain_rewards",
+	"derived_gas_outputs",
+	"drand_block_entries",
+	"id_addresses",
+	"internal_messages",
+	"internal_parsed_messages",
+	"market_deal_proposals",
+	"market_deal_states",
+	"message_gas_economy",
+	"messages",
+	"miner_current_deadline_infos",
+	"miner_fee_debts",
+	"miner_infos",
+	"miner_locked_funds",
+	"miner_pre_commit_infos",
+	"miner_sector_deals",
+	"miner_sector_events",
+	"miner_sector_infos",
+	"miner_sector_infos_v7",
+	"miner_sector_posts",
+	"multisig_approvals",
+	"multisig_transactions",
+	"parsed_messages",
+	"power_actor_claims",
+	"receipts",
+	"verified_registry_verified_clients",
+	"verified_registry_verifiers",
 }
 
 // TipSetIndexer waits for tipsets and persists their block data into a database.
@@ -126,6 +126,153 @@ func NewTipSetIndexer(node tasks.DataSource, name string, tasks []string, option
 
 	for _, t := range tasks {
 		switch t {
+		//
+		// miners
+		//
+		case MinerCurrentDeadlineInfoTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
+				miner.AllCodes(), miner2.DeadlineInfoExtractor{},
+			))
+		case MinerFeeDebtTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
+				miner.AllCodes(), miner2.FeeDebtExtractor{},
+			))
+		case MinerInfoTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
+				miner.AllCodes(), miner2.InfoExtractor{},
+			))
+		case MinerLockedFundsTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
+				miner.AllCodes(), miner2.InfoExtractor{},
+			))
+		case MinerPreCommitInfoTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
+				miner.AllCodes(), miner2.PreCommitInfoExtractor{},
+			))
+		case MinerSectorDealTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
+				miner.AllCodes(), miner2.SectorDealsExtractor{},
+			))
+		case MinerSectorEventsTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
+				miner.AllCodes(), miner2.SectorEventsExtractor{},
+			))
+		case MinerSectorPoStTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
+				miner.AllCodes(), miner2.PoStExtractor{},
+			))
+		case MinerSectorInfoTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewCustomTypedActorExtractorMap(
+				map[cid.Cid][]actorstate.ActorStateExtractor{
+					saminer1.Actor{}.Code(): {miner2.SectorInfoExtractor{}},
+					saminer2.Actor{}.Code(): {miner2.SectorInfoExtractor{}},
+					saminer3.Actor{}.Code(): {miner2.SectorInfoExtractor{}},
+					saminer4.Actor{}.Code(): {miner2.SectorInfoExtractor{}},
+					saminer5.Actor{}.Code(): {miner2.SectorInfoExtractor{}},
+					saminer6.Actor{}.Code(): {miner2.SectorInfoExtractor{}},
+					saminer7.Actor{}.Code(): {miner2.V7SectorInfoExtractor{}},
+				},
+			))
+
+			//
+			// Power
+			//
+		case PowerActorClaimTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
+				power.AllCodes(),
+				power2.ClaimedPowerExtractor{},
+			))
+		case ChainPowersTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
+				power.AllCodes(),
+				power2.ChainPowerExtractor{},
+			))
+
+			//
+			// Reward
+			//
+		case ChainRewardsTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
+				reward.AllCodes(),
+				reward2.RewardExtractor{},
+			))
+
+			//
+			// Init
+			//
+		case IdAddressTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
+				init_.AllCodes(),
+				init_2.InitExtractor{},
+			))
+
+			//
+			// Market
+			//
+		case MarketDealStatesTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
+				market.AllCodes(),
+				market2.DealStateExtractor{},
+			))
+		case MarketDealProposalsTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
+				market.AllCodes(),
+				market2.DealProposalExtractor{},
+			))
+
+			//
+			// Multisig
+			//
+		case MultiSigTransactionTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
+				multisig.AllCodes(),
+				multisig2.MultiSigActorExtractor{},
+			))
+
+			//
+			// Verified Registry
+			//
+		case VerifiedRegistryVerifierTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes(),
+				verifreg2.VerifierExtractor{},
+			))
+		case VerifiedRegistryClientTask:
+			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes(),
+				verifreg2.ClientExtractor{},
+			))
+
+			//
+			// Raw Actors
+			//
+		case ActorRawTask:
+			rae := &actorstate.RawActorExtractorMap{}
+			rae.Register(&raw.RawActorExtractor{})
+			actorProcessors[t] = actorstate.NewTask(node, rae)
+		case ActorStatesRawTask:
+			rae := &actorstate.RawActorExtractorMap{}
+			rae.Register(&raw.RawActorStateExtractor{})
+			actorProcessors[t] = actorstate.NewTask(node, rae)
+
+		case MessagesTask:
+			tipsetsProcessors[t] = message.NewTask(node)
+		case DerivedGasOutputsTask:
+			tipsetsProcessors[t] = gas_output.NewTask(node)
+		case BlockMessagesTask:
+			tipsetsProcessors[t] = block_message.NewTask(node)
+		case ParsedMessageTask:
+			tipsetsProcessors[t] = parsed_message.NewTask(node)
+		case ReceiptTask:
+			tipsetsProcessors[t] = receipt.NewTask(node)
+		case InternalMessagesTask:
+			tipsetsProcessors[t] = internal_message.NewTask(node)
+		case InternalParsedMessagesTask:
+			tipsetsProcessors[t] = internal_parsed_message.NewTask(node)
+		case MessageGasEconomyTask:
+			tipsetsProcessors[t] = gas_economy.NewTask(node)
+
+		case MultiSigApprovalTask:
+			tipsetsProcessors[t] = msapprovals.NewTask(node)
+
 		case BlocksTask:
 			tipsetProcessors[BlocksTask] = blocks.NewTask()
 		case ChainEconomicsTask:
@@ -133,72 +280,6 @@ func NewTipSetIndexer(node tasks.DataSource, name string, tasks []string, option
 		case ChainConsensusTask:
 			tipsetProcessors[ChainConsensusTask] = consensus.NewTask(node)
 
-		case ActorStatesRawTask:
-			rae := &actorstate.RawActorExtractorMap{}
-			rae.Register(&raw.RawActorExtractor{})
-			rae.Register(&raw.RawActorStateExtractor{})
-			actorProcessors[ActorStatesRawTask] = actorstate.NewTask(node, rae)
-
-		case ActorStatesPowerTask:
-			actorProcessors[ActorStatesPowerTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
-				power.AllCodes(),
-				power2.ClaimedPowerExtractor{},
-				power2.ChainPowerExtractor{},
-			))
-		case ActorStatesRewardTask:
-			actorProcessors[ActorStatesRewardTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
-				reward.AllCodes(),
-				reward2.RewardExtractor{},
-			))
-		case ActorStatesMinerTask:
-			actorProcessors[ActorStatesMinerTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(),
-				miner2.DeadlineInfoExtractor{},
-				miner2.FeeDebtExtractor{},
-				miner2.InfoExtractor{},
-				miner2.LockedFundsExtractor{},
-				miner2.PoStExtractor{},
-				miner2.PreCommitInfoExtractor{},
-				miner2.SectorDealsExtractor{},
-				miner2.SectorEventsExtractor{},
-				miner2.SectorInfoExtractor{},
-			))
-		case ActorStatesInitTask:
-			actorProcessors[ActorStatesInitTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
-				init_.AllCodes(),
-				init_2.InitExtractor{},
-			))
-		case ActorStatesMarketTask:
-			actorProcessors[ActorStatesMarketTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
-				market.AllCodes(),
-				market2.DealStateExtractor{},
-				market2.DealProposalExtractor{},
-			))
-		case ActorStatesMultisigTask:
-			actorProcessors[ActorStatesMultisigTask] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
-				multisig.AllCodes(),
-				multisig2.MultiSigActorExtractor{},
-			))
-		case ActorStatesVerifreg:
-			actorProcessors[ActorStatesVerifreg] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes(),
-				verifreg2.ClientExtractor{},
-				verifreg2.VerifierExtractor{},
-			))
-
-		case MessageTask:
-			tipsetsProcessors[MessageTask] = message.NewTask(node)
-		case GasOutputTask:
-			tipsetsProcessors[GasOutputTask] = gas_output.NewTask(node)
-		case BlockMessageTask:
-			tipsetsProcessors[BlockMessageTask] = block_message.NewTask(node)
-		case ParsedMessageTask:
-			tipsetsProcessors[ParsedMessageTask] = parsed_message.NewTask(node)
-		case ReceiptTask:
-			tipsetsProcessors[ReceiptTask] = receipt.NewTask(node)
-		case MultisigApprovalsTask:
-			tipsetsProcessors[MultisigApprovalsTask] = msapprovals.NewTask(node)
-		case ImplicitMessageTask:
-			tipsetsProcessors[ImplicitMessageTask] = messageexecutions.NewTask(node)
 		default:
 			return nil, xerrors.Errorf("unknown task: %s", t)
 		}
