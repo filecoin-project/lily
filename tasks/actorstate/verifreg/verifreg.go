@@ -11,7 +11,6 @@ import (
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
-	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 )
 
@@ -72,9 +71,6 @@ func (VerifiedRegistryExtractor) Extract(ctx context.Context, a actorstate.Actor
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)
 	}
-
-	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
-	defer stop()
 
 	verifiers, err := VerifierExtractor{}.Extract(ctx, a, node)
 	if err != nil {

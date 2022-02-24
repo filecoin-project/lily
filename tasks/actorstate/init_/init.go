@@ -12,7 +12,6 @@ import (
 	"golang.org/x/xerrors"
 
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
-	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	initmodel "github.com/filecoin-project/lily/model/actors/init"
 	"github.com/filecoin-project/lily/tasks/actorstate"
@@ -30,9 +29,6 @@ func (InitExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)
 	}
-
-	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
-	defer stop()
 
 	// genesis state.
 	if a.Current.Height() == 1 {

@@ -13,7 +13,6 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
 	"github.com/filecoin-project/lily/tasks/actorstate"
 
-	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	multisigmodel "github.com/filecoin-project/lily/model/actors/multisig"
 )
@@ -29,9 +28,6 @@ func (MultiSigActorExtractor) Extract(ctx context.Context, a actorstate.ActorInf
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)
 	}
-
-	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
-	defer stop()
 
 	ec, err := NewMultiSigExtractionContext(ctx, a, node)
 	if err != nil {

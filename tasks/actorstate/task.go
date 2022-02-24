@@ -53,20 +53,20 @@ func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, execute
 			actors[addr] = ch
 		}
 	}
-	log.Debugw("processing actor state changes", "height", current.Height(), "")
+	ll := log.With("height", int64(current.Height()))
+	ll.Debug("processing actor state changes")
 
 	data := make(model.PersistableList, 0, len(actors))
 	errorsDetected := make([]*ActorStateError, 0, len(actors))
 	skippedActors := 0
-	ll := log.With("height", int64(current.Height()))
 
 	if len(actors) == 0 {
-		ll.Debugw("no actor state changes found")
+		ll.Debug("no actor state changes found")
 		return data, report, nil
 	}
 
 	start := time.Now()
-	ll.Debugw("found actor state changes", "count", len(actors))
+	ll.Debug("found actor state changes", "count", len(actors))
 
 	results := make(chan *ActorStateResult, len(actors))
 	// closes result when done, runs extraction for each actor in actors concurrently.
@@ -153,6 +153,8 @@ func (t *Task) startActorStateExtraction(ctx context.Context, current, executed 
 							Head:    ac.Actor.Head,
 							Address: addr,
 						}
+						stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
+						defer stop()
 						data, err := e.Extract(ctx, info, t.node)
 						if err != nil {
 							res.Error = xerrors.Errorf("failed to extract parsed actor state: %w", err)

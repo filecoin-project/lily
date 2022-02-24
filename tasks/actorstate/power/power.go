@@ -11,7 +11,6 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin/power"
 	"github.com/filecoin-project/lily/tasks/actorstate"
 
-	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 )
 
@@ -74,9 +73,6 @@ func (StoragePowerExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)
 	}
-
-	stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
-	defer stop()
 
 	chainPowerModel, err := ChainPowerExtractor{}.Extract(ctx, a, node)
 	if err != nil {
