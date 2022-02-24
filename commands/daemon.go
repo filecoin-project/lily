@@ -166,6 +166,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 	},
 	Action: func(c *cli.Context) error {
 		lotuslog.SetupLogLevels()
+		log.Info("test deploy")
 
 		if err := setupLogging(VisorLogFlags); err != nil {
 			return xerrors.Errorf("setup logging: %w", err)
