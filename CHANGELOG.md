@@ -26,6 +26,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - add test to ensure docker images are executable (#848)
 - error marshalling in processing reports (#855)
 - continuous deployment for tags and deploy branches (#868)
+- persisting miner task results with nil models (#882)
 
 ### Chore
 - improve tracing data and include lotus tracing (#794)
