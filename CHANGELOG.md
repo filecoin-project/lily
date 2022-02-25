@@ -5,6 +5,41 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.8.6"></a>
+## [v0.8.6] - 2022-02-25
+
+### Feat
+- add block and actor caches (#766)
+- set log level with regular expression (#876)
+- job wait api (#785)
+- implement v1.5 schema (#823)
+
+### Fix
+- ignore message parse errors for failed messages with unknown actor addresses (#806)
+- panic due to res.Task being nil for skips (#814)
+- add integration test build flag (#827)
+- pass correct tipset to getTransactionIfApplied (#829)
+- daemon help and config load (#831)
+- dirty docker builds are now clean (#835)
+- sanitize illegal utf in market deal proposal labels (#844)
+- update docker base image for prod; Fix libc mismatch (#848)
+- add test to ensure docker images are executable (#848)
+- error marshalling in processing reports (#855)
+- continuous deployment for tags and deploy branches (#868)
+
+### Chore
+- improve tracing data and include lotus tracing (#794)
+- replace ported state diff with lotus actor registry (#799)
+- generic in memory lily vector test-suite (#811)
+- implement wrapper type for custom message param json marshalling (#821)
+- update to go1.17 (#822)
+- Update to lotus 1.14.1 & specs-actors 7.0.0 (#823)
+- add InternalParsedMessage to schema compatibility checklist (#833)
+- add method to get csv headers for model (#834)
+- set default log level to info (#870)
+- an error when --to and --from are reversed (#872)
+- Document --bootstrap flag in daemon command (#873)
+
 <a name="v0.8.5"></a>
 ## [v0.8.5] - 2021-12-02
 
