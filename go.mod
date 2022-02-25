@@ -32,7 +32,7 @@ require (
 	github.com/ipfs/go-fs-lock v0.0.6
 	github.com/ipfs/go-ipfs-blockstore v1.0.4
 	github.com/ipfs/go-ipld-cbor v0.0.5
-	github.com/ipfs/go-log/v2 v2.3.0
+	github.com/ipfs/go-log/v2 v2.5.0
 	github.com/ipfs/go-metrics-prometheus v0.0.2
 	github.com/ipld/go-car v0.3.2-0.20211001225732-32d0d9933823
 	github.com/lib/pq v1.9.0
@@ -103,7 +103,7 @@ require (
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/filecoin-project/dagstore v0.4.3 // indirect
 	github.com/filecoin-project/filecoin-ffi v0.30.4-0.20200910194244-f640612a1a1f // indirect
-	github.com/filecoin-project/go-amt-ipld/v4 v4.0.0 // indirect
+	github.com/filecoin-project/go-amt-ipld/v4 v4.0.1-0.20220218192059-e6f3ce3e7821 // indirect
 	github.com/filecoin-project/go-cbor-util v0.0.1 // indirect
 	github.com/filecoin-project/go-commp-utils v0.1.2 // indirect
 	github.com/filecoin-project/go-crypto v0.0.1 // indirect
