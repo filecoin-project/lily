@@ -603,7 +603,7 @@ func (t *TipSetIndexer) stateChangedActors(ctx context.Context, old, new cid.Cid
 	if newVersion == oldVersion && (newVersion != types.StateTreeVersion0 && newVersion != types.StateTreeVersion1) {
 		span.SetAttributes(attribute.String("diff", "fast"))
 		// TODO: replace hamt.UseTreeBitWidth and hamt.UseHashFunction with values based on network version
-		changes, err := hamt.Diff(ctx, t.node.Store(), t.node.Store(), oldRoot, newRoot, hamt.UseTreeBitWidth(5), hamt.UseHashFunction(func(input []byte) []byte {
+		changes, err := hamt.ParallelDiff(ctx, t.node.Store(), t.node.Store(), oldRoot, newRoot, hamt.UseTreeBitWidth(5), hamt.UseHashFunction(func(input []byte) []byte {
 			res := sha256.Sum256(input)
 			return res[:]
 		}))

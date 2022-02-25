@@ -11,7 +11,7 @@ require (
 	github.com/filecoin-project/go-amt-ipld/v2 v2.1.1-0.20201006184820-924ee87a1349 // indirect
 	github.com/filecoin-project/go-amt-ipld/v3 v3.1.1
 	github.com/filecoin-project/go-bitfield v0.2.4
-	github.com/filecoin-project/go-hamt-ipld/v3 v3.1.0
+	github.com/filecoin-project/go-hamt-ipld/v3 v3.1.1-0.20220218192134-ff52c0c24b11
 	github.com/filecoin-project/go-jsonrpc v0.1.5
 	github.com/filecoin-project/go-paramfetch v0.0.4
 	github.com/filecoin-project/go-state-types v0.1.3
