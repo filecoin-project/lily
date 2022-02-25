@@ -84,15 +84,16 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, emsgs [
 		return nil, xerrors.Errorf("extracting miner posts: %v", err)
 	}
 
-	out := model.PersistableList{
-		minerInfoModel,
-		lockedFundsModel,
-		feeDebtModel,
-		currDeadlineModel,
-		preCommitModel,
-		sectorDealsModel,
-		sectorEventsModel,
-		posts,
+	// a wrapper type used to avoid calling persist on nil models
+	out := &minermodel.MinerTaskResult{
+		Posts:                    posts,
+		MinerInfoModel:           minerInfoModel,
+		FeeDebtModel:             feeDebtModel,
+		LockedFundsModel:         lockedFundsModel,
+		CurrentDeadlineInfoModel: currDeadlineModel,
+		PreCommitsModel:          preCommitModel,
+		SectorEventsModel:        sectorEventsModel,
+		SectorDealsModel:         sectorDealsModel,
 	}
 
 	// if the miner actor is v1-6 persist its model to the miner_sector_infos table
@@ -119,10 +120,10 @@ func (m StorageMinerExtractor) Extract(ctx context.Context, a ActorInfo, emsgs [
 				ExpectedStoragePledge: sm.ExpectedStoragePledge,
 			})
 		}
-		out = append(out, sectorModelV6Minus)
+		out.SectorsModelV1_6 = sectorModelV6Minus
 	} else {
 		// if the miner actor is v7 or newer persist its model the miner_sector_infos_v7 table
-		out = append(out, sectorModelV7)
+		out.SectorsModelV7 = sectorModelV7
 	}
 
 	return out, nil
