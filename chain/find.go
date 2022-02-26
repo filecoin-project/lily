@@ -222,44 +222,41 @@ func (g *GapIndexer) findTaskEpochGaps(ctx context.Context) (visor.GapReportList
 		ctx,
 		&result,
 		`
-select height, task
-	from (
+with
 
-	-- incomplete_heights_and_their_completed_tasks: for every incomplete
-	-- heightin incomplete_task_counts we will take all processing_reports
-	-- with the same height and return height,tasks which are 'OK'
-	-- which provides all incomplete heights and their completed tasks
-	select distinct vpr.task, vpr.height
-	from visor_processing_reports vpr
-	right join(
+-- ranked_tasks: filters by height and prepares ranking status of tasks by int
+ranked_tasks as (
+	select height, task, status,
+	case status -- adding a col of int for statuses to make choosing tasks that have OK and non-OK status easier.
+		when 'OK' then 0
+		when 'ERROR' then 1
+		when 'INFO' then 2
+		when 'SKIP' then 3
+		else null
+	end as status_rank
+	from visor_processing_reports
+	where height >= ?2 and height <= ?3
+	group by height, task, status
+	having count(*) != ?0
+),
 
-		-- incomplete_task_counts: count of all tasks by height,status
-		-- and filter for status = 'OK' and all task counts which
-		-- don't equal len(AllTasks)
-		select incomplete_task_counts.height, status, count(incomplete_task_counts.height) cheight
-		from (
+-- min_ranked_tasks: where the actual "ranking" happens
+-- rank by status_rank
+-- rank 1 means the lowest value status rank found of the tuple (height, task)
+min_ranked_tasks as (
+	select *,
+	dense_rank() over (partition by height, task order by status_rank) as min_status_rank
+	from ranked_tasks
+	group by height, task, status, status_rank
+)
 
-			-- all unique height,tasks,status within range of interest
-			select task, height, status
-			from visor_processing_reports
-			where height >= ?2 and height <= ?3
-			group by height, task, status
-			order by height desc, task
-
-		) incomplete_task_counts
-		where status = ?4
-		group by incomplete_task_counts.height, incomplete_task_counts.status
-		having count(incomplete_task_counts.height) != ?0
-
-	) incomplete_heights
-
-	on vpr.height = incomplete_heights.height
-	where (vpr.status_information != ?1
-	or vpr.status_information is null)
-	and vpr.status = ?4
-) incomplete_heights_and_their_completed_tasks
-order by height desc
-;
+select vpr.height, vpr.task
+from visor_processing_reports vpr
+right join min_ranked_tasks rt
+on vpr.height = rt.height and vpr.task = rt.task and vpr.status = rt.status
+where rt.min_status_rank = 1 and vpr.status = ?4
+group by vpr.height, vpr.task, vpr.status, rt.min_status_rank
+order by height desc, task;
 `,
 		len(AllTasks), // arg 0
 		visor.ProcessingStatusInformationNullRound, // arg 1
