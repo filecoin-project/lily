@@ -255,7 +255,7 @@ select vpr.height, vpr.task
 from visor_processing_reports vpr
 right join dense_ranked_tasks rt
 on vpr.height = rt.height and vpr.task = rt.task and vpr.status = rt.status
-where rt.ranked_status = 1 and vpr.status = ?4
+where rt.ranked_status = 1 and vpr.status = ?4 and (vpr.status_information != ?1 or vpr.status_information is null)
 group by vpr.height, vpr.task, vpr.status, rt.ranked_status
 order by height desc, task;
 `,
