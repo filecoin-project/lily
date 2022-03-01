@@ -29,7 +29,7 @@ type LilyAPIStruct struct {
 		Store                                func() adt.Store                                                                  `perm:"read"`
 		GetExecutedAndBlockMessagesForTipset func(context.Context, *types.TipSet, *types.TipSet) (*lens.TipSetMessages, error) `perm:"read"`
 
-		LilyIndex  func(ctx context.Context, config *LilyIndexConfig) (interface{}, error)     `perm:"read"`
+		LilyIndex  func(ctx context.Context, config *LilyIndexConfig) (bool, error)            `perm:"read"`
 		LilyWatch  func(context.Context, *LilyWatchConfig) (*schedule.JobSubmitResult, error)  `perm:"read"`
 		LilyWalk   func(context.Context, *LilyWalkConfig) (*schedule.JobSubmitResult, error)   `perm:"read"`
 		LilySurvey func(context.Context, *LilySurveyConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
@@ -71,7 +71,8 @@ type LilyAPIStruct struct {
 		NetAgentVersion  func(ctx context.Context, p peer.ID) (string, error)          `perm:"read"`
 		NetPeerInfo      func(context.Context, peer.ID) (*api.ExtendedPeerInfo, error) `perm:"read"`
 
-		StartTipSetWorker func(ctx context.Context) error `perm:"read"`
+		StartTipSetWorker   func(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error)   `perm:"read"`
+		StartTipSetNotifier func(ctx context.Context, cfg *LilyTipSetNotifierConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
 	}
 }
 
@@ -123,7 +124,7 @@ func (s *LilyAPIStruct) Store() adt.Store {
 	return s.Internal.Store()
 }
 
-func (s *LilyAPIStruct) LilyIndex(ctx context.Context, cfg *LilyIndexConfig) (interface{}, error) {
+func (s *LilyAPIStruct) LilyIndex(ctx context.Context, cfg *LilyIndexConfig) (bool, error) {
 	return s.Internal.LilyIndex(ctx, cfg)
 }
 
@@ -219,6 +220,10 @@ func (s *LilyAPIStruct) NetPeerInfo(ctx context.Context, p peer.ID) (*api.Extend
 	return s.Internal.NetPeerInfo(ctx, p)
 }
 
-func (s *LilyAPIStruct) StartTipSetWorker(ctx context.Context) error {
-	return s.Internal.StartTipSetWorker(ctx)
+func (s *LilyAPIStruct) StartTipSetWorker(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error) {
+	return s.Internal.StartTipSetWorker(ctx, cfg)
+}
+
+func (s *LilyAPIStruct) StartTipSetNotifier(ctx context.Context, cfg *LilyTipSetNotifierConfig) (*schedule.JobSubmitResult, error) {
+	return s.Internal.StartTipSetNotifier(ctx, cfg)
 }

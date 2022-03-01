@@ -9,14 +9,17 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/metrics"
 )
+
+type WatcherObserver interface {
+	TipSetAsync(ctx context.Context, ts *types.TipSet) error
+}
 
 // NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held
 // in a cache awaiting possible reversion. Tipsets will be written to the database when they are evicted from
 // the cache due to incoming later tipsets.
-func NewWatcher(obs *indexer.Manager, hn HeadNotifier, cache *TipSetCache) *Watcher {
+func NewWatcher(obs WatcherObserver, hn HeadNotifier, cache *TipSetCache) *Watcher {
 	return &Watcher{
 		notifier:   hn,
 		obs:        obs,
@@ -28,7 +31,7 @@ func NewWatcher(obs *indexer.Manager, hn HeadNotifier, cache *TipSetCache) *Watc
 // Watcher is a task that indexes blocks by following the chain head.
 type Watcher struct {
 	notifier   HeadNotifier
-	obs        *indexer.Manager
+	obs        WatcherObserver
 	confidence int          // size of tipset cache
 	cache      *TipSetCache // caches tipsets for possible reversion
 	done       chan struct{}

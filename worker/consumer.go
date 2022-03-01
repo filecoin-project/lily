@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/hibiken/asynq"
 
@@ -29,4 +30,55 @@ func (ih *IndexHandler) HandleIndexTipSetTask(ctx context.Context, t *asynq.Task
 		return err
 	}
 	return nil
+}
+
+type TipSetWorker struct {
+	name        string
+	concurrency int
+	cfg         *RedisConfig
+	mux         *asynq.ServeMux
+	done        chan struct{}
+}
+
+func NewTipSetWorker(im *indexer.Manager, name string, concurrency int, cfg *RedisConfig) *TipSetWorker {
+	ih := NewIndexHandler(im)
+	mux := asynq.NewServeMux()
+	mux.HandleFunc(TypeIndexTipSet, ih.HandleIndexTipSetTask)
+	return &TipSetWorker{
+		name:        name,
+		concurrency: concurrency,
+		cfg:         cfg,
+		mux:         mux,
+	}
+}
+
+func (t *TipSetWorker) Run(ctx context.Context) error {
+	t.done = make(chan struct{})
+	defer close(t.done)
+
+	srv := asynq.NewServer(
+		asynq.RedisClientOpt{
+			Network:  t.cfg.Network,
+			Addr:     t.cfg.Addr,
+			Username: t.cfg.Username,
+			Password: t.cfg.Password,
+			DB:       t.cfg.DB,
+			PoolSize: t.cfg.PoolSize,
+		},
+		// TODO configure error handling
+		asynq.Config{
+			Concurrency: t.concurrency,
+			Logger:      log.With("process", fmt.Sprintf("TipSetWorker-%s", t.name)),
+			LogLevel:    asynq.InfoLevel,
+		},
+	)
+	go func() {
+		<-ctx.Done()
+		srv.Shutdown()
+	}()
+	return srv.Run(t.mux)
+}
+
+func (t *TipSetWorker) Done() <-chan struct{} {
+	return t.done
 }

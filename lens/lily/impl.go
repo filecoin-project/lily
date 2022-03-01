@@ -16,7 +16,6 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/gammazero/workerpool"
 	"github.com/go-pg/pg/v10"
-	"github.com/hibiken/asynq"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
@@ -67,91 +66,139 @@ func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.C
 	return m.ChainAPI.Chain.GetTipsetByHeight(ctx, epoch, ts, false)
 }
 
-var redisAddr = "127.0.0.1:6379"
-
-func (m *LilyNodeAPI) StartTipSetWorker(ctx context.Context) error {
-	log.Infow("Starting TIpSetWorker")
-	md := storage.Metadata{
-		JobName: "TipSetWorker",
-	}
-	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	strg, err := m.StorageCatalog.Connect(ctx, "Database1", md)
-	if err != nil {
-		return err
-	}
-
-	taskAPI, err := datasource.NewDataSource(m)
-	if err != nil {
-		return err
-	}
-
-	// instantiate an indexer to extract blocks
-	im, err := indexer.NewManager(taskAPI, strg, "TipSetWorker", []string{"blocks"})
-	if err != nil {
-		return err
-	}
-
-	ih := worker.NewIndexHandler(im)
-
-	srv := asynq.NewServer(
-		asynq.RedisClientOpt{Addr: redisAddr},
-		asynq.Config{
-			Concurrency: 1,
-			Logger:      log.With("process", "TipSetWorker"),
-			LogLevel:    asynq.InfoLevel,
-		},
-	)
-
-	mux := asynq.NewServeMux()
-	mux.HandleFunc(worker.TypeIndexTipSet, ih.HandleIndexTipSetTask)
-
-	go func() {
-		if err := srv.Run(mux); err != nil {
-			log.Errorw("tipset worker died", "error", err)
-		}
-	}()
-	return nil
-}
-
-func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interface{}, error) {
+func (m *LilyNodeAPI) StartTipSetNotifier(_ context.Context, cfg *LilyTipSetNotifierConfig) (*schedule.JobSubmitResult, error) {
+	log.Infow("starting TipSetNotifier")
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
 
-	/*
-		md := storage.Metadata{
-			JobName: cfg.Name,
-		}
-		// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-		strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
-		if err != nil {
-			return nil, err
-		}
+	// HeadNotifier bridges between the event system and the watcher
+	obs := &HeadNotifier{
+		bufferSize: 5,
+	}
 
-		taskAPI, err := datasource.NewDataSource(m)
-		if err != nil {
-			return nil, err
-		}
+	// Hook up the notifier to the event system
+	head := m.Events.Observe(obs)
+	if err := obs.SetCurrent(ctx, head); err != nil {
+		return nil, err
+	}
 
-		// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-			im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, indexer.WithWindow(cfg.Window))
-			if err != nil {
-				return nil, err
-			}
+	// warm the tipset cache.
+	tsCache := chain.NewTipSetCache(cfg.Confidence)
+	if err := tsCache.Warm(ctx, head, m.ChainModuleAPI.ChainGetTipSet); err != nil {
+		return nil, err
+	}
 
-	*/
+	producer := worker.NewProducer(&worker.RedisConfig{
+		Network:  cfg.Redis.Network,
+		Addr:     cfg.Redis.Addr,
+		Username: cfg.Redis.Username,
+		Password: cfg.Redis.Password,
+		DB:       cfg.Redis.DB,
+		PoolSize: cfg.Redis.PoolSize,
+	})
 
-	ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
+	res := m.Scheduler.Submit(&schedule.JobConfig{
+		Name: cfg.Name,
+		Type: "tipset_notifier",
+		Params: map[string]string{
+			"confidence": fmt.Sprintf("%d", cfg.Confidence),
+			"network":    cfg.Redis.Network,
+			"addr":       cfg.Redis.Addr,
+			"username":   cfg.Redis.Username,
+			"password":   cfg.Redis.Password,
+			"db":         fmt.Sprintf("%d", cfg.Redis.DB),
+			"poolsize":   fmt.Sprintf("%d", cfg.Redis.PoolSize),
+		},
+		Job:                 chain.NewWatcher(producer, obs, tsCache),
+		RestartOnFailure:    cfg.RestartOnFailure,
+		RestartOnCompletion: cfg.RestartOnCompletion,
+		RestartDelay:        cfg.RestartDelay,
+	})
+
+	return res, nil
+}
+
+func (m *LilyNodeAPI) StartTipSetWorker(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error) {
+	log.Infow("starting TipSetWorker", "name", cfg.Name)
+	md := storage.Metadata{
+		JobName: cfg.Name,
+	}
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.Name, md)
 	if err != nil {
 		return nil, err
 	}
 
-	p := worker.NewProducer(redisAddr)
-	err = p.TipSetWithTasks(ctx, ts, cfg.Tasks)
+	taskAPI, err := datasource.NewDataSource(m)
+	if err != nil {
+		return nil, err
+	}
 
-	//success, err := im.TipSet(ctx, ts)
+	// instantiate an indexer with no tasks, requests for tipset indexing will contain tasks
+	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, []string{})
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, err
+	res := m.Scheduler.Submit(&schedule.JobConfig{
+		Name: cfg.Name,
+		Type: "tipset_notifier",
+		Params: map[string]string{
+			"network":  cfg.Redis.Network,
+			"addr":     cfg.Redis.Addr,
+			"username": cfg.Redis.Username,
+			"password": cfg.Redis.Password,
+			"db":       fmt.Sprintf("%d", cfg.Redis.DB),
+			"poolsize": fmt.Sprintf("%d", cfg.Redis.PoolSize),
+		},
+		Job: worker.NewTipSetWorker(im, cfg.Name, cfg.Concurrency, &worker.RedisConfig{
+			Network:  cfg.Redis.Network,
+			Addr:     cfg.Redis.Addr,
+			Username: cfg.Redis.Username,
+			Password: cfg.Redis.Password,
+			DB:       cfg.Redis.DB,
+			PoolSize: cfg.Redis.PoolSize,
+		}),
+		RestartOnFailure:    cfg.RestartOnFailure,
+		RestartOnCompletion: cfg.RestartOnCompletion,
+		RestartDelay:        cfg.RestartDelay,
+	})
+	return res, nil
+}
 
+func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (bool, error) {
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx := context.Background()
+
+	md := storage.Metadata{
+		JobName: cfg.Name,
+	}
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
+	if err != nil {
+		return false, err
+	}
+
+	taskAPI, err := datasource.NewDataSource(m)
+	if err != nil {
+		return false, err
+	}
+
+	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, indexer.WithWindow(cfg.Window))
+	if err != nil {
+		return false, err
+	}
+
+	ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
+	if err != nil {
+		return false, err
+	}
+
+	success, err := im.TipSet(ctx, ts)
+
+	return success, err
 }
 
 func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*schedule.JobSubmitResult, error) {
