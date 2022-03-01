@@ -32,6 +32,22 @@ var indexFlags indexOps
 var IndexTipSetCmd = &cli.Command{
 	Name:  "tipset",
 	Usage: "Index the state of a tipset from the filecoin blockchain by tipset key",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:        "api",
+			Usage:       "Address of lily api in multiaddr format.",
+			EnvVars:     []string{"LILY_API"},
+			Value:       "/ip4/127.0.0.1/tcp/1234",
+			Destination: &indexFlags.apiAddr,
+		},
+		&cli.StringFlag{
+			Name:        "api-token",
+			Usage:       "Authentication token for lily api.",
+			EnvVars:     []string{"LILY_API_TOKEN"},
+			Value:       "",
+			Destination: &indexFlags.apiToken,
+		},
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
@@ -81,6 +97,9 @@ var IndexTipSetCmd = &cli.Command{
 var IndexHeightCmd = &cli.Command{
 	Name:  "height",
 	Usage: "Index the state of a tipset from the filecoin blockchain by height",
+	Flags: flagSet(
+		clientAPIFlagSet,
+	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
