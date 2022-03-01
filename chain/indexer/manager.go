@@ -149,10 +149,10 @@ func (i *Manager) TipSetAsync(ctx context.Context, ts *types.TipSet) error {
 // TipSet synchronously indexes and persists `ts`. TipSet returns an error if the Manager's Indexer encounters a
 // fatal error. TipSet returns false if one or more of the Indexer's tasks complete with a status `ERROR` or `SKIPPED`, else returns true.
 // Upon cancellation of `ctx` TipSet will persist all incomplete tasks with status `SKIPPED` before returning.
-func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
+func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, tasks ...string) (bool, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "Manager.TipSet")
 	defer span.End()
-	log.Infow("index tipset", "height", ts.Height())
+	log.Infow("index tipset", "height", ts.Height(), "tasks", tasks)
 
 	var cancel func()
 	var procCtx context.Context // cancellable context for the task
@@ -166,11 +166,24 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
 	}
 	defer cancel()
 
-	// asynchronously begin indexing tipset `ts`, returning results as they become avaiable.
-	taskResults, taskErrors, err := i.indexer.TipSet(procCtx, ts)
-	// indexer suffered fatal error, abort.
-	if err != nil {
-		return false, err
+	var (
+		taskResults chan *Result
+		taskErrors  chan error
+		err         error
+	)
+	if len(tasks) > 0 {
+		tsi, err := NewTipSetIndexer(i.api, "REDIS_TEST", tasks)
+		if err != nil {
+			return false, err
+		}
+		taskResults, taskErrors, err = tsi.TipSet(ctx, ts)
+	} else {
+		// asynchronously begin indexing tipset `ts`, returning results as they become avaiable.
+		taskResults, taskErrors, err = i.indexer.TipSet(procCtx, ts)
+		// indexer suffered fatal error, abort.
+		if err != nil {
+			return false, err
+		}
 	}
 
 	// there are no results, bail.

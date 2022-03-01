@@ -129,6 +129,7 @@ var WalkCmd = &cli.Command{
 			RestartOnFailure:    false,
 			Storage:             walkFlags.storage,
 			Workers:             walkFlags.workers,
+			Redis:               true,
 		}
 
 		api, closer, err := GetAPI(ctx, walkFlags.apiAddr, walkFlags.apiToken)

@@ -142,6 +142,7 @@ func main() {
 			commands.WaitApiCmd,
 			commands.WalkCmd,
 			commands.WatchCmd,
+			commands.WorkerCmd,
 		},
 	}
 	app.Setup()

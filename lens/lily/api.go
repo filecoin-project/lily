@@ -64,6 +64,9 @@ type LilyAPI interface {
 	NetPubsubScores(context.Context) ([]api.PubsubScore, error)
 	NetAgentVersion(ctx context.Context, p peer.ID) (string, error)
 	NetPeerInfo(context.Context, peer.ID) (*api.ExtendedPeerInfo, error)
+
+	// Workers
+	StartTipSetWorker(ctx context.Context) error
 }
 
 type LilyIndexConfig struct {
@@ -97,6 +100,7 @@ type LilyWalkConfig struct {
 	RestartDelay        time.Duration
 	Storage             string // name of storage system to use, may be empty
 	Workers             int    // number of indexing jobs that can run in parallel
+	Redis               bool
 }
 
 type LilyGapFindConfig struct {

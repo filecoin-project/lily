@@ -16,6 +16,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/gammazero/workerpool"
 	"github.com/go-pg/pg/v10"
+	"github.com/hibiken/asynq"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
@@ -24,6 +25,7 @@ import (
 	"github.com/filecoin-project/lily/chain/datasource"
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/lens/lily/modules"
+	"github.com/filecoin-project/lily/worker"
 
 	"github.com/filecoin-project/lily/chain"
 	"github.com/filecoin-project/lily/lens"
@@ -65,38 +67,89 @@ func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.C
 	return m.ChainAPI.Chain.GetTipsetByHeight(ctx, epoch, ts, false)
 }
 
-func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interface{}, error) {
-	md := storage.Metadata{
-		JobName: cfg.Name,
-	}
-	// the context's passed to these methods live for the duration of the clients request, so make a new one.
-	ctx := context.Background()
+var redisAddr = "127.0.0.1:6379"
 
+func (m *LilyNodeAPI) StartTipSetWorker(ctx context.Context) error {
+	md := storage.Metadata{
+		JobName: "TipSetWorker",
+	}
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
+	strg, err := m.StorageCatalog.Connect(ctx, "Database1", md)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	taskAPI, err := datasource.NewDataSource(m)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, indexer.WithWindow(cfg.Window))
+	// instantiate an indexer to extract blocks
+	im, err := indexer.NewManager(taskAPI, strg, "TipSetWorker", []string{"blocks"})
 	if err != nil {
-		return nil, err
+		return err
 	}
+
+	ih := worker.NewIndexHandler(im)
+
+	srv := asynq.NewServer(
+		asynq.RedisClientOpt{Addr: redisAddr},
+		asynq.Config{
+			Concurrency: 1,
+			Logger:      log.With("process", "TipSetWorker"),
+			LogLevel:    asynq.InfoLevel,
+		},
+	)
+
+	mux := asynq.NewServeMux()
+	mux.HandleFunc(worker.TypeIndexTipSet, ih.HandleIndexTipSetTask)
+
+	go func() {
+		if err := srv.Run(mux); err != nil {
+			log.Errorw("tipset worker died", "error", err)
+		}
+	}()
+	return nil
+}
+
+func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interface{}, error) {
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx := context.Background()
+
+	/*
+		md := storage.Metadata{
+			JobName: cfg.Name,
+		}
+		// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+		strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
+		if err != nil {
+			return nil, err
+		}
+
+		taskAPI, err := datasource.NewDataSource(m)
+		if err != nil {
+			return nil, err
+		}
+
+		// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+			im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, indexer.WithWindow(cfg.Window))
+			if err != nil {
+				return nil, err
+			}
+
+	*/
 
 	ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
 	if err != nil {
 		return nil, err
 	}
 
-	success, err := im.TipSet(ctx, ts)
+	p := worker.NewProducer(redisAddr)
+	err = p.TipSetWithTasks(ctx, ts, cfg.Tasks)
 
-	return success, err
+	//success, err := im.TipSet(ctx, ts)
+
+	return nil, err
 
 }
 
