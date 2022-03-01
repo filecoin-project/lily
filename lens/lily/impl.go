@@ -70,6 +70,7 @@ func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.C
 var redisAddr = "127.0.0.1:6379"
 
 func (m *LilyNodeAPI) StartTipSetWorker(ctx context.Context) error {
+	log.Infow("Starting TIpSetWorker")
 	md := storage.Metadata{
 		JobName: "TipSetWorker",
 	}
