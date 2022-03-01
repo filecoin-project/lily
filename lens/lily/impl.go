@@ -125,7 +125,7 @@ func (m *LilyNodeAPI) StartTipSetWorker(ctx context.Context, cfg *LilyTipSetWork
 	}
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	strg, err := m.StorageCatalog.Connect(ctx, cfg.Name, md)
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
 	if err != nil {
 		return nil, err
 	}
