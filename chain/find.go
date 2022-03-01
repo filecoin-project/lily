@@ -225,13 +225,14 @@ func (g *GapIndexer) findTaskEpochGaps(ctx context.Context) (visor.GapReportList
 with
 
 -- ranked_tasks: filters by height and prepares ranking status of tasks by int
+-- only considers heights with incomplete task count
 ranked_tasks as (
 	select height, task, status,
 	case status -- adding a col of int for statuses to make choosing tasks that have OK and non-OK status easier.
 		when 'OK' then 0
-		when 'ERROR' then 1
-		when 'INFO' then 2
-		when 'SKIP' then 3
+		when 'INFO' then 1
+		when 'SKIP' then 2
+		when 'ERROR' then 3
 		else null
 	end as status_rank
 	from visor_processing_reports
@@ -240,22 +241,22 @@ ranked_tasks as (
 	having count(*) != ?0
 ),
 
--- min_ranked_tasks: where the actual "ranking" happens
+-- dense_ranked_tasks: where the actual "ranking" happens
 -- rank by status_rank
 -- rank 1 means the lowest value status rank found of the tuple (height, task)
-min_ranked_tasks as (
+dense_ranked_tasks as (
 	select *,
-	dense_rank() over (partition by height, task order by status_rank) as min_status_rank
+	dense_rank() over (partition by height, task order by status_rank) as ranked_status
 	from ranked_tasks
 	group by height, task, status, status_rank
 )
 
 select vpr.height, vpr.task
 from visor_processing_reports vpr
-right join min_ranked_tasks rt
+right join dense_ranked_tasks rt
 on vpr.height = rt.height and vpr.task = rt.task and vpr.status = rt.status
-where rt.min_status_rank = 1 and vpr.status = ?4
-group by vpr.height, vpr.task, vpr.status, rt.min_status_rank
+where rt.ranked_status = 1 and vpr.status = ?4
+group by vpr.height, vpr.task, vpr.status, rt.ranked_status
 order by height desc, task;
 `,
 		len(AllTasks), // arg 0
