@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/filecoin-project/go-address"
@@ -28,8 +30,61 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/tasks"
 )
+
+var (
+	executedBlkMsgCacheSize int
+	executedTsCacheSize     int
+	diffPreCommitCacheSize  int
+	diffSectorCacheSize     int
+
+	executedBlkMsgCacheSizeEnv = "LILY_EXECUTED_BLK_MSG_CACHE_SIZE"
+	executedTsCacheSizeEnv     = "LILY_EXECUTED_TS_CACHE_SIZE"
+	diffPreCommitCacheSizeEnv  = "LILY_DIFF_PRECOMMIT_CACHE_SIZE"
+	diffSectorCacheSizeEnv     = "LILY_DIFF_SECTORS_CACHE_SIZE"
+)
+
+func init() {
+	executedBlkMsgCacheSize = 4
+	executedTsCacheSize = 4
+	diffPreCommitCacheSize = 500
+	diffSectorCacheSize = 500
+	if s := os.Getenv(executedBlkMsgCacheSizeEnv); s != "" {
+		v, err := strconv.ParseInt(s, 10, 64)
+		if err == nil {
+			executedBlkMsgCacheSize = int(v)
+		} else {
+			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, executedBlkMsgCacheSizeEnv, executedBlkMsgCacheSize, err)
+		}
+	}
+	if s := os.Getenv(executedTsCacheSizeEnv); s != "" {
+		v, err := strconv.ParseInt(s, 10, 64)
+		if err == nil {
+			executedTsCacheSize = int(v)
+		} else {
+			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, executedTsCacheSizeEnv, executedTsCacheSize, err)
+		}
+	}
+	if s := os.Getenv(diffPreCommitCacheSizeEnv); s != "" {
+		v, err := strconv.ParseInt(s, 10, 64)
+		if err == nil {
+			diffPreCommitCacheSize = int(v)
+		} else {
+			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, diffPreCommitCacheSizeEnv, diffPreCommitCacheSize, err)
+		}
+	}
+	if s := os.Getenv(diffSectorCacheSizeEnv); s != "" {
+		v, err := strconv.ParseInt(s, 10, 64)
+		if err == nil {
+			diffSectorCacheSize = int(v)
+		} else {
+			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, diffSectorCacheSizeEnv, diffSectorCacheSize, err)
+		}
+	}
+
+}
 
 var _ tasks.DataSource = (*DataSource)(nil)
 
@@ -56,23 +111,23 @@ func NewDataSource(node lens.API) (*DataSource, error) {
 		node: node,
 	}
 	var err error
-	t.executedBlkMsgCache, err = lru.New(4)
+	t.executedBlkMsgCache, err = lru.New(executedBlkMsgCacheSize)
 	if err != nil {
 		return nil, err
 	}
 
-	t.executedTsCache, err = lru.New(4)
+	t.executedTsCache, err = lru.New(executedTsCacheSize)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO these cache sizes will need to increase depending on the number of miner actors at each epoch
-	t.diffPreCommitCache, err = lru.New(500)
+	t.diffPreCommitCache, err = lru.New(diffPreCommitCacheSize)
 	if err != nil {
 		return nil, err
 	}
 
-	t.diffSectorsCache, err = lru.New(500)
+	t.diffSectorsCache, err = lru.New(diffSectorCacheSize)
 	if err != nil {
 		return nil, err
 	}
@@ -147,6 +202,7 @@ func (t *DataSource) CirculatingSupply(ctx context.Context, ts *types.TipSet) (a
 }
 
 func (t *DataSource) MessageExecutions(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {
+	metrics.RecordInc(ctx, metrics.DataSourceMessageExecutionRead)
 	ctx, span := otel.Tracer("").Start(ctx, "DataSource.MessageExecutions")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.String("tipset", ts.Key().String()))
@@ -157,6 +213,7 @@ func (t *DataSource) MessageExecutions(ctx context.Context, ts, pts *types.TipSe
 	key := ts.Key().String() + pts.Key().String()
 	value, found := t.executedTsCache.Get(key)
 	if found {
+		metrics.RecordInc(ctx, metrics.DataSourceMessageExecutionCacheHit)
 		return value.([]*lens.MessageExecution), nil
 	}
 
@@ -178,6 +235,7 @@ func (t *DataSource) MessageExecutions(ctx context.Context, ts, pts *types.TipSe
 }
 
 func (t *DataSource) ExecutedAndBlockMessages(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
+	metrics.RecordInc(ctx, metrics.DataSourceExecutedAndBlockMessagesRead)
 	ctx, span := otel.Tracer("").Start(ctx, "DataSource.ExecutedAndBlockMessages")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.String("tipset", ts.Key().String()))
@@ -188,6 +246,7 @@ func (t *DataSource) ExecutedAndBlockMessages(ctx context.Context, ts, pts *type
 	key := ts.Key().String() + pts.Key().String()
 	value, found := t.executedBlkMsgCache.Get(key)
 	if found {
+		metrics.RecordInc(ctx, metrics.DataSourceExecutedAndBlockMessagesCacheHit)
 		return value.(*lens.TipSetMessages), nil
 	}
 
@@ -231,6 +290,7 @@ func GetActorStateChanges(ctx context.Context, store adt.Store, current, execute
 	if newVersion == oldVersion && (newVersion != types.StateTreeVersion0 && newVersion != types.StateTreeVersion1) {
 		changes, err := fastDiff(ctx, store, oldRoot, newRoot)
 		if err == nil {
+			metrics.RecordInc(ctx, metrics.DataSourceActorStateChangesFastDiff)
 			log.Infow("got actor state changes", "height", current.Height(), "duration", time.Since(start), "count", len(changes))
 			if span.IsRecording() {
 				span.SetAttributes(attribute.Bool("fast", true), attribute.Int("changes", len(changes)))
@@ -239,6 +299,7 @@ func GetActorStateChanges(ctx context.Context, store adt.Store, current, execute
 		}
 		log.Warnw("failed to diff state tree efficiently, falling back to slow method", "error", err)
 	}
+	metrics.RecordInc(ctx, metrics.DataSourceActorStateChangesSlowDiff)
 
 	oldTree, err := state.LoadStateTree(store, executed.ParentState())
 	if err != nil {
