@@ -53,11 +53,7 @@ type DataSource struct {
 
 func NewDataSource(node lens.API) (*DataSource, error) {
 	t := &DataSource{
-		node:                node,
-		executedBlkMsgGroup: singleflight.Group{},
-		executedTsGroup:     singleflight.Group{},
-		diffSectorsGroup:    singleflight.Group{},
-		diffPreCommitGroup:  singleflight.Group{},
+		node: node,
 	}
 	var err error
 	t.executedBlkMsgCache, err = lru.New(4)
