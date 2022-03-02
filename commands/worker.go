@@ -57,7 +57,7 @@ var redisPoolSizeFlag = &cli.IntFlag{
 	Name:        "redis-poolsize",
 	Usage:       `Maximum number of socket connection, default is 10 connections per every CPU as reported by runtime.NumCPU`,
 	Value:       0,
-	Destination: &redisFlags.db,
+	Destination: &redisFlags.poolSize,
 }
 
 var redisFlagSet = []cli.Flag{
