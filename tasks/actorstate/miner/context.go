@@ -10,79 +10,7 @@ import (
 
 	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/tasks/actorstate"
-
-	"github.com/filecoin-project/lily/model"
 )
-
-// was services/processor/tasks/miner/miner.go
-
-// StorageMinerExtractor extracts miner actor state
-type StorageMinerExtractor struct{}
-
-func (m StorageMinerExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "StorageMinerExtractor.Extract")
-	defer span.End()
-	if span.IsRecording() {
-		span.SetAttributes(a.Attributes()...)
-	}
-
-	minerInfoModel, err := InfoExtractor{}.Extract(ctx, a, node)
-	if err != nil {
-		return nil, xerrors.Errorf("extracting miner info: %w", err)
-	}
-
-	lockedFundsModel, err := LockedFundsExtractor{}.Extract(ctx, a, node)
-	if err != nil {
-		return nil, xerrors.Errorf("extracting miner locked funds: %w", err)
-	}
-
-	feeDebtModel, err := FeeDebtExtractor{}.Extract(ctx, a, node)
-	if err != nil {
-		return nil, xerrors.Errorf("extracting miner fee debt: %w", err)
-	}
-
-	currDeadlineModel, err := DeadlineInfoExtractor{}.Extract(ctx, a, node)
-	if err != nil {
-		return nil, xerrors.Errorf("extracting miner current deadline info: %w", err)
-	}
-
-	preCommitModel, err := PreCommitInfoExtractor{}.Extract(ctx, a, node)
-	if err != nil {
-		return nil, err
-	}
-
-	sectorModel, err := SectorInfoExtractor{}.Extract(ctx, a, node)
-	if err != nil {
-		return nil, err
-	}
-
-	sectorDealsModel, err := SectorDealsExtractor{}.Extract(ctx, a, node)
-	if err != nil {
-		return nil, err
-	}
-
-	sectorEventsModel, err := SectorEventsExtractor{}.Extract(ctx, a, node)
-	if err != nil {
-		return nil, err
-	}
-
-	posts, err := PoStExtractor{}.Extract(ctx, a, node)
-	if err != nil {
-		return nil, err
-	}
-
-	return model.PersistableList{
-		minerInfoModel,
-		lockedFundsModel,
-		feeDebtModel,
-		currDeadlineModel,
-		preCommitModel,
-		sectorModel,
-		sectorDealsModel,
-		sectorEventsModel,
-		posts,
-	}, nil
-}
 
 func NewMinerStateExtractionContext(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (*MinerStateExtractionContext, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "NewMinerExtractionContext")
