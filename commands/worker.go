@@ -43,7 +43,7 @@ var redisPasswordFlag = &cli.StringFlag{
 	Name:        "redis-password",
 	Usage:       `Password to authenticate the current connection`,
 	Value:       "",
-	Destination: &redisFlags.username,
+	Destination: &redisFlags.password,
 }
 
 var redisDBFlag = &cli.IntFlag{
