@@ -9,9 +9,11 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
+	"github.com/filecoin-project/lily/metrics"
 )
 
 func (t *DataSource) DiffSectors(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.SectorChanges, error) {
+	metrics.RecordInc(ctx, metrics.DataSourceSectorDiffCacheHit)
 	ctx, span := otel.Tracer("").Start(ctx, "DataSource.DiffSectors")
 	defer span.End()
 
@@ -26,6 +28,7 @@ func (t *DataSource) DiffSectors(ctx context.Context, addr address.Address, ts, 
 	key := curA.Head.String() + preA.Head.String()
 	value, found := t.diffSectorsCache.Get(key)
 	if found {
+		metrics.RecordInc(ctx, metrics.DataSourceSectorDiffCacheHit)
 		return value.(*miner.SectorChanges), nil
 	}
 
@@ -47,6 +50,7 @@ func (t *DataSource) DiffSectors(ctx context.Context, addr address.Address, ts, 
 }
 
 func (t *DataSource) DiffPreCommits(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.PreCommitChanges, error) {
+	metrics.RecordInc(ctx, metrics.DataSourcePreCommitDiffRead)
 	ctx, span := otel.Tracer("").Start(ctx, "DataSource.DiffPreCommits")
 	defer span.End()
 
@@ -61,6 +65,7 @@ func (t *DataSource) DiffPreCommits(ctx context.Context, addr address.Address, t
 	key := curA.Head.String() + preA.Head.String()
 	value, found := t.diffPreCommitCache.Get(key)
 	if found {
+		metrics.RecordInc(ctx, metrics.DataSourcePreCommitDiffCacheHit)
 		return value.(*miner.PreCommitChanges), nil
 	}
 
