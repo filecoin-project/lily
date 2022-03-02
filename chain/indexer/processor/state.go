@@ -20,27 +20,27 @@ import (
 type TipSetProcessor interface {
 	// ProcessTipSet processes a tipset. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
-	// Implementation of this interface are responsible for abort when their context is canceled.
+	// Implementations of this interface must abort processing when their context is canceled.
 	ProcessTipSet(ctx context.Context, current *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
 }
 
 type TipSetsProcessor interface {
 	// ProcessTipSets processes sequential tipsts (a parent and a child, or an executed and a current). If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
-	// Implementation of this interface are responsible for abort when their context is canceled.
+	// Implementations of this interface must abort processing when their context is canceled.
 	ProcessTipSets(ctx context.Context, current *types.TipSet, executed *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
 }
 
 type ActorProcessor interface {
 	// ProcessActors processes a set of actors. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
-	// Implementation of this interface are responsible for abort when their context is canceled.
+	// Implementations of this interface must abort processing when their context is canceled.
 	ProcessActors(ctx context.Context, current *types.TipSet, executed *types.TipSet, actors tasks.ActorStateChangeDiff) (model.Persistable, *visormodel.ProcessingReport, error)
 }
 
 type ReportProcessor interface {
 	// ProcessTipSet processes a tipset. If error is non-nil then the processor encountered a fatal error.
-	// Implementation of this interface are responsible for abort when their context is canceled.
+	// Implementations of this interface must abort processing when their context is canceled.
 	ProcessTipSet(ctx context.Context, current *types.TipSet) (visormodel.ProcessingReportList, error)
 }
 
@@ -115,7 +115,7 @@ func (sp *StateProcessor) startReport(ctx context.Context, current *types.TipSet
 			defer stop()
 
 			pl := log.With("name", name, "height", current.Height())
-			pl.Infow("start processor")
+			pl.Infow("processor started")
 			defer func() {
 				pl.Infow("processor ended", "duration", time.Since(start))
 				sp.pwg.Done()
@@ -162,7 +162,7 @@ func (sp *StateProcessor) startTipSet(ctx context.Context, current *types.TipSet
 			defer stop()
 
 			pl := log.With("name", name, "height", current.Height())
-			pl.Infow("start processor")
+			pl.Infow("processor started")
 			defer func() {
 				pl.Infow("processor ended", "duration", time.Since(start))
 				sp.pwg.Done()
@@ -210,7 +210,7 @@ func (sp *StateProcessor) startTipSets(ctx context.Context, current, executed *t
 			defer stop()
 
 			pl := log.With("name", name, "height", current.Height())
-			pl.Infow("start processor")
+			pl.Infow("processor started")
 			defer func() {
 				pl.Infow("processor ended", "duration", time.Since(start))
 				sp.pwg.Done()
@@ -294,7 +294,7 @@ func (sp *StateProcessor) startActor(ctx context.Context, current, executed *typ
 				defer stop()
 
 				pl := log.With("name", name, "height", current.Height())
-				pl.Infow("start processor")
+				pl.Infow("processor started")
 				defer func() {
 					pl.Infow("processor ended", "duration", time.Since(start))
 					sp.pwg.Done()
