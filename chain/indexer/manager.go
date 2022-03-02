@@ -2,6 +2,7 @@ package indexer
 
 import (
 	"context"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -37,8 +38,10 @@ type Manager struct {
 
 	// used for async tipset indexing
 	pool   *workerpool.WorkerPool
-	fatal  error
-	active int64
+	active int64 // must be accessed using atomic operations, updated automatically.
+
+	fatalMu sync.Mutex
+	fatal   error
 }
 
 type ManagerOpt func(i *Manager)
@@ -109,9 +112,9 @@ func NewManager(api tasks.DataSource, strg model.Storage, name string, tasks []s
 // TipSetAsync enqueues `ts` into the Manager's worker pool for processing. An error is returned if any Indexer in
 // the pool encounters a fatal error, else the method returns immediately.
 func (i *Manager) TipSetAsync(ctx context.Context, ts *types.TipSet) error {
-	if i.fatal != nil {
+	if err := i.fatalError(); err != nil {
 		defer i.pool.Stop()
-		return i.fatal
+		return err
 	}
 
 	stats.Record(ctx, metrics.IndexManagerActiveWorkers.M(i.active))
@@ -133,7 +136,7 @@ func (i *Manager) TipSetAsync(ctx context.Context, ts *types.TipSet) error {
 		success, err := i.TipSet(ctx, ts)
 		if err != nil {
 			log.Errorw("index manager suffered fatal error", "error", err, "height", ts.Height(), "tipset", ts.Key().String())
-			i.fatal = err
+			i.setFatalError(err)
 			return
 		}
 		if !success {
@@ -176,8 +179,6 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
 	}
 
 	success := true
-	ctx, exportSpan := otel.Tracer("").Start(ctx, "Manager.Export")
-	defer exportSpan.End()
 	for {
 		select {
 		case fatal := <-taskErrors:
@@ -210,4 +211,17 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
 			}
 		}
 	}
+}
+
+func (i *Manager) setFatalError(err error) {
+	i.fatalMu.Lock()
+	i.fatal = err
+	i.fatalMu.Unlock()
+}
+
+func (i *Manager) fatalError() error {
+	i.fatalMu.Lock()
+	out := i.fatal
+	i.fatalMu.Unlock()
+	return out
 }
