@@ -45,7 +45,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 	ctx, span := otel.Tracer("").Start(ctx, "GetExecutedAndBlockMessagesForTipSet")
 	defer span.End()
 	if !types.CidArrsEqual(current.Parents().Cids(), executed.Cids()) {
-		return nil, xerrors.Errorf("child tipset (%s) is not on the same chain as parent (%s)", current.Key(), executed.Key())
+		return nil, xerrors.Errorf("current tipset (%s) is not on the same chain as executed (%s)", current.Key(), executed.Key())
 	}
 
 	getActorCode, err := MakeGetActorCodeFunc(ctx, cs.ActorStore(ctx), current, executed)
