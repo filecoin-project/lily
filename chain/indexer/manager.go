@@ -78,21 +78,30 @@ func WithIndexer(i Indexer) ManagerOpt {
 
 // NewManager returns a default Manager. Any provided ManagerOpt's will override Manager's default values.
 func NewManager(api tasks.DataSource, strg model.Storage, name string, tasks []string, opts ...ManagerOpt) (*Manager, error) {
-	indexer, err := NewTipSetIndexer(api, name, tasks)
-	if err != nil {
-		return nil, err
+	im := &Manager{
+		api:     api,
+		storage: strg,
+		window:  0,
 	}
 
-	im := &Manager{
-		api:      api,
-		storage:  strg,
-		indexer:  indexer,
-		exporter: NewModelExporter(),
-		window:   0,
-		pool:     workerpool.New(1),
-	}
 	for _, opt := range opts {
 		opt(im)
+	}
+
+	if im.indexer == nil {
+		var err error
+		im.indexer, err = NewTipSetIndexer(api, name, tasks)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if im.exporter == nil {
+		im.exporter = NewModelExporter()
+	}
+
+	if im.pool == nil {
+		im.pool = workerpool.New(1)
 	}
 	return im, nil
 }
