@@ -17,15 +17,10 @@ func (t *DataSource) DiffSectors(ctx context.Context, addr address.Address, ts, 
 	ctx, span := otel.Tracer("").Start(ctx, "DataSource.DiffSectors")
 	defer span.End()
 
-	curA, err := t.Actor(ctx, addr, ts.Key())
+	key, err := asKey(addr, ts, pts)
 	if err != nil {
 		return nil, err
 	}
-	preA, err := t.Actor(ctx, addr, pts.Key())
-	if err != nil {
-		return nil, err
-	}
-	key := curA.Head.String() + preA.Head.String()
 	value, found := t.diffSectorsCache.Get(key)
 	if found {
 		metrics.RecordInc(ctx, metrics.DataSourceSectorDiffCacheHit)
@@ -54,15 +49,10 @@ func (t *DataSource) DiffPreCommits(ctx context.Context, addr address.Address, t
 	ctx, span := otel.Tracer("").Start(ctx, "DataSource.DiffPreCommits")
 	defer span.End()
 
-	curA, err := t.Actor(ctx, addr, ts.Key())
+	key, err := asKey(addr, ts, pts)
 	if err != nil {
 		return nil, err
 	}
-	preA, err := t.Actor(ctx, addr, pts.Key())
-	if err != nil {
-		return nil, err
-	}
-	key := curA.Head.String() + preA.Head.String()
 	value, found := t.diffPreCommitCache.Get(key)
 	if found {
 		metrics.RecordInc(ctx, metrics.DataSourcePreCommitDiffCacheHit)

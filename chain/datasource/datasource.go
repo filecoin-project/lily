@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/filecoin-project/go-address"
@@ -210,7 +212,10 @@ func (t *DataSource) MessageExecutions(ctx context.Context, ts, pts *types.TipSe
 	}
 	defer span.End()
 
-	key := ts.Key().String() + pts.Key().String()
+	key, err := asKey(ts, pts)
+	if err != nil {
+		return nil, err
+	}
 	value, found := t.executedTsCache.Get(key)
 	if found {
 		metrics.RecordInc(ctx, metrics.DataSourceMessageExecutionCacheHit)
@@ -243,7 +248,10 @@ func (t *DataSource) ExecutedAndBlockMessages(ctx context.Context, ts, pts *type
 	}
 	defer span.End()
 
-	key := ts.Key().String() + pts.Key().String()
+	key, err := asKey(ts, pts)
+	if err != nil {
+		return nil, err
+	}
 	value, found := t.executedBlkMsgCache.Get(key)
 	if found {
 		metrics.RecordInc(ctx, metrics.DataSourceExecutedAndBlockMessagesCacheHit)
@@ -446,4 +454,14 @@ func getStateTreeHamtRootCIDAndVersion(ctx context.Context, store adt.Store, c c
 	default:
 		return nil, 0, xerrors.Errorf("unsupported state tree version: %d", root.Version)
 	}
+}
+
+func asKey(strs ...fmt.Stringer) (string, error) {
+	var sb strings.Builder
+	for _, s := range strs {
+		if _, err := sb.WriteString(s.String()); err != nil {
+			return "", xerrors.Errorf("failed to make key for %s: %w", s, err)
+		}
+	}
+	return sb.String(), nil
 }
