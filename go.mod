@@ -62,6 +62,11 @@ require (
 )
 
 require (
+	github.com/hibiken/asynq v0.22.1
+	github.com/hibiken/asynq/x v0.0.0-20220224163055-04d7c8c38cf9
+)
+
+require (
 	github.com/DataDog/zstd v1.4.1 // indirect
 	github.com/GeertJohan/go.incremental v1.0.0 // indirect
 	github.com/GeertJohan/go.rice v1.0.2 // indirect
@@ -150,7 +155,6 @@ require (
 	github.com/hannahhoward/go-pubsub v0.0.0-20200423002714-8d62886cc36e // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/hibiken/asynq v0.22.1 // indirect
 	github.com/huin/goupnp v1.0.2 // indirect
 	github.com/icza/backscanner v0.0.0-20210726202459-ac2ffc679f94 // indirect
 	github.com/ipfs/bbloom v0.0.4 // indirect

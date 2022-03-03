@@ -42,15 +42,16 @@ type RedisConfig struct {
 }
 
 func NewProducer(cfg *RedisConfig) *Producer {
+	redisCfg := asynq.RedisClientOpt{
+		Network:  cfg.Network,
+		Addr:     cfg.Addr,
+		Username: cfg.Username,
+		Password: cfg.Password,
+		DB:       cfg.DB,
+		PoolSize: cfg.PoolSize,
+	}
 	c := asynq.NewClient(
-		asynq.RedisClientOpt{
-			Network:  cfg.Network,
-			Addr:     cfg.Addr,
-			Username: cfg.Username,
-			Password: cfg.Password,
-			DB:       cfg.DB,
-			PoolSize: cfg.PoolSize,
-		},
+		redisCfg,
 	)
 	return &Producer{
 		Client: c,
