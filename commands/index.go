@@ -168,6 +168,14 @@ var IndexHeightCmd = &cli.Command{
 			Tasks:   tasks,
 			Storage: indexFlags.storage,
 			Window:  indexFlags.window,
+			Redis: &lily.LilyRedisClientConfig{
+				Network:  redisFlags.network,
+				Addr:     redisFlags.addr,
+				Username: redisFlags.username,
+				Password: redisFlags.password,
+				DB:       redisFlags.db,
+				PoolSize: redisFlags.poolSize,
+			},
 		}
 
 		_, err = api.LilyIndex(ctx, cfg)
