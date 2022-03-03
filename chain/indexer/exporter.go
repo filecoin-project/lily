@@ -26,7 +26,7 @@ type ModelResult struct {
 	Model model.Persistable
 }
 
-// ExportResult synchronously persists ModelResult `res` to model.Storage `strg. An error is returned if persisting the
+// ExportResult synchronously persists ModelResult `res` to model.Storage `strg`. An error is returned if persisting the
 // model fails.
 func (me *ModelExporter) ExportResult(ctx context.Context, strg model.Storage, res *ModelResult) error {
 	ctx, span := otel.Tracer("").Start(ctx, "ModelExporter.ExportResult")
