@@ -45,7 +45,7 @@ var IndexTipSetCmd = &cli.Command{
 			return xerrors.Errorf("tipset argument required")
 		}
 
-		tsk, err := parseTipSetKey(strings.Split(tsStr, ","))
+		tsk, err := parseTipSetKey(tsStr)
 		if err != nil {
 			return xerrors.Errorf("failed to parse tipset key: %w", err)
 		}
@@ -188,9 +188,10 @@ var IndexCmd = &cli.Command{
 	},
 }
 
-func parseTipSetKey(vals []string) (types.TipSetKey, error) {
+func parseTipSetKey(val string) (types.TipSetKey, error) {
+	tskStr := strings.Split(val, ",")
 	var cids []cid.Cid
-	for _, c := range vals {
+	for _, c := range tskStr {
 		blkc, err := cid.Decode(c)
 		if err != nil {
 			return types.EmptyTSK, err
