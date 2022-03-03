@@ -5,7 +5,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/filecoin-project/lotus/chain/types"
-	"go.opentelemetry.io/otel"
 	"golang.org/x/text/runes"
 	"golang.org/x/xerrors"
 
@@ -13,14 +12,7 @@ import (
 	"github.com/filecoin-project/lily/tasks/actorstate"
 
 	market "github.com/filecoin-project/lily/chain/actors/builtin/market"
-
-	"github.com/filecoin-project/lily/model"
 )
-
-// was services/processor/tasks/market/market.go
-
-// StorageMarketExtractor extracts market actor state
-type StorageMarketExtractor struct{}
 
 type MarketStateExtractionContext struct {
 	PrevState market.State
@@ -67,29 +59,6 @@ func NewMarketStateExtractionContext(ctx context.Context, a actorstate.ActorInfo
 
 func (m *MarketStateExtractionContext) IsGenesis() bool {
 	return m.CurrTs.Height() == 0
-}
-
-func (m StorageMarketExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "StorageMarketExtractor.Extract")
-	defer span.End()
-	if span.IsRecording() {
-		span.SetAttributes(a.Attributes()...)
-	}
-
-	dealStateModel, err := DealStateExtractor{}.Extract(ctx, a, node)
-	if err != nil {
-		return nil, xerrors.Errorf("extracting market deal state changes: %w", err)
-	}
-
-	dealProposalModel, err := DealProposalExtractor{}.Extract(ctx, a, node)
-	if err != nil {
-		return nil, xerrors.Errorf("extracting market proposal changes: %w", err)
-	}
-
-	return &model.PersistableList{
-		dealProposalModel,
-		dealStateModel,
-	}, nil
 }
 
 // SanitizeLabel ensures that s is a valid utf8 string by replacing any ill formed bytes with a replacement character.
