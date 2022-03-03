@@ -32,22 +32,24 @@ var indexFlags indexOps
 var IndexTipSetCmd = &cli.Command{
 	Name:  "tipset",
 	Usage: "Index the state of a tipset from the filecoin blockchain by tipset key",
-	Flags: []cli.Flag{
-		&cli.StringFlag{
+	Flags: flagSet(
+		redisFlagSet,
+		[]cli.Flag{&cli.StringFlag{
 			Name:        "api",
 			Usage:       "Address of lily api in multiaddr format.",
 			EnvVars:     []string{"LILY_API"},
 			Value:       "/ip4/127.0.0.1/tcp/1234",
 			Destination: &indexFlags.apiAddr,
 		},
-		&cli.StringFlag{
-			Name:        "api-token",
-			Usage:       "Authentication token for lily api.",
-			EnvVars:     []string{"LILY_API_TOKEN"},
-			Value:       "",
-			Destination: &indexFlags.apiToken,
+			&cli.StringFlag{
+				Name:        "api-token",
+				Usage:       "Authentication token for lily api.",
+				EnvVars:     []string{"LILY_API_TOKEN"},
+				Value:       "",
+				Destination: &indexFlags.apiToken,
+			},
 		},
-	},
+	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
@@ -77,6 +79,14 @@ var IndexTipSetCmd = &cli.Command{
 			Tasks:   tasks,
 			Storage: indexFlags.storage,
 			Window:  indexFlags.window,
+			Redis: &lily.LilyRedisClientConfig{
+				Network:  redisFlags.network,
+				Addr:     redisFlags.addr,
+				Username: redisFlags.username,
+				Password: redisFlags.password,
+				DB:       redisFlags.db,
+				PoolSize: redisFlags.poolSize,
+			},
 		}
 
 		api, closer, err := GetAPI(ctx, indexFlags.apiAddr, indexFlags.apiToken)

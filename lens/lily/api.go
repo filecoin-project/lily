@@ -76,6 +76,7 @@ type LilyIndexConfig struct {
 	Tasks   []string
 	Storage string // name of storage system to use, may be empty
 	Window  time.Duration
+	Redis   *LilyRedisClientConfig
 }
 
 type LilyWatchConfig struct {

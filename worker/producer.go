@@ -17,6 +17,13 @@ type Producer struct {
 	Client *asynq.Client
 }
 
+func (p *Producer) TipSet(ctx context.Context, ts *types.TipSet, tasks ...string) (bool, error) {
+	if err := p.TipSetWithTasks(ctx, ts, indexer.AllTasks); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func (p *Producer) TipSetAsync(ctx context.Context, ts *types.TipSet) error {
 	return p.TipSetWithTasks(ctx, ts, indexer.AllTasks)
 }

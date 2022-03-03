@@ -9,11 +9,15 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/lens"
 )
 
-func NewWalker(obs *indexer.Manager, node lens.API, minHeight, maxHeight int64, parallel bool) *Walker {
+type WalkObserver interface {
+	TipSet(ctx context.Context, ts *types.TipSet, tasks ...string) (bool, error)
+	TipSetAsync(ctx context.Context, ts *types.TipSet) error
+}
+
+func NewWalker(obs WalkObserver, node lens.API, minHeight, maxHeight int64, parallel bool) *Walker {
 	return &Walker{
 		node:      node,
 		obs:       obs,
@@ -25,7 +29,7 @@ func NewWalker(obs *indexer.Manager, node lens.API, minHeight, maxHeight int64, 
 // Walker is a job that indexes blocks by walking the chain history.
 type Walker struct {
 	node      lens.API
-	obs       *indexer.Manager
+	obs       WalkObserver
 	minHeight int64 // limit persisting to tipsets equal to or above this height
 	maxHeight int64 // limit persisting to tipsets equal to or below this height}
 	done      chan struct{}

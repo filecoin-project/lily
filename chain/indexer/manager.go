@@ -31,6 +31,7 @@ type Exporter interface {
 // Manager manages the execution of an Indexer. It may be used to index TipSets both serially or in parallel.
 type Manager struct {
 	api      tasks.DataSource
+	name     string
 	storage  model.Storage
 	indexer  Indexer
 	exporter Exporter
@@ -83,6 +84,7 @@ func WithIndexer(i Indexer) ManagerOpt {
 func NewManager(api tasks.DataSource, strg model.Storage, name string, tasks []string, opts ...ManagerOpt) (*Manager, error) {
 	im := &Manager{
 		api:     api,
+		name:    name,
 		storage: strg,
 		window:  0,
 	}
@@ -172,7 +174,7 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, tasks ...string)
 		err         error
 	)
 	if len(tasks) > 0 {
-		tsi, err := NewTipSetIndexer(i.api, "REDIS_TEST", tasks)
+		tsi, err := NewTipSetIndexer(i.api, i.name, tasks)
 		if err != nil {
 			return false, err
 		}

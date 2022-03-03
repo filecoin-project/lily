@@ -171,34 +171,55 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (bool, 
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
 
-	md := storage.Metadata{
-		JobName: cfg.Name,
-	}
-	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
-	if err != nil {
-		return false, err
-	}
+	/*
+		md := storage.Metadata{
+			JobName: cfg.Name,
+		}
+		// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+		strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
+		if err != nil {
+			return false, err
+		}
 
-	taskAPI, err := datasource.NewDataSource(m)
-	if err != nil {
-		return false, err
-	}
+		taskAPI, err := datasource.NewDataSource(m)
+		if err != nil {
+			return false, err
+		}
 
-	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, indexer.WithWindow(cfg.Window))
-	if err != nil {
-		return false, err
-	}
+	*/
+
+	p := worker.NewProducer(&worker.RedisConfig{
+		Network:  cfg.Redis.Network,
+		Addr:     cfg.Redis.Addr,
+		Username: cfg.Redis.Username,
+		Password: cfg.Redis.Password,
+		DB:       cfg.Redis.DB,
+		PoolSize: cfg.Redis.PoolSize,
+	})
 
 	ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
 	if err != nil {
 		return false, err
 	}
 
-	success, err := im.TipSet(ctx, ts)
+	success, err := p.TipSet(ctx, ts, cfg.Tasks...)
+	if err != nil {
+		return false, err
+	}
+	return success, nil
 
-	return success, err
+	/*
+		// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+		im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, indexer.WithWindow(cfg.Window))
+		if err != nil {
+			return false, err
+		}
+
+		success, err := im.TipSet(ctx, ts)
+
+		return success, err
+
+	*/
 }
 
 func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*schedule.JobSubmitResult, error) {
