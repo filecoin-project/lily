@@ -241,6 +241,9 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (string, 
 	b, err := MarshalWithOverrides(p, map[reflect.Type]marshaller{
 		reflect.TypeOf(bitfield.BitField{}): bitfieldCountMarshaller,
 	})
+	if err != nil {
+		return "", "", xerrors.Errorf("failed to parse message params method: %d, actor code: %s, params: %s: %w", method, actCode, string(params), err)
+	}
 
 	return string(b), m.Name, err
 }
@@ -351,7 +354,13 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 
 type marshaller func(interface{}) ([]byte, error)
 
-func MarshalWithOverrides(v interface{}, overrides map[reflect.Type]marshaller) ([]byte, error) {
+func MarshalWithOverrides(v interface{}, overrides map[reflect.Type]marshaller) (out []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			out = nil
+			err = xerrors.Errorf("failed to override message param json marshaller: %v", r)
+		}
+	}()
 	pwt := paramWrapperType{
 		obj:     v,
 		replace: overrides,
@@ -388,6 +397,10 @@ func (wt *paramWrapperType) MarshalJSON() ([]byte, error) {
 
 	switch t.Kind() {
 	case reflect.Struct:
+		// if an empty struct marshal the empty struct and bail.
+		if v.IsZero() {
+			return json.Marshal(wt.obj)
+		}
 		// if its a struct, walk its fields and recurse.
 		m := make(map[string]interface{})
 		for i := 0; i < v.NumField(); i++ {
