@@ -3,12 +3,16 @@ package chain
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/lily/chain/index"
+	"github.com/filecoin-project/lily/chain/index/distributed"
+	"github.com/filecoin-project/lily/chain/index/distributed/asynq"
 	"github.com/filecoin-project/lily/chain/index/integrated"
 	"github.com/filecoin-project/lily/metrics"
 )
@@ -16,7 +20,7 @@ import (
 // NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held
 // in a cache awaiting possible reversion. Tipsets will be written to the database when they are evicted from
 // the cache due to incoming later tipsets.
-func NewWatcher(obs *integrated.Manager, hn HeadNotifier, cache *TipSetCache) *Watcher {
+func NewWatcher(obs index.Indexer, hn HeadNotifier, cache *TipSetCache) *Watcher {
 	return &Watcher{
 		notifier:   hn,
 		obs:        obs,
@@ -28,7 +32,7 @@ func NewWatcher(obs *integrated.Manager, hn HeadNotifier, cache *TipSetCache) *W
 // Watcher is a task that indexes blocks by following the chain head.
 type Watcher struct {
 	notifier   HeadNotifier
-	obs        *integrated.Manager
+	obs        index.Indexer
 	confidence int          // size of tipset cache
 	cache      *TipSetCache // caches tipsets for possible reversion
 	done       chan struct{}
@@ -123,7 +127,17 @@ func (c *Watcher) maybeIndexTipSet(ctx context.Context, ts *types.TipSet) error 
 	defer span.End()
 
 	log.Infow("watch tipset", "height", ts.Height())
-	return c.obs.TipSetAsync(ctx, ts)
+	switch i := c.obs.(type) {
+	case *integrated.Manager:
+		return i.TipSetAsync(ctx, ts)
+	case *distributed.TipSetIndexer:
+		if _, err := i.TipSet(ctx, ts, asynq.WatcherQueue); err != nil {
+			return err
+		}
+	default:
+		panic(fmt.Sprintf("unknown indexer type %T", i))
+	}
+	return nil
 }
 
 // A HeadNotifier reports tipset events that occur at the head of the chain

@@ -25,6 +25,7 @@ type walkOps struct {
 	apiToken string
 	name     string
 	workers  int
+	queue    string
 }
 
 var walkFlags walkOps
@@ -96,6 +97,13 @@ var WalkCmd = &cli.Command{
 			Value:       1,
 			Destination: &walkFlags.workers,
 		},
+		&cli.StringFlag{
+			Name:        "queue",
+			Usage:       "Name of queue that walker will write tipsets to.",
+			EnvVars:     []string{"LILY_WALK_QUEUE"},
+			Value:       "",
+			Destination: &walkFlags.queue,
+		},
 	},
 	Before: func(cctx *cli.Context) error {
 		from, to := walkFlags.from, walkFlags.to
@@ -129,6 +137,7 @@ var WalkCmd = &cli.Command{
 			RestartOnFailure:    false,
 			Storage:             walkFlags.storage,
 			Workers:             walkFlags.workers,
+			Queue:               walkFlags.queue,
 		}
 
 		api, closer, err := GetAPI(ctx, walkFlags.apiAddr, walkFlags.apiToken)

@@ -23,6 +23,7 @@ type watchOps struct {
 	apiToken   string
 	name       string
 	workers    int
+	queue      string
 }
 
 var watchFlags watchOps
@@ -87,6 +88,13 @@ var WatchCmd = &cli.Command{
 			Value:       "",
 			Destination: &watchFlags.name,
 		},
+		&cli.StringFlag{
+			Name:        "queue",
+			Usage:       "Name of queue that watcher will write tipsets to.",
+			EnvVars:     []string{"LILY_WATCH_QUEUE"},
+			Value:       "",
+			Destination: &watchFlags.queue,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
@@ -111,6 +119,7 @@ var WatchCmd = &cli.Command{
 			RestartOnFailure:    true,
 			Storage:             watchFlags.storage,
 			Workers:             watchFlags.workers,
+			Queue:               watchFlags.queue,
 		}
 
 		api, closer, err := GetAPI(ctx, watchFlags.apiAddr, watchFlags.apiToken)

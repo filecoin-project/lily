@@ -9,11 +9,12 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/lily/chain/index/integrated"
+	"github.com/filecoin-project/lily/chain/index"
+	"github.com/filecoin-project/lily/chain/index/distributed/asynq"
 	"github.com/filecoin-project/lily/lens"
 )
 
-func NewWalker(obs *integrated.Manager, node lens.API, minHeight, maxHeight int64, parallel bool) *Walker {
+func NewWalker(obs index.Indexer, node lens.API, minHeight, maxHeight int64, parallel bool) *Walker {
 	return &Walker{
 		node:      node,
 		obs:       obs,
@@ -25,7 +26,7 @@ func NewWalker(obs *integrated.Manager, node lens.API, minHeight, maxHeight int6
 // Walker is a job that indexes blocks by walking the chain history.
 type Walker struct {
 	node      lens.API
-	obs       *integrated.Manager
+	obs       index.Indexer
 	minHeight int64 // limit persisting to tipsets equal to or above this height
 	maxHeight int64 // limit persisting to tipsets equal to or below this height}
 	done      chan struct{}
@@ -90,12 +91,15 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 		default:
 		}
 		if c.parallel {
-			if err := c.obs.TipSetAsync(ctx, ts); err != nil {
-				return err
-			}
+			panic("NYI")
+			/*
+				if err := c.obs.TipSetAsync(ctx, ts); err != nil {
+					return err
+				}
+			*/
 		} else {
 			log.Infow("walk tipset", "height", ts.Height())
-			if success, err := c.obs.TipSet(ctx, ts); err != nil {
+			if success, err := c.obs.TipSet(ctx, ts, asynq.WalkerQueue); err != nil {
 				span.RecordError(err)
 				return xerrors.Errorf("notify tipset: %w", err)
 			} else if !success {

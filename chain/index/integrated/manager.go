@@ -29,6 +29,8 @@ type Exporter interface {
 	ExportResult(ctx context.Context, strg model.Storage, m *index.ModelResult) error
 }
 
+var _ index.Indexer = (*Manager)(nil)
+
 // Manager manages the execution of an Indexer. It may be used to index TipSets both serially or in parallel.
 type Manager struct {
 	api      tasks.DataSource
@@ -134,7 +136,7 @@ func (i *Manager) TipSetAsync(ctx context.Context, ts *types.TipSet) error {
 		}()
 
 		ts := ts
-		success, err := i.TipSet(ctx, ts)
+		success, err := i.TipSet(ctx, ts, "")
 		if err != nil {
 			log.Errorw("index manager suffered fatal error", "error", err, "height", ts.Height(), "tipset", ts.Key().String())
 			i.setFatalError(err)
@@ -150,7 +152,7 @@ func (i *Manager) TipSetAsync(ctx context.Context, ts *types.TipSet) error {
 // TipSet synchronously indexes and persists `ts`. TipSet returns an error if the Manager's Indexer encounters a
 // fatal error. TipSet returns false if one or more of the Indexer's tasks complete with a status `ERROR` or `SKIPPED`, else returns true.
 // Upon cancellation of `ctx` TipSet will persist all incomplete tasks with status `SKIPPED` before returning.
-func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
+func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, _ string, _ ...string) (bool, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "Manager.TipSet")
 	defer span.End()
 	log.Infow("index tipset", "height", ts.Height())

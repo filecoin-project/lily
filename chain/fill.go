@@ -74,7 +74,7 @@ func (g *GapFiller) Run(ctx context.Context) error {
 			return err
 		}
 		fillLog.Infof("got tipset for height %d, tipset height %d", heights, ts.Height())
-		if success, err := index.TipSet(ctx, ts); err != nil {
+		if success, err := index.TipSet(ctx, ts, ""); err != nil {
 			fillLog.Errorw("fill indexing encountered fatal error", "height", height, "tipset", ts.Key().String(), "error", err, "tasks", gaps[height])
 			return err
 		} else if !success {

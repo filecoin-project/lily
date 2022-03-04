@@ -25,6 +25,7 @@ type indexOps struct {
 	apiToken string
 	name     string
 	window   time.Duration
+	queue    string
 }
 
 var indexFlags indexOps
@@ -61,6 +62,7 @@ var IndexTipSetCmd = &cli.Command{
 			Tasks:   tasks,
 			Storage: indexFlags.storage,
 			Window:  indexFlags.window,
+			Queue:   indexFlags.queue,
 		}
 
 		api, closer, err := GetAPI(ctx, indexFlags.apiAddr, indexFlags.apiToken)
@@ -124,6 +126,7 @@ var IndexHeightCmd = &cli.Command{
 			Tasks:   tasks,
 			Storage: indexFlags.storage,
 			Window:  indexFlags.window,
+			Queue:   indexFlags.queue,
 		}
 
 		_, err = api.LilyIndex(ctx, cfg)
@@ -180,6 +183,13 @@ var IndexCmd = &cli.Command{
 			EnvVars:     []string{"LILY_WINDOW"},
 			Value:       builtin.EpochDurationSeconds * time.Second,
 			Destination: &indexFlags.window,
+		},
+		&cli.StringFlag{
+			Name:        "queue",
+			Usage:       "Name of queue that index will write tipset to.",
+			EnvVars:     []string{"LILY_INDEX_QUEUE"},
+			Value:       "",
+			Destination: &indexFlags.queue,
 		},
 	},
 	Subcommands: []*cli.Command{

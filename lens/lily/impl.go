@@ -22,6 +22,9 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/datasource"
+	"github.com/filecoin-project/lily/chain/index"
+	"github.com/filecoin-project/lily/chain/index/distributed"
+	"github.com/filecoin-project/lily/chain/index/distributed/asynq"
 	"github.com/filecoin-project/lily/chain/index/integrated"
 	"github.com/filecoin-project/lily/lens/lily/modules"
 
@@ -46,6 +49,7 @@ type LilyNodeAPI struct {
 	Events         *events.Events
 	Scheduler      *schedule.Scheduler
 	StorageCatalog *storage.Catalog
+	QueueCatalog   *distributed.Catalog
 	ExecMonitor    stmgr.ExecMonitor
 	CacheConfig    *util.CacheConfig
 	actorStore     adt.Store
@@ -65,12 +69,55 @@ func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.C
 	return m.ChainAPI.Chain.GetTipsetByHeight(ctx, epoch, ts, false)
 }
 
-func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interface{}, error) {
+func (m *LilyNodeAPI) StartTipSetWorker(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error) {
+	log.Infow("starting TipSetWorker", "name", cfg.Name)
 	md := storage.Metadata{
 		JobName: cfg.Name,
 	}
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
+	if err != nil {
+		return nil, err
+	}
+
+	qcfg, err := m.QueueCatalog.AsynqConfig(cfg.Queue)
+	if err != nil {
+		return nil, err
+	}
+
+	taskAPI, err := datasource.NewDataSource(m)
+	if err != nil {
+		return nil, err
+	}
+
+	// instantiate an indexer with no tasks, requests for tipset indexing will contain tasks
+	im, err := integrated.NewManager(taskAPI, strg, cfg.Name, []string{})
+	if err != nil {
+		return nil, err
+	}
+
+	res := m.Scheduler.Submit(&schedule.JobConfig{
+		Name: cfg.Name,
+		Type: "tipset_notifier",
+		Params: map[string]string{
+			"queue": cfg.Queue,
+		},
+		Job:                 asynq.NewAsynqWorker(im, cfg.Name, 1, qcfg),
+		RestartOnFailure:    cfg.RestartOnFailure,
+		RestartOnCompletion: cfg.RestartOnCompletion,
+		RestartDelay:        cfg.RestartDelay,
+	})
+	return res, nil
+}
+
+func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interface{}, error) {
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
+
+	md := storage.Metadata{
+		JobName: cfg.Name,
+	}
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
 	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
@@ -94,7 +141,15 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 		return nil, err
 	}
 
-	success, err := im.TipSet(ctx, ts)
+	if cfg.Queue != "" {
+		qcfg, err := m.QueueCatalog.AsynqConfig(cfg.Queue)
+		if err != nil {
+			return nil, err
+		}
+		return distributed.NewTipSetIndexer(asynq.NewAsynQ(qcfg)).TipSet(ctx, ts, asynq.IndexQueue, cfg.Tasks...)
+	}
+
+	success, err := im.TipSet(ctx, ts, "")
 
 	return success, err
 
@@ -119,21 +174,31 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		bufferSize: 5,
 	}
 
-	taskAPI, err := datasource.NewDataSource(m)
-	if err != nil {
-		return nil, err
-	}
+	var tsIndexer index.Indexer
+	if cfg.Queue != "" {
+		qcfg, err := m.QueueCatalog.AsynqConfig(cfg.Queue)
+		if err != nil {
+			return nil, err
+		}
+		tsIndexer = distributed.NewTipSetIndexer(asynq.NewAsynQ(qcfg))
+	} else {
+		cfg.Queue = "integrated"
+		taskAPI, err := datasource.NewDataSource(m)
+		if err != nil {
+			return nil, err
+		}
 
-	imOpts := []integrated.ManagerOpt{integrated.WithWindow(cfg.Window)}
-	if cfg.Workers > 0 {
-		pool := workerpool.New(cfg.Workers)
-		imOpts = append(imOpts, integrated.WithWorkerPool(pool))
-	}
+		imOpts := []integrated.ManagerOpt{integrated.WithWindow(cfg.Window)}
+		if cfg.Workers > 0 {
+			pool := workerpool.New(cfg.Workers)
+			imOpts = append(imOpts, integrated.WithWorkerPool(pool))
+		}
 
-	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := integrated.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
-	if err != nil {
-		return nil, err
+		// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+		tsIndexer, err = integrated.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Hook up the notifier to the event system
@@ -155,9 +220,10 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 			"window":     cfg.Window.String(),
 			"confidence": fmt.Sprintf("%d", cfg.Confidence),
 			"storage":    cfg.Storage,
+			"queue":      cfg.Queue,
 		},
 		Tasks:               cfg.Tasks,
-		Job:                 chain.NewWatcher(im, obs, tsCache),
+		Job:                 chain.NewWatcher(tsIndexer, obs, tsCache),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
@@ -180,25 +246,31 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		return nil, err
 	}
 
-	taskAPI, err := datasource.NewDataSource(m)
-	if err != nil {
-		return nil, err
-	}
-
-	imOpts := []integrated.ManagerOpt{integrated.WithWindow(cfg.Window)}
-	parallel := false
-	if cfg.Workers > 0 {
-		if cfg.Workers > 1 {
-			parallel = true
+	var tsIndexer index.Indexer
+	if cfg.Queue != "" {
+		qcfg, err := m.QueueCatalog.AsynqConfig(cfg.Queue)
+		if err != nil {
+			return nil, err
 		}
-		pool := workerpool.New(cfg.Workers)
-		imOpts = append(imOpts, integrated.WithWorkerPool(pool))
-	}
+		tsIndexer = distributed.NewTipSetIndexer(asynq.NewAsynQ(qcfg))
+	} else {
+		cfg.Queue = "integrated"
+		taskAPI, err := datasource.NewDataSource(m)
+		if err != nil {
+			return nil, err
+		}
 
-	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := integrated.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
-	if err != nil {
-		return nil, err
+		imOpts := []integrated.ManagerOpt{integrated.WithWindow(cfg.Window)}
+		if cfg.Workers > 0 {
+			pool := workerpool.New(cfg.Workers)
+			imOpts = append(imOpts, integrated.WithWorkerPool(pool))
+		}
+
+		// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+		tsIndexer, err = integrated.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
@@ -211,7 +283,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 			"storage":   cfg.Storage,
 		},
 		Tasks:               cfg.Tasks,
-		Job:                 chain.NewWalker(im, m, cfg.From, cfg.To, parallel),
+		Job:                 chain.NewWalker(tsIndexer, m, cfg.From, cfg.To, false),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
