@@ -10,7 +10,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/urfave/cli/v2"
 
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/index"
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
@@ -49,7 +49,7 @@ var WatchCmd = &cli.Command{
 			Name:        "tasks",
 			Usage:       "Comma separated list of tasks to run. Each task is reported separately in the database.",
 			EnvVars:     []string{"LILY_TASKS"},
-			Value:       strings.Join([]string{indexer.BlocksTask, indexer.MessagesTask, indexer.ReceiptTask, indexer.ChainEconomicsTask, indexer.ActorStatesRawTask}, ","),
+			Value:       strings.Join([]string{index.BlocksTask, index.MessagesTask, index.ReceiptTask, index.ChainEconomicsTask, index.ActorStatesRawTask}, ","),
 			Destination: &watchFlags.tasks,
 		},
 		&cli.DurationFlag{
@@ -98,7 +98,7 @@ var WatchCmd = &cli.Command{
 
 		tasks := strings.Split(watchFlags.tasks, ",")
 		if watchFlags.tasks == "*" {
-			tasks = indexer.AllTasks
+			tasks = index.AllTasks
 		}
 
 		cfg := &lily.LilyWatchConfig{

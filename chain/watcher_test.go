@@ -21,7 +21,8 @@ import (
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/chain/datasource"
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/index"
+	"github.com/filecoin-project/lily/chain/index/integrated"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/blocks"
 	"github.com/filecoin-project/lily/storage"
@@ -70,7 +71,7 @@ func TestWatcher(t *testing.T) {
 
 	taskAPI, err := datasource.NewDataSource(nodeAPI)
 	require.NoError(t, err)
-	im, err := indexer.NewManager(taskAPI, strg, t.Name(), []string{indexer.BlocksTask}, indexer.WithWindow(builtin.EpochDurationSeconds*time.Second))
+	im, err := integrated.NewManager(taskAPI, strg, t.Name(), []string{index.BlocksTask}, integrated.WithWindow(builtin.EpochDurationSeconds*time.Second))
 	require.NoError(t, err, "NewManager")
 	t.Logf("initializing indexer")
 	idx := NewWatcher(im, NullHeadNotifier{}, NewTipSetCache(0))

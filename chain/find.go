@@ -9,7 +9,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/index"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/storage"
@@ -28,7 +28,7 @@ var FullTaskSet mapset.Set
 
 func init() {
 	FullTaskSet = mapset.NewSet()
-	for _, t := range indexer.AllTasks {
+	for _, t := range index.AllTasks {
 		FullTaskSet.Add(t)
 	}
 }
@@ -187,7 +187,7 @@ func (g *GapIndexer) findEpochGapsAndNullRounds(ctx context.Context, node GapInd
 		}
 		if tsgap.Height() == gh {
 			log.Debugw("found gap", "height", gh)
-			for _, task := range indexer.AllTasks {
+			for _, task := range index.AllTasks {
 				gapReport = append(gapReport, &visor.GapReport{
 					Height:     int64(tsgap.Height()),
 					Task:       task,
@@ -264,7 +264,7 @@ select height, task
 order by height desc
 ;
 `,
-		len(indexer.AllTasks),                      // arg 0
+		len(index.AllTasks),                        // arg 0
 		visor.ProcessingStatusInformationNullRound, // arg 1
 		g.minHeight,              // arg 2
 		g.maxHeight,              // arg 3

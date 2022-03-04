@@ -1,4 +1,4 @@
-package indexer
+package integrated
 
 import (
 	"context"
@@ -27,7 +27,8 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin/power"
 	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
-	"github.com/filecoin-project/lily/chain/indexer/processor"
+	"github.com/filecoin-project/lily/chain/index"
+	"github.com/filecoin-project/lily/chain/index/processor"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
@@ -92,39 +93,39 @@ func NewTipSetIndexer(node tasks.DataSource, name string, tasks []string, option
 		//
 		// miners
 		//
-		case MinerCurrentDeadlineInfoTask:
+		case index.MinerCurrentDeadlineInfoTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
 				miner.AllCodes(), miner2.DeadlineInfoExtractor{},
 			))
-		case MinerFeeDebtTask:
+		case index.MinerFeeDebtTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
 				miner.AllCodes(), miner2.FeeDebtExtractor{},
 			))
-		case MinerInfoTask:
+		case index.MinerInfoTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
 				miner.AllCodes(), miner2.InfoExtractor{},
 			))
-		case MinerLockedFundsTask:
+		case index.MinerLockedFundsTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
 				miner.AllCodes(), miner2.InfoExtractor{},
 			))
-		case MinerPreCommitInfoTask:
+		case index.MinerPreCommitInfoTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
 				miner.AllCodes(), miner2.PreCommitInfoExtractor{},
 			))
-		case MinerSectorDealTask:
+		case index.MinerSectorDealTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
 				miner.AllCodes(), miner2.SectorDealsExtractor{},
 			))
-		case MinerSectorEventsTask:
+		case index.MinerSectorEventsTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
 				miner.AllCodes(), miner2.SectorEventsExtractor{},
 			))
-		case MinerSectorPoStTask:
+		case index.MinerSectorPoStTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
 				miner.AllCodes(), miner2.PoStExtractor{},
 			))
-		case MinerSectorInfoTask:
+		case index.MinerSectorInfoTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewCustomTypedActorExtractorMap(
 				map[cid.Cid][]actorstate.ActorStateExtractor{
 					saminer1.Actor{}.Code(): {miner2.SectorInfoExtractor{}},
@@ -140,12 +141,12 @@ func NewTipSetIndexer(node tasks.DataSource, name string, tasks []string, option
 			//
 			// Power
 			//
-		case PowerActorClaimTask:
+		case index.PowerActorClaimTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
 				power.AllCodes(),
 				power2.ClaimedPowerExtractor{},
 			))
-		case ChainPowersTask:
+		case index.ChainPowersTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
 				power.AllCodes(),
 				power2.ChainPowerExtractor{},
@@ -154,7 +155,7 @@ func NewTipSetIndexer(node tasks.DataSource, name string, tasks []string, option
 			//
 			// Reward
 			//
-		case ChainRewardsTask:
+		case index.ChainRewardsTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
 				reward.AllCodes(),
 				reward2.RewardExtractor{},
@@ -163,7 +164,7 @@ func NewTipSetIndexer(node tasks.DataSource, name string, tasks []string, option
 			//
 			// Init
 			//
-		case IdAddressTask:
+		case index.IdAddressTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
 				init_.AllCodes(),
 				init_2.InitExtractor{},
@@ -172,12 +173,12 @@ func NewTipSetIndexer(node tasks.DataSource, name string, tasks []string, option
 			//
 			// Market
 			//
-		case MarketDealStatesTask:
+		case index.MarketDealStatesTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
 				market.AllCodes(),
 				market2.DealStateExtractor{},
 			))
-		case MarketDealProposalsTask:
+		case index.MarketDealProposalsTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
 				market.AllCodes(),
 				market2.DealProposalExtractor{},
@@ -186,7 +187,7 @@ func NewTipSetIndexer(node tasks.DataSource, name string, tasks []string, option
 			//
 			// Multisig
 			//
-		case MultiSigTransactionTask:
+		case index.MultiSigTransactionTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(
 				multisig.AllCodes(),
 				multisig2.MultiSigActorExtractor{},
@@ -195,11 +196,11 @@ func NewTipSetIndexer(node tasks.DataSource, name string, tasks []string, option
 			//
 			// Verified Registry
 			//
-		case VerifiedRegistryVerifierTask:
+		case index.VerifiedRegistryVerifierTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes(),
 				verifreg2.VerifierExtractor{},
 			))
-		case VerifiedRegistryClientTask:
+		case index.VerifiedRegistryClientTask:
 			actorProcessors[t] = actorstate.NewTask(node, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes(),
 				verifreg2.ClientExtractor{},
 			))
@@ -207,41 +208,41 @@ func NewTipSetIndexer(node tasks.DataSource, name string, tasks []string, option
 			//
 			// Raw Actors
 			//
-		case ActorRawTask:
+		case index.ActorRawTask:
 			rae := &actorstate.RawActorExtractorMap{}
 			rae.Register(&raw.RawActorExtractor{})
 			actorProcessors[t] = actorstate.NewTask(node, rae)
-		case ActorStatesRawTask:
+		case index.ActorStatesRawTask:
 			rae := &actorstate.RawActorExtractorMap{}
 			rae.Register(&raw.RawActorStateExtractor{})
 			actorProcessors[t] = actorstate.NewTask(node, rae)
 
-		case MessagesTask:
+		case index.MessagesTask:
 			tipsetsProcessors[t] = message.NewTask(node)
-		case DerivedGasOutputsTask:
+		case index.DerivedGasOutputsTask:
 			tipsetsProcessors[t] = gas_output.NewTask(node)
-		case BlockMessagesTask:
+		case index.BlockMessagesTask:
 			tipsetsProcessors[t] = block_message.NewTask(node)
-		case ParsedMessageTask:
+		case index.ParsedMessageTask:
 			tipsetsProcessors[t] = parsed_message.NewTask(node)
-		case ReceiptTask:
+		case index.ReceiptTask:
 			tipsetsProcessors[t] = receipt.NewTask(node)
-		case InternalMessagesTask:
+		case index.InternalMessagesTask:
 			tipsetsProcessors[t] = internal_message.NewTask(node)
-		case InternalParsedMessagesTask:
+		case index.InternalParsedMessagesTask:
 			tipsetsProcessors[t] = internal_parsed_message.NewTask(node)
-		case MessageGasEconomyTask:
+		case index.MessageGasEconomyTask:
 			tipsetsProcessors[t] = gas_economy.NewTask(node)
 
-		case MultiSigApprovalTask:
+		case index.MultiSigApprovalTask:
 			tipsetsProcessors[t] = msapprovals.NewTask(node)
 
-		case BlocksTask:
-			tipsetProcessors[BlocksTask] = blocks.NewTask()
-		case ChainEconomicsTask:
-			tipsetProcessors[ChainEconomicsTask] = chaineconomics.NewTask(node)
-		case ChainConsensusTask:
-			tipsetProcessors[ChainConsensusTask] = consensus.NewTask(node)
+		case index.BlocksTask:
+			tipsetProcessors[t] = blocks.NewTask()
+		case index.ChainEconomicsTask:
+			tipsetProcessors[t] = chaineconomics.NewTask(node)
+		case index.ChainConsensusTask:
+			tipsetProcessors[t] = consensus.NewTask(node)
 
 		default:
 			return nil, xerrors.Errorf("unknown task: %s", t)

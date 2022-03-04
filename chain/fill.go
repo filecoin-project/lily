@@ -12,7 +12,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/datasource"
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/index/integrated"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/storage"
@@ -63,7 +63,7 @@ func (g *GapFiller) Run(ctx context.Context) error {
 		default:
 		}
 		runStart := time.Now()
-		index, err := indexer.NewManager(taskAPI, g.DB, g.name, gaps[height])
+		index, err := integrated.NewManager(taskAPI, g.DB, g.name, gaps[height])
 		if err != nil {
 			return err
 		}

@@ -11,7 +11,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/index"
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
@@ -37,7 +37,7 @@ var WalkCmd = &cli.Command{
 			Name:        "tasks",
 			Usage:       "Comma separated list of tasks to run. Each task is reported separately in the database.",
 			EnvVars:     []string{"LILY_TASKS"},
-			Value:       strings.Join([]string{indexer.BlocksTask, indexer.MessagesTask, indexer.ReceiptTask, indexer.ChainEconomicsTask, indexer.ActorStatesRawTask}, ","),
+			Value:       strings.Join([]string{index.BlocksTask, index.MessagesTask, index.ReceiptTask, index.ChainEconomicsTask, index.ActorStatesRawTask}, ","),
 			Destination: &walkFlags.tasks,
 		},
 		&cli.DurationFlag{
@@ -115,7 +115,7 @@ var WalkCmd = &cli.Command{
 
 		tasks := strings.Split(walkFlags.tasks, ",")
 		if walkFlags.tasks == "*" {
-			tasks = indexer.AllTasks
+			tasks = index.AllTasks
 		}
 
 		cfg := &lily.LilyWalkConfig{

@@ -14,7 +14,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/index"
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
@@ -52,7 +52,7 @@ var IndexTipSetCmd = &cli.Command{
 
 		tasks := strings.Split(indexFlags.tasks, ",")
 		if indexFlags.tasks == "*" {
-			tasks = indexer.AllTasks
+			tasks = index.AllTasks
 		}
 
 		cfg := &lily.LilyIndexConfig{
@@ -115,7 +115,7 @@ var IndexHeightCmd = &cli.Command{
 
 		tasks := strings.Split(indexFlags.tasks, ",")
 		if indexFlags.tasks == "*" {
-			tasks = indexer.AllTasks
+			tasks = index.AllTasks
 		}
 
 		cfg := &lily.LilyIndexConfig{
@@ -143,7 +143,7 @@ var IndexCmd = &cli.Command{
 			Name:        "tasks",
 			Usage:       "Comma separated list of tasks to run. Each task is reported separately in the database.",
 			EnvVars:     []string{"LILY_TASKS"},
-			Value:       strings.Join([]string{indexer.BlocksTask, indexer.MessagesTask, indexer.ReceiptTask, indexer.ChainEconomicsTask, indexer.ActorStatesRawTask}, ","),
+			Value:       strings.Join([]string{index.BlocksTask, index.MessagesTask, index.ReceiptTask, index.ChainEconomicsTask, index.ActorStatesRawTask}, ","),
 			Destination: &indexFlags.tasks,
 		},
 		&cli.StringFlag{

@@ -22,7 +22,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/datasource"
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/index/integrated"
 	"github.com/filecoin-project/lily/lens/lily/modules"
 
 	"github.com/filecoin-project/lily/chain"
@@ -84,7 +84,7 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, indexer.WithWindow(cfg.Window))
+	im, err := integrated.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, integrated.WithWindow(cfg.Window))
 	if err != nil {
 		return nil, err
 	}
@@ -124,14 +124,14 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		return nil, err
 	}
 
-	imOpts := []indexer.ManagerOpt{indexer.WithWindow(cfg.Window)}
+	imOpts := []integrated.ManagerOpt{integrated.WithWindow(cfg.Window)}
 	if cfg.Workers > 0 {
 		pool := workerpool.New(cfg.Workers)
-		imOpts = append(imOpts, indexer.WithWorkerPool(pool))
+		imOpts = append(imOpts, integrated.WithWorkerPool(pool))
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
+	im, err := integrated.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -185,18 +185,18 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		return nil, err
 	}
 
-	imOpts := []indexer.ManagerOpt{indexer.WithWindow(cfg.Window)}
+	imOpts := []integrated.ManagerOpt{integrated.WithWindow(cfg.Window)}
 	parallel := false
 	if cfg.Workers > 0 {
 		if cfg.Workers > 1 {
 			parallel = true
 		}
 		pool := workerpool.New(cfg.Workers)
-		imOpts = append(imOpts, indexer.WithWorkerPool(pool))
+		imOpts = append(imOpts, integrated.WithWorkerPool(pool))
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
+	im, err := integrated.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
 	if err != nil {
 		return nil, err
 	}

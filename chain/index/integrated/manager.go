@@ -1,4 +1,4 @@
-package indexer
+package integrated
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/otel"
 
+	"github.com/filecoin-project/lily/chain/index"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
@@ -25,7 +26,7 @@ type Indexer interface {
 }
 
 type Exporter interface {
-	ExportResult(ctx context.Context, strg model.Storage, m *ModelResult) error
+	ExportResult(ctx context.Context, strg model.Storage, m *index.ModelResult) error
 }
 
 // Manager manages the execution of an Indexer. It may be used to index TipSets both serially or in parallel.
@@ -100,7 +101,7 @@ func NewManager(api tasks.DataSource, strg model.Storage, name string, tasks []s
 	}
 
 	if im.exporter == nil {
-		im.exporter = NewModelExporter()
+		im.exporter = index.NewModelExporter()
 	}
 
 	if im.pool == nil {
@@ -200,7 +201,7 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
 					log.Infow("task success", "task", res.Name, "status", report.Status, "duration", report.CompletedAt.Sub(report.StartedAt))
 				}
 			}
-			m := &ModelResult{
+			m := &index.ModelResult{
 				Name:  res.Name,
 				Model: model.PersistableList{res.Report, res.Data},
 			}
