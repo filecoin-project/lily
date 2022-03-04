@@ -24,6 +24,7 @@ import (
 	"github.com/filecoin-project/lily/chain/datasource"
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/lens/lily/modules"
+	"github.com/filecoin-project/lily/queue"
 	"github.com/filecoin-project/lily/worker"
 
 	"github.com/filecoin-project/lily/chain"
@@ -47,6 +48,7 @@ type LilyNodeAPI struct {
 	Events         *events.Events
 	Scheduler      *schedule.Scheduler
 	StorageCatalog *storage.Catalog
+	QueueCatalog   *queue.Catalog
 	ExecMonitor    stmgr.ExecMonitor
 	CacheConfig    *util.CacheConfig
 	actorStore     adt.Store
@@ -88,28 +90,19 @@ func (m *LilyNodeAPI) StartTipSetNotifier(_ context.Context, cfg *LilyTipSetNoti
 		return nil, err
 	}
 
-	producer := worker.NewProducer(&worker.RedisConfig{
-		Network:  cfg.Redis.Network,
-		Addr:     cfg.Redis.Addr,
-		Username: cfg.Redis.Username,
-		Password: cfg.Redis.Password,
-		DB:       cfg.Redis.DB,
-		PoolSize: cfg.Redis.PoolSize,
-	})
+	qcfg, err := m.QueueCatalog.Config(cfg.Queue)
+	if err != nil {
+		return nil, err
+	}
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
 		Name: cfg.Name,
 		Type: "tipset_notifier",
 		Params: map[string]string{
 			"confidence": fmt.Sprintf("%d", cfg.Confidence),
-			"network":    cfg.Redis.Network,
-			"addr":       cfg.Redis.Addr,
-			"username":   cfg.Redis.Username,
-			"password":   cfg.Redis.Password,
-			"db":         fmt.Sprintf("%d", cfg.Redis.DB),
-			"poolsize":   fmt.Sprintf("%d", cfg.Redis.PoolSize),
+			"queue":      cfg.Queue,
 		},
-		Job:                 chain.NewWatcher(producer, obs, tsCache),
+		Job:                 chain.NewWatcher(worker.NewProducer(qcfg), obs, tsCache),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
@@ -130,6 +123,11 @@ func (m *LilyNodeAPI) StartTipSetWorker(ctx context.Context, cfg *LilyTipSetWork
 		return nil, err
 	}
 
+	qcfg, err := m.QueueCatalog.Config(cfg.Queue)
+	if err != nil {
+		return nil, err
+	}
+
 	taskAPI, err := datasource.NewDataSource(m)
 	if err != nil {
 		return nil, err
@@ -145,21 +143,9 @@ func (m *LilyNodeAPI) StartTipSetWorker(ctx context.Context, cfg *LilyTipSetWork
 		Name: cfg.Name,
 		Type: "tipset_notifier",
 		Params: map[string]string{
-			"network":  cfg.Redis.Network,
-			"addr":     cfg.Redis.Addr,
-			"username": cfg.Redis.Username,
-			"password": cfg.Redis.Password,
-			"db":       fmt.Sprintf("%d", cfg.Redis.DB),
-			"poolsize": fmt.Sprintf("%d", cfg.Redis.PoolSize),
+			"queue": cfg.Queue,
 		},
-		Job: worker.NewTipSetWorker(im, cfg.Name, cfg.Concurrency, &worker.RedisConfig{
-			Network:  cfg.Redis.Network,
-			Addr:     cfg.Redis.Addr,
-			Username: cfg.Redis.Username,
-			Password: cfg.Redis.Password,
-			DB:       cfg.Redis.DB,
-			PoolSize: cfg.Redis.PoolSize,
-		}),
+		Job:                 worker.NewTipSetWorker(im, cfg.Name, cfg.Concurrency, qcfg),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
@@ -171,55 +157,35 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (bool, 
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
 
-	/*
-		md := storage.Metadata{
-			JobName: cfg.Name,
-		}
-		// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-		strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
-		if err != nil {
-			return false, err
-		}
+	md := storage.Metadata{
+		JobName: cfg.Name,
+	}
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
+	if err != nil {
+		return false, err
+	}
 
-		taskAPI, err := datasource.NewDataSource(m)
-		if err != nil {
-			return false, err
-		}
-
-	*/
-
-	p := worker.NewProducer(&worker.RedisConfig{
-		Network:  cfg.Redis.Network,
-		Addr:     cfg.Redis.Addr,
-		Username: cfg.Redis.Username,
-		Password: cfg.Redis.Password,
-		DB:       cfg.Redis.DB,
-		PoolSize: cfg.Redis.PoolSize,
-	})
+	taskAPI, err := datasource.NewDataSource(m)
+	if err != nil {
+		return false, err
+	}
 
 	ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
 	if err != nil {
 		return false, err
 	}
 
-	success, err := p.TipSet(ctx, ts, cfg.Tasks...)
+	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, indexer.WithWindow(cfg.Window))
 	if err != nil {
 		return false, err
 	}
-	return success, nil
 
-	/*
-		// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-		im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, indexer.WithWindow(cfg.Window))
-		if err != nil {
-			return false, err
-		}
+	success, err := im.TipSet(ctx, ts)
 
-		success, err := im.TipSet(ctx, ts)
+	return success, err
 
-		return success, err
-
-	*/
 }
 
 func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*schedule.JobSubmitResult, error) {
@@ -637,10 +603,10 @@ func (h *HeadNotifier) SetCurrent(ctx context.Context, ts *types.TipSet) error {
 	// This is imprecise since it's inherently racy but good enough to emit
 	// a warning that the event may block the sender
 	if len(ev) == cap(ev) {
-		log.Warnw("head notifier buffer at capacity", "queued", len(ev))
+		log.Warnw("head queue buffer at capacity", "queued", len(ev))
 	}
 
-	log.Debugw("head notifier setting head", "tipset", ts.Key().String())
+	log.Debugw("head queue setting head", "tipset", ts.Key().String())
 	ev <- &chain.HeadEvent{
 		Type:   chain.HeadEventCurrent,
 		TipSet: ts,
@@ -661,10 +627,10 @@ func (h *HeadNotifier) Apply(ctx context.Context, from, to *types.TipSet) error 
 	// This is imprecise since it's inherently racy but good enough to emit
 	// a warning that the event may block the sender
 	if len(ev) == cap(ev) {
-		log.Warnw("head notifier buffer at capacity", "queued", len(ev))
+		log.Warnw("head queue buffer at capacity", "queued", len(ev))
 	}
 
-	log.Debugw("head notifier apply", "to", to.Key().String(), "from", from.Key().String())
+	log.Debugw("head queue apply", "to", to.Key().String(), "from", from.Key().String())
 	ev <- &chain.HeadEvent{
 		Type:   chain.HeadEventApply,
 		TipSet: to,
@@ -685,10 +651,10 @@ func (h *HeadNotifier) Revert(ctx context.Context, from, to *types.TipSet) error
 	// This is imprecise since it's inherently racy but good enough to emit
 	// a warning that the event may block the sender
 	if len(ev) == cap(ev) {
-		log.Warnw("head notifier buffer at capacity", "queued", len(ev))
+		log.Warnw("head queue buffer at capacity", "queued", len(ev))
 	}
 
-	log.Debugw("head notifier revert", "to", to.Key().String(), "from", from.Key().String())
+	log.Debugw("head queue revert", "to", to.Key().String(), "from", from.Key().String())
 	ev <- &chain.HeadEvent{
 		Type:   chain.HeadEventRevert,
 		TipSet: from,

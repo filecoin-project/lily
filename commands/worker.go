@@ -83,7 +83,7 @@ var WorkerCmd = &cli.Command{
 }
 
 var TipSetNotifierCmd = &cli.Command{
-	Name: "tipset-notifier",
+	Name: "tipset-queue",
 	Flags: flagSet(
 		clientAPIFlagSet,
 		redisFlagSet,
@@ -122,14 +122,6 @@ var TipSetNotifierCmd = &cli.Command{
 		}
 
 		cfg := &lily.LilyTipSetNotifierConfig{
-			Redis: &lily.LilyRedisClientConfig{
-				Network:  redisFlags.network,
-				Addr:     redisFlags.addr,
-				Username: redisFlags.username,
-				Password: redisFlags.password,
-				DB:       redisFlags.db,
-				PoolSize: redisFlags.poolSize,
-			},
 			Confidence:          tipSetNotifierFlags.confidence,
 			Name:                tipSetNotifierFlags.name,
 			RestartOnFailure:    true,
@@ -203,14 +195,6 @@ var TipSetWorkerCmd = &cli.Command{
 		}
 
 		cfg := &lily.LilyTipSetWorkerConfig{
-			Redis: &lily.LilyRedisClientConfig{
-				Network:  redisFlags.network,
-				Addr:     redisFlags.addr,
-				Username: redisFlags.username,
-				Password: redisFlags.password,
-				DB:       redisFlags.db,
-				PoolSize: redisFlags.poolSize,
-			},
 			Concurrency:         tipsetWorkerFlags.concurrency,
 			Storage:             tipsetWorkerFlags.storage,
 			Name:                tipsetWorkerFlags.name,

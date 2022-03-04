@@ -26,6 +26,7 @@ import (
 	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lily/lens/lily/modules"
 	lutil "github.com/filecoin-project/lily/lens/util"
+	"github.com/filecoin-project/lily/queue"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 )
@@ -244,6 +245,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 			node.Override(new(*events.Events), modules.NewEvents),
 			node.Override(new(*schedule.Scheduler), schedule.NewSchedulerDaemon),
 			node.Override(new(*storage.Catalog), modules.NewStorageCatalog),
+			node.Override(new(*queue.Catalog), modules.NewQueueCatalog),
 			node.Override(new(*lutil.CacheConfig), modules.CacheConfig(cacheFlags.BlockstoreCacheSize, cacheFlags.StatestoreCacheSize)),
 			// End Injection
 

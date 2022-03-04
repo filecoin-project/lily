@@ -76,7 +76,6 @@ type LilyIndexConfig struct {
 	Tasks   []string
 	Storage string // name of storage system to use, may be empty
 	Window  time.Duration
-	Redis   *LilyRedisClientConfig
 }
 
 type LilyWatchConfig struct {
@@ -137,29 +136,9 @@ type LilySurveyConfig struct {
 	Storage             string // name of storage system to use, may be empty
 }
 
-type LilyRedisClientConfig struct {
-	// Network type to use, either tcp or unix.
-	// Default is tcp.
-	Network string
-	// Redis server address in "host:port" format.
-	Addr string
-	// Username to authenticate the current connection when Redis ACLs are used.
-	// See: https://redis.io/commands/auth.
-	Username string
-	// Password to authenticate the current connection.
-	// See: https://redis.io/commands/auth.
-	Password string
-	// Redis DB to select after connecting to a server.
-	// See: https://redis.io/commands/select.
-	DB int
-	// Maximum number of socket connections.
-	// Default is 10 connections per every CPU as reported by runtime.NumCPU.
-	PoolSize int
-}
-
 type LilyTipSetWorkerConfig struct {
-	// Redis configures the connection to the redis service.
-	Redis *LilyRedisClientConfig
+	Queue string
+
 	// Concurrency sets the maximum number of concurrent processing of tasks.
 	// If set to a zero or negative value, NewServer will overwrite the value
 	// to the number of CPUs usable by the current process.
@@ -174,7 +153,8 @@ type LilyTipSetWorkerConfig struct {
 }
 
 type LilyTipSetNotifierConfig struct {
-	Redis               *LilyRedisClientConfig
+	Queue string
+
 	Name                string
 	Confidence          int
 	RestartOnFailure    bool

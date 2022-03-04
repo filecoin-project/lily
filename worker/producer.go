@@ -8,47 +8,41 @@ import (
 	"github.com/hibiken/asynq"
 	logging "github.com/ipfs/go-log/v2"
 
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/queue"
 )
 
 var log = logging.Logger("lily/worker")
 
-type Producer struct {
+type IndexPriority string
+
+const (
+	High   IndexPriority = "High"
+	Medium IndexPriority = "Medium"
+	Low    IndexPriority = "Low"
+)
+
+type Indexer interface {
+	TipSet(ctx context.Context, ts *types.TipSet, priority IndexPriority, tasks ...string) error
+}
+
+type RedisIndexer struct {
 	Client *asynq.Client
 }
 
-func (p *Producer) TipSet(ctx context.Context, ts *types.TipSet, tasks ...string) (bool, error) {
-	if err := p.TipSetWithTasks(ctx, ts, indexer.AllTasks); err != nil {
-		return false, err
+func (p *RedisIndexer) TipSet(ctx context.Context, ts *types.TipSet, priority IndexPriority, tasks ...string) error {
+	task, err := NewIndexTipSetTask(ts, tasks)
+	if err != nil {
+		return err
 	}
-	return true, nil
+	info, err := p.Client.EnqueueContext(ctx, task, asynq.Queue(string(priority)))
+	if err != nil {
+		return err
+	}
+	log.Infow("enqueued task", "id", info.ID, "queue", info.Queue, "tasks", tasks)
+	return nil
 }
 
-func (p *Producer) TipSetAsync(ctx context.Context, ts *types.TipSet) error {
-	return p.TipSetWithTasks(ctx, ts, indexer.AllTasks)
-}
-
-type RedisConfig struct {
-	// Network type to use, either tcp or unix.
-	// Default is tcp.
-	Network string
-	// Redis server address in "host:port" format.
-	Addr string
-	// Username to authenticate the current connection when Redis ACLs are used.
-	// See: https://redis.io/commands/auth.
-	Username string
-	// Password to authenticate the current connection.
-	// See: https://redis.io/commands/auth.
-	Password string
-	// Redis DB to select after connecting to a server.
-	// See: https://redis.io/commands/select.
-	DB int
-	// Maximum number of socket connections.
-	// Default is 10 connections per every CPU as reported by runtime.NumCPU.
-	PoolSize int
-}
-
-func NewProducer(cfg *RedisConfig) *Producer {
+func NewProducer(cfg *queue.RedisConfig) *RedisIndexer {
 	redisCfg := asynq.RedisClientOpt{
 		Network:  cfg.Network,
 		Addr:     cfg.Addr,
@@ -60,7 +54,7 @@ func NewProducer(cfg *RedisConfig) *Producer {
 	c := asynq.NewClient(
 		redisCfg,
 	)
-	return &Producer{
+	return &RedisIndexer{
 		Client: c,
 	}
 }
@@ -82,7 +76,7 @@ func NewIndexTipSetTask(ts *types.TipSet, tasks []string) (*asynq.Task, error) {
 	return asynq.NewTask(TypeIndexTipSet, payload), nil
 }
 
-func (p *Producer) TipSetWithTasks(ctx context.Context, ts *types.TipSet, tasks []string) error {
+func (p *RedisIndexer) TipSetWithTasks(ctx context.Context, ts *types.TipSet, tasks []string) error {
 	task, err := NewIndexTipSetTask(ts, tasks)
 	if err != nil {
 		return err
@@ -95,6 +89,6 @@ func (p *Producer) TipSetWithTasks(ctx context.Context, ts *types.TipSet, tasks 
 	return nil
 }
 
-func (p *Producer) Close() error {
+func (p *RedisIndexer) Close() error {
 	return p.Client.Close()
 }

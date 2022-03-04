@@ -8,6 +8,7 @@ import (
 	"github.com/hibiken/asynq"
 
 	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/queue"
 )
 
 type IndexHandler struct {
@@ -35,12 +36,12 @@ func (ih *IndexHandler) HandleIndexTipSetTask(ctx context.Context, t *asynq.Task
 type TipSetWorker struct {
 	name        string
 	concurrency int
-	cfg         *RedisConfig
+	cfg         *queue.RedisConfig
 	mux         *asynq.ServeMux
 	done        chan struct{}
 }
 
-func NewTipSetWorker(im *indexer.Manager, name string, concurrency int, cfg *RedisConfig) *TipSetWorker {
+func NewTipSetWorker(im *indexer.Manager, name string, concurrency int, cfg *queue.RedisConfig) *TipSetWorker {
 	ih := NewIndexHandler(im)
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(TypeIndexTipSet, ih.HandleIndexTipSetTask)
@@ -70,6 +71,12 @@ func (t *TipSetWorker) Run(ctx context.Context) error {
 			Concurrency: t.concurrency,
 			Logger:      log.With("process", fmt.Sprintf("TipSetWorker-%s", t.name)),
 			LogLevel:    asynq.InfoLevel,
+			Queues: map[string]int{
+				string(High):   3,
+				string(Medium): 2,
+				string(Low):    1,
+			},
+			StrictPriority: true,
 		},
 	)
 	go func() {
