@@ -305,11 +305,11 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 func (cas *CachingStateStore) tryAssign(value interface{}, out interface{}) error {
 	o := reflect.ValueOf(out).Elem()
 	if !o.CanSet() {
-		return xerrors.Errorf("out parameter cannot be set")
+		return xerrors.Errorf("out parameter (type %s) cannot be set", o.Type().Name())
 	}
 
 	if !value.(reflect.Value).Type().AssignableTo(o.Type()) {
-		return xerrors.Errorf("out parameter cannot be assigned cached value")
+		return xerrors.Errorf("out parameter (type %s) cannot be assigned cached value (type %s)", o.Type().Name(), value.(reflect.Value).Type().Name())
 	}
 
 	o.Set(value.(reflect.Value))
