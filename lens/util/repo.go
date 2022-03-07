@@ -395,12 +395,17 @@ func (wt *paramWrapperType) MarshalJSON() ([]byte, error) {
 		t = t.Elem()
 	}
 
+	// if v is the zero value use default marshaling
+	if !v.IsValid() {
+		return json.Marshal(wt.obj)
+	}
+	// if v is typed zero value use default marshaling
+	if v.IsZero() {
+		return json.Marshal(wt.obj)
+	}
+
 	switch t.Kind() {
 	case reflect.Struct:
-		// if an empty struct marshal the empty struct and bail.
-		if v.IsZero() {
-			return json.Marshal(wt.obj)
-		}
 		// if its a struct, walk its fields and recurse.
 		m := make(map[string]interface{})
 		for i := 0; i < v.NumField(); i++ {
