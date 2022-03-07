@@ -380,13 +380,13 @@ func (wt *paramWrapperType) MarshalJSON() ([]byte, error) {
 		return json.Marshal(wt.obj)
 	}
 
-	switch t.Kind() {
-	case reflect.Ptr:
+	if t.Kind() == reflect.Ptr {
 		// unwrap pointer
 		v = v.Elem()
 		t = t.Elem()
-		fallthrough
+	}
 
+	switch t.Kind() {
 	case reflect.Struct:
 		// if its a struct, walk its fields and recurse.
 		m := make(map[string]interface{})
