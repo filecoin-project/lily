@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [v0.8.7] - 2022-03-07
 
 ### Fix
+- avoid custom marshal for zero and invalid values (#893)
 - wrong use of fallthrough in marshalling paramWrapperType (#890)
 - avoid panic on reflected param parsing code (#888)
 
