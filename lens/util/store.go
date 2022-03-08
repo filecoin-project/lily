@@ -278,19 +278,14 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 
 	v, hit := cas.cache.Get(c)
 	if hit {
-		atomic.AddInt64(&cas.hits, 1)
-
-		o := reflect.ValueOf(out).Elem()
-		if !o.CanSet() {
-			return xerrors.Errorf("out parameter cannot be set")
+		err := cas.tryAssign(v, out)
+		if err == nil {
+			atomic.AddInt64(&cas.hits, 1)
+			return nil
 		}
 
-		if !v.(reflect.Value).Type().AssignableTo(o.Type()) {
-			return xerrors.Errorf("out parameter cannot be assigned cached value")
-		}
-
-		o.Set(v.(reflect.Value))
-		return nil
+		// log and fall through to get from store
+		log.Debugw("CachingStateStore failed to read from cache", "error", err.Error())
 	}
 
 	blk, err := cas.blocks.Get(c)
@@ -304,6 +299,20 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 
 	o := reflect.ValueOf(out).Elem()
 	cas.cache.Add(c, o)
+	return nil
+}
+
+func (cas *CachingStateStore) tryAssign(value interface{}, out interface{}) error {
+	o := reflect.ValueOf(out).Elem()
+	if !o.CanSet() {
+		return xerrors.Errorf("out parameter (type %s) cannot be set", o.Type().Name())
+	}
+
+	if !value.(reflect.Value).Type().AssignableTo(o.Type()) {
+		return xerrors.Errorf("out parameter (type %s) cannot be assigned cached value (type %s)", o.Type().Name(), value.(reflect.Value).Type().Name())
+	}
+
+	o.Set(value.(reflect.Value))
 	return nil
 }
 
