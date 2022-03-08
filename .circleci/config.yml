@@ -352,17 +352,21 @@ jobs:
       - validate-docker-executeable
 
 
+# build and deploy branches which match these rules
+# used in `build-docker-images` workflow below
 branch_filters: &branch_filters
   branches:
-    only: /deploy/
+    only: /.*deploy.*/
   tags:
     ignore: /.*/
 
+# build and deploy tags which match these rules
+# used in `build-docker-images` workflow below
 tag_filters: &tag_filters
   branches:
     ignore: /.*/
   tags:
-    only: /^(v[0-9]+\.[0-9]+\.[0-9]+|.*dev.*)(-rc[0-9]+)*$/  # incl v0.0.0 or v0.0.0-rc0 or containing w `dev`
+    only: /^v[0-9]+\.[0-9]+\.[0-9]+((-rc[0-9]+)|(-dev))*$/  # matches vN.N.N, vN.N.N-rcN, or vN.N.N-dev
 
 workflows:
   version: 2
@@ -410,11 +414,5 @@ workflows:
             - publish-production-image-from-semver-tag-for-calibnet
             - publish-production-image-from-semver-tag-for-butterflynet
           filters:
-            branches:
-              ignore: /.*/
-            # this filters which tags get deployed
-            # should be within the set of dependent (required) publish step
-            # ONLY deploy semver tags with `dev` in the name for now
-            tags:
-              only: /.*dev.*/ # any tag containing `dev`
+            <<: *tag_filters
 
