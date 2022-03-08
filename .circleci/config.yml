@@ -366,7 +366,7 @@ tag_filters: &tag_filters
   branches:
     ignore: /.*/
   tags:
-    only: /^v[0-9]+\.[0-9]+\.[0-9]+((-rc[0-9]+)*|(-dev))*$/  # matches vN.N.N, vN.N.N-rcN, or vN.N.N-dev
+    only: /^v[0-9]+\.[0-9]+\.[0-9]+((-rc[0-9]+)|(-dev))*$/  # matches vN.N.N, vN.N.N-rcN, or vN.N.N-dev
 
 workflows:
   version: 2
