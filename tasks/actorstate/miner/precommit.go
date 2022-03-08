@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	"github.com/filecoin-project/lily/tasks/actorstate"
@@ -27,34 +28,41 @@ func (PreCommitInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInf
 		return nil, xerrors.Errorf("creating miner state extraction context: %w", err)
 	}
 
-	preCommitChanges, err := node.DiffPreCommits(ctx, a.Address, a.Current, a.Executed, ec.PrevState, ec.CurrState)
-	if err != nil {
-		return nil, err
+	var preCommits []miner.SectorPreCommitOnChainInfo
+	if !ec.HasPreviousState() {
+		if err := ec.CurrState.ForEachPrecommittedSector(func(info miner.SectorPreCommitOnChainInfo) error {
+			preCommits = append(preCommits, info)
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+	} else {
+		preCommitChanges, err := node.DiffPreCommits(ctx, a.Address, a.Current, a.Executed, ec.PrevState, ec.CurrState)
+		if err != nil {
+			return nil, err
+		}
+		preCommits = append(preCommits, preCommitChanges.Added...)
 	}
 
-	preCommitModel := minermodel.MinerPreCommitInfoList{}
-	for _, added := range preCommitChanges.Added {
-		pcm := &minermodel.MinerPreCommitInfo{
-			Height:    int64(ec.CurrTs.Height()),
-			MinerID:   a.Address.String(),
-			SectorID:  uint64(added.Info.SectorNumber),
-			StateRoot: a.Current.ParentState().String(),
-
-			SealedCID:       added.Info.SealedCID.String(),
-			SealRandEpoch:   int64(added.Info.SealRandEpoch),
-			ExpirationEpoch: int64(added.Info.Expiration),
-
-			PreCommitDeposit:   added.PreCommitDeposit.String(),
-			PreCommitEpoch:     int64(added.PreCommitEpoch),
-			DealWeight:         added.DealWeight.String(),
-			VerifiedDealWeight: added.VerifiedDealWeight.String(),
-
-			IsReplaceCapacity:      added.Info.ReplaceCapacity,
-			ReplaceSectorDeadline:  added.Info.ReplaceSectorDeadline,
-			ReplaceSectorPartition: added.Info.ReplaceSectorPartition,
-			ReplaceSectorNumber:    uint64(added.Info.ReplaceSectorNumber),
+	preCommitModel := make(minermodel.MinerPreCommitInfoList, len(preCommits))
+	for i, preCommit := range preCommits {
+		preCommitModel[i] = &minermodel.MinerPreCommitInfo{
+			Height:                 int64(ec.CurrTs.Height()),
+			MinerID:                a.Address.String(),
+			StateRoot:              a.Current.ParentState().String(),
+			SectorID:               uint64(preCommit.Info.SectorNumber),
+			SealedCID:              preCommit.Info.SealedCID.String(),
+			SealRandEpoch:          int64(preCommit.Info.SealRandEpoch),
+			ExpirationEpoch:        int64(preCommit.Info.Expiration),
+			PreCommitDeposit:       preCommit.PreCommitDeposit.String(),
+			PreCommitEpoch:         int64(preCommit.PreCommitEpoch),
+			DealWeight:             preCommit.DealWeight.String(),
+			VerifiedDealWeight:     preCommit.VerifiedDealWeight.String(),
+			IsReplaceCapacity:      preCommit.Info.ReplaceCapacity,
+			ReplaceSectorDeadline:  preCommit.Info.ReplaceSectorDeadline,
+			ReplaceSectorPartition: preCommit.Info.ReplaceSectorPartition,
+			ReplaceSectorNumber:    uint64(preCommit.Info.ReplaceSectorNumber),
 		}
-		preCommitModel = append(preCommitModel, pcm)
 	}
 
 	return preCommitModel, nil
