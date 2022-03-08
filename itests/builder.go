@@ -3,13 +3,11 @@ package itests
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/config"
-	"github.com/filecoin-project/lily/lens"
-	"github.com/filecoin-project/lily/lens/lily"
-	lutil "github.com/filecoin-project/lily/lens/util"
-	"github.com/filecoin-project/lily/storage"
 	api2 "github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/node"
@@ -17,8 +15,12 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/xerrors"
-	"testing"
-	"time"
+
+	"github.com/filecoin-project/lily/config"
+	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/lens/lily"
+	lutil "github.com/filecoin-project/lily/lens/util"
+	"github.com/filecoin-project/lily/storage"
 )
 
 type VectorWalkValidatorBuilder struct {
@@ -289,7 +291,7 @@ func actorsFromGenesisBlock(ctx context.Context, n *lily.LilyNodeAPI, ts *types.
 	return actorsChanged, nil
 }
 
-// StateForTipSet returns a TipSetState for TipSet `ts`. All state is derived from Lotus API calls.
+// StateForTipSet returns a TipSetState for Current `ts`. All state is derived from Lotus API calls.
 func StateForTipSet(ctx context.Context, n *lily.LilyNodeAPI, ts *types.TipSet) (*TipSetState, error) {
 	pts, err := n.ChainGetTipSet(ctx, ts.Parents())
 	if err != nil {

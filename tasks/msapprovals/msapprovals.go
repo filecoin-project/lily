@@ -34,19 +34,25 @@ func NewTask(node tasks.DataSource) *Task {
 	}
 }
 
-func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "ProcessMultisigApprovals")
+func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, executed *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "ProcessTipSets")
 	if span.IsRecording() {
-		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))
+		span.SetAttributes(
+			attribute.String("current", current.String()),
+			attribute.Int64("current_height", int64(current.Height())),
+			attribute.String("executed", executed.String()),
+			attribute.Int64("executed_height", int64(executed.Height())),
+			attribute.String("processor", "multisig_approvals"),
+		)
 	}
 	defer span.End()
 
 	report := &visormodel.ProcessingReport{
-		Height:    int64(pts.Height()),
-		StateRoot: pts.ParentState().String(),
+		Height:    int64(current.Height()),
+		StateRoot: current.ParentState().String(),
 	}
 
-	tsMsgs, err := p.node.ExecutedAndBlockMessages(ctx, ts, pts)
+	tsMsgs, err := p.node.ExecutedAndBlockMessages(ctx, current, executed)
 	if err != nil {
 		report.ErrorsDetected = xerrors.Errorf("getting executed and block messages: %w", err)
 		return nil, report, nil
@@ -79,7 +85,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			continue
 		}
 
-		applied, tx, err := p.getTransactionIfApplied(ctx, m.Message, m.Receipt, ts)
+		applied, tx, err := p.getTransactionIfApplied(ctx, m.Message, m.Receipt, current)
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
@@ -94,8 +100,8 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 
 		appr := msapprovals.MultisigApproval{
-			Height:        int64(pts.Height()),
-			StateRoot:     pts.ParentState().String(),
+			Height:        int64(executed.Height()),
+			StateRoot:     executed.ParentState().String(),
 			MultisigID:    m.Message.To.String(),
 			Message:       m.Cid.String(),
 			Method:        uint64(m.Message.Method),
@@ -107,7 +113,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 
 		// Get state of actor after the message has been applied
-		act, err := p.node.Actor(ctx, m.Message.To, ts.Key())
+		act, err := p.node.Actor(ctx, m.Message.To, current.Key())
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
