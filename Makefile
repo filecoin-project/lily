@@ -153,6 +153,9 @@ mainnet: build
 
 # Dockerfiles
 
+docker-clean:
+	rm Dockerfile Dockerfile.dev
+
 docker-files: Dockerfile Dockerfile.dev
 
 Dockerfile:
@@ -161,7 +164,6 @@ Dockerfile:
 		build/docker/builder.tpl \
 		build/docker/prod_entrypoint.tpl \
 		> ./Dockerfile
-CLEAN+=Dockerfile
 
 Dockerfile.dev:
 	@echo "Writing ./Dockerfile.dev..."
@@ -169,7 +171,6 @@ Dockerfile.dev:
 		build/docker/builder.tpl \
 		build/docker/dev_entrypoint.tpl \
 		> ./Dockerfile.dev
-CLEAN+=Dockerfile.dev
 
 # Docker images
 
