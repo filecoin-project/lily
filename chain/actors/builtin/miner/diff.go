@@ -80,9 +80,25 @@ func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreC
 	return diffContainer.Results, nil
 }
 
+func MakeSectorChanges() *SectorChanges {
+	var out *SectorChanges
+	out.Added = []SectorOnChainInfo{}
+	out.Removed = []SectorOnChainInfo{}
+	out.Snapped = []SectorModification{}
+	out.Extended = []SectorModification{}
+	return out
+}
+
+func MakePreCommitChanges() *PreCommitChanges {
+	var out *PreCommitChanges
+	out.Added = []SectorPreCommitOnChainInfo{}
+	out.Removed = []SectorPreCommitOnChainInfo{}
+	return out
+}
+
 func NewPreCommitDiffContainer(pre, cur State) *preCommitDiffContainer {
 	return &preCommitDiffContainer{
-		Results: new(PreCommitChanges),
+		Results: MakePreCommitChanges(),
 		pre:     pre,
 		after:   cur,
 	}
@@ -179,7 +195,7 @@ func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorC
 
 func NewSectorDiffContainer(pre, cur State) *sectorDiffContainer {
 	return &sectorDiffContainer{
-		Results: new(SectorChanges),
+		Results: MakeSectorChanges(),
 		pre:     pre,
 		after:   cur,
 	}
