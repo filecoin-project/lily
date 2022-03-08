@@ -2,16 +2,17 @@ package actorstate
 
 import (
 	"context"
-	"sync"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/tasks"
@@ -20,13 +21,28 @@ import (
 var log = logging.Logger("lily/tasks")
 
 type ActorInfo struct {
-	Actor           types.Actor
-	ChangeType      tasks.ChangeType
-	Address         address.Address
-	ParentStateRoot cid.Cid
-	Epoch           abi.ChainEpoch
-	TipSet          *types.TipSet
-	ParentTipSet    *types.TipSet
+	Actor      types.Actor
+	ChangeType tasks.ChangeType
+	Address    address.Address
+	Current    *types.TipSet
+	Executed   *types.TipSet
+}
+
+func (a ActorInfo) Attributes() []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.String("address", a.Address.String()),
+		attribute.String("code", a.Actor.Code.String()),
+		attribute.String("head", a.Actor.Head.String()),
+		attribute.String("type", builtin.ActorNameByCode(a.Actor.Code)),
+		attribute.String("change", a.ChangeType.String()),
+	}
+}
+
+func (a ActorInfo) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	for _, a := range a.Attributes() {
+		enc.AddString(string(a.Key), a.Value.Emit())
+	}
+	return nil
 }
 
 // ActorStateAPI is the minimal subset of lens.API that is needed for actor state extraction
@@ -45,32 +61,12 @@ type ActorStateAPI interface {
 	Store() adt.Store
 
 	ExecutedAndBlockMessages(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error)
+
+	DiffSectors(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.SectorChanges, error)
+	DiffPreCommits(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.PreCommitChanges, error)
 }
 
 // An ActorStateExtractor extracts actor state into a persistable format
 type ActorStateExtractor interface {
 	Extract(ctx context.Context, a ActorInfo, node ActorStateAPI) (model.Persistable, error)
-}
-
-// All supported actor state extractors
-var (
-	extractorsMu sync.Mutex
-	extractors   = map[cid.Cid]ActorStateExtractor{}
-)
-
-// Register adds an actor state extractor
-func Register(code cid.Cid, e ActorStateExtractor) {
-	extractorsMu.Lock()
-	defer extractorsMu.Unlock()
-	if _, ok := extractors[code]; ok {
-		log.Warnf("extractor overrides previously registered extractor for code %q", code.String())
-	}
-	extractors[code] = e
-}
-
-func GetActorStateExtractor(code cid.Cid) (ActorStateExtractor, bool) {
-	extractorsMu.Lock()
-	defer extractorsMu.Unlock()
-	ase, ok := extractors[code]
-	return ase, ok
 }

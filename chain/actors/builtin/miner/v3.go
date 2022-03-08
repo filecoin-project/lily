@@ -411,11 +411,11 @@ func (s *state3) DeadlineCronActive() (bool, error) {
 	return true, nil // always active in this version
 }
 
-func (s *state3) sectors() (adt.Array, error) {
+func (s *state3) SectorArray() (adt.Array, error) {
 	return adt3.AsArray(s.store, s.Sectors, miner3.SectorsAmtBitwidth)
 }
 
-func (s *state3) decodeSectorOnChainInfo(val *cbg.Deferred) (SectorOnChainInfo, error) {
+func (s *state3) DecodeSectorOnChainInfo(val *cbg.Deferred) (SectorOnChainInfo, error) {
 	var si miner3.SectorOnChainInfo
 	err := si.UnmarshalCBOR(bytes.NewReader(val.Raw))
 	if err != nil {
@@ -425,11 +425,11 @@ func (s *state3) decodeSectorOnChainInfo(val *cbg.Deferred) (SectorOnChainInfo, 
 	return fromV3SectorOnChainInfo(si), nil
 }
 
-func (s *state3) precommits() (adt.Map, error) {
+func (s *state3) PreCommitMap() (adt.Map, error) {
 	return adt3.AsMap(s.store, s.PreCommittedSectors, builtin3.DefaultHamtBitwidth)
 }
 
-func (s *state3) decodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (SectorPreCommitOnChainInfo, error) {
+func (s *state3) DecodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (SectorPreCommitOnChainInfo, error) {
 	var sp miner3.SectorPreCommitOnChainInfo
 	err := sp.UnmarshalCBOR(bytes.NewReader(val.Raw))
 	if err != nil {

@@ -2,16 +2,18 @@ package chain
 
 import (
 	"context"
+
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/lens"
 )
 
-func NewWalker(obs TipSetObserver, node lens.API, minHeight, maxHeight int64) *Walker {
+func NewWalker(obs *indexer.Manager, node lens.API, minHeight, maxHeight int64, parallel bool) *Walker {
 	return &Walker{
 		node:      node,
 		obs:       obs,
@@ -23,10 +25,11 @@ func NewWalker(obs TipSetObserver, node lens.API, minHeight, maxHeight int64) *W
 // Walker is a job that indexes blocks by walking the chain history.
 type Walker struct {
 	node      lens.API
-	obs       TipSetObserver
+	obs       *indexer.Manager
 	minHeight int64 // limit persisting to tipsets equal to or above this height
 	maxHeight int64 // limit persisting to tipsets equal to or below this height}
 	done      chan struct{}
+	parallel  bool
 }
 
 // Run starts walking the chain history and continues until the context is done or
@@ -35,30 +38,28 @@ func (c *Walker) Run(ctx context.Context) error {
 	c.done = make(chan struct{})
 	defer func() {
 		close(c.done)
-		if err := c.obs.Close(); err != nil {
-			log.Errorw("walker failed to close TipSetObserver", "error", err)
-		}
 	}()
 
-	ts, err := c.node.ChainHead(ctx)
+	head, err := c.node.ChainHead(ctx)
 	if err != nil {
 		return xerrors.Errorf("get chain head: %w", err)
 	}
 
-	if int64(ts.Height()) < c.minHeight {
-		return xerrors.Errorf("cannot walk history, chain head (%d) is earlier than minimum height (%d)", int64(ts.Height()), c.minHeight)
+	if int64(head.Height()) < c.minHeight {
+		return xerrors.Errorf("cannot walk history, chain head (%d) is earlier than minimum height (%d)", int64(head.Height()), c.minHeight)
 	}
 
+	start := head
 	// Start at maxHeight+1 so that the tipset at maxHeight becomes the parent for any tasks that need to make a diff between two tipsets.
 	// A walk where min==max must still process two tipsets to be sure of extracting data.
-	if int64(ts.Height()) > c.maxHeight+1 {
-		ts, err = c.node.ChainGetTipSetAfterHeight(ctx, abi.ChainEpoch(c.maxHeight+1), types.EmptyTSK)
+	if int64(head.Height()) > c.maxHeight+1 {
+		start, err = c.node.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(c.maxHeight), head.Key())
 		if err != nil {
 			return xerrors.Errorf("get tipset by height: %w", err)
 		}
 	}
 
-	if err := c.WalkChain(ctx, c.node, ts); err != nil {
+	if err := c.WalkChain(ctx, c.node, start); err != nil {
 		return xerrors.Errorf("walk chain: %w", err)
 	}
 
@@ -81,36 +82,33 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 	}
 	defer span.End()
 
-	log.Debugw("found tipset", "height", ts.Height())
-	if err := c.obs.TipSet(ctx, ts); err != nil {
-		span.RecordError(err)
-		return xerrors.Errorf("notify tipset: %w", err)
-	}
-
 	var err error
-	for ts.Height() > 0 {
+	for int64(ts.Height()) >= c.minHeight && ts.Height() != 0 {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 		}
+		if c.parallel {
+			if err := c.obs.TipSetAsync(ctx, ts); err != nil {
+				return err
+			}
+		} else {
+			log.Infow("walk tipset", "height", ts.Height())
+			if success, err := c.obs.TipSet(ctx, ts); err != nil {
+				span.RecordError(err)
+				return xerrors.Errorf("notify tipset: %w", err)
+			} else if !success {
+				log.Errorw("walk incomplete", "height", ts.Height(), "tipset", ts.Key().String())
+			}
+			log.Infow("walk tipset success", "height", ts.Height())
 
-		ts, err = node.ChainGetTipSet(ctx, ts.Parents())
-		if err != nil {
-			span.RecordError(err)
-			return xerrors.Errorf("get tipset: %w", err)
+			ts, err = node.ChainGetTipSet(ctx, ts.Parents())
+			if err != nil {
+				span.RecordError(err)
+				return xerrors.Errorf("get tipset: %w", err)
+			}
 		}
-
-		if int64(ts.Height()) < c.minHeight {
-			break
-		}
-
-		log.Debugw("found tipset", "height", ts.Height())
-		if err := c.obs.TipSet(ctx, ts); err != nil {
-			span.RecordError(err)
-			return xerrors.Errorf("notify tipset: %w", err)
-		}
-
 	}
 
 	return nil

@@ -5,13 +5,20 @@ import (
 	"sort"
 	"time"
 
+	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
+	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/lily/chain/datasource"
+	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/storage"
 )
+
+var fillLog = logging.Logger("lily/chain/fill")
 
 type GapFiller struct {
 	DB                   *storage.Database
@@ -42,42 +49,46 @@ func (g *GapFiller) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	fillLog := log.With("type", "gap_fill")
 	fillStart := time.Now()
 	fillLog.Infow("gap fill start", "start", fillStart.String(), "total_epoch_gaps", len(gaps), "from", g.minHeight, "to", g.maxHeight, "task", g.tasks)
 
-	idx := 0
+	taskAPI, err := datasource.NewDataSource(g.node)
+	if err != nil {
+		return err
+	}
 	for _, height := range heights {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 		}
-		taskAPI, err := NewDataSource(g.node)
-		if err != nil {
-			return err
-		}
 		runStart := time.Now()
-		indexer, err := NewTipSetIndexer(taskAPI, g.DB, 0, g.name, gaps[height])
+		index, err := indexer.NewManager(taskAPI, g.DB, g.name, gaps[height])
 		if err != nil {
 			return err
 		}
 
-		// walk a single height at a time since there is no guarantee neighboring heights share the same missing tasks.
-		if err := NewWalker(indexer, g.node, height, height).Run(ctx); err != nil {
-			log.Errorw("fill failed", "height", height, "error", err.Error(), "tasks", gaps[height])
-			// TODO we could add an error to the gap report in a follow on if needed, but the actualy error should
-			// exist in the processing report if this fails.
+		fillLog.Infof("filling height %d", heights)
+		ts, err := g.node.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(height), types.EmptyTSK)
+		if err != nil {
+			return err
+		}
+		fillLog.Infof("got tipset for height %d, tipset height %d", heights, ts.Height())
+		if success, err := index.TipSet(ctx, ts); err != nil {
+			fillLog.Errorw("fill indexing encountered fatal error", "height", height, "tipset", ts.Key().String(), "error", err, "tasks", gaps[height])
+			return err
+		} else if !success {
+			fillLog.Errorw("fill indexing failed to successfully index tipset, skipping fill for tipset, gap remains", "height", height, "tipset", ts.Key().String(), "tasks", gaps[height])
 			continue
 		}
-		fillLog.Infow("fill success", "epoch", height, "epochs_remaining", len(gaps)-idx, "tasks_filled", gaps[height], "duration", time.Since(runStart))
+		fillLog.Infow("fill success", "epoch", ts.Height(), "tasks_filled", gaps[height], "duration", time.Since(runStart))
 
 		if err := g.setGapsFilled(ctx, height, gaps[height]...); err != nil {
 			return err
 		}
-		idx += 1
 	}
-	fillLog.Infow("gap fill complete", "duration", time.Since(fillStart), "total_epoch_gaps", len(gaps), "epoch_gaps_filled", idx, "from", g.minHeight, "to", g.maxHeight, "task", g.tasks)
+	fillLog.Infow("gap fill complete", "duration", time.Since(fillStart), "total_epoch_gaps", len(gaps), "from", g.minHeight, "to", g.maxHeight, "task", g.tasks)
+
 	return nil
 }
 
