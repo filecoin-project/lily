@@ -147,6 +147,7 @@ func main() {
 	app.Metadata["repoType"] = repo.FullNode
 	app.Metadata["traceContext"] = ctx
 
+	log.Info("test deploy v0.8.8-rc1")
 	if err := app.RunContext(ctx, os.Args); err != nil {
 		fmt.Fprintln(os.Stdout, err.Error())
 		os.Exit(1)
