@@ -385,6 +385,16 @@ func ExtractMinerSectorData(ctx context.Context, ec *MinerStateExtractionContext
 				})
 			}
 		}
+		for _, snappedSector := range sectorChanges.Snapped {
+			for _, dealID := range snappedSector.To.DealIDs {
+				sectorDealsModel = append(sectorDealsModel, &minermodel.MinerSectorDeal{
+					Height:   int64(ec.CurrTs.Height()),
+					MinerID:  a.Address.String(),
+					SectorID: uint64(snappedSector.To.SectorNumber),
+					DealID:   uint64(dealID),
+				})
+			}
+		}
 	}
 	sectorEventModel, err := extractMinerSectorEvents(ctx, node, a, ec, sectorChanges, preCommitChanges)
 	if err != nil {
