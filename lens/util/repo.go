@@ -460,10 +460,15 @@ var bitfieldCountMarshaller = func(v interface{}) ([]byte, error) {
 		return nil, err
 	}
 
+	// this struct matches the param schema used in network v14
+	// see https://github.com/filecoin-project/lily/pull/821/files#r821851219
 	var ret = struct {
-		Count uint64
-		RLE   []uint64
-	}{}
+		Count uint64   `json:"elemcount"`
+		RLE   []uint64 `json:"rle"`
+		Type  string   `json:"_type"`
+	}{
+		Type: "bitfield",
+	}
 	if r.HasNext() {
 		first, err := r.NextRun()
 		if err != nil {
