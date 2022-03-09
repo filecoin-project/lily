@@ -6,11 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/filecoin-project/lily/chain"
-	"github.com/filecoin-project/lily/lens/lily"
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lily/chain"
+	"github.com/filecoin-project/lily/lens/lily"
 )
 
 type gapOps struct {
@@ -91,7 +92,7 @@ var GapFillCmd = &cli.Command{
 	Before: func(cctx *cli.Context) error {
 		from, to := gapFlags.from, gapFlags.to
 		if to < from {
-			xerrors.Errorf("value of --to (%d) should be >= --from (%d)", to, from)
+			return xerrors.Errorf("value of --to (%d) should be >= --from (%d)", to, from)
 		}
 
 		return nil
