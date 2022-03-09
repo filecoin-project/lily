@@ -15,7 +15,7 @@ require (
 	github.com/filecoin-project/go-jsonrpc v0.1.5
 	github.com/filecoin-project/go-paramfetch v0.0.4
 	github.com/filecoin-project/go-state-types v0.1.3
-	github.com/filecoin-project/lotus v1.15.0-rc1
+	github.com/filecoin-project/lotus v1.15.0-rc3
 	github.com/filecoin-project/specs-actors v0.9.14
 	github.com/filecoin-project/specs-actors/v2 v2.3.6
 	github.com/filecoin-project/specs-actors/v3 v3.1.1
@@ -108,11 +108,11 @@ require (
 	github.com/filecoin-project/go-cbor-util v0.0.1 // indirect
 	github.com/filecoin-project/go-commp-utils v0.1.3 // indirect
 	github.com/filecoin-project/go-crypto v0.0.1 // indirect
-	github.com/filecoin-project/go-data-transfer v1.14.0 // indirect
+	github.com/filecoin-project/go-data-transfer v1.14.1 // indirect
 	github.com/filecoin-project/go-ds-versioning v0.1.1 // indirect
 	github.com/filecoin-project/go-fil-commcid v0.1.0 // indirect
 	github.com/filecoin-project/go-fil-commp-hashhash v0.1.0 // indirect
-	github.com/filecoin-project/go-fil-markets v1.19.0 // indirect
+	github.com/filecoin-project/go-fil-markets v1.19.2 // indirect
 	github.com/filecoin-project/go-hamt-ipld v0.1.5 // indirect
 	github.com/filecoin-project/go-hamt-ipld/v2 v2.0.0 // indirect
 	github.com/filecoin-project/go-padreader v0.0.1 // indirect
