@@ -28,6 +28,7 @@ type LilyAPI interface {
 	LilyJobStop(ctx context.Context, ID schedule.JobID) error
 	LilyJobWait(ctx context.Context, ID schedule.JobID) (*schedule.JobListResult, error)
 	LilyJobList(ctx context.Context) ([]schedule.JobListResult, error)
+	LilyNextJobID() schedule.JobID
 
 	LilyGapFind(ctx context.Context, cfg *LilyGapFindConfig) (*schedule.JobSubmitResult, error)
 	LilyGapFill(ctx context.Context, cfg *LilyGapFillConfig) (*schedule.JobSubmitResult, error)
@@ -66,67 +67,47 @@ type LilyAPI interface {
 	NetPeerInfo(context.Context, peer.ID) (*api.ExtendedPeerInfo, error)
 }
 
+type LilyJobConfig struct {
+	Name                string
+	Storage             string // name of storage system to use, may be empty
+	Tasks               []string
+	Window              time.Duration
+	RestartOnFailure    bool
+	RestartOnCompletion bool
+	RestartDelay        time.Duration
+}
+
 type LilyIndexConfig struct {
-	TipSet  types.TipSetKey
-	Name    string
-	Tasks   []string
-	Storage string // name of storage system to use, may be empty
-	Window  time.Duration
+	JobConfig LilyJobConfig
+	TipSet    types.TipSetKey
 }
 
 type LilyWatchConfig struct {
-	Name                string
-	Tasks               []string
-	Window              time.Duration
-	Confidence          int
-	RestartOnFailure    bool
-	RestartOnCompletion bool
-	RestartDelay        time.Duration
-	Storage             string // name of storage system to use, may be empty
-	Workers             int    // number of indexing jobs that can run in parallel
+	JobConfig  LilyJobConfig
+	Confidence int
+	Workers    int // number of indexing jobs that can run in parallel
 }
 
 type LilyWalkConfig struct {
-	From                int64
-	To                  int64
-	Name                string
-	Tasks               []string
-	Window              time.Duration
-	RestartOnFailure    bool
-	RestartOnCompletion bool
-	RestartDelay        time.Duration
-	Storage             string // name of storage system to use, may be empty
-	Workers             int    // number of indexing jobs that can run in parallel
+	JobConfig LilyJobConfig
+	From      int64
+	To        int64
+	Workers   int // number of indexing jobs that can run in parallel
 }
 
 type LilyGapFindConfig struct {
-	RestartOnFailure    bool
-	RestartOnCompletion bool
-	RestartDelay        time.Duration
-	Storage             string // name of storage system to use, cannot be empty and must be Database storage.
-	Name                string
-	To                  uint64
-	From                uint64
-	Tasks               []string // name of tasks to fill gaps for
+	JobConfig LilyJobConfig
+	To        uint64
+	From      uint64
 }
 
 type LilyGapFillConfig struct {
-	RestartOnFailure    bool
-	RestartOnCompletion bool
-	RestartDelay        time.Duration
-	Storage             string // name of storage system to use, cannot be empty and must be Database storage.
-	Name                string
-	To                  uint64
-	From                uint64
-	Tasks               []string // name of tasks to fill gaps for
+	JobConfig LilyJobConfig
+	To        uint64
+	From      uint64
 }
 
 type LilySurveyConfig struct {
-	Name                string
-	Tasks               []string
-	Interval            time.Duration
-	RestartOnFailure    bool
-	RestartOnCompletion bool
-	RestartDelay        time.Duration
-	Storage             string // name of storage system to use, may be empty
+	JobConfig LilyJobConfig
+	Interval  time.Duration
 }

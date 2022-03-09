@@ -67,13 +67,13 @@ func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.C
 
 func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interface{}, error) {
 	md := storage.Metadata{
-		JobName: cfg.Name,
+		JobName: cfg.JobConfig.Name,
 	}
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, indexer.WithWindow(cfg.Window))
+	im, err := indexer.NewManager(taskAPI, strg, cfg.JobConfig.Name, cfg.JobConfig.Tasks, indexer.WithWindow(cfg.JobConfig.Window))
 	if err != nil {
 		return nil, err
 	}
@@ -105,11 +105,11 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 	ctx := context.Background()
 
 	md := storage.Metadata{
-		JobName: cfg.Name,
+		JobName: cfg.JobConfig.Name,
 	}
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
 	if err != nil {
 		return nil, err
 	}
@@ -124,14 +124,14 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		return nil, err
 	}
 
-	imOpts := []indexer.ManagerOpt{indexer.WithWindow(cfg.Window)}
+	imOpts := []indexer.ManagerOpt{indexer.WithWindow(cfg.JobConfig.Window)}
 	if cfg.Workers > 0 {
 		pool := workerpool.New(cfg.Workers)
 		imOpts = append(imOpts, indexer.WithWorkerPool(pool))
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
+	im, err := indexer.NewManager(taskAPI, strg, cfg.JobConfig.Name, cfg.JobConfig.Tasks, imOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -149,18 +149,18 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 	}
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
-		Name: cfg.Name,
+		Name: cfg.JobConfig.Name,
 		Type: "watch",
 		Params: map[string]string{
-			"window":     cfg.Window.String(),
+			"window":     cfg.JobConfig.Window.String(),
 			"confidence": fmt.Sprintf("%d", cfg.Confidence),
-			"storage":    cfg.Storage,
+			"storage":    cfg.JobConfig.Storage,
 		},
-		Tasks:               cfg.Tasks,
+		Tasks:               cfg.JobConfig.Tasks,
 		Job:                 chain.NewWatcher(im, obs, tsCache),
-		RestartOnFailure:    cfg.RestartOnFailure,
-		RestartOnCompletion: cfg.RestartOnCompletion,
-		RestartDelay:        cfg.RestartDelay,
+		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
+		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
+		RestartDelay:        cfg.JobConfig.RestartDelay,
 	})
 
 	return res, nil
@@ -171,11 +171,11 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 	ctx := context.Background()
 
 	md := storage.Metadata{
-		JobName: cfg.Name,
+		JobName: cfg.JobConfig.Name,
 	}
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, md)
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		return nil, err
 	}
 
-	imOpts := []indexer.ManagerOpt{indexer.WithWindow(cfg.Window)}
+	imOpts := []indexer.ManagerOpt{indexer.WithWindow(cfg.JobConfig.Window)}
 	parallel := false
 	if cfg.Workers > 0 {
 		if cfg.Workers > 1 {
@@ -196,25 +196,25 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
+	im, err := indexer.NewManager(taskAPI, strg, cfg.JobConfig.Name, cfg.JobConfig.Tasks, imOpts...)
 	if err != nil {
 		return nil, err
 	}
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
-		Name: cfg.Name,
+		Name: cfg.JobConfig.Name,
 		Type: "walk",
 		Params: map[string]string{
-			"window":    cfg.Window.String(),
+			"window":    cfg.JobConfig.Window.String(),
 			"minHeight": fmt.Sprintf("%d", cfg.From),
 			"maxHeight": fmt.Sprintf("%d", cfg.To),
-			"storage":   cfg.Storage,
+			"storage":   cfg.JobConfig.Storage,
 		},
-		Tasks:               cfg.Tasks,
+		Tasks:               cfg.JobConfig.Tasks,
 		Job:                 chain.NewWalker(im, m, cfg.From, cfg.To, parallel),
-		RestartOnFailure:    cfg.RestartOnFailure,
-		RestartOnCompletion: cfg.RestartOnCompletion,
-		RestartDelay:        cfg.RestartDelay,
+		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
+		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
+		RestartDelay:        cfg.JobConfig.RestartDelay,
 	})
 
 	return res, nil
@@ -225,28 +225,28 @@ func (m *LilyNodeAPI) LilyGapFind(_ context.Context, cfg *LilyGapFindConfig) (*s
 	ctx := context.Background()
 
 	md := storage.Metadata{
-		JobName: cfg.Name,
+		JobName: cfg.JobConfig.Name,
 	}
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	db, err := m.StorageCatalog.ConnectAsDatabase(ctx, cfg.Storage, md)
+	db, err := m.StorageCatalog.ConnectAsDatabase(ctx, cfg.JobConfig.Storage, md)
 	if err != nil {
 		return nil, err
 	}
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
-		Name:  cfg.Name,
+		Name:  cfg.JobConfig.Name,
 		Type:  "Find",
-		Tasks: cfg.Tasks,
+		Tasks: cfg.JobConfig.Tasks,
 		Params: map[string]string{
 			"minHeight": fmt.Sprintf("%d", cfg.From),
 			"maxHeight": fmt.Sprintf("%d", cfg.To),
-			"storage":   cfg.Storage,
+			"storage":   cfg.JobConfig.Storage,
 		},
-		Job:                 chain.NewGapIndexer(m, db, cfg.Name, cfg.From, cfg.To, cfg.Tasks),
-		RestartOnFailure:    cfg.RestartOnFailure,
-		RestartOnCompletion: cfg.RestartOnCompletion,
-		RestartDelay:        cfg.RestartDelay,
+		Job:                 chain.NewGapIndexer(m, db, cfg.JobConfig.Name, cfg.From, cfg.To, cfg.JobConfig.Tasks),
+		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
+		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
+		RestartDelay:        cfg.JobConfig.RestartDelay,
 	})
 
 	return res, nil
@@ -257,28 +257,28 @@ func (m *LilyNodeAPI) LilyGapFill(_ context.Context, cfg *LilyGapFillConfig) (*s
 	ctx := context.Background()
 
 	md := storage.Metadata{
-		JobName: cfg.Name,
+		JobName: cfg.JobConfig.Name,
 	}
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	db, err := m.StorageCatalog.ConnectAsDatabase(ctx, cfg.Storage, md)
+	db, err := m.StorageCatalog.ConnectAsDatabase(ctx, cfg.JobConfig.Storage, md)
 	if err != nil {
 		return nil, err
 	}
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
-		Name: cfg.Name,
+		Name: cfg.JobConfig.Name,
 		Type: "Fill",
 		Params: map[string]string{
 			"minHeight": fmt.Sprintf("%d", cfg.From),
 			"maxHeight": fmt.Sprintf("%d", cfg.To),
-			"storage":   cfg.Storage,
+			"storage":   cfg.JobConfig.Storage,
 		},
-		Tasks:               cfg.Tasks,
-		Job:                 chain.NewGapFiller(m, db, cfg.Name, cfg.From, cfg.To, cfg.Tasks),
-		RestartOnFailure:    cfg.RestartOnFailure,
-		RestartOnCompletion: cfg.RestartOnCompletion,
-		RestartDelay:        cfg.RestartDelay,
+		Tasks:               cfg.JobConfig.Tasks,
+		Job:                 chain.NewGapFiller(m, db, cfg.JobConfig.Name, cfg.From, cfg.To, cfg.JobConfig.Tasks),
+		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
+		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
+		RestartDelay:        cfg.JobConfig.RestartDelay,
 	})
 
 	return res, nil
@@ -296,6 +296,10 @@ func (m *LilyNodeAPI) LilyJobStop(_ context.Context, ID schedule.JobID) error {
 		return err
 	}
 	return nil
+}
+
+func (m *LilyNodeAPI) LilyNextJobID() schedule.JobID {
+	return m.Scheduler.NextJobID()
 }
 
 // TODO pass context to fix wait
@@ -428,27 +432,27 @@ func (m *LilyNodeAPI) LilySurvey(_ context.Context, cfg *LilySurveyConfig) (*sch
 	ctx := context.Background()
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	strg, err := m.StorageCatalog.Connect(ctx, cfg.Storage, storage.Metadata{JobName: cfg.Name})
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, storage.Metadata{JobName: cfg.JobConfig.Name})
 	if err != nil {
 		return nil, err
 	}
 
 	// instantiate a new surveyer.
-	surv, err := network.NewSurveyer(m, strg, cfg.Interval, cfg.Name, cfg.Tasks)
+	surv, err := network.NewSurveyer(m, strg, cfg.Interval, cfg.JobConfig.Name, cfg.JobConfig.Tasks)
 	if err != nil {
 		return nil, err
 	}
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
-		Name:  cfg.Name,
-		Tasks: cfg.Tasks,
+		Name:  cfg.JobConfig.Name,
+		Tasks: cfg.JobConfig.Tasks,
 		Job:   surv,
 		Params: map[string]string{
 			"interval": cfg.Interval.String(),
 		},
-		RestartOnFailure:    cfg.RestartOnFailure,
-		RestartOnCompletion: cfg.RestartOnCompletion,
-		RestartDelay:        cfg.RestartDelay,
+		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
+		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
+		RestartDelay:        cfg.JobConfig.RestartDelay,
 	})
 
 	return res, nil

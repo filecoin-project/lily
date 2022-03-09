@@ -172,6 +172,12 @@ type JobSubmitResult struct {
 	RestartDelay        time.Duration
 }
 
+func (s *Scheduler) NextJobID() JobID {
+	s.jobIDMu.Lock()
+	defer s.jobIDMu.Unlock()
+	return s.jobID + 1
+}
+
 func (s *Scheduler) Submit(jc *JobConfig) *JobSubmitResult {
 	s.jobIDMu.Lock()
 	defer s.jobIDMu.Unlock()
