@@ -6,11 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/filecoin-project/lily/chain/actors/builtin"
-	"github.com/filecoin-project/lily/lens/lily"
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/lens/lily"
 
 	"github.com/filecoin-project/lily/chain"
 )
@@ -92,7 +93,7 @@ var WalkCmd = &cli.Command{
 	Before: func(cctx *cli.Context) error {
 		from, to := walkFlags.from, walkFlags.to
 		if to < from {
-			xerrors.Errorf("value of --to (%d) should be >= --from (%d)", to, from)
+			return xerrors.Errorf("value of --to (%d) should be >= --from (%d)", to, from)
 		}
 
 		return nil
