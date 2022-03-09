@@ -9,7 +9,6 @@ import (
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
-	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lotus/api"
 	lotusbuild "github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -17,6 +16,9 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lily/lens/client"
+	"github.com/filecoin-project/lily/lens/lily"
 )
 
 var ChainCmd = &cli.Command{
@@ -41,7 +43,7 @@ var ChainHeadCmd = &cli.Command{
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := client.GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}
@@ -73,7 +75,7 @@ var ChainGetBlock = &cli.Command{
 		}),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := client.GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}
@@ -160,7 +162,7 @@ var ChainReadObjCmd = &cli.Command{
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := client.GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}
@@ -200,7 +202,7 @@ var ChainStatObjCmd = &cli.Command{
 		}),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := client.GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}
@@ -240,7 +242,7 @@ var ChainGetMsgCmd = &cli.Command{
 		}
 
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := client.GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}
@@ -299,7 +301,7 @@ var ChainListCmd = &cli.Command{
 		}),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := client.GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}
@@ -427,7 +429,7 @@ var ChainSetHeadCmd = &cli.Command{
 		}),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := client.GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}

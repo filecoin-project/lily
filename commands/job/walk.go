@@ -1,4 +1,4 @@
-package commands
+package job
 
 import (
 	"os"
@@ -7,6 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/lily/lens/client"
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
@@ -56,13 +57,13 @@ var WalkCmd = &cli.Command{
 		ctx := lotuscli.ReqContext(cctx)
 
 		cfg := &lily.LilyWalkConfig{
-			JobConfig: jobConfigFromFlags(cctx, runFlags),
+			JobConfig: JobConfigFromFlags(cctx, RunFlags),
 			From:      walkFlags.from,
 			To:        walkFlags.to,
 			Workers:   walkFlags.workers,
 		}
 
-		api, closer, err := GetAPI(ctx, runFlags.apiAddr, runFlags.apiToken)
+		api, closer, err := client.GetAPI(ctx, RunFlags.ApiAddr, RunFlags.ApiToken)
 		if err != nil {
 			return err
 		}

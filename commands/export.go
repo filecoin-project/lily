@@ -30,6 +30,7 @@ type chainExportOps struct {
 var chainExportFlags chainExportOps
 
 var ExportChainCmd = &cli.Command{
+	Hidden:      true,
 	Name:        "export",
 	Description: "Export chain from repo (requires node to be offline)",
 	UsageText: `

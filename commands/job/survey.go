@@ -1,4 +1,4 @@
-package commands
+package job
 
 import (
 	"os"
@@ -7,6 +7,7 @@ import (
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
 
+	"github.com/filecoin-project/lily/lens/client"
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
@@ -28,14 +29,14 @@ var SurveyCmd = &cli.Command{
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
-		api, closer, err := GetAPI(ctx, runFlags.apiAddr, runFlags.apiToken)
+		api, closer, err := client.GetAPI(ctx, RunFlags.ApiAddr, RunFlags.ApiToken)
 		if err != nil {
 			return err
 		}
 		defer closer()
 
 		cfg := &lily.LilySurveyConfig{
-			JobConfig: jobConfigFromFlags(cctx, runFlags),
+			JobConfig: JobConfigFromFlags(cctx, RunFlags),
 			Interval:  surveyFlags.interval,
 		}
 

@@ -15,6 +15,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/lily/commands"
+	"github.com/filecoin-project/lily/commands/job"
 	"github.com/filecoin-project/lily/version"
 )
 
@@ -69,8 +70,6 @@ func main() {
 		})
 	}
 
-	cli.AppHelpTemplate = commands.AppHelpTemplate
-
 	app := &cli.App{
 		Name:    "lily",
 		Usage:   "a tool for capturing on-chain state from the filecoin network",
@@ -122,19 +121,15 @@ func main() {
 				Destination: &commands.VisorMetricFlags.PrometheusPort,
 			},
 		},
-		HideHelp: true,
-		Metadata: commands.Metadata(),
 		Commands: []*cli.Command{
 			commands.ChainCmd,
 			commands.DaemonCmd,
 			commands.ExportChainCmd,
-			commands.HelpCmd,
 			commands.InitCmd,
-			commands.JobCmd,
+			job.JobCmd,
 			commands.LogCmd,
 			commands.MigrateCmd,
 			commands.NetCmd,
-			commands.RunCmd,
 			commands.StopCmd,
 			commands.SyncCmd,
 			commands.WaitApiCmd,

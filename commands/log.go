@@ -8,6 +8,8 @@ import (
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lily/lens/client"
 )
 
 var LogCmd = &cli.Command{
@@ -38,7 +40,7 @@ var LogList = &cli.Command{
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
-		api, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		api, closer, err := client.GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}
@@ -88,7 +90,7 @@ var LogSetLevel = &cli.Command{
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
-		api, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		api, closer, err := client.GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}
@@ -138,7 +140,7 @@ var LogSetLevelRegex = &cli.Command{
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
-		api, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		api, closer, err := client.GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}

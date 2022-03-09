@@ -1,4 +1,4 @@
-package commands
+package job
 
 import (
 	"strconv"
@@ -12,6 +12,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/lily/lens/client"
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
@@ -25,6 +26,15 @@ type indexOps struct {
 }
 
 var indexFlags indexOps
+
+var IndexCmd = &cli.Command{
+	Name:  "index",
+	Usage: "Start a daemon job to index the state of a tipset from the filecoin blockchain.",
+	Subcommands: []*cli.Command{
+		IndexTipSetCmd,
+		IndexHeightCmd,
+	},
+}
 
 var IndexTipSetCmd = &cli.Command{
 	Name:  "tipset",
@@ -43,11 +53,11 @@ var IndexTipSetCmd = &cli.Command{
 		}
 
 		cfg := &lily.LilyIndexConfig{
-			JobConfig: jobConfigFromFlags(cctx, runFlags),
+			JobConfig: JobConfigFromFlags(cctx, RunFlags),
 			TipSet:    tsk,
 		}
 
-		api, closer, err := GetAPI(ctx, indexFlags.apiAddr, indexFlags.apiToken)
+		api, closer, err := client.GetAPI(ctx, indexFlags.apiAddr, indexFlags.apiToken)
 		if err != nil {
 			return err
 		}
@@ -73,7 +83,7 @@ var IndexHeightCmd = &cli.Command{
 			return xerrors.Errorf("height argument required")
 		}
 
-		api, closer, err := GetAPI(ctx, indexFlags.apiAddr, indexFlags.apiToken)
+		api, closer, err := client.GetAPI(ctx, indexFlags.apiAddr, indexFlags.apiToken)
 		if err != nil {
 			return err
 		}
@@ -93,7 +103,7 @@ var IndexHeightCmd = &cli.Command{
 		}
 
 		cfg := &lily.LilyIndexConfig{
-			JobConfig: jobConfigFromFlags(cctx, runFlags),
+			JobConfig: JobConfigFromFlags(cctx, RunFlags),
 			TipSet:    ts.Key(),
 		}
 
@@ -103,15 +113,6 @@ var IndexHeightCmd = &cli.Command{
 		}
 
 		return nil
-	},
-}
-
-var IndexCmd = &cli.Command{
-	Name:  "index",
-	Usage: "Index the state of a tipset from the filecoin blockchain.",
-	Subcommands: []*cli.Command{
-		IndexTipSetCmd,
-		IndexHeightCmd,
 	},
 }
 

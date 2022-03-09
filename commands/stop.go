@@ -3,6 +3,8 @@ package commands
 import (
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
+
+	"github.com/filecoin-project/lily/lens/client"
 )
 
 var StopCmd = &cli.Command{
@@ -13,7 +15,7 @@ var StopCmd = &cli.Command{
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := client.GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}

@@ -1,4 +1,4 @@
-package commands
+package job
 
 import (
 	"os"
@@ -7,24 +7,20 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/lily/lens/client"
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
 type gapOps struct {
-	apiAddr  string
-	apiToken string
-	storage  string
-	tasks    string
-	name     string
-	from     uint64
-	to       uint64
+	from uint64
+	to   uint64
 }
 
 var gapFlags gapOps
 
 var GapCmd = &cli.Command{
 	Name:  "gap",
-	Usage: "Launch gap filling and finding jobs",
+	Usage: "Start a daemon job to find or fill gaps in the database.",
 	Flags: []cli.Flag{
 		&cli.Uint64Flag{
 			Name:        "to",
@@ -49,7 +45,7 @@ var GapCmd = &cli.Command{
 
 var GapFillCmd = &cli.Command{
 	Name:  "fill",
-	Usage: "Fill gaps in the database",
+	Usage: "Start a daemon job to fill gaps in the database.",
 	Before: func(cctx *cli.Context) error {
 		from, to := gapFlags.from, gapFlags.to
 		if to < from {
@@ -61,14 +57,14 @@ var GapFillCmd = &cli.Command{
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
-		api, closer, err := GetAPI(ctx, gapFlags.apiAddr, gapFlags.apiToken)
+		api, closer, err := client.GetAPI(ctx, RunFlags.ApiAddr, RunFlags.ApiToken)
 		if err != nil {
 			return err
 		}
 		defer closer()
 
 		res, err := api.LilyGapFill(ctx, &lily.LilyGapFillConfig{
-			JobConfig: jobConfigFromFlags(cctx, runFlags),
+			JobConfig: JobConfigFromFlags(cctx, RunFlags),
 			To:        gapFlags.to,
 			From:      gapFlags.from,
 		})
@@ -84,18 +80,18 @@ var GapFillCmd = &cli.Command{
 
 var GapFindCmd = &cli.Command{
 	Name:  "find",
-	Usage: "find gaps in the database",
+	Usage: "Start a demon job to find gaps in the database",
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
-		api, closer, err := GetAPI(ctx, gapFlags.apiAddr, gapFlags.apiToken)
+		api, closer, err := client.GetAPI(ctx, RunFlags.ApiAddr, RunFlags.ApiToken)
 		if err != nil {
 			return err
 		}
 		defer closer()
 
 		res, err := api.LilyGapFind(ctx, &lily.LilyGapFindConfig{
-			JobConfig: jobConfigFromFlags(cctx, runFlags),
+			JobConfig: JobConfigFromFlags(cctx, RunFlags),
 			To:        gapFlags.to,
 			From:      gapFlags.from,
 		})

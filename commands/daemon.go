@@ -23,6 +23,7 @@ import (
 
 	"github.com/filecoin-project/lily/commands/util"
 	"github.com/filecoin-project/lily/config"
+	"github.com/filecoin-project/lily/lens/client"
 	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lily/lens/lily/modules"
 	lutil "github.com/filecoin-project/lily/lens/util"
@@ -239,7 +240,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 		var api lily.LilyAPI
 		stop, err := node.New(ctx,
 			// Start Sentinel Dep injection
-			LilyNodeAPIOption(&api),
+			client.LilyNodeAPIOption(&api),
 			node.Override(new(*config.Conf), modules.LoadConf(daemonFlags.config)),
 			node.Override(new(*events.Events), modules.NewEvents),
 			node.Override(new(*schedule.Scheduler), schedule.NewSchedulerDaemon),

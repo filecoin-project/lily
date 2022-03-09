@@ -8,6 +8,8 @@ import (
 	lotuscli "github.com/filecoin-project/lotus/cli"
 
 	"github.com/urfave/cli/v2"
+
+	"github.com/filecoin-project/lily/lens/client"
 )
 
 var WaitApiCmd = &cli.Command{
@@ -51,7 +53,7 @@ var WaitApiCmd = &cli.Command{
 }
 
 func checkAPI(ctx context.Context, addrStr string, token string) error {
-	lapi, closer, err := GetAPI(ctx, addrStr, token)
+	lapi, closer, err := client.GetAPI(ctx, addrStr, token)
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package commands
+package job
 
 import (
 	"os"
@@ -6,6 +6,7 @@ import (
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
 
+	"github.com/filecoin-project/lily/lens/client"
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
@@ -39,12 +40,12 @@ var WatchCmd = &cli.Command{
 		ctx := lotuscli.ReqContext(cctx)
 
 		cfg := &lily.LilyWatchConfig{
-			JobConfig:  jobConfigFromFlags(cctx, runFlags),
+			JobConfig:  JobConfigFromFlags(cctx, RunFlags),
 			Confidence: watchFlags.confidence,
 			Workers:    watchFlags.workers,
 		}
 
-		api, closer, err := GetAPI(ctx, runFlags.apiAddr, runFlags.apiToken)
+		api, closer, err := client.GetAPI(ctx, RunFlags.ApiAddr, RunFlags.ApiToken)
 		if err != nil {
 			return err
 		}

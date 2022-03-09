@@ -6,7 +6,10 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
+
 	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/lens/client"
+
 	"github.com/filecoin-project/lotus/api"
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	cid "github.com/ipfs/go-cid"
@@ -32,7 +35,7 @@ var SyncStatusCmd = &cli.Command{
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := client.GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}
@@ -94,7 +97,7 @@ var SyncWaitCmd = &cli.Command{
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := client.GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
 		if err != nil {
 			return err
 		}
