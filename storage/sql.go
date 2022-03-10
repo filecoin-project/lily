@@ -92,7 +92,7 @@ var (
 
 var (
 	ErrSchemaTooOld = errors.New("database schema is too old and requires migration")
-	ErrSchemaTooNew = errors.New("database schema is too new for this version of visor")
+	ErrSchemaTooNew = errors.New("database schema is too new for this version of lily")
 	ErrNameTooLong  = errors.New("name exceeds maximum length for postgres application names")
 )
 
