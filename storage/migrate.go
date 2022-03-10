@@ -135,18 +135,17 @@ func validateDatabaseSchemaVersion(ctx context.Context, db *pg.DB, cfg schemas.C
 		return model.Version{}, xerrors.Errorf("schema not installed in database")
 	}
 
-	latestVersion := LatestSchemaVersion()
-	switch {
-	case latestVersion.Before(dbVersion):
-		// porridge too hot
-		return model.Version{}, ErrSchemaTooNew
-	case dbVersion.Before(model.OldestSupportedSchemaVersion):
-		// porridge too cold
-		return model.Version{}, ErrSchemaTooOld
-	default:
-		// just right
-		return dbVersion, nil
+	if dbVersion.Before(LatestSchemaVersion()) {
+		// the latest schema version supported by lily (LatestSchemaVersion()) is newer than the schema version in use by the database (`dbVersion`)
+		// running lily this way will cause models data persistence failures.
+		return model.Version{}, xerrors.Errorf("the latest schema version supported by lily (%s) is newer than the schema version in use by the database (%s) running lily this way will cause models data persistence failures: %w", LatestSchemaVersion(), dbVersion, ErrSchemaTooOld)
 	}
+	if LatestSchemaVersion().Before(dbVersion) {
+		// the latest schema version supported by lily (LatestSchemaVersion()) is older than the schema version in use by the database (`dbVersion`)
+		// running lily this way will cause undefined behaviour.
+		return model.Version{}, xerrors.Errorf("the latest schema version supported by lily (%s) is older than the schema version in use by the database (%s) running lily this way will cause undefined behaviour: %w", LatestSchemaVersion(), dbVersion, ErrSchemaTooNew)
+	}
+	return dbVersion, nil
 }
 
 // LatestSchemaVersion returns the most recent version of the model schema. It is based on the highest migration version
