@@ -5,6 +5,20 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.8.8"></a>
+## [v0.8.8] - 2022-03-11
+
+### Fix
+- state cache falls through to slow path on error (#885)
+- track dealID's of snapped sector (#901)
+- return error when to and from are invalid (#906)
+- Rollback v15 ProveCommitAggregate param schema to match (#907)
+
+### Chore
+- Adjust comments; Fix autodeploy regexs (#895)
+- Dockerfiles are no longer included in make clean (#896)
+
+
 <a name="v0.8.7"></a>
 ## [v0.8.7] - 2022-03-07
 
