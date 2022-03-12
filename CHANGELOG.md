@@ -18,6 +18,40 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Adjust comments; Fix autodeploy regexs (#895)
 - Dockerfiles are no longer included in make clean (#896)
 
+### NOTICE: Fix for data bug affecting processing from Lily since v0.8.6
+
+Fixes in v0.8.8 ([Fix 1](https://github.com/filecoin-project/lily/pull/885), [Fix 2](https://github.com/filecoin-project/lily/pull/907)) adjust data which has occurred in the past (before this release). In order to repair data produced by v0.8.6 and fixed in v0.8.8, please follow these steps:
+
+1. Upgrade all lily instances which are writing to the database to be repaired to v0.8.8 (or later).
+2. Run the following SQL to remove any data which may have been incorrectly written.
+
+    ```sql
+    -- parsed_messages may require the schema name for it to work properly: DELETE FROM customschemaname.parsed_messages WHERE...
+
+    DELETE FROM parsed_messages
+    WHERE height > 1594679;
+    ```
+
+3. Start a new job in lily to reprocess the affected heights:
+
+    ```sh
+    $ lily walk --name repair-data-0.8.8 --from 1594679 --to <CURRENTHEIGHT> --tasks=messages,actorstatesminer
+    ```
+
+4. Observe the processing reports and job results to ensure the walk completes successfully.
+
+    ```sql
+    SELECT FROM visor_processing_reports WHERE reporter = 'repair-data-0.8.8';
+    ```
+
+    ```sh
+    $ lily job list
+    ```
+
+These repair steps will add data into `miner_sector_deals` for Snapped deals which were added in the v15 network upgrade and will repopulate the removed `parsed_messages` data which had unintended changes to the JSON schema in the `params` column of that table.
+
+If there are any questions or problems, please [open a support issue](https://github.com/filecoin-project/lily/issues/new/choose).
+
 
 <a name="v0.8.7"></a>
 ## [v0.8.7] - 2022-03-07
