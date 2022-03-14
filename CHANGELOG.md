@@ -20,7 +20,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### NOTICE: Fix for data bug affecting processing from Lily since v0.8.6
 
-Fixes in v0.8.8 ([Fix 1](https://github.com/filecoin-project/lily/pull/885), [Fix 2](https://github.com/filecoin-project/lily/pull/907)) adjust data which has occurred in the past (before this release). In order to repair data produced by v0.8.6 and fixed in v0.8.8, please follow these steps:
+Fixes in v0.8.8 ([Fix 1](https://github.com/filecoin-project/lily/pull/901), [Fix 2](https://github.com/filecoin-project/lily/pull/907)) adjust data which has occurred in the past (before this release). In order to repair data produced by v0.8.6 and fixed in v0.8.8, please follow these steps:
 
 1. Upgrade all lily instances which are writing to the database to be repaired to v0.8.8 (or later).
 2. Run the following SQL to remove any data which may have been incorrectly written.
