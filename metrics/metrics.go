@@ -80,7 +80,7 @@ var DefaultViews = []*view.View{
 	{
 		Measure:     TipsetHeight,
 		Aggregation: view.LastValue(),
-		TagKeys:     []tag.Key{TaskType},
+		TagKeys:     []tag.Key{TaskType, Job},
 	},
 	{
 		Name:        ProcessingFailure.Name() + "_total",
