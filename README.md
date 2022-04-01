@@ -7,7 +7,7 @@ Lily is a instrumentalized instance of a [**Lotus**](https://github.com/filecoin
 
 ## User documentation
 
-Lily documentation, including with [build](https://lilium.sh/lily/setup.html), [operation instructions](https://lilium.sh/lily/operation.html), [data models](https://lilium.sh/lily/models.html) and [access to data dumps](https://lilium.sh/lily/data-dumps.html) is available at https://lilium.sh/lily.
+Lily documentation, including with [build](https://lilium.sh/software/lily/setup/), [operation instructions](https://lilium.sh/software/lily/operation/), [data models](https://lilium.sh/data/models/) and [access to data dumps](https://lilium.sh/data/dumps/) is available at https://lilium.sh/.
 
 ## Running tests
 
