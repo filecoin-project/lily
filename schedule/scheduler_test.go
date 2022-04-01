@@ -3,11 +3,12 @@ package schedule_test
 import (
 	"context"
 	"errors"
+	"testing"
+	"time"
+
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/fx/fxtest"
-	"testing"
-	"time"
 
 	"github.com/filecoin-project/lily/schedule"
 )
@@ -22,6 +23,10 @@ type testJob struct {
 	// for injecting a job
 	fn   func(ctx context.Context) error
 	done chan struct{}
+}
+
+func (r *testJob) Close() {
+	return
 }
 
 func (r *testJob) Run(ctx context.Context) error {

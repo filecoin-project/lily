@@ -32,6 +32,10 @@ type Walker struct {
 	parallel  bool
 }
 
+func (c *Walker) Close() {
+	c.obs.Close()
+}
+
 // Run starts walking the chain history and continues until the context is done or
 // the start of the chain is reached.
 func (c *Walker) Run(ctx context.Context) error {
@@ -39,6 +43,9 @@ func (c *Walker) Run(ctx context.Context) error {
 	defer func() {
 		close(c.done)
 	}()
+	if err := c.obs.Init(); err != nil {
+		return err
+	}
 
 	head, err := c.node.ChainHead(ctx)
 	if err != nil {

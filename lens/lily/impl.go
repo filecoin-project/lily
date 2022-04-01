@@ -84,8 +84,8 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, indexer.WithWindow(cfg.Window))
-	if err != nil {
+	im := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, indexer.WithWindow(cfg.Window))
+	if err := im.Init(); err != nil {
 		return nil, err
 	}
 
@@ -130,12 +130,6 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		imOpts = append(imOpts, indexer.WithWorkerPool(pool))
 	}
 
-	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
-	if err != nil {
-		return nil, err
-	}
-
 	// Hook up the notifier to the event system
 	head := m.Events.Observe(obs)
 	if err := obs.SetCurrent(ctx, head); err != nil {
@@ -147,6 +141,9 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 	if err := tsCache.Warm(ctx, head, m.ChainModuleAPI.ChainGetTipSet); err != nil {
 		return nil, err
 	}
+
+	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+	im := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
 		Name: cfg.Name,
@@ -195,11 +192,9 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		imOpts = append(imOpts, indexer.WithWorkerPool(pool))
 	}
 
+	imOpts = append(imOpts, indexer.WithWorkerPool(workerpool.New(19)))
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
-	if err != nil {
-		return nil, err
-	}
+	im := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
 		Name: cfg.Name,

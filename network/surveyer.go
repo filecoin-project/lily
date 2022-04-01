@@ -9,10 +9,11 @@ import (
 	"go.opentelemetry.io/otel"
 	"golang.org/x/xerrors"
 
+	logging "github.com/ipfs/go-log/v2"
+
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/tasks/survey/peeragents"
-	logging "github.com/ipfs/go-log/v2"
 )
 
 const (
@@ -56,6 +57,10 @@ type Surveyer struct {
 	name     string
 	tasks    map[string]Task
 	done     chan struct{}
+}
+
+func (s *Surveyer) Close() {
+	return
 }
 
 // Run starts observing the filecoin netwoirk and continues until the context is done or

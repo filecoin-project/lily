@@ -48,6 +48,10 @@ func NewGapIndexer(node lens.API, db *storage.Database, name string, minHeight, 
 	}
 }
 
+func (g *GapIndexer) Close() {
+	return
+}
+
 func (g *GapIndexer) Run(ctx context.Context) error {
 	// init the done channel for each run since jobs may be started and stopped.
 	g.done = make(chan struct{})

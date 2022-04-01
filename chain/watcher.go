@@ -34,12 +34,20 @@ type Watcher struct {
 	done       chan struct{}
 }
 
+func (c *Watcher) Close() {
+	c.obs.Close()
+}
+
 // Run starts following the chain head and blocks until the context is done or
 // an error occurs.
 func (c *Watcher) Run(ctx context.Context) error {
 	// init the done channel for each run since jobs may be started and stopped.
 	c.done = make(chan struct{})
 	defer close(c.done)
+
+	if err := c.obs.Init(); err != nil {
+		return err
+	}
 
 	for {
 		select {
