@@ -30,11 +30,15 @@ type Exporter interface {
 
 // Manager manages the execution of an Indexer. It may be used to index TipSets both serially or in parallel.
 type Manager struct {
-	api      tasks.DataSource
-	storage  model.Storage
+	api     tasks.DataSource
+	storage model.Storage
+	window  time.Duration
+	opts    []ManagerOpt
+	name    string
+	tasks   []string
+
 	indexer  Indexer
 	exporter Exporter
-	window   time.Duration
 
 	// used for async tipset indexing
 	pool   *workerpool.WorkerPool
@@ -80,40 +84,53 @@ func WithIndexer(i Indexer) ManagerOpt {
 }
 
 // NewManager returns a default Manager. Any provided ManagerOpt's will override Manager's default values.
-func NewManager(api tasks.DataSource, strg model.Storage, name string, tasks []string, opts ...ManagerOpt) (*Manager, error) {
-	im := &Manager{
+func NewManager(api tasks.DataSource, strg model.Storage, name string, tasks []string, opts ...ManagerOpt) *Manager {
+	return &Manager{
 		api:     api,
 		storage: strg,
 		window:  0,
+		opts:    opts,
+		name:    name,
+		tasks:   tasks,
+	}
+}
+
+// Init must be called before calling TipSet or TipSetAsync.
+func (i *Manager) Init() error {
+	for _, opt := range i.opts {
+		opt(i)
 	}
 
-	for _, opt := range opts {
-		opt(im)
-	}
+	i.active = 0
+	i.fatal = nil
 
-	if im.indexer == nil {
+	if i.indexer == nil {
 		var err error
-		im.indexer, err = NewTipSetIndexer(api, name, tasks)
+		i.indexer, err = NewTipSetIndexer(i.api, i.name, i.tasks)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	if im.exporter == nil {
-		im.exporter = NewModelExporter()
+	if i.exporter == nil {
+		i.exporter = NewModelExporter()
 	}
 
-	if im.pool == nil {
-		im.pool = workerpool.New(1)
+	if i.pool == nil {
+		i.pool = workerpool.New(1)
 	}
-	return im, nil
+	log.Infow("initialized Manager", "tasks", i.tasks, "name", i.name)
+	return nil
+}
+
+func (i *Manager) Close() {
+	i.pool.Stop()
 }
 
 // TipSetAsync enqueues `ts` into the Manager's worker pool for processing. An error is returned if any Indexer in
 // the pool encounters a fatal error, else the method returns immediately.
 func (i *Manager) TipSetAsync(ctx context.Context, ts *types.TipSet) error {
 	if err := i.fatalError(); err != nil {
-		defer i.pool.Stop()
 		return err
 	}
 

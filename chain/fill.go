@@ -40,6 +40,10 @@ func NewGapFiller(node lens.API, db *storage.Database, name string, minHeight, m
 	}
 }
 
+func (g *GapFiller) Close() {
+	return
+}
+
 func (g *GapFiller) Run(ctx context.Context) error {
 	// init the done channel for each run since jobs may be started and stopped.
 	g.done = make(chan struct{})
@@ -63,8 +67,8 @@ func (g *GapFiller) Run(ctx context.Context) error {
 		default:
 		}
 		runStart := time.Now()
-		index, err := indexer.NewManager(taskAPI, g.DB, g.name, gaps[height])
-		if err != nil {
+		index := indexer.NewManager(taskAPI, g.DB, g.name, gaps[height])
+		if err := index.Init(); err != nil {
 			return err
 		}
 

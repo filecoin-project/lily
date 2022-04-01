@@ -70,7 +70,8 @@ func TestWatcher(t *testing.T) {
 
 	taskAPI, err := datasource.NewDataSource(nodeAPI)
 	require.NoError(t, err)
-	im, err := indexer.NewManager(taskAPI, strg, t.Name(), []string{indexer.BlocksTask}, indexer.WithWindow(builtin.EpochDurationSeconds*time.Second))
+	im := indexer.NewManager(taskAPI, strg, t.Name(), []string{indexer.BlocksTask}, indexer.WithWindow(builtin.EpochDurationSeconds*time.Second))
+	err = im.Init()
 	require.NoError(t, err, "NewManager")
 	t.Logf("initializing indexer")
 	idx := NewWatcher(im, NullHeadNotifier{}, NewTipSetCache(0))

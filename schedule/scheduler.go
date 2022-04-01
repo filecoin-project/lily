@@ -26,6 +26,7 @@ type Job interface {
 	// retry the job so implemententions must ensure that Run resets any
 	// necessary state.
 	Run(context.Context) error
+	Close()
 	Done() <-chan struct{}
 }
 
@@ -462,6 +463,7 @@ func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 
 			if !jc.RestartOnFailure {
 				// Exit the job
+				jc.Job.Close()
 				break
 			}
 		} else {
@@ -470,6 +472,7 @@ func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 
 			if !jc.RestartOnCompletion {
 				// Exit the job
+				jc.Job.Close()
 				break
 			}
 		}
