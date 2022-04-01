@@ -25,7 +25,7 @@ type Indexer interface {
 }
 
 type Exporter interface {
-	ExportResult(ctx context.Context, strg model.Storage, m *ModelResult) error
+	ExportResult(ctx context.Context, strg model.Storage, height int64, m []*ModelResult) error
 }
 
 // Manager manages the execution of an Indexer. It may be used to index TipSets both serially or in parallel.
@@ -178,39 +178,39 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
 		return true, nil
 	}
 
+	var modelResults []*ModelResult
 	success := true
-	for {
+	// collect all the results, recording if any of the tasks were skipped or errored
+	for res := range taskResults {
 		select {
 		case fatal := <-taskErrors:
-			log.Errorw("fatal indexer error", "error", fatal)
+			log.Errorw("fatal indexer error", "height", ts.Height(), "error", fatal)
 			return false, fatal
 		default:
-			res, ok := <-taskResults
-			if !ok {
-				log.Infow("index tipset complete", "height", ts.Height(), "success", success)
-				return success, nil
-			}
-
 			for _, report := range res.Report {
 				if report.Status != visormodel.ProcessingStatusOK &&
 					report.Status != visormodel.ProcessingStatusInfo {
-					log.Infow("task failed", "task", res.Name, "status", report.Status, "errors", report.ErrorsDetected, "info", report.StatusInformation)
+					log.Warnw("task failed", "height", ts.Height(), "task", res.Name, "status", report.Status, "errors", report.ErrorsDetected, "info", report.StatusInformation)
 					success = false
 				} else {
-					log.Infow("task success", "task", res.Name, "status", report.Status, "duration", report.CompletedAt.Sub(report.StartedAt))
+					log.Infow("task success", "height", ts.Height(), "task", res.Name, "status", report.Status, "duration", report.CompletedAt.Sub(report.StartedAt))
 				}
 			}
-			m := &ModelResult{
+			modelResults = append(modelResults, &ModelResult{
 				Name:  res.Name,
 				Model: model.PersistableList{res.Report, res.Data},
-			}
+			})
 
-			// synchronously export extracted data and its report.
-			if err := i.exporter.ExportResult(ctx, i.storage, m); err != nil {
-				return false, err
-			}
 		}
 	}
+
+	// synchronously export extracted data and its report. If datas at this height are currently being persisted this method will block to avoid deadlocking the database.
+	if err := i.exporter.ExportResult(ctx, i.storage, int64(ts.Height()), modelResults); err != nil {
+		return false, err
+	}
+
+	log.Infow("index tipset complete", "height", ts.Height(), "success", success)
+	return success, nil
 }
 
 func (i *Manager) setFatalError(err error) {

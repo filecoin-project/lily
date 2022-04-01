@@ -351,7 +351,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Res
 				// received a result
 			default:
 
-				llt := tsLog.With("task", res.Task)
+				llt := tsLog.With("height", current.Height(), "task", res.Task)
 
 				// Was there a fatal error?
 				if res.Error != nil {

@@ -60,6 +60,8 @@ require (
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 )
 
+require k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
+
 require (
 	github.com/DataDog/zstd v1.4.1 // indirect
 	github.com/GeertJohan/go.incremental v1.0.0 // indirect
