@@ -35,6 +35,9 @@ type Watcher struct {
 }
 
 func (c *Watcher) Close() {
+	if err := c.notifier.Close(); err != nil {
+		log.Errorw("failed to close watcher notifier", "error", err)
+	}
 	c.obs.Close()
 }
 
@@ -144,6 +147,8 @@ type HeadNotifier interface {
 
 	// Err returns the reason for the closing of the HeadEvents channel.
 	Err() error
+
+	Close() error
 }
 
 // A HeadEvent is a notification of a change at the head of the chain

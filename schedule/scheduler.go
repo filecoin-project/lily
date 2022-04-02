@@ -449,6 +449,7 @@ func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 		metrics.RecordInc(ctx, metrics.JobStart)
 		err := jc.Job.Run(ctx)
 		if err != nil {
+			jc.Job.Close()
 			if errors.Is(err, context.Canceled) {
 				break
 			}
@@ -463,16 +464,15 @@ func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 
 			if !jc.RestartOnFailure {
 				// Exit the job
-				jc.Job.Close()
 				break
 			}
 		} else {
+			jc.Job.Close()
 			metrics.RecordInc(ctx, metrics.JobComplete)
 			jc.log.Info("job exited cleanly")
 
 			if !jc.RestartOnCompletion {
 				// Exit the job
-				jc.Job.Close()
 				break
 			}
 		}

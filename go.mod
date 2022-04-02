@@ -347,4 +347,5 @@ replace (
 	github.com/filecoin-project/fil-blst => ./extern/fil-blst
 	github.com/filecoin-project/filecoin-ffi => ./extern/filecoin-ffi
 	github.com/supranational/blst => ./extern/fil-blst/blst
+	"github.com/filecoin-project/lotus" => "../lotus"
 )

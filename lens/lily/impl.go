@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
@@ -114,11 +115,6 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		return nil, err
 	}
 
-	// HeadNotifier bridges between the event system and the watcher
-	obs := &HeadNotifier{
-		bufferSize: 5,
-	}
-
 	taskAPI, err := datasource.NewDataSource(m)
 	if err != nil {
 		return nil, err
@@ -130,10 +126,18 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		imOpts = append(imOpts, indexer.WithWorkerPool(pool))
 	}
 
+	// HeadNotifier bridges between the event system and the watcher
+	obs := NewHeadNotifier(5, time.Second*5)
+
 	// Hook up the notifier to the event system
-	head := m.Events.Observe(obs)
+	head, id := m.Events.Observe(obs)
 	if err := obs.SetCurrent(ctx, head); err != nil {
 		return nil, err
+	}
+
+	// all the observer to be deregistered from the event system
+	obs.closeFn = func() error {
+		return m.Events.Deregister(id)
 	}
 
 	// warm the tipset cache.
@@ -451,6 +455,14 @@ func (m *LilyNodeAPI) LilySurvey(_ context.Context, cfg *LilySurveyConfig) (*sch
 
 var _ events.TipSetObserver = (*HeadNotifier)(nil)
 
+func NewHeadNotifier(bufferSize int, timeout time.Duration) *HeadNotifier {
+	return &HeadNotifier{
+		bufferSize: bufferSize,
+		timeout:    timeout,
+		timer:      time.NewTimer(timeout),
+	}
+}
+
 type HeadNotifier struct {
 	mu     sync.Mutex            // protects following fields
 	events chan *chain.HeadEvent // created lazily, closed by first cancel call
@@ -459,6 +471,15 @@ type HeadNotifier struct {
 	// size of the buffer to maintain for events. Using a buffer reduces chance
 	// that the emitter of events will block when sending to this notifier.
 	bufferSize int
+	// a function used to close the HeadNotifier.
+	closeFn func() error
+	// duration after which apply and revert operations will abort sending on event channel and return an error to the observer.
+	timer   *time.Timer
+	timeout time.Duration
+}
+
+func (h *HeadNotifier) Close() error {
+	return h.closeFn()
 }
 
 func (h *HeadNotifier) eventsCh() chan *chain.HeadEvent {
@@ -538,9 +559,21 @@ func (h *HeadNotifier) Apply(ctx context.Context, from, to *types.TipSet) error 
 	}
 
 	log.Debugw("head notifier apply", "to", to.Key().String(), "from", from.Key().String())
-	ev <- &chain.HeadEvent{
+
+	// reset the timout timer
+	if !h.timer.Stop() {
+		<-h.timer.C
+	}
+	h.timer.Reset(h.timeout)
+
+	select {
+	case ev <- &chain.HeadEvent{
 		Type:   chain.HeadEventApply,
 		TipSet: to,
+	}:
+	case <-h.timer.C:
+		log.Error("head notifier timeout sending on event channel")
+		return xerrors.Errorf("head notifier timeout sending on event channel")
 	}
 	return nil
 }
@@ -562,10 +595,23 @@ func (h *HeadNotifier) Revert(ctx context.Context, from, to *types.TipSet) error
 	}
 
 	log.Debugw("head notifier revert", "to", to.Key().String(), "from", from.Key().String())
-	ev <- &chain.HeadEvent{
+
+	// reset the timout timer
+	if !h.timer.Stop() {
+		<-h.timer.C
+	}
+	h.timer.Reset(h.timeout)
+
+	select {
+	case ev <- &chain.HeadEvent{
 		Type:   chain.HeadEventRevert,
 		TipSet: from,
+	}:
+	case <-h.timer.C:
+		log.Error("head notifier timeout sending on event channel")
+		return xerrors.Errorf("head notifier timeout sending on event channel")
 	}
+
 	return nil
 }
 
