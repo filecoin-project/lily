@@ -10,6 +10,7 @@ import (
 	"github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/go-pg/pg/v10"
 	"golang.org/x/xerrors"
 )
 
@@ -222,91 +223,31 @@ func (g *GapIndexer) findTaskEpochGaps(ctx context.Context) (visor.GapReportList
 		ctx,
 		&result,
 		`
-with
-
--- ranked_tasks: filters by height and prepares ranking status of tasks by int
--- only considers heights with incomplete task count
-ranked_tasks as (
-	select height, task, status,
-	case status -- adding a col of int for statuses to make choosing tasks that have OK and non-OK status easier.
-		when 'OK' then 0
-		when 'INFO' then 1
-		when 'SKIP' then 2
-		when 'ERROR' then 3
-		else null
-	end as status_rank
-	from visor_processing_reports
-	where height >= ?2 and height <= ?3
-	group by height, task, status
-	having count(*) != ?0
-),
-
--- dense_ranked_tasks: where the actual "ranking" happens
--- rank by status_rank
--- rank 1 means the lowest value status rank found of the tuple (height, task)
-dense_ranked_tasks as (
-	select *,
-	dense_rank() over (partition by height, task order by status_rank) as ranked_status
-	from ranked_tasks
-	group by height, task, status, status_rank
-)
-
-select vpr.height, vpr.task
-from visor_processing_reports vpr
-right join dense_ranked_tasks rt
-on vpr.height = rt.height and vpr.task = rt.task and vpr.status = rt.status
-where rt.ranked_status = 1 and vpr.status = ?4 and (vpr.status_information != ?1 or vpr.status_information is null)
-group by vpr.height, vpr.task, vpr.status, rt.ranked_status
-order by height desc, task;
+SELECT * FROM gap_find(?,?,?,?,?);
 `,
-		len(AllTasks), // arg 0
-		visor.ProcessingStatusInformationNullRound, // arg 1
-		g.minHeight,              // arg 2
-		g.maxHeight,              // arg 3
-		visor.ProcessingStatusOK, // arg 4
+		pg.Array(AllTasks), // arg 0
+		g.minHeight,        // arg 1
+		g.maxHeight,        // arg 2
+		visor.ProcessingStatusInformationNullRound, // arg 3
+		visor.ProcessingStatusOK,                   // arg 4
 	)
 	if err != nil {
 		return nil, err
 	}
 	log.Debugw("executed find task epoch gap query", "count", res.RowsReturned())
-
-	// TODO the below could be replaced by creating a virtual table of all tasks and diffing
-	// the above results with the table to find missing tasks.
-
-	// result has all the tasks completed at each height, now we need to find what is missing
-	// at each height.
-	var CompletedTasksForHeight = make(map[uint64][]string)
 	for _, th := range result {
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		default:
 		}
-		CompletedTasksForHeight[th.Height] = append(CompletedTasksForHeight[th.Height], th.Task)
-	}
-
-	for height, tasks := range CompletedTasksForHeight {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
-		completedTasks := mapset.NewSet()
-		for _, t := range tasks {
-			completedTasks.Add(t)
-		}
-		missingTasks := FullTaskSet.Difference(completedTasks).Intersect(g.taskSet)
-		log.Debugw("found tasks with gaps", "height", height, "missing", missingTasks.String())
-		for mt := range missingTasks.Iter() {
-			missing := mt.(string)
-			out = append(out, &visor.GapReport{
-				Height:     int64(height),
-				Task:       missing,
-				Status:     "GAP",
-				Reporter:   g.name,
-				ReportedAt: start,
-			})
-		}
+		out = append(out, &visor.GapReport{
+			Height:     int64(th.Height),
+			Task:       th.Task,
+			Status:     "GAP",
+			Reporter:   g.name,
+			ReportedAt: start,
+		})
 	}
 	return out, nil
 }
