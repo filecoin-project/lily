@@ -6,7 +6,6 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0
 	github.com/BurntSushi/toml v0.4.1
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
-	github.com/deckarep/golang-set v1.7.1
 	github.com/filecoin-project/go-address v0.0.6
 	github.com/filecoin-project/go-amt-ipld/v2 v2.1.1-0.20201006184820-924ee87a1349 // indirect
 	github.com/filecoin-project/go-amt-ipld/v3 v3.1.1
