@@ -14,6 +14,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	"github.com/filecoin-project/specs-actors/actors/builtin/power"
 	"github.com/filecoin-project/specs-actors/actors/builtin/verifreg"
+	"github.com/gammazero/workerpool"
 	"github.com/go-pg/pg/v10"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
@@ -73,7 +74,9 @@ func TestWatcher(t *testing.T) {
 	im, err := indexer.NewManager(taskAPI, strg, t.Name(), []string{indexer.BlocksTask}, indexer.WithWindow(builtin.EpochDurationSeconds*time.Second))
 	require.NoError(t, err, "NewManager")
 	t.Logf("initializing indexer")
-	idx := NewWatcher(im, NullHeadNotifier{}, NewTipSetCache(0))
+	idx := NewWatcher(im, NullHeadNotifier{}, NewTipSetCache(0), 1)
+	// the watchers worker pool is initialized in its Run method, since we don't call that here initialize the pool now.
+	idx.pool = workerpool.New(1)
 
 	newHeads, err := full.ChainNotify(ctx)
 	require.NoError(t, err, "chain notify")
