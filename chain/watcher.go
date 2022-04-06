@@ -56,6 +56,9 @@ func (c *Watcher) Run(ctx context.Context) error {
 		c.pool.Stop()
 		// ensure we clear the fatal error after shut down, this allows the watcher to be restarted without reinitializing its state.
 		c.setFatalError(nil)
+		// ensure we reset the tipset cache to avoid process stale state if watcher is restarted.
+		// TODO: if the watcher is restarted the cache will not be warmed.
+		c.cache.Reset()
 		close(c.done)
 	}()
 	c.pool = workerpool.New(c.poolSize)
