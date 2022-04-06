@@ -3,10 +3,13 @@ package chain
 import (
 	"context"
 	"errors"
+	"sync"
+	"sync/atomic"
 
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/gammazero/workerpool"
+	"go.opencensus.io/stats"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/indexer"
@@ -16,12 +19,13 @@ import (
 // NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held
 // in a cache awaiting possible reversion. Tipsets will be written to the database when they are evicted from
 // the cache due to incoming later tipsets.
-func NewWatcher(obs *indexer.Manager, hn HeadNotifier, cache *TipSetCache) *Watcher {
+func NewWatcher(obs *indexer.Manager, hn HeadNotifier, cache *TipSetCache, poolSize int) *Watcher {
 	return &Watcher{
 		notifier:   hn,
 		obs:        obs,
 		confidence: cache.Confidence(),
 		cache:      cache,
+		poolSize:   poolSize,
 	}
 }
 
@@ -32,6 +36,14 @@ type Watcher struct {
 	confidence int          // size of tipset cache
 	cache      *TipSetCache // caches tipsets for possible reversion
 	done       chan struct{}
+
+	// used for async tipset indexing
+	poolSize int
+	pool     *workerpool.WorkerPool
+	active   int64 // must be accessed using atomic operations, updated automatically.
+
+	fatalMu sync.Mutex
+	fatal   error
 }
 
 // Run starts following the chain head and blocks until the context is done or
@@ -39,7 +51,14 @@ type Watcher struct {
 func (c *Watcher) Run(ctx context.Context) error {
 	// init the done channel for each run since jobs may be started and stopped.
 	c.done = make(chan struct{})
-	defer close(c.done)
+	defer func() {
+		// ensure we shut down the pool when the watcher stops.
+		c.pool.Stop()
+		// ensure we clear the fatal error after shut down, this allows the watcher to be restarted without reinitializing its state.
+		c.setFatalError(nil)
+		close(c.done)
+	}()
+	c.pool = workerpool.New(c.poolSize)
 
 	for {
 		select {
@@ -74,7 +93,7 @@ func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {
 
 		// If we have a zero confidence window then we need to notify every tipset we see
 		if c.confidence == 0 {
-			if err := c.maybeIndexTipSet(ctx, he.TipSet); err != nil {
+			if err := c.indexTipSetAsync(ctx, he.TipSet); err != nil {
 				return xerrors.Errorf("notify tipset: %w", err)
 			}
 		}
@@ -86,7 +105,7 @@ func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {
 
 		// Send the tipset that fell out of the confidence window to the observer
 		if tail != nil {
-			if err := c.maybeIndexTipSet(ctx, tail); err != nil {
+			if err := c.indexTipSetAsync(ctx, tail); err != nil {
 				return xerrors.Errorf("notify tipset: %w", err)
 			}
 		}
@@ -111,19 +130,53 @@ func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {
 	return nil
 }
 
-// maybeIndexTipSet is called when a new tipset has been discovered
-func (c *Watcher) maybeIndexTipSet(ctx context.Context, ts *types.TipSet) error {
-	ctx, span := otel.Tracer("").Start(ctx, "Watcher.maybeIndexTipSet")
-	if span.IsRecording() {
-		span.SetAttributes(
-			attribute.String("tipset", ts.String()),
-			attribute.Int64("height", int64(ts.Height())),
-		)
+// indexTipSetAsync is called when a new tipset has been discovered
+func (c *Watcher) indexTipSetAsync(ctx context.Context, ts *types.TipSet) error {
+	if err := c.fatalError(); err != nil {
+		defer c.pool.Stop()
+		return err
 	}
-	defer span.End()
 
-	log.Infow("watch tipset", "height", ts.Height())
-	return c.obs.TipSetAsync(ctx, ts)
+	stats.Record(ctx, metrics.WatcherActiveWorkers.M(c.active))
+	stats.Record(ctx, metrics.WatcherWaitingWorkers.M(int64(c.pool.WaitingQueueSize())))
+	if c.pool.WaitingQueueSize() > c.pool.Size() {
+		log.Warnw("queuing worker in watcher pool", "waiting", c.pool.WaitingQueueSize())
+	}
+	log.Infow("submitting tipset for async indexing", "height", ts.Height(), "active", c.active)
+
+	ctx, span := otel.Tracer("").Start(ctx, "Manager.TipSetAsync")
+	c.pool.Submit(func() {
+		atomic.AddInt64(&c.active, 1)
+		defer func() {
+			atomic.AddInt64(&c.active, -1)
+			span.End()
+		}()
+
+		ts := ts
+		success, err := c.obs.TipSet(ctx, ts)
+		if err != nil {
+			log.Errorw("watcher suffered fatal error", "error", err, "height", ts.Height(), "tipset", ts.Key().String())
+			c.setFatalError(err)
+			return
+		}
+		if !success {
+			log.Warnw("watcher failed to fully index tipset", "height", ts.Height(), "tipset", ts.Key().String())
+		}
+	})
+	return nil
+}
+
+func (c *Watcher) setFatalError(err error) {
+	c.fatalMu.Lock()
+	c.fatal = err
+	c.fatalMu.Unlock()
+}
+
+func (c *Watcher) fatalError() error {
+	c.fatalMu.Lock()
+	out := c.fatal
+	c.fatalMu.Unlock()
+	return out
 }
 
 // A HeadNotifier reports tipset events that occur at the head of the chain

@@ -13,7 +13,7 @@ import (
 	"github.com/filecoin-project/lily/lens"
 )
 
-func NewWalker(obs *indexer.Manager, node lens.API, minHeight, maxHeight int64, parallel bool) *Walker {
+func NewWalker(obs *indexer.Manager, node lens.API, minHeight, maxHeight int64) *Walker {
 	return &Walker{
 		node:      node,
 		obs:       obs,
@@ -29,7 +29,6 @@ type Walker struct {
 	minHeight int64 // limit persisting to tipsets equal to or above this height
 	maxHeight int64 // limit persisting to tipsets equal to or below this height}
 	done      chan struct{}
-	parallel  bool
 }
 
 // Run starts walking the chain history and continues until the context is done or
@@ -89,25 +88,19 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 			return ctx.Err()
 		default:
 		}
-		if c.parallel {
-			if err := c.obs.TipSetAsync(ctx, ts); err != nil {
-				return err
-			}
-		} else {
-			log.Infow("walk tipset", "height", ts.Height())
-			if success, err := c.obs.TipSet(ctx, ts); err != nil {
-				span.RecordError(err)
-				return xerrors.Errorf("notify tipset: %w", err)
-			} else if !success {
-				log.Errorw("walk incomplete", "height", ts.Height(), "tipset", ts.Key().String())
-			}
-			log.Infow("walk tipset success", "height", ts.Height())
+		log.Infow("walk tipset", "height", ts.Height())
+		if success, err := c.obs.TipSet(ctx, ts); err != nil {
+			span.RecordError(err)
+			return xerrors.Errorf("notify tipset: %w", err)
+		} else if !success {
+			log.Errorw("walk incomplete", "height", ts.Height(), "tipset", ts.Key().String())
+		}
+		log.Infow("walk tipset success", "height", ts.Height())
 
-			ts, err = node.ChainGetTipSet(ctx, ts.Parents())
-			if err != nil {
-				span.RecordError(err)
-				return xerrors.Errorf("get tipset: %w", err)
-			}
+		ts, err = node.ChainGetTipSet(ctx, ts.Parents())
+		if err != nil {
+			span.RecordError(err)
+			return xerrors.Errorf("get tipset: %w", err)
 		}
 	}
 

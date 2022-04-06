@@ -14,7 +14,6 @@ import (
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/lotus/node/impl/net"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
-	"github.com/gammazero/workerpool"
 	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -124,14 +123,8 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		return nil, err
 	}
 
-	imOpts := []indexer.ManagerOpt{indexer.WithWindow(cfg.Window)}
-	if cfg.Workers > 0 {
-		pool := workerpool.New(cfg.Workers)
-		imOpts = append(imOpts, indexer.WithWorkerPool(pool))
-	}
-
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
+	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, indexer.WithWindow(cfg.Window))
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +150,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 			"storage":    cfg.Storage,
 		},
 		Tasks:               cfg.Tasks,
-		Job:                 chain.NewWatcher(im, obs, tsCache),
+		Job:                 chain.NewWatcher(im, obs, tsCache, cfg.Workers),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
@@ -185,18 +178,8 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		return nil, err
 	}
 
-	imOpts := []indexer.ManagerOpt{indexer.WithWindow(cfg.Window)}
-	parallel := false
-	if cfg.Workers > 0 {
-		if cfg.Workers > 1 {
-			parallel = true
-		}
-		pool := workerpool.New(cfg.Workers)
-		imOpts = append(imOpts, indexer.WithWorkerPool(pool))
-	}
-
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, imOpts...)
+	im, err := indexer.NewManager(taskAPI, strg, cfg.Name, cfg.Tasks, indexer.WithWindow(cfg.Window))
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +194,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 			"storage":   cfg.Storage,
 		},
 		Tasks:               cfg.Tasks,
-		Job:                 chain.NewWalker(im, m, cfg.From, cfg.To, parallel),
+		Job:                 chain.NewWalker(im, m, cfg.From, cfg.To),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
