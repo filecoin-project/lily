@@ -6,6 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/gammazero/workerpool"
 	"go.opencensus.io/stats"
@@ -16,24 +17,32 @@ import (
 	"github.com/filecoin-project/lily/metrics"
 )
 
+type WatcherAPI interface {
+	Observe(obs events.TipSetObserver) *types.TipSet
+	//Unregister(obs events.TipSetObserver) bool
+	ChainGetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error)
+}
+
 // NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held
 // in a cache awaiting possible reversion. Tipsets will be written to the database when they are evicted from
 // the cache due to incoming later tipsets.
-func NewWatcher(obs *indexer.Manager, hn HeadNotifier, cache *TipSetCache, poolSize int) *Watcher {
+func NewWatcher(api WatcherAPI, indexer *indexer.Manager, confidence int, poolSize int, bufferSize int) *Watcher {
 	return &Watcher{
-		notifier:   hn,
-		obs:        obs,
-		confidence: cache.Confidence(),
-		cache:      cache,
+		api:        api,
+		bufferSize: bufferSize,
+		indexer:    indexer,
+		confidence: confidence,
+		cache:      NewTipSetCache(confidence),
 		poolSize:   poolSize,
 	}
 }
 
 // Watcher is a task that indexes blocks by following the chain head.
 type Watcher struct {
-	notifier   HeadNotifier
-	obs        *indexer.Manager
+	api        WatcherAPI
+	indexer    *indexer.Manager
 	confidence int          // size of tipset cache
+	bufferSize int          // size of the buffer for incoming tipset notifications.
 	cache      *TipSetCache // caches tipsets for possible reversion
 	done       chan struct{}
 
@@ -51,25 +60,37 @@ type Watcher struct {
 func (c *Watcher) Run(ctx context.Context) error {
 	// init the done channel for each run since jobs may be started and stopped.
 	c.done = make(chan struct{})
+
+	notifier := &TipSetObserver{bufferSize: c.bufferSize}
+	head := c.api.Observe(notifier)
+	if err := notifier.SetCurrent(ctx, head); err != nil {
+		return err
+	}
+	if err := c.cache.Warm(ctx, head, c.api.ChainGetTipSet); err != nil {
+		return err
+	}
+	c.pool = workerpool.New(c.poolSize)
+
 	defer func() {
 		// ensure we shut down the pool when the watcher stops.
 		c.pool.Stop()
 		// ensure we clear the fatal error after shut down, this allows the watcher to be restarted without reinitializing its state.
 		c.setFatalError(nil)
 		// ensure we reset the tipset cache to avoid process stale state if watcher is restarted.
-		// TODO: if the watcher is restarted the cache will not be warmed.
 		c.cache.Reset()
+		// unregister the observer
+		// TODO https://github.com/filecoin-project/lotus/pull/8441
+		//c.api.Unregister(notifier)
 		close(c.done)
 	}()
-	c.pool = workerpool.New(c.poolSize)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case he, ok := <-c.notifier.HeadEvents():
+		case he, ok := <-notifier.HeadEvents():
 			if !ok {
-				return c.notifier.Err()
+				return notifier.Err()
 			}
 			if he != nil && he.TipSet != nil {
 				metrics.RecordCount(ctx, metrics.WatchHeight, int(he.TipSet.Height()))
@@ -156,7 +177,7 @@ func (c *Watcher) indexTipSetAsync(ctx context.Context, ts *types.TipSet) error 
 		}()
 
 		ts := ts
-		success, err := c.obs.TipSet(ctx, ts)
+		success, err := c.indexer.TipSet(ctx, ts)
 		if err != nil {
 			log.Errorw("watcher suffered fatal error", "error", err, "height", ts.Height(), "tipset", ts.Key().String())
 			c.setFatalError(err)
@@ -211,3 +232,131 @@ const (
 	// HeadEventRevert indicates that the event signals the current known head tipset
 	HeadEventCurrent = "current"
 )
+
+var _ events.TipSetObserver = (*TipSetObserver)(nil)
+
+type TipSetObserver struct {
+	mu     sync.Mutex      // protects following fields
+	events chan *HeadEvent // created lazily, closed by first cancel call
+	err    error           // set to non-nil by the first cancel call
+
+	// size of the buffer to maintain for events. Using a buffer reduces chance
+	// that the emitter of events will block when sending to this notifier.
+	bufferSize int
+}
+
+func (h *TipSetObserver) eventsCh() chan *HeadEvent {
+	// caller must hold mu
+	if h.events == nil {
+		h.events = make(chan *HeadEvent, h.bufferSize)
+	}
+	return h.events
+}
+
+func (h *TipSetObserver) HeadEvents() <-chan *HeadEvent {
+	h.mu.Lock()
+	ev := h.eventsCh()
+	h.mu.Unlock()
+	return ev
+}
+
+func (h *TipSetObserver) Err() error {
+	h.mu.Lock()
+	err := h.err
+	h.mu.Unlock()
+	return err
+}
+
+func (h *TipSetObserver) Cancel(err error) {
+	h.mu.Lock()
+	if h.err != nil {
+		h.mu.Unlock()
+		return
+	}
+	h.err = err
+	if h.events == nil {
+		h.events = make(chan *HeadEvent, h.bufferSize)
+	}
+	close(h.events)
+	h.mu.Unlock()
+}
+
+func (h *TipSetObserver) SetCurrent(ctx context.Context, ts *types.TipSet) error {
+	h.mu.Lock()
+	if h.err != nil {
+		err := h.err
+		h.mu.Unlock()
+		return err
+	}
+	ev := h.eventsCh()
+	h.mu.Unlock()
+
+	// This is imprecise since it's inherently racy but good enough to emit
+	// a warning that the event may block the sender
+	if len(ev) == cap(ev) {
+		log.Warnw("head notifier buffer at capacity", "queued", len(ev))
+	}
+
+	log.Debugw("head notifier setting head", "tipset", ts.Key().String())
+	ev <- &HeadEvent{
+		Type:   HeadEventCurrent,
+		TipSet: ts,
+	}
+	return nil
+}
+
+func (h *TipSetObserver) Apply(ctx context.Context, from, to *types.TipSet) error {
+	h.mu.Lock()
+	if h.err != nil {
+		err := h.err
+		h.mu.Unlock()
+		return err
+	}
+	ev := h.eventsCh()
+	h.mu.Unlock()
+
+	// This is imprecise since it's inherently racy but good enough to emit
+	// a warning that the event may block the sender
+	if len(ev) == cap(ev) {
+		log.Warnw("head notifier buffer at capacity", "queued", len(ev))
+	}
+
+	log.Debugw("head notifier apply", "to", to.Key().String(), "from", from.Key().String())
+	select {
+	case ev <- &HeadEvent{
+		Type:   HeadEventApply,
+		TipSet: to,
+	}:
+	default:
+		log.Errorw("head notifier event channel blocked dropping apply event", "to", to.Key().String(), "from", from.Key().String())
+	}
+	return nil
+}
+
+func (h *TipSetObserver) Revert(ctx context.Context, from, to *types.TipSet) error {
+	h.mu.Lock()
+	if h.err != nil {
+		err := h.err
+		h.mu.Unlock()
+		return err
+	}
+	ev := h.eventsCh()
+	h.mu.Unlock()
+
+	// This is imprecise since it's inherently racy but good enough to emit
+	// a warning that the event may block the sender
+	if len(ev) == cap(ev) {
+		log.Warnw("head notifier buffer at capacity", "queued", len(ev))
+	}
+
+	log.Debugw("head notifier revert", "to", to.Key().String(), "from", from.Key().String())
+	select {
+	case ev <- &HeadEvent{
+		Type:   HeadEventRevert,
+		TipSet: from,
+	}:
+	default:
+		log.Errorw("head notifier event channel blocked dropping revert event", "to", to.Key().String(), "from", from.Key().String())
+	}
+	return nil
+}
