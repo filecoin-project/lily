@@ -526,9 +526,13 @@ func (h *HeadNotifier) Apply(ctx context.Context, from, to *types.TipSet) error 
 	}
 
 	log.Debugw("head notifier apply", "to", to.Key().String(), "from", from.Key().String())
-	ev <- &chain.HeadEvent{
+	select {
+	case ev <- &chain.HeadEvent{
 		Type:   chain.HeadEventApply,
 		TipSet: to,
+	}:
+	default:
+		log.Errorw("head notifier event channel blocked dropping apply event", "to", to.Key().String(), "from", from.Key().String())
 	}
 	return nil
 }
@@ -550,9 +554,13 @@ func (h *HeadNotifier) Revert(ctx context.Context, from, to *types.TipSet) error
 	}
 
 	log.Debugw("head notifier revert", "to", to.Key().String(), "from", from.Key().String())
-	ev <- &chain.HeadEvent{
+	select {
+	case ev <- &chain.HeadEvent{
 		Type:   chain.HeadEventRevert,
 		TipSet: from,
+	}:
+	default:
+		log.Errorw("head notifier event channel blocked dropping revert event", "to", to.Key().String(), "from", from.Key().String())
 	}
 	return nil
 }
