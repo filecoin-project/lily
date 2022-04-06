@@ -23,26 +23,26 @@ var (
 )
 
 var (
-	ProcessingDuration         = stats.Float64("processing_duration_ms", "Time taken to process a task", stats.UnitMilliseconds)
-	StateExtractionDuration    = stats.Float64("state_extraction_duration_ms", "Time taken to extract an actor state", stats.UnitMilliseconds)
-	PersistDuration            = stats.Float64("persist_duration_ms", "Duration of a models persist operation", stats.UnitMilliseconds)
-	PersistModel               = stats.Int64("persist_model", "Number of models persisted", stats.UnitDimensionless)
-	DBConns                    = stats.Int64("db_conns", "Database connections held", stats.UnitDimensionless)
-	LensRequestDuration        = stats.Float64("lens_request_duration_ms", "Duration of lotus api requets", stats.UnitMilliseconds)
-	TipsetHeight               = stats.Int64("tipset_height", "The height of the tipset being processed by a task", stats.UnitDimensionless)
-	ProcessingFailure          = stats.Int64("processing_failure", "Number of processing failures", stats.UnitDimensionless)
-	PersistFailure             = stats.Int64("persist_failure", "Number of persistence failures", stats.UnitDimensionless)
-	WatchHeight                = stats.Int64("watch_height", "The height of the tipset last seen by the watch command", stats.UnitDimensionless)
-	TipSetSkip                 = stats.Int64("tipset_skip", "Number of tipsets that were not processed. This is is an indication that lily cannot keep up with chain.", stats.UnitDimensionless)
-	JobStart                   = stats.Int64("job_start", "Number of jobs started", stats.UnitDimensionless)
-	JobComplete                = stats.Int64("job_complete", "Number of jobs completed without error", stats.UnitDimensionless)
-	JobError                   = stats.Int64("job_error", "Number of jobs stopped due to a fatal error", stats.UnitDimensionless)
-	JobTimeout                 = stats.Int64("job_timeout", "Number of jobs stopped due to taking longer than expected", stats.UnitDimensionless)
-	TipSetCacheSize            = stats.Int64("tipset_cache_size", "Configured size of the tipset cache (aka confidence).", stats.UnitDimensionless)
-	TipSetCacheDepth           = stats.Int64("tipset_cache_depth", "Number of tipsets currently in the tipset cache.", stats.UnitDimensionless)
-	TipSetCacheEmptyRevert     = stats.Int64("tipset_cache_empty_revert", "Number of revert operations performed on an empty tipset cache. This is an indication that a chain reorg is underway that is deeper than the cache size and includes tipsets that have already been read from the cache.", stats.UnitDimensionless)
-	IndexManagerActiveWorkers  = stats.Int64("index_manager_active_workers", "Current number of tipset indexers executing", stats.UnitDimensionless)
-	IndexManagerWaitingWorkers = stats.Int64("index_manager_waiting_workers", "Current number of tipset indexers waiting to execute", stats.UnitDimensionless)
+	ProcessingDuration      = stats.Float64("processing_duration_ms", "Time taken to process a task", stats.UnitMilliseconds)
+	StateExtractionDuration = stats.Float64("state_extraction_duration_ms", "Time taken to extract an actor state", stats.UnitMilliseconds)
+	PersistDuration         = stats.Float64("persist_duration_ms", "Duration of a models persist operation", stats.UnitMilliseconds)
+	PersistModel            = stats.Int64("persist_model", "Number of models persisted", stats.UnitDimensionless)
+	DBConns                 = stats.Int64("db_conns", "Database connections held", stats.UnitDimensionless)
+	LensRequestDuration     = stats.Float64("lens_request_duration_ms", "Duration of lotus api requets", stats.UnitMilliseconds)
+	TipsetHeight            = stats.Int64("tipset_height", "The height of the tipset being processed by a task", stats.UnitDimensionless)
+	ProcessingFailure       = stats.Int64("processing_failure", "Number of processing failures", stats.UnitDimensionless)
+	PersistFailure          = stats.Int64("persist_failure", "Number of persistence failures", stats.UnitDimensionless)
+	WatchHeight             = stats.Int64("watch_height", "The height of the tipset last seen by the watch command", stats.UnitDimensionless)
+	TipSetSkip              = stats.Int64("tipset_skip", "Number of tipsets that were not processed. This is is an indication that lily cannot keep up with chain.", stats.UnitDimensionless)
+	JobStart                = stats.Int64("job_start", "Number of jobs started", stats.UnitDimensionless)
+	JobComplete             = stats.Int64("job_complete", "Number of jobs completed without error", stats.UnitDimensionless)
+	JobError                = stats.Int64("job_error", "Number of jobs stopped due to a fatal error", stats.UnitDimensionless)
+	JobTimeout              = stats.Int64("job_timeout", "Number of jobs stopped due to taking longer than expected", stats.UnitDimensionless)
+	TipSetCacheSize         = stats.Int64("tipset_cache_size", "Configured size of the tipset cache (aka confidence).", stats.UnitDimensionless)
+	TipSetCacheDepth        = stats.Int64("tipset_cache_depth", "Number of tipsets currently in the tipset cache.", stats.UnitDimensionless)
+	TipSetCacheEmptyRevert  = stats.Int64("tipset_cache_empty_revert", "Number of revert operations performed on an empty tipset cache. This is an indication that a chain reorg is underway that is deeper than the cache size and includes tipsets that have already been read from the cache.", stats.UnitDimensionless)
+	WatcherActiveWorkers    = stats.Int64("watcher_active_workers", "Current number of tipset indexers executing", stats.UnitDimensionless)
+	WatcherWaitingWorkers   = stats.Int64("watcher_waiting_workers", "Current number of tipset indexers waiting to execute", stats.UnitDimensionless)
 
 	DataSourceSectorDiffCacheHit               = stats.Int64("data_source_sector_diff_cache_hit", "Number of cache hits for sector diff", stats.UnitDimensionless)
 	DataSourceSectorDiffRead                   = stats.Int64("data_source_sector_diff_read", "Number of reads for sector diff", stats.UnitDimensionless)
@@ -216,12 +216,12 @@ var DefaultViews = []*view.View{
 		TagKeys:     []tag.Key{Job},
 	},
 	{
-		Measure:     IndexManagerActiveWorkers,
+		Measure:     WatcherActiveWorkers,
 		Aggregation: view.LastValue(),
 		TagKeys:     []tag.Key{Job},
 	},
 	{
-		Measure:     IndexManagerWaitingWorkers,
+		Measure:     WatcherWaitingWorkers,
 		Aggregation: view.LastValue(),
 		TagKeys:     []tag.Key{Job},
 	},

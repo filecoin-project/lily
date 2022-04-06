@@ -2,17 +2,12 @@ package indexer
 
 import (
 	"context"
-	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/gammazero/workerpool"
 	logging "github.com/ipfs/go-log/v2"
-	"go.opencensus.io/stats"
 	"go.opentelemetry.io/otel"
 
-	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
@@ -35,24 +30,9 @@ type Manager struct {
 	indexer  Indexer
 	exporter Exporter
 	window   time.Duration
-
-	// used for async tipset indexing
-	pool   *workerpool.WorkerPool
-	active int64 // must be accessed using atomic operations, updated automatically.
-
-	fatalMu sync.Mutex
-	fatal   error
 }
 
 type ManagerOpt func(i *Manager)
-
-// WithWorkerPool overrides the Manager's default pool (1) with the provided pool.
-// The size of the pool controls the number of TipSets that can be indexed in parallel.
-func WithWorkerPool(pool *workerpool.WorkerPool) ManagerOpt {
-	return func(m *Manager) {
-		m.pool = pool
-	}
-}
 
 // WithWindow overrides the Manager's default (0) window with the provided window.
 // The value of the window controls a timeout after which the Manager aborts processing the tipset, marking any incomplete
@@ -102,48 +82,7 @@ func NewManager(api tasks.DataSource, strg model.Storage, name string, tasks []s
 	if im.exporter == nil {
 		im.exporter = NewModelExporter()
 	}
-
-	if im.pool == nil {
-		im.pool = workerpool.New(1)
-	}
 	return im, nil
-}
-
-// TipSetAsync enqueues `ts` into the Manager's worker pool for processing. An error is returned if any Indexer in
-// the pool encounters a fatal error, else the method returns immediately.
-func (i *Manager) TipSetAsync(ctx context.Context, ts *types.TipSet) error {
-	if err := i.fatalError(); err != nil {
-		defer i.pool.Stop()
-		return err
-	}
-
-	stats.Record(ctx, metrics.IndexManagerActiveWorkers.M(i.active))
-	stats.Record(ctx, metrics.IndexManagerWaitingWorkers.M(int64(i.pool.WaitingQueueSize())))
-	if i.pool.WaitingQueueSize() > i.pool.Size() {
-		log.Warnw("queuing worker in Manager pool", "waiting", i.pool.WaitingQueueSize())
-	}
-	log.Infow("submitting tipset for async indexing", "height", ts.Height(), "active", i.active)
-
-	ctx, span := otel.Tracer("").Start(ctx, "Manager.TipSetAsync")
-	i.pool.Submit(func() {
-		atomic.AddInt64(&i.active, 1)
-		defer func() {
-			atomic.AddInt64(&i.active, -1)
-			span.End()
-		}()
-
-		ts := ts
-		success, err := i.TipSet(ctx, ts)
-		if err != nil {
-			log.Errorw("index manager suffered fatal error", "error", err, "height", ts.Height(), "tipset", ts.Key().String())
-			i.setFatalError(err)
-			return
-		}
-		if !success {
-			log.Warnw("index manager failed to fully index tipset", "height", ts.Height(), "tipset", ts.Key().String())
-		}
-	})
-	return nil
 }
 
 // TipSet synchronously indexes and persists `ts`. TipSet returns an error if the Manager's Indexer encounters a
@@ -211,17 +150,4 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
 
 	log.Infow("index tipset complete", "height", ts.Height(), "success", success)
 	return success, nil
-}
-
-func (i *Manager) setFatalError(err error) {
-	i.fatalMu.Lock()
-	i.fatal = err
-	i.fatalMu.Unlock()
-}
-
-func (i *Manager) fatalError() error {
-	i.fatalMu.Lock()
-	out := i.fatal
-	i.fatalMu.Unlock()
-	return out
 }
