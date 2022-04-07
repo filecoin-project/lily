@@ -61,21 +61,26 @@ func (c *Watcher) Run(ctx context.Context) error {
 	// init the done channel for each run since jobs may be started and stopped.
 	c.done = make(chan struct{})
 
+	// create a worker pool with workers to index tipsets as they become avaiable.
+	c.pool = workerpool.New(c.poolSize)
+
+	// create a tipset notifier, register it to observe tipset applications and set its current head.
 	notifier := &TipSetObserver{bufferSize: c.bufferSize}
 	head := c.api.Observe(notifier)
 	if err := notifier.SetCurrent(ctx, head); err != nil {
 		return err
 	}
+
+	// warm the tipset cache with confidence tipsets
 	if err := c.cache.Warm(ctx, head, c.api.ChainGetTipSet); err != nil {
 		return err
 	}
-	c.pool = workerpool.New(c.poolSize)
 
 	defer func() {
-		// ensure we shut down the pool when the watcher stops.
-		c.pool.Stop()
 		// ensure we clear the fatal error after shut down, this allows the watcher to be restarted without reinitializing its state.
 		c.setFatalError(nil)
+		// ensure we shut down the pool when the watcher stops.
+		c.pool.Stop()
 		// ensure we reset the tipset cache to avoid process stale state if watcher is restarted.
 		c.cache.Reset()
 		// unregister the observer
@@ -157,7 +162,6 @@ func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {
 // indexTipSetAsync is called when a new tipset has been discovered
 func (c *Watcher) indexTipSetAsync(ctx context.Context, ts *types.TipSet) error {
 	if err := c.fatalError(); err != nil {
-		defer c.pool.Stop()
 		return err
 	}
 
@@ -168,7 +172,7 @@ func (c *Watcher) indexTipSetAsync(ctx context.Context, ts *types.TipSet) error 
 	}
 	log.Infow("submitting tipset for async indexing", "height", ts.Height(), "active", c.active)
 
-	ctx, span := otel.Tracer("").Start(ctx, "Manager.TipSetAsync")
+	ctx, span := otel.Tracer("").Start(ctx, "Watcher.indexTipSetAsync")
 	c.pool.Submit(func() {
 		atomic.AddInt64(&c.active, 1)
 		defer func() {

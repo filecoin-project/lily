@@ -3,6 +3,7 @@ package lily
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/filecoin-project/go-state-types/abi"
@@ -134,14 +135,16 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		Type: "watch",
 		Params: map[string]string{
 			"window":     cfg.Window.String(),
-			"confidence": fmt.Sprintf("%d", cfg.Confidence),
 			"storage":    cfg.Storage,
+			"confidence": strconv.Itoa(cfg.Confidence),
+			"worker":     strconv.Itoa(cfg.Workers),
+			"buffer":     strconv.Itoa(cfg.BufferSize),
 		},
 		Tasks: cfg.Tasks,
 		Job: chain.NewWatcher(&watcherAPIWrapper{
 			Events:         m.Events,
 			ChainModuleAPI: m.ChainModuleAPI,
-		}, im, cfg.Confidence, cfg.Workers, 5),
+		}, im, cfg.Confidence, cfg.Workers, cfg.BufferSize),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
