@@ -23,6 +23,7 @@ type watchOps struct {
 	apiToken   string
 	name       string
 	workers    int
+	bufferSize int
 }
 
 var watchFlags watchOps
@@ -44,6 +45,13 @@ var WatchCmd = &cli.Command{
 			EnvVars:     []string{"LILY_WATCH_WORKERS"},
 			Value:       4,
 			Destination: &watchFlags.workers,
+		},
+		&cli.IntFlag{
+			Name:        "buffer-size",
+			Usage:       "Set the number of tipsets the watcher will buffer while waiting for a worker to accept the work",
+			EnvVars:     []string{"LILY_WATCH_BUFFER"},
+			Value:       5,
+			Destination: &watchFlags.bufferSize,
 		},
 		&cli.StringFlag{
 			Name:        "tasks",
@@ -111,6 +119,7 @@ var WatchCmd = &cli.Command{
 			RestartOnFailure:    true,
 			Storage:             watchFlags.storage,
 			Workers:             watchFlags.workers,
+			BufferSize:          watchFlags.bufferSize,
 		}
 
 		api, closer, err := GetAPI(ctx, watchFlags.apiAddr, watchFlags.apiToken)

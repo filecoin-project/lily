@@ -74,8 +74,8 @@ func TestWatcher(t *testing.T) {
 	im, err := indexer.NewManager(taskAPI, strg, t.Name(), []string{indexer.BlocksTask}, indexer.WithWindow(builtin.EpochDurationSeconds*time.Second))
 	require.NoError(t, err, "NewManager")
 	t.Logf("initializing indexer")
-	idx := NewWatcher(im, NullHeadNotifier{}, NewTipSetCache(0), 1)
-	// the watchers worker pool is initialized in its Run method, since we don't call that here initialize the pool now.
+	idx := NewWatcher(nil, im, 0, 1, 5)
+	// the watchers worker pool and cache are initialized in its Run method, since we don't call that here initialize them now.
 	idx.pool = workerpool.New(1)
 
 	newHeads, err := full.ChainNotify(ctx)

@@ -3,6 +3,7 @@ package lily
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/filecoin-project/go-state-types/abi"
@@ -99,6 +100,11 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 
 }
 
+type watcherAPIWrapper struct {
+	*events.Events
+	full.ChainModuleAPI
+}
+
 func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*schedule.JobSubmitResult, error) {
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
@@ -113,11 +119,6 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		return nil, err
 	}
 
-	// HeadNotifier bridges between the event system and the watcher
-	obs := &HeadNotifier{
-		bufferSize: 5,
-	}
-
 	taskAPI, err := datasource.NewDataSource(m)
 	if err != nil {
 		return nil, err
@@ -129,28 +130,21 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		return nil, err
 	}
 
-	// Hook up the notifier to the event system
-	head := m.Events.Observe(obs)
-	if err := obs.SetCurrent(ctx, head); err != nil {
-		return nil, err
-	}
-
-	// warm the tipset cache.
-	tsCache := chain.NewTipSetCache(cfg.Confidence)
-	if err := tsCache.Warm(ctx, head, m.ChainModuleAPI.ChainGetTipSet); err != nil {
-		return nil, err
-	}
-
 	res := m.Scheduler.Submit(&schedule.JobConfig{
 		Name: cfg.Name,
 		Type: "watch",
 		Params: map[string]string{
 			"window":     cfg.Window.String(),
-			"confidence": fmt.Sprintf("%d", cfg.Confidence),
 			"storage":    cfg.Storage,
+			"confidence": strconv.Itoa(cfg.Confidence),
+			"worker":     strconv.Itoa(cfg.Workers),
+			"buffer":     strconv.Itoa(cfg.BufferSize),
 		},
-		Tasks:               cfg.Tasks,
-		Job:                 chain.NewWatcher(im, obs, tsCache, cfg.Workers),
+		Tasks: cfg.Tasks,
+		Job: chain.NewWatcher(&watcherAPIWrapper{
+			Events:         m.Events,
+			ChainModuleAPI: m.ChainModuleAPI,
+		}, im, cfg.Confidence, cfg.Workers, cfg.BufferSize),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
@@ -435,126 +429,6 @@ func (m *LilyNodeAPI) LilySurvey(_ context.Context, cfg *LilySurveyConfig) (*sch
 	})
 
 	return res, nil
-}
-
-var _ events.TipSetObserver = (*HeadNotifier)(nil)
-
-type HeadNotifier struct {
-	mu     sync.Mutex            // protects following fields
-	events chan *chain.HeadEvent // created lazily, closed by first cancel call
-	err    error                 // set to non-nil by the first cancel call
-
-	// size of the buffer to maintain for events. Using a buffer reduces chance
-	// that the emitter of events will block when sending to this notifier.
-	bufferSize int
-}
-
-func (h *HeadNotifier) eventsCh() chan *chain.HeadEvent {
-	// caller must hold mu
-	if h.events == nil {
-		h.events = make(chan *chain.HeadEvent, h.bufferSize)
-	}
-	return h.events
-}
-
-func (h *HeadNotifier) HeadEvents() <-chan *chain.HeadEvent {
-	h.mu.Lock()
-	ev := h.eventsCh()
-	h.mu.Unlock()
-	return ev
-}
-
-func (h *HeadNotifier) Err() error {
-	h.mu.Lock()
-	err := h.err
-	h.mu.Unlock()
-	return err
-}
-
-func (h *HeadNotifier) Cancel(err error) {
-	h.mu.Lock()
-	if h.err != nil {
-		h.mu.Unlock()
-		return
-	}
-	h.err = err
-	if h.events == nil {
-		h.events = make(chan *chain.HeadEvent, h.bufferSize)
-	}
-	close(h.events)
-	h.mu.Unlock()
-}
-
-func (h *HeadNotifier) SetCurrent(ctx context.Context, ts *types.TipSet) error {
-	h.mu.Lock()
-	if h.err != nil {
-		err := h.err
-		h.mu.Unlock()
-		return err
-	}
-	ev := h.eventsCh()
-	h.mu.Unlock()
-
-	// This is imprecise since it's inherently racy but good enough to emit
-	// a warning that the event may block the sender
-	if len(ev) == cap(ev) {
-		log.Warnw("head notifier buffer at capacity", "queued", len(ev))
-	}
-
-	log.Debugw("head notifier setting head", "tipset", ts.Key().String())
-	ev <- &chain.HeadEvent{
-		Type:   chain.HeadEventCurrent,
-		TipSet: ts,
-	}
-	return nil
-}
-
-func (h *HeadNotifier) Apply(ctx context.Context, from, to *types.TipSet) error {
-	h.mu.Lock()
-	if h.err != nil {
-		err := h.err
-		h.mu.Unlock()
-		return err
-	}
-	ev := h.eventsCh()
-	h.mu.Unlock()
-
-	// This is imprecise since it's inherently racy but good enough to emit
-	// a warning that the event may block the sender
-	if len(ev) == cap(ev) {
-		log.Warnw("head notifier buffer at capacity", "queued", len(ev))
-	}
-
-	log.Debugw("head notifier apply", "to", to.Key().String(), "from", from.Key().String())
-	ev <- &chain.HeadEvent{
-		Type:   chain.HeadEventApply,
-		TipSet: to,
-	}
-	return nil
-}
-
-func (h *HeadNotifier) Revert(ctx context.Context, from, to *types.TipSet) error {
-	h.mu.Lock()
-	if h.err != nil {
-		err := h.err
-		h.mu.Unlock()
-		return err
-	}
-	ev := h.eventsCh()
-	h.mu.Unlock()
-
-	// This is imprecise since it's inherently racy but good enough to emit
-	// a warning that the event may block the sender
-	if len(ev) == cap(ev) {
-		log.Warnw("head notifier buffer at capacity", "queued", len(ev))
-	}
-
-	log.Debugw("head notifier revert", "to", to.Key().String(), "from", from.Key().String())
-	ev <- &chain.HeadEvent{
-		Type:   chain.HeadEventRevert,
-		TipSet: from,
-	}
-	return nil
 }
 
 // used for debugging querries, call ORM.AddHook and this will print all queries.
