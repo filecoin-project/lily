@@ -84,6 +84,7 @@ type LilyWatchConfig struct {
 	RestartDelay        time.Duration
 	Storage             string // name of storage system to use, may be empty
 	Workers             int    // number of indexing jobs that can run in parallel
+	BufferSize          int    // number of tipsets to buffer from notifier service
 }
 
 type LilyWalkConfig struct {
