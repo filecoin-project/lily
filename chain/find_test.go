@@ -342,6 +342,24 @@ func TestFind(t *testing.T) {
 		expected := makeGapReportList(2, AllTasks...)
 		assertGapReportsEqual(t, expected, actual)
 	})
+
+	t.Run("null rounds at epoch 2 and non-null round tasks at epoch 3", func(t *testing.T) {
+		truncate(t, db)
+
+		pre1 := NewPREditor(t, db, "reporter1")
+		pre1.initialize(maxHeight, AllTasks...)
+		pre1.updateEpochStatus(2, visor.ProcessingStatusInfo, WithStatusInformation(visor.ProcessingStatusInformationNullRound))
+		pre1.updateEpochStatus(3, visor.ProcessingStatusInfo, WithStatusInformation("not the permitted null round"))
+
+		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
+		require.NoError(t, err, "NewDatabaseFromDB")
+
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).Find(ctx)
+		require.NoError(t, err)
+
+		expected := makeGapReportList(3, AllTasks...)
+		assertGapReportsEqual(t, expected, actual)
+	})
 }
 
 type assertFields struct {
@@ -415,9 +433,10 @@ func NewPREditor(tb testing.TB, db *pg.DB, reporter string) *PREditor {
 }
 
 type PREditorQuery struct {
-	epoch  int64
-	tasks  []string
-	status string
+	epoch             int64
+	tasks             []string
+	status            string
+	statusInformation string
 }
 
 type PREditorOption func(q *PREditorQuery)
@@ -425,6 +444,12 @@ type PREditorOption func(q *PREditorQuery)
 func WithTasks(tasks ...string) PREditorOption {
 	return func(q *PREditorQuery) {
 		q.tasks = tasks
+	}
+}
+
+func WithStatusInformation(statusInformation string) PREditorOption {
+	return func(q *PREditorQuery) {
+		q.statusInformation = statusInformation
 	}
 }
 
@@ -455,7 +480,7 @@ func (e *PREditor) initialize(count uint64, tasks ...string) {
         for epoch in 0..%d loop
                 foreach task_name in array arr loop
                 insert into public.visor_processing_reports(height, state_root, reporter, task, started_at, completed_at, status, status_information, errors_detected)
-                values(epoch, concat(epoch, '_state_root'), '%s', task_name, '2021-01-01 00:00:00.000000 +00:00', '2021-01-21 00:00:00.000000 +00:00', 'OK',null, null);
+                values(epoch, concat(epoch, '_state_root'), '%s', task_name, '2021-01-01 00:00:00.000000 +00:00', '2021-01-21 00:00:00.000000 +00:00', 'OK', null, null);
                     end loop;
             end loop;
     end;
@@ -478,10 +503,10 @@ func (e *PREditor) updateEpochStatus(epoch int64, status string, opts ...PREdito
 		_, err := e.db.Exec(
 			`
 	update visor_processing_reports
-	set status = ?
+	set status = ?, status_information = ?
 	where height = ? and task = ? and reporter = ?
 `,
-			q.status, q.epoch, task, e.reporter)
+			q.status, q.statusInformation, q.epoch, task, e.reporter)
 		require.NoError(e.t, err)
 	}
 }
@@ -498,7 +523,7 @@ func (e *PREditor) insertEpochStatus(epoch int64, status string, opts ...PREdito
 	for _, task := range q.tasks {
 		qsrt := fmt.Sprintf(`
 	insert into public.visor_processing_reports(height, state_root, reporter, task, started_at, completed_at, status, status_information, errors_detected)
-	values(%d, concat(%d, '_state_root'), '%s', '%s', '2021-01-01 00:00:00.000000 +00:00', '2021-01-21 00:00:00.000000 +00:00', '%s',null, null);
+	values(%d, concat(%d, '_state_root'), '%s', '%s', '2021-01-01 00:00:00.000000 +00:00', '2021-01-21 00:00:00.000000 +00:00', '%s', null, null);
 			`, q.epoch, q.epoch, e.reporter, task, q.status)
 		_, err := e.db.Exec(qsrt)
 		require.NoError(e.t, err)
