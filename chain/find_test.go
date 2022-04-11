@@ -8,18 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/go-state-types/crypto"
+	"github.com/go-pg/pg/v10"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lily/testutil"
-	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/go-pg/pg/v10"
-	"github.com/ipfs/go-cid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -39,342 +34,331 @@ func TestFind(t *testing.T) {
 	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
 	require.NoError(t, err)
 	defer func() { require.NoError(t, cleanup()) }()
-	defer truncateVPR(t, db)
 
 	t.Run("gap all tasks at epoch 1", func(t *testing.T) {
-		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
-		gapEpochVPR(t, db, 1, AllTasks...)
+		truncate(t, db)
+		gapHeight := int64(1)
+		pre := NewPREditor(t, db, t.Name())
+		pre.initialize(maxHeight, AllTasks...)
+		pre.deleteEpochStatus(gapHeight, visor.ProcessingStatusOK)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		tsh1 := fakeTipset(t, 1)
-		mlens := new(MockedFindLens)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh1.Height(), types.EmptyTSK).
-			Return(tsh1, nil)
-
-		actual, nullRounds, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
-			findEpochGapsAndNullRounds(ctx, mlens)
-		require.NoError(t, err)
-		require.Len(t, nullRounds, 0)
-
-		expected := makeGapReportList(tsh1, AllTasks...)
-		assertGapReportsEqual(t, expected, actual)
-	})
-
-	t.Run("gap all tasks at epoch 1 null rounds at epochs 5 6 7 9", func(t *testing.T) {
-		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
-		gapEpochVPR(t, db, 1, AllTasks...)
-		gapEpochVPR(t, db, 5, AllTasks...)
-		gapEpochVPR(t, db, 6, AllTasks...)
-		gapEpochVPR(t, db, 7, AllTasks...)
-		gapEpochVPR(t, db, 9, AllTasks...)
-
-		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
-		require.NoError(t, err, "NewDatabaseFromDB")
-
-		tsh1 := fakeTipset(t, 1)
-		mlens := new(MockedFindLens)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh1.Height(), types.EmptyTSK).
-			Return(tsh1, nil)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, abi.ChainEpoch(5), types.EmptyTSK).
-			Return(tsh1, nil)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, abi.ChainEpoch(6), types.EmptyTSK).
-			Return(tsh1, nil)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, abi.ChainEpoch(7), types.EmptyTSK).
-			Return(tsh1, nil)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, abi.ChainEpoch(9), types.EmptyTSK).
-			Return(tsh1, nil)
-
-		actual, nullRounds, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
-			findEpochGapsAndNullRounds(ctx, mlens)
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh1, AllTasks...)
+		expected := makeGapReportList(gapHeight, AllTasks...)
 		assertGapReportsEqual(t, expected, actual)
-
-		assert.Len(t, nullRounds, 4)
-		assert.Equal(t, nullRounds, []abi.ChainEpoch{5, 6, 7, 9})
 	})
 
 	t.Run("gap all tasks at epoch 1 4 5", func(t *testing.T) {
-		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
-		gapEpochVPR(t, db, 1, AllTasks...)
-		gapEpochVPR(t, db, 4, AllTasks...)
-		gapEpochVPR(t, db, 5, AllTasks...)
+		truncate(t, db)
+		gapHeights := []int64{1, 4, 5}
+		gapTasks := AllTasks
+
+		pre := NewPREditor(t, db, t.Name())
+		pre.truncate()
+		pre.initialize(maxHeight, AllTasks...)
+
+		var expected visor.GapReportList
+		for _, height := range gapHeights {
+			pre.deleteEpochStatus(height, visor.ProcessingStatusOK)
+			expected = append(expected, makeGapReportList(height, gapTasks...)...)
+		}
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		tsh1 := fakeTipset(t, 1)
-		tsh4 := fakeTipset(t, 4)
-		tsh5 := fakeTipset(t, 5)
-		mlens := new(MockedFindLens)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh1.Height(), types.EmptyTSK).
-			Return(tsh1, nil)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh4.Height(), types.EmptyTSK).
-			Return(tsh4, nil)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh5.Height(), types.EmptyTSK).
-			Return(tsh5, nil)
-
-		actual, nullRounds, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
-			findEpochGapsAndNullRounds(ctx, mlens)
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, gapTasks).Find(ctx)
 		require.NoError(t, err)
-		require.Len(t, nullRounds, 0)
 
-		expected1 := makeGapReportList(tsh1, AllTasks...)
-		expected4 := makeGapReportList(tsh4, AllTasks...)
-		expected5 := makeGapReportList(tsh5, AllTasks...)
-		expected := append(expected1, expected4...)
-		expected = append(expected, expected5...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("gap at epoch 2 for miner and init task", func(t *testing.T) {
-		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
-		gapEpochVPR(t, db, 2, ActorStatesMinerTask, ActorStatesInitTask)
+		truncate(t, db)
+		gapHeight := int64(2)
+		gapTasks := []string{ActorStatesMinerTask, ActorStatesInitTask}
+
+		pre := NewPREditor(t, db, t.Name())
+		pre.initialize(maxHeight, AllTasks...)
+		pre.deleteEpochStatus(gapHeight, visor.ProcessingStatusOK, WithTasks(gapTasks...))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		tsh2 := fakeTipset(t, 2)
-		mlens := new(MockedFindLens)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
-			Return(tsh2, nil)
-
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
-			findTaskEpochGaps(ctx)
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
+		expected := makeGapReportList(gapHeight, gapTasks...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("gap at epoch 2 for miner and init task epoch 10 blocks messages market", func(t *testing.T) {
-		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
-		gapEpochVPR(t, db, 2, ActorStatesMinerTask, ActorStatesInitTask)
-		gapEpochVPR(t, db, 10, BlocksTask, MessagesTask, ActorStatesMarketTask)
+		truncate(t, db)
+		pre := NewPREditor(t, db, t.Name())
+		pre.initialize(maxHeight, AllTasks...)
+		pre.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(ActorStatesMinerTask, ActorStatesInitTask))
+		pre.deleteEpochStatus(10, visor.ProcessingStatusOK, WithTasks(BlocksTask, MessagesTask, ActorStatesMarketTask))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		tsh2 := fakeTipset(t, 2)
-		tsh10 := fakeTipset(t, 10)
-		mlens := new(MockedFindLens)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
-			Return(tsh2, nil)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh10.Height(), types.EmptyTSK).
-			Return(tsh10, nil)
-
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
-			findTaskEpochGaps(ctx)
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
-		expected = append(expected, makeGapReportList(tsh10, BlocksTask, MessagesTask, ActorStatesMarketTask)...)
+		expected := makeGapReportList(2, ActorStatesMinerTask, ActorStatesInitTask)
+		expected = append(expected, makeGapReportList(10, BlocksTask, MessagesTask, ActorStatesMarketTask)...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("skip all tasks at epoch 1 and miner task at epoch 5", func(t *testing.T) {
-		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
-		skipEpochSkippedVRP(t, db, 1, AllTasks...)
-		skipEpochSkippedVRP(t, db, 5, ActorStatesMinerTask)
+		truncate(t, db)
+		pre := NewPREditor(t, db, t.Name())
+		pre.initialize(maxHeight, AllTasks...)
+		pre.updateEpochStatus(1, visor.ProcessingStatusSkip)
+		pre.updateEpochStatus(5, visor.ProcessingStatusSkip, WithTasks(ActorStatesMinerTask))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
-			findEpochSkips(ctx)
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).Find(ctx)
 		require.NoError(t, err)
 
-		tsh1 := fakeTipset(t, 1)
-		tsh5 := fakeTipset(t, 5)
-		expected := makeGapReportList(tsh1, AllTasks...)
-		expected = append(expected, makeGapReportList(tsh5, ActorStatesMinerTask)...)
+		expected := makeGapReportList(1, AllTasks...)
+		expected = append(expected, makeGapReportList(5, ActorStatesMinerTask)...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
-	t.Run("gap at epoch 2 for miner and init task with null rounds 4,5,7", func(t *testing.T) {
-		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
-		gapEpochVPR(t, db, 2, ActorStatesMinerTask, ActorStatesInitTask)
-		nullRoundEpochVPR(t, db, t.Name(), 4)
-		nullRoundEpochVPR(t, db, t.Name(), 5)
-		nullRoundEpochVPR(t, db, t.Name(), 7)
+	t.Run("gap at epoch 2 for miner and init task, miner errors in 8, all errors in 9", func(t *testing.T) {
+		truncate(t, db)
+		pre := NewPREditor(t, db, t.Name())
+		pre.initialize(maxHeight, AllTasks...)
+
+		pre.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(ActorStatesMinerTask, ActorStatesInitTask))
+		pre.updateEpochStatus(8, visor.ProcessingStatusError, WithTasks(ActorStatesMinerTask))
+		pre.updateEpochStatus(9, visor.ProcessingStatusError)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		tsh2 := fakeTipset(t, 2)
-		mlens := new(MockedFindLens)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
-			Return(tsh2, nil)
-
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
-			findTaskEpochGaps(ctx)
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
-		assertGapReportsEqual(t, expected, actual)
-	})
-
-	t.Run("gap at epoch 2 for miner and init task with null rounds 4,5,7, miner errors in 8, all errors in 9", func(t *testing.T) {
-		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
-		gapEpochVPR(t, db, 2, ActorStatesMinerTask, ActorStatesInitTask)
-		nullRoundEpochVPR(t, db, t.Name(), 4)
-		nullRoundEpochVPR(t, db, t.Name(), 5)
-		nullRoundEpochVPR(t, db, t.Name(), 7)
-		errorEpochTasksVPR(t, db, 8, ActorStatesMinerTask)
-		errorEpochTasksVPR(t, db, 9, AllTasks...)
-
-		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
-		require.NoError(t, err, "NewDatabaseFromDB")
-
-		tsh2 := fakeTipset(t, 2)
-		mlens := new(MockedFindLens)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
-			Return(tsh2, nil)
-
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
-			findTaskEpochGaps(ctx)
-		require.NoError(t, err)
-
-		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
-		expected = append(expected, makeGapReportList(fakeTipset(t, 8), ActorStatesMinerTask)...)
+		expected := makeGapReportList(2, ActorStatesMinerTask, ActorStatesInitTask)
+		expected = append(expected, makeGapReportList(8, ActorStatesMinerTask)...)
+		expected = append(expected, makeGapReportList(9, AllTasks...)...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	// ensure that when there is more than one processing entry for a height we handle is correctly
-	t.Run("duplicate processing row with gap at epoch 2 for miner and init task with duplicate null rounds 4,5,7", func(t *testing.T) {
-		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
-		initializeVPR(t, db, maxHeight, t.Name()+"_2", AllTasks...)
-		gapEpochVPR(t, db, 2, ActorStatesMinerTask, ActorStatesInitTask)
-		nullRoundEpochVPR(t, db, t.Name()+"_2", 4)
-		nullRoundEpochVPR(t, db, t.Name()+"_2", 5)
-		nullRoundEpochVPR(t, db, t.Name()+"_2", 7)
+	t.Run("duplicate processing row with gap at epoch 2 for miner and init task", func(t *testing.T) {
+		truncate(t, db)
+		pre1 := NewPREditor(t, db, "reporter1")
+		pre2 := NewPREditor(t, db, "reporter2")
+		pre1.initialize(maxHeight, AllTasks...)
+		pre2.initialize(maxHeight, AllTasks...)
+		pre1.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(ActorStatesMinerTask, ActorStatesInitTask))
+		pre2.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(ActorStatesMinerTask, ActorStatesInitTask))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		tsh2 := fakeTipset(t, 2)
-		mlens := new(MockedFindLens)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
-			Return(tsh2, nil)
-
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
-			findTaskEpochGaps(ctx)
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, ActorStatesMinerTask, ActorStatesInitTask)
+		expected := makeGapReportList(2, ActorStatesMinerTask, ActorStatesInitTask)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("(sub task indexer, full reports table) gap at epoch 2 for messages and init task", func(t *testing.T) {
-		monitoringTasks := []string{BlocksTask, MessagesTask, ChainEconomicsTask, ActorStatesInitTask}
-		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
-		gapEpochVPR(t, db, 2, MessagesTask, ActorStatesInitTask)
+		truncate(t, db)
+
+		gapTasks := []string{MessagesTask, ActorStatesInitTask}
+		monitoringTasks := append(gapTasks, []string{BlocksTask, ChainEconomicsTask}...)
+
+		pre := NewPREditor(t, db, t.Name())
+		pre.initialize(maxHeight, AllTasks...)
+		pre.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(gapTasks...))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		tsh2 := fakeTipset(t, 2)
-		mlens := new(MockedFindLens)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
-			Return(tsh2, nil)
-
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, monitoringTasks).
-			findTaskEpochGaps(ctx)
+		// tasks to find gaps in
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, monitoringTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, MessagesTask, ActorStatesInitTask)
+		expected := makeGapReportList(2, gapTasks...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("(sub task indexer partial reports table) gap at epoch 2 for messages and init task", func(t *testing.T) {
-		monitoringTasks := []string{BlocksTask, MessagesTask, ChainEconomicsTask, ActorStatesInitTask}
-		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), monitoringTasks...)
-		gapEpochVPR(t, db, 2, MessagesTask, ActorStatesInitTask)
+		truncate(t, db)
+
+		// tasks to create gaps for
+		gapTasks := []string{MessagesTask, ActorStatesInitTask}
+		monitoringTasks := append(gapTasks, []string{BlocksTask, ChainEconomicsTask}...)
+
+		pre := NewPREditor(t, db, t.Name())
+		pre.initialize(maxHeight, monitoringTasks...)
+		pre.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(gapTasks...))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		tsh2 := fakeTipset(t, 2)
-		mlens := new(MockedFindLens)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
-			Return(tsh2, nil)
-
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, monitoringTasks).
-			findTaskEpochGaps(ctx)
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, monitoringTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, MessagesTask, ActorStatesInitTask)
+		expected := makeGapReportList(2, gapTasks...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("(#775) for each task at epoch 2 there exists an ERROR", func(t *testing.T) {
-		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
-		errorEpochTasksVPR(t, db, 2, AllTasks...)
+		truncate(t, db)
+
+		pre := NewPREditor(t, db, t.Name())
+		pre.initialize(maxHeight, AllTasks...)
+		pre.updateEpochStatus(2, visor.ProcessingStatusError, WithTasks(AllTasks...))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		tsh2 := fakeTipset(t, 2)
-		mlens := new(MockedFindLens)
-		mlens.On("ChainGetTipSetByHeight", mock.Anything, tsh2.Height(), types.EmptyTSK).
-			Return(tsh2, nil)
-
-		actual, _, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
-			findEpochGapsAndNullRounds(ctx, mlens)
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(tsh2, AllTasks...)
+		expected := makeGapReportList(2, AllTasks...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
-	t.Run("(#775) for each task at epoch 2 there exists an ERROR _and_ an OK on some tasks", func(t *testing.T) {
-		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
-		// error on some tasks
-		errorEpochTasksVPR(t, db, 2, ActorStatesInitTask, ActorStatesMinerTask)
+	t.Run("(#775) for init and miner tasks at epoch 2 there exists an ERROR _and_ an OK", func(t *testing.T) {
+		truncate(t, db)
+
+		pre1 := NewPREditor(t, db, "reporter1")
+		pre1.initialize(maxHeight, AllTasks...)
+		pre2 := NewPREditor(t, db, "reporter2")
+		pre2.insertEpochStatus(2, visor.ProcessingStatusError, WithTasks(ActorStatesInitTask, ActorStatesMinerTask))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
-			findTaskEpochGaps(ctx)
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).Find(ctx)
 		require.NoError(t, err)
 
-		// only expect gaps at height 2
-		expected := makeGapReportList(fakeTipset(t, 2), ActorStatesInitTask, ActorStatesMinerTask)
-		assertGapReportsEqual(t, expected, actual)
+		// expect nothing since tasks have an OK status dispite the error
+		require.Len(t, actual, 0)
 	})
 
 	t.Run("(#773) for each task at epoch 2 there exists a SKIP and an OK", func(t *testing.T) {
-		truncateVPR(t, db)
-		initializeVPR(t, db, maxHeight, t.Name(), AllTasks...)
-		skipEpochSkippedVRP(t, db, 2, AllTasks...)
-		appendOKAtEpochVPR(t, db, 2, AllTasks...)
+		truncate(t, db)
+
+		pre1 := NewPREditor(t, db, "reporter1")
+		pre1.initialize(maxHeight, AllTasks...)
+		pre1.updateEpochStatus(2, visor.ProcessingStatusSkip)
+
+		pre2 := NewPREditor(t, db, "reporter2")
+		pre2.insertEpochStatus(2, visor.ProcessingStatusOK)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).
-			findTaskEpochGaps(ctx)
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).Find(ctx)
 		require.NoError(t, err)
 
 		// no gaps should be found since the epoch has OK's for all tasks; the SKIPS are ignored.
 		require.Len(t, actual, 0)
+	})
+
+	t.Run("for each task at epoch 2 and 8 there exists a SKIP, ERROR and an OK", func(t *testing.T) {
+		truncate(t, db)
+
+		pre1 := NewPREditor(t, db, "reporter1")
+		pre1.initialize(maxHeight, AllTasks...)
+		pre1.updateEpochStatus(2, visor.ProcessingStatusSkip)
+		pre1.updateEpochStatus(8, visor.ProcessingStatusSkip)
+
+		pre2 := NewPREditor(t, db, "reporter2")
+		pre2.insertEpochStatus(2, visor.ProcessingStatusError)
+		pre2.insertEpochStatus(8, visor.ProcessingStatusError)
+
+		pre3 := NewPREditor(t, db, "reporter3")
+		pre3.insertEpochStatus(2, visor.ProcessingStatusOK)
+		pre3.insertEpochStatus(8, visor.ProcessingStatusOK)
+
+		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
+		require.NoError(t, err, "NewDatabaseFromDB")
+
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).Find(ctx)
+		require.NoError(t, err)
+
+		// no gaps should be found since the epoch has OK's for all tasks; the SKIPS and ERRORs are ignored.
+		require.Len(t, actual, 0)
+	})
+
+	t.Run("for each task at epoch 2 and 8 there exists a SKIP, ERROR and duplicate OKs", func(t *testing.T) {
+		truncate(t, db)
+
+		pre1 := NewPREditor(t, db, "reporter1")
+		pre1.initialize(maxHeight, AllTasks...)
+		pre1.updateEpochStatus(2, visor.ProcessingStatusSkip)
+		pre1.updateEpochStatus(8, visor.ProcessingStatusSkip)
+
+		pre2 := NewPREditor(t, db, "reporter2")
+		pre2.initialize(maxHeight, AllTasks...)
+		pre2.updateEpochStatus(2, visor.ProcessingStatusError)
+		pre2.updateEpochStatus(8, visor.ProcessingStatusError)
+
+		pre3 := NewPREditor(t, db, "reporter3")
+		pre3.initialize(maxHeight, AllTasks...)
+		pre3.updateEpochStatus(2, visor.ProcessingStatusOK)
+		pre3.updateEpochStatus(8, visor.ProcessingStatusOK)
+
+		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
+		require.NoError(t, err, "NewDatabaseFromDB")
+
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).Find(ctx)
+		require.NoError(t, err)
+
+		// no gaps should be found since the epoch has OK's for all tasks; the SKIPS and ERRORs are ignored.
+		require.Len(t, actual, 0)
+	})
+
+	t.Run("for each task at epoch 2 there exists a SKIP and ERROR", func(t *testing.T) {
+		truncate(t, db)
+
+		pre1 := NewPREditor(t, db, "reporter1")
+		pre1.initialize(maxHeight, AllTasks...)
+		pre1.updateEpochStatus(2, visor.ProcessingStatusSkip)
+
+		pre2 := NewPREditor(t, db, "reporter2")
+		pre2.updateEpochStatus(2, visor.ProcessingStatusError)
+
+		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
+		require.NoError(t, err, "NewDatabaseFromDB")
+
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).Find(ctx)
+		require.NoError(t, err)
+
+		expected := makeGapReportList(2, AllTasks...)
+		assertGapReportsEqual(t, expected, actual)
+	})
+
+	t.Run("null rounds at epoch 2 and non-null round tasks at epoch 3", func(t *testing.T) {
+		truncate(t, db)
+
+		pre1 := NewPREditor(t, db, "reporter1")
+		pre1.initialize(maxHeight, AllTasks...)
+		pre1.updateEpochStatus(2, visor.ProcessingStatusInfo, WithStatusInformation(visor.ProcessingStatusInformationNullRound))
+		pre1.updateEpochStatus(3, visor.ProcessingStatusInfo, WithStatusInformation("not the permitted null round"))
+
+		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
+		require.NoError(t, err, "NewDatabaseFromDB")
+
+		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, AllTasks).Find(ctx)
+		require.NoError(t, err)
+
+		expected := makeGapReportList(3, AllTasks...)
+		assertGapReportsEqual(t, expected, actual)
 	})
 }
 
@@ -415,11 +399,11 @@ func assertGapReportsEqual(t testing.TB, expected, actual visor.GapReportList) {
 	}
 }
 
-func makeGapReportList(ts *types.TipSet, tasks ...string) visor.GapReportList {
+func makeGapReportList(height int64, tasks ...string) visor.GapReportList {
 	var out visor.GapReportList
 	for _, task := range tasks {
 		out = append(out, &visor.GapReport{
-			Height:     int64(ts.Height()),
+			Height:     height,
 			Task:       task,
 			Status:     "GAP",
 			Reporter:   "gapIndexer",
@@ -429,73 +413,52 @@ func makeGapReportList(ts *types.TipSet, tasks ...string) visor.GapReportList {
 	return out
 }
 
-func errorEpochTasksVPR(tb testing.TB, db *pg.DB, epoch int, tasks ...string) {
-	for _, task := range tasks {
-		_, err := db.Exec(
-			`
-	update visor_processing_reports
-	set status = 'ERROR'
-	where height = ? and task = ?
-`,
-			epoch, task)
-		require.NoError(tb, err)
-	}
-}
-
-func nullRoundEpochVPR(tb testing.TB, db *pg.DB, reporter string, epoch int) {
-	// remove every task at this epoch
-	gapEpochVPR(tb, db, epoch, AllTasks...)
-	query := fmt.Sprintf(
-		`insert into public.visor_processing_reports(height, state_root, reporter, task, started_at, completed_at, status, status_information, errors_detected)
-                values(%d, concat(%d, '_state_root'), '%s', 'consensus', '2021-01-01 00:00:00.000000 +00:00', '2021-01-21 00:00:00.000000 +00:00', 'INFO','NULL_ROUND', null);`,
-		epoch, epoch, reporter)
-	_, err := db.Exec(query)
-	require.NoError(tb, err)
-}
-
-func gapEpochVPR(tb testing.TB, db *pg.DB, epoch int, tasks ...string) {
-	for _, task := range tasks {
-		_, err := db.Exec(
-			`
-	delete from visor_processing_reports
-	where height = ? and task = ?
-`,
-			epoch, task)
-		require.NoError(tb, err)
-	}
-}
-
-func skipEpochSkippedVRP(tb testing.TB, db *pg.DB, epoch int, tasks ...string) {
-	for _, task := range tasks {
-		_, err := db.Exec(
-			`
-	update visor_processing_reports
-	set status = 'SKIP'
-	where height = ? and task = ?
-`,
-			epoch, task)
-		require.NoError(tb, err)
-	}
-}
-
-func appendOKAtEpochVPR(tb testing.TB, db *pg.DB, epoch int, tasks ...string) {
-	for _, task := range tasks {
-		qsrt := fmt.Sprintf(`
-	insert into public.visor_processing_reports(height, state_root, reporter, task, started_at, completed_at, status, status_information, errors_detected)
-	values(%d, concat(%d, '_state_root'), '%s_appendok', '%s', '2021-01-01 00:00:00.000000 +00:00', '2021-01-21 00:00:00.000000 +00:00', 'OK',null, null);
-			`, epoch, epoch, tb.Name(), task)
-		_, err := db.Exec(qsrt)
-		require.NoError(tb, err)
-	}
-}
-
-func truncateVPR(tb testing.TB, db *pg.DB) {
+func truncate(tb testing.TB, db *pg.DB) {
 	_, err := db.Exec(`TRUNCATE TABLE visor_processing_reports`)
 	require.NoError(tb, err, "visor_processing_report")
 }
 
-// fill the table at every epoch with every task for `count` epochs.
-func initializeVPR(tb testing.TB, db *pg.DB, count uint64, reporter string, tasks ...string) {
+type PREditor struct {
+	t        testing.TB
+	db       *pg.DB
+	reporter string
+}
+
+func NewPREditor(tb testing.TB, db *pg.DB, reporter string) *PREditor {
+	return &PREditor{
+		t:        tb,
+		db:       db,
+		reporter: reporter,
+	}
+}
+
+type PREditorQuery struct {
+	epoch             int64
+	tasks             []string
+	status            string
+	statusInformation string
+}
+
+type PREditorOption func(q *PREditorQuery)
+
+func WithTasks(tasks ...string) PREditorOption {
+	return func(q *PREditorQuery) {
+		q.tasks = tasks
+	}
+}
+
+func WithStatusInformation(statusInformation string) PREditorOption {
+	return func(q *PREditorQuery) {
+		q.statusInformation = statusInformation
+	}
+}
+
+func (e *PREditor) truncate() {
+	_, err := e.db.Exec(`TRUNCATE TABLE visor_processing_reports`)
+	require.NoError(e.t, err, "visor_processing_report")
+}
+
+func (e *PREditor) initialize(count uint64, tasks ...string) {
 	// build the task array
 	// uncomment to see all query
 	// db.AddQueryHook(&LoggingQueryHook{})
@@ -517,40 +480,74 @@ func initializeVPR(tb testing.TB, db *pg.DB, count uint64, reporter string, task
         for epoch in 0..%d loop
                 foreach task_name in array arr loop
                 insert into public.visor_processing_reports(height, state_root, reporter, task, started_at, completed_at, status, status_information, errors_detected)
-                values(epoch, concat(epoch, '_state_root'), '%s', task_name, '2021-01-01 00:00:00.000000 +00:00', '2021-01-21 00:00:00.000000 +00:00', 'OK',null, null);
+                values(epoch, concat(epoch, '_state_root'), '%s', task_name, '2021-01-01 00:00:00.000000 +00:00', '2021-01-21 00:00:00.000000 +00:00', 'OK', null, null);
                     end loop;
             end loop;
     end;
-$$;`, taskQbuilder.String(), count, reporter)
-	_, err := db.Exec(query)
+$$;`, taskQbuilder.String(), count, e.reporter)
+	_, err := e.db.Exec(query)
 
-	require.NoError(tb, err)
+	require.NoError(e.t, err)
 }
 
-type MockedFindLens struct {
-	mock.Mock
-}
-
-func (m *MockedFindLens) ChainGetTipSetByHeight(ctx context.Context, epoch abi.ChainEpoch, tsk types.TipSetKey) (*types.TipSet, error) {
-	args := m.Called(ctx, epoch, tsk)
-	return args.Get(0).(*types.TipSet), args.Error(1)
-}
-
-func fakeTipset(t testing.TB, height int) *types.TipSet {
-	bh := &types.BlockHeader{
-		Miner:                 address.TestAddress,
-		Height:                abi.ChainEpoch(height),
-		ParentStateRoot:       testutil.RandomCid(),
-		Parents:               []cid.Cid{testutil.RandomCid()},
-		Messages:              testutil.RandomCid(),
-		ParentMessageReceipts: testutil.RandomCid(),
-		BlockSig:              &crypto.Signature{Type: crypto.SigTypeBLS},
-		BLSAggregate:          &crypto.Signature{Type: crypto.SigTypeBLS},
-		Timestamp:             uint64(time.Now().Unix()),
+func (e *PREditor) updateEpochStatus(epoch int64, status string, opts ...PREditorOption) {
+	q := &PREditorQuery{
+		epoch:  epoch,
+		status: status,
+		tasks:  AllTasks,
 	}
-	ts, err := types.NewTipSet([]*types.BlockHeader{bh})
-	require.NoError(t, err)
-	return ts
+	for _, opt := range opts {
+		opt(q)
+	}
+	for _, task := range q.tasks {
+		_, err := e.db.Exec(
+			`
+	update visor_processing_reports
+	set status = ?, status_information = ?
+	where height = ? and task = ? and reporter = ?
+`,
+			q.status, q.statusInformation, q.epoch, task, e.reporter)
+		require.NoError(e.t, err)
+	}
+}
+
+func (e *PREditor) insertEpochStatus(epoch int64, status string, opts ...PREditorOption) {
+	q := &PREditorQuery{
+		epoch:  epoch,
+		status: status,
+		tasks:  AllTasks,
+	}
+	for _, opt := range opts {
+		opt(q)
+	}
+	for _, task := range q.tasks {
+		qsrt := fmt.Sprintf(`
+	insert into public.visor_processing_reports(height, state_root, reporter, task, started_at, completed_at, status, status_information, errors_detected)
+	values(%d, concat(%d, '_state_root'), '%s', '%s', '2021-01-01 00:00:00.000000 +00:00', '2021-01-21 00:00:00.000000 +00:00', '%s', null, null);
+			`, q.epoch, q.epoch, e.reporter, task, q.status)
+		_, err := e.db.Exec(qsrt)
+		require.NoError(e.t, err)
+	}
+}
+
+func (e *PREditor) deleteEpochStatus(epoch int64, status string, opts ...PREditorOption) {
+	q := &PREditorQuery{
+		epoch:  epoch,
+		status: status,
+		tasks:  AllTasks,
+	}
+	for _, opt := range opts {
+		opt(q)
+	}
+	for _, task := range q.tasks {
+		_, err := e.db.Exec(
+			`
+	delete from visor_processing_reports
+	where height = ? and task = ? and status = ? and reporter = ?
+`,
+			q.epoch, task, q.status, e.reporter)
+		require.NoError(e.t, err)
+	}
 }
 
 type LoggingQueryHook struct{}
