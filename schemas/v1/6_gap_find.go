@@ -63,7 +63,7 @@ BEGIN
 		FROM heights_in_processing_report pr
 		CROSS JOIN interesting_tasks t
 		WHERE (
-			pr.status_information = null_status
+			pr.status_information = null_status AND pr.status = 'INFO'
 		)
 		GROUP BY 1, 2
 	)
