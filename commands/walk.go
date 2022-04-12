@@ -38,7 +38,6 @@ var WalkCmd = &cli.Command{
 			Name:        "tasks",
 			Usage:       "Comma separated list of tasks to run. Each task is reported separately in the database.",
 			EnvVars:     []string{"LILY_TASKS"},
-			Value:       strings.Join([]string{indexer.BlocksTask, indexer.MessagesTask, indexer.ReceiptTask, indexer.ChainEconomicsTask, indexer.ActorStatesRawTask}, ","),
 			Destination: &walkFlags.tasks,
 		},
 		&cli.DurationFlag{
@@ -116,7 +115,7 @@ var WalkCmd = &cli.Command{
 
 		tasks := strings.Split(walkFlags.tasks, ",")
 		if walkFlags.tasks == "*" {
-			tasks = indexer.AllTasks
+			tasks = indexer.AllTableTasks
 		}
 
 		cfg := &lily.LilyWalkConfig{

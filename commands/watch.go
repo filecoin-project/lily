@@ -57,7 +57,6 @@ var WatchCmd = &cli.Command{
 			Name:        "tasks",
 			Usage:       "Comma separated list of tasks to run. Each task is reported separately in the database.",
 			EnvVars:     []string{"LILY_TASKS"},
-			Value:       strings.Join([]string{indexer.BlocksTask, indexer.MessagesTask, indexer.ReceiptTask, indexer.ChainEconomicsTask, indexer.ActorStatesRawTask}, ","),
 			Destination: &watchFlags.tasks,
 		},
 		&cli.DurationFlag{
@@ -106,7 +105,7 @@ var WatchCmd = &cli.Command{
 
 		tasks := strings.Split(watchFlags.tasks, ",")
 		if watchFlags.tasks == "*" {
-			tasks = indexer.AllTasks
+			tasks = indexer.AllTableTasks
 		}
 
 		cfg := &lily.LilyWatchConfig{

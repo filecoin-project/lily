@@ -2,13 +2,15 @@ package blocks
 
 import (
 	"context"
+
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/filecoin-project/lily/metrics"
-	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
+
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
 )
 
 func NewDrandBlockEntries(header *types.BlockHeader) DrandBlockEntries {
@@ -22,8 +24,11 @@ func NewDrandBlockEntries(header *types.BlockHeader) DrandBlockEntries {
 	return out
 }
 
+// DrandBlockEntrie contains Drand randomness round numbers used in each block.
 type DrandBlockEntrie struct {
+	// Round is the round number of randomness used.
 	Round uint64 `pg:",pk,use_zero"`
+	// Block is the CID of the block.
 	Block string `pg:",notnull"`
 }
 

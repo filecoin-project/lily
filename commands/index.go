@@ -52,7 +52,7 @@ var IndexTipSetCmd = &cli.Command{
 
 		tasks := strings.Split(indexFlags.tasks, ",")
 		if indexFlags.tasks == "*" {
-			tasks = indexer.AllTasks
+			tasks = indexer.AllTableTasks
 		}
 
 		cfg := &lily.LilyIndexConfig{
@@ -115,7 +115,7 @@ var IndexHeightCmd = &cli.Command{
 
 		tasks := strings.Split(indexFlags.tasks, ",")
 		if indexFlags.tasks == "*" {
-			tasks = indexer.AllTasks
+			tasks = indexer.AllTableTasks
 		}
 
 		cfg := &lily.LilyIndexConfig{
@@ -143,7 +143,6 @@ var IndexCmd = &cli.Command{
 			Name:        "tasks",
 			Usage:       "Comma separated list of tasks to run. Each task is reported separately in the database.",
 			EnvVars:     []string{"LILY_TASKS"},
-			Value:       strings.Join([]string{indexer.BlocksTask, indexer.MessagesTask, indexer.ReceiptTask, indexer.ChainEconomicsTask, indexer.ActorStatesRawTask}, ","),
 			Destination: &indexFlags.tasks,
 		},
 		&cli.StringFlag{

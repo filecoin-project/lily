@@ -3,11 +3,12 @@ package miner
 import (
 	"context"
 
-	"github.com/filecoin-project/lily/metrics"
-	"github.com/filecoin-project/lily/model"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
 )
 
 const (
@@ -35,10 +36,7 @@ type MinerSectorEvent struct {
 	SectorID  uint64 `pg:",pk,use_zero"`
 	StateRoot string `pg:",pk,notnull"`
 
-	// https://github.com/go-pg/pg/issues/993
-	// override the SQL type with enum type, see 1_chainwatch.go for enum definition
-	//lint:ignore SA5008 duplicate tag allowed by go-pg
-	Event string `pg:"type:miner_sector_event_type" pg:",pk,notnull"`
+	Event string `pg:"type:miner_sector_event_type" pg:",pk,notnull"` //lint:ignore SA5008 duplicate tag allowed by go-pg
 }
 
 func (mse *MinerSectorEvent) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {

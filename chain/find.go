@@ -28,9 +28,10 @@ var FullTaskSet mapset.Set
 
 func init() {
 	FullTaskSet = mapset.NewSet()
-	for _, t := range indexer.AllTasks {
+	for _, t := range indexer.AllTableTasks {
 		FullTaskSet.Add(t)
 	}
+
 }
 
 func NewGapIndexer(node lens.API, db *storage.Database, name string, minHeight, maxHeight uint64, tasks []string) *GapIndexer {
@@ -187,7 +188,7 @@ func (g *GapIndexer) findEpochGapsAndNullRounds(ctx context.Context, node GapInd
 		}
 		if tsgap.Height() == gh {
 			log.Debugw("found gap", "height", gh)
-			for _, task := range indexer.AllTasks {
+			for _, task := range indexer.AllTableTasks {
 				gapReport = append(gapReport, &visor.GapReport{
 					Height:     int64(tsgap.Height()),
 					Task:       task,
@@ -264,7 +265,7 @@ select height, task
 order by height desc
 ;
 `,
-		len(indexer.AllTasks),                      // arg 0
+		len(indexer.AllTableTasks),                 // arg 0
 		visor.ProcessingStatusInformationNullRound, // arg 1
 		g.minHeight,              // arg 2
 		g.maxHeight,              // arg 3
