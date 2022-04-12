@@ -25,8 +25,6 @@ type Task struct {
 	node tasks.DataSource
 
 	extracterMap ActorExtractorMap
-
-	apwg sync.WaitGroup
 }
 
 func NewTask(node tasks.DataSource, extracterMap ActorExtractorMap) *Task {
@@ -115,13 +113,14 @@ func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, execute
 }
 
 func (t *Task) startActorStateExtraction(ctx context.Context, current, executed *types.TipSet, actors tasks.ActorStateChangeDiff, results chan *ActorStateResult) {
+	var wg sync.WaitGroup
 	for addr, ac := range actors {
 		addr := addr
 		ac := ac
 
-		t.apwg.Add(1)
+		wg.Add(1)
 		go func() {
-			defer t.apwg.Done()
+			defer wg.Done()
 
 			ctx, _ = tag.New(ctx, tag.Upsert(metrics.ActorCode, builtin.ActorNameByCode(ac.Actor.Code)))
 
@@ -144,9 +143,9 @@ func (t *Task) startActorStateExtraction(ctx context.Context, current, executed 
 			} else {
 				for _, e := range ae {
 					e := e
-					t.apwg.Add(1)
+					wg.Add(1)
 					go func() {
-						defer t.apwg.Done()
+						defer wg.Done()
 
 						res := &ActorStateResult{
 							Code:    ac.Actor.Code,
@@ -167,7 +166,7 @@ func (t *Task) startActorStateExtraction(ctx context.Context, current, executed 
 		}()
 	}
 	go func() {
-		t.apwg.Wait()
+		wg.Wait()
 		close(results)
 	}()
 }
