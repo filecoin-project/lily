@@ -42,10 +42,12 @@ func (me *ModelExporter) ExportResult(ctx context.Context, strg model.Storage, h
 	// lock exporting based on height only allowing a single height to be persisted simultaneously
 	heightKey := strconv.FormatInt(height, 10)
 	me.heightKeyMu.LockKey(heightKey)
-	if err := me.heightKeyMu.UnlockKey(heightKey); err != nil {
-		//NB: this could be a panic or ignored since it would indicate some fundamentally impossible error, the lock will always exist given the prior lock call.
-		return err
-	}
+	defer func() {
+		if err := me.heightKeyMu.UnlockKey(heightKey); err != nil {
+			//NB: this could be a panic or ignored since it would indicate some fundamentally impossible error, the lock will always exist given the prior lock call.
+			log.Errorw("failed to unlock export keymutex", "error", err, "height", height)
+		}
+	}()
 
 	grp, ctx := errgroup.WithContext(ctx)
 	for _, res := range results {
