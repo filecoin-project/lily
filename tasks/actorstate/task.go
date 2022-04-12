@@ -99,7 +99,7 @@ func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, execute
 		data = append(data, res.Data)
 	}
 
-	log.Infow("completed processing actor state changes", "height", current.Height(), "success", len(actors)-len(errorsDetected)-skippedActors, "errors", len(errorsDetected), "skipped", skippedActors, "time", time.Since(start))
+	log.Debugw("completed processing actor state changes", "height", current.Height(), "success", len(actors)-len(errorsDetected)-skippedActors, "errors", len(errorsDetected), "skipped", skippedActors, "time", time.Since(start))
 
 	if skippedActors > 0 {
 		report.StatusInformation = fmt.Sprintf("did not parse %d actors", skippedActors)
