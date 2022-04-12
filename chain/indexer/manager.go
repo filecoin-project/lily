@@ -151,6 +151,6 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
 		return false, err
 	}
 
-	lg.Infow("index tipset complete", ts.Height(), "success", success)
+	lg.Infow("index tipset complete", "success", success)
 	return success, nil
 }
