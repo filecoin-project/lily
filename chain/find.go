@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-pg/pg/v10"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/storage"
@@ -53,10 +53,10 @@ func (g *GapIndexer) Find(ctx context.Context) (visor.GapReportList, error) {
 		`
 SELECT * FROM gap_find(?,?,?,?,?);
 `,
-		len(indexer.AllTableTasks),                 // arg 0
-		visor.ProcessingStatusInformationNullRound, // arg 1
-		g.minHeight,                                // arg 2
-		g.maxHeight,                                // arg 3
+		pg.Array(g.tasks), // arg 0
+		g.minHeight,       // arg 1
+		g.maxHeight,       // arg 2
+		visor.ProcessingStatusInformationNullRound, // arg 3
 		visor.ProcessingStatusOK,                   // arg 4
 	)
 	if err != nil {
