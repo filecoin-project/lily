@@ -222,7 +222,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 			s.jobsMu.Lock()
 
 			s.jobs[newTask.id] = newTask
-			newTask.log = log.With("id", newTask.id, "name", newTask.Name)
+			newTask.log = log.With("id", newTask.id, "reporter", newTask.Name)
 			newTask.log.Infow("new job received")
 
 			s.jobsMu.Unlock()
