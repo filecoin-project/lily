@@ -94,7 +94,7 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "Manager.TipSet")
 	defer span.End()
 	lg := log.With("height", ts.Height(), "reporter", i.name)
-	lg.Infow("index tipset")
+	lg.Info("index tipset")
 
 	var cancel func()
 	var procCtx context.Context // cancellable context for the task
