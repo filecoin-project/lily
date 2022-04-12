@@ -108,7 +108,7 @@ var GapFillCmd = &cli.Command{
 
 		var tasks []string
 		if gapFlags.tasks == "" {
-			tasks = indexer.AllTasks
+			tasks = indexer.AllTableTasks
 		} else {
 			tasks = strings.Split(gapFlags.tasks, ",")
 		}
@@ -203,7 +203,7 @@ var GapFindCmd = &cli.Command{
 
 		var tasks []string
 		if gapFlags.tasks == "" {
-			tasks = indexer.AllTasks
+			tasks = indexer.AllTableTasks
 		} else {
 			tasks = strings.Split(gapFlags.tasks, ",")
 		}

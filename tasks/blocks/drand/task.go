@@ -1,4 +1,4 @@
-package blocks
+package drand
 
 import (
 	"context"
@@ -37,8 +37,6 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 		default:
 		}
 
-		pl = append(pl, blocks.NewBlockHeader(bh))
-		pl = append(pl, blocks.NewBlockParents(bh))
 		pl = append(pl, blocks.NewDrandBlockEntries(bh))
 	}
 

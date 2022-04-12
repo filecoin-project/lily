@@ -53,7 +53,7 @@ func (g *GapIndexer) Find(ctx context.Context) (visor.GapReportList, error) {
 		`
 SELECT * FROM gap_find(?,?,?,?,?);
 `,
-		len(indexer.AllTasks),                      // arg 0
+		len(indexer.AllTableTasks),                 // arg 0
 		visor.ProcessingStatusInformationNullRound, // arg 1
 		g.minHeight,                                // arg 2
 		g.maxHeight,                                // arg 3

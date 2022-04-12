@@ -33,7 +33,7 @@ import (
 
 // Note this list is manually updated. Its only significant use is to verify schema compatibility
 // between the version of lily being used and the database being written to.
-var models = []interface{}{
+var Models = []interface{}{
 	(*blocks.BlockHeader)(nil),
 	(*blocks.BlockParent)(nil),
 	(*blocks.DrandBlockEntrie)(nil),
@@ -278,7 +278,7 @@ func verifyCurrentSchema(ctx context.Context, db *pg.DB, cfg schemas.Config) err
 	}
 
 	valid := true
-	for _, model := range models {
+	for _, model := range Models {
 		if vm, ok := model.(versionable); ok {
 			m, ok := vm.AsVersion(version)
 			if !ok {

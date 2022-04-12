@@ -127,6 +127,11 @@ actors-gen:
 	go run ./chain/actors/agen
 	go fmt ./...
 
+.PHONY: tasks-gen
+tasks-gen:
+	go run ./chain/indexer/tablegen
+	go fmt ./...
+
 .PHONY: itest
 itest:
 	LILY_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test --tags=integration ./itests/
