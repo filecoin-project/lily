@@ -62,7 +62,7 @@ SELECT * FROM gap_find(?,?,?,?,?);
 	if err != nil {
 		return nil, err
 	}
-	log.Infow("executed find task epoch gap query", "count", res.RowsReturned())
+	log.Infow("executed find task epoch gap query", "count", res.RowsReturned(), "reporter", g.name)
 	for _, th := range result {
 		select {
 		case <-ctx.Done():

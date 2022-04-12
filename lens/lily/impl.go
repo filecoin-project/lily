@@ -144,7 +144,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		Job: chain.NewWatcher(&watcherAPIWrapper{
 			Events:         m.Events,
 			ChainModuleAPI: m.ChainModuleAPI,
-		}, im, cfg.Confidence, cfg.Workers, cfg.BufferSize),
+		}, im, cfg.Name, cfg.Confidence, cfg.Workers, cfg.BufferSize),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,
@@ -188,7 +188,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 			"storage":   cfg.Storage,
 		},
 		Tasks:               cfg.Tasks,
-		Job:                 chain.NewWalker(im, m, cfg.From, cfg.To),
+		Job:                 chain.NewWalker(im, m, cfg.Name, cfg.From, cfg.To),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,

@@ -114,7 +114,7 @@ func (sp *StateProcessor) startReport(ctx context.Context, current *types.TipSet
 			stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 			defer stop()
 
-			pl := log.With("task", name, "height", current.Height())
+			pl := log.With("task", name, "height", current.Height(), "reporter", sp.name)
 			pl.Infow("processor started")
 			defer func() {
 				pl.Infow("processor ended", "duration", time.Since(start))
@@ -161,7 +161,7 @@ func (sp *StateProcessor) startTipSet(ctx context.Context, current *types.TipSet
 			stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 			defer stop()
 
-			pl := log.With("task", name, "height", current.Height())
+			pl := log.With("task", name, "height", current.Height(), "reporter", sp.name)
 			pl.Infow("processor started")
 			defer func() {
 				pl.Infow("processor ended", "duration", time.Since(start))
@@ -209,7 +209,7 @@ func (sp *StateProcessor) startTipSets(ctx context.Context, current, executed *t
 			stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 			defer stop()
 
-			pl := log.With("task", name, "height", current.Height())
+			pl := log.With("task", name, "height", current.Height(), "reporter", sp.name)
 			pl.Infow("processor started")
 			defer func() {
 				pl.Infow("processor ended", "duration", time.Since(start))
@@ -293,7 +293,7 @@ func (sp *StateProcessor) startActor(ctx context.Context, current, executed *typ
 				stop := metrics.Timer(ctx, metrics.ProcessingDuration)
 				defer stop()
 
-				pl := log.With("task", name, "height", current.Height())
+				pl := log.With("task", name, "height", current.Height(), "reporter", sp.name)
 				pl.Infow("processor started")
 				defer func() {
 					pl.Infow("processor ended", "duration", time.Since(start))

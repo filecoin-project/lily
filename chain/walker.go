@@ -13,10 +13,11 @@ import (
 	"github.com/filecoin-project/lily/lens"
 )
 
-func NewWalker(obs *indexer.Manager, node lens.API, minHeight, maxHeight int64) *Walker {
+func NewWalker(obs *indexer.Manager, node lens.API, name string, minHeight, maxHeight int64) *Walker {
 	return &Walker{
 		node:      node,
 		obs:       obs,
+		name:      name,
 		minHeight: minHeight,
 		maxHeight: maxHeight,
 	}
@@ -26,6 +27,7 @@ func NewWalker(obs *indexer.Manager, node lens.API, minHeight, maxHeight int64) 
 type Walker struct {
 	node      lens.API
 	obs       *indexer.Manager
+	name      string
 	minHeight int64 // limit persisting to tipsets equal to or above this height
 	maxHeight int64 // limit persisting to tipsets equal to or below this height}
 	done      chan struct{}
@@ -88,14 +90,14 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 			return ctx.Err()
 		default:
 		}
-		log.Infow("walk tipset", "height", ts.Height())
+		log.Infow("walk tipset", "height", ts.Height(), "reporter", c.name)
 		if success, err := c.obs.TipSet(ctx, ts); err != nil {
 			span.RecordError(err)
 			return xerrors.Errorf("notify tipset: %w", err)
 		} else if !success {
-			log.Errorw("walk incomplete", "height", ts.Height(), "tipset", ts.Key().String())
+			log.Errorw("walk incomplete", "height", ts.Height(), "tipset", ts.Key().String(), "reporter", c.name)
 		}
-		log.Infow("walk tipset success", "height", ts.Height())
+		log.Infow("walk tipset success", "height", ts.Height(), "reporter", c.name)
 
 		ts, err = node.ChainGetTipSet(ctx, ts.Parents())
 		if err != nil {

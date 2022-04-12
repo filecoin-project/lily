@@ -109,7 +109,7 @@ func NewScheduler(jobDelay time.Duration, scheduledJobs ...*JobConfig) *Schedule
 	for _, st := range scheduledJobs {
 		s.jobID++
 		st.id = s.jobID
-		st.log = log.With("id", st.id, "name", st.Name)
+		st.log = log.With("id", st.id, "reporter", st.Name)
 		s.jobs[s.jobID] = st
 	}
 	return s

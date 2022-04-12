@@ -63,7 +63,7 @@ func TestWalker(t *testing.T) {
 	im, err := indexer.NewManager(taskAPI, strg, t.Name(), []string{indexer.BlocksTask}, indexer.WithWindow(builtin.EpochDurationSeconds*time.Second))
 	require.NoError(t, err, "NewManager")
 	t.Logf("initializing indexer")
-	idx := NewWalker(im, nodeAPI, 0, int64(head.Height()))
+	idx := NewWalker(im, nodeAPI, t.Name(), 0, int64(head.Height()))
 
 	t.Logf("indexing chain")
 	err = idx.WalkChain(ctx, nodeAPI, head)

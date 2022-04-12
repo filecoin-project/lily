@@ -50,7 +50,7 @@ func (g *GapFiller) Run(ctx context.Context) error {
 		return err
 	}
 	fillStart := time.Now()
-	fillLog.Infow("gap fill start", "start", fillStart.String(), "total_epoch_gaps", len(gaps), "from", g.minHeight, "to", g.maxHeight, "task", g.tasks)
+	fillLog.Infow("gap fill start", "start", fillStart.String(), "total_epoch_gaps", len(gaps), "from", g.minHeight, "to", g.maxHeight, "task", g.tasks, "reporter", g.name)
 
 	taskAPI, err := datasource.NewDataSource(g.node)
 	if err != nil {
@@ -68,26 +68,26 @@ func (g *GapFiller) Run(ctx context.Context) error {
 			return err
 		}
 
-		fillLog.Infof("filling height %d", heights)
+		fillLog.Infow("filling gap", "height", heights, "reporter", g.name)
 		ts, err := g.node.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(height), types.EmptyTSK)
 		if err != nil {
 			return err
 		}
 		fillLog.Infof("got tipset for height %d, tipset height %d", heights, ts.Height())
 		if success, err := index.TipSet(ctx, ts); err != nil {
-			fillLog.Errorw("fill indexing encountered fatal error", "height", height, "tipset", ts.Key().String(), "error", err, "tasks", gaps[height])
+			fillLog.Errorw("fill indexing encountered fatal error", "height", height, "tipset", ts.Key().String(), "error", err, "tasks", gaps[height], "reporter", g.name)
 			return err
 		} else if !success {
-			fillLog.Errorw("fill indexing failed to successfully index tipset, skipping fill for tipset, gap remains", "height", height, "tipset", ts.Key().String(), "tasks", gaps[height])
+			fillLog.Errorw("fill indexing failed to successfully index tipset, skipping fill for tipset, gap remains", "height", height, "tipset", ts.Key().String(), "tasks", gaps[height], "reporter", g.name)
 			continue
 		}
-		fillLog.Infow("fill success", "epoch", ts.Height(), "tasks_filled", gaps[height], "duration", time.Since(runStart))
+		fillLog.Infow("fill success", "epoch", ts.Height(), "tasks_filled", gaps[height], "duration", time.Since(runStart), "reporter", g.name)
 
 		if err := g.setGapsFilled(ctx, height, gaps[height]...); err != nil {
 			return err
 		}
 	}
-	fillLog.Infow("gap fill complete", "duration", time.Since(fillStart), "total_epoch_gaps", len(gaps), "from", g.minHeight, "to", g.maxHeight, "task", g.tasks)
+	fillLog.Infow("gap fill complete", "duration", time.Since(fillStart), "total_epoch_gaps", len(gaps), "from", g.minHeight, "to", g.maxHeight, "task", g.tasks, "reporter", g.name)
 
 	return nil
 }

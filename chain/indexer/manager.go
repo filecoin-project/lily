@@ -30,6 +30,7 @@ type Manager struct {
 	indexer  Indexer
 	exporter Exporter
 	window   time.Duration
+	name     string
 }
 
 type ManagerOpt func(i *Manager)
@@ -65,6 +66,7 @@ func NewManager(api tasks.DataSource, strg model.Storage, name string, tasks []s
 		api:     api,
 		storage: strg,
 		window:  0,
+		name:    name,
 	}
 
 	for _, opt := range opts {
@@ -80,7 +82,7 @@ func NewManager(api tasks.DataSource, strg model.Storage, name string, tasks []s
 	}
 
 	if im.exporter == nil {
-		im.exporter = NewModelExporter()
+		im.exporter = NewModelExporter(name)
 	}
 	return im, nil
 }
@@ -91,7 +93,8 @@ func NewManager(api tasks.DataSource, strg model.Storage, name string, tasks []s
 func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "Manager.TipSet")
 	defer span.End()
-	log.Infow("index tipset", "height", ts.Height())
+	lg := log.With("height", ts.Height(), "reporter", i.name)
+	lg.Infow("index tipset")
 
 	var cancel func()
 	var procCtx context.Context // cancellable context for the task
@@ -123,16 +126,16 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
 	for res := range taskResults {
 		select {
 		case fatal := <-taskErrors:
-			log.Errorw("fatal indexer error", "height", ts.Height(), "error", fatal)
+			lg.Errorw("fatal indexer error", "error", fatal)
 			return false, fatal
 		default:
 			for _, report := range res.Report {
 				if report.Status != visormodel.ProcessingStatusOK &&
 					report.Status != visormodel.ProcessingStatusInfo {
-					log.Warnw("task failed", "height", ts.Height(), "task", res.Name, "status", report.Status, "errors", report.ErrorsDetected, "info", report.StatusInformation)
+					lg.Warnw("task failed", "task", res.Name, "status", report.Status, "errors", report.ErrorsDetected, "info", report.StatusInformation)
 					success = false
 				} else {
-					log.Infow("task success", "height", ts.Height(), "task", res.Name, "status", report.Status, "duration", report.CompletedAt.Sub(report.StartedAt))
+					lg.Infow("task success", "task", res.Name, "status", report.Status, "duration", report.CompletedAt.Sub(report.StartedAt))
 				}
 			}
 			modelResults = append(modelResults, &ModelResult{
@@ -148,6 +151,6 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
 		return false, err
 	}
 
-	log.Infow("index tipset complete", "height", ts.Height(), "success", success)
+	lg.Infow("index tipset complete", ts.Height(), "success", success)
 	return success, nil
 }

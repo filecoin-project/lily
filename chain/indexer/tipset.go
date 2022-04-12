@@ -327,7 +327,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Res
 		)
 	}
 
-	tsLog.Infow("index", "current", current.Height(), "executed", executed.Height())
+	tsLog.Infow("index", "reporter", t.name, "current", current.Height(), "executed", executed.Height())
 	stateResults, taskNames := t.procBuilder.Build().State(ctx, current, executed)
 
 	// build list of executing tasks, used below to label incomplete tasks as skipped.
@@ -375,7 +375,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Res
 				// received a result
 			default:
 
-				llt := tsLog.With("height", current.Height(), "task", res.Task)
+				llt := tsLog.With("height", current.Height(), "task", res.Task, "reporter", t.name)
 
 				// Was there a fatal error?
 				if res.Error != nil {

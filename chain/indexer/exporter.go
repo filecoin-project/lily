@@ -19,14 +19,16 @@ import (
 
 var mdlLog = logging.Logger("lily/index/exporter")
 
-func NewModelExporter() *ModelExporter {
+func NewModelExporter(name string) *ModelExporter {
 	return &ModelExporter{
 		heightKeyMu: keymutex.NewHashed(907), // a prime greater than finality.
+		name:        name,
 	}
 }
 
 type ModelExporter struct {
 	heightKeyMu keymutex.KeyMutex
+	name        string
 }
 
 type ModelResult struct {
@@ -45,7 +47,7 @@ func (me *ModelExporter) ExportResult(ctx context.Context, strg model.Storage, h
 	defer func() {
 		if err := me.heightKeyMu.UnlockKey(heightKey); err != nil {
 			//NB: this could be a panic or ignored since it would indicate some fundamentally impossible error, the lock will always exist given the prior lock call.
-			log.Errorw("failed to unlock export keymutex", "error", err, "height", height)
+			log.Errorw("failed to unlock export keymutex", "error", err, "height", height, "reporter", me.name)
 		}
 	}()
 
@@ -63,7 +65,7 @@ func (me *ModelExporter) ExportResult(ctx context.Context, strg model.Storage, h
 				stats.Record(ctx, metrics.PersistFailure.M(1))
 				return err
 			}
-			mdlLog.Infow("model data persisted", "height", height, "task", res.Name, "duration", time.Since(start))
+			mdlLog.Infow("model data persisted", "height", height, "task", res.Name, "duration", time.Since(start), "reporter", me.name)
 			return nil
 		})
 	}
