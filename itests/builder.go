@@ -321,7 +321,7 @@ func StateForTipSet(ctx context.Context, n *lily.LilyNodeAPI, ts *types.TipSet) 
 	}
 
 	// messages from the parent tipset, their receipts will be in (child) ts
-	parentMessages, err := n.ChainAPI.Chain.MessagesForTipset(pts)
+	parentMessages, err := n.ChainAPI.Chain.MessagesForTipset(ctx, pts)
 	if err != nil {
 		return nil, err
 	}
@@ -338,7 +338,7 @@ func StateForTipSet(ctx context.Context, n *lily.LilyNodeAPI, ts *types.TipSet) 
 
 		// map of parent messages to their receipts
 		for i := 0; i < len(parentMessages); i++ {
-			r, err := n.ChainAPI.Chain.GetParentReceipt(blk, i)
+			r, err := n.ChainAPI.Chain.GetParentReceipt(ctx, blk, i)
 			if err != nil {
 				return nil, err
 			}

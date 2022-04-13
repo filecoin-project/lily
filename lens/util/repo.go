@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/filecoin-project/go-bitfield"
+	"github.com/filecoin-project/go-state-types/exitcode"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -56,7 +57,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 	// Build a lookup of which blocks each message appears in
 	messageBlocks := map[cid.Cid][]cid.Cid{}
 	for blockIdx, bh := range executed.Blocks() {
-		blscids, secpkcids, err := cs.ReadMsgMetaCids(bh.Messages)
+		blscids, secpkcids, err := cs.ReadMsgMetaCids(ctx, bh.Messages)
 		if err != nil {
 			return nil, xerrors.Errorf("read messages for block: %w", err)
 		}
@@ -71,7 +72,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 	}
 	span.AddEvent("read block message metadata")
 
-	bmsgs, err := cs.BlockMsgsForTipset(executed)
+	bmsgs, err := cs.BlockMsgsForTipset(ctx, executed)
 	if err != nil {
 		return nil, xerrors.Errorf("block messages for tipset: %w", err)
 	}
@@ -159,15 +160,22 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		return nil, xerrors.Errorf("mismatching number of receipts: got %d wanted %d", rs.Length(), len(emsgs))
 	}
 
+	filVested, err := sm.GetFilVested(ctx, current.Height())
+	if err != nil {
+		return nil, err
+	}
 	// Create a skeleton vm just for calling ShouldBurn
 	vmi, err := vm.NewVM(ctx, &vm.VMOpts{
-		StateBase:      current.ParentState(),
-		Epoch:          current.Height(),
-		Bstore:         cs.StateBlockstore(),
-		NtwkVersion:    DefaultNetwork.Version,
+		StateBase: current.ParentState(),
+		Epoch:     current.Height(),
+		Bstore:    cs.StateBlockstore(),
+		// TODO is this `current` or `executed` height?
+		NetworkVersion: DefaultNetwork.Version(ctx, current.Height()),
 		Actors:         filcns.NewActorRegistry(),
 		Syscalls:       sm.Syscalls,
 		CircSupplyCalc: sm.GetVMCirculatingSupply,
+		BaseFee:        current.Blocks()[0].ParentBaseFee,
+		FilVested:      filVested,
 	})
 	if err != nil {
 		return nil, xerrors.Errorf("creating temporary vm: %w", err)
@@ -179,6 +187,8 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 	}
 	span.AddEvent("loaded parent state tree")
 
+	vmw := &vmWrapper{vm: vmi}
+
 	// Receipts are in same order as BlockMsgsForTipset
 	for _, em := range emsgs {
 		var r types.MessageReceipt
@@ -189,7 +199,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		}
 		em.Receipt = &r
 
-		burn, err := vmi.ShouldBurn(ctx, parentStateTree, em.Message, em.Receipt.ExitCode)
+		burn, err := vmw.ShouldBurn(ctx, parentStateTree, em.Message, em.Receipt.ExitCode)
 		if err != nil {
 			return nil, xerrors.Errorf("deciding whether should burn failed: %w", err)
 		}
@@ -201,7 +211,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 
 	blkMsgs := make([]*lens.BlockMessages, len(current.Blocks()))
 	for idx, blk := range current.Blocks() {
-		msgs, smsgs, err := cs.MessagesForBlock(blk)
+		msgs, smsgs, err := cs.MessagesForBlock(ctx, blk)
 		if err != nil {
 			return nil, err
 		}
@@ -218,6 +228,20 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		Executed: emsgs,
 		Block:    blkMsgs,
 	}, nil
+}
+
+type vmWrapper struct {
+	vm vm.Interface
+}
+
+func (v *vmWrapper) ShouldBurn(ctx context.Context, st *state.StateTree, msg *types.Message, errcode exitcode.ExitCode) (bool, error) {
+	if lvmi, ok := v.vm.(*vm.LegacyVM); ok {
+		return lvmi.ShouldBurn(ctx, st, msg, errcode)
+	}
+
+	// Any "don't burn" rules from Network v13 onwards go here, for now we always return true
+	// source: https://github.com/filecoin-project/lotus/blob/v1.15.1/chain/vm/vm.go#L647
+	return true, nil
 }
 
 func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (string, string, error) {

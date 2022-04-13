@@ -36,52 +36,52 @@ type ProxyingBlockstore struct {
 	gets  int64 // updated atomically
 }
 
-func (pb *ProxyingBlockstore) View(key cid.Cid, callback func([]byte) error) error {
-	if err := pb.cache.View(key, callback); err == nil {
+func (pb *ProxyingBlockstore) View(ctx context.Context, key cid.Cid, callback func([]byte) error) error {
+	if err := pb.cache.View(ctx, key, callback); err == nil {
 		return nil
 	}
-	return pb.store.View(key, callback)
+	return pb.store.View(ctx, key, callback)
 }
 
-func (pb *ProxyingBlockstore) DeleteMany(keys []cid.Cid) error {
-	return pb.cache.DeleteMany(keys)
+func (pb *ProxyingBlockstore) DeleteMany(ctx context.Context, keys []cid.Cid) error {
+	return pb.cache.DeleteMany(ctx, keys)
 }
 
-func (pb *ProxyingBlockstore) Get(c cid.Cid) (blocks.Block, error) {
+func (pb *ProxyingBlockstore) Get(ctx context.Context, c cid.Cid) (blocks.Block, error) {
 	atomic.AddInt64(&pb.gets, 1)
-	if block, err := pb.cache.Get(c); err == nil {
+	if block, err := pb.cache.Get(ctx, c); err == nil {
 		return block, err
 	}
 
-	return pb.store.Get(c)
+	return pb.store.Get(ctx, c)
 }
 
-func (pb *ProxyingBlockstore) Has(c cid.Cid) (bool, error) {
-	if h, err := pb.cache.Has(c); err == nil && h {
+func (pb *ProxyingBlockstore) Has(ctx context.Context, c cid.Cid) (bool, error) {
+	if h, err := pb.cache.Has(ctx, c); err == nil && h {
 		return true, nil
 	}
 
-	return pb.store.Has(c)
+	return pb.store.Has(ctx, c)
 }
 
-func (pb *ProxyingBlockstore) DeleteBlock(c cid.Cid) error {
-	return pb.cache.DeleteBlock(c)
+func (pb *ProxyingBlockstore) DeleteBlock(ctx context.Context, c cid.Cid) error {
+	return pb.cache.DeleteBlock(ctx, c)
 }
 
-func (pb *ProxyingBlockstore) GetSize(c cid.Cid) (int, error) {
-	if s, err := pb.cache.GetSize(c); err == nil {
+func (pb *ProxyingBlockstore) GetSize(ctx context.Context, c cid.Cid) (int, error) {
+	if s, err := pb.cache.GetSize(ctx, c); err == nil {
 		return s, nil
 	}
-	return pb.store.GetSize(c)
+	return pb.store.GetSize(ctx, c)
 }
 
-func (pb *ProxyingBlockstore) Put(b blocks.Block) error {
-	return pb.cache.Put(b)
+func (pb *ProxyingBlockstore) Put(ctx context.Context, b blocks.Block) error {
+	return pb.cache.Put(ctx, b)
 }
 
-func (pb *ProxyingBlockstore) PutMany(bs []blocks.Block) error {
+func (pb *ProxyingBlockstore) PutMany(ctx context.Context, bs []blocks.Block) error {
 	for _, b := range bs {
-		if err := pb.Put(b); err != nil {
+		if err := pb.Put(ctx, b); err != nil {
 			return err
 		}
 	}
@@ -150,20 +150,20 @@ func NewCachingBlockstore(blocks blockstore.Blockstore, cacheSize int) (*Caching
 	}, nil
 }
 
-func (cs *CachingBlockstore) DeleteBlock(c cid.Cid) error {
-	return cs.blocks.DeleteBlock(c)
+func (cs *CachingBlockstore) DeleteBlock(ctx context.Context, c cid.Cid) error {
+	return cs.blocks.DeleteBlock(ctx, c)
 }
 
-func (cs *CachingBlockstore) GetSize(c cid.Cid) (int, error) {
-	return cs.blocks.GetSize(c)
+func (cs *CachingBlockstore) GetSize(ctx context.Context, c cid.Cid) (int, error) {
+	return cs.blocks.GetSize(ctx, c)
 }
 
-func (cs *CachingBlockstore) Put(blk blocks.Block) error {
-	return cs.blocks.Put(blk)
+func (cs *CachingBlockstore) Put(ctx context.Context, blk blocks.Block) error {
+	return cs.blocks.Put(ctx, blk)
 }
 
-func (cs *CachingBlockstore) PutMany(blks []blocks.Block) error {
-	return cs.blocks.PutMany(blks)
+func (cs *CachingBlockstore) PutMany(ctx context.Context, blks []blocks.Block) error {
+	return cs.blocks.PutMany(ctx, blks)
 }
 
 func (cs *CachingBlockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, error) {
@@ -174,11 +174,11 @@ func (cs *CachingBlockstore) HashOnRead(enabled bool) {
 	cs.blocks.HashOnRead(enabled)
 }
 
-func (cs *CachingBlockstore) DeleteMany(cids []cid.Cid) error {
-	return cs.blocks.DeleteMany(cids)
+func (cs *CachingBlockstore) DeleteMany(ctx context.Context, cids []cid.Cid) error {
+	return cs.blocks.DeleteMany(ctx, cids)
 }
 
-func (cs *CachingBlockstore) Get(c cid.Cid) (blocks.Block, error) {
+func (cs *CachingBlockstore) Get(ctx context.Context, c cid.Cid) (blocks.Block, error) {
 	reads := atomic.AddInt64(&cs.reads, 1)
 	if reads%1000000 == 0 {
 		hits := atomic.LoadInt64(&cs.hits)
@@ -192,7 +192,7 @@ func (cs *CachingBlockstore) Get(c cid.Cid) (blocks.Block, error) {
 		return v.(blocks.Block), nil
 	}
 
-	blk, err := cs.blocks.Get(c)
+	blk, err := cs.blocks.Get(ctx, c)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ func (cs *CachingBlockstore) Get(c cid.Cid) (blocks.Block, error) {
 	return blk, err
 }
 
-func (cs *CachingBlockstore) View(c cid.Cid, callback func([]byte) error) error {
+func (cs *CachingBlockstore) View(ctx context.Context, c cid.Cid, callback func([]byte) error) error {
 	reads := atomic.AddInt64(&cs.reads, 1)
 	if reads%1000000 == 0 {
 		hits := atomic.LoadInt64(&cs.hits)
@@ -215,7 +215,7 @@ func (cs *CachingBlockstore) View(c cid.Cid, callback func([]byte) error) error 
 		return callback(v.(blocks.Block).RawData())
 	}
 
-	blk, err := cs.blocks.Get(c)
+	blk, err := cs.blocks.Get(ctx, c)
 	if err != nil {
 		return err
 	}
@@ -225,14 +225,14 @@ func (cs *CachingBlockstore) View(c cid.Cid, callback func([]byte) error) error 
 	return callback(blk.RawData())
 }
 
-func (cs *CachingBlockstore) Has(c cid.Cid) (bool, error) {
+func (cs *CachingBlockstore) Has(ctx context.Context, c cid.Cid) (bool, error) {
 	atomic.AddInt64(&cs.reads, 1)
 	// Safe to query cache since blockstore never deletes
 	if cs.cache.Contains(c) {
 		return true, nil
 	}
 
-	return cs.blocks.Has(c)
+	return cs.blocks.Has(ctx, c)
 }
 
 var _ adt.Store = (*CachingStateStore)(nil)
@@ -288,7 +288,7 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 		log.Debugw("CachingStateStore failed to read from cache", "error", err.Error())
 	}
 
-	blk, err := cas.blocks.Get(c)
+	blk, err := cas.blocks.Get(ctx, c)
 	if err != nil {
 		return err
 	}

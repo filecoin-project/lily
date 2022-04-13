@@ -90,12 +90,12 @@ func (ce *ChainExporter) Export(ctx context.Context) error {
 		}
 
 		// we haven't visited this cid and its part of a dag, write it to file
-		if err := ce.writeContent(c); err != nil {
+		if err := ce.writeContent(ctx, c); err != nil {
 			return err
 		}
 
 		if kind == BlockHeader {
-			blk, err := ce.store.Get(c)
+			blk, err := ce.store.Get(ctx, c)
 			if err != nil {
 				return err
 			}
@@ -121,25 +121,25 @@ func (ce *ChainExporter) Export(ctx context.Context) error {
 			// of range.
 			if b.Height == 0 || b.Height > abi.ChainEpoch(ce.Config.MinHeight) {
 				if ce.Config.IncludeMessages {
-					if err := ce.pushNewLinks(b.Messages, todo); err != nil {
+					if err := ce.pushNewLinks(ctx, b.Messages, todo); err != nil {
 						return err
 					}
 				}
 
 				if ce.Config.IncludeReceipts {
-					if err := ce.pushNewLinks(b.ParentMessageReceipts, todo); err != nil {
+					if err := ce.pushNewLinks(ctx, b.ParentMessageReceipts, todo); err != nil {
 						return err
 					}
 				}
 
 				if ce.Config.IncludeStateRoots {
-					if err := ce.pushNewLinks(b.ParentStateRoot, todo); err != nil {
+					if err := ce.pushNewLinks(ctx, b.ParentStateRoot, todo); err != nil {
 						return err
 					}
 				}
 			}
 		} else if kind == Dag {
-			if err := ce.pushNewLinks(c, todo); err != nil {
+			if err := ce.pushNewLinks(ctx, c, todo); err != nil {
 				return err
 			}
 		} else {
@@ -149,9 +149,9 @@ func (ce *ChainExporter) Export(ctx context.Context) error {
 	return nil
 }
 
-func (ce *ChainExporter) pushNewLinks(c cid.Cid, s *Stack) error {
+func (ce *ChainExporter) pushNewLinks(ctx context.Context, c cid.Cid, s *Stack) error {
 	s.Push(c, Dag)
-	data, err := ce.store.Get(c)
+	data, err := ce.store.Get(ctx, c)
 	if err != nil {
 		return err
 	}
@@ -160,8 +160,8 @@ func (ce *ChainExporter) pushNewLinks(c cid.Cid, s *Stack) error {
 	})
 }
 
-func (ce *ChainExporter) writeContent(c cid.Cid) error {
-	blk, err := ce.store.Get(c)
+func (ce *ChainExporter) writeContent(ctx context.Context, c cid.Cid) error {
+	blk, err := ce.store.Get(ctx, c)
 	if err != nil {
 		return err
 	}
