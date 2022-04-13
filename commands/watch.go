@@ -10,7 +10,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/urfave/cli/v2"
 
-	"github.com/filecoin-project/lily/chain"
+	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
@@ -22,6 +22,8 @@ type watchOps struct {
 	apiAddr    string
 	apiToken   string
 	name       string
+	workers    int
+	bufferSize int
 }
 
 var watchFlags watchOps
@@ -37,11 +39,24 @@ var WatchCmd = &cli.Command{
 			Value:       2,
 			Destination: &watchFlags.confidence,
 		},
+		&cli.IntFlag{
+			Name:        "workers",
+			Usage:       "Sets the number of tipsets that may be simultaneous indexed while watching",
+			EnvVars:     []string{"LILY_WATCH_WORKERS"},
+			Value:       4,
+			Destination: &watchFlags.workers,
+		},
+		&cli.IntFlag{
+			Name:        "buffer-size",
+			Usage:       "Set the number of tipsets the watcher will buffer while waiting for a worker to accept the work",
+			EnvVars:     []string{"LILY_WATCH_BUFFER"},
+			Value:       5,
+			Destination: &watchFlags.bufferSize,
+		},
 		&cli.StringFlag{
 			Name:        "tasks",
 			Usage:       "Comma separated list of tasks to run. Each task is reported separately in the database.",
 			EnvVars:     []string{"LILY_TASKS"},
-			Value:       strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorStatesRawTask}, ","),
 			Destination: &watchFlags.tasks,
 		},
 		&cli.DurationFlag{
@@ -88,15 +103,22 @@ var WatchCmd = &cli.Command{
 			watchName = watchFlags.name
 		}
 
+		tasks := strings.Split(watchFlags.tasks, ",")
+		if watchFlags.tasks == "*" {
+			tasks = indexer.AllTableTasks
+		}
+
 		cfg := &lily.LilyWatchConfig{
 			Name:                watchName,
-			Tasks:               strings.Split(watchFlags.tasks, ","),
+			Tasks:               tasks,
 			Window:              watchFlags.window,
 			Confidence:          watchFlags.confidence,
 			RestartDelay:        0,
 			RestartOnCompletion: false,
 			RestartOnFailure:    true,
 			Storage:             watchFlags.storage,
+			Workers:             watchFlags.workers,
+			BufferSize:          watchFlags.bufferSize,
 		}
 
 		api, closer, err := GetAPI(ctx, watchFlags.apiAddr, watchFlags.apiToken)

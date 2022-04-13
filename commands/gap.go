@@ -10,7 +10,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/lily/chain"
+	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
@@ -108,7 +108,7 @@ var GapFillCmd = &cli.Command{
 
 		var tasks []string
 		if gapFlags.tasks == "" {
-			tasks = chain.AllTasks
+			tasks = indexer.AllTableTasks
 		} else {
 			tasks = strings.Split(gapFlags.tasks, ",")
 		}
@@ -203,7 +203,7 @@ var GapFindCmd = &cli.Command{
 
 		var tasks []string
 		if gapFlags.tasks == "" {
-			tasks = chain.AllTasks
+			tasks = indexer.AllTableTasks
 		} else {
 			tasks = strings.Split(gapFlags.tasks, ",")
 		}

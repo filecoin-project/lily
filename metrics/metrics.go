@@ -41,11 +41,72 @@ var (
 	TipSetCacheSize         = stats.Int64("tipset_cache_size", "Configured size of the tipset cache (aka confidence).", stats.UnitDimensionless)
 	TipSetCacheDepth        = stats.Int64("tipset_cache_depth", "Number of tipsets currently in the tipset cache.", stats.UnitDimensionless)
 	TipSetCacheEmptyRevert  = stats.Int64("tipset_cache_empty_revert", "Number of revert operations performed on an empty tipset cache. This is an indication that a chain reorg is underway that is deeper than the cache size and includes tipsets that have already been read from the cache.", stats.UnitDimensionless)
-	WatcherActiveWorkers    = stats.Int64("watcher_active_workers", "Current number of watcher observers executing", stats.UnitDimensionless)
-	WatcherWaitingWorkers   = stats.Int64("watcher_waiting_workers", "Current number of watcher observers waiting to execute", stats.UnitDimensionless)
+	WatcherActiveWorkers    = stats.Int64("watcher_active_workers", "Current number of tipset indexers executing", stats.UnitDimensionless)
+	WatcherWaitingWorkers   = stats.Int64("watcher_waiting_workers", "Current number of tipset indexers waiting to execute", stats.UnitDimensionless)
+
+	DataSourceSectorDiffCacheHit               = stats.Int64("data_source_sector_diff_cache_hit", "Number of cache hits for sector diff", stats.UnitDimensionless)
+	DataSourceSectorDiffRead                   = stats.Int64("data_source_sector_diff_read", "Number of reads for sector diff", stats.UnitDimensionless)
+	DataSourcePreCommitDiffCacheHit            = stats.Int64("data_source_precommit_diff_cache_hit", "Number of cache hits for precommit diff", stats.UnitDimensionless)
+	DataSourcePreCommitDiffRead                = stats.Int64("data_source_precommit_diff_read", "Number of reads for precommit diff", stats.UnitDimensionless)
+	DataSourceMessageExecutionRead             = stats.Int64("data_source_message_execution_read", "Number of reads for message executions", stats.UnitDimensionless)
+	DataSourceMessageExecutionCacheHit         = stats.Int64("data_source_message_execution_cache_hit", "Number of cache hits for message executions", stats.UnitDimensionless)
+	DataSourceExecutedAndBlockMessagesRead     = stats.Int64("data_source_executed_block_messages_read", "Number of reads for executed block messages", stats.UnitDimensionless)
+	DataSourceExecutedAndBlockMessagesCacheHit = stats.Int64("data_source_executed_block_messages_cache_hig", "Number of cache hits for executed block messages", stats.UnitDimensionless)
+	DataSourceActorStateChangesFastDiff        = stats.Int64("data_source_actor_state_changes_fast_diff", "Number of fast diff operations performed for actor state changes", stats.UnitDimensionless)
+	DataSourceActorStateChangesSlowDiff        = stats.Int64("data_source_actor_state_changes_slow_diff", "Number of slow diff operations performed for actor state changes", stats.UnitDimensionless)
 )
 
 var DefaultViews = []*view.View{
+	{
+		Measure:     DataSourceActorStateChangesFastDiff,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{Job, TaskType, Name},
+	},
+	{
+		Measure:     DataSourceActorStateChangesSlowDiff,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{Job, TaskType, Name},
+	},
+	{
+		Measure:     DataSourceMessageExecutionRead,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{Job, TaskType, Name},
+	},
+	{
+		Measure:     DataSourceMessageExecutionCacheHit,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{Job, TaskType, Name},
+	},
+	{
+		Measure:     DataSourceExecutedAndBlockMessagesRead,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{Job, TaskType, Name},
+	},
+	{
+		Measure:     DataSourceExecutedAndBlockMessagesCacheHit,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{Job, TaskType, Name},
+	},
+	{
+		Measure:     DataSourceSectorDiffCacheHit,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{Job, TaskType, Name},
+	},
+	{
+		Measure:     DataSourceSectorDiffRead,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{Job, TaskType, Name},
+	},
+	{
+		Measure:     DataSourcePreCommitDiffCacheHit,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{Job, TaskType, Name},
+	},
+	{
+		Measure:     DataSourcePreCommitDiffRead,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{Job, TaskType, Name},
+	},
 	{
 		Measure:     ProcessingDuration,
 		Aggregation: defaultMillisecondsDistribution,

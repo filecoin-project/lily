@@ -130,6 +130,7 @@ func main() {
 			commands.ExportChainCmd,
 			commands.GapCmd,
 			commands.HelpCmd,
+			commands.IndexCmd,
 			commands.InitCmd,
 			commands.JobCmd,
 			commands.LogCmd,

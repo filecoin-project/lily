@@ -226,7 +226,7 @@ type CSVBatch struct {
 }
 
 func (c *CSVBatch) PersistModel(ctx context.Context, m interface{}) error {
-	if len(models) == 0 {
+	if len(Models) == 0 {
 		return nil
 	}
 

@@ -3,21 +3,32 @@ package common
 import (
 	"context"
 
-	"github.com/filecoin-project/lily/metrics"
-	"github.com/filecoin-project/lily/model"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
 )
 
+// Actor on chain that were added or updated at an epoch.
+// Associates the actor's state root CID (head) with the chain state root CID from which it decends.
+// Includes account ID nonce and balance at each state.
 type Actor struct {
-	Height    int64  `pg:",pk,notnull,use_zero"`
-	ID        string `pg:",pk,notnull"`
+	// Epoch when this actor was created or updated.
+	Height int64 `pg:",pk,notnull,use_zero"`
+	// ID Actor address.
+	ID string `pg:",pk,notnull"`
+	// CID of the state root when this actor was created or changed.
 	StateRoot string `pg:",pk,notnull"`
-	Code      string `pg:",notnull"`
-	Head      string `pg:",notnull"`
-	Balance   string `pg:",notnull"`
-	Nonce     uint64 `pg:",use_zero"`
+	// Human-readable identifier for the type of the actor.
+	Code string `pg:",notnull"`
+	// CID of the root of the state tree for the actor.
+	Head string `pg:",notnull"`
+	// Balance of Actor in attoFIL.
+	Balance string `pg:",notnull"`
+	// The next Actor nonce that is expected to appear on chain.
+	Nonce uint64 `pg:",use_zero"`
 }
 
 func (a *Actor) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
@@ -58,11 +69,16 @@ func (actors ActorList) Persist(ctx context.Context, s model.StorageBatch, versi
 	return s.PersistModel(ctx, actors)
 }
 
+// ActorState that were changed at an epoch. Associates actors states as single-level trees with CIDs pointing to complete state tree with the root CID (head) for that actor’s state.
 type ActorState struct {
-	Height int64  `pg:",pk,notnull,use_zero"`
-	Head   string `pg:",pk,notnull"`
-	Code   string `pg:",pk,notnull"`
-	State  string `pg:",type:jsonb,notnull"`
+	// Epoch when this actor was created or updated.
+	Height int64 `pg:",pk,notnull,use_zero"`
+	// CID of the root of the state tree for the actor.
+	Head string `pg:",pk,notnull"`
+	// CID identifier for the type of the actor.
+	Code string `pg:",pk,notnull"`
+	// Top level of state data as json.
+	State string `pg:",type:jsonb,notnull"`
 }
 
 func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {

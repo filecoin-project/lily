@@ -42,7 +42,7 @@ func TestSchemaIsCurrent(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { require.NoError(t, cleanup()) }()
 
-	for _, m := range models {
+	for _, m := range Models {
 		model := m
 		t.Run(fmt.Sprintf("%T", model), func(t *testing.T) {
 			q := db.Model(model)

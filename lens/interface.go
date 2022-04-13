@@ -56,7 +56,7 @@ type StateAPI interface {
 
 	StateReadState(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.ActorState, error)
 	StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error)
-	StateVMCirculatingSupplyInternal(context.Context, types.TipSetKey) (api.CirculatingSupply, error)
+	CirculatingSupply(context.Context, types.TipSetKey) (api.CirculatingSupply, error)
 	StateNetworkName(context.Context) (dtypes.NetworkName, error)
 }
 
@@ -96,19 +96,4 @@ type BlockMessages struct {
 	Block        *types.BlockHeader     // block messages appeared in
 	BlsMessages  []*types.Message       // BLS messages in block `Block`
 	SecpMessages []*types.SignedMessage // SECP messages in block `Block`
-}
-
-// ChangeType denotes type of state change
-type ChangeType int
-
-const (
-	ChangeTypeUnknown = 0
-	ChangeTypeAdd     = 1
-	ChangeTypeRemove  = 2
-	ChangeTypeModify  = 3
-)
-
-type ActorStateChange struct {
-	Actor      types.Actor
-	ChangeType ChangeType
 }

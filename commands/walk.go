@@ -13,7 +13,7 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/lens/lily"
 
-	"github.com/filecoin-project/lily/chain"
+	"github.com/filecoin-project/lily/chain/indexer"
 )
 
 type walkOps struct {
@@ -25,6 +25,7 @@ type walkOps struct {
 	apiAddr  string
 	apiToken string
 	name     string
+	workers  int
 }
 
 var walkFlags walkOps
@@ -37,7 +38,6 @@ var WalkCmd = &cli.Command{
 			Name:        "tasks",
 			Usage:       "Comma separated list of tasks to run. Each task is reported separately in the database.",
 			EnvVars:     []string{"LILY_TASKS"},
-			Value:       strings.Join([]string{chain.BlocksTask, chain.MessagesTask, chain.ChainEconomicsTask, chain.ActorStatesRawTask}, ","),
 			Destination: &walkFlags.tasks,
 		},
 		&cli.DurationFlag{
@@ -89,6 +89,13 @@ var WalkCmd = &cli.Command{
 			Value:       "",
 			Destination: &walkFlags.name,
 		},
+		&cli.IntFlag{
+			Name:        "workers",
+			Usage:       "Sets the number of tipsets that may be simultaneous indexed while walking",
+			EnvVars:     []string{"LILY_WALK_WORKERS"},
+			Value:       1,
+			Destination: &walkFlags.workers,
+		},
 	},
 	Before: func(cctx *cli.Context) error {
 		from, to := walkFlags.from, walkFlags.to
@@ -106,9 +113,14 @@ var WalkCmd = &cli.Command{
 			walkName = walkFlags.name
 		}
 
+		tasks := strings.Split(walkFlags.tasks, ",")
+		if walkFlags.tasks == "*" {
+			tasks = indexer.AllTableTasks
+		}
+
 		cfg := &lily.LilyWalkConfig{
 			Name:                walkName,
-			Tasks:               strings.Split(walkFlags.tasks, ","),
+			Tasks:               tasks,
 			Window:              walkFlags.window,
 			From:                walkFlags.from,
 			To:                  walkFlags.to,
@@ -116,6 +128,7 @@ var WalkCmd = &cli.Command{
 			RestartOnCompletion: false,
 			RestartOnFailure:    false,
 			Storage:             walkFlags.storage,
+			Workers:             walkFlags.workers,
 		}
 
 		api, closer, err := GetAPI(ctx, walkFlags.apiAddr, walkFlags.apiToken)

@@ -3,33 +3,35 @@ package itests
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/chain"
+	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/go-pg/pg/v10"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lily/model/actors/common"
 	"github.com/filecoin-project/lily/model/blocks"
 	chain2 "github.com/filecoin-project/lily/model/chain"
 	"github.com/filecoin-project/lily/model/messages"
 	"github.com/filecoin-project/lily/storage"
-	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/go-pg/pg/v10"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 var TaskModels = map[string][]string{
-	chain.MessagesTask:       {"messages", "parsed_messages", "block_messages", "derived_gas_outputs", "message_gas_economy", "receipts"},
-	chain.BlocksTask:         {"block_headers", "block_parents", "drand_block_entries"},
-	chain.ChainConsensusTask: {"chain_consensus"},
-	chain.ActorStatesRawTask: {"actors", "actor_states"},
+	indexer.MessagesTask:       {"receipts", "block_messages"},
+	indexer.BlocksTask:         {"block_headers", "block_parents", "drand_block_entries"},
+	indexer.ChainConsensusTask: {"chain_consensus"},
+	indexer.ActorStatesRawTask: {"actors", "actor_states"},
 }
 
 var TaskValidators = map[string][]interface{}{
-	chain.MessagesTask:       {BlockMessagesValidator{}, ReceiptsValidator{}},
-	chain.BlocksTask:         {BlockHeaderValidator{}, BlockParentsValidator{}, DrandBlockEntriesValidator{}},
-	chain.ChainConsensusTask: {ChainConsensusValidator{}},
-	chain.ActorStatesRawTask: {ActorValidator{}, ActorStatesValidator{}},
+	indexer.MessagesTask:       {BlockMessagesValidator{}, ReceiptsValidator{}},
+	indexer.BlocksTask:         {BlockHeaderValidator{}, BlockParentsValidator{}, DrandBlockEntriesValidator{}},
+	indexer.ChainConsensusTask: {ChainConsensusValidator{}},
+	indexer.ActorStatesRawTask: {ActorStatesValidator{}, ActorValidator{}},
 }
 
 type TipSetStateValidator interface {

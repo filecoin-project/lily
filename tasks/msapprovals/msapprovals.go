@@ -5,14 +5,15 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
 	"github.com/filecoin-project/lotus/chain/actors/builtin"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
+	"github.com/filecoin-project/lily/tasks"
+
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/msapprovals"
 	visormodel "github.com/filecoin-project/lily/model/visor"
@@ -24,26 +25,39 @@ const (
 )
 
 type Task struct {
-	node lens.API
+	node tasks.DataSource
 }
 
-func NewTask(node lens.API) *Task {
+func NewTask(node tasks.DataSource) *Task {
 	return &Task{
 		node: node,
 	}
 }
 
-func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types.TipSet, emsgs []*lens.ExecutedMessage, _ []*lens.BlockMessages) (model.Persistable, *visormodel.ProcessingReport, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "ProcessMultisigApprovals")
+func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, executed *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "ProcessTipSets")
 	if span.IsRecording() {
-		span.SetAttributes(attribute.String("tipset", ts.String()), attribute.Int64("height", int64(ts.Height())))
+		span.SetAttributes(
+			attribute.String("current", current.String()),
+			attribute.Int64("current_height", int64(current.Height())),
+			attribute.String("executed", executed.String()),
+			attribute.Int64("executed_height", int64(executed.Height())),
+			attribute.String("processor", "multisig_approvals"),
+		)
 	}
 	defer span.End()
 
 	report := &visormodel.ProcessingReport{
-		Height:    int64(pts.Height()),
-		StateRoot: pts.ParentState().String(),
+		Height:    int64(current.Height()),
+		StateRoot: current.ParentState().String(),
 	}
+
+	tsMsgs, err := p.node.ExecutedAndBlockMessages(ctx, current, executed)
+	if err != nil {
+		report.ErrorsDetected = xerrors.Errorf("getting executed and block messages: %w", err)
+		return nil, report, nil
+	}
+	emsgs := tsMsgs.Executed
 
 	errorsDetected := make([]*MultisigError, 0, len(emsgs))
 	results := make(msapprovals.MultisigApprovalList, 0) // no initial size capacity since approvals are rare
@@ -71,7 +85,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 			continue
 		}
 
-		applied, tx, err := p.getTransactionIfApplied(ctx, m.Message, m.Receipt, ts)
+		applied, tx, err := p.getTransactionIfApplied(ctx, m.Message, m.Receipt, current)
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
@@ -86,8 +100,8 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 
 		appr := msapprovals.MultisigApproval{
-			Height:        int64(pts.Height()),
-			StateRoot:     pts.ParentState().String(),
+			Height:        int64(executed.Height()),
+			StateRoot:     executed.ParentState().String(),
 			MultisigID:    m.Message.To.String(),
 			Message:       m.Cid.String(),
 			Method:        uint64(m.Message.Method),
@@ -99,7 +113,7 @@ func (p *Task) ProcessMessages(ctx context.Context, ts *types.TipSet, pts *types
 		}
 
 		// Get state of actor after the message has been applied
-		act, err := p.node.StateGetActor(ctx, m.Message.To, ts.Key())
+		act, err := p.node.Actor(ctx, m.Message.To, current.Key())
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
@@ -227,7 +241,7 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		// Get state of actor before the message was applied
 		// pts is the tipset containing the messages, so we need the state as seen at the start of message processing
 		// for that tipset
-		act, err := p.node.StateGetActor(ctx, msg.To, pts.Parents())
+		act, err := p.node.Actor(ctx, msg.To, pts.Parents())
 		if err != nil {
 			return false, nil, xerrors.Errorf("failed to load previous actor: %w", err)
 		}

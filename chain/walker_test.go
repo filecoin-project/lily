@@ -7,10 +7,13 @@ import (
 
 	itestkit "github.com/filecoin-project/lotus/itests/kit"
 	"github.com/go-pg/pg/v10"
+	logging "github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/chain/datasource"
+	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/model/blocks"
 	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lily/testutil"
@@ -45,10 +48,7 @@ func TestWalker(t *testing.T) {
 
 	t.Logf("collecting chain blocks from tipset before head")
 
-	beforeHead, err := full.ChainGetTipSet(ctx, head.Parents())
-	require.NoError(t, err, "get tipset before head")
-
-	bhs, err := collectBlockHeaders(nodeAPI, beforeHead)
+	bhs, err := collectBlockHeaders(nodeAPI, head)
 	require.NoError(t, err, "collect chain blocks")
 
 	cids := bhs.Cids()
@@ -57,19 +57,17 @@ func TestWalker(t *testing.T) {
 	strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 	require.NoError(t, err, "NewDatabaseFromDB")
 
-	tsIndexer, err := NewTipSetIndexer(nodeAPI, strg, builtin.EpochDurationSeconds*time.Second, t.Name(), []string{BlocksTask})
-	require.NoError(t, err, "NewTipSetIndexer")
+	logging.SetAllLoggers(logging.LevelInfo)
+	taskAPI, err := datasource.NewDataSource(nodeAPI)
+	require.NoError(t, err)
+	im, err := indexer.NewManager(taskAPI, strg, t.Name(), []string{indexer.BlocksTask}, indexer.WithWindow(builtin.EpochDurationSeconds*time.Second))
+	require.NoError(t, err, "NewManager")
 	t.Logf("initializing indexer")
-	idx := NewWalker(tsIndexer, nodeAPI, 0, int64(beforeHead.Height()))
+	idx := NewWalker(im, nodeAPI, t.Name(), 0, int64(head.Height()))
 
 	t.Logf("indexing chain")
 	err = idx.WalkChain(ctx, nodeAPI, head)
 	require.NoError(t, err, "WalkChain")
-
-	// TODO NewTipSetIndexer runs its processors in their own go routines (started when TipSet() is called)
-	// this causes this test to behave nondeterministicly so we sleep here to ensure all async jobs
-	// have completed before asserting results
-	time.Sleep(time.Second * 3)
 
 	t.Run("block_headers", func(t *testing.T) {
 		var count int

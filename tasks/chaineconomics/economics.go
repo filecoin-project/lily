@@ -20,7 +20,7 @@ type EconomicsStorage interface {
 }
 
 type ChainEconomicsLens interface {
-	StateVMCirculatingSupplyInternal(context.Context, types.TipSetKey) (api.CirculatingSupply, error)
+	CirculatingSupply(context.Context, *types.TipSet) (api.CirculatingSupply, error)
 }
 
 func ExtractChainEconomicsModel(ctx context.Context, node ChainEconomicsLens, ts *types.TipSet) (*chainmodel.ChainEconomics, error) {
@@ -30,7 +30,7 @@ func ExtractChainEconomicsModel(ctx context.Context, node ChainEconomicsLens, ts
 	}
 	defer span.End()
 
-	supply, err := node.StateVMCirculatingSupplyInternal(ctx, ts.Key())
+	supply, err := node.CirculatingSupply(ctx, ts)
 	if err != nil {
 		return nil, xerrors.Errorf("get circulating supply: %w", err)
 	}

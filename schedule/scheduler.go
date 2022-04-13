@@ -109,7 +109,7 @@ func NewScheduler(jobDelay time.Duration, scheduledJobs ...*JobConfig) *Schedule
 	for _, st := range scheduledJobs {
 		s.jobID++
 		st.id = s.jobID
-		st.log = log.With("id", st.id, "name", st.Name)
+		st.log = log.With("id", st.id, "reporter", st.Name)
 		s.jobs[s.jobID] = st
 	}
 	return s
@@ -222,7 +222,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 			s.jobsMu.Lock()
 
 			s.jobs[newTask.id] = newTask
-			newTask.log = log.With("id", newTask.id, "name", newTask.Name)
+			newTask.log = log.With("id", newTask.id, "reporter", newTask.Name)
 			newTask.log.Infow("new job received")
 
 			s.jobsMu.Unlock()

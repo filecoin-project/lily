@@ -1,0 +1,37 @@
+// Code generate by: `make tasks-gen`. DO NOT EDIT.
+package indexer
+
+const (
+{{- range $idx, $tn := .tableNames}}
+    {{$tn.TypeName}} = "{{$tn.ModelName}}"
+{{- end}}
+)
+
+var AllTableTasks = []string {
+{{- range $idx, $tn := .tableNames}}
+    {{$tn.TypeName}},
+{{- end}}
+}
+
+var TableLookup = map[string]struct{}{
+{{- range $idx, $tn := .tableNames}}
+    {{$tn.TypeName}}: {},
+{{- end}}
+}
+
+var TableComment = map[string]string{
+{{- range $idx, $tn := .tableNames}}
+    {{$tn.TypeName}}: `{{$tn.ModelComment}}`,
+{{- end}}
+}
+
+var TableFieldComments = map[string]map[string]string{
+{{- range $idx, $tn := .tableNames}}
+    {{$tn.TypeName}}: {
+        {{- range $name, $comment := $tn.FieldComment}}
+            "{{$name}}": "{{$comment}}",
+        {{- end}}
+    },
+{{- end}}
+}
+

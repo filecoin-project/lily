@@ -5,25 +5,35 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
+	"github.com/filecoin-project/lily/tasks"
 )
 
 var log = logging.Logger("lily/tasks")
 
 type Task struct {
-	node lens.API
+	node tasks.DataSource
 }
 
-func NewTask(node lens.API) *Task {
+func NewTask(node tasks.DataSource) *Task {
 	return &Task{
 		node: node,
 	}
 }
 
 func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+	_, span := otel.Tracer("").Start(ctx, "ProcessTipSet")
+	if span.IsRecording() {
+		span.SetAttributes(
+			attribute.String("tipset", ts.Key().String()),
+			attribute.Int64("height", int64(ts.Height())),
+			attribute.String("processor", "chaineconomics"),
+		)
+	}
 	report := &visormodel.ProcessingReport{
 		Height:    int64(ts.Height()),
 		StateRoot: ts.ParentState().String(),
