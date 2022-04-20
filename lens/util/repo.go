@@ -165,11 +165,11 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		return nil, err
 	}
 	// Create a skeleton vm just for calling ShouldBurn
+	// NB: VM is only required to process state prior to network v13
 	vmi, err := vm.NewVM(ctx, &vm.VMOpts{
-		StateBase: current.ParentState(),
-		Epoch:     current.Height(),
-		Bstore:    cs.StateBlockstore(),
-		// TODO is this `current` or `executed` height?
+		StateBase:      current.ParentState(),
+		Epoch:          current.Height(),
+		Bstore:         cs.StateBlockstore(),
 		NetworkVersion: DefaultNetwork.Version(ctx, current.Height()),
 		Actors:         filcns.NewActorRegistry(),
 		Syscalls:       sm.Syscalls,
