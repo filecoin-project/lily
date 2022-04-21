@@ -61,7 +61,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     | block_message|block_messages|
     | block_parent|block_parents|
     | chain_consensus|chain_consensus|
-    | chain_economics|chin_economics
+    | chain_economics|chain_economics|
     | chain_power|chain_powers|
     | chain_reward|chain_rewards|
     | derived_gas_outputs|derived_gas_outputs|
@@ -69,21 +69,21 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     | id_address|id_addresses|
     | internal_messages|internal_messages|
     | internal_parsed_messages|internal_parsed_messages|
-    | market_deal_proposal|market_deal_proposals
-    | market_deal_state|market_deal_states
+    | market_deal_proposal|market_deal_proposals|
+    | market_deal_state|market_deal_states|
     | message|messages|
     | message_gas_economy|message_gas_economy|
     | miner_current_deadline_info|miner_current_deadlines|
-    | miner_fee_debt|miner_fee_debts
+    | miner_fee_debt|miner_fee_debts|
     | miner_info|miner_infos|
     | miner_locked_fund|miner_locked_funds|
     | miner_pre_commit_info|miner_pre_commit_infos|
     | miner_sector_deal|miner_sector_deals|
-    | miner_sector_event|miner_sector_events
+    | miner_sector_event|miner_sector_events|
     | miner_sector_infos|miner_sector_infos|
     | miner_sector_infos_v7|miner_sector_infos_v7|
     | miner_sector_post|miner_sector_posts|
-    | multisig_approvals|multisig_approvals
+    | multisig_approvals|multisig_approvals|
     | multisig_transaction|multisig_transactions|
     | parsed_message|parsed_messages|
     | power_actor_claim|power_actor_claims|
