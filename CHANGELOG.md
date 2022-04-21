@@ -38,65 +38,64 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Granular Task Management (#871)
   - Tasks in Lily now correspond to the tables they produce. Users of Lily can specify the exact models they would like Lily to extract as opposed to previous behavior that grouped sets of models under a singe task name. See the below table for a mapping of task names to models they extract, and note that previous task names (📃) now map to the set of tasks Lily will run.
   - Lily Task Table
-    ```
+
     | Task Name | Model(s) |
     |-----------|----------|
-    |actorstatesinit|id_addresses|
-    |actorstatesmarket|market_deal_proposals, market_deal_states|
-    |actorstatesminer|miner_sector_deals, miner_sector_infos_v7, miner_sector_infos, miner_sector_posts, miner_pre_commit_infos, miner_sector_infos, miner_sector_events, miner_current_deadline_infos, miner_fee_debt, miner_locked_funds, miner_infos|
-    |actorstatesmultisig|multisig_transactions|
-    |actorstatespower|chain_powers, power_actor_claims|
-    |actorstatesraw|actors, actor_states|
-    |actorstatesreward|chain_rewards|
-    |actorstatesverifreg|verified_registry_verified_clients, verified_registry_verifiers|
-    |blocks|block_headers, block_parents, drand_block_entires|
-    |chaineconomics|chain_economics|
-    |consensus|chain_consensus|
-    |implicitmessage|internal_messages, internal_parsed_messages|
-    |messages|messages, block_messages, receipts, message_gas_economy, derived_gas_outputs|
-    |msapprovals|multisig_approvals|
-    |actor|actors|
-    |actor_state|actor_states|
-    |block_header|block_headers|
-    |block_message|block_messages|
-    |block_parent|block_parents|
-    |chain_consensus|chain_consensus|
-    |chain_economics|chin_economics
-    |chain_power|chain_powers|
-    |chain_reward|chain_rewards|
-    |derived_gas_outputs|derived_gas_outputs|
-    |drand_block_entrie|drand_block_entires|
-    |id_address|id_addresses|
-    |internal_messages|internal_messages|
-    |internal_parsed_messages|internal_parsed_messages|
-    |market_deal_proposal|market_deal_proposals
-    |market_deal_state|market_deal_states
-    |message|messages|
-    |message_gas_economy|message_gas_economy|
-    |miner_current_deadline_info|miner_current_deadlines|
-    |miner_fee_debt|miner_fee_debts
-    |miner_info|miner_infos|
-    |miner_locked_fund|miner_locked_funds|
-    |miner_pre_commit_info|miner_pre_commit_infos|
-    |miner_sector_deal|miner_sector_deals|
-    |miner_sector_event|miner_sector_events
-    |miner_sector_infos|miner_sector_infos|
-    |miner_sector_infos_v7|miner_sector_infos_v7|
-    |miner_sector_post|miner_sector_posts|
-    |multisig_approvals|multisig_approvals
-    |multisig_transaction|multisig_transactions|
-    |parsed_message|parsed_messages|
-    |power_actor_claim|power_actor_claims|
-    |receipt|receipts|
-    |verified_registry_verified_client|verified_registry_clients|
-    |verified_registry_verifier|verified_registry_verifier|
-    ```
+    | actorstatesinit | id_addresses |
+    | actorstatesmarket | market_deal_proposals, market_deal_states |
+    | actorstatesminer|miner_sector_deals, miner_sector_infos_v7, miner_sector_infos, miner_sector_posts, miner_pre_commit_infos, miner_sector_infos, miner_sector_events, miner_current_deadline_infos, miner_fee_debt, miner_locked_funds, miner_infos|
+    | actorstatesmultisig|multisig_transactions|
+    | actorstatespower|chain_powers, power_actor_claims|
+    | actorstatesraw|actors, actor_states|
+    | actorstatesreward|chain_rewards|
+    | actorstatesverifreg|verified_registry_verified_clients, verified_registry_verifiers|
+    | blocks|block_headers, block_parents, drand_block_entires|
+    | chaineconomics|chain_economics|
+    | consensus|chain_consensus|
+    | implicitmessage|internal_messages, internal_parsed_messages|
+    | messages|messages, block_messages, receipts, message_gas_economy, derived_gas_outputs|
+    | msapprovals|multisig_approvals|
+    | actor|actors|
+    | actor_state|actor_states|
+    | block_header|block_headers|
+    | block_message|block_messages|
+    | block_parent|block_parents|
+    | chain_consensus|chain_consensus|
+    | chain_economics|chin_economics
+    | chain_power|chain_powers|
+    | chain_reward|chain_rewards|
+    | derived_gas_outputs|derived_gas_outputs|
+    | drand_block_entrie|drand_block_entires|
+    | id_address|id_addresses|
+    | internal_messages|internal_messages|
+    | internal_parsed_messages|internal_parsed_messages|
+    | market_deal_proposal|market_deal_proposals
+    | market_deal_state|market_deal_states
+    | message|messages|
+    | message_gas_economy|message_gas_economy|
+    | miner_current_deadline_info|miner_current_deadlines|
+    | miner_fee_debt|miner_fee_debts
+    | miner_info|miner_infos|
+    | miner_locked_fund|miner_locked_funds|
+    | miner_pre_commit_info|miner_pre_commit_infos|
+    | miner_sector_deal|miner_sector_deals|
+    | miner_sector_event|miner_sector_events
+    | miner_sector_infos|miner_sector_infos|
+    | miner_sector_infos_v7|miner_sector_infos_v7|
+    | miner_sector_post|miner_sector_posts|
+    | multisig_approvals|multisig_approvals
+    | multisig_transaction|multisig_transactions|
+    | parsed_message|parsed_messages|
+    | power_actor_claim|power_actor_claims|
+    | receipt|receipts|
+    | verified_registry_verified_client|verified_registry_clients|
+    | verified_registry_verifier|verified_registry_verifier|
   As an example, the command:
     ```bash
     $ lily index height 1741960 --tasks=actorstatesraw,actorstatespower,actorstatesreward,actorstatesminer,actorstatesinit,actorstatesmarket,actorstatesmultisig,actorstatesverifreg,block,messages,chaineconomics,msapprovals,implicitmessage,consensus
     ```
   will produce the follow entries in the processing_reports table
-    ```markdown
+
     | height | task | status |
     | --- | --- | --- |
     | 1741960 | verified_registry_verifier | OK |
@@ -135,7 +134,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     | 1741960 | block_header | OK |
     | 1741960 | actor_state | OK |
     | 1741960 | actor | OK |
-    ```
 
 - Watcher Workers (#871)
   - The `lily watch` command now has the option to specify the number of tipsets that may be indexed in parallel. This can be specified with the `--workers` flag (see `lily watch --help` for details). Note that using large values (greater than 2) will require significant resource to coupe with indexing demands.
