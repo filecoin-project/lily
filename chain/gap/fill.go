@@ -58,6 +58,9 @@ func (g *Filler) Run(ctx context.Context) error {
 	}
 
 	index, err := integrated.NewManager(taskAPI, g.DB, g.name)
+	if err != nil {
+		return err
+	}
 
 	for _, height := range heights {
 		select {
