@@ -21,6 +21,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/lily/chain/indexer/distributed"
 	"github.com/filecoin-project/lily/commands/util"
 	"github.com/filecoin-project/lily/config"
 	"github.com/filecoin-project/lily/lens/lily"
@@ -244,6 +245,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 			node.Override(new(*events.Events), modules.NewEvents),
 			node.Override(new(*schedule.Scheduler), schedule.NewSchedulerDaemon),
 			node.Override(new(*storage.Catalog), modules.NewStorageCatalog),
+			node.Override(new(*distributed.Catalog), modules.NewQueueCatalog),
 			node.Override(new(*lutil.CacheConfig), modules.CacheConfig(cacheFlags.BlockstoreCacheSize, cacheFlags.StatestoreCacheSize)),
 			// End Injection
 

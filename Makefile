@@ -129,7 +129,7 @@ actors-gen:
 
 .PHONY: tasks-gen
 tasks-gen:
-	go run ./chain/indexer/tablegen
+	go run ./chain/indexer/tasktype/tablegen
 	go fmt ./...
 
 .PHONY: itest

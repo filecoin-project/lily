@@ -1,16 +1,19 @@
 package commands
 
 import (
-	octrace "go.opencensus.io/trace"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/bridge/opencensus"
 	"net/http"
 	"net/http/pprof"
 	"strings"
 	"time"
 
+	"github.com/hibiken/asynq"
+	octrace "go.opencensus.io/trace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/bridge/opencensus"
+
 	"contrib.go.opencensus.io/exporter/prometheus"
 	lotusmetrics "github.com/filecoin-project/lotus/metrics"
+	asynqmetrics "github.com/hibiken/asynq/x/metrics"
 	logging "github.com/ipfs/go-log/v2"
 	metricsprom "github.com/ipfs/go-metrics-prometheus"
 	_ "github.com/lib/pq"
@@ -44,6 +47,11 @@ var VisorTracingFlags VisorTracingOpts
 
 type VisorMetricOpts struct {
 	PrometheusPort string
+	RedisNetwork   string
+	RedisAddr      string
+	RedisUsername  string
+	RedisPassword  string
+	RedisDB        int
 }
 
 var VisorMetricFlags VisorMetricOpts
@@ -78,7 +86,6 @@ func setupMetrics(flags VisorMetricOpts) error {
 	registry := prom.NewRegistry()
 	goCollector := collectors.NewGoCollector()
 	procCollector := collectors.NewProcessCollector(collectors.ProcessCollectorOpts{})
-	registry.MustRegister(goCollector, procCollector)
 	pe, err := prometheus.NewExporter(prometheus.Options{
 		Namespace: "visor",
 		Registry:  registry,
@@ -87,6 +94,17 @@ func setupMetrics(flags VisorMetricOpts) error {
 		return err
 	}
 
+	inspector := asynq.NewInspector(asynq.RedisClientOpt{
+		Addr:     flags.RedisAddr,
+		DB:       flags.RedisDB,
+		Password: flags.RedisPassword,
+		Username: flags.RedisUsername,
+	})
+	registry.MustRegister(
+		goCollector,
+		procCollector,
+		asynqmetrics.NewQueueMetricsCollector(inspector),
+	)
 	// register prometheus with opencensus
 	view.RegisterExporter(pe)
 	view.SetReportingPeriod(2 * time.Second)

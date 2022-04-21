@@ -18,7 +18,7 @@ import (
 	"github.com/filecoin-project/lily/model"
 )
 
-var mdlLog = logging.Logger("lily/index/exporter")
+var log = logging.Logger("lily/index/exporter")
 
 func NewModelExporter(name string) *ModelExporter {
 	return &ModelExporter{
@@ -66,7 +66,7 @@ func (me *ModelExporter) ExportResult(ctx context.Context, strg model.Storage, h
 				stats.Record(ctx, metrics.PersistFailure.M(1))
 				return xerrors.Errorf("persist result (%s.%T): %w", res.Name, res.Model, err)
 			}
-			mdlLog.Infow("model data persisted", "height", height, "task", res.Name, "duration", time.Since(start), "reporter", me.name)
+			log.Infow("model data persisted", "height", height, "task", res.Name, "duration", time.Since(start), "reporter", me.name)
 			return nil
 		})
 	}

@@ -11,9 +11,8 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/lens/lily"
-
-	"github.com/filecoin-project/lily/chain/indexer"
 )
 
 type walkOps struct {
@@ -26,6 +25,7 @@ type walkOps struct {
 	apiToken string
 	name     string
 	workers  int
+	queue    string
 }
 
 var walkFlags walkOps
@@ -96,6 +96,13 @@ var WalkCmd = &cli.Command{
 			Value:       1,
 			Destination: &walkFlags.workers,
 		},
+		&cli.StringFlag{
+			Name:        "queue",
+			Usage:       "Name of queue that walker will write tipsets to.",
+			EnvVars:     []string{"LILY_WALK_QUEUE"},
+			Value:       "",
+			Destination: &walkFlags.queue,
+		},
 	},
 	Before: func(cctx *cli.Context) error {
 		from, to := walkFlags.from, walkFlags.to
@@ -113,14 +120,14 @@ var WalkCmd = &cli.Command{
 			walkName = walkFlags.name
 		}
 
-		tasks := strings.Split(walkFlags.tasks, ",")
+		taskList := strings.Split(walkFlags.tasks, ",")
 		if walkFlags.tasks == "*" {
-			tasks = indexer.AllTableTasks
+			taskList = tasktype.AllTableTasks
 		}
 
 		cfg := &lily.LilyWalkConfig{
 			Name:                walkName,
-			Tasks:               tasks,
+			Tasks:               taskList,
 			Window:              walkFlags.window,
 			From:                walkFlags.from,
 			To:                  walkFlags.to,
@@ -129,6 +136,7 @@ var WalkCmd = &cli.Command{
 			RestartOnFailure:    false,
 			Storage:             walkFlags.storage,
 			Workers:             walkFlags.workers,
+			Queue:               walkFlags.queue,
 		}
 
 		api, closer, err := GetAPI(ctx, walkFlags.apiAddr, walkFlags.apiToken)

@@ -1,4 +1,4 @@
-package chain
+package watch
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/lotus/build"
-	types "github.com/filecoin-project/lotus/chain/types"
 	itestkit "github.com/filecoin-project/lotus/itests/kit"
 	"github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	"github.com/filecoin-project/specs-actors/actors/builtin/power"
@@ -21,9 +20,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/chain/cache"
 	"github.com/filecoin-project/lily/chain/datasource"
-	"github.com/filecoin-project/lily/chain/indexer"
-	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/chain/indexer/integrated"
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/model/blocks"
 	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lily/testutil"
@@ -58,7 +58,7 @@ func TestWatcher(t *testing.T) {
 	defer func() { require.NoError(t, cleanup()) }()
 
 	t.Logf("truncating database tables")
-	err = truncateBlockTables(t, db)
+	err = testutil.TruncateBlockTables(t, db)
 	require.NoError(t, err, "truncating tables")
 
 	t.Logf("preparing chain")
@@ -71,10 +71,11 @@ func TestWatcher(t *testing.T) {
 
 	taskAPI, err := datasource.NewDataSource(nodeAPI)
 	require.NoError(t, err)
-	im, err := indexer.NewManager(taskAPI, strg, t.Name(), []string{indexer.BlocksTask}, indexer.WithWindow(builtin.EpochDurationSeconds*time.Second))
+	im, err := integrated.NewManager(taskAPI, strg, t.Name(), integrated.WithWindow(builtin.EpochDurationSeconds*time.Second))
 	require.NoError(t, err, "NewManager")
 	t.Logf("initializing indexer")
-	idx := NewWatcher(nil, im, t.Name(), 0, 1, 5)
+	idx := NewWatcher(nil, im, t.Name(), WithConfidence(0), WithConcurrentWorkers(1), WithBufferSize(5), WithTasks(tasktype.BlocksTask))
+	idx.cache = cache.NewTipSetCache(0)
 	// the watchers worker pool and cache are initialized in its Run method, since we don't call that here initialize them now.
 	idx.pool = workerpool.New(1)
 
@@ -85,7 +86,7 @@ func TestWatcher(t *testing.T) {
 	t.Logf("mining first block")
 	bm.MineUntilBlock(ctx, full, nil)
 	first := <-newHeads
-	var bhs blockHeaderList
+	var bhs testutil.BlockHeaderList
 	for _, head := range first {
 		bhs = append(bhs, head.Val.Blocks()...)
 	}
@@ -163,67 +164,3 @@ func TestWatcher(t *testing.T) {
 		}
 	})
 }
-
-type blockHeaderList []*types.BlockHeader
-
-func (b blockHeaderList) Cids() []string {
-	var cids []string
-	for _, bh := range b {
-		cids = append(cids, bh.Cid().String())
-	}
-	return cids
-}
-
-func (b blockHeaderList) Rounds() []uint64 {
-	var rounds []uint64
-	for _, bh := range b {
-		for _, ent := range bh.BeaconEntries {
-			rounds = append(rounds, ent.Round)
-		}
-	}
-
-	return rounds
-}
-
-// collectBlockHeaders walks the chain to collect blocks that should be indexed
-func collectBlockHeaders(n lens.API, ts *types.TipSet) (blockHeaderList, error) {
-	blocks := ts.Blocks()
-
-	for _, bh := range ts.Blocks() {
-		if bh.Height < 2 {
-			continue
-		}
-
-		parent, err := n.ChainGetTipSet(context.TODO(), types.NewTipSetKey(bh.Parents...))
-		if err != nil {
-			return nil, err
-		}
-
-		pblocks, err := collectBlockHeaders(n, parent)
-		if err != nil {
-			return nil, err
-		}
-		blocks = append(blocks, pblocks...)
-
-	}
-	return blocks, nil
-}
-
-// truncateBlockTables ensures the indexing tables are empty
-func truncateBlockTables(tb testing.TB, db *pg.DB) error {
-	_, err := db.Exec(`TRUNCATE TABLE block_headers`)
-	require.NoError(tb, err, "block_headers")
-
-	_, err = db.Exec(`TRUNCATE TABLE block_parents`)
-	require.NoError(tb, err, "block_parents")
-
-	_, err = db.Exec(`TRUNCATE TABLE drand_block_entries`)
-	require.NoError(tb, err, "drand_block_entries")
-
-	return nil
-}
-
-type NullHeadNotifier struct{}
-
-func (NullHeadNotifier) HeadEvents() <-chan *HeadEvent { return nil }
-func (NullHeadNotifier) Err() error                    { return nil }

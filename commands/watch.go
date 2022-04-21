@@ -10,7 +10,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/urfave/cli/v2"
 
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
@@ -24,6 +24,7 @@ type watchOps struct {
 	name       string
 	workers    int
 	bufferSize int
+	queue      string
 }
 
 var watchFlags watchOps
@@ -94,6 +95,13 @@ var WatchCmd = &cli.Command{
 			Value:       "",
 			Destination: &watchFlags.name,
 		},
+		&cli.StringFlag{
+			Name:        "queue",
+			Usage:       "Name of queue that watcher will write tipsets to.",
+			EnvVars:     []string{"LILY_WATCH_QUEUE"},
+			Value:       "",
+			Destination: &watchFlags.queue,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
@@ -103,14 +111,14 @@ var WatchCmd = &cli.Command{
 			watchName = watchFlags.name
 		}
 
-		tasks := strings.Split(watchFlags.tasks, ",")
+		taskList := strings.Split(watchFlags.tasks, ",")
 		if watchFlags.tasks == "*" {
-			tasks = indexer.AllTableTasks
+			taskList = tasktype.AllTableTasks
 		}
 
 		cfg := &lily.LilyWatchConfig{
 			Name:                watchName,
-			Tasks:               tasks,
+			Tasks:               taskList,
 			Window:              watchFlags.window,
 			Confidence:          watchFlags.confidence,
 			RestartDelay:        0,
@@ -119,6 +127,7 @@ var WatchCmd = &cli.Command{
 			Storage:             watchFlags.storage,
 			Workers:             watchFlags.workers,
 			BufferSize:          watchFlags.bufferSize,
+			Queue:               watchFlags.queue,
 		}
 
 		api, closer, err := GetAPI(ctx, watchFlags.apiAddr, watchFlags.apiToken)

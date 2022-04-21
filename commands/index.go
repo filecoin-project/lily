@@ -14,7 +14,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
@@ -25,6 +25,7 @@ type indexOps struct {
 	apiToken string
 	name     string
 	window   time.Duration
+	queue    string
 }
 
 var indexFlags indexOps
@@ -50,17 +51,18 @@ var IndexTipSetCmd = &cli.Command{
 			return xerrors.Errorf("failed to parse tipset key: %w", err)
 		}
 
-		tasks := strings.Split(indexFlags.tasks, ",")
+		taskList := strings.Split(indexFlags.tasks, ",")
 		if indexFlags.tasks == "*" {
-			tasks = indexer.AllTableTasks
+			taskList = tasktype.AllTableTasks
 		}
 
 		cfg := &lily.LilyIndexConfig{
 			TipSet:  tsk,
 			Name:    indexName,
-			Tasks:   tasks,
+			Tasks:   taskList,
 			Storage: indexFlags.storage,
 			Window:  indexFlags.window,
+			Queue:   indexFlags.queue,
 		}
 
 		api, closer, err := GetAPI(ctx, indexFlags.apiAddr, indexFlags.apiToken)
@@ -113,17 +115,18 @@ var IndexHeightCmd = &cli.Command{
 			log.Warnf("height (%d) is null round, indexing height %d", height, ts.Height())
 		}
 
-		tasks := strings.Split(indexFlags.tasks, ",")
+		taskList := strings.Split(indexFlags.tasks, ",")
 		if indexFlags.tasks == "*" {
-			tasks = indexer.AllTableTasks
+			taskList = tasktype.AllTableTasks
 		}
 
 		cfg := &lily.LilyIndexConfig{
 			TipSet:  ts.Key(),
 			Name:    indexName,
-			Tasks:   tasks,
+			Tasks:   taskList,
 			Storage: indexFlags.storage,
 			Window:  indexFlags.window,
+			Queue:   indexFlags.queue,
 		}
 
 		_, err = api.LilyIndex(ctx, cfg)
@@ -179,6 +182,13 @@ var IndexCmd = &cli.Command{
 			EnvVars:     []string{"LILY_WINDOW"},
 			Value:       builtin.EpochDurationSeconds * time.Second,
 			Destination: &indexFlags.window,
+		},
+		&cli.StringFlag{
+			Name:        "queue",
+			Usage:       "Name of queue that index will write tipset to.",
+			EnvVars:     []string{"LILY_INDEX_QUEUE"},
+			Value:       "",
+			Destination: &indexFlags.queue,
 		},
 	},
 	Subcommands: []*cli.Command{

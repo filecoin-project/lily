@@ -10,7 +10,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
@@ -106,11 +106,11 @@ var GapFillCmd = &cli.Command{
 		}
 		defer closer()
 
-		var tasks []string
+		var taskList []string
 		if gapFlags.tasks == "" {
-			tasks = indexer.AllTableTasks
+			taskList = tasktype.AllTableTasks
 		} else {
-			tasks = strings.Split(gapFlags.tasks, ",")
+			taskList = strings.Split(gapFlags.tasks, ",")
 		}
 
 		fillName := fmt.Sprintf("fill_%d", time.Now().Unix())
@@ -124,7 +124,7 @@ var GapFillCmd = &cli.Command{
 			RestartDelay:        0,
 			Storage:             gapFlags.storage,
 			Name:                fillName,
-			Tasks:               tasks,
+			Tasks:               taskList,
 			To:                  gapFlags.to,
 			From:                gapFlags.from,
 		})
@@ -201,11 +201,11 @@ var GapFindCmd = &cli.Command{
 			findName = gapFlags.name
 		}
 
-		var tasks []string
+		var taskList []string
 		if gapFlags.tasks == "" {
-			tasks = indexer.AllTableTasks
+			taskList = tasktype.AllTableTasks
 		} else {
-			tasks = strings.Split(gapFlags.tasks, ",")
+			taskList = strings.Split(gapFlags.tasks, ",")
 		}
 
 		res, err := api.LilyGapFind(ctx, &lily.LilyGapFindConfig{
@@ -213,7 +213,7 @@ var GapFindCmd = &cli.Command{
 			RestartOnCompletion: false,
 			RestartDelay:        0,
 			Storage:             gapFlags.storage,
-			Tasks:               tasks,
+			Tasks:               taskList,
 			Name:                findName,
 			To:                  gapFlags.to,
 			From:                gapFlags.from,

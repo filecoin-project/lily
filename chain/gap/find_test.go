@@ -1,4 +1,4 @@
-package chain
+package gap
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lily/testutil"
@@ -40,27 +40,27 @@ func TestFind(t *testing.T) {
 		truncate(t, db)
 		gapHeight := int64(1)
 		pre := NewPREditor(t, db, t.Name())
-		pre.initialize(maxHeight, indexer.AllTableTasks...)
+		pre.initialize(maxHeight, tasktype.AllTableTasks...)
 		pre.deleteEpochStatus(gapHeight, visor.ProcessingStatusOK)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, indexer.AllTableTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(gapHeight, indexer.AllTableTasks...)
+		expected := makeGapReportList(gapHeight, tasktype.AllTableTasks...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("gap all tasks at epoch 1 4 5", func(t *testing.T) {
 		truncate(t, db)
 		gapHeights := []int64{1, 4, 5}
-		gapTasks := indexer.AllTableTasks
+		gapTasks := tasktype.AllTableTasks
 
 		pre := NewPREditor(t, db, t.Name())
 		pre.truncate()
-		pre.initialize(maxHeight, indexer.AllTableTasks...)
+		pre.initialize(maxHeight, tasktype.AllTableTasks...)
 
 		var expected visor.GapReportList
 		for _, height := range gapHeights {
@@ -71,7 +71,7 @@ func TestFind(t *testing.T) {
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, gapTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, gapTasks).Find(ctx)
 		require.NoError(t, err)
 
 		assertGapReportsEqual(t, expected, actual)
@@ -80,16 +80,16 @@ func TestFind(t *testing.T) {
 	t.Run("gap at epoch 2 for miner and init task", func(t *testing.T) {
 		truncate(t, db)
 		gapHeight := int64(2)
-		gapTasks := []string{indexer.MinerInfo, indexer.IdAddress}
+		gapTasks := []string{tasktype.MinerInfo, tasktype.IdAddress}
 
 		pre := NewPREditor(t, db, t.Name())
-		pre.initialize(maxHeight, indexer.AllTableTasks...)
+		pre.initialize(maxHeight, tasktype.AllTableTasks...)
 		pre.deleteEpochStatus(gapHeight, visor.ProcessingStatusOK, WithTasks(gapTasks...))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, indexer.AllTableTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
 		expected := makeGapReportList(gapHeight, gapTasks...)
@@ -99,57 +99,57 @@ func TestFind(t *testing.T) {
 	t.Run("gap at epoch 2 for miner and init task epoch 10 blocks messages market", func(t *testing.T) {
 		truncate(t, db)
 		pre := NewPREditor(t, db, t.Name())
-		pre.initialize(maxHeight, indexer.AllTableTasks...)
-		pre.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(indexer.MinerInfo, indexer.IdAddress))
-		pre.deleteEpochStatus(10, visor.ProcessingStatusOK, WithTasks(indexer.BlockHeader, indexer.Message, indexer.MarketDealProposal))
+		pre.initialize(maxHeight, tasktype.AllTableTasks...)
+		pre.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(tasktype.MinerInfo, tasktype.IdAddress))
+		pre.deleteEpochStatus(10, visor.ProcessingStatusOK, WithTasks(tasktype.BlockHeader, tasktype.Message, tasktype.MarketDealProposal))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, indexer.AllTableTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(2, indexer.MinerInfo, indexer.IdAddress)
-		expected = append(expected, makeGapReportList(10, indexer.BlockHeader, indexer.Message, indexer.MarketDealProposal)...)
+		expected := makeGapReportList(2, tasktype.MinerInfo, tasktype.IdAddress)
+		expected = append(expected, makeGapReportList(10, tasktype.BlockHeader, tasktype.Message, tasktype.MarketDealProposal)...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("skip all tasks at epoch 1 and miner task at epoch 5", func(t *testing.T) {
 		truncate(t, db)
 		pre := NewPREditor(t, db, t.Name())
-		pre.initialize(maxHeight, indexer.AllTableTasks...)
+		pre.initialize(maxHeight, tasktype.AllTableTasks...)
 		pre.updateEpochStatus(1, visor.ProcessingStatusSkip)
-		pre.updateEpochStatus(5, visor.ProcessingStatusSkip, WithTasks(indexer.MinerInfo))
+		pre.updateEpochStatus(5, visor.ProcessingStatusSkip, WithTasks(tasktype.MinerInfo))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, indexer.AllTableTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(1, indexer.AllTableTasks...)
-		expected = append(expected, makeGapReportList(5, indexer.MinerInfo)...)
+		expected := makeGapReportList(1, tasktype.AllTableTasks...)
+		expected = append(expected, makeGapReportList(5, tasktype.MinerInfo)...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("gap at epoch 2 for miner and init task, miner errors in 8, all errors in 9", func(t *testing.T) {
 		truncate(t, db)
 		pre := NewPREditor(t, db, t.Name())
-		pre.initialize(maxHeight, indexer.AllTableTasks...)
+		pre.initialize(maxHeight, tasktype.AllTableTasks...)
 
-		pre.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(indexer.MinerInfo, indexer.IdAddress))
-		pre.updateEpochStatus(8, visor.ProcessingStatusError, WithTasks(indexer.MinerInfo))
+		pre.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(tasktype.MinerInfo, tasktype.IdAddress))
+		pre.updateEpochStatus(8, visor.ProcessingStatusError, WithTasks(tasktype.MinerInfo))
 		pre.updateEpochStatus(9, visor.ProcessingStatusError)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, indexer.AllTableTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(2, indexer.MinerInfo, indexer.IdAddress)
-		expected = append(expected, makeGapReportList(8, indexer.MinerInfo)...)
-		expected = append(expected, makeGapReportList(9, indexer.AllTableTasks...)...)
+		expected := makeGapReportList(2, tasktype.MinerInfo, tasktype.IdAddress)
+		expected = append(expected, makeGapReportList(8, tasktype.MinerInfo)...)
+		expected = append(expected, makeGapReportList(9, tasktype.AllTableTasks...)...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
@@ -158,36 +158,36 @@ func TestFind(t *testing.T) {
 		truncate(t, db)
 		pre1 := NewPREditor(t, db, "reporter1")
 		pre2 := NewPREditor(t, db, "reporter2")
-		pre1.initialize(maxHeight, indexer.AllTableTasks...)
-		pre2.initialize(maxHeight, indexer.AllTableTasks...)
-		pre1.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(indexer.MinerInfo, indexer.IdAddress))
-		pre2.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(indexer.MinerInfo, indexer.IdAddress))
+		pre1.initialize(maxHeight, tasktype.AllTableTasks...)
+		pre2.initialize(maxHeight, tasktype.AllTableTasks...)
+		pre1.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(tasktype.MinerInfo, tasktype.IdAddress))
+		pre2.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(tasktype.MinerInfo, tasktype.IdAddress))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, indexer.AllTableTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(2, indexer.MinerInfo, indexer.IdAddress)
+		expected := makeGapReportList(2, tasktype.MinerInfo, tasktype.IdAddress)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("(sub task indexer, full reports table) gap at epoch 2 for messages and init task", func(t *testing.T) {
 		truncate(t, db)
 
-		gapTasks := []string{indexer.Message, indexer.IdAddress}
-		monitoringTasks := append(gapTasks, []string{indexer.BlockHeader, indexer.ChainEconomics}...)
+		gapTasks := []string{tasktype.Message, tasktype.IdAddress}
+		monitoringTasks := append(gapTasks, []string{tasktype.BlockHeader, tasktype.ChainEconomics}...)
 
 		pre := NewPREditor(t, db, t.Name())
-		pre.initialize(maxHeight, indexer.AllTableTasks...)
+		pre.initialize(maxHeight, tasktype.AllTableTasks...)
 		pre.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(gapTasks...))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
 		// tasks to find gaps in
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, monitoringTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, monitoringTasks).Find(ctx)
 		require.NoError(t, err)
 
 		expected := makeGapReportList(2, gapTasks...)
@@ -198,8 +198,8 @@ func TestFind(t *testing.T) {
 		truncate(t, db)
 
 		// tasks to create gaps for
-		gapTasks := []string{indexer.Message, indexer.IdAddress}
-		monitoringTasks := append(gapTasks, []string{indexer.BlockHeader, indexer.ChainEconomics}...)
+		gapTasks := []string{tasktype.Message, tasktype.IdAddress}
+		monitoringTasks := append(gapTasks, []string{tasktype.BlockHeader, tasktype.ChainEconomics}...)
 
 		pre := NewPREditor(t, db, t.Name())
 		pre.initialize(maxHeight, monitoringTasks...)
@@ -208,7 +208,7 @@ func TestFind(t *testing.T) {
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, monitoringTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, monitoringTasks).Find(ctx)
 		require.NoError(t, err)
 
 		expected := makeGapReportList(2, gapTasks...)
@@ -219,16 +219,16 @@ func TestFind(t *testing.T) {
 		truncate(t, db)
 
 		pre := NewPREditor(t, db, t.Name())
-		pre.initialize(maxHeight, indexer.AllTableTasks...)
-		pre.updateEpochStatus(2, visor.ProcessingStatusError, WithTasks(indexer.AllTableTasks...))
+		pre.initialize(maxHeight, tasktype.AllTableTasks...)
+		pre.updateEpochStatus(2, visor.ProcessingStatusError, WithTasks(tasktype.AllTableTasks...))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, indexer.AllTableTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(2, indexer.AllTableTasks...)
+		expected := makeGapReportList(2, tasktype.AllTableTasks...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
@@ -236,14 +236,14 @@ func TestFind(t *testing.T) {
 		truncate(t, db)
 
 		pre1 := NewPREditor(t, db, "reporter1")
-		pre1.initialize(maxHeight, indexer.AllTableTasks...)
+		pre1.initialize(maxHeight, tasktype.AllTableTasks...)
 		pre2 := NewPREditor(t, db, "reporter2")
-		pre2.insertEpochStatus(2, visor.ProcessingStatusError, WithTasks(indexer.IdAddress, indexer.MinerInfo))
+		pre2.insertEpochStatus(2, visor.ProcessingStatusError, WithTasks(tasktype.IdAddress, tasktype.MinerInfo))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, indexer.AllTableTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
 		// expect nothing since tasks have an OK status dispite the error
@@ -254,7 +254,7 @@ func TestFind(t *testing.T) {
 		truncate(t, db)
 
 		pre1 := NewPREditor(t, db, "reporter1")
-		pre1.initialize(maxHeight, indexer.AllTableTasks...)
+		pre1.initialize(maxHeight, tasktype.AllTableTasks...)
 		pre1.updateEpochStatus(2, visor.ProcessingStatusSkip)
 
 		pre2 := NewPREditor(t, db, "reporter2")
@@ -263,7 +263,7 @@ func TestFind(t *testing.T) {
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, indexer.AllTableTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
 		// no gaps should be found since the epoch has OK's for all tasks; the SKIPS are ignored.
@@ -274,7 +274,7 @@ func TestFind(t *testing.T) {
 		truncate(t, db)
 
 		pre1 := NewPREditor(t, db, "reporter1")
-		pre1.initialize(maxHeight, indexer.AllTableTasks...)
+		pre1.initialize(maxHeight, tasktype.AllTableTasks...)
 		pre1.updateEpochStatus(2, visor.ProcessingStatusSkip)
 		pre1.updateEpochStatus(8, visor.ProcessingStatusSkip)
 
@@ -289,7 +289,7 @@ func TestFind(t *testing.T) {
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, indexer.AllTableTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
 		// no gaps should be found since the epoch has OK's for all tasks; the SKIPS and ERRORs are ignored.
@@ -300,24 +300,24 @@ func TestFind(t *testing.T) {
 		truncate(t, db)
 
 		pre1 := NewPREditor(t, db, "reporter1")
-		pre1.initialize(maxHeight, indexer.AllTableTasks...)
+		pre1.initialize(maxHeight, tasktype.AllTableTasks...)
 		pre1.updateEpochStatus(2, visor.ProcessingStatusSkip)
 		pre1.updateEpochStatus(8, visor.ProcessingStatusSkip)
 
 		pre2 := NewPREditor(t, db, "reporter2")
-		pre2.initialize(maxHeight, indexer.AllTableTasks...)
+		pre2.initialize(maxHeight, tasktype.AllTableTasks...)
 		pre2.updateEpochStatus(2, visor.ProcessingStatusError)
 		pre2.updateEpochStatus(8, visor.ProcessingStatusError)
 
 		pre3 := NewPREditor(t, db, "reporter3")
-		pre3.initialize(maxHeight, indexer.AllTableTasks...)
+		pre3.initialize(maxHeight, tasktype.AllTableTasks...)
 		pre3.updateEpochStatus(2, visor.ProcessingStatusOK)
 		pre3.updateEpochStatus(8, visor.ProcessingStatusOK)
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, indexer.AllTableTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
 		// no gaps should be found since the epoch has OK's for all tasks; the SKIPS and ERRORs are ignored.
@@ -328,7 +328,7 @@ func TestFind(t *testing.T) {
 		truncate(t, db)
 
 		pre1 := NewPREditor(t, db, "reporter1")
-		pre1.initialize(maxHeight, indexer.AllTableTasks...)
+		pre1.initialize(maxHeight, tasktype.AllTableTasks...)
 		pre1.updateEpochStatus(2, visor.ProcessingStatusSkip)
 
 		pre2 := NewPREditor(t, db, "reporter2")
@@ -337,10 +337,10 @@ func TestFind(t *testing.T) {
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, indexer.AllTableTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(2, indexer.AllTableTasks...)
+		expected := makeGapReportList(2, tasktype.AllTableTasks...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
@@ -348,17 +348,17 @@ func TestFind(t *testing.T) {
 		truncate(t, db)
 
 		pre1 := NewPREditor(t, db, "reporter1")
-		pre1.initialize(maxHeight, indexer.AllTableTasks...)
+		pre1.initialize(maxHeight, tasktype.AllTableTasks...)
 		pre1.updateEpochStatus(2, visor.ProcessingStatusInfo, WithStatusInformation(visor.ProcessingStatusInformationNullRound))
 		pre1.updateEpochStatus(3, visor.ProcessingStatusInfo, WithStatusInformation("not the permitted null round"))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
 
-		actual, err := NewGapIndexer(nil, strg, t.Name(), minHeight, maxHeight, indexer.AllTableTasks).Find(ctx)
+		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(3, indexer.AllTableTasks...)
+		expected := makeGapReportList(3, tasktype.AllTableTasks...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 }
@@ -495,7 +495,7 @@ func (e *PREditor) updateEpochStatus(epoch int64, status string, opts ...PREdito
 	q := &PREditorQuery{
 		epoch:  epoch,
 		status: status,
-		tasks:  indexer.AllTableTasks,
+		tasks:  tasktype.AllTableTasks,
 	}
 	for _, opt := range opts {
 		opt(q)
@@ -516,7 +516,7 @@ func (e *PREditor) insertEpochStatus(epoch int64, status string, opts ...PREdito
 	q := &PREditorQuery{
 		epoch:  epoch,
 		status: status,
-		tasks:  indexer.AllTableTasks,
+		tasks:  tasktype.AllTableTasks,
 	}
 	for _, opt := range opts {
 		opt(q)
@@ -535,7 +535,7 @@ func (e *PREditor) deleteEpochStatus(epoch int64, status string, opts ...PREdito
 	q := &PREditorQuery{
 		epoch:  epoch,
 		status: status,
-		tasks:  indexer.AllTableTasks,
+		tasks:  tasktype.AllTableTasks,
 	}
 	for _, opt := range opts {
 		opt(q)

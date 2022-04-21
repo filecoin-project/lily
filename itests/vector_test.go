@@ -12,7 +12,7 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	tstorage "github.com/filecoin-project/lily/storage/testing"
 )
 
@@ -33,7 +33,7 @@ func TestCalibrationVector(t *testing.T) {
 			tvb := NewVectorWalkValidatorBuilder(vf).
 				WithDatabase(strg).
 				WithRange(vf.From, vf.To).
-				WithTasks(indexer.ActorStatesRawTask, indexer.BlocksTask, indexer.MessagesTask, indexer.ChainConsensusTask)
+				WithTasks(tasktype.ActorStatesRawTask, tasktype.BlocksTask, tasktype.MessagesTask, tasktype.ChainConsensusTask)
 
 			vw := tvb.Build(ctx, t)
 			stop := vw.Run(ctx)

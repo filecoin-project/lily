@@ -70,6 +70,8 @@ type LilyAPIStruct struct {
 		NetPubsubScores  func(context.Context) ([]api.PubsubScore, error)              `perm:"read"`
 		NetAgentVersion  func(ctx context.Context, p peer.ID) (string, error)          `perm:"read"`
 		NetPeerInfo      func(context.Context, peer.ID) (*api.ExtendedPeerInfo, error) `perm:"read"`
+
+		StartTipSetWorker func(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
 	}
 }
 
@@ -215,4 +217,8 @@ func (s *LilyAPIStruct) NetAgentVersion(ctx context.Context, p peer.ID) (string,
 
 func (s *LilyAPIStruct) NetPeerInfo(ctx context.Context, p peer.ID) (*api.ExtendedPeerInfo, error) {
 	return s.Internal.NetPeerInfo(ctx, p)
+}
+
+func (s *LilyAPIStruct) StartTipSetWorker(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error) {
+	return s.Internal.StartTipSetWorker(ctx, cfg)
 }

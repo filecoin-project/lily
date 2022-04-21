@@ -121,6 +121,37 @@ func main() {
 				Value:       ":9991",
 				Destination: &commands.VisorMetricFlags.PrometheusPort,
 			},
+			&cli.StringFlag{
+				Name:        "redis-addr",
+				EnvVars:     []string{"LILY_REDIS_ADDR"},
+				Usage:       `Redis server address in "host:port" format`,
+				Value:       "127.0.0.1:6379",
+				Destination: &commands.VisorMetricFlags.RedisAddr,
+			},
+
+			&cli.StringFlag{
+				Name:        "redis-username",
+				EnvVars:     []string{"LILY_REDIS_USERNAME"},
+				Usage:       `Username to authenticate the current connection when redis ACLs are used.`,
+				Value:       "",
+				Destination: &commands.VisorMetricFlags.RedisUsername,
+			},
+
+			&cli.StringFlag{
+				Name:        "redis-password",
+				EnvVars:     []string{"LILY_REDIS_PASSWORD"},
+				Usage:       `Password to authenticate the current connection`,
+				Value:       "",
+				Destination: &commands.VisorMetricFlags.RedisPassword,
+			},
+
+			&cli.IntFlag{
+				Name:        "redis-db",
+				EnvVars:     []string{"LILY_REDIS_DB"},
+				Usage:       `Redis DB to select after connection to server`,
+				Value:       0,
+				Destination: &commands.VisorMetricFlags.RedisDB,
+			},
 		},
 		HideHelp: true,
 		Metadata: commands.Metadata(),
@@ -142,6 +173,7 @@ func main() {
 			commands.WaitApiCmd,
 			commands.WalkCmd,
 			commands.WatchCmd,
+			commands.WorkerCmd,
 		},
 	}
 	app.Setup()

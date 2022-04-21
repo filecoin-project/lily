@@ -1,4 +1,4 @@
-package chain
+package gap
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/filecoin-project/lily/storage"
 )
 
-type GapIndexer struct {
+type Finder struct {
 	DB                   *storage.Database
 	node                 lens.API
 	name                 string
@@ -21,8 +21,8 @@ type GapIndexer struct {
 	done                 chan struct{}
 }
 
-func NewGapIndexer(node lens.API, db *storage.Database, name string, minHeight, maxHeight uint64, tasks []string) *GapIndexer {
-	return &GapIndexer{
+func NewFinder(node lens.API, db *storage.Database, name string, minHeight, maxHeight uint64, tasks []string) *Finder {
+	return &Finder{
 		DB:        db,
 		node:      node,
 		name:      name,
@@ -38,7 +38,7 @@ type TaskHeight struct {
 	Status string
 }
 
-func (g *GapIndexer) Find(ctx context.Context) (visor.GapReportList, error) {
+func (g *Finder) Find(ctx context.Context) (visor.GapReportList, error) {
 	log.Debug("finding task epoch gaps")
 	start := time.Now()
 	var result []TaskHeight
@@ -80,7 +80,7 @@ SELECT * FROM gap_find(?,?,?,?,?);
 	return out, nil
 }
 
-func (g *GapIndexer) Run(ctx context.Context) error {
+func (g *Finder) Run(ctx context.Context) error {
 	// init the done channel for each run since jobs may be started and stopped.
 	g.done = make(chan struct{})
 	defer close(g.done)
@@ -101,6 +101,6 @@ func (g *GapIndexer) Run(ctx context.Context) error {
 	return g.DB.PersistBatch(ctx, gaps)
 }
 
-func (g *GapIndexer) Done() <-chan struct{} {
+func (g *Finder) Done() <-chan struct{} {
 	return g.done
 }

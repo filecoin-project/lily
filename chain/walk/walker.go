@@ -1,23 +1,28 @@
-package chain
+package walk
 
 import (
 	"context"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
+	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/distributed/queue"
 	"github.com/filecoin-project/lily/lens"
 )
 
-func NewWalker(obs *indexer.Manager, node lens.API, name string, minHeight, maxHeight int64) *Walker {
+var log = logging.Logger("lily/chain/walk")
+
+func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, minHeight, maxHeight int64) *Walker {
 	return &Walker{
 		node:      node,
 		obs:       obs,
 		name:      name,
+		tasks:     tasks,
 		minHeight: minHeight,
 		maxHeight: maxHeight,
 	}
@@ -26,8 +31,9 @@ func NewWalker(obs *indexer.Manager, node lens.API, name string, minHeight, maxH
 // Walker is a job that indexes blocks by walking the chain history.
 type Walker struct {
 	node      lens.API
-	obs       *indexer.Manager
+	obs       indexer.Indexer
 	name      string
+	tasks     []string
 	minHeight int64 // limit persisting to tipsets equal to or above this height
 	maxHeight int64 // limit persisting to tipsets equal to or below this height}
 	done      chan struct{}
@@ -91,7 +97,7 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 		default:
 		}
 		log.Infow("walk tipset", "height", ts.Height(), "reporter", c.name)
-		if success, err := c.obs.TipSet(ctx, ts); err != nil {
+		if success, err := c.obs.TipSet(ctx, ts, queue.WalkerQueue, c.tasks...); err != nil {
 			span.RecordError(err)
 			return xerrors.Errorf("notify tipset: %w", err)
 		} else if !success {

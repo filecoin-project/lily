@@ -1,4 +1,4 @@
-package chain
+package gap
 
 import (
 	"context"
@@ -12,15 +12,15 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/datasource"
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/integrated"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/storage"
 )
 
-var fillLog = logging.Logger("lily/chain/fill")
+var log = logging.Logger("lily/chain/gap")
 
-type GapFiller struct {
+type Filler struct {
 	DB                   *storage.Database
 	node                 lens.API
 	name                 string
@@ -29,8 +29,8 @@ type GapFiller struct {
 	done                 chan struct{}
 }
 
-func NewGapFiller(node lens.API, db *storage.Database, name string, minHeight, maxHeight uint64, tasks []string) *GapFiller {
-	return &GapFiller{
+func NewFiller(node lens.API, db *storage.Database, name string, minHeight, maxHeight uint64, tasks []string) *Filler {
+	return &Filler{
 		DB:        db,
 		node:      node,
 		name:      name,
@@ -40,7 +40,7 @@ func NewGapFiller(node lens.API, db *storage.Database, name string, minHeight, m
 	}
 }
 
-func (g *GapFiller) Run(ctx context.Context) error {
+func (g *Filler) Run(ctx context.Context) error {
 	// init the done channel for each run since jobs may be started and stopped.
 	g.done = make(chan struct{})
 	defer close(g.done)
@@ -50,12 +50,15 @@ func (g *GapFiller) Run(ctx context.Context) error {
 		return err
 	}
 	fillStart := time.Now()
-	fillLog.Infow("gap fill start", "start", fillStart.String(), "total_epoch_gaps", len(gaps), "from", g.minHeight, "to", g.maxHeight, "task", g.tasks, "reporter", g.name)
+	log.Infow("gap fill start", "start", fillStart.String(), "total_epoch_gaps", len(gaps), "from", g.minHeight, "to", g.maxHeight, "task", g.tasks, "reporter", g.name)
 
 	taskAPI, err := datasource.NewDataSource(g.node)
 	if err != nil {
 		return err
 	}
+
+	index, err := integrated.NewManager(taskAPI, g.DB, g.name)
+
 	for _, height := range heights {
 		select {
 		case <-ctx.Done():
@@ -63,41 +66,41 @@ func (g *GapFiller) Run(ctx context.Context) error {
 		default:
 		}
 		runStart := time.Now()
-		index, err := indexer.NewManager(taskAPI, g.DB, g.name, gaps[height])
 		if err != nil {
 			return err
 		}
 
-		fillLog.Infow("filling gap", "height", heights, "reporter", g.name)
+		log.Infow("filling gap", "height", heights, "reporter", g.name)
 		ts, err := g.node.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(height), types.EmptyTSK)
 		if err != nil {
 			return err
 		}
-		fillLog.Infof("got tipset for height %d, tipset height %d", heights, ts.Height())
-		if success, err := index.TipSet(ctx, ts); err != nil {
-			fillLog.Errorw("fill indexing encountered fatal error", "height", height, "tipset", ts.Key().String(), "error", err, "tasks", gaps[height], "reporter", g.name)
+		log.Infof("got tipset for height %d, tipset height %d", heights, ts.Height())
+		// TODO priority
+		if success, err := index.TipSet(ctx, ts, "fill", gaps[height]...); err != nil {
+			log.Errorw("fill indexing encountered fatal error", "height", height, "tipset", ts.Key().String(), "error", err, "tasks", gaps[height], "reporter", g.name)
 			return err
 		} else if !success {
-			fillLog.Errorw("fill indexing failed to successfully index tipset, skipping fill for tipset, gap remains", "height", height, "tipset", ts.Key().String(), "tasks", gaps[height], "reporter", g.name)
+			log.Errorw("fill indexing failed to successfully index tipset, skipping fill for tipset, gap remains", "height", height, "tipset", ts.Key().String(), "tasks", gaps[height], "reporter", g.name)
 			continue
 		}
-		fillLog.Infow("fill success", "epoch", ts.Height(), "tasks_filled", gaps[height], "duration", time.Since(runStart), "reporter", g.name)
+		log.Infow("fill success", "epoch", ts.Height(), "tasks_filled", gaps[height], "duration", time.Since(runStart), "reporter", g.name)
 
 		if err := g.setGapsFilled(ctx, height, gaps[height]...); err != nil {
 			return err
 		}
 	}
-	fillLog.Infow("gap fill complete", "duration", time.Since(fillStart), "total_epoch_gaps", len(gaps), "from", g.minHeight, "to", g.maxHeight, "task", g.tasks, "reporter", g.name)
+	log.Infow("gap fill complete", "duration", time.Since(fillStart), "total_epoch_gaps", len(gaps), "from", g.minHeight, "to", g.maxHeight, "task", g.tasks, "reporter", g.name)
 
 	return nil
 }
 
-func (g *GapFiller) Done() <-chan struct{} {
+func (g *Filler) Done() <-chan struct{} {
 	return g.done
 }
 
 // returns a map of heights to missing tasks, and a list of heights to iterate the map in order with.
-func (g *GapFiller) consolidateGaps(ctx context.Context) (map[int64][]string, []int64, error) {
+func (g *Filler) consolidateGaps(ctx context.Context) (map[int64][]string, []int64, error) {
 	gaps, err := g.queryGaps(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -117,7 +120,7 @@ func (g *GapFiller) consolidateGaps(ctx context.Context) (map[int64][]string, []
 	return out, heights, nil
 }
 
-func (g *GapFiller) queryGaps(ctx context.Context) ([]*visor.GapReport, error) {
+func (g *Filler) queryGaps(ctx context.Context) ([]*visor.GapReport, error) {
 	var out []*visor.GapReport
 	if len(g.tasks) != 0 {
 		if err := g.DB.AsORM().ModelContext(ctx, &out).
@@ -143,7 +146,7 @@ func (g *GapFiller) queryGaps(ctx context.Context) ([]*visor.GapReport, error) {
 }
 
 // mark all gaps at height as filled.
-func (g *GapFiller) setGapsFilled(ctx context.Context, height int64, tasks ...string) error {
+func (g *Filler) setGapsFilled(ctx context.Context, height int64, tasks ...string) error {
 	if _, err := g.DB.AsORM().ModelContext(ctx, &visor.GapReport{}).
 		Set("status = 'FILLED'").
 		Where("height = ?", height).

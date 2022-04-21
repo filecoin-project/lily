@@ -1,4 +1,4 @@
-package indexer
+package tasktype
 
 const (
 	ActorStatesRawTask      = "actorstatesraw"      // task that only extracts raw actor state

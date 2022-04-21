@@ -1,4 +1,4 @@
-package indexer
+package integrated
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 
+	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
@@ -15,22 +16,18 @@ import (
 
 var log = logging.Logger("lily/index/manager")
 
-type Indexer interface {
-	TipSet(ctx context.Context, ts *types.TipSet) (chan *Result, chan error, error)
-}
-
 type Exporter interface {
-	ExportResult(ctx context.Context, strg model.Storage, height int64, m []*ModelResult) error
+	ExportResult(ctx context.Context, strg model.Storage, height int64, m []*indexer.ModelResult) error
 }
 
 // Manager manages the execution of an Indexer. It may be used to index TipSets both serially or in parallel.
 type Manager struct {
-	api      tasks.DataSource
-	storage  model.Storage
-	indexer  Indexer
-	exporter Exporter
-	window   time.Duration
-	name     string
+	api          tasks.DataSource
+	storage      model.Storage
+	indexBuilder *Builder
+	exporter     Exporter
+	window       time.Duration
+	name         string
 }
 
 type ManagerOpt func(i *Manager)
@@ -44,24 +41,8 @@ func WithWindow(w time.Duration) ManagerOpt {
 	}
 }
 
-// WithExporter overrides the Manager's default Exporter with the provided Exporter.
-// An Exporter is used to export the results of the Manager's Indexer.
-func WithExporter(e Exporter) ManagerOpt {
-	return func(m *Manager) {
-		m.exporter = e
-	}
-}
-
-// WithIndexer overrides the Manager's default Indexer with the provided Indexer.
-// An Indexer is used to collect state from a tipset.
-func WithIndexer(i Indexer) ManagerOpt {
-	return func(m *Manager) {
-		m.indexer = i
-	}
-}
-
 // NewManager returns a default Manager. Any provided ManagerOpt's will override Manager's default values.
-func NewManager(api tasks.DataSource, strg model.Storage, name string, tasks []string, opts ...ManagerOpt) (*Manager, error) {
+func NewManager(api tasks.DataSource, strg model.Storage, name string, opts ...ManagerOpt) (*Manager, error) {
 	im := &Manager{
 		api:     api,
 		storage: strg,
@@ -73,16 +54,10 @@ func NewManager(api tasks.DataSource, strg model.Storage, name string, tasks []s
 		opt(im)
 	}
 
-	if im.indexer == nil {
-		var err error
-		im.indexer, err = NewTipSetIndexer(api, name, tasks)
-		if err != nil {
-			return nil, err
-		}
-	}
+	im.indexBuilder = NewBuilder(api, name)
 
 	if im.exporter == nil {
-		im.exporter = NewModelExporter(name)
+		im.exporter = indexer.NewModelExporter(name)
 	}
 	return im, nil
 }
@@ -90,7 +65,7 @@ func NewManager(api tasks.DataSource, strg model.Storage, name string, tasks []s
 // TipSet synchronously indexes and persists `ts`. TipSet returns an error if the Manager's Indexer encounters a
 // fatal error. TipSet returns false if one or more of the Indexer's tasks complete with a status `ERROR` or `SKIPPED`, else returns true.
 // Upon cancellation of `ctx` TipSet will persist all incomplete tasks with status `SKIPPED` before returning.
-func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
+func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, priority string, tasks ...string) (bool, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "Manager.TipSet")
 	defer span.End()
 	lg := log.With("height", ts.Height(), "reporter", i.name)
@@ -108,8 +83,13 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
 	}
 	defer cancel()
 
+	idxer, err := i.indexBuilder.WithTasks(tasks).Build()
+	if err != nil {
+		return false, err
+	}
+
 	// asynchronously begin indexing tipset `ts`, returning results as they become avaiable.
-	taskResults, taskErrors, err := i.indexer.TipSet(procCtx, ts)
+	taskResults, taskErrors, err := idxer.TipSet(procCtx, ts)
 	// indexer suffered fatal error, abort.
 	if err != nil {
 		return false, err
@@ -120,7 +100,7 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
 		return true, nil
 	}
 
-	var modelResults []*ModelResult
+	var modelResults []*indexer.ModelResult
 	success := true
 	// collect all the results, recording if any of the tasks were skipped or errored
 	for res := range taskResults {
@@ -138,7 +118,7 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet) (bool, error) {
 					lg.Infow("task success", "task", res.Name, "status", report.Status, "duration", report.CompletedAt.Sub(report.StartedAt))
 				}
 			}
-			modelResults = append(modelResults, &ModelResult{
+			modelResults = append(modelResults, &indexer.ModelResult{
 				Name:  res.Name,
 				Model: model.PersistableList{res.Report, res.Data},
 			})

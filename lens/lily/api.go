@@ -64,6 +64,8 @@ type LilyAPI interface {
 	NetPubsubScores(context.Context) ([]api.PubsubScore, error)
 	NetAgentVersion(ctx context.Context, p peer.ID) (string, error)
 	NetPeerInfo(context.Context, peer.ID) (*api.ExtendedPeerInfo, error)
+
+	StartTipSetWorker(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error)
 }
 
 type LilyIndexConfig struct {
@@ -72,6 +74,7 @@ type LilyIndexConfig struct {
 	Tasks   []string
 	Storage string // name of storage system to use, may be empty
 	Window  time.Duration
+	Queue   string
 }
 
 type LilyWatchConfig struct {
@@ -85,6 +88,7 @@ type LilyWatchConfig struct {
 	Storage             string // name of storage system to use, may be empty
 	Workers             int    // number of indexing jobs that can run in parallel
 	BufferSize          int    // number of tipsets to buffer from notifier service
+	Queue               string
 }
 
 type LilyWalkConfig struct {
@@ -98,6 +102,7 @@ type LilyWalkConfig struct {
 	RestartDelay        time.Duration
 	Storage             string // name of storage system to use, may be empty
 	Workers             int    // number of indexing jobs that can run in parallel
+	Queue               string
 }
 
 type LilyGapFindConfig struct {
@@ -130,4 +135,20 @@ type LilySurveyConfig struct {
 	RestartOnCompletion bool
 	RestartDelay        time.Duration
 	Storage             string // name of storage system to use, may be empty
+}
+
+type LilyTipSetWorkerConfig struct {
+	Queue string
+
+	// Concurrency sets the maximum number of concurrent processing of tasks.
+	// If set to a zero or negative value, NewServer will overwrite the value
+	// to the number of CPUs usable by the current process.
+	Concurrency int
+	// Storage sets the name of storage system to use, may be empty
+	Storage string
+	// Name sets the job name
+	Name                string
+	RestartOnFailure    bool
+	RestartOnCompletion bool
+	RestartDelay        time.Duration
 }
