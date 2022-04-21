@@ -5,6 +5,161 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.9.0"></a>
+## [v0.9.0] - 2022-04-21
+
+### Feat
+
+- Index Command (#871)
+
+   - Lily received a new command - **index** - The index command can be used to index a single tipset, referenced by either its height or its TipSetKey. This command will block until indexing the tipset has completed.
+   ```bash
+   NAME:
+      lily index - Index the state of a tipset from the filecoin blockchain.
+
+   USAGE:
+      lily index command [command options] [arguments...]
+
+   COMMANDS:
+      tipset   Index the state of a tipset from the filecoin blockchain by tipset key
+      height   Index the state of a tipset from the filecoin blockchain by height
+      help, h  Shows a list of commands or help for one command
+
+   OPTIONS:
+      --tasks value      Comma separated list of tasks to run. Each task is reported separately in the database. [$LILY_TASKS]
+      --storage value    Name of storage that results will be written to. [$LILY_STORAGE]
+      --api value        Address of lily api in multiaddr format. (default: "/ip4/127.0.0.1/tcp/1231") [$LILY_API]
+      --api-token value  Authentication token for lily api. [$LILY_API_TOKEN]
+      --name value       Name of job for easy identification later. [$LILY_JOB_NAME]
+      --window value     Duration after which any indexing work not completed will be marked incomplete (default: 30s) [$LILY_WINDOW]
+      --help, -h         show help (default: false)
+   ```
+  
+- Granular Task Management (#871)
+  - Tasks in Lily now correspond to the tables they produce. Users of Lily can specify the exact models they would like Lily to extract as opposed to previous behavior that grouped sets of models under a singe task name. See the below table for a mapping of task names to models they extract, and note that previous task names (📃) now map to the set of tasks Lily will run.
+  - Lily Task Table
+    ```
+    | Task Name | Model(s) |
+    |-----------|----------|
+    |actorstatesinit|id_addresses|
+    |actorstatesmarket|market_deal_proposals, market_deal_states|
+    |actorstatesminer|miner_sector_deals, miner_sector_infos_v7, miner_sector_infos, miner_sector_posts, miner_pre_commit_infos, miner_sector_infos, miner_sector_events, miner_current_deadline_infos, miner_fee_debt, miner_locked_funds, miner_infos|
+    |actorstatesmultisig|multisig_transactions|
+    |actorstatespower|chain_powers, power_actor_claims|
+    |actorstatesraw|actors, actor_states|
+    |actorstatesreward|chain_rewards|
+    |actorstatesverifreg|verified_registry_verified_clients, verified_registry_verifiers|
+    |blocks|block_headers, block_parents, drand_block_entires|
+    |chaineconomics|chain_economics|
+    |consensus|chain_consensus|
+    |implicitmessage|internal_messages, internal_parsed_messages|
+    |messages|messages, block_messages, receipts, message_gas_economy, derived_gas_outputs|
+    |msapprovals|multisig_approvals|
+    |actor|actors|
+    |actor_state|actor_states|
+    |block_header|block_headers|
+    |block_message|block_messages|
+    |block_parent|block_parents|
+    |chain_consensus|chain_consensus|
+    |chain_economics|chin_economics
+    |chain_power|chain_powers|
+    |chain_reward|chain_rewards|
+    |derived_gas_outputs|derived_gas_outputs|
+    |drand_block_entrie|drand_block_entires|
+    |id_address|id_addresses|
+    |internal_messages|internal_messages|
+    |internal_parsed_messages|internal_parsed_messages|
+    |market_deal_proposal|market_deal_proposals
+    |market_deal_state|market_deal_states
+    |message|messages|
+    |message_gas_economy|message_gas_economy|
+    |miner_current_deadline_info|miner_current_deadlines|
+    |miner_fee_debt|miner_fee_debts
+    |miner_info|miner_infos|
+    |miner_locked_fund|miner_locked_funds|
+    |miner_pre_commit_info|miner_pre_commit_infos|
+    |miner_sector_deal|miner_sector_deals|
+    |miner_sector_event|miner_sector_events
+    |miner_sector_infos|miner_sector_infos|
+    |miner_sector_infos_v7|miner_sector_infos_v7|
+    |miner_sector_post|miner_sector_posts|
+    |multisig_approvals|multisig_approvals
+    |multisig_transaction|multisig_transactions|
+    |parsed_message|parsed_messages|
+    |power_actor_claim|power_actor_claims|
+    |receipt|receipts|
+    |verified_registry_verified_client|verified_registry_clients|
+    |verified_registry_verifier|verified_registry_verifier|
+    ```
+  As an example, the command:
+    ```bash
+    $ lily index height 1741960 --tasks=actorstatesraw,actorstatespower,actorstatesreward,actorstatesminer,actorstatesinit,actorstatesmarket,actorstatesmultisig,actorstatesverifreg,block,messages,chaineconomics,msapprovals,implicitmessage,consensus
+    ```
+  will produce the follow entries in the processing_reports table
+    ```markdown
+    | height | task | status |
+    | --- | --- | --- |
+    | 1741960 | verified_registry_verifier | OK |
+    | 1741960 | verified_registry_verified_client | OK |
+    | 1741960 | receipt | OK |
+    | 1741960 | power_actor_claim | OK |
+    | 1741960 | parsed_message | OK |
+    | 1741960 | multisig_transaction | OK |
+    | 1741960 | multisig_approvals | OK |
+    | 1741960 | miner_sector_post | OK |
+    | 1741960 | miner_sector_infos_v7 | OK |
+    | 1741960 | miner_sector_infos | OK |
+    | 1741960 | miner_sector_event | OK |
+    | 1741960 | miner_sector_deal | OK |
+    | 1741960 | miner_pre_commit_info | OK |
+    | 1741960 | miner_locked_fund | OK |
+    | 1741960 | miner_info | OK |
+    | 1741960 | miner_fee_debt | OK |
+    | 1741960 | miner_current_deadline_info | OK |
+    | 1741960 | message_gas_economy | OK |
+    | 1741960 | message | OK |
+    | 1741960 | market_deal_state | OK |
+    | 1741960 | market_deal_proposal | OK |
+    | 1741960 | internal_parsed_messages | OK |
+    | 1741960 | internal_messages | OK |
+    | 1741960 | id_address | OK |
+    | 1741960 | drand_block_entrie | OK |
+    | 1741960 | derived_gas_outputs | OK |
+    | 1741960 | chain_reward | OK |
+    | 1741960 | chain_power | OK |
+    | 1741960 | chain_economics | OK |
+    | 1741960 | chain_consensus | OK |
+    | 1741960 | builtin | OK |
+    | 1741960 | block_parent | OK |
+    | 1741960 | block_message | OK |
+    | 1741960 | block_header | OK |
+    | 1741960 | actor_state | OK |
+    | 1741960 | actor | OK |
+    ```
+
+- Watcher Workers (#871)
+  - The `lily watch` command now has the option to specify the number of tipsets that may be indexed in parallel. This can be specified with the `--workers` flag (see `lily watch --help` for details). Note that using large values (greater than 2) will require significant resource to coupe with indexing demands.
+
+- Blockstore and Statestore Caching (#766)
+  - The `lily daemon` command now as the option to use a `blockstore` and/or `statestore` cache. The `blockstore` cache caches values from the lotus blockstore, the `statestore` cache caches values from the lotus statestore. Setting these flags will increase the performance of the lily daemon, but will cause lily to use more memory. Assuming lily is operating on a system with 256 GiB of RAM we recommend the following values: `--blockstore-cache-size=5000000` and `--statestore-cache-size=3000000`. Some tuning will be required to find the values that work best for your deployment.
+
+### Fix
+
+- Gap Find (#884)
+  - Gap find now exists as a single SQL function - requiring a migration to schema version 1.6. This function improves the performance and **accuracy** of the `gap find` command.
+
+- Stateless Indexer (#871)
+  - Lilys indexer is now stateless meaning the error `mismatching current and next tipsets` will no longer happen while indexing tipsets.
+
+- Write Task Errors to Database (#871)
+  - When tasks error their error message is correctly written to the `visor_processing_reports` table.
+
+- Watch is tolerant of chain re-orgs (#871)
+  - The watcher can now correctly watch the chain when a reorg occurs.
+
+- Include job name in TipSetHeight metric (#918)
+  - Allows metric collection on each jobs processing height.
+
 <a name="v0.8.8"></a>
 ## [v0.8.8] - 2022-03-11
 
