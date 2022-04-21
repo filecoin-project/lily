@@ -41,20 +41,20 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
     | Task Name | Model(s) |
     |-----------|----------|
-    | actorstatesinit | id_addresses |
-    | actorstatesmarket | market_deal_proposals, market_deal_states |
-    | actorstatesminer|miner_sector_deals, miner_sector_infos_v7, miner_sector_infos, miner_sector_posts, miner_pre_commit_infos, miner_sector_infos, miner_sector_events, miner_current_deadline_infos, miner_fee_debt, miner_locked_funds, miner_infos|
-    | actorstatesmultisig|multisig_transactions|
-    | actorstatespower|chain_powers, power_actor_claims|
-    | actorstatesraw|actors, actor_states|
-    | actorstatesreward|chain_rewards|
-    | actorstatesverifreg|verified_registry_verified_clients, verified_registry_verifiers|
-    | blocks|block_headers, block_parents, drand_block_entires|
-    | chaineconomics|chain_economics|
-    | consensus|chain_consensus|
-    | implicitmessage|internal_messages, internal_parsed_messages|
-    | messages|messages, block_messages, receipts, message_gas_economy, derived_gas_outputs|
-    | msapprovals|multisig_approvals|
+    |📃 actorstatesinit | id_addresses |
+    |📃 actorstatesmarket | market_deal_proposals, market_deal_states |
+    |📃 actorstatesminer|miner_sector_deals, miner_sector_infos_v7, miner_sector_infos, miner_sector_posts, miner_pre_commit_infos, miner_sector_infos, miner_sector_events, miner_current_deadline_infos, miner_fee_debt, miner_locked_funds, miner_infos|
+    |📃 actorstatesmultisig|multisig_transactions|
+    |📃 actorstatespower|chain_powers, power_actor_claims|
+    |📃 actorstatesraw|actors, actor_states|
+    |📃 actorstatesreward|chain_rewards|
+    |📃 actorstatesverifreg|verified_registry_verified_clients, verified_registry_verifiers|
+    |📃 blocks|block_headers, block_parents, drand_block_entires|
+    |📃 chaineconomics|chain_economics|
+    |📃 consensus|chain_consensus|
+    |📃 implicitmessage|internal_messages, internal_parsed_messages|
+    |📃 messages|messages, block_messages, receipts, message_gas_economy, derived_gas_outputs|
+    |📃 msapprovals|multisig_approvals|
     | actor|actors|
     | actor_state|actor_states|
     | block_header|block_headers|
