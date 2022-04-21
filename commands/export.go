@@ -193,7 +193,7 @@ func openChainAndBlockStores(ctx context.Context, path string) (*store.ChainStor
 	}
 
 	cs := store.NewChainStore(chainAndStateBs, chainAndStateBs, mds, nil, nil)
-	if err := cs.Load(); err != nil {
+	if err := cs.Load(ctx); err != nil {
 		return nil, nil, nil, xerrors.Errorf("loading repo (%s) chain store: %w", repoDir, err)
 	}
 
