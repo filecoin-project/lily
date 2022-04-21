@@ -43,7 +43,7 @@ var WatchCmd = &cli.Command{
 			Name:        "workers",
 			Usage:       "Sets the number of tipsets that may be simultaneous indexed while watching",
 			EnvVars:     []string{"LILY_WATCH_WORKERS"},
-			Value:       4,
+			Value:       2,
 			Destination: &watchFlags.workers,
 		},
 		&cli.IntFlag{
