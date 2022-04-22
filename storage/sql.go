@@ -373,7 +373,7 @@ func (d *Database) PersistBatch(ctx context.Context, ps ...model.Persistable) er
 
 		for _, p := range ps {
 			if err := p.Persist(ctx, txs, d.version); err != nil {
-				return err
+				return xerrors.Errorf("persisting %T: %w", p, err)
 			}
 		}
 
