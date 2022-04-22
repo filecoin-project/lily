@@ -6,8 +6,10 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/hibiken/asynq"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/distributed/queue/tracing"
 	"github.com/filecoin-project/lily/storage"
 )
 
@@ -16,12 +18,18 @@ const (
 )
 
 type GapFillTipSetPayload struct {
-	TipSet *types.TipSet
-	Tasks  []string
+	TipSet       *types.TipSet
+	Tasks        []string
+	TraceCarrier *tracing.TraceCarrier `json:",omitempty"`
 }
 
-func NewGapFillTipSetTask(ts *types.TipSet, tasks []string) (*asynq.Task, error) {
-	payload, err := json.Marshal(GapFillTipSetPayload{TipSet: ts, Tasks: tasks})
+// HasTraceCarrier returns true iff payload contains a trace.
+func (g *GapFillTipSetPayload) HasTraceCarrier() bool {
+	return !(g.TraceCarrier == nil)
+}
+
+func NewGapFillTipSetTask(ctx context.Context, ts *types.TipSet, tasks []string) (*asynq.Task, error) {
+	payload, err := json.Marshal(GapFillTipSetPayload{TipSet: ts, Tasks: tasks, TraceCarrier: tracing.NewTraceCarrier(trace.SpanFromContext(ctx).SpanContext())})
 	if err != nil {
 		return nil, err
 	}
@@ -43,6 +51,12 @@ func (gh *AsynqGapFillTipSetTaskHandler) HandleGapFillTipSetTask(ctx context.Con
 		return err
 	}
 	log.Infow("gap fill tipset", "tipset", p.TipSet.String(), "height", p.TipSet.Height(), "tasks", p.Tasks)
+
+	if p.HasTraceCarrier() {
+		if sc := p.TraceCarrier.AsSpanContext(); sc.IsValid() {
+			ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
+		}
+	}
 
 	success, err := gh.indexer.TipSet(ctx, p.TipSet, indexer.WithTasks(p.Tasks))
 	if err != nil {
