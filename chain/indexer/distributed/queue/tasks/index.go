@@ -45,7 +45,7 @@ func (ih *AsynqTipSetTaskHandler) HandleIndexTipSetTask(ctx context.Context, t *
 	}
 	log.Infow("indexing tipset", "tipset", p.TipSet.String(), "height", p.TipSet.Height(), "tasks", p.Tasks)
 
-	success, err := ih.indexer.TipSet(ctx, p.TipSet, "", p.Tasks...)
+	success, err := ih.indexer.TipSet(ctx, p.TipSet, indexer.WithTasks(p.Tasks))
 	if err != nil {
 		return err
 	}

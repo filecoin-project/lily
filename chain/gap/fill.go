@@ -9,6 +9,7 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 
 	"github.com/filecoin-project/lily/chain/datasource"
+	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/integrated"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/storage"
@@ -74,7 +75,7 @@ func (g *Filler) Run(ctx context.Context) error {
 		}
 
 		log.Infof("got tipset for height %d, tipset height %d", heights, ts.Height())
-		if success, err := index.TipSet(ctx, ts, "fill", gaps[height]...); err != nil {
+		if success, err := index.TipSet(ctx, ts, indexer.WithTasks(gaps[height])); err != nil {
 			log.Errorw("fill indexing encountered fatal error", "height", height, "tipset", ts.Key().String(), "error", err, "tasks", gaps[height], "reporter", g.name)
 			return err
 		} else if !success {

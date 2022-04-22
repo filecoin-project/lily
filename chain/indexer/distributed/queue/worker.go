@@ -35,13 +35,6 @@ func NewAsynqWorker(i indexer.Indexer, db *storage.Database, name string, concur
 	}
 }
 
-const (
-	WatcherQueue = "WATCHER"
-	WalkerQueue  = "WALKER"
-	IndexQueue   = "INDEX"
-	FillQueue    = "FILL"
-)
-
 func (t *AsynqWorker) Run(ctx context.Context) error {
 	t.done = make(chan struct{})
 	defer close(t.done)
@@ -61,10 +54,10 @@ func (t *AsynqWorker) Run(ctx context.Context) error {
 			Logger:      log.With("process", fmt.Sprintf("AsynqWorker-%s", t.name)),
 			LogLevel:    asynq.DebugLevel,
 			Queues: map[string]int{
-				WatcherQueue: 6,
-				WalkerQueue:  2,
-				IndexQueue:   1,
-				FillQueue:    1,
+				indexer.Watch.String(): 6,
+				indexer.Walk.String():  2,
+				indexer.Index.String(): 1,
+				indexer.Fill.String():  1,
 			},
 			StrictPriority: true,
 		},

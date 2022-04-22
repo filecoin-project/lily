@@ -6,6 +6,7 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
 
+	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/distributed"
 	"github.com/filecoin-project/lily/chain/indexer/distributed/queue"
 	"github.com/filecoin-project/lily/lens"
@@ -58,7 +59,7 @@ func (g *Notifier) Run(ctx context.Context) error {
 			return err
 		}
 
-		if success, err := idx.TipSet(ctx, ts, queue.FillQueue, gaps[height]...); err != nil {
+		if success, err := idx.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Fill), indexer.WithTasks(gaps[height])); err != nil {
 			return err
 		} else if !success {
 			continue

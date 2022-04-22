@@ -16,7 +16,6 @@ import (
 
 	"github.com/filecoin-project/lily/chain/cache"
 	"github.com/filecoin-project/lily/chain/indexer"
-	"github.com/filecoin-project/lily/chain/indexer/distributed/queue"
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/metrics"
 )
@@ -243,7 +242,7 @@ func (c *Watcher) indexTipSetAsync(ctx context.Context, ts *types.TipSet) error 
 		}()
 
 		ts := ts
-		success, err := c.indexer.TipSet(ctx, ts, queue.WatcherQueue, c.tasks...)
+		success, err := c.indexer.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Watch), indexer.WithTasks(c.tasks))
 		if err != nil {
 			log.Errorw("watcher suffered fatal error", "error", err, "height", ts.Height(), "tipset", ts.Key().String(), "reporter", c.name)
 			c.setFatalError(err)

@@ -65,7 +65,11 @@ func NewManager(api tasks.DataSource, strg model.Storage, name string, opts ...M
 // TipSet synchronously indexes and persists `ts`. TipSet returns an error if the Manager's Indexer encounters a
 // fatal error. TipSet returns false if one or more of the Indexer's tasks complete with a status `ERROR` or `SKIPPED`, else returns true.
 // Upon cancellation of `ctx` TipSet will persist all incomplete tasks with status `SKIPPED` before returning.
-func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, priority string, tasks ...string) (bool, error) {
+func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...indexer.Option) (bool, error) {
+	opts, err := indexer.ConstructOptions(options...)
+	if err != nil {
+		return false, err
+	}
 	ctx, span := otel.Tracer("").Start(ctx, "Manager.TipSet")
 	defer span.End()
 	lg := log.With("height", ts.Height(), "reporter", i.name)
@@ -83,7 +87,7 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, priority string,
 	}
 	defer cancel()
 
-	idxer, err := i.indexBuilder.WithTasks(tasks).Build()
+	idxer, err := i.indexBuilder.WithTasks(opts.Tasks).Build()
 	if err != nil {
 		return false, err
 	}

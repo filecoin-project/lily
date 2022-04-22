@@ -23,6 +23,7 @@ import (
 
 	"github.com/filecoin-project/lily/chain/datasource"
 	"github.com/filecoin-project/lily/chain/gap"
+	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/distributed"
 	"github.com/filecoin-project/lily/chain/indexer/distributed/queue"
 	"github.com/filecoin-project/lily/chain/indexer/integrated"
@@ -150,7 +151,7 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 		return nil, err
 	}
 
-	success, err := im.TipSet(ctx, ts, "index", cfg.Tasks...)
+	success, err := im.TipSet(ctx, ts, indexer.WithTasks(cfg.Tasks))
 
 	return success, err
 }
@@ -169,9 +170,9 @@ func (m *LilyNodeAPI) LilyIndexNotify(_ context.Context, cfg *LilyIndexNotifyCon
 		return nil, err
 	}
 
-	idx := distributed.NewTipSetIndexer(queue.NewAsynQ(qcfg))
+	idx := distributed.NewTipSetIndexer(queue.NewAsynq(qcfg))
 
-	return idx.TipSet(ctx, ts, queue.IndexQueue, cfg.Tasks...)
+	return idx.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Index), indexer.WithTasks(cfg.Tasks))
 }
 
 type watcherAPIWrapper struct {
@@ -246,7 +247,7 @@ func (m *LilyNodeAPI) LilyWatchNotify(_ context.Context, cfg *LilyWatchNotifyCon
 	if err != nil {
 		return nil, err
 	}
-	idx := distributed.NewTipSetIndexer(queue.NewAsynQ(qcfg))
+	idx := distributed.NewTipSetIndexer(queue.NewAsynq(qcfg))
 
 	watchJob := watch.NewWatcher(wapi, idx, cfg.Name,
 		watch.WithTasks(cfg.Tasks...),
@@ -321,7 +322,7 @@ func (m *LilyNodeAPI) LilyWalkNotify(_ context.Context, cfg *LilyWalkNotifyConfi
 	if err != nil {
 		return nil, err
 	}
-	idx := distributed.NewTipSetIndexer(queue.NewAsynQ(qcfg))
+	idx := distributed.NewTipSetIndexer(queue.NewAsynq(qcfg))
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
 		Name: cfg.Name,
@@ -433,7 +434,7 @@ func (m *LilyNodeAPI) LilyGapFillNotify(_ context.Context, cfg *LilyGapFillNotif
 			"queue":     cfg.Queue,
 		},
 		Tasks:               cfg.Tasks,
-		Job:                 gap.NewNotifier(m, db, queue.NewAsynQ(qcfg), cfg.Name, cfg.From, cfg.To, cfg.Tasks),
+		Job:                 gap.NewNotifier(m, db, queue.NewAsynq(qcfg), cfg.Name, cfg.From, cfg.To, cfg.Tasks),
 		RestartOnFailure:    cfg.RestartOnFailure,
 		RestartOnCompletion: cfg.RestartOnCompletion,
 		RestartDelay:        cfg.RestartDelay,

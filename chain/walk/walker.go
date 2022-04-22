@@ -11,7 +11,6 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/indexer"
-	"github.com/filecoin-project/lily/chain/indexer/distributed/queue"
 	"github.com/filecoin-project/lily/lens"
 )
 
@@ -97,7 +96,7 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 		default:
 		}
 		log.Infow("walk tipset", "height", ts.Height(), "reporter", c.name)
-		if success, err := c.obs.TipSet(ctx, ts, queue.WalkerQueue, c.tasks...); err != nil {
+		if success, err := c.obs.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Walk), indexer.WithTasks(c.tasks)); err != nil {
 			span.RecordError(err)
 			return xerrors.Errorf("notify tipset: %w", err)
 		} else if !success {
