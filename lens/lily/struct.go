@@ -34,6 +34,11 @@ type LilyAPIStruct struct {
 		LilyWalk   func(context.Context, *LilyWalkConfig) (*schedule.JobSubmitResult, error)   `perm:"read"`
 		LilySurvey func(context.Context, *LilySurveyConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
 
+		LilyIndexNotify func(ctx context.Context, config *LilyIndexNotifyConfig) (interface{}, error)                 `perm:"read"`
+		LilyWatchNotify func(ctx context.Context, config *LilyWatchNotifyConfig) (*schedule.JobSubmitResult, error)   `perm:"read"`
+		LilyWalkNotify  func(ctx context.Context, config *LilyWalkNotifyConfig) (*schedule.JobSubmitResult, error)    `perm:"read"`
+		LilyFillNotify  func(ctx context.Context, config *LilyGapFillNotifyConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
+
 		LilyJobStart func(ctx context.Context, ID schedule.JobID) error                            `perm:"read"`
 		LilyJobStop  func(ctx context.Context, ID schedule.JobID) error                            `perm:"read"`
 		LilyJobWait  func(ctx context.Context, ID schedule.JobID) (*schedule.JobListResult, error) `perm:"read"`
@@ -221,4 +226,20 @@ func (s *LilyAPIStruct) NetPeerInfo(ctx context.Context, p peer.ID) (*api.Extend
 
 func (s *LilyAPIStruct) StartTipSetWorker(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error) {
 	return s.Internal.StartTipSetWorker(ctx, cfg)
+}
+
+func (s *LilyAPIStruct) LilyIndexNotify(ctx context.Context, cfg *LilyIndexNotifyConfig) (interface{}, error) {
+	return s.Internal.LilyIndexNotify(ctx, cfg)
+}
+
+func (s *LilyAPIStruct) LilyWatchNotify(ctx context.Context, cfg *LilyWatchNotifyConfig) (*schedule.JobSubmitResult, error) {
+	return s.Internal.LilyWatchNotify(ctx, cfg)
+}
+
+func (s *LilyAPIStruct) LilyWalkNotify(ctx context.Context, cfg *LilyWalkNotifyConfig) (*schedule.JobSubmitResult, error) {
+	return s.Internal.LilyWalkNotify(ctx, cfg)
+}
+
+func (s *LilyAPIStruct) LilyGapFillNotify(ctx context.Context, cfg *LilyGapFillNotifyConfig) (*schedule.JobSubmitResult, error) {
+	return s.Internal.LilyFillNotify(ctx, cfg)
 }

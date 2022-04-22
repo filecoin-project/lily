@@ -13,6 +13,7 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/lens/lily"
+	"github.com/filecoin-project/lily/schedule"
 )
 
 type walkOps struct {
@@ -125,33 +126,53 @@ var WalkCmd = &cli.Command{
 			taskList = tasktype.AllTableTasks
 		}
 
-		cfg := &lily.LilyWalkConfig{
-			Name:                walkName,
-			Tasks:               taskList,
-			Window:              walkFlags.window,
-			From:                walkFlags.from,
-			To:                  walkFlags.to,
-			RestartDelay:        0,
-			RestartOnCompletion: false,
-			RestartOnFailure:    false,
-			Storage:             walkFlags.storage,
-			Workers:             walkFlags.workers,
-			Queue:               walkFlags.queue,
-		}
-
 		api, closer, err := GetAPI(ctx, walkFlags.apiAddr, walkFlags.apiToken)
 		if err != nil {
 			return err
 		}
 		defer closer()
 
-		res, err := api.LilyWalk(ctx, cfg)
-		if err != nil {
-			return err
+		var res *schedule.JobSubmitResult
+		if walkFlags.queue == "" {
+			cfg := &lily.LilyWalkConfig{
+				Name:                walkName,
+				Tasks:               taskList,
+				Window:              walkFlags.window,
+				From:                walkFlags.from,
+				To:                  walkFlags.to,
+				RestartDelay:        0,
+				RestartOnCompletion: false,
+				RestartOnFailure:    false,
+				Storage:             walkFlags.storage,
+				Workers:             walkFlags.workers,
+			}
+
+			res, err = api.LilyWalk(ctx, cfg)
+			if err != nil {
+				return err
+			}
+		} else {
+			cfg := &lily.LilyWalkNotifyConfig{
+				Name:                walkName,
+				Tasks:               taskList,
+				From:                walkFlags.from,
+				To:                  walkFlags.to,
+				RestartDelay:        0,
+				RestartOnCompletion: false,
+				RestartOnFailure:    false,
+				Queue:               walkFlags.queue,
+			}
+
+			res, err = api.LilyWalkNotify(ctx, cfg)
+			if err != nil {
+				return err
+			}
 		}
+
 		if err := printNewJob(os.Stdout, res); err != nil {
 			return err
 		}
+
 		return nil
 	},
 }

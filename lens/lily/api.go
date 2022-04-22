@@ -24,6 +24,10 @@ type LilyAPI interface {
 	LilyWalk(ctx context.Context, cfg *LilyWalkConfig) (*schedule.JobSubmitResult, error)
 	LilySurvey(ctx context.Context, cfg *LilySurveyConfig) (*schedule.JobSubmitResult, error)
 
+	LilyIndexNotify(ctx context.Context, cfg *LilyIndexNotifyConfig) (interface{}, error)
+	LilyWatchNotify(ctx context.Context, cfg *LilyWatchNotifyConfig) (*schedule.JobSubmitResult, error)
+	LilyWalkNotify(ctx context.Context, cfg *LilyWalkNotifyConfig) (*schedule.JobSubmitResult, error)
+
 	LilyJobStart(ctx context.Context, ID schedule.JobID) error
 	LilyJobStop(ctx context.Context, ID schedule.JobID) error
 	LilyJobWait(ctx context.Context, ID schedule.JobID) (*schedule.JobListResult, error)
@@ -31,6 +35,7 @@ type LilyAPI interface {
 
 	LilyGapFind(ctx context.Context, cfg *LilyGapFindConfig) (*schedule.JobSubmitResult, error)
 	LilyGapFill(ctx context.Context, cfg *LilyGapFillConfig) (*schedule.JobSubmitResult, error)
+	LilyGapFillNotify(ctx context.Context, cfg *LilyGapFillNotifyConfig) (*schedule.JobSubmitResult, error)
 
 	// SyncState returns the current status of the chain sync system.
 	SyncState(context.Context) (*api.SyncState, error) //perm:read
@@ -74,7 +79,13 @@ type LilyIndexConfig struct {
 	Tasks   []string
 	Storage string // name of storage system to use, may be empty
 	Window  time.Duration
-	Queue   string
+}
+
+type LilyIndexNotifyConfig struct {
+	TipSet types.TipSetKey
+	Name   string
+	Tasks  []string
+	Queue  string
 }
 
 type LilyWatchConfig struct {
@@ -88,6 +99,16 @@ type LilyWatchConfig struct {
 	Storage             string // name of storage system to use, may be empty
 	Workers             int    // number of indexing jobs that can run in parallel
 	BufferSize          int    // number of tipsets to buffer from notifier service
+}
+
+type LilyWatchNotifyConfig struct {
+	Name                string
+	Tasks               []string
+	Confidence          int
+	RestartOnFailure    bool
+	RestartOnCompletion bool
+	RestartDelay        time.Duration
+	BufferSize          int // number of tipsets to buffer from notifier service
 	Queue               string
 }
 
@@ -102,6 +123,16 @@ type LilyWalkConfig struct {
 	RestartDelay        time.Duration
 	Storage             string // name of storage system to use, may be empty
 	Workers             int    // number of indexing jobs that can run in parallel
+}
+
+type LilyWalkNotifyConfig struct {
+	From                int64
+	To                  int64
+	Name                string
+	Tasks               []string
+	RestartOnFailure    bool
+	RestartOnCompletion bool
+	RestartDelay        time.Duration
 	Queue               string
 }
 
@@ -125,6 +156,18 @@ type LilyGapFillConfig struct {
 	To                  uint64
 	From                uint64
 	Tasks               []string // name of tasks to fill gaps for
+}
+
+type LilyGapFillNotifyConfig struct {
+	RestartOnFailure    bool
+	RestartOnCompletion bool
+	RestartDelay        time.Duration
+	Storage             string // name of storage system to use, cannot be empty and must be Database storage.
+	Name                string
+	To                  uint64
+	From                uint64
+	Tasks               []string // name of tasks to fill gaps for
+	Queue               string
 }
 
 type LilySurveyConfig struct {

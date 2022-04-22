@@ -2,42 +2,18 @@ package queue
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/hibiken/asynq"
 	logging "github.com/ipfs/go-log/v2"
 
 	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/distributed/queue/tasks"
 	"github.com/filecoin-project/lily/config"
+	"github.com/filecoin-project/lily/storage"
 )
 
 var log = logging.Logger("lily/asynq")
-
-type AsynqTipSetTaskHandler struct {
-	indexer indexer.Indexer
-}
-
-func NewIndexHandler(i indexer.Indexer) *AsynqTipSetTaskHandler {
-	return &AsynqTipSetTaskHandler{indexer: i}
-}
-
-func (ih *AsynqTipSetTaskHandler) HandleIndexTipSetTask(ctx context.Context, t *asynq.Task) error {
-	var p IndexTipSetPayload
-	if err := json.Unmarshal(t.Payload(), &p); err != nil {
-		return err
-	}
-	log.Infow("indexing tipset", "tipset", p.TipSet.String(), "height", p.TipSet.Height(), "tasks", p.Tasks)
-
-	success, err := ih.indexer.TipSet(ctx, p.TipSet, "", p.Tasks...)
-	if err != nil {
-		return err
-	}
-	if !success {
-		log.Warnw("failed to index task successfully", "height", p.TipSet.Height(), "tipset", p.TipSet.Key().String())
-	}
-	return nil
-}
 
 type AsynqWorker struct {
 	name        string
@@ -47,10 +23,10 @@ type AsynqWorker struct {
 	done        chan struct{}
 }
 
-func NewAsynqWorker(i indexer.Indexer, name string, concurrency int, cfg config.AsynqRedisConfig) *AsynqWorker {
-	ih := NewIndexHandler(i)
+func NewAsynqWorker(i indexer.Indexer, db *storage.Database, name string, concurrency int, cfg config.AsynqRedisConfig) *AsynqWorker {
 	mux := asynq.NewServeMux()
-	mux.HandleFunc(TypeIndexTipSet, ih.HandleIndexTipSetTask)
+	mux.HandleFunc(tasks.TypeIndexTipSet, tasks.NewIndexHandler(i).HandleIndexTipSetTask)
+	mux.HandleFunc(tasks.TypeGapFillTipSet, tasks.NewGapFillHandler(i, db).HandleGapFillTipSetTask)
 	return &AsynqWorker{
 		name:        name,
 		concurrency: concurrency,
@@ -63,6 +39,7 @@ const (
 	WatcherQueue = "WATCHER"
 	WalkerQueue  = "WALKER"
 	IndexQueue   = "INDEX"
+	FillQueue    = "FILL"
 )
 
 func (t *AsynqWorker) Run(ctx context.Context) error {
@@ -84,9 +61,10 @@ func (t *AsynqWorker) Run(ctx context.Context) error {
 			Logger:      log.With("process", fmt.Sprintf("AsynqWorker-%s", t.name)),
 			LogLevel:    asynq.DebugLevel,
 			Queues: map[string]int{
-				WatcherQueue: 3,
+				WatcherQueue: 6,
 				WalkerQueue:  2,
 				IndexQueue:   1,
+				FillQueue:    1,
 			},
 			StrictPriority: true,
 		},

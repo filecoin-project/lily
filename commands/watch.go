@@ -12,6 +12,7 @@ import (
 
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/lens/lily"
+	"github.com/filecoin-project/lily/schedule"
 )
 
 type watchOps struct {
@@ -116,29 +117,47 @@ var WatchCmd = &cli.Command{
 			taskList = tasktype.AllTableTasks
 		}
 
-		cfg := &lily.LilyWatchConfig{
-			Name:                watchName,
-			Tasks:               taskList,
-			Window:              watchFlags.window,
-			Confidence:          watchFlags.confidence,
-			RestartDelay:        0,
-			RestartOnCompletion: false,
-			RestartOnFailure:    true,
-			Storage:             watchFlags.storage,
-			Workers:             watchFlags.workers,
-			BufferSize:          watchFlags.bufferSize,
-			Queue:               watchFlags.queue,
-		}
-
 		api, closer, err := GetAPI(ctx, watchFlags.apiAddr, watchFlags.apiToken)
 		if err != nil {
 			return err
 		}
 		defer closer()
 
-		res, err := api.LilyWatch(ctx, cfg)
-		if err != nil {
-			return err
+		var res *schedule.JobSubmitResult
+		if watchFlags.queue == "" {
+			cfg := &lily.LilyWatchConfig{
+				Name:                watchName,
+				Tasks:               taskList,
+				Window:              watchFlags.window,
+				Confidence:          watchFlags.confidence,
+				RestartDelay:        0,
+				RestartOnCompletion: false,
+				RestartOnFailure:    true,
+				Storage:             watchFlags.storage,
+				Workers:             watchFlags.workers,
+				BufferSize:          watchFlags.bufferSize,
+			}
+
+			res, err = api.LilyWatch(ctx, cfg)
+			if err != nil {
+				return err
+			}
+		} else {
+			cfg := &lily.LilyWatchNotifyConfig{
+				Name:                watchName,
+				Tasks:               taskList,
+				Confidence:          watchFlags.confidence,
+				RestartDelay:        0,
+				RestartOnCompletion: false,
+				RestartOnFailure:    true,
+				BufferSize:          watchFlags.bufferSize,
+				Queue:               watchFlags.queue,
+			}
+
+			res, err = api.LilyWatchNotify(ctx, cfg)
+			if err != nil {
+				return err
+			}
 		}
 		if err := printNewJob(os.Stdout, res); err != nil {
 			return err
