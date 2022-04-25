@@ -59,10 +59,8 @@ func (g *Notifier) Run(ctx context.Context) error {
 			return err
 		}
 
-		if success, err := idx.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Fill), indexer.WithTasks(gaps[height])); err != nil {
+		if _, err := idx.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Fill), indexer.WithTasks(gaps[height])); err != nil {
 			return err
-		} else if !success {
-			continue
 		}
 	}
 
