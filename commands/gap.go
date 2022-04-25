@@ -95,7 +95,7 @@ var GapFillCmd = &cli.Command{
 			Usage:       "Name of queue that fill will write missing tipset tasks to.",
 			EnvVars:     []string{"LILY_FILL_QUEUE"},
 			Value:       "",
-			Destination: &indexFlags.queue,
+			Destination: &gapFlags.queue,
 		},
 	},
 	Before: func(cctx *cli.Context) error {
