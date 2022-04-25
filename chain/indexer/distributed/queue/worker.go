@@ -2,10 +2,12 @@ package queue
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/hibiken/asynq"
 	logging "github.com/ipfs/go-log/v2"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/distributed/queue/tasks"
@@ -48,7 +50,6 @@ func (t *AsynqWorker) Run(ctx context.Context) error {
 			DB:       t.cfg.DB,
 			PoolSize: t.cfg.PoolSize,
 		},
-		// TODO configure error handling
 		asynq.Config{
 			Concurrency: t.concurrency,
 			Logger:      log.With("process", fmt.Sprintf("AsynqWorker-%s", t.name)),
@@ -59,7 +60,8 @@ func (t *AsynqWorker) Run(ctx context.Context) error {
 				indexer.Index.String(): 1,
 				indexer.Fill.String():  1,
 			},
-			StrictPriority: true,
+			StrictPriority: false,
+			ErrorHandler:   &WorkerErrorHandler{},
 		},
 	)
 	go func() {
@@ -71,4 +73,36 @@ func (t *AsynqWorker) Run(ctx context.Context) error {
 
 func (t *AsynqWorker) Done() <-chan struct{} {
 	return t.done
+}
+
+type WorkerErrorHandler struct {
+}
+
+func (w *WorkerErrorHandler) HandleError(ctx context.Context, task *asynq.Task, err error) {
+	switch task.Type() {
+	case tasks.TypeIndexTipSet:
+		var p tasks.IndexTipSetPayload
+		if err := json.Unmarshal(task.Payload(), &p); err != nil {
+			log.Errorw("failed to decode task type (developer error?)", "error", err)
+		}
+		if p.HasTraceCarrier() {
+			if sc := p.TraceCarrier.AsSpanContext(); sc.IsValid() {
+				ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
+				trace.SpanFromContext(ctx).RecordError(err)
+			}
+		}
+		log.Errorw("task failed", "type", task.Type(), "tipset", p.TipSet.Key().String(), "height", p.TipSet.Height(), "tasks", p.Tasks, "error", err)
+	case tasks.TypeGapFillTipSet:
+		var p tasks.GapFillTipSetPayload
+		if err := json.Unmarshal(task.Payload(), &p); err != nil {
+			log.Errorw("failed to decode task type (developer error?)", "error", err)
+		}
+		if p.HasTraceCarrier() {
+			if sc := p.TraceCarrier.AsSpanContext(); sc.IsValid() {
+				ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
+				trace.SpanFromContext(ctx).RecordError(err)
+			}
+		}
+		log.Errorw("task failed", "type", task.Type(), "tipset", p.TipSet.Key().String(), "height", p.TipSet.Height(), "tasks", p.Tasks, "error", err)
+	}
 }

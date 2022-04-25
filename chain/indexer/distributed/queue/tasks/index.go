@@ -3,11 +3,14 @@ package tasks
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
+	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/hibiken/asynq"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/distributed/queue/tracing"
@@ -64,7 +67,14 @@ func (ih *AsynqTipSetTaskHandler) HandleIndexTipSetTask(ctx context.Context, t *
 		return err
 	}
 	if !success {
-		log.Warnw("failed to index task successfully", "height", p.TipSet.Height(), "tipset", p.TipSet.Key().String())
+		log.Errorw("failed to index tipset successfully", "height", p.TipSet.Height(), "tipset", p.TipSet.Key().String())
+		return xerrors.Errorf("indexing tipset.(height) %s.(%d)", p.TipSet.Key().String(), p.TipSet.Height())
+	}
+	if strings.Contains(err.Error(), blockstore.ErrNotFound.Error()) {
+		log.Errorw("failed to index tipset", "height", p.TipSet.Height(), "tipset", p.TipSet.Key().String(), "error", err)
+		// return SkipRetry to prevent the task from being retried since nodes do not contain the block
+		// TODO: later, reschedule task in "backfill" queue with lily nodes capable of syncing the required data.
+		return xerrors.Errorf("indexing tipset.(height) %s.(%d): Error %s : %w", p.TipSet.Key().String(), p.TipSet.Height(), err, asynq.SkipRetry)
 	}
 	return nil
 }

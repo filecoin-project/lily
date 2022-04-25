@@ -3,10 +3,13 @@ package tasks
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
+	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/distributed/queue/tracing"
@@ -60,13 +63,20 @@ func (gh *AsynqGapFillTipSetTaskHandler) HandleGapFillTipSetTask(ctx context.Con
 
 	success, err := gh.indexer.TipSet(ctx, p.TipSet, indexer.WithTasks(p.Tasks))
 	if err != nil {
-		return err
+		if strings.Contains(err.Error(), blockstore.ErrNotFound.Error()) {
+			// return SkipRetry to prevent the task from being retried since nodes do not contain the block
+			// TODO: later, reschedule task in "backfill" queue with lily nodes capable of syncing the required data.
+			return xerrors.Errorf("indexing tipset for gap fill tipset.(height) %s.(%d): Error %s : %w", p.TipSet.Key().String(), p.TipSet.Height(), err, asynq.SkipRetry)
+		} else {
+			return err
+		}
 	}
 	if !success {
-		// TODO do we return an error here and try again or do we give up: depends on error, if no state, give up
-		log.Warnw("failed to gap fill task successfully", "height", p.TipSet.Height(), "tipset", p.TipSet.Key().String())
+		log.Errorw("failed to gap fill task successfully", "height", p.TipSet.Height(), "tipset", p.TipSet.Key().String())
+		return xerrors.Errorf("gap filling tipset.(height) %s.(%d)", p.TipSet.Key(), p.TipSet.Height())
 	} else {
 		if err := gh.db.SetGapsFilled(ctx, int64(p.TipSet.Height()), p.Tasks...); err != nil {
+			log.Errorw("failed to mark gap as filled", "error", err)
 			return err
 		}
 	}
