@@ -37,6 +37,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   
 - Granular Task Management (#871)
   - Tasks in Lily now correspond to the tables they produce. Users of Lily can specify the exact models they would like Lily to extract as opposed to previous behavior that grouped sets of models under a singe task name. See the below table for a mapping of task names to models they extract, and note that previous task names (📃) now map to the set of tasks Lily will run.
+  - **NOTE: This requires that operators call `gap find` differently depending on whether they target the heights before or after the upgrade epoch (using the legacy task names in --tasks in the old epochs and using the granular task names in the newer epochs). Operators could optionally create a view which makes the legacy processing reports compatible with the new `gap find` query.**
   - Lily Task Table
 
     | Task Name | Model(s) |
