@@ -159,6 +159,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Include job name in TipSetHeight metric (#918)
   - Allows metric collection on each jobs processing height.
 
+- Prevent lily from running with incompatible schema (#910)
+  - Ensures lily job only execute against correct schema version
+
 <a name="v0.8.8"></a>
 ## [v0.8.8] - 2022-03-11
 
