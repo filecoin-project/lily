@@ -9,7 +9,8 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// Option specifies the task processing behavior.
+// Option specifies the index processing behavior. The interface allows implementations of the Indexer interface
+// to be configured independently without changing the declaration of the Indexer.TipSet method.
 type Option interface {
 	// String returns a string representation of the option.
 	String() string
@@ -33,6 +34,8 @@ type (
 	tasksTypeOption []string
 )
 
+// WithTasks returns and Option that specifies the tasks to be indexed.
+// It is used by both the distributed and integrated indexers.
 func WithTasks(tasks []string) Option {
 	return tasksTypeOption(tasks)
 }
@@ -60,6 +63,8 @@ func (i IndexerType) String() string {
 	}
 }
 
+// WithIndexerType returns and Option that specifies the type of index operation being performed.
+// It is used by the distributed indexer to determine priority of the TipSet being indexed.
 func WithIndexerType(it IndexerType) Option {
 	return indexTypeOption(it)
 }
@@ -76,11 +81,13 @@ func (o indexTypeOption) String() string     { return fmt.Sprintf("IndexerType(%
 func (o indexTypeOption) Type() OptionType   { return IndexTypeOpt }
 func (o indexTypeOption) Value() interface{} { return IndexerType(o) }
 
+// IndexerOptions are used by implementations of the Indexer interface for configuration.
 type IndexerOptions struct {
 	IndexType IndexerType
 	Tasks     []string
 }
 
+// ConstructOptions returns an IndexerOptions struct that may be used to configured implementations of the Indexer interface.
 func ConstructOptions(opts ...Option) (IndexerOptions, error) {
 	res := IndexerOptions{
 		IndexType: Undefined,
@@ -101,6 +108,9 @@ func ConstructOptions(opts ...Option) (IndexerOptions, error) {
 	return res, nil
 }
 
+// Indexer implemented to index TipSets.
 type Indexer interface {
+	// TipSet indexes a TipSet. The returned error is non-nill if a fatal error is encountered. True is returned if the
+	// TipSet is indexed successfully, false if returned if the TipSet was only paritally indexer.
 	TipSet(ctx context.Context, ts *types.TipSet, opts ...Option) (bool, error)
 }

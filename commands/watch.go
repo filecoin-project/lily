@@ -98,7 +98,7 @@ var WatchCmd = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:        "queue",
-			Usage:       "Name of queue that watcher will write tipsets to.",
+			Usage:       "Name of queue that watcher will write tipsets to. If empty the node will watch and index tipsets locally. If populated the node will write tipsets to the queue for tipset-workers to consume",
 			EnvVars:     []string{"LILY_WATCH_QUEUE"},
 			Value:       "",
 			Destination: &watchFlags.queue,

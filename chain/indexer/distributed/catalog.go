@@ -9,6 +9,8 @@ import (
 
 var log = logging.Logger("lily/distributed")
 
+// NewCatalog returns a Catalog configured with the values specified in config.QueueConfig. Error is non-nill if
+// config.QueueConfig contains a duplicate queue name.
 func NewCatalog(cfg config.QueueConfig) (*Catalog, error) {
 	c := &Catalog{
 		queues: map[string]config.AsynqRedisConfig{},
@@ -32,10 +34,13 @@ func NewCatalog(cfg config.QueueConfig) (*Catalog, error) {
 	return c, nil
 }
 
+// Catalog contains a map of queue names to their configurations. Catalog is used to configure the distributed indexer.
 type Catalog struct {
 	queues map[string]config.AsynqRedisConfig
 }
 
+// AsynqConfig returns a config.AsynqRedisConfig by `name`. And error is returned if name is empty or if a
+// config.AsynqRedisConfig doesn't exist for `name`.
 func (c *Catalog) AsynqConfig(name string) (config.AsynqRedisConfig, error) {
 	if name == "" {
 		return config.AsynqRedisConfig{}, xerrors.Errorf("queue config name required")

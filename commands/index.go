@@ -212,7 +212,7 @@ var IndexCmd = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:        "queue",
-			Usage:       "Name of queue that index will write tipset to.",
+			Usage:       "Name of queue that index will write tipsets to. If empty the node will index tipsets locally. If populated the node will write the tipset to the queue for tipset-workers to consume",
 			EnvVars:     []string{"LILY_INDEX_QUEUE"},
 			Value:       "",
 			Destination: &indexFlags.queue,
