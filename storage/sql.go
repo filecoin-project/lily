@@ -28,6 +28,7 @@ import (
 	"github.com/filecoin-project/lily/model/derived"
 	"github.com/filecoin-project/lily/model/messages"
 	"github.com/filecoin-project/lily/model/msapprovals"
+	"github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/schemas"
 )
 
@@ -488,4 +489,62 @@ func GenerateUpsertStrings(model interface{}) (string, string) {
 		}
 	}
 	return conflict.String(), upsert.String()
+}
+
+// returns a map of heights to missing tasks, and a list of heights to iterate the map in order with.
+func (d *Database) ConsolidateGaps(ctx context.Context, minHeight, maxHeight uint64, tasks ...string) (map[int64][]string, []int64, error) {
+	gaps, err := d.QueryGaps(ctx, minHeight, maxHeight, tasks...)
+	if err != nil {
+		return nil, nil, err
+	}
+	// used to walk gaps in order, should help optimize some caching.
+	heights := make([]int64, 0, len(gaps))
+	out := make(map[int64][]string)
+	for _, gap := range gaps {
+		if _, ok := out[gap.Height]; !ok {
+			heights = append(heights, gap.Height)
+		}
+		out[gap.Height] = append(out[gap.Height], gap.Task)
+	}
+	sort.Slice(heights, func(i, j int) bool {
+		return heights[i] < heights[j]
+	})
+	return out, heights, nil
+}
+
+func (d *Database) QueryGaps(ctx context.Context, minHeight, maxHeight uint64, tasks ...string) ([]*visor.GapReport, error) {
+	var out []*visor.GapReport
+	if len(tasks) != 0 {
+		if err := d.AsORM().ModelContext(ctx, &out).
+			Order("height desc").
+			Where("status = ?", "GAP").
+			Where("task = ANY (?)", pg.Array(tasks)).
+			Where("height >= ?", minHeight).
+			Where("height <= ?", maxHeight).
+			Select(); err != nil {
+			return nil, xerrors.Errorf("querying gap reports: %w", err)
+		}
+	} else {
+		if err := d.AsORM().ModelContext(ctx, &out).
+			Order("height desc").
+			Where("status = ?", "GAP").
+			Where("height >= ?", minHeight).
+			Where("height <= ?", maxHeight).
+			Select(); err != nil {
+			return nil, xerrors.Errorf("querying gap reports: %w", err)
+		}
+	}
+	return out, nil
+}
+
+// mark all gaps at height as filled.
+func (d *Database) SetGapsFilled(ctx context.Context, height int64, tasks ...string) error {
+	if _, err := d.AsORM().ModelContext(ctx, &visor.GapReport{}).
+		Set("status = 'FILLED'").
+		Where("height = ?", height).
+		Where("task = ANY (?)", pg.Array(tasks)).
+		Update(); err != nil {
+		return err
+	}
+	return nil
 }

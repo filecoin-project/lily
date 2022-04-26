@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"context"
 	"testing"
 
 	"github.com/filecoin-project/go-state-types/abi"
@@ -8,6 +9,8 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	tutils "github.com/filecoin-project/specs-actors/support/testing"
 	"github.com/ipfs/go-cid"
+
+	"github.com/filecoin-project/lily/lens"
 )
 
 func FakeTipset(t testing.TB) *types.TipSet {
@@ -30,4 +33,49 @@ func FakeBlockHeader(t testing.TB, height int64, stateRoot cid.Cid) *types.Block
 		BLSAggregate:          &crypto.Signature{Type: crypto.SigTypeBLS},
 		Timestamp:             0,
 	}
+}
+
+type BlockHeaderList []*types.BlockHeader
+
+func (b BlockHeaderList) Cids() []string {
+	var cids []string
+	for _, bh := range b {
+		cids = append(cids, bh.Cid().String())
+	}
+	return cids
+}
+
+func (b BlockHeaderList) Rounds() []uint64 {
+	var rounds []uint64
+	for _, bh := range b {
+		for _, ent := range bh.BeaconEntries {
+			rounds = append(rounds, ent.Round)
+		}
+	}
+
+	return rounds
+}
+
+// CollectBlockHeaders walks the chain to collect blocks that should be indexed
+func CollectBlockHeaders(n lens.API, ts *types.TipSet) (BlockHeaderList, error) {
+	blocks := ts.Blocks()
+
+	for _, bh := range ts.Blocks() {
+		if bh.Height < 2 {
+			continue
+		}
+
+		parent, err := n.ChainGetTipSet(context.TODO(), types.NewTipSetKey(bh.Parents...))
+		if err != nil {
+			return nil, err
+		}
+
+		pblocks, err := CollectBlockHeaders(n, parent)
+		if err != nil {
+			return nil, err
+		}
+		blocks = append(blocks, pblocks...)
+
+	}
+	return blocks, nil
 }

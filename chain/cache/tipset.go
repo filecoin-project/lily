@@ -1,4 +1,4 @@
-package chain
+package cache
 
 import (
 	"context"
@@ -6,11 +6,8 @@ import (
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
-	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/xerrors"
 )
-
-var log = logging.Logger("lily/chain")
 
 var (
 	ErrCacheEmpty       = errors.New("cache empty")

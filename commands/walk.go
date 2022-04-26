@@ -11,9 +11,9 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/lens/lily"
-
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/schedule"
 )
 
 type walkOps struct {
@@ -26,6 +26,7 @@ type walkOps struct {
 	apiToken string
 	name     string
 	workers  int
+	queue    string
 }
 
 var walkFlags walkOps
@@ -96,6 +97,13 @@ var WalkCmd = &cli.Command{
 			Value:       1,
 			Destination: &walkFlags.workers,
 		},
+		&cli.StringFlag{
+			Name:        "queue",
+			Usage:       "Name of queue that walked will write tipsets to. If empty the node will walk and index tipsets locally. If populated the node will write tipsets to the queue for tipset-workers to consume",
+			EnvVars:     []string{"LILY_WALK_QUEUE"},
+			Value:       "",
+			Destination: &walkFlags.queue,
+		},
 	},
 	Before: func(cctx *cli.Context) error {
 		from, to := walkFlags.from, walkFlags.to
@@ -113,22 +121,9 @@ var WalkCmd = &cli.Command{
 			walkName = walkFlags.name
 		}
 
-		tasks := strings.Split(walkFlags.tasks, ",")
+		taskList := strings.Split(walkFlags.tasks, ",")
 		if walkFlags.tasks == "*" {
-			tasks = indexer.AllTableTasks
-		}
-
-		cfg := &lily.LilyWalkConfig{
-			Name:                walkName,
-			Tasks:               tasks,
-			Window:              walkFlags.window,
-			From:                walkFlags.from,
-			To:                  walkFlags.to,
-			RestartDelay:        0,
-			RestartOnCompletion: false,
-			RestartOnFailure:    false,
-			Storage:             walkFlags.storage,
-			Workers:             walkFlags.workers,
+			taskList = tasktype.AllTableTasks
 		}
 
 		api, closer, err := GetAPI(ctx, walkFlags.apiAddr, walkFlags.apiToken)
@@ -137,13 +132,47 @@ var WalkCmd = &cli.Command{
 		}
 		defer closer()
 
-		res, err := api.LilyWalk(ctx, cfg)
-		if err != nil {
-			return err
+		var res *schedule.JobSubmitResult
+		if walkFlags.queue == "" {
+			cfg := &lily.LilyWalkConfig{
+				Name:                walkName,
+				Tasks:               taskList,
+				Window:              walkFlags.window,
+				From:                walkFlags.from,
+				To:                  walkFlags.to,
+				RestartDelay:        0,
+				RestartOnCompletion: false,
+				RestartOnFailure:    false,
+				Storage:             walkFlags.storage,
+				Workers:             walkFlags.workers,
+			}
+
+			res, err = api.LilyWalk(ctx, cfg)
+			if err != nil {
+				return err
+			}
+		} else {
+			cfg := &lily.LilyWalkNotifyConfig{
+				Name:                walkName,
+				Tasks:               taskList,
+				From:                walkFlags.from,
+				To:                  walkFlags.to,
+				RestartDelay:        0,
+				RestartOnCompletion: false,
+				RestartOnFailure:    false,
+				Queue:               walkFlags.queue,
+			}
+
+			res, err = api.LilyWalkNotify(ctx, cfg)
+			if err != nil {
+				return err
+			}
 		}
+
 		if err := printNewJob(os.Stdout, res); err != nil {
 			return err
 		}
+
 		return nil
 	},
 }

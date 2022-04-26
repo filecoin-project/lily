@@ -2,14 +2,10 @@ package itests
 
 import (
 	"context"
-	"github.com/filecoin-project/lily/commands"
-	"github.com/filecoin-project/lily/commands/util"
-	"github.com/filecoin-project/lily/config"
-	"github.com/filecoin-project/lily/lens/lily"
-	"github.com/filecoin-project/lily/lens/lily/modules"
-	lutil "github.com/filecoin-project/lily/lens/util"
-	"github.com/filecoin-project/lily/schedule"
-	"github.com/filecoin-project/lily/storage"
+	"io/fs"
+	"io/ioutil"
+	"testing"
+
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/lib/peermgr"
@@ -19,9 +15,16 @@ import (
 	"github.com/filecoin-project/lotus/node/repo"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
-	"io/fs"
-	"io/ioutil"
-	"testing"
+
+	"github.com/filecoin-project/lily/chain/indexer/distributed"
+	"github.com/filecoin-project/lily/commands"
+	"github.com/filecoin-project/lily/commands/util"
+	"github.com/filecoin-project/lily/config"
+	"github.com/filecoin-project/lily/lens/lily"
+	"github.com/filecoin-project/lily/lens/lily/modules"
+	lutil "github.com/filecoin-project/lily/lens/util"
+	"github.com/filecoin-project/lily/schedule"
+	"github.com/filecoin-project/lily/storage"
 )
 
 type TestNodeConfig struct {
@@ -65,6 +68,7 @@ func NewTestNode(t testing.TB, ctx context.Context, cfg *TestNodeConfig) (lily.L
 		node.Override(new(*events.Events), modules.NewEvents),
 		node.Override(new(*schedule.Scheduler), schedule.NewSchedulerDaemon),
 		node.Override(new(*storage.Catalog), modules.NewStorageCatalog),
+		node.Override(new(*distributed.Catalog), modules.NewQueueCatalog),
 		// End Injection
 
 		node.Override(new(dtypes.Bootstrapper), false),

@@ -18,7 +18,7 @@ import (
 )
 
 func Gen() error {
-	taskDir := "./chain/indexer"
+	taskDir := "./chain/indexer/tasktype"
 	rf, err := ioutil.ReadFile(filepath.Join(taskDir, "table_tasks.go.template"))
 	if err != nil {
 		return xerrors.Errorf("loading registry template: %w", err)

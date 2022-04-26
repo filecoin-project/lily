@@ -14,7 +14,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
@@ -25,6 +25,7 @@ type indexOps struct {
 	apiToken string
 	name     string
 	window   time.Duration
+	queue    string
 }
 
 var indexFlags indexOps
@@ -50,17 +51,9 @@ var IndexTipSetCmd = &cli.Command{
 			return xerrors.Errorf("failed to parse tipset key: %w", err)
 		}
 
-		tasks := strings.Split(indexFlags.tasks, ",")
+		taskList := strings.Split(indexFlags.tasks, ",")
 		if indexFlags.tasks == "*" {
-			tasks = indexer.AllTableTasks
-		}
-
-		cfg := &lily.LilyIndexConfig{
-			TipSet:  tsk,
-			Name:    indexName,
-			Tasks:   tasks,
-			Storage: indexFlags.storage,
-			Window:  indexFlags.window,
+			taskList = tasktype.AllTableTasks
 		}
 
 		api, closer, err := GetAPI(ctx, indexFlags.apiAddr, indexFlags.apiToken)
@@ -69,9 +62,31 @@ var IndexTipSetCmd = &cli.Command{
 		}
 		defer closer()
 
-		_, err = api.LilyIndex(ctx, cfg)
-		if err != nil {
-			return err
+		if indexFlags.queue == "" {
+			cfg := &lily.LilyIndexConfig{
+				TipSet:  tsk,
+				Name:    indexName,
+				Tasks:   taskList,
+				Storage: indexFlags.storage,
+				Window:  indexFlags.window,
+			}
+
+			_, err = api.LilyIndex(ctx, cfg)
+			if err != nil {
+				return err
+			}
+		} else {
+			cfg := &lily.LilyIndexNotifyConfig{
+				TipSet: tsk,
+				Name:   indexName,
+				Tasks:  taskList,
+				Queue:  indexFlags.queue,
+			}
+
+			_, err = api.LilyIndexNotify(ctx, cfg)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -94,16 +109,22 @@ var IndexHeightCmd = &cli.Command{
 			return xerrors.Errorf("height argument required")
 		}
 
+		height, err := strconv.ParseInt(cctx.Args().First(), 10, 46)
+		if err != nil {
+			return err
+		}
+
+		taskList := strings.Split(indexFlags.tasks, ",")
+		if indexFlags.tasks == "*" {
+			taskList = tasktype.AllTableTasks
+		}
+
 		api, closer, err := GetAPI(ctx, indexFlags.apiAddr, indexFlags.apiToken)
 		if err != nil {
 			return err
 		}
 		defer closer()
 
-		height, err := strconv.ParseInt(cctx.Args().First(), 10, 46)
-		if err != nil {
-			return err
-		}
 		ts, err := api.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(height), types.EmptyTSK)
 		if err != nil {
 			return err
@@ -113,22 +134,31 @@ var IndexHeightCmd = &cli.Command{
 			log.Warnf("height (%d) is null round, indexing height %d", height, ts.Height())
 		}
 
-		tasks := strings.Split(indexFlags.tasks, ",")
-		if indexFlags.tasks == "*" {
-			tasks = indexer.AllTableTasks
-		}
+		if indexFlags.queue == "" {
+			cfg := &lily.LilyIndexConfig{
+				TipSet:  ts.Key(),
+				Name:    indexName,
+				Tasks:   taskList,
+				Storage: indexFlags.storage,
+				Window:  indexFlags.window,
+			}
 
-		cfg := &lily.LilyIndexConfig{
-			TipSet:  ts.Key(),
-			Name:    indexName,
-			Tasks:   tasks,
-			Storage: indexFlags.storage,
-			Window:  indexFlags.window,
-		}
+			_, err = api.LilyIndex(ctx, cfg)
+			if err != nil {
+				return err
+			}
+		} else {
+			cfg := &lily.LilyIndexNotifyConfig{
+				TipSet: ts.Key(),
+				Name:   indexName,
+				Tasks:  taskList,
+				Queue:  indexFlags.queue,
+			}
 
-		_, err = api.LilyIndex(ctx, cfg)
-		if err != nil {
-			return err
+			_, err = api.LilyIndexNotify(ctx, cfg)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -179,6 +209,13 @@ var IndexCmd = &cli.Command{
 			EnvVars:     []string{"LILY_WINDOW"},
 			Value:       builtin.EpochDurationSeconds * time.Second,
 			Destination: &indexFlags.window,
+		},
+		&cli.StringFlag{
+			Name:        "queue",
+			Usage:       "Name of queue that index will write tipsets to. If empty the node will index tipsets locally. If populated the node will write the tipset to the queue for tipset-workers to consume",
+			EnvVars:     []string{"LILY_INDEX_QUEUE"},
+			Value:       "",
+			Destination: &indexFlags.queue,
 		},
 	},
 	Subcommands: []*cli.Command{

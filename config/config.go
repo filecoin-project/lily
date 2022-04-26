@@ -19,6 +19,7 @@ type Conf struct {
 	Client     config.Client
 	Chainstore config.Chainstore
 	Storage    StorageConf
+	Queue      QueueConfig
 }
 
 type StorageConf struct {
@@ -40,6 +41,30 @@ type FileStorageConf struct {
 	Path        string
 	OmitHeader  bool   // when true, don't write column headers to new output files
 	FilePattern string // pattern to use for filenames written in the path specified
+}
+
+type QueueConfig struct {
+	Asynq map[string]AsynqRedisConfig
+}
+
+type AsynqRedisConfig struct {
+	// Network type to use, either tcp or unix.
+	// Default is tcp.
+	Network string
+	// Redis server address in "host:port" format.
+	Addr string
+	// Username to authenticate the current connection when Redis ACLs are used.
+	// See: https://redis.io/commands/auth.
+	Username string
+	// Password to authenticate the current connection.
+	// See: https://redis.io/commands/auth.
+	Password string
+	// Redis DB to select after connecting to a server.
+	// See: https://redis.io/commands/select.
+	DB int
+	// Maximum number of socket connections.
+	// Default is 10 connections per every CPU as reported by runtime.NumCPU.
+	PoolSize int
 }
 
 func DefaultConf() *Conf {
@@ -104,6 +129,18 @@ func SampleConf() *Conf {
 				Path:        "/tmp",
 				OmitHeader:  false,
 				FilePattern: "{table}.csv",
+			},
+		},
+	}
+	cfg.Queue = QueueConfig{
+		Asynq: map[string]AsynqRedisConfig{
+			"Asynq1": {
+				Network:  "tcp",
+				Addr:     "127.0.0.1:6379",
+				Username: "",
+				Password: "",
+				DB:       0,
+				PoolSize: 0,
 			},
 		},
 	}

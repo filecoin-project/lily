@@ -90,3 +90,17 @@ func tryTestDatabaseLock(ctx context.Context, db *pg.DB) func(context.Context) (
 		return acquired, err
 	}
 }
+
+// TruncateBlockTables ensures the indexing tables are empty
+func TruncateBlockTables(tb testing.TB, db *pg.DB) error {
+	_, err := db.Exec(`TRUNCATE TABLE block_headers`)
+	require.NoError(tb, err, "block_headers")
+
+	_, err = db.Exec(`TRUNCATE TABLE block_parents`)
+	require.NoError(tb, err, "block_parents")
+
+	_, err = db.Exec(`TRUNCATE TABLE drand_block_entries`)
+	require.NoError(tb, err, "drand_block_entries")
+
+	return nil
+}

@@ -22,7 +22,6 @@ type API interface {
 	GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*TipSetMessages, error)
 	GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*MessageExecution, error)
 }
-
 type StoreAPI interface {
 	// TODO this should be the lotus store not the specs-actors store.
 	Store() adt.Store

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lily/model/actors/common"
 	"github.com/filecoin-project/lily/model/blocks"
@@ -21,17 +21,17 @@ import (
 )
 
 var TaskModels = map[string][]string{
-	indexer.MessagesTask:       {"receipts", "block_messages"},
-	indexer.BlocksTask:         {"block_headers", "block_parents", "drand_block_entries"},
-	indexer.ChainConsensusTask: {"chain_consensus"},
-	indexer.ActorStatesRawTask: {"actors", "actor_states"},
+	tasktype.MessagesTask:       {"receipts", "block_messages"},
+	tasktype.BlocksTask:         {"block_headers", "block_parents", "drand_block_entries"},
+	tasktype.ChainConsensusTask: {"chain_consensus"},
+	tasktype.ActorStatesRawTask: {"actors", "actor_states"},
 }
 
 var TaskValidators = map[string][]interface{}{
-	indexer.MessagesTask:       {BlockMessagesValidator{}, ReceiptsValidator{}},
-	indexer.BlocksTask:         {BlockHeaderValidator{}, BlockParentsValidator{}, DrandBlockEntriesValidator{}},
-	indexer.ChainConsensusTask: {ChainConsensusValidator{}},
-	indexer.ActorStatesRawTask: {ActorStatesValidator{}, ActorValidator{}},
+	tasktype.MessagesTask:       {BlockMessagesValidator{}, ReceiptsValidator{}},
+	tasktype.BlocksTask:         {BlockHeaderValidator{}, BlockParentsValidator{}, DrandBlockEntriesValidator{}},
+	tasktype.ChainConsensusTask: {ChainConsensusValidator{}},
+	tasktype.ActorStatesRawTask: {ActorStatesValidator{}, ActorValidator{}},
 }
 
 type TipSetStateValidator interface {

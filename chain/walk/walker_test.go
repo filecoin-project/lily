@@ -1,4 +1,4 @@
-package chain
+package walk
 
 import (
 	"context"
@@ -13,7 +13,8 @@ import (
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/chain/datasource"
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/integrated"
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/model/blocks"
 	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lily/testutil"
@@ -32,7 +33,7 @@ func TestWalker(t *testing.T) {
 	defer func() { require.NoError(t, cleanup()) }()
 
 	t.Logf("truncating database tables")
-	err = truncateBlockTables(t, db)
+	err = testutil.TruncateBlockTables(t, db)
 	require.NoError(t, err, "truncating tables")
 
 	t.Logf("preparing chain")
@@ -48,7 +49,7 @@ func TestWalker(t *testing.T) {
 
 	t.Logf("collecting chain blocks from tipset before head")
 
-	bhs, err := collectBlockHeaders(nodeAPI, head)
+	bhs, err := testutil.CollectBlockHeaders(nodeAPI, head)
 	require.NoError(t, err, "collect chain blocks")
 
 	cids := bhs.Cids()
@@ -58,12 +59,15 @@ func TestWalker(t *testing.T) {
 	require.NoError(t, err, "NewDatabaseFromDB")
 
 	logging.SetAllLoggers(logging.LevelInfo)
+
 	taskAPI, err := datasource.NewDataSource(nodeAPI)
 	require.NoError(t, err)
-	im, err := indexer.NewManager(taskAPI, strg, t.Name(), []string{indexer.BlocksTask}, indexer.WithWindow(builtin.EpochDurationSeconds*time.Second))
+
+	im, err := integrated.NewManager(taskAPI, strg, t.Name(), integrated.WithWindow(builtin.EpochDurationSeconds*time.Second))
 	require.NoError(t, err, "NewManager")
+
 	t.Logf("initializing indexer")
-	idx := NewWalker(im, nodeAPI, t.Name(), 0, int64(head.Height()))
+	idx := NewWalker(im, nodeAPI, t.Name(), []string{tasktype.BlocksTask}, 0, int64(head.Height()))
 
 	t.Logf("indexing chain")
 	err = idx.WalkChain(ctx, nodeAPI, head)

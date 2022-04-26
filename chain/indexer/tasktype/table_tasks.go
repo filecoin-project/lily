@@ -1,5 +1,5 @@
 // Code generate by: `make tasks-gen`. DO NOT EDIT.
-package indexer
+package tasktype
 
 const (
 	BlockHeader                    = "block_header"

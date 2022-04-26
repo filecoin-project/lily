@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/filecoin-project/lily/chain/indexer/tablegen/generator"
+	"github.com/filecoin-project/lily/chain/indexer/tasktype/tablegen/generator"
 )
 
 func main() {

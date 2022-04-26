@@ -10,8 +10,9 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/lens/lily"
+	"github.com/filecoin-project/lily/schedule"
 )
 
 type gapOps struct {
@@ -22,6 +23,7 @@ type gapOps struct {
 	name     string
 	from     uint64
 	to       uint64
+	queue    string
 }
 
 var gapFlags gapOps
@@ -88,6 +90,13 @@ var GapFillCmd = &cli.Command{
 			Destination: &gapFlags.from,
 			Required:    true,
 		},
+		&cli.StringFlag{
+			Name:        "queue",
+			Usage:       "Name of queue that fill will write missing tipset tasks to.",
+			EnvVars:     []string{"LILY_FILL_QUEUE"},
+			Value:       "",
+			Destination: &gapFlags.queue,
+		},
 	},
 	Before: func(cctx *cli.Context) error {
 		from, to := gapFlags.from, gapFlags.to
@@ -100,17 +109,11 @@ var GapFillCmd = &cli.Command{
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
-		api, closer, err := GetAPI(ctx, gapFlags.apiAddr, gapFlags.apiToken)
-		if err != nil {
-			return err
-		}
-		defer closer()
-
-		var tasks []string
+		var taskList []string
 		if gapFlags.tasks == "" {
-			tasks = indexer.AllTableTasks
+			taskList = tasktype.AllTableTasks
 		} else {
-			tasks = strings.Split(gapFlags.tasks, ",")
+			taskList = strings.Split(gapFlags.tasks, ",")
 		}
 
 		fillName := fmt.Sprintf("fill_%d", time.Now().Unix())
@@ -118,19 +121,44 @@ var GapFillCmd = &cli.Command{
 			fillName = gapFlags.name
 		}
 
-		res, err := api.LilyGapFill(ctx, &lily.LilyGapFillConfig{
-			RestartOnFailure:    false,
-			RestartOnCompletion: false,
-			RestartDelay:        0,
-			Storage:             gapFlags.storage,
-			Name:                fillName,
-			Tasks:               tasks,
-			To:                  gapFlags.to,
-			From:                gapFlags.from,
-		})
+		api, closer, err := GetAPI(ctx, gapFlags.apiAddr, gapFlags.apiToken)
 		if err != nil {
 			return err
 		}
+		defer closer()
+
+		var res *schedule.JobSubmitResult
+		if gapFlags.queue == "" {
+			res, err = api.LilyGapFill(ctx, &lily.LilyGapFillConfig{
+				RestartOnFailure:    false,
+				RestartOnCompletion: false,
+				RestartDelay:        0,
+				Storage:             gapFlags.storage,
+				Name:                fillName,
+				Tasks:               taskList,
+				To:                  gapFlags.to,
+				From:                gapFlags.from,
+			})
+			if err != nil {
+				return err
+			}
+		} else {
+			res, err = api.LilyGapFillNotify(ctx, &lily.LilyGapFillNotifyConfig{
+				RestartOnFailure:    false,
+				RestartOnCompletion: false,
+				RestartDelay:        0,
+				Storage:             gapFlags.storage,
+				Name:                fillName,
+				Tasks:               taskList,
+				To:                  gapFlags.to,
+				From:                gapFlags.from,
+				Queue:               gapFlags.queue,
+			})
+			if err != nil {
+				return err
+			}
+		}
+
 		if err := printNewJob(os.Stdout, res); err != nil {
 			return err
 		}
@@ -201,11 +229,11 @@ var GapFindCmd = &cli.Command{
 			findName = gapFlags.name
 		}
 
-		var tasks []string
+		var taskList []string
 		if gapFlags.tasks == "" {
-			tasks = indexer.AllTableTasks
+			taskList = tasktype.AllTableTasks
 		} else {
-			tasks = strings.Split(gapFlags.tasks, ",")
+			taskList = strings.Split(gapFlags.tasks, ",")
 		}
 
 		res, err := api.LilyGapFind(ctx, &lily.LilyGapFindConfig{
@@ -213,7 +241,7 @@ var GapFindCmd = &cli.Command{
 			RestartOnCompletion: false,
 			RestartDelay:        0,
 			Storage:             gapFlags.storage,
-			Tasks:               tasks,
+			Tasks:               taskList,
 			Name:                findName,
 			To:                  gapFlags.to,
 			From:                gapFlags.from,

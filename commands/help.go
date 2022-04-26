@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 )
 
 var HelpModelsListCmd = &cli.Command{
@@ -15,8 +15,8 @@ var HelpModelsListCmd = &cli.Command{
 	Action: func(cctx *cli.Context) error { // initialize tabwriter
 		t := table.NewWriter()
 		t.AppendHeader(table.Row{"Model", "Description"})
-		for _, m := range indexer.AllTableTasks {
-			comment := indexer.TableComment[m]
+		for _, m := range tasktype.AllTableTasks {
+			comment := tasktype.TableComment[m]
 			t.AppendRow(table.Row{m, comment})
 			t.AppendSeparator()
 		}
@@ -32,16 +32,16 @@ var HelpModelsDescribeCmd = &cli.Command{
 			return xerrors.Errorf("model name required, run `lily help models-list`, to see all available models")
 		}
 		mname := cctx.Args().First()
-		if _, found := indexer.TableLookup[mname]; !found {
+		if _, found := tasktype.TableLookup[mname]; !found {
 			return xerrors.Errorf("model %s doesn't exist", mname)
 		}
 
-		modelFields := indexer.TableFieldComments[mname]
+		modelFields := tasktype.TableFieldComments[mname]
 		t := table.NewWriter()
 		t.AppendHeader(table.Row{"Fields", "Description"})
 		t.SortBy([]table.SortBy{
 			{Name: "Fields", Mode: table.Asc}})
-		t.SetCaption(indexer.TableComment[mname])
+		t.SetCaption(tasktype.TableComment[mname])
 		for field, comment := range modelFields {
 			t.AppendRow(table.Row{field, comment})
 			t.AppendSeparator()

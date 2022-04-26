@@ -10,8 +10,9 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/urfave/cli/v2"
 
-	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/lens/lily"
+	"github.com/filecoin-project/lily/schedule"
 )
 
 type watchOps struct {
@@ -24,6 +25,7 @@ type watchOps struct {
 	name       string
 	workers    int
 	bufferSize int
+	queue      string
 }
 
 var watchFlags watchOps
@@ -94,6 +96,13 @@ var WatchCmd = &cli.Command{
 			Value:       "",
 			Destination: &watchFlags.name,
 		},
+		&cli.StringFlag{
+			Name:        "queue",
+			Usage:       "Name of queue that watcher will write tipsets to. If empty the node will watch and index tipsets locally. If populated the node will write tipsets to the queue for tipset-workers to consume",
+			EnvVars:     []string{"LILY_WATCH_QUEUE"},
+			Value:       "",
+			Destination: &watchFlags.queue,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
@@ -103,22 +112,9 @@ var WatchCmd = &cli.Command{
 			watchName = watchFlags.name
 		}
 
-		tasks := strings.Split(watchFlags.tasks, ",")
+		taskList := strings.Split(watchFlags.tasks, ",")
 		if watchFlags.tasks == "*" {
-			tasks = indexer.AllTableTasks
-		}
-
-		cfg := &lily.LilyWatchConfig{
-			Name:                watchName,
-			Tasks:               tasks,
-			Window:              watchFlags.window,
-			Confidence:          watchFlags.confidence,
-			RestartDelay:        0,
-			RestartOnCompletion: false,
-			RestartOnFailure:    true,
-			Storage:             watchFlags.storage,
-			Workers:             watchFlags.workers,
-			BufferSize:          watchFlags.bufferSize,
+			taskList = tasktype.AllTableTasks
 		}
 
 		api, closer, err := GetAPI(ctx, watchFlags.apiAddr, watchFlags.apiToken)
@@ -127,9 +123,41 @@ var WatchCmd = &cli.Command{
 		}
 		defer closer()
 
-		res, err := api.LilyWatch(ctx, cfg)
-		if err != nil {
-			return err
+		var res *schedule.JobSubmitResult
+		if watchFlags.queue == "" {
+			cfg := &lily.LilyWatchConfig{
+				Name:                watchName,
+				Tasks:               taskList,
+				Window:              watchFlags.window,
+				Confidence:          watchFlags.confidence,
+				RestartDelay:        0,
+				RestartOnCompletion: false,
+				RestartOnFailure:    true,
+				Storage:             watchFlags.storage,
+				Workers:             watchFlags.workers,
+				BufferSize:          watchFlags.bufferSize,
+			}
+
+			res, err = api.LilyWatch(ctx, cfg)
+			if err != nil {
+				return err
+			}
+		} else {
+			cfg := &lily.LilyWatchNotifyConfig{
+				Name:                watchName,
+				Tasks:               taskList,
+				Confidence:          watchFlags.confidence,
+				RestartDelay:        0,
+				RestartOnCompletion: false,
+				RestartOnFailure:    true,
+				BufferSize:          watchFlags.bufferSize,
+				Queue:               watchFlags.queue,
+			}
+
+			res, err = api.LilyWatchNotify(ctx, cfg)
+			if err != nil {
+				return err
+			}
 		}
 		if err := printNewJob(os.Stdout, res); err != nil {
 			return err
