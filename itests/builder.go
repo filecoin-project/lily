@@ -149,20 +149,22 @@ func (vw *VectorWalkValidator) Run(ctx context.Context) node.StopFunc {
 
 	// create a walk config from the builder values
 	walkCfg := &lily.LilyWalkConfig{
-		From:                vw.from,
-		To:                  vw.to,
-		Name:                vw.t.Name(),
-		Tasks:               vw.tasks,
-		Window:              0,
-		RestartOnFailure:    false,
-		RestartOnCompletion: false,
-		RestartDelay:        0,
-		Storage:             "TestDatabase1",
+		From: vw.from,
+		To:   vw.to,
+		JobConfig: lily.LilyJobConfig{
+			Name:                vw.t.Name(),
+			Tasks:               vw.tasks,
+			Window:              0,
+			RestartOnFailure:    false,
+			RestartOnCompletion: false,
+			RestartDelay:        0,
+			Storage:             "TestDatabase1",
+		},
 	}
 
 	walkStart := time.Now()
 	// walk that walk
-	vw.t.Logf("starting walk from %d to %d with tasks %s", walkCfg.From, walkCfg.To, walkCfg.Tasks)
+	vw.t.Logf("starting walk from %d to %d with tasks %s", walkCfg.From, walkCfg.To, walkCfg.JobConfig.Tasks)
 	res, err := vw.api.LilyWalk(ctx, walkCfg)
 	require.NoError(vw.t, err)
 	require.NotEmpty(vw.t, res)

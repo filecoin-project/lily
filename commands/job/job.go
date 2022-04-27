@@ -42,7 +42,7 @@ var JobRunCmd = &cli.Command{
 		IndexCmd,
 		SurveyCmd,
 		GapFillCmd,
-		GapFillCmd,
+		GapFindCmd,
 	},
 }
 

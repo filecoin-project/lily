@@ -19,8 +19,8 @@ import (
 )
 
 var (
-	minHeight = uint64(0)
-	maxHeight = uint64(10)
+	minHeight = int64(0)
+	maxHeight = int64(10)
 )
 
 func TestFind(t *testing.T) {
@@ -459,7 +459,7 @@ func (e *PREditor) truncate() {
 	require.NoError(e.t, err, "visor_processing_report")
 }
 
-func (e *PREditor) initialize(count uint64, tasks ...string) {
+func (e *PREditor) initialize(count int64, tasks ...string) {
 	// build the task array
 	// uncomment to see all query
 	// db.AddQueryHook(&LoggingQueryHook{})
