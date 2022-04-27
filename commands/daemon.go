@@ -31,31 +31,31 @@ import (
 	"github.com/filecoin-project/lily/storage"
 )
 
-var clientAPIFlags struct {
-	apiAddr  string
-	apiToken string
+var ClientAPIFlags struct {
+	ApiAddr  string
+	ApiToken string
 }
 
-var clientAPIFlag = &cli.StringFlag{
+var ClientAPIFlag = &cli.StringFlag{
 	Name:        "api",
 	Usage:       "Address of lily api in multiaddr format.",
 	EnvVars:     []string{"LILY_API"},
 	Value:       "/ip4/127.0.0.1/tcp/1234",
-	Destination: &clientAPIFlags.apiAddr,
+	Destination: &ClientAPIFlags.ApiAddr,
 }
 
-var clientTokenFlag = &cli.StringFlag{
+var ClientTokenFlag = &cli.StringFlag{
 	Name:        "api-token",
 	Usage:       "Authentication token for lily api.",
 	EnvVars:     []string{"LILY_API_TOKEN"},
 	Value:       "",
-	Destination: &clientAPIFlags.apiToken,
+	Destination: &ClientAPIFlags.ApiToken,
 }
 
-// clientAPIFlagSet are used by commands that act as clients of a daemon's API
-var clientAPIFlagSet = []cli.Flag{
-	clientAPIFlag,
-	clientTokenFlag,
+// ClientAPIFlagSet are used by commands that act as clients of a daemon's API
+var ClientAPIFlagSet = []cli.Flag{
+	ClientAPIFlag,
+	ClientTokenFlag,
 }
 
 type daemonOpts struct {
@@ -125,7 +125,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 `,
 
 	Flags: []cli.Flag{
-		clientAPIFlag,
+		ClientAPIFlag,
 		&cli.StringFlag{
 			Name:        "repo",
 			Usage:       "Specify path where lily should store chain state.",
@@ -266,7 +266,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 
 			node.ApplyIf(func(s *node.Settings) bool { return c.IsSet("api") },
 				node.Override(node.SetApiEndpointKey, func(lr repo.LockedRepo) error {
-					apima, err := multiaddr.NewMultiaddr(clientAPIFlags.apiAddr)
+					apima, err := multiaddr.NewMultiaddr(ClientAPIFlags.ApiAddr)
 					if err != nil {
 						return err
 					}

@@ -8,12 +8,12 @@ import (
 var StopCmd = &cli.Command{
 	Name:  "stop",
 	Usage: "Stop a running lily daemon",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: FlagSet(
+		ClientAPIFlagSet,
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
 			return err
 		}

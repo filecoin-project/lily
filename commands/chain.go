@@ -9,7 +9,6 @@ import (
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
-	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lotus/api"
 	lotusbuild "github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -17,6 +16,8 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lily/lens/lily"
 )
 
 var ChainCmd = &cli.Command{
@@ -36,12 +37,12 @@ var ChainCmd = &cli.Command{
 var ChainHeadCmd = &cli.Command{
 	Name:  "head",
 	Usage: "Print chain head",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: FlagSet(
+		ClientAPIFlagSet,
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
 			return err
 		}
@@ -63,8 +64,8 @@ var ChainGetBlock = &cli.Command{
 	Name:      "getblock",
 	Usage:     "Get a block and print its details",
 	ArgsUsage: "[blockCid]",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: FlagSet(
+		ClientAPIFlagSet,
 		[]cli.Flag{
 			&cli.BoolFlag{
 				Name:  "raw",
@@ -73,7 +74,7 @@ var ChainGetBlock = &cli.Command{
 		}),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
 			return err
 		}
@@ -155,12 +156,12 @@ var ChainReadObjCmd = &cli.Command{
 	Name:      "read-obj",
 	Usage:     "Read the raw bytes of an object",
 	ArgsUsage: "[objectCid]",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: FlagSet(
+		ClientAPIFlagSet,
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
 			return err
 		}
@@ -190,8 +191,8 @@ var ChainStatObjCmd = &cli.Command{
    When a base is provided it will be walked first, and all links visisted
    will be ignored when the passed in object is walked.
 `,
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: FlagSet(
+		ClientAPIFlagSet,
 		[]cli.Flag{
 			&cli.StringFlag{
 				Name:  "base",
@@ -200,7 +201,7 @@ var ChainStatObjCmd = &cli.Command{
 		}),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
 			return err
 		}
@@ -240,7 +241,7 @@ var ChainGetMsgCmd = &cli.Command{
 		}
 
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
 			return err
 		}
@@ -282,8 +283,8 @@ var ChainListCmd = &cli.Command{
 	Name:    "list",
 	Aliases: []string{"love"},
 	Usage:   "View a segment of the chain",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: FlagSet(
+		ClientAPIFlagSet,
 		[]cli.Flag{
 			&cli.Uint64Flag{Name: "height", DefaultText: "current head"},
 			&cli.IntFlag{Name: "count", Value: 30},
@@ -299,7 +300,7 @@ var ChainListCmd = &cli.Command{
 		}),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
 			return err
 		}
@@ -413,8 +414,8 @@ var ChainSetHeadCmd = &cli.Command{
 	Name:      "sethead",
 	Usage:     "manually set the local nodes head tipset (Caution: normally only used for recovery)",
 	ArgsUsage: "[tipsetkey]",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: FlagSet(
+		ClientAPIFlagSet,
 		[]cli.Flag{
 			&cli.BoolFlag{
 				Name:  "genesis",
@@ -427,7 +428,7 @@ var ChainSetHeadCmd = &cli.Command{
 		}),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
 			return err
 		}

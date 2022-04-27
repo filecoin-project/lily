@@ -1,4 +1,4 @@
-package commands
+package job
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
 
+	"github.com/filecoin-project/lily/commands"
 	"github.com/filecoin-project/lily/schedule"
 )
 
@@ -15,10 +16,33 @@ var JobCmd = &cli.Command{
 	Name:  "job",
 	Usage: "Manage jobs being run by the daemon.",
 	Subcommands: []*cli.Command{
+		JobRunCmd,
 		JobStartCmd,
 		JobStopCmd,
 		JobWaitCmd,
 		JobListCmd,
+	},
+}
+
+var JobRunCmd = &cli.Command{
+	Name:  "run",
+	Usage: "run a job",
+	Flags: []cli.Flag{
+		RunWindowFlag,
+		RunTaskFlag,
+		RunStorageFlag,
+		RunNameFlag,
+		RunRestartDelayFlag,
+		RunRestartFailure,
+		RunRestartCompletion,
+	},
+	Subcommands: []*cli.Command{
+		WalkCmd,
+		WatchCmd,
+		IndexCmd,
+		SurveyCmd,
+		GapFillCmd,
+		GapFillCmd,
 	},
 }
 
@@ -29,8 +53,8 @@ var jobControlFlags struct {
 var JobStartCmd = &cli.Command{
 	Name:  "start",
 	Usage: "start a job.",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: commands.FlagSet(
+		commands.ClientAPIFlagSet,
 		[]cli.Flag{
 			&cli.IntFlag{
 				Name:        "id",
@@ -42,7 +66,7 @@ var JobStartCmd = &cli.Command{
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		api, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		api, closer, err := commands.GetAPI(ctx)
 		if err != nil {
 			return err
 		}
@@ -55,8 +79,8 @@ var JobStartCmd = &cli.Command{
 var JobStopCmd = &cli.Command{
 	Name:  "stop",
 	Usage: "stop a job.",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: commands.FlagSet(
+		commands.ClientAPIFlagSet,
 		[]cli.Flag{
 			&cli.IntFlag{
 				Name:        "id",
@@ -68,7 +92,7 @@ var JobStopCmd = &cli.Command{
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		api, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		api, closer, err := commands.GetAPI(ctx)
 		if err != nil {
 			return err
 		}
@@ -81,12 +105,12 @@ var JobStopCmd = &cli.Command{
 var JobListCmd = &cli.Command{
 	Name:  "list",
 	Usage: "list all jobs and their status",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: commands.FlagSet(
+		commands.ClientAPIFlagSet,
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		api, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		api, closer, err := commands.GetAPI(ctx)
 		if err != nil {
 			return err
 		}
@@ -110,8 +134,8 @@ var JobListCmd = &cli.Command{
 var JobWaitCmd = &cli.Command{
 	Name:  "wait",
 	Usage: "wait on a job to complete.",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: commands.FlagSet(
+		commands.ClientAPIFlagSet,
 		[]cli.Flag{
 			&cli.IntFlag{
 				Name:        "id",
@@ -123,7 +147,7 @@ var JobWaitCmd = &cli.Command{
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		api, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		api, closer, err := commands.GetAPI(ctx)
 		if err != nil {
 			return err
 		}

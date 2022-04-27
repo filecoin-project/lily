@@ -13,8 +13,8 @@ import (
 var WaitApiCmd = &cli.Command{
 	Name:  "wait-api",
 	Usage: "Wait for lily api to come online",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: FlagSet(
+		ClientAPIFlagSet,
 		[]cli.Flag{
 			&cli.DurationFlag{
 				Name:  "timeout",
@@ -33,7 +33,7 @@ var WaitApiCmd = &cli.Command{
 		}
 
 		for {
-			err := checkAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+			err := checkAPI(ctx, ClientAPIFlags.ApiAddr, ClientAPIFlags.ApiToken)
 			if err == nil {
 				return nil
 			}
@@ -51,7 +51,7 @@ var WaitApiCmd = &cli.Command{
 }
 
 func checkAPI(ctx context.Context, addrStr string, token string) error {
-	lapi, closer, err := GetAPI(ctx, addrStr, token)
+	lapi, closer, err := GetAPI(ctx)
 	if err != nil {
 		return err
 	}

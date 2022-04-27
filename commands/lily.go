@@ -14,10 +14,10 @@ import (
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
-func GetAPI(ctx context.Context, addrStr string, token string) (lily.LilyAPI, jsonrpc.ClientCloser, error) {
-	addrStr = strings.TrimSpace(addrStr)
+func GetAPI(ctx context.Context) (lily.LilyAPI, jsonrpc.ClientCloser, error) {
+	addrStr := strings.TrimSpace(ClientAPIFlags.ApiAddr)
 
-	ainfo := cliutil.APIInfo{Addr: addrStr, Token: []byte(token)}
+	ainfo := cliutil.APIInfo{Addr: addrStr, Token: []byte(ClientAPIFlags.ApiToken)}
 
 	addr, err := ainfo.DialArgs("v0")
 	if err != nil {

@@ -15,6 +15,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/lily/commands"
+	"github.com/filecoin-project/lily/commands/job"
 	"github.com/filecoin-project/lily/version"
 )
 
@@ -69,13 +70,15 @@ func main() {
 		})
 	}
 
-	cli.AppHelpTemplate = commands.AppHelpTemplate
+	//cli.AppHelpTemplate = commands.AppHelpTemplate
 
 	app := &cli.App{
 		Name:    "lily",
 		Usage:   "a tool for capturing on-chain state from the filecoin network",
 		Version: fmt.Sprintf("VisorVersion: \t%s\n   NewestNetworkVersion: \t%d\n   GenesisFile: \t%s\n   DevNet: \t%t\n   UserVersion: \t%s\n   UpgradeSchedule: \n%s", version.String(), build.NewestNetworkVersion, build.GenesisFile, build.Devnet, build.UserVersion(), up.String()),
 		Flags: []cli.Flag{
+			commands.ClientAPIFlag,
+			commands.ClientTokenFlag,
 			&cli.StringFlag{
 				Name:        "log-level",
 				EnvVars:     []string{"GOLOG_LOG_LEVEL"},
@@ -153,27 +156,21 @@ func main() {
 				Destination: &commands.VisorMetricFlags.RedisDB,
 			},
 		},
-		HideHelp: true,
+		HideHelp: false,
 		Metadata: commands.Metadata(),
 		Commands: []*cli.Command{
 			commands.ChainCmd,
 			commands.DaemonCmd,
 			commands.ExportChainCmd,
-			commands.GapCmd,
 			commands.HelpCmd,
-			commands.IndexCmd,
 			commands.InitCmd,
-			commands.JobCmd,
 			commands.LogCmd,
 			commands.MigrateCmd,
 			commands.NetCmd,
-			commands.SurveyCmd,
 			commands.StopCmd,
 			commands.SyncCmd,
 			commands.WaitApiCmd,
-			commands.WalkCmd,
-			commands.WatchCmd,
-			commands.WorkerCmd,
+			job.JobCmd,
 		},
 	}
 	app.Setup()

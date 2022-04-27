@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/filecoin-project/lily/version"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/lily/version"
 
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/storage"
@@ -66,7 +67,7 @@ var dbConnectFlags = []cli.Flag{
 var MigrateCmd = &cli.Command{
 	Name:  "migrate",
 	Usage: "Manage the schema version installed in a database.",
-	Flags: flagSet(
+	Flags: FlagSet(
 		dbConnectFlags,
 		[]cli.Flag{
 			&cli.StringFlag{

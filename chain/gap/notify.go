@@ -18,12 +18,12 @@ type Notifier struct {
 	queue                *queue.AsynQ
 	node                 lens.API
 	name                 string
-	minHeight, maxHeight uint64
+	minHeight, maxHeight int64
 	tasks                []string
 	done                 chan struct{}
 }
 
-func NewNotifier(node lens.API, db *storage.Database, queue *queue.AsynQ, name string, minHeight, maxHeight uint64, tasks []string) *Notifier {
+func NewNotifier(node lens.API, db *storage.Database, queue *queue.AsynQ, name string, minHeight, maxHeight int64, tasks []string) *Notifier {
 	return &Notifier{
 		DB:        db,
 		queue:     queue,

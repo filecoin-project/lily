@@ -29,12 +29,12 @@ var NetCmd = &cli.Command{
 var NetID = &cli.Command{
 	Name:  "id",
 	Usage: "Get peer ID of libp2p node used by daemon",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: FlagSet(
+		ClientAPIFlagSet,
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
 			return xerrors.Errorf("get api: %w", err)
 		}
@@ -53,12 +53,12 @@ var NetID = &cli.Command{
 var NetListen = &cli.Command{
 	Name:  "listen",
 	Usage: "List libp2p addresses daemon is listening on",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: FlagSet(
+		ClientAPIFlagSet,
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
 			return xerrors.Errorf("get api: %w", err)
 		}
@@ -79,8 +79,8 @@ var NetListen = &cli.Command{
 var NetPeers = &cli.Command{
 	Name:  "peers",
 	Usage: "List peers daemon is connected to",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: FlagSet(
+		ClientAPIFlagSet,
 		[]cli.Flag{
 			&cli.BoolFlag{
 				Name:    "agent",
@@ -96,7 +96,7 @@ var NetPeers = &cli.Command{
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
 			return xerrors.Errorf("get api: %w", err)
 		}
@@ -157,12 +157,12 @@ var NetPeers = &cli.Command{
 var NetReachability = &cli.Command{
 	Name:  "reachability",
 	Usage: "Print information about reachability from the Internet",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: FlagSet(
+		ClientAPIFlagSet,
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
 			return xerrors.Errorf("get api: %w", err)
 		}
@@ -184,8 +184,8 @@ var NetReachability = &cli.Command{
 var NetScores = &cli.Command{
 	Name:  "scores",
 	Usage: "List scores assigned to peers",
-	Flags: flagSet(
-		clientAPIFlagSet,
+	Flags: FlagSet(
+		ClientAPIFlagSet,
 		[]cli.Flag{
 			&cli.BoolFlag{
 				Name:    "extended",
@@ -196,7 +196,7 @@ var NetScores = &cli.Command{
 	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
 			return xerrors.Errorf("get api: %w", err)
 		}

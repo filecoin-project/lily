@@ -492,7 +492,7 @@ func GenerateUpsertStrings(model interface{}) (string, string) {
 }
 
 // returns a map of heights to missing tasks, and a list of heights to iterate the map in order with.
-func (d *Database) ConsolidateGaps(ctx context.Context, minHeight, maxHeight uint64, tasks ...string) (map[int64][]string, []int64, error) {
+func (d *Database) ConsolidateGaps(ctx context.Context, minHeight, maxHeight int64, tasks ...string) (map[int64][]string, []int64, error) {
 	gaps, err := d.QueryGaps(ctx, minHeight, maxHeight, tasks...)
 	if err != nil {
 		return nil, nil, err
@@ -512,7 +512,7 @@ func (d *Database) ConsolidateGaps(ctx context.Context, minHeight, maxHeight uin
 	return out, heights, nil
 }
 
-func (d *Database) QueryGaps(ctx context.Context, minHeight, maxHeight uint64, tasks ...string) ([]*visor.GapReport, error) {
+func (d *Database) QueryGaps(ctx context.Context, minHeight, maxHeight int64, tasks ...string) ([]*visor.GapReport, error) {
 	var out []*visor.GapReport
 	if len(tasks) != 0 {
 		if err := d.AsORM().ModelContext(ctx, &out).
