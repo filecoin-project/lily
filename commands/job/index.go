@@ -26,6 +26,9 @@ var indexFlags indexOps
 var IndexCmd = &cli.Command{
 	Name:  "index",
 	Usage: "Index the state of a tipset from the filecoin blockchain.",
+	Description: `
+The index command may be used to index a single tipset from the filecoin blockchain specified either by height or by tipset key.
+`,
 	Subcommands: []*cli.Command{
 		IndexTipSetCmd,
 		IndexHeightCmd,
@@ -34,7 +37,7 @@ var IndexCmd = &cli.Command{
 
 var IndexTipSetCmd = &cli.Command{
 	Name:  "tipset",
-	Usage: "Index the state of a tipset from the filecoin blockchain by tipset key",
+	Usage: "Index the state of a tipset from the filecoin blockchain by tipset key.",
 	Subcommands: []*cli.Command{
 		IndexNotifyCmd,
 	},
@@ -65,7 +68,7 @@ var IndexTipSetCmd = &cli.Command{
 		defer closer()
 
 		_, err = api.LilyIndex(ctx, &lily.LilyIndexConfig{
-			JobConfig: RunFlags.ParseJobConfig(),
+			JobConfig: RunFlags.ParseJobConfig(cctx.Command.Name),
 			TipSet:    indexFlags.tipsetKey,
 		})
 		if err != nil {
@@ -78,7 +81,10 @@ var IndexTipSetCmd = &cli.Command{
 
 var IndexHeightCmd = &cli.Command{
 	Name:  "height",
-	Usage: "Index the state of a tipset from the filecoin blockchain by height",
+	Usage: "Index the state of a tipset from the filecoin blockchain by height.",
+	Description: `
+	Index the state of a tipset from the filecoin blockchain by height. If the provided height is a null-round and error will be returned.
+`,
 	Flags: []cli.Flag{
 		&cli.Int64Flag{
 			Name:        "height",
@@ -121,7 +127,7 @@ var IndexHeightCmd = &cli.Command{
 		defer closer()
 
 		_, err = api.LilyIndex(ctx, &lily.LilyIndexConfig{
-			JobConfig: RunFlags.ParseJobConfig(),
+			JobConfig: RunFlags.ParseJobConfig(cctx.Command.Name),
 			TipSet:    indexFlags.tipsetKey,
 		})
 		if err != nil {
@@ -133,7 +139,12 @@ var IndexHeightCmd = &cli.Command{
 }
 
 var IndexNotifyCmd = &cli.Command{
-	Name: "notify",
+	Name:  "notify",
+	Usage: "notify the provided queueing system of the tipset to index allowing tipset-workers to perform the indexing.",
+	Description: `
+The notify command will insert tasks into the provided queueing system for consumption by tipset-workers.
+This command should be used when lily is configured to perform distributed indexing.
+`,
 	Flags: []cli.Flag{
 		NotifyQueueFlag,
 	},
@@ -148,7 +159,7 @@ var IndexNotifyCmd = &cli.Command{
 
 		cfg := &lily.LilyIndexNotifyConfig{
 			IndexConfig: lily.LilyIndexConfig{
-				JobConfig: RunFlags.ParseJobConfig(),
+				JobConfig: RunFlags.ParseJobConfig("index-" + cctx.Command.Name),
 				TipSet:    indexFlags.tipsetKey,
 			},
 			Queue: notifyFlags.queue,

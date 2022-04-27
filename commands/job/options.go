@@ -23,9 +23,9 @@ type runOpts struct {
 	RestartFailure    bool
 }
 
-func (r runOpts) ParseJobConfig() lily.LilyJobConfig {
+func (r runOpts) ParseJobConfig(kind string) lily.LilyJobConfig {
 	if RunFlags.Name == "" {
-		RunFlags.Name = fmt.Sprintf("job_%d", time.Now().Unix())
+		RunFlags.Name = fmt.Sprintf("%s_%d", kind, time.Now().Unix())
 	}
 	if len(RunFlags.Tasks.Value()) == 0 {
 		// TODO don't panic
@@ -47,8 +47,9 @@ var RunFlags runOpts
 
 var RunWindowFlag = &cli.DurationFlag{
 	Name:        "window",
-	Usage:       "Duaration after which job execution will be cancled",
+	Usage:       "Duaration after which job execution will be canceled",
 	EnvVars:     []string{"LILY_JOB_WINDOW"},
+	Value:       0,
 	Destination: &RunFlags.Window,
 }
 
@@ -61,7 +62,7 @@ var RunTaskFlag = &cli.StringSliceFlag{
 
 var RunStorageFlag = &cli.StringFlag{
 	Name:        "storage",
-	Usage:       "Name of storage that job will write result to.",
+	Usage:       "Name of storage backend the job will write result to.",
 	EnvVars:     []string{"LILY_JOB_STORAGE"},
 	Value:       "",
 	Destination: &RunFlags.Storage,
@@ -69,7 +70,7 @@ var RunStorageFlag = &cli.StringFlag{
 
 var RunNameFlag = &cli.StringFlag{
 	Name:        "name",
-	Usage:       "Name of job for easy identification later.",
+	Usage:       "Name of job for easy identification later. Will appear as 'reporter' in the visor_processing_reports table.",
 	EnvVars:     []string{"LILY_JOB_NAME"},
 	Value:       "",
 	Destination: &RunFlags.Name,
@@ -77,7 +78,7 @@ var RunNameFlag = &cli.StringFlag{
 
 var RunRestartDelayFlag = &cli.DurationFlag{
 	Name:        "restart-delay",
-	Usage:       "Duration to wait before restarting job",
+	Usage:       "Duration to wait before restarting job after it ends execution",
 	EnvVars:     []string{"LILY_JOB_RESTART_DELAY"},
 	Value:       0,
 	Destination: &RunFlags.RestartDelay,
@@ -85,7 +86,7 @@ var RunRestartDelayFlag = &cli.DurationFlag{
 
 var RunRestartCompletion = &cli.BoolFlag{
 	Name:        "restart-on-completion",
-	Usage:       "Restart the job after it completes",
+	Usage:       "Restart the job after it completes.",
 	EnvVars:     []string{"LILY_JOB_RESTART_COMPLETION"},
 	Value:       false,
 	Destination: &RunFlags.RestartCompletion,
@@ -93,7 +94,7 @@ var RunRestartCompletion = &cli.BoolFlag{
 
 var RunRestartFailure = &cli.BoolFlag{
 	Name:        "restart-on-failure",
-	Usage:       "Restart the job if it fails",
+	Usage:       "Restart the job if it fails.",
 	EnvVars:     []string{"LILY_JOB_RESTART_FAILURE"},
 	Value:       false,
 	Destination: &RunFlags.RestartFailure,

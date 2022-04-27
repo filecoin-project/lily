@@ -16,7 +16,8 @@ var tipsetWorkerFlags struct {
 }
 
 var TipSetWorkerCmd = &cli.Command{
-	Name: "tipset-worker",
+	Name:  "tipset-worker",
+	Usage: "start a tipset-worker that consumes tasks from the provided queuing system and performs indexing",
 	Flags: commands.FlagSet(
 		commands.ClientAPIFlagSet,
 		[]cli.Flag{
@@ -28,7 +29,7 @@ var TipSetWorkerCmd = &cli.Command{
 			},
 			&cli.StringFlag{
 				Name:        "queue",
-				Usage:       "Name of queue worker will consume work from.",
+				Usage:       "Name of queue system worker will consume work from.",
 				EnvVars:     []string{"LILY_TSWORKER_QUEUE"},
 				Value:       "",
 				Destination: &tipsetWorkerFlags.queue,
@@ -45,7 +46,7 @@ var TipSetWorkerCmd = &cli.Command{
 		defer closer()
 
 		res, err := api.StartTipSetWorker(ctx, &lily.LilyTipSetWorkerConfig{
-			JobConfig:   RunFlags.ParseJobConfig(),
+			JobConfig:   RunFlags.ParseJobConfig(cctx.Command.Name),
 			Queue:       tipsetWorkerFlags.queue,
 			Concurrency: tipsetWorkerFlags.concurrency,
 		})

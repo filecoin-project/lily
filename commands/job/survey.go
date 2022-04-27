@@ -39,7 +39,7 @@ var SurveyCmd = &cli.Command{
 		defer closer()
 
 		res, err := api.LilySurvey(ctx, &lily.LilySurveyConfig{
-			JobConfig: RunFlags.ParseJobConfig(),
+			JobConfig: RunFlags.ParseJobConfig(cctx.Command.Name),
 			Interval:  surveyFlags.interval,
 		})
 		if err != nil {

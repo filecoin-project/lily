@@ -43,6 +43,7 @@ var JobRunCmd = &cli.Command{
 		SurveyCmd,
 		GapFillCmd,
 		GapFindCmd,
+		TipSetWorkerCmd,
 	},
 }
 

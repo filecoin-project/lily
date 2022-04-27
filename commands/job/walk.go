@@ -12,7 +12,16 @@ import (
 
 var WalkCmd = &cli.Command{
 	Name:  "walk",
-	Usage: "Start a daemon job to walk a range of the filecoin blockchain.",
+	Usage: "walk and index a range of the filecoin blockchain.",
+	Description: `
+The walk command will index state based on the list of tasks (--tasks) provided over the specified range (--from --to).
+Each epoch will be indexed serially starting from the heaviest tipset at the upper height (--to) to the lower height (--to).
+
+As and example, the below command:
+  $ lily job run --tasks=block_headers,messages walk --from=10 --to=20
+walks epochs 20 through 10 (inclusive) executing the block_headers and messages task for each epoch.
+The status of each epoch and its set of tasks can be observed in the visor_processing_reports table.
+`,
 	Flags: []cli.Flag{
 		RangeFromFlag,
 		RangeToFlag,
@@ -33,7 +42,7 @@ var WalkCmd = &cli.Command{
 		defer closer()
 
 		cfg := &lily.LilyWalkConfig{
-			JobConfig: RunFlags.ParseJobConfig(),
+			JobConfig: RunFlags.ParseJobConfig(cctx.Command.Name),
 			From:      rangeFlags.from,
 			To:        rangeFlags.to,
 		}
@@ -52,7 +61,12 @@ var WalkCmd = &cli.Command{
 }
 
 var WalkNotifyCmd = &cli.Command{
-	Name: "notify",
+	Name:  "notify",
+	Usage: "notify the provided queueing system of epochs to index allowing tipset-workers to perform the indexing.",
+	Description: `
+The notify command will insert tasks into the provided queueing system for consumption by tipset-workers.
+This command should be used when lily is configured to perform distributed indexing.
+`,
 	Flags: []cli.Flag{
 		NotifyQueueFlag,
 	},
@@ -67,7 +81,7 @@ var WalkNotifyCmd = &cli.Command{
 
 		cfg := &lily.LilyWalkNotifyConfig{
 			WalkConfig: lily.LilyWalkConfig{
-				JobConfig: RunFlags.ParseJobConfig(),
+				JobConfig: RunFlags.ParseJobConfig("walk-" + cctx.Command.Name),
 				From:      rangeFlags.from,
 				To:        rangeFlags.to,
 			},
