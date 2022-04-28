@@ -23,7 +23,7 @@ func init() {
 	}
 }
 
-type VisorDBOpts struct {
+type LilyDBOpts struct {
 	DB                string
 	Name              string
 	DBSchema          string
@@ -32,7 +32,7 @@ type VisorDBOpts struct {
 	DBAllowMigrations bool
 }
 
-var VisorDBFlags VisorDBOpts
+var LilyDBFlags LilyDBOpts
 
 var dbConnectFlags = []cli.Flag{
 	&cli.StringFlag{
@@ -40,27 +40,27 @@ var dbConnectFlags = []cli.Flag{
 		EnvVars:     []string{"LILY_DB"},
 		Value:       "",
 		Usage:       "A connection string for the TimescaleDB database, for example postgres://postgres:password@localhost:5432/postgres?sslmode=disable",
-		Destination: &VisorDBFlags.DB,
+		Destination: &LilyDBFlags.DB,
 	},
 	&cli.IntFlag{
 		Name:        "db-pool-size",
 		EnvVars:     []string{"LILY_DB_POOL_SIZE"},
 		Value:       75,
-		Destination: &VisorDBFlags.DBPoolSize,
+		Destination: &LilyDBFlags.DBPoolSize,
 	},
 	&cli.StringFlag{
 		Name:        "name",
 		EnvVars:     []string{"LILY_NAME"},
 		Value:       defaultName,
 		Usage:       "A name that helps to identify this instance of visor.",
-		Destination: &VisorDBFlags.Name,
+		Destination: &LilyDBFlags.Name,
 	},
 	&cli.StringFlag{
 		Name:        "schema",
 		EnvVars:     []string{"LILY_SCHEMA"},
 		Value:       "public",
 		Usage:       "The name of the postgresql schema that holds the objects used by this instance of visor.",
-		Destination: &VisorDBFlags.DBSchema,
+		Destination: &LilyDBFlags.DBSchema,
 	},
 }
 
@@ -83,13 +83,13 @@ var MigrateCmd = &cli.Command{
 		},
 	),
 	Action: func(cctx *cli.Context) error {
-		if err := setupLogging(VisorLogFlags); err != nil {
+		if err := setupLogging(LilyLogFlags); err != nil {
 			return xerrors.Errorf("setup logging: %w", err)
 		}
 
 		ctx := cctx.Context
 
-		db, err := storage.NewDatabase(ctx, VisorDBFlags.DB, VisorDBFlags.DBPoolSize, VisorDBFlags.Name, VisorDBFlags.DBSchema, false)
+		db, err := storage.NewDatabase(ctx, LilyDBFlags.DB, LilyDBFlags.DBPoolSize, LilyDBFlags.Name, LilyDBFlags.DBSchema, false)
 		if err != nil {
 			return xerrors.Errorf("connect database: %w", err)
 		}

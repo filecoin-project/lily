@@ -25,7 +25,7 @@ Changes that would require modification of a table's schema should instead creat
 Each major version of the database schema is contained in its own Go package in a subdirectory prefixed with `v`, for example `v0`, `v1`, `v2` etc.
 
 This package must export a string variable called `Base` which contains the base sql that is executed when the schema is being created initially. 
-The package must also register its major version number by calling `schemas.RegisterSchema` which allows Visor to detect the most recent schema
+The package must also register its major version number by calling `schemas.RegisterSchema` which allows Lily to detect the most recent schema
 available.
 
 Additionally the package may contain migration scripts for applying patches onto the base schema over time. The migration scripts are registered 
@@ -45,7 +45,7 @@ The patch in use by the database is held in a table called `gopg_migrations`. Th
 
 The major version is 0 unless a table called `visor_version` exists with a single row containing the major version number. A new major schema should create and populate this table in its base SQL.
 
-Every running instance of Visor now takes a shared advisory lock in the database to indicate their presence. A schema migration requires an exclusive advisory lock which will fail if there are any existing locks already taken. This ensures that migrations are only performed by a single instance of Visor.
+Every running instance of Lily now takes a shared advisory lock in the database to indicate their presence. A schema migration requires an exclusive advisory lock which will fail if there are any existing locks already taken. This ensures that migrations are only performed by a single instance of Lily.
 
 ## When to write a schema migration
 

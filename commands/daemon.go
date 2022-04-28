@@ -82,7 +82,7 @@ than operating against an external blockstore but requires more disk space and
 memory.
 
 Before starting the daemon for the first time the blockstore must be initialized
-and synchronized. Visor can use a copy of an already synchronized Lotus node
+and synchronized. Lily can use a copy of an already synchronized Lotus node
 repository or can initialize its own empty one and import a snapshot to catch
 up to the chain.
 
@@ -109,7 +109,7 @@ Once the repository is initialized, start the daemon:
 
   lily daemon --repo=<path> --config=<path>/config.toml
 
-Visor will connect to the filecoin network and begin synchronizing with the
+Lily will connect to the filecoin network and begin synchronizing with the
 chain. To check the synchronization status use 'lily sync status' or
 'lily sync wait'.
 
@@ -168,15 +168,15 @@ Note that jobs are not persisted between restarts of the daemon. See
 	Action: func(c *cli.Context) error {
 		lotuslog.SetupLogLevels()
 
-		if err := setupLogging(VisorLogFlags); err != nil {
+		if err := setupLogging(LilyLogFlags); err != nil {
 			return xerrors.Errorf("setup logging: %w", err)
 		}
 
-		if err := setupMetrics(VisorMetricFlags); err != nil {
+		if err := setupMetrics(LilyMetricFlags); err != nil {
 			return xerrors.Errorf("setup metrics: %w", err)
 		}
 
-		if err := setupTracing(VisorTracingFlags); err != nil {
+		if err := setupTracing(LilyTracingFlags); err != nil {
 			return xerrors.Errorf("setup tracing: %w", err)
 		}
 

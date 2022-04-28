@@ -29,23 +29,23 @@ import (
 
 var log = logging.Logger("lily/commands")
 
-type VisorLogOpts struct {
+type LilyLogOpts struct {
 	LogLevel      string
 	LogLevelNamed string
 }
 
-var VisorLogFlags VisorLogOpts
+var LilyLogFlags LilyLogOpts
 
-type VisorTracingOpts struct {
+type LilyTracingOpts struct {
 	Enabled            bool
 	ServiceName        string
 	ProviderURL        string
 	JaegerSamplerParam float64
 }
 
-var VisorTracingFlags VisorTracingOpts
+var LilyTracingFlags LilyTracingOpts
 
-type VisorMetricOpts struct {
+type LilyMetricOpts struct {
 	PrometheusPort string
 	RedisNetwork   string
 	RedisAddr      string
@@ -54,9 +54,9 @@ type VisorMetricOpts struct {
 	RedisDB        int
 }
 
-var VisorMetricFlags VisorMetricOpts
+var LilyMetricFlags LilyMetricOpts
 
-func setupLogging(flags VisorLogOpts) error {
+func setupLogging(flags LilyLogOpts) error {
 	ll := flags.LogLevel
 	if err := logging.SetLogLevel("*", ll); err != nil {
 		return xerrors.Errorf("set log level: %w", err)
@@ -76,12 +76,12 @@ func setupLogging(flags VisorLogOpts) error {
 		}
 	}
 
-	log.Infof("Visor version:%s", version.String())
+	log.Infof("lily version:%s", version.String())
 
 	return nil
 }
 
-func setupMetrics(flags VisorMetricOpts) error {
+func setupMetrics(flags LilyMetricOpts) error {
 	// setup Prometheus
 	registry := prom.NewRegistry()
 	goCollector := collectors.NewGoCollector()
@@ -146,18 +146,18 @@ func setupMetrics(flags VisorMetricOpts) error {
 	return nil
 }
 
-func setupTracing(flags VisorTracingOpts) error {
+func setupTracing(flags LilyTracingOpts) error {
 	if !flags.Enabled {
 		return nil
 	}
 
-	tp, err := metrics.NewJaegerTraceProvider(VisorTracingFlags.ServiceName, VisorTracingFlags.ProviderURL, VisorTracingFlags.JaegerSamplerParam)
+	tp, err := metrics.NewJaegerTraceProvider(LilyTracingFlags.ServiceName, LilyTracingFlags.ProviderURL, LilyTracingFlags.JaegerSamplerParam)
 	if err != nil {
 		return xerrors.Errorf("setup tracing: %w", err)
 	}
 	otel.SetTracerProvider(tp)
 	// upgrades libraries (lotus) that use OpenCensus to OpenTelemetry to facilitate a migration.
-	tracer := tp.Tracer(VisorTracingFlags.ServiceName)
+	tracer := tp.Tracer(LilyTracingFlags.ServiceName)
 	octrace.DefaultTracer = opencensus.NewTracer(tracer)
 
 	return nil
