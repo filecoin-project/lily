@@ -4,17 +4,21 @@ import (
 	"fmt"
 	"time"
 
+	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/lens/lily"
 )
+
+var log = logging.Logger("lily/commands/job")
 
 type runOpts struct {
 	Storage string
 	Name    string
 
-	Tasks *cli.StringSlice
+	Tasks cli.StringSlice
 
 	Window       time.Duration
 	RestartDelay time.Duration
@@ -27,11 +31,6 @@ func (r runOpts) ParseJobConfig(kind string) lily.LilyJobConfig {
 	if RunFlags.Name == "" {
 		RunFlags.Name = fmt.Sprintf("%s_%d", kind, time.Now().Unix())
 	}
-	if len(RunFlags.Tasks.Value()) == 0 {
-		// TODO don't panic
-		panic("need tasks")
-	}
-	// TODO handle task wild card *
 	return lily.LilyJobConfig{
 		Name:                RunFlags.Name,
 		Storage:             RunFlags.Storage,
@@ -57,7 +56,8 @@ var RunTaskFlag = &cli.StringSliceFlag{
 	Name:        "tasks",
 	Usage:       "Comma separated list of tasks to run in job. Each task is reported separately in the storage backend.",
 	EnvVars:     []string{"LILY_JOB_TASKS"},
-	Destination: RunFlags.Tasks,
+	Value:       cli.NewStringSlice(tasktype.AllTableTasks...),
+	Destination: &RunFlags.Tasks,
 }
 
 var RunStorageFlag = &cli.StringFlag{

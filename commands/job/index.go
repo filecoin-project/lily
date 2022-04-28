@@ -68,7 +68,7 @@ var IndexTipSetCmd = &cli.Command{
 		defer closer()
 
 		_, err = api.LilyIndex(ctx, &lily.LilyIndexConfig{
-			JobConfig: RunFlags.ParseJobConfig(cctx.Command.Name),
+			JobConfig: RunFlags.ParseJobConfig("index-tipset"),
 			TipSet:    indexFlags.tipsetKey,
 		})
 		if err != nil {
@@ -127,7 +127,7 @@ var IndexHeightCmd = &cli.Command{
 		defer closer()
 
 		_, err = api.LilyIndex(ctx, &lily.LilyIndexConfig{
-			JobConfig: RunFlags.ParseJobConfig(cctx.Command.Name),
+			JobConfig: RunFlags.ParseJobConfig("index-height"),
 			TipSet:    indexFlags.tipsetKey,
 		})
 		if err != nil {
@@ -159,7 +159,7 @@ This command should be used when lily is configured to perform distributed index
 
 		cfg := &lily.LilyIndexNotifyConfig{
 			IndexConfig: lily.LilyIndexConfig{
-				JobConfig: RunFlags.ParseJobConfig("index-" + cctx.Command.Name),
+				JobConfig: RunFlags.ParseJobConfig("index-notify"),
 				TipSet:    indexFlags.tipsetKey,
 			},
 			Queue: notifyFlags.queue,

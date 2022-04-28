@@ -100,7 +100,7 @@ watches the chain head and only indexes a tipset after observing 10 subsequent t
 
 		var res *schedule.JobSubmitResult
 		cfg := &lily.LilyWatchConfig{
-			JobConfig:  RunFlags.ParseJobConfig(cctx.Command.Name),
+			JobConfig:  RunFlags.ParseJobConfig("watch"),
 			BufferSize: watchFlags.bufferSize,
 			Confidence: watchFlags.confidence,
 			Workers:    watchFlags.workers,
@@ -139,7 +139,7 @@ This command should be used when lily is configured to perform distributed index
 		defer closer()
 
 		cfg := &lily.LilyWatchNotifyConfig{
-			JobConfig: RunFlags.ParseJobConfig("watch-" + cctx.Command.Name),
+			JobConfig: RunFlags.ParseJobConfig("watch-notify"),
 
 			Confidence: watchFlags.confidence,
 			BufferSize: watchFlags.bufferSize,

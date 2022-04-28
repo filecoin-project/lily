@@ -47,7 +47,7 @@ since visor_processing_report entries will not be present for imported data (mea
 		defer closer()
 
 		res, err := api.LilyGapFind(ctx, &lily.LilyGapFindConfig{
-			JobConfig: RunFlags.ParseJobConfig(cctx.Command.Name),
+			JobConfig: RunFlags.ParseJobConfig("find"),
 			To:        rangeFlags.to,
 			From:      rangeFlags.from,
 		})

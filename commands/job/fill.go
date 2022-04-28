@@ -47,7 +47,7 @@ Constraints:
 		defer closer()
 
 		res, err := api.LilyGapFill(ctx, &lily.LilyGapFillConfig{
-			JobConfig: RunFlags.ParseJobConfig(cctx.Command.Name),
+			JobConfig: RunFlags.ParseJobConfig("fill"),
 			To:        rangeFlags.to,
 			From:      rangeFlags.from,
 		})
@@ -80,7 +80,7 @@ This command should be used when lily is configured to perform distributed index
 
 		cfg := &lily.LilyGapFillNotifyConfig{
 			GapFillConfig: lily.LilyGapFillConfig{
-				JobConfig: RunFlags.ParseJobConfig("fill-" + cctx.Command.Name),
+				JobConfig: RunFlags.ParseJobConfig("fill-notify"),
 				From:      rangeFlags.from,
 				To:        rangeFlags.to,
 			},

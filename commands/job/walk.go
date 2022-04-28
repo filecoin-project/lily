@@ -42,7 +42,7 @@ The status of each epoch and its set of tasks can be observed in the visor_proce
 		defer closer()
 
 		cfg := &lily.LilyWalkConfig{
-			JobConfig: RunFlags.ParseJobConfig(cctx.Command.Name),
+			JobConfig: RunFlags.ParseJobConfig("walk"),
 			From:      rangeFlags.from,
 			To:        rangeFlags.to,
 		}
@@ -81,7 +81,7 @@ This command should be used when lily is configured to perform distributed index
 
 		cfg := &lily.LilyWalkNotifyConfig{
 			WalkConfig: lily.LilyWalkConfig{
-				JobConfig: RunFlags.ParseJobConfig("walk-" + cctx.Command.Name),
+				JobConfig: RunFlags.ParseJobConfig("walk-notify"),
 				From:      rangeFlags.from,
 				To:        rangeFlags.to,
 			},

@@ -43,7 +43,7 @@ var TipSetWorkerCmd = &cli.Command{
 		defer closer()
 
 		res, err := api.StartTipSetWorker(ctx, &lily.LilyTipSetWorkerConfig{
-			JobConfig:   RunFlags.ParseJobConfig(cctx.Command.Name),
+			JobConfig:   RunFlags.ParseJobConfig("tipset-worker"),
 			Queue:       tipsetWorkerFlags.queue,
 			Concurrency: tipsetWorkerFlags.concurrency,
 		})
