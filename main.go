@@ -70,8 +70,6 @@ func main() {
 		})
 	}
 
-	//cli.AppHelpTemplate = commands.AppHelpTemplate
-
 	app := &cli.App{
 		Name:    "lily",
 		Usage:   "a tool for capturing on-chain state from the filecoin network",
@@ -156,8 +154,6 @@ func main() {
 				Destination: &commands.VisorMetricFlags.RedisDB,
 			},
 		},
-		HideHelp: false,
-		Metadata: commands.Metadata(),
 		Commands: []*cli.Command{
 			commands.ChainCmd,
 			commands.DaemonCmd,
