@@ -4,15 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/lens/lily"
 )
-
-var log = logging.Logger("lily/commands/job")
 
 type runOpts struct {
 	Storage string
