@@ -54,17 +54,14 @@ var jobControlFlags struct {
 var JobStartCmd = &cli.Command{
 	Name:  "start",
 	Usage: "start a job.",
-	Flags: commands.FlagSet(
-		commands.ClientAPIFlagSet,
-		[]cli.Flag{
-			&cli.IntFlag{
-				Name:        "id",
-				Usage:       "Identifier of job to start",
-				Required:    true,
-				Destination: &jobControlFlags.ID,
-			},
+	Flags: []cli.Flag{
+		&cli.IntFlag{
+			Name:        "id",
+			Usage:       "Identifier of job to start",
+			Required:    true,
+			Destination: &jobControlFlags.ID,
 		},
-	),
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 		api, closer, err := commands.GetAPI(ctx)
@@ -80,17 +77,14 @@ var JobStartCmd = &cli.Command{
 var JobStopCmd = &cli.Command{
 	Name:  "stop",
 	Usage: "stop a job.",
-	Flags: commands.FlagSet(
-		commands.ClientAPIFlagSet,
-		[]cli.Flag{
-			&cli.IntFlag{
-				Name:        "id",
-				Usage:       "Identifier of job to stop",
-				Required:    true,
-				Destination: &jobControlFlags.ID,
-			},
+	Flags: []cli.Flag{
+		&cli.IntFlag{
+			Name:        "id",
+			Usage:       "Identifier of job to stop",
+			Required:    true,
+			Destination: &jobControlFlags.ID,
 		},
-	),
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 		api, closer, err := commands.GetAPI(ctx)
@@ -106,9 +100,6 @@ var JobStopCmd = &cli.Command{
 var JobListCmd = &cli.Command{
 	Name:  "list",
 	Usage: "list all jobs and their status",
-	Flags: commands.FlagSet(
-		commands.ClientAPIFlagSet,
-	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 		api, closer, err := commands.GetAPI(ctx)
@@ -135,17 +126,14 @@ var JobListCmd = &cli.Command{
 var JobWaitCmd = &cli.Command{
 	Name:  "wait",
 	Usage: "wait on a job to complete.",
-	Flags: commands.FlagSet(
-		commands.ClientAPIFlagSet,
-		[]cli.Flag{
-			&cli.IntFlag{
-				Name:        "id",
-				Usage:       "Identifier of job to wait on",
-				Required:    true,
-				Destination: &jobControlFlags.ID,
-			},
+	Flags: []cli.Flag{
+		&cli.IntFlag{
+			Name:        "id",
+			Usage:       "Identifier of job to wait on",
+			Required:    true,
+			Destination: &jobControlFlags.ID,
 		},
-	),
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 		api, closer, err := commands.GetAPI(ctx)

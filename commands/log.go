@@ -32,9 +32,6 @@ var LogCmd = &cli.Command{
 var LogList = &cli.Command{
 	Name:  "list",
 	Usage: "List log systems",
-	Flags: FlagSet(
-		ClientAPIFlagSet,
-	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
@@ -75,16 +72,13 @@ var LogSetLevel = &cli.Command{
    warn
    error
 `,
-	Flags: FlagSet(
-		ClientAPIFlagSet,
-		[]cli.Flag{
-			&cli.StringSliceFlag{
-				Name:  "system",
-				Usage: "limit to log system",
-				Value: &cli.StringSlice{},
-			},
+	Flags: []cli.Flag{
+		&cli.StringSliceFlag{
+			Name:  "system",
+			Usage: "limit to log system",
+			Value: &cli.StringSlice{},
 		},
-	),
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
@@ -132,9 +126,6 @@ var LogSetLevelRegex = &cli.Command{
    warn
    error
 `,
-	Flags: FlagSet(
-		ClientAPIFlagSet,
-	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 

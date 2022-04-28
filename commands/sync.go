@@ -28,9 +28,6 @@ var SyncCmd = &cli.Command{
 var SyncStatusCmd = &cli.Command{
 	Name:  "status",
 	Usage: "Report sync status of a running lily daemon",
-	Flags: FlagSet(
-		ClientAPIFlagSet,
-	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)
@@ -84,15 +81,12 @@ var SyncStatusCmd = &cli.Command{
 var SyncWaitCmd = &cli.Command{
 	Name:  "wait",
 	Usage: "Wait for sync to be complete",
-	Flags: FlagSet(
-		ClientAPIFlagSet,
-		[]cli.Flag{
-			&cli.BoolFlag{
-				Name:  "watch",
-				Usage: "don't exit after node is synced",
-			},
+	Flags: []cli.Flag{
+		&cli.BoolFlag{
+			Name:  "watch",
+			Usage: "don't exit after node is synced",
 		},
-	),
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)

@@ -37,9 +37,6 @@ var ChainCmd = &cli.Command{
 var ChainHeadCmd = &cli.Command{
 	Name:  "head",
 	Usage: "Print chain head",
-	Flags: FlagSet(
-		ClientAPIFlagSet,
-	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)
@@ -64,14 +61,12 @@ var ChainGetBlock = &cli.Command{
 	Name:      "getblock",
 	Usage:     "Get a block and print its details",
 	ArgsUsage: "[blockCid]",
-	Flags: FlagSet(
-		ClientAPIFlagSet,
-		[]cli.Flag{
-			&cli.BoolFlag{
-				Name:  "raw",
-				Usage: "print just the raw block header",
-			},
-		}),
+	Flags: []cli.Flag{
+		&cli.BoolFlag{
+			Name:  "raw",
+			Usage: "print just the raw block header",
+		},
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)
@@ -156,9 +151,6 @@ var ChainReadObjCmd = &cli.Command{
 	Name:      "read-obj",
 	Usage:     "Read the raw bytes of an object",
 	ArgsUsage: "[objectCid]",
-	Flags: FlagSet(
-		ClientAPIFlagSet,
-	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)
@@ -191,14 +183,12 @@ var ChainStatObjCmd = &cli.Command{
    When a base is provided it will be walked first, and all links visisted
    will be ignored when the passed in object is walked.
 `,
-	Flags: FlagSet(
-		ClientAPIFlagSet,
-		[]cli.Flag{
-			&cli.StringFlag{
-				Name:  "base",
-				Usage: "ignore links found in this obj",
-			},
-		}),
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:  "base",
+			Usage: "ignore links found in this obj",
+		},
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)
@@ -283,21 +273,19 @@ var ChainListCmd = &cli.Command{
 	Name:    "list",
 	Aliases: []string{"love"},
 	Usage:   "View a segment of the chain",
-	Flags: FlagSet(
-		ClientAPIFlagSet,
-		[]cli.Flag{
-			&cli.Uint64Flag{Name: "height", DefaultText: "current head"},
-			&cli.IntFlag{Name: "count", Value: 30},
-			&cli.StringFlag{
-				Name:  "format",
-				Usage: "specify the format to print out tipsets",
-				Value: "<height>: (<time>) <blocks>",
-			},
-			&cli.BoolFlag{
-				Name:  "gas-stats",
-				Usage: "view gas statistics for the chain",
-			},
-		}),
+	Flags: []cli.Flag{
+		&cli.Uint64Flag{Name: "height", DefaultText: "current head"},
+		&cli.IntFlag{Name: "count", Value: 30},
+		&cli.StringFlag{
+			Name:  "format",
+			Usage: "specify the format to print out tipsets",
+			Value: "<height>: (<time>) <blocks>",
+		},
+		&cli.BoolFlag{
+			Name:  "gas-stats",
+			Usage: "view gas statistics for the chain",
+		},
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)
@@ -414,18 +402,16 @@ var ChainSetHeadCmd = &cli.Command{
 	Name:      "sethead",
 	Usage:     "manually set the local nodes head tipset (Caution: normally only used for recovery)",
 	ArgsUsage: "[tipsetkey]",
-	Flags: FlagSet(
-		ClientAPIFlagSet,
-		[]cli.Flag{
-			&cli.BoolFlag{
-				Name:  "genesis",
-				Usage: "reset head to genesis",
-			},
-			&cli.Uint64Flag{
-				Name:  "epoch",
-				Usage: "reset head to given epoch",
-			},
-		}),
+	Flags: []cli.Flag{
+		&cli.BoolFlag{
+			Name:  "genesis",
+			Usage: "reset head to genesis",
+		},
+		&cli.Uint64Flag{
+			Name:  "epoch",
+			Usage: "reset head to given epoch",
+		},
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)
