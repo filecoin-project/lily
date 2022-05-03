@@ -52,7 +52,7 @@ queue of tipsets to index. Consumption of this queue can be configured via the -
 to the --workers flag will allow the watch job to index tipsets simultaneously (Note: this will use a significant amount of system resources).
 
 Since it may be the case that lily experiences a reorg while the watch job is observing the head of the chain
-the --confidence flag may be used to buffed the amount of tipsets observed before it begins indexing - illustrated by the below diagram:
+the --confidence flag may be used to buffer the amount of tipsets observed before it begins indexing - illustrated by the below diagram:
 
              *unshift*        *unshift*      *unshift*       *unshift*
                 │  │            │  │            │  │            │  │

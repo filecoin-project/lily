@@ -83,7 +83,7 @@ var IndexHeightCmd = &cli.Command{
 	Name:  "height",
 	Usage: "Index the state of a tipset from the filecoin blockchain by height.",
 	Description: `
-	Index the state of a tipset from the filecoin blockchain by height. If the provided height is a null-round and error will be returned.
+	Index the state of a tipset from the filecoin blockchain by height. If the provided height is a null-round an error will be returned.
 `,
 	Flags: []cli.Flag{
 		&cli.Int64Flag{
