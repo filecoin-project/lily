@@ -13,8 +13,9 @@ import (
 type MessageGasEconomy struct {
 	//lint:ignore U1000 tableName is a convention used by go-pg
 	tableName struct{} `pg:"message_gas_economy"`
-	Height    int64    `pg:",pk,notnull,use_zero"`
-	StateRoot string   `pg:",pk,notnull"`
+
+	Height    int64  `pg:",pk,notnull,use_zero"`
+	StateRoot string `pg:",pk,notnull"`
 
 	BaseFee          float64 `pg:"type:numeric,use_zero"`
 	BaseFeeChangeLog float64 `pg:",use_zero"`

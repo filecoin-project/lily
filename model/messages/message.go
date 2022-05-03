@@ -2,6 +2,7 @@ package messages
 
 import (
 	"context"
+
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -12,6 +13,9 @@ import (
 )
 
 type Message struct {
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"messages"`
+
 	Height int64  `pg:",pk,notnull,use_zero"`
 	Cid    string `pg:",pk,notnull"`
 

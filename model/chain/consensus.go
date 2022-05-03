@@ -2,6 +2,7 @@ package chain
 
 import (
 	"context"
+
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	"go.opencensus.io/tag"
@@ -10,6 +11,10 @@ import (
 )
 
 type ChainConsensus struct {
+	// explicit table name to ensure model changes don't affect task names
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"chain_consensus"`
+
 	Height          int64  `pg:",pk,notnull,use_zero"`
 	ParentStateRoot string `pg:",pk,notnull"`
 	ParentTipSet    string `pg:",pk,notnull"`

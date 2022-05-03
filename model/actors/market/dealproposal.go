@@ -14,6 +14,9 @@ import (
 
 // MarketDealProposal contains all storage deal states with latest values applied to end_epoch when updates are detected on-chain.
 type MarketDealProposal struct {
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"market_deal_proposals"`
+
 	// Epoch at which this deal proposal was added or changed.
 	Height int64 `pg:",pk,notnull,use_zero"`
 	// Identifier for the deal.

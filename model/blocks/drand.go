@@ -26,6 +26,9 @@ func NewDrandBlockEntries(header *types.BlockHeader) DrandBlockEntries {
 
 // DrandBlockEntrie contains Drand randomness round numbers used in each block.
 type DrandBlockEntrie struct {
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"drand_block_entries"`
+
 	// Round is the round number of randomness used.
 	Round uint64 `pg:",pk,use_zero"`
 	// Block is the CID of the block.
