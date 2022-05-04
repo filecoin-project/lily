@@ -14,15 +14,16 @@ import (
 
 type ChainEconomics struct {
 	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName           struct{} `pg:"chain_economics"`
-	Height              int64    `pg:",pk,notnull,use_zero"`
-	ParentStateRoot     string   `pg:",notnull"`
-	CirculatingFil      string   `pg:"type:numeric,notnull"`
-	VestedFil           string   `pg:"type:numeric,notnull"`
-	MinedFil            string   `pg:"type:numeric,notnull"`
-	BurntFil            string   `pg:"type:numeric,notnull"`
-	LockedFil           string   `pg:"type:numeric,notnull"`
-	FilReserveDisbursed string   `pg:"type:numeric,notnull"`
+	tableName struct{} `pg:"chain_economics"`
+
+	Height              int64  `pg:",pk,notnull,use_zero"`
+	ParentStateRoot     string `pg:",notnull"`
+	CirculatingFil      string `pg:"type:numeric,notnull"`
+	VestedFil           string `pg:"type:numeric,notnull"`
+	MinedFil            string `pg:"type:numeric,notnull"`
+	BurntFil            string `pg:"type:numeric,notnull"`
+	LockedFil           string `pg:"type:numeric,notnull"`
+	FilReserveDisbursed string `pg:"type:numeric,notnull"`
 }
 
 type ChainEconomicsV0 struct {

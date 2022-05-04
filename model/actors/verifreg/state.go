@@ -15,6 +15,9 @@ const (
 )
 
 type VerifiedRegistryVerifier struct {
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"verified_registry_verifiers"`
+
 	Height    int64  `pg:",pk,notnull,use_zero"`
 	StateRoot string `pg:",pk,notnull"`
 	Address   string `pg:",pk,notnull"`

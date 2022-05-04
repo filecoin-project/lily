@@ -11,6 +11,9 @@ import (
 )
 
 type MinerInfo struct {
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"miner_infos"`
+
 	Height    int64  `pg:",pk,notnull,use_zero"`
 	MinerID   string `pg:",pk,notnull"`
 	StateRoot string `pg:",pk,notnull"`

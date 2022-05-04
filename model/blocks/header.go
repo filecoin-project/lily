@@ -12,6 +12,9 @@ import (
 )
 
 type BlockHeader struct {
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"block_headers"`
+
 	Height          int64  `pg:",pk,use_zero,notnull"`
 	Cid             string `pg:",pk,notnull"`
 	Miner           string `pg:",notnull"`

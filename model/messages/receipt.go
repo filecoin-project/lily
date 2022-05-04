@@ -11,6 +11,9 @@ import (
 )
 
 type Receipt struct {
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"receipts"`
+
 	Height    int64  `pg:",pk,notnull,use_zero"` // note this is the height of the receipt not the message
 	Message   string `pg:",pk,notnull"`
 	StateRoot string `pg:",pk,notnull"`

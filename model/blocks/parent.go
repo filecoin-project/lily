@@ -12,6 +12,9 @@ import (
 )
 
 type BlockParent struct {
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"block_parents"`
+
 	Height int64  `pg:",pk,notnull,use_zero"`
 	Block  string `pg:",pk,notnull"`
 	Parent string `pg:",notnull"`

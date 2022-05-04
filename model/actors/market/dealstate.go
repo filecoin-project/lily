@@ -11,6 +11,9 @@ import (
 )
 
 type MarketDealState struct {
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"market_deal_states"`
+
 	Height           int64  `pg:",pk,notnull,use_zero"`
 	DealID           uint64 `pg:",pk,use_zero"`
 	SectorStartEpoch int64  `pg:",pk,use_zero"`

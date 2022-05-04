@@ -2,6 +2,7 @@ package miner
 
 import (
 	"context"
+
 	"go.opentelemetry.io/otel/attribute"
 
 	"go.opencensus.io/tag"
@@ -13,6 +14,9 @@ import (
 )
 
 type MinerPreCommitInfo struct {
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"miner_pre_commit_infos"`
+
 	Height    int64  `pg:",pk,notnull,use_zero"`
 	MinerID   string `pg:",pk,notnull"`
 	SectorID  uint64 `pg:",pk,use_zero"`

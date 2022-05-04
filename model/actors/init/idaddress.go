@@ -14,6 +14,9 @@ import (
 
 // IdAddress contains a mapping of ID addresses to robust addresses from the init actor’s state.
 type IdAddress struct {
+	//lint:ignore U1000 tableName is a convention used by go-pg
+	tableName struct{} `pg:"id_addresses"`
+
 	// Epoch when this address mapping was created or updated.
 	Height int64 `pg:",pk,notnull,use_zero"`
 	// ID address
