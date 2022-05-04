@@ -61,6 +61,7 @@ var TaskLookup = map[string][]string{
 		DrandBlockEntrie,
 	},
 	MessagesTask: {
+		ParsedMessage,
 		Message,
 		Receipt,
 		GasOutputs,
