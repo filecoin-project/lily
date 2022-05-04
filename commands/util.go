@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/filecoin-project/lily/schedule"
 	"github.com/urfave/cli/v2"
+
+	"github.com/filecoin-project/lily/schedule"
 )
 
-func flagSet(fs ...[]cli.Flag) []cli.Flag {
+func FlagSet(fs ...[]cli.Flag) []cli.Flag {
 	var flags []cli.Flag
 
 	for _, f := range fs {
@@ -19,7 +20,7 @@ func flagSet(fs ...[]cli.Flag) []cli.Flag {
 	return flags
 }
 
-func printNewJob(w io.Writer, res *schedule.JobSubmitResult) error {
+func PrintNewJob(w io.Writer, res *schedule.JobSubmitResult) error {
 	prettyJob, err := json.MarshalIndent(res, "", "\t")
 	if err != nil {
 		return err

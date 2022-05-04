@@ -32,13 +32,10 @@ var LogCmd = &cli.Command{
 var LogList = &cli.Command{
 	Name:  "list",
 	Usage: "List log systems",
-	Flags: flagSet(
-		clientAPIFlagSet,
-	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
-		api, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		api, closer, err := GetAPI(ctx)
 		if err != nil {
 			return err
 		}
@@ -75,20 +72,17 @@ var LogSetLevel = &cli.Command{
    warn
    error
 `,
-	Flags: flagSet(
-		clientAPIFlagSet,
-		[]cli.Flag{
-			&cli.StringSliceFlag{
-				Name:  "system",
-				Usage: "limit to log system",
-				Value: &cli.StringSlice{},
-			},
+	Flags: []cli.Flag{
+		&cli.StringSliceFlag{
+			Name:  "system",
+			Usage: "limit to log system",
+			Value: &cli.StringSlice{},
 		},
-	),
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
-		api, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		api, closer, err := GetAPI(ctx)
 		if err != nil {
 			return err
 		}
@@ -132,13 +126,10 @@ var LogSetLevelRegex = &cli.Command{
    warn
    error
 `,
-	Flags: flagSet(
-		clientAPIFlagSet,
-	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
-		api, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		api, closer, err := GetAPI(ctx)
 		if err != nil {
 			return err
 		}

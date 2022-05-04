@@ -6,11 +6,12 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lotus/api"
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	cid "github.com/ipfs/go-cid"
 	"github.com/urfave/cli/v2"
+
+	"github.com/filecoin-project/lily/chain/actors/builtin"
 
 	"github.com/filecoin-project/lily/lens/lily"
 )
@@ -27,12 +28,9 @@ var SyncCmd = &cli.Command{
 var SyncStatusCmd = &cli.Command{
 	Name:  "status",
 	Usage: "Report sync status of a running lily daemon",
-	Flags: flagSet(
-		clientAPIFlagSet,
-	),
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
 			return err
 		}
@@ -83,18 +81,15 @@ var SyncStatusCmd = &cli.Command{
 var SyncWaitCmd = &cli.Command{
 	Name:  "wait",
 	Usage: "Wait for sync to be complete",
-	Flags: flagSet(
-		clientAPIFlagSet,
-		[]cli.Flag{
-			&cli.BoolFlag{
-				Name:  "watch",
-				Usage: "don't exit after node is synced",
-			},
+	Flags: []cli.Flag{
+		&cli.BoolFlag{
+			Name:  "watch",
+			Usage: "don't exit after node is synced",
 		},
-	),
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
 			return err
 		}

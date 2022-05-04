@@ -7,7 +7,7 @@ The database schema is versioned and every change requires a migration script to
 The lily `migrate` subcommand compares the **database schema version** to the **latest schema version** and reports any differences.
 It also verifies that the **database schema** matches the requirements of the models used by lily. It is safe to run and will not alter the database.
 
-Visor also verifies that the schema is compatible when the index or process subcommands are executed.
+Lily also verifies that the schema is compatible when the index or process subcommands are executed.
 
 ## Migrating schema to latest version
 
@@ -15,9 +15,9 @@ To migrate a database schema to the latest version, run:
 
     lily migrate --latest
 
-Visor will only migrate a schema if it determines that it has exclusive access to the database. 
+Lily will only migrate a schema if it determines that it has exclusive access to the database. 
 
-Visor can also be configured to automatically migrate the database when indexing or processing by passing the `--allow-schema-migration` flag.
+Lily can also be configured to automatically migrate the database when indexing or processing by passing the `--allow-schema-migration` flag.
 
 ## Reverting a schema migration
 

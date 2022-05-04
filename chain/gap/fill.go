@@ -21,12 +21,12 @@ type Filler struct {
 	DB                   *storage.Database
 	node                 lens.API
 	name                 string
-	minHeight, maxHeight uint64
+	minHeight, maxHeight int64
 	tasks                []string
 	done                 chan struct{}
 }
 
-func NewFiller(node lens.API, db *storage.Database, name string, minHeight, maxHeight uint64, tasks []string) *Filler {
+func NewFiller(node lens.API, db *storage.Database, name string, minHeight, maxHeight int64, tasks []string) *Filler {
 	return &Filler{
 		DB:        db,
 		node:      node,

@@ -13,16 +13,13 @@ import (
 var WaitApiCmd = &cli.Command{
 	Name:  "wait-api",
 	Usage: "Wait for lily api to come online",
-	Flags: flagSet(
-		clientAPIFlagSet,
-		[]cli.Flag{
-			&cli.DurationFlag{
-				Name:  "timeout",
-				Usage: "Time to wait for API to become ready",
-				Value: 30 * time.Second,
-			},
+	Flags: []cli.Flag{
+		&cli.DurationFlag{
+			Name:  "timeout",
+			Usage: "Time to wait for API to become ready",
+			Value: 30 * time.Second,
 		},
-	),
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 
@@ -33,7 +30,7 @@ var WaitApiCmd = &cli.Command{
 		}
 
 		for {
-			err := checkAPI(ctx, clientAPIFlags.apiAddr, clientAPIFlags.apiToken)
+			err := checkAPI(ctx, ClientAPIFlags.ApiAddr, ClientAPIFlags.ApiToken)
 			if err == nil {
 				return nil
 			}
@@ -51,7 +48,7 @@ var WaitApiCmd = &cli.Command{
 }
 
 func checkAPI(ctx context.Context, addrStr string, token string) error {
-	lapi, closer, err := GetAPI(ctx, addrStr, token)
+	lapi, closer, err := GetAPI(ctx)
 	if err != nil {
 		return err
 	}

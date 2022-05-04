@@ -31,31 +31,31 @@ import (
 	"github.com/filecoin-project/lily/storage"
 )
 
-var clientAPIFlags struct {
-	apiAddr  string
-	apiToken string
+var ClientAPIFlags struct {
+	ApiAddr  string
+	ApiToken string
 }
 
-var clientAPIFlag = &cli.StringFlag{
+var ClientAPIFlag = &cli.StringFlag{
 	Name:        "api",
 	Usage:       "Address of lily api in multiaddr format.",
 	EnvVars:     []string{"LILY_API"},
 	Value:       "/ip4/127.0.0.1/tcp/1234",
-	Destination: &clientAPIFlags.apiAddr,
+	Destination: &ClientAPIFlags.ApiAddr,
 }
 
-var clientTokenFlag = &cli.StringFlag{
+var ClientTokenFlag = &cli.StringFlag{
 	Name:        "api-token",
 	Usage:       "Authentication token for lily api.",
 	EnvVars:     []string{"LILY_API_TOKEN"},
 	Value:       "",
-	Destination: &clientAPIFlags.apiToken,
+	Destination: &ClientAPIFlags.ApiToken,
 }
 
-// clientAPIFlagSet are used by commands that act as clients of a daemon's API
-var clientAPIFlagSet = []cli.Flag{
-	clientAPIFlag,
-	clientTokenFlag,
+// ClientAPIFlagSet are used by commands that act as clients of a daemon's API
+var ClientAPIFlagSet = []cli.Flag{
+	ClientAPIFlag,
+	ClientTokenFlag,
 }
 
 type daemonOpts struct {
@@ -82,7 +82,7 @@ than operating against an external blockstore but requires more disk space and
 memory.
 
 Before starting the daemon for the first time the blockstore must be initialized
-and synchronized. Visor can use a copy of an already synchronized Lotus node
+and synchronized. Lily can use a copy of an already synchronized Lotus node
 repository or can initialize its own empty one and import a snapshot to catch
 up to the chain.
 
@@ -109,7 +109,7 @@ Once the repository is initialized, start the daemon:
 
   lily daemon --repo=<path> --config=<path>/config.toml
 
-Visor will connect to the filecoin network and begin synchronizing with the
+Lily will connect to the filecoin network and begin synchronizing with the
 chain. To check the synchronization status use 'lily sync status' or
 'lily sync wait'.
 
@@ -125,7 +125,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 `,
 
 	Flags: []cli.Flag{
-		clientAPIFlag,
+		ClientAPIFlag,
 		&cli.StringFlag{
 			Name:        "repo",
 			Usage:       "Specify path where lily should store chain state.",
@@ -168,15 +168,15 @@ Note that jobs are not persisted between restarts of the daemon. See
 	Action: func(c *cli.Context) error {
 		lotuslog.SetupLogLevels()
 
-		if err := setupLogging(VisorLogFlags); err != nil {
+		if err := setupLogging(LilyLogFlags); err != nil {
 			return xerrors.Errorf("setup logging: %w", err)
 		}
 
-		if err := setupMetrics(VisorMetricFlags); err != nil {
+		if err := setupMetrics(LilyMetricFlags); err != nil {
 			return xerrors.Errorf("setup metrics: %w", err)
 		}
 
-		if err := setupTracing(VisorTracingFlags); err != nil {
+		if err := setupTracing(LilyTracingFlags); err != nil {
 			return xerrors.Errorf("setup tracing: %w", err)
 		}
 
@@ -266,7 +266,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 
 			node.ApplyIf(func(s *node.Settings) bool { return c.IsSet("api") },
 				node.Override(node.SetApiEndpointKey, func(lr repo.LockedRepo) error {
-					apima, err := multiaddr.NewMultiaddr(clientAPIFlags.apiAddr)
+					apima, err := multiaddr.NewMultiaddr(ClientAPIFlags.ApiAddr)
 					if err != nil {
 						return err
 					}

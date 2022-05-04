@@ -16,12 +16,12 @@ type Finder struct {
 	DB                   *storage.Database
 	node                 lens.API
 	name                 string
-	minHeight, maxHeight uint64
+	minHeight, maxHeight int64
 	tasks                []string
 	done                 chan struct{}
 }
 
-func NewFinder(node lens.API, db *storage.Database, name string, minHeight, maxHeight uint64, tasks []string) *Finder {
+func NewFinder(node lens.API, db *storage.Database, name string, minHeight, maxHeight int64, tasks []string) *Finder {
 	return &Finder{
 		DB:        db,
 		node:      node,
@@ -89,7 +89,7 @@ func (g *Finder) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if uint64(head.Height()) < g.maxHeight {
+	if int64(head.Height()) < g.maxHeight {
 		return xerrors.Errorf("cannot look for gaps beyond chain head height %d", head.Height())
 	}
 

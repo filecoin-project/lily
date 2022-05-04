@@ -42,7 +42,7 @@ func init() {
 	verifreg.MinVerifiedDealSize = big.NewInt(256)
 
 	logging.SetLogLevel("*", "ERROR")
-	logging.SetLogLevelRegex("visor/.+", "DEBUG")
+	logging.SetLogLevelRegex("lily/.+", "DEBUG")
 }
 
 func TestWatcher(t *testing.T) {
