@@ -62,6 +62,7 @@ var TaskLookup = map[string][]string{
 	},
 	MessagesTask: {
 		Message,
+		ParsedMessage,
 		Receipt,
 		GasOutputs,
 		MessageGasEconomy,
