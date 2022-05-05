@@ -4,9 +4,13 @@ import (
 	"bytes"
 
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/chain/actors/adt"
+	logging "github.com/ipfs/go-log/v2"
 	typegen "github.com/whyrusleeping/cbor-gen"
+
+	"github.com/filecoin-project/lily/chain/actors/adt"
 )
+
+var log = logging.Logger("lily/chain/diff")
 
 // ArrayDiffer generalizes adt.Array diffing by accepting a Deferred type that can unmarshalled to its corresponding struct
 // in an interface implantation.
