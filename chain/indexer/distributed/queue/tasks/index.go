@@ -64,17 +64,17 @@ func (ih *AsynqTipSetTaskHandler) HandleIndexTipSetTask(ctx context.Context, t *
 
 	success, err := ih.indexer.TipSet(ctx, p.TipSet, indexer.WithTasks(p.Tasks))
 	if err != nil {
+		if strings.Contains(err.Error(), blockstore.ErrNotFound.Error()) {
+			log.Errorw("failed to index tipset", "height", p.TipSet.Height(), "tipset", p.TipSet.Key().String(), "error", err)
+			// return SkipRetry to prevent the task from being retried since nodes do not contain the block
+			// TODO: later, reschedule task in "backfill" queue with lily nodes capable of syncing the required data.
+			return xerrors.Errorf("indexing tipset.(height) %s.(%d): Error %s : %w", p.TipSet.Key().String(), p.TipSet.Height(), err, asynq.SkipRetry)
+		}
 		return err
 	}
 	if !success {
 		log.Errorw("failed to index tipset successfully", "height", p.TipSet.Height(), "tipset", p.TipSet.Key().String())
 		return xerrors.Errorf("indexing tipset.(height) %s.(%d)", p.TipSet.Key().String(), p.TipSet.Height())
-	}
-	if strings.Contains(err.Error(), blockstore.ErrNotFound.Error()) {
-		log.Errorw("failed to index tipset", "height", p.TipSet.Height(), "tipset", p.TipSet.Key().String(), "error", err)
-		// return SkipRetry to prevent the task from being retried since nodes do not contain the block
-		// TODO: later, reschedule task in "backfill" queue with lily nodes capable of syncing the required data.
-		return xerrors.Errorf("indexing tipset.(height) %s.(%d): Error %s : %w", p.TipSet.Key().String(), p.TipSet.Height(), err, asynq.SkipRetry)
 	}
 	return nil
 }
