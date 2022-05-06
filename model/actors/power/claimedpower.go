@@ -2,10 +2,10 @@ package power
 
 import (
 	"context"
+	"fmt"
 
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -60,7 +60,7 @@ func (p *PowerActorClaim) Persist(ctx context.Context, s model.StorageBatch, ver
 
 	vp, ok := p.AsVersion(version)
 	if !ok {
-		return xerrors.Errorf("PowerActorClaim not supported for schema version %s", version)
+		return fmt.Errorf("PowerActorClaim not supported for schema version %s", version)
 	}
 
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)

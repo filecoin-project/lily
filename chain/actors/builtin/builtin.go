@@ -2,11 +2,11 @@
 package builtin
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/ipfs/go-cid"
-	"golang.org/x/xerrors"
 
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 	smoothing0 "github.com/filecoin-project/specs-actors/actors/util/smoothing"
@@ -126,7 +126,7 @@ func RegisterActorState(code cid.Cid, loader ActorStateLoader) {
 func Load(store adt.Store, act *types.Actor) (cbor.Marshaler, error) {
 	loader, found := ActorStateLoaders[act.Code]
 	if !found {
-		return nil, xerrors.Errorf("unknown actor code %s", act.Code)
+		return nil, fmt.Errorf("unknown actor code %s", act.Code)
 	}
 	return loader(store, act.Head)
 }

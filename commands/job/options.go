@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/lens/lily"
@@ -121,7 +120,7 @@ var rangeFlags rangeOps
 func (r rangeOps) validate() error {
 	from, to := rangeFlags.from, rangeFlags.to
 	if to < from {
-		return xerrors.Errorf("value of --to (%d) should be >= --from (%d)", to, from)
+		return fmt.Errorf("value of --to (%d) should be >= --from (%d)", to, from)
 	}
 
 	return nil

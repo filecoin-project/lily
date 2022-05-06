@@ -2,10 +2,10 @@ package gap
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/go-pg/pg/v10"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model/visor"
@@ -90,7 +90,7 @@ func (g *Finder) Run(ctx context.Context) error {
 		return err
 	}
 	if int64(head.Height()) < g.maxHeight {
-		return xerrors.Errorf("cannot look for gaps beyond chain head height %d", head.Height())
+		return fmt.Errorf("cannot look for gaps beyond chain head height %d", head.Height())
 	}
 
 	gaps, err := g.Find(ctx)

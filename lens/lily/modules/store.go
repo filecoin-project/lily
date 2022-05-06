@@ -2,13 +2,13 @@ package modules
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/filecoin-project/lotus/node/modules/dtypes"
 	"github.com/filecoin-project/lotus/node/modules/helpers"
 	"github.com/filecoin-project/lotus/node/repo"
 	"go.uber.org/fx"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/lens/util"
 )
@@ -42,7 +42,7 @@ func NewCachingUniversalBlockstore(lc fx.Lifecycle, mctx helpers.MetricsCtx, cc 
 	log.Infof("creating caching blockstore with size=%d", cc.BlockstoreCacheSize)
 	cbs, err := util.NewCachingBlockstore(bs, int(cc.BlockstoreCacheSize))
 	if err != nil {
-		return nil, xerrors.Errorf("failed to create caching blockstore: %v", err)
+		return nil, fmt.Errorf("failed to create caching blockstore: %v", err)
 	}
 
 	return cbs, err

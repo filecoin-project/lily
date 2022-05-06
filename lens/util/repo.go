@@ -14,7 +14,6 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"go.opentelemetry.io/otel"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
@@ -46,7 +45,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 	ctx, span := otel.Tracer("").Start(ctx, "GetExecutedAndBlockMessagesForTipSet")
 	defer span.End()
 	if !types.CidArrsEqual(current.Parents().Cids(), executed.Cids()) {
-		return nil, xerrors.Errorf("current tipset (%s) is not on the same chain as executed (%s)", current.Key(), executed.Key())
+		return nil, fmt.Errorf("current tipset (%s) is not on the same chain as executed (%s)", current.Key(), executed.Key())
 	}
 
 	getActorCode, err := MakeGetActorCodeFunc(ctx, cs.ActorStore(ctx), current, executed)
@@ -59,7 +58,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 	for blockIdx, bh := range executed.Blocks() {
 		blscids, secpkcids, err := cs.ReadMsgMetaCids(ctx, bh.Messages)
 		if err != nil {
-			return nil, xerrors.Errorf("read messages for block: %w", err)
+			return nil, fmt.Errorf("read messages for block: %w", err)
 		}
 
 		for _, c := range blscids {
@@ -74,7 +73,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 
 	bmsgs, err := cs.BlockMsgsForTipset(ctx, executed)
 	if err != nil {
-		return nil, xerrors.Errorf("block messages for tipset: %w", err)
+		return nil, fmt.Errorf("block messages for tipset: %w", err)
 	}
 
 	span.AddEvent("read block messages for tipset")
@@ -82,7 +81,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 	pblocks := executed.Blocks()
 	if len(bmsgs) != len(pblocks) {
 		// logic error somewhere
-		return nil, xerrors.Errorf("mismatching number of blocks returned from block messages, got %d wanted %d", len(bmsgs), len(pblocks))
+		return nil, fmt.Errorf("mismatching number of blocks returned from block messages, got %d wanted %d", len(bmsgs), len(pblocks))
 	}
 
 	count := 0
@@ -106,7 +105,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 			// we must always be able to find the sender, else there is a logic error somewhere.
 			fromCode, found := getActorCode(msg.From)
 			if !found {
-				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, current.Height(), msg.Cid())
+				return nil, fmt.Errorf("failed to find from actor %s height %d message %s", msg.From, current.Height(), msg.Cid())
 			}
 			emsgs = append(emsgs, &lens.ExecutedMessage{
 				Cid:           blsm.Cid(),
@@ -131,7 +130,7 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 			// we must always be able to find the sender, else there is a logic error somewhere.
 			fromCode, found := getActorCode(msg.From)
 			if !found {
-				return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", msg.From, current.Height(), msg.Cid())
+				return nil, fmt.Errorf("failed to find from actor %s height %d message %s", msg.From, current.Height(), msg.Cid())
 			}
 			emsgs = append(emsgs, &lens.ExecutedMessage{
 				Cid:           secm.Cid(),
@@ -152,12 +151,12 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 	// Retrieve receipts using a block from the child tipset
 	rs, err := adt.AsArray(cs.ActorStore(ctx), current.Blocks()[0].ParentMessageReceipts)
 	if err != nil {
-		return nil, xerrors.Errorf("amt load: %w", err)
+		return nil, fmt.Errorf("amt load: %w", err)
 	}
 
 	if rs.Length() != uint64(len(emsgs)) {
 		// logic error somewhere
-		return nil, xerrors.Errorf("mismatching number of receipts: got %d wanted %d", rs.Length(), len(emsgs))
+		return nil, fmt.Errorf("mismatching number of receipts: got %d wanted %d", rs.Length(), len(emsgs))
 	}
 
 	filVested, err := sm.GetFilVested(ctx, current.Height())
@@ -178,12 +177,12 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		FilVested:      filVested,
 	})
 	if err != nil {
-		return nil, xerrors.Errorf("creating temporary vm: %w", err)
+		return nil, fmt.Errorf("creating temporary vm: %w", err)
 	}
 
 	parentStateTree, err := state.LoadStateTree(cs.ActorStore(ctx), executed.ParentState())
 	if err != nil {
-		return nil, xerrors.Errorf("load state tree: %w", err)
+		return nil, fmt.Errorf("load state tree: %w", err)
 	}
 	span.AddEvent("loaded parent state tree")
 
@@ -195,13 +194,13 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		if found, err := rs.Get(em.Index, &r); err != nil {
 			return nil, err
 		} else if !found {
-			return nil, xerrors.Errorf("failed to find receipt %d", em.Index)
+			return nil, fmt.Errorf("failed to find receipt %d", em.Index)
 		}
 		em.Receipt = &r
 
 		burn, err := vmw.ShouldBurn(ctx, parentStateTree, em.Message, em.Receipt.ExitCode)
 		if err != nil {
-			return nil, xerrors.Errorf("deciding whether should burn failed: %w", err)
+			return nil, fmt.Errorf("deciding whether should burn failed: %w", err)
 		}
 
 		em.GasOutputs = vm.ComputeGasOutputs(em.Receipt.GasUsed, em.Message.GasLimit, em.BlockHeader.ParentBaseFee, em.Message.GasFeeCap, em.Message.GasPremium, burn)
@@ -266,7 +265,7 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (string, 
 		reflect.TypeOf(bitfield.BitField{}): bitfieldCountMarshaller,
 	})
 	if err != nil {
-		return "", "", xerrors.Errorf("failed to parse message params method: %d, actor code: %s, params: %s: %w", method, actCode, string(params), err)
+		return "", "", fmt.Errorf("failed to parse message params method: %d, actor code: %s, params: %s: %w", method, actCode, string(params), err)
 	}
 
 	return string(b), m.Name, err
@@ -279,12 +278,12 @@ func MethodAndParamsForMessage(m *types.Message, destCode cid.Cid) (string, stri
 	}
 
 	if !destCode.Defined() {
-		return "Unknown", "", xerrors.Errorf("missing actor code")
+		return "Unknown", "", fmt.Errorf("missing actor code")
 	}
 
 	params, method, err := ParseParams(m.Params, m.Method, destCode)
 	if method == "Unknown" {
-		return "", "", xerrors.Errorf("unknown method for actor type %s: %d", destCode.String(), int64(m.Method))
+		return "", "", fmt.Errorf("unknown method for actor type %s: %d", destCode.String(), int64(m.Method))
 	}
 	if err != nil {
 		log.Warnf("failed to parse parameters of message %s: %v", m.Cid, err)
@@ -300,15 +299,15 @@ func MethodAndParamsForMessage(m *types.Message, destCode cid.Cid) (string, stri
 
 func ActorNameAndFamilyFromCode(c cid.Cid) (name string, family string, err error) {
 	if !c.Defined() {
-		return "", "", xerrors.Errorf("cannot derive actor name from undefined CID")
+		return "", "", fmt.Errorf("cannot derive actor name from undefined CID")
 	}
 	name = builtin.ActorNameByCode(c)
 	if name == "<unknown>" {
-		return "", "", xerrors.Errorf("cannot derive actor name from unknown CID: %s (maybe we need up update deps?)", c.String())
+		return "", "", fmt.Errorf("cannot derive actor name from unknown CID: %s (maybe we need up update deps?)", c.String())
 	}
 	tokens := strings.Split(name, "/")
 	if len(tokens) != 3 {
-		return "", "", xerrors.Errorf("cannot parse actor name: %s from tokens: %s", name, tokens)
+		return "", "", fmt.Errorf("cannot parse actor name: %s from tokens: %s", name, tokens)
 	}
 	// network = tokens[0]
 	// version = tokens[1]
@@ -321,7 +320,7 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 	defer span.End()
 	nextStateTree, err := state.LoadStateTree(store, next.ParentState())
 	if err != nil {
-		return nil, xerrors.Errorf("load state tree: %w", err)
+		return nil, fmt.Errorf("load state tree: %w", err)
 	}
 
 	// Build a lookup of actor codes that exist after all messages in the current epoch have been executed
@@ -330,17 +329,17 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 		actorCodes[a] = act.Code
 		return nil
 	}); err != nil {
-		return nil, xerrors.Errorf("iterate actors: %w", err)
+		return nil, fmt.Errorf("iterate actors: %w", err)
 	}
 
 	nextInitActor, err := nextStateTree.GetActor(builtininit.Address)
 	if err != nil {
-		return nil, xerrors.Errorf("getting init actor: %w", err)
+		return nil, fmt.Errorf("getting init actor: %w", err)
 	}
 
 	nextInitActorState, err := builtininit.Load(store, nextInitActor)
 	if err != nil {
-		return nil, xerrors.Errorf("loading init actor state: %w", err)
+		return nil, fmt.Errorf("loading init actor state: %w", err)
 	}
 
 	return func(a address.Address) (cid.Cid, bool) {
@@ -386,7 +385,7 @@ func MarshalWithOverrides(v interface{}, overrides map[reflect.Type]marshaller) 
 	defer func() {
 		if r := recover(); r != nil {
 			out = nil
-			err = xerrors.Errorf("failed to override message param json marshaller: %v", r)
+			err = fmt.Errorf("failed to override message param json marshaller: %v", r)
 		}
 	}()
 	pwt := paramWrapperType{

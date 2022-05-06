@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -15,7 +17,6 @@ import (
 	"time"
 
 	"go.uber.org/multierr"
-	"golang.org/x/xerrors"
 	"gopkg.in/cheggaaa/pb.v1"
 
 	fslock "github.com/ipfs/go-fs-lock"
@@ -114,12 +115,12 @@ func (ft *fetch) fetchAsync(ctx context.Context, vectorTar, vectorDir string, in
 			lockfail = true
 
 			le := fslock.LockedError("")
-			if xerrors.As(err, &le) {
+			if errors.As(err, &le) {
 				log.Warnf("acquiring filesystem fetch lock: %s; will retry in %s", err, lockRetry)
 				time.Sleep(lockRetry)
 				continue
 			}
-			ft.errs = append(ft.errs, xerrors.Errorf("acquiring filesystem fetch lock: %w", err))
+			ft.errs = append(ft.errs, fmt.Errorf("acquiring filesystem fetch lock: %w", err))
 			return
 		}
 		defer func() {
@@ -135,15 +136,14 @@ func (ft *fetch) fetchAsync(ctx context.Context, vectorTar, vectorDir string, in
 		}
 
 		if err := doFetch(ctx, path, info); err != nil {
-			ft.errs = append(ft.errs, xerrors.Errorf("fetching file %s failed: %w", path, err))
+			ft.errs = append(ft.errs, fmt.Errorf("fetching file %s failed: %w", path, err))
 			return
 		}
-		ft.checkFile(path, info)
-		if err != nil {
-			ft.errs = append(ft.errs, xerrors.Errorf("checking file %s failed: %w", path, err))
+		if err := ft.checkFile(path, info); err != nil {
+			ft.errs = append(ft.errs, fmt.Errorf("checking file %s failed: %w", path, err))
 			err := os.Remove(path)
 			if err != nil {
-				ft.errs = append(ft.errs, xerrors.Errorf("remove file %s failed: %w", path, err))
+				ft.errs = append(ft.errs, fmt.Errorf("remove file %s failed: %w", path, err))
 			}
 		}
 	}()
@@ -198,7 +198,7 @@ func (ft *fetch) checkFile(path string, info VectorFile) error {
 		return nil
 	}
 
-	return xerrors.Errorf("checksum mismatch in test vector file %s, %s != %s", path, strSum, info.Digest)
+	return fmt.Errorf("checksum mismatch in test vector file %s, %s != %s", path, strSum, info.Digest)
 }
 
 func doFetch(ctx context.Context, out string, info VectorFile) error {

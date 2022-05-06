@@ -2,9 +2,9 @@ package distributed
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/types"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/indexer"
 )
@@ -29,7 +29,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet, opts ...in
 		return false, err
 	}
 	if o.IndexType == indexer.Undefined {
-		return false, xerrors.Errorf("indexer type required")
+		return false, fmt.Errorf("indexer type required")
 	}
 	log.Infow("index tipset", "height", ts.Height(), "type", o.IndexType.String(), "tasks", o.Tasks)
 	if err := t.q.EnqueueTipSet(ctx, ts, o.IndexType, o.Tasks...); err != nil {

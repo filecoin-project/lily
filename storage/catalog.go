@@ -7,7 +7,6 @@ import (
 
 	"github.com/filecoin-project/lily/config"
 	"github.com/filecoin-project/lily/model"
-	"golang.org/x/xerrors"
 )
 
 type Connector interface {
@@ -127,7 +126,7 @@ func (c *Catalog) ConnectAsDatabase(ctx context.Context, name string, md Metadat
 
 	db, ok := strg.(*Database)
 	if !ok {
-		return nil, xerrors.Errorf("storage type (%T) is unsupported", strg)
+		return nil, fmt.Errorf("storage type (%T) is unsupported", strg)
 	}
 	return db, nil
 }

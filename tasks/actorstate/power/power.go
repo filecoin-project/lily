@@ -2,11 +2,11 @@ package power
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/v3/actors/util/adt"
 	"go.opentelemetry.io/otel"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/power"
 	"github.com/filecoin-project/lily/tasks/actorstate"
@@ -22,7 +22,7 @@ type StoragePowerExtractor struct{}
 func NewPowerStateExtractionContext(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (*PowerStateExtractionContext, error) {
 	curState, err := power.Load(node.Store(), &a.Actor)
 	if err != nil {
-		return nil, xerrors.Errorf("loading current power state: %w", err)
+		return nil, fmt.Errorf("loading current power state: %w", err)
 	}
 
 	prevState := curState
@@ -39,12 +39,12 @@ func NewPowerStateExtractionContext(ctx context.Context, a actorstate.ActorInfo,
 					Store:     node.Store(),
 				}, nil
 			}
-			return nil, xerrors.Errorf("loading previous power actor at tipset %s epoch %d: %w", a.Executed.Key(), a.Current.Height(), err)
+			return nil, fmt.Errorf("loading previous power actor at tipset %s epoch %d: %w", a.Executed.Key(), a.Current.Height(), err)
 		}
 
 		prevState, err = power.Load(node.Store(), prevActor)
 		if err != nil {
-			return nil, xerrors.Errorf("loading previous power actor state: %w", err)
+			return nil, fmt.Errorf("loading previous power actor state: %w", err)
 		}
 	}
 	return &PowerStateExtractionContext{

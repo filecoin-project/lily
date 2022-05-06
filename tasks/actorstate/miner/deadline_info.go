@@ -2,10 +2,10 @@ package miner
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
@@ -24,7 +24,7 @@ func (DeadlineInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 
 	ec, err := NewMinerStateExtractionContext(ctx, a, node)
 	if err != nil {
-		return nil, xerrors.Errorf("creating miner state extraction context: %w", err)
+		return nil, fmt.Errorf("creating miner state extraction context: %w", err)
 	}
 	currDeadlineInfo, err := ec.CurrState.DeadlineInfo(ec.CurrTs.Height())
 	if err != nil {

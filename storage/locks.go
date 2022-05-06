@@ -3,9 +3,9 @@ package storage
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/go-pg/pg/v10"
-	"golang.org/x/xerrors"
 )
 
 var ErrLockNotAcquired = errors.New("lock not acquired")
@@ -21,7 +21,7 @@ func (l AdvisoryLock) LockExclusive(ctx context.Context, db *pg.DB) error {
 	var acquired bool
 	_, err := db.QueryOneContext(ctx, pg.Scan(&acquired), `SELECT pg_try_advisory_lock(?);`, int64(l))
 	if err != nil {
-		return xerrors.Errorf("acquiring exclusive lock: %w", err)
+		return fmt.Errorf("acquiring exclusive lock: %w", err)
 	}
 	if !acquired {
 		return ErrLockNotAcquired
@@ -34,7 +34,7 @@ func (l AdvisoryLock) UnlockExclusive(ctx context.Context, db *pg.DB) error {
 	var released bool
 	_, err := db.QueryOneContext(ctx, pg.Scan(&released), `SELECT pg_advisory_unlock(?);`, int64(l))
 	if err != nil {
-		return xerrors.Errorf("unlocking exclusive lock: %w", err)
+		return fmt.Errorf("unlocking exclusive lock: %w", err)
 	}
 	if !released {
 		return ErrLockNotReleased
@@ -47,7 +47,7 @@ func (l AdvisoryLock) LockShared(ctx context.Context, db *pg.DB) error {
 	var acquired bool
 	_, err := db.QueryOneContext(ctx, pg.Scan(&acquired), `SELECT pg_try_advisory_lock_shared(?);`, int64(l))
 	if err != nil {
-		return xerrors.Errorf("acquiring exclusive lock: %w", err)
+		return fmt.Errorf("acquiring exclusive lock: %w", err)
 	}
 	if !acquired {
 		return ErrLockNotAcquired
@@ -60,7 +60,7 @@ func (l AdvisoryLock) UnlockShared(ctx context.Context, db *pg.DB) error {
 	var released bool
 	_, err := db.QueryOneContext(ctx, pg.Scan(&released), `SELECT pg_advisory_unlock_shared(?);`, int64(l))
 	if err != nil {
-		return xerrors.Errorf("unlocking shared lock: %w", err)
+		return fmt.Errorf("unlocking shared lock: %w", err)
 	}
 	if !released {
 		return ErrLockNotReleased

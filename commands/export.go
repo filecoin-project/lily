@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/filecoin-project/lotus/node/repo"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/export"
 )
@@ -110,7 +110,7 @@ Some examples:
 	Before: func(cctx *cli.Context) error {
 		from, to := chainExportFlags.from, chainExportFlags.to
 		if to < from {
-			return xerrors.Errorf("value of --to (%d) should be >= --from (%d)", to, from)
+			return fmt.Errorf("value of --to (%d) should be >= --from (%d)", to, from)
 		}
 
 		return nil
@@ -161,40 +161,40 @@ Some examples:
 func openChainAndBlockStores(ctx context.Context, path string) (*store.ChainStore, blockstore.Blockstore, func(), error) {
 	repoDir, err := homedir.Expand(path)
 	if err != nil {
-		return nil, nil, nil, xerrors.Errorf("expand repo path (%s): %w", path, err)
+		return nil, nil, nil, fmt.Errorf("expand repo path (%s): %w", path, err)
 	}
 
 	r, err := repo.NewFS(repoDir)
 	if err != nil {
-		return nil, nil, nil, xerrors.Errorf("open repo (%s): %w", repoDir, err)
+		return nil, nil, nil, fmt.Errorf("open repo (%s): %w", repoDir, err)
 	}
 
 	exists, err := r.Exists()
 	if err != nil {
-		return nil, nil, nil, xerrors.Errorf("check repo (%s) exists: %w", repoDir, err)
+		return nil, nil, nil, fmt.Errorf("check repo (%s) exists: %w", repoDir, err)
 	}
 	if !exists {
-		return nil, nil, nil, xerrors.Errorf("lily repo (%s) doesn't exists", repoDir)
+		return nil, nil, nil, fmt.Errorf("lily repo (%s) doesn't exists", repoDir)
 	}
 
 	lr, err := r.Lock(repo.FullNode)
 	if err != nil {
-		return nil, nil, nil, xerrors.Errorf("lock repo (%s): %w", repoDir, err)
+		return nil, nil, nil, fmt.Errorf("lock repo (%s): %w", repoDir, err)
 	}
 
 	chainAndStateBs, err := lr.Blockstore(ctx, repo.UniversalBlockstore)
 	if err != nil {
-		return nil, nil, nil, xerrors.Errorf("accessing repo (%s) blockstore: %w", repoDir, err)
+		return nil, nil, nil, fmt.Errorf("accessing repo (%s) blockstore: %w", repoDir, err)
 	}
 
 	mds, err := lr.Datastore(ctx, "/metadata")
 	if err != nil {
-		return nil, nil, nil, xerrors.Errorf("accessing repo (%s) datastore: %w", repoDir, err)
+		return nil, nil, nil, fmt.Errorf("accessing repo (%s) datastore: %w", repoDir, err)
 	}
 
 	cs := store.NewChainStore(chainAndStateBs, chainAndStateBs, mds, nil, nil)
 	if err := cs.Load(ctx); err != nil {
-		return nil, nil, nil, xerrors.Errorf("loading repo (%s) chain store: %w", repoDir, err)
+		return nil, nil, nil, fmt.Errorf("loading repo (%s) chain store: %w", repoDir, err)
 	}
 
 	return cs, chainAndStateBs,

@@ -2,10 +2,10 @@ package miner
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
@@ -24,17 +24,17 @@ func (LockedFundsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo,
 
 	ec, err := NewMinerStateExtractionContext(ctx, a, node)
 	if err != nil {
-		return nil, xerrors.Errorf("creating miner state extraction context: %w", err)
+		return nil, fmt.Errorf("creating miner state extraction context: %w", err)
 	}
 
 	currLocked, err := ec.CurrState.LockedFunds()
 	if err != nil {
-		return nil, xerrors.Errorf("loading current miner locked funds: %w", err)
+		return nil, fmt.Errorf("loading current miner locked funds: %w", err)
 	}
 	if ec.HasPreviousState() {
 		prevLocked, err := ec.PrevState.LockedFunds()
 		if err != nil {
-			return nil, xerrors.Errorf("loading previous miner locked funds: %w", err)
+			return nil, fmt.Errorf("loading previous miner locked funds: %w", err)
 		}
 		if prevLocked == currLocked {
 			return nil, nil

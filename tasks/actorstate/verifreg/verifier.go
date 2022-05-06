@@ -2,13 +2,13 @@ package verifreg
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/model"
@@ -53,7 +53,7 @@ func (VerifierExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, no
 
 	changes, err := verifreg.DiffVerifiers(ctx, ec.Store, ec.PrevState, ec.CurrState)
 	if err != nil {
-		return nil, xerrors.Errorf("diffing verified registry verifiers: %w", err)
+		return nil, fmt.Errorf("diffing verified registry verifiers: %w", err)
 	}
 
 	// a new verifier was added

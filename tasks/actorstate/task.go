@@ -11,7 +11,6 @@ import (
 	"github.com/ipfs/go-cid"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/metrics"
@@ -156,7 +155,7 @@ func (t *Task) startActorStateExtraction(ctx context.Context, current, executed 
 						defer stop()
 						data, err := e.Extract(ctx, info, t.node)
 						if err != nil {
-							res.Error = xerrors.Errorf("failed to extract parsed actor state: %w", err)
+							res.Error = fmt.Errorf("failed to extract parsed actor state: %w", err)
 						}
 						res.Data = data
 						results <- res

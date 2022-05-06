@@ -15,7 +15,6 @@ import (
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/ipfs/go-cid"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/lens/lily"
 )
@@ -86,7 +85,7 @@ var ChainGetBlock = &cli.Command{
 
 		blk, err := lapi.ChainGetBlock(ctx, bcid)
 		if err != nil {
-			return xerrors.Errorf("get block failed: %w", err)
+			return fmt.Errorf("get block failed: %w", err)
 		}
 
 		if cctx.Bool("raw") {
@@ -101,18 +100,18 @@ var ChainGetBlock = &cli.Command{
 
 		msgs, err := lapi.ChainGetBlockMessages(ctx, bcid)
 		if err != nil {
-			return xerrors.Errorf("failed to get messages: %w", err)
+			return fmt.Errorf("failed to get messages: %w", err)
 		}
 
 		pmsgs, err := lapi.ChainGetParentMessages(ctx, bcid)
 		if err != nil {
-			return xerrors.Errorf("failed to get parent messages: %w", err)
+			return fmt.Errorf("failed to get parent messages: %w", err)
 		}
 
 		recpts, err := lapi.ChainGetParentReceipts(ctx, bcid)
 		if err != nil {
 			log.Warn(err)
-			// return xerrors.Errorf("failed to get receipts: %w", err)
+			// return fmt.Errorf("failed to get receipts: %w", err)
 		}
 
 		cblock := struct {
@@ -239,12 +238,12 @@ var ChainGetMsgCmd = &cli.Command{
 
 		c, err := cid.Decode(cctx.Args().First())
 		if err != nil {
-			return xerrors.Errorf("failed to parse cid input: %w", err)
+			return fmt.Errorf("failed to parse cid input: %w", err)
 		}
 
 		mb, err := lapi.ChainReadObj(ctx, c)
 		if err != nil {
-			return xerrors.Errorf("failed to read object: %w", err)
+			return fmt.Errorf("failed to read object: %w", err)
 		}
 
 		var i interface{}
@@ -252,7 +251,7 @@ var ChainGetMsgCmd = &cli.Command{
 		if err != nil {
 			sm, err := types.DecodeSignedMessage(mb)
 			if err != nil {
-				return xerrors.Errorf("failed to decode object as a message: %w", err)
+				return fmt.Errorf("failed to decode object as a message: %w", err)
 			}
 			i = sm
 		} else {

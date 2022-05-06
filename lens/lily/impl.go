@@ -19,7 +19,6 @@ import (
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/datasource"
 	"github.com/filecoin-project/lily/chain/gap"
@@ -68,7 +67,7 @@ func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.C
 	// TODO (Frrist): I copied this from lotus, I need it now to handle gap filling edge cases.
 	ts, err := m.ChainAPI.Chain.GetTipSetFromKey(ctx, key)
 	if err != nil {
-		return nil, xerrors.Errorf("loading tipset %s: %w", key, err)
+		return nil, fmt.Errorf("loading tipset %s: %w", key, err)
 	}
 	return m.ChainAPI.Chain.GetTipsetByHeight(ctx, epoch, ts, false)
 }
@@ -485,26 +484,26 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, next *t
 	// contain executions for this tipset.
 	executions, err := msgMonitor.ExecutionFor(current)
 	if err != nil {
-		if err == modules.ExecutionTraceNotFound {
+		if err == modules.ErrExecutionTraceNotFound {
 			// if lily hasn't watched this tipset be applied then we need to compute its execution trace.
 			// this will likely be the case for most walk tasks.
 			_, err := m.StateManager.ExecutionTraceWithMonitor(ctx, current, msgMonitor)
 			if err != nil {
-				return nil, xerrors.Errorf("failed to compute execution trace for tipset %s: %w", current.Key().String(), err)
+				return nil, fmt.Errorf("failed to compute execution trace for tipset %s: %w", current.Key().String(), err)
 			}
 			// the above call will populate the msgMonitor with an execution trace for this tipset, get it.
 			executions, err = msgMonitor.ExecutionFor(current)
 			if err != nil {
-				return nil, xerrors.Errorf("failed to find execution trace for tipset %s: %w", current.Key().String(), err)
+				return nil, fmt.Errorf("failed to find execution trace for tipset %s: %w", current.Key().String(), err)
 			}
 		} else {
-			return nil, xerrors.Errorf("failed to extract message execution for tipset %s: %w", next, err)
+			return nil, fmt.Errorf("failed to extract message execution for tipset %s: %w", next, err)
 		}
 	}
 
 	getActorCode, err := util.MakeGetActorCodeFunc(ctx, m.ChainAPI.Chain.ActorStore(ctx), next, current)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to make actor code query function: %w", err)
+		return nil, fmt.Errorf("failed to make actor code query function: %w", err)
 	}
 
 	out := make([]*lens.MessageExecution, len(executions))
@@ -517,7 +516,7 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, next *t
 		// if the message sender cannot be found this is an unexpected error
 		fromCode, found := getActorCode(execution.Msg.From)
 		if !found {
-			return nil, xerrors.Errorf("failed to find from actor %s height %d message %s", execution.Msg.From, execution.TipSet.Height(), execution.Msg.Cid())
+			return nil, fmt.Errorf("failed to find from actor %s height %d message %s", execution.Msg.From, execution.TipSet.Height(), execution.Msg.Cid())
 		}
 		out[idx] = &lens.MessageExecution{
 			Cid:           execution.Mcid,

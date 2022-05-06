@@ -2,6 +2,7 @@ package generator
 
 import (
 	"bytes"
+	"fmt"
 	"go/ast"
 	"go/doc"
 	"go/parser"
@@ -12,8 +13,6 @@ import (
 	"strings"
 	"text/template"
 
-	"golang.org/x/xerrors"
-
 	"github.com/filecoin-project/lily/storage"
 )
 
@@ -21,7 +20,7 @@ func Gen() error {
 	taskDir := "./chain/indexer/tasktype"
 	rf, err := ioutil.ReadFile(filepath.Join(taskDir, "table_tasks.go.template"))
 	if err != nil {
-		return xerrors.Errorf("loading registry template: %w", err)
+		return fmt.Errorf("loading registry template: %w", err)
 	}
 
 	mtn := modelTableNames()

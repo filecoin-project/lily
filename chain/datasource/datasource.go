@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/sync/singleflight"
-	"golang.org/x/xerrors"
 
 	states0 "github.com/filecoin-project/specs-actors/actors/states"
 	states2 "github.com/filecoin-project/specs-actors/v2/actors/states"
@@ -372,7 +371,7 @@ func fastDiff(ctx context.Context, store adt.Store, oldR, newR adt.Map) (tasks.A
 	for _, change := range changes {
 		addr, err := address.NewFromBytes([]byte(change.Key))
 		if err != nil {
-			return nil, xerrors.Errorf("address in state tree was not valid: %w", err)
+			return nil, fmt.Errorf("address in state tree was not valid: %w", err)
 		}
 		var ch tasks.ActorStateChange
 		switch change.Type {
@@ -452,7 +451,7 @@ func getStateTreeHamtRootCIDAndVersion(ctx context.Context, store adt.Store, c c
 		}
 		return tree.Map, root.Version, nil
 	default:
-		return nil, 0, xerrors.Errorf("unsupported state tree version: %d", root.Version)
+		return nil, 0, fmt.Errorf("unsupported state tree version: %d", root.Version)
 	}
 }
 
@@ -460,7 +459,7 @@ func asKey(strs ...fmt.Stringer) (string, error) {
 	var sb strings.Builder
 	for _, s := range strs {
 		if _, err := sb.WriteString(s.String()); err != nil {
-			return "", xerrors.Errorf("failed to make key for %s: %w", s, err)
+			return "", fmt.Errorf("failed to make key for %s: %w", s, err)
 		}
 	}
 	return sb.String(), nil

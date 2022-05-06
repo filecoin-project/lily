@@ -2,13 +2,13 @@ package chaineconomics
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/model"
 	chainmodel "github.com/filecoin-project/lily/model/chain"
@@ -32,7 +32,7 @@ func ExtractChainEconomicsModel(ctx context.Context, node ChainEconomicsLens, ts
 
 	supply, err := node.CirculatingSupply(ctx, ts)
 	if err != nil {
-		return nil, xerrors.Errorf("get circulating supply: %w", err)
+		return nil, fmt.Errorf("get circulating supply: %w", err)
 	}
 
 	return &chainmodel.ChainEconomics{

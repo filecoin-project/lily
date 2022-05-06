@@ -2,11 +2,11 @@ package chain
 
 import (
 	"context"
+	"fmt"
 
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -65,7 +65,7 @@ func (c *ChainEconomics) Persist(ctx context.Context, s model.StorageBatch, vers
 
 	m, ok := c.AsVersion(version)
 	if !ok {
-		return xerrors.Errorf("ChainEconomics not supported for schema version %s", version)
+		return fmt.Errorf("ChainEconomics not supported for schema version %s", version)
 	}
 
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)

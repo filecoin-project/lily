@@ -2,6 +2,7 @@ package init_
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
@@ -9,7 +10,6 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/xerrors"
 
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/model"
@@ -69,22 +69,22 @@ func (InitExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 	}
 	prevActor, err := node.Actor(ctx, a.Address, a.Executed.Key())
 	if err != nil {
-		return nil, xerrors.Errorf("loading previous init actor: %w", err)
+		return nil, fmt.Errorf("loading previous init actor: %w", err)
 	}
 
 	prevState, err := init_.Load(node.Store(), prevActor)
 	if err != nil {
-		return nil, xerrors.Errorf("loading previous init actor state: %w", err)
+		return nil, fmt.Errorf("loading previous init actor state: %w", err)
 	}
 
 	curState, err := init_.Load(node.Store(), &a.Actor)
 	if err != nil {
-		return nil, xerrors.Errorf("loading current init actor state: %w", err)
+		return nil, fmt.Errorf("loading current init actor state: %w", err)
 	}
 
 	addressChanges, err := init_.DiffAddressMap(ctx, node.Store(), prevState, curState)
 	if err != nil {
-		return nil, xerrors.Errorf("diffing init actor state: %w", err)
+		return nil, fmt.Errorf("diffing init actor state: %w", err)
 	}
 
 	out := make(initmodel.IdAddressList, 0, len(addressChanges.Added)+len(addressChanges.Modified))

@@ -5,7 +5,6 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 )
@@ -29,11 +28,11 @@ var HelpModelsDescribeCmd = &cli.Command{
 	Name: "models-describe",
 	Action: func(cctx *cli.Context) error {
 		if cctx.Args().First() == "" {
-			return xerrors.Errorf("model name required, run `lily help models-list`, to see all available models")
+			return fmt.Errorf("model name required, run `lily help models-list`, to see all available models")
 		}
 		mname := cctx.Args().First()
 		if _, found := tasktype.TableLookup[mname]; !found {
-			return xerrors.Errorf("model %s doesn't exist", mname)
+			return fmt.Errorf("model %s doesn't exist", mname)
 		}
 
 		modelFields := tasktype.TableFieldComments[mname]

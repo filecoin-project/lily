@@ -2,11 +2,11 @@ package block_message
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/model"
 	messagemodel "github.com/filecoin-project/lily/model/messages"
@@ -44,7 +44,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 	tsMsgs, err := t.node.ExecutedAndBlockMessages(ctx, current, executed)
 	if err != nil {
-		report.ErrorsDetected = xerrors.Errorf("getting executed and block messages: %w", err)
+		report.ErrorsDetected = fmt.Errorf("getting executed and block messages: %w", err)
 		return nil, report, nil
 	}
 	blkMsgs := tsMsgs.Block
@@ -59,7 +59,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		// Stop processing if we have been told to cancel
 		select {
 		case <-ctx.Done():
-			return nil, nil, xerrors.Errorf("context done: %w", ctx.Err())
+			return nil, nil, fmt.Errorf("context done: %w", ctx.Err())
 		default:
 		}
 

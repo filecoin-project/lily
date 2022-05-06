@@ -2,6 +2,7 @@ package integrated
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/ipfs/go-cid"
@@ -9,7 +10,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lotus/chain/types"
 
@@ -82,7 +82,7 @@ func (ti *TipSetIndexer) init() error {
 			// it's not a task, maybe it's a table, if it is added to task list, else this is an unknown task
 			indexerTasks = append(indexerTasks, taskName)
 		} else {
-			return xerrors.Errorf("unknown task: %s", taskName)
+			return fmt.Errorf("unknown task: %s", taskName)
 		}
 	}
 
@@ -265,7 +265,7 @@ func (ti *TipSetIndexer) init() error {
 			tipsetProcessors[t] = consensus.NewTask(ti.node)
 
 		default:
-			return xerrors.Errorf("unknown task: %s", t)
+			return fmt.Errorf("unknown task: %s", t)
 		}
 	}
 

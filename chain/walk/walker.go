@@ -2,13 +2,13 @@ package walk
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/lens"
@@ -48,11 +48,11 @@ func (c *Walker) Run(ctx context.Context) error {
 
 	head, err := c.node.ChainHead(ctx)
 	if err != nil {
-		return xerrors.Errorf("get chain head: %w", err)
+		return fmt.Errorf("get chain head: %w", err)
 	}
 
 	if int64(head.Height()) < c.minHeight {
-		return xerrors.Errorf("cannot walk history, chain head (%d) is earlier than minimum height (%d)", int64(head.Height()), c.minHeight)
+		return fmt.Errorf("cannot walk history, chain head (%d) is earlier than minimum height (%d)", int64(head.Height()), c.minHeight)
 	}
 
 	start := head
@@ -61,12 +61,12 @@ func (c *Walker) Run(ctx context.Context) error {
 	if int64(head.Height()) > c.maxHeight+1 {
 		start, err = c.node.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(c.maxHeight), head.Key())
 		if err != nil {
-			return xerrors.Errorf("get tipset by height: %w", err)
+			return fmt.Errorf("get tipset by height: %w", err)
 		}
 	}
 
 	if err := c.WalkChain(ctx, c.node, start); err != nil {
-		return xerrors.Errorf("walk chain: %w", err)
+		return fmt.Errorf("walk chain: %w", err)
 	}
 
 	return nil
@@ -98,7 +98,7 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 		log.Infow("walk tipset", "height", ts.Height(), "reporter", c.name)
 		if success, err := c.obs.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Walk), indexer.WithTasks(c.tasks)); err != nil {
 			span.RecordError(err)
-			return xerrors.Errorf("notify tipset: %w", err)
+			return fmt.Errorf("notify tipset: %w", err)
 		} else if !success {
 			log.Errorw("walk incomplete", "height", ts.Height(), "tipset", ts.Key().String(), "reporter", c.name)
 		}
@@ -107,7 +107,7 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 		ts, err = node.ChainGetTipSet(ctx, ts.Parents())
 		if err != nil {
 			span.RecordError(err)
-			return xerrors.Errorf("get tipset: %w", err)
+			return fmt.Errorf("get tipset: %w", err)
 		}
 	}
 

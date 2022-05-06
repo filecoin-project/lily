@@ -2,11 +2,11 @@ package derived
 
 import (
 	"context"
+	"fmt"
 
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -115,7 +115,7 @@ func (g *GasOutputs) Persist(ctx context.Context, s model.StorageBatch, version 
 
 	vg, ok := g.AsVersion(version)
 	if !ok {
-		return xerrors.Errorf("GasOutputs not supported for schema version %s", version)
+		return fmt.Errorf("GasOutputs not supported for schema version %s", version)
 	}
 
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
@@ -143,7 +143,7 @@ func (l GasOutputsList) Persist(ctx context.Context, s model.StorageBatch, versi
 		for _, g := range l {
 			vg, ok := g.AsVersion(version)
 			if !ok {
-				return xerrors.Errorf("GasOutputs not supported for schema version %s", version)
+				return fmt.Errorf("GasOutputs not supported for schema version %s", version)
 			}
 			vgl = append(vgl, vg)
 		}

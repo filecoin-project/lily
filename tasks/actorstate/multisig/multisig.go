@@ -2,12 +2,12 @@ package multisig
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
@@ -36,7 +36,7 @@ func (MultiSigActorExtractor) Extract(ctx context.Context, a actorstate.ActorInf
 
 	transactionModels, err := ExtractMultisigTransactions(ctx, a, ec)
 	if err != nil {
-		return nil, xerrors.Errorf("extracting multisig actor %s with head %s transactions: %w", a.Address, a.Actor.Head, err)
+		return nil, fmt.Errorf("extracting multisig actor %s with head %s transactions: %w", a.Address, a.Actor.Head, err)
 	}
 	return &multisigmodel.MultisigTaskResult{TransactionModel: transactionModels}, nil
 }
@@ -70,7 +70,7 @@ func ExtractMultisigTransactions(ctx context.Context, a actorstate.ActorInfo, ec
 
 	changes, err := multisig.DiffPendingTransactions(ctx, ec.Store, ec.PrevState, ec.CurrState)
 	if err != nil {
-		return nil, xerrors.Errorf("diffing pending transactions: %w", err)
+		return nil, fmt.Errorf("diffing pending transactions: %w", err)
 	}
 
 	for _, added := range changes.Added {
@@ -129,7 +129,7 @@ func (m *MsigExtractionContext) HasPreviousState() bool {
 func NewMultiSigExtractionContext(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (*MsigExtractionContext, error) {
 	curState, err := multisig.Load(node.Store(), &a.Actor)
 	if err != nil {
-		return nil, xerrors.Errorf("loading current multisig state at head %s: %w", a.Actor.Head, err)
+		return nil, fmt.Errorf("loading current multisig state at head %s: %w", a.Actor.Head, err)
 	}
 
 	prevState := curState
@@ -147,12 +147,12 @@ func NewMultiSigExtractionContext(ctx context.Context, a actorstate.ActorInfo, n
 					Store:     node.Store(),
 				}, nil
 			}
-			return nil, xerrors.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.Executed.Key(), a.Current.Height(), err)
+			return nil, fmt.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.Executed.Key(), a.Current.Height(), err)
 		}
 
 		prevState, err = multisig.Load(node.Store(), prevActor)
 		if err != nil {
-			return nil, xerrors.Errorf("loading previous multisig actor state: %w", err)
+			return nil, fmt.Errorf("loading previous multisig actor state: %w", err)
 		}
 	}
 

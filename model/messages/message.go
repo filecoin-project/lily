@@ -2,10 +2,11 @@ package messages
 
 import (
 	"context"
+	"fmt"
+
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -79,7 +80,7 @@ func (m *Message) Persist(ctx context.Context, s model.StorageBatch, version mod
 
 	vm, ok := m.AsVersion(version)
 	if !ok {
-		return xerrors.Errorf("Message not supported for schema version %s", version)
+		return fmt.Errorf("Message not supported for schema version %s", version)
 	}
 
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
@@ -107,7 +108,7 @@ func (ms Messages) Persist(ctx context.Context, s model.StorageBatch, version mo
 		for _, m := range ms {
 			vm, ok := m.AsVersion(version)
 			if !ok {
-				return xerrors.Errorf("Message not supported for schema version %s", version)
+				return fmt.Errorf("Message not supported for schema version %s", version)
 			}
 			vms = append(vms, vm)
 		}

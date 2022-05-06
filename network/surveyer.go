@@ -2,17 +2,18 @@ package network
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
-	"golang.org/x/xerrors"
+
+	logging "github.com/ipfs/go-log/v2"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/tasks/survey/peeragents"
-	logging "github.com/ipfs/go-log/v2"
 )
 
 const (
@@ -27,7 +28,7 @@ type API interface {
 
 func NewSurveyer(api API, storage model.Storage, interval time.Duration, name string, tasks []string) (*Surveyer, error) {
 	if interval <= 0 {
-		return nil, xerrors.Errorf("surveyer interval must be greater than zero: %d", interval)
+		return nil, fmt.Errorf("surveyer interval must be greater than zero: %d", interval)
 	}
 
 	obs := &Surveyer{
@@ -42,7 +43,7 @@ func NewSurveyer(api API, storage model.Storage, interval time.Duration, name st
 		case PeerAgentsTask:
 			obs.tasks[PeerAgentsTask] = peeragents.NewTask(api)
 		default:
-			return nil, xerrors.Errorf("unknown task: %s", task)
+			return nil, fmt.Errorf("unknown task: %s", task)
 		}
 	}
 

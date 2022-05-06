@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/xerrors"
-
 	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lily/wait"
 )
@@ -45,7 +43,7 @@ func (r *ChainVisRefresher) refreshView(ctx context.Context) (bool, error) {
 	for _, v := range chainVisViews {
 		_, err := r.db.ExecContext(ctx, fmt.Sprintf("REFRESH MATERIALIZED VIEW %s;", v))
 		if err != nil {
-			return true, xerrors.Errorf("refresh %s: %w", v, err)
+			return true, fmt.Errorf("refresh %s: %w", v, err)
 		}
 	}
 	return false, nil

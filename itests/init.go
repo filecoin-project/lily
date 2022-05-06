@@ -4,15 +4,17 @@ import (
 	"archive/tar"
 	"context"
 	"encoding/json"
-	"github.com/filecoin-project/lily/build"
-	"github.com/filecoin-project/lily/itests/fetch"
-	logging "github.com/ipfs/go-log/v2"
-	"go.uber.org/multierr"
-	"golang.org/x/xerrors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"time"
+
+	logging "github.com/ipfs/go-log/v2"
+	"go.uber.org/multierr"
+
+	"github.com/filecoin-project/lily/build"
+	"github.com/filecoin-project/lily/itests/fetch"
 )
 
 var log = logging.Logger("lily/itests")
@@ -129,7 +131,7 @@ func vectorsForNetwork(fileName string, meta fetch.VectorFile) (*TestVector, err
 				return nil, err
 			}
 		default:
-			return nil, xerrors.Errorf("unexpected file: %v", t.Name)
+			return nil, fmt.Errorf("unexpected file: %v", t.Name)
 		}
 	}
 

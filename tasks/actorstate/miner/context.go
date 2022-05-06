@@ -2,9 +2,9 @@ package miner
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/otel"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lotus/chain/types"
 
@@ -18,7 +18,7 @@ func NewMinerStateExtractionContext(ctx context.Context, a actorstate.ActorInfo,
 
 	curState, err := miner.Load(node.Store(), &a.Actor)
 	if err != nil {
-		return nil, xerrors.Errorf("loading current miner state: %w", err)
+		return nil, fmt.Errorf("loading current miner state: %w", err)
 	}
 
 	prevTipset := a.Current
@@ -39,12 +39,12 @@ func NewMinerStateExtractionContext(ctx context.Context, a actorstate.ActorInfo,
 					CurrTs:    a.Current,
 				}, nil
 			}
-			return nil, xerrors.Errorf("loading previous miner %s at tipset %s epoch %d: %w", a.Address, a.Executed.Key(), a.Current.Height(), err)
+			return nil, fmt.Errorf("loading previous miner %s at tipset %s epoch %d: %w", a.Address, a.Executed.Key(), a.Current.Height(), err)
 		}
 
 		prevState, err = miner.Load(node.Store(), prevActor)
 		if err != nil {
-			return nil, xerrors.Errorf("loading previous miner actor state: %w", err)
+			return nil, fmt.Errorf("loading previous miner actor state: %w", err)
 		}
 	}
 

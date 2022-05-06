@@ -3,6 +3,8 @@ package adt
 import (
 	"bytes"
 	"crypto/sha256"
+	"fmt"
+
 	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
@@ -10,7 +12,6 @@ import (
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
 	"github.com/ipfs/go-cid"
 	sha256simd "github.com/minio/sha256-simd"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/cbor"
@@ -116,7 +117,7 @@ func MapOptsForActorCode(c cid.Cid) (*MapOpts, error) {
 		}, nil
 	}
 
-	return nil, xerrors.Errorf("actor code unknown or doesn't have Map: %s", c)
+	return nil, fmt.Errorf("actor code unknown or doesn't have Map: %s", c)
 }
 
 type MapHashFunc func([]byte) []byte

@@ -2,13 +2,13 @@ package miner
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/go-address"
 	logging "github.com/ipfs/go-log/v2"
 	maddr "github.com/multiformats/go-multiaddr"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
@@ -28,7 +28,7 @@ func (InfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 	}
 	ec, err := NewMinerStateExtractionContext(ctx, a, node)
 	if err != nil {
-		return nil, xerrors.Errorf("creating miner state extraction context: %w", err)
+		return nil, fmt.Errorf("creating miner state extraction context: %w", err)
 	}
 
 	if !ec.HasPreviousState() {

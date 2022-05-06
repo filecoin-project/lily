@@ -6,7 +6,6 @@ import (
 
 	"github.com/minio/blake2b-simd"
 	cbg "github.com/whyrusleeping/cbor-gen"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
@@ -86,7 +85,7 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 		return load7(store, act.Head)
 
 	}
-	return nil, xerrors.Errorf("unknown actor code %s", act.Code)
+	return nil, fmt.Errorf("unknown actor code %s", act.Code)
 }
 
 type State interface {
@@ -180,13 +179,13 @@ func txnParams(id uint64, data *ProposalHashData) ([]byte, error) {
 	params := msig7.TxnIDParams{ID: msig7.TxnID(id)}
 	if data != nil {
 		if data.Requester.Protocol() != address.ID {
-			return nil, xerrors.Errorf("proposer address must be an ID address, was %s", data.Requester)
+			return nil, fmt.Errorf("proposer address must be an ID address, was %s", data.Requester)
 		}
 		if data.Value.Sign() == -1 {
-			return nil, xerrors.Errorf("proposal value must be non-negative, was %s", data.Value)
+			return nil, fmt.Errorf("proposal value must be non-negative, was %s", data.Value)
 		}
 		if data.To == address.Undef {
-			return nil, xerrors.Errorf("proposed destination address must be set")
+			return nil, fmt.Errorf("proposed destination address must be set")
 		}
 		pser, err := data.Serialize()
 		if err != nil {

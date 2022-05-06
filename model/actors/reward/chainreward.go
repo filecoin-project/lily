@@ -2,10 +2,10 @@ package reward
 
 import (
 	"context"
+	"fmt"
 
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -79,7 +79,7 @@ func (r *ChainReward) Persist(ctx context.Context, s model.StorageBatch, version
 
 	vr, ok := r.AsVersion(version)
 	if !ok {
-		return xerrors.Errorf("ChainReward not supported for schema version %s", version)
+		return fmt.Errorf("ChainReward not supported for schema version %s", version)
 	}
 
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)

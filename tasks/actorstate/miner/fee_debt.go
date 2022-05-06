@@ -2,10 +2,10 @@ package miner
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
@@ -23,18 +23,18 @@ func (FeeDebtExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, nod
 	}
 	ec, err := NewMinerStateExtractionContext(ctx, a, node)
 	if err != nil {
-		return nil, xerrors.Errorf("creating miner state extraction context: %w", err)
+		return nil, fmt.Errorf("creating miner state extraction context: %w", err)
 	}
 
 	currDebt, err := ec.CurrState.FeeDebt()
 	if err != nil {
-		return nil, xerrors.Errorf("loading current miner fee debt: %w", err)
+		return nil, fmt.Errorf("loading current miner fee debt: %w", err)
 	}
 
 	if ec.HasPreviousState() {
 		prevDebt, err := ec.PrevState.FeeDebt()
 		if err != nil {
-			return nil, xerrors.Errorf("loading previous miner fee debt: %w", err)
+			return nil, fmt.Errorf("loading previous miner fee debt: %w", err)
 		}
 		if prevDebt == currDebt {
 			return nil, nil

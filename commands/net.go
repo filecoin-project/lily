@@ -11,7 +11,6 @@ import (
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 )
 
 var NetCmd = &cli.Command{
@@ -33,13 +32,13 @@ var NetID = &cli.Command{
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
-			return xerrors.Errorf("get api: %w", err)
+			return fmt.Errorf("get api: %w", err)
 		}
 		defer closer()
 
 		pid, err := lapi.ID(ctx)
 		if err != nil {
-			return xerrors.Errorf("get id: %w", err)
+			return fmt.Errorf("get id: %w", err)
 		}
 
 		fmt.Println(pid)
@@ -54,7 +53,7 @@ var NetListen = &cli.Command{
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
-			return xerrors.Errorf("get api: %w", err)
+			return fmt.Errorf("get api: %w", err)
 		}
 		defer closer()
 
@@ -89,7 +88,7 @@ var NetPeers = &cli.Command{
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
-			return xerrors.Errorf("get api: %w", err)
+			return fmt.Errorf("get api: %w", err)
 		}
 		defer closer()
 
@@ -152,7 +151,7 @@ var NetReachability = &cli.Command{
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
-			return xerrors.Errorf("get api: %w", err)
+			return fmt.Errorf("get api: %w", err)
 		}
 		defer closer()
 
@@ -183,7 +182,7 @@ var NetScores = &cli.Command{
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
-			return xerrors.Errorf("get api: %w", err)
+			return fmt.Errorf("get api: %w", err)
 		}
 		defer closer()
 

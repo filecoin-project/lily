@@ -3,6 +3,7 @@ package export
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/filecoin-project/go-state-types/abi"
@@ -13,7 +14,6 @@ import (
 	"github.com/ipld/go-car"
 	"github.com/ipld/go-car/util"
 	cbg "github.com/whyrusleeping/cbor-gen"
-	"golang.org/x/xerrors"
 	"gopkg.in/cheggaaa/pb.v1"
 )
 
@@ -102,7 +102,7 @@ func (ce *ChainExporter) Export(ctx context.Context) error {
 
 			var b types.BlockHeader
 			if err := b.UnmarshalCBOR(bytes.NewBuffer(blk.RawData())); err != nil {
-				return xerrors.Errorf("unmarshaling block header (cid=%s): %w", blk, err)
+				return fmt.Errorf("unmarshaling block header (cid=%s): %w", blk, err)
 			}
 
 			if ce.Config.ShowProcess {

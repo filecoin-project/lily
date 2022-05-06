@@ -2,6 +2,7 @@ package modules
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/filecoin-project/lotus/chain/beacon"
@@ -14,12 +15,11 @@ import (
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
-	"golang.org/x/xerrors"
 )
 
 var log = logging.Logger("lily/lens")
 
-var ExecutionTraceNotFound = xerrors.Errorf("failed to find execution trace")
+var ErrExecutionTraceNotFound = fmt.Errorf("failed to find execution trace")
 
 func StateManager(lmctx helpers.MetricsCtx, lc fx.Lifecycle, cs *store.ChainStore, exec stmgr.Executor, sys vm.SyscallBuilder, us stmgr.UpgradeSchedule, bs beacon.Schedule, em stmgr.ExecMonitor) (*stmgr.StateManager, error) {
 	sm, err := stmgr.NewStateManagerWithUpgradeScheduleAndMonitor(cs, exec, sys, us, bs, em)
@@ -98,7 +98,7 @@ func (b *BufferedExecMonitor) ExecutionFor(ts *types.TipSet) ([]*BufferedExecuti
 
 	exe, found := b.cache.Get(ts.Key())
 	if !found {
-		return nil, ExecutionTraceNotFound
+		return nil, ErrExecutionTraceNotFound
 	}
 	return exe.([]*BufferedExecution), nil
 }

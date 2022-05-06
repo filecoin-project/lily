@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
@@ -19,7 +20,6 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/indexer/distributed"
 	"github.com/filecoin-project/lily/commands/util"
@@ -169,15 +169,15 @@ Note that jobs are not persisted between restarts of the daemon. See
 		lotuslog.SetupLogLevels()
 
 		if err := setupLogging(LilyLogFlags); err != nil {
-			return xerrors.Errorf("setup logging: %w", err)
+			return fmt.Errorf("setup logging: %w", err)
 		}
 
 		if err := setupMetrics(LilyMetricFlags); err != nil {
-			return xerrors.Errorf("setup metrics: %w", err)
+			return fmt.Errorf("setup metrics: %w", err)
 		}
 
 		if err := setupTracing(LilyTracingFlags); err != nil {
-			return xerrors.Errorf("setup tracing: %w", err)
+			return fmt.Errorf("setup tracing: %w", err)
 		}
 
 		ctx := context.Background()
@@ -191,7 +191,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 
 		r, err := repo.NewFS(daemonFlags.repo)
 		if err != nil {
-			return xerrors.Errorf("opening fs repo: %w", err)
+			return fmt.Errorf("opening fs repo: %w", err)
 		}
 
 		if daemonFlags.config == "" {
@@ -206,24 +206,24 @@ Note that jobs are not persisted between restarts of the daemon. See
 		}
 
 		if err := config.EnsureExists(daemonFlags.config); err != nil {
-			return xerrors.Errorf("ensuring config is present at %q: %w", daemonFlags.config, err)
+			return fmt.Errorf("ensuring config is present at %q: %w", daemonFlags.config, err)
 		}
 		r.SetConfigPath(daemonFlags.config)
 
 		err = r.Init(repo.FullNode)
 		if err != nil && err != repo.ErrRepoExists {
-			return xerrors.Errorf("repo init error: %w", err)
+			return fmt.Errorf("repo init error: %w", err)
 		}
 
 		if err := paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), lotusbuild.SrsJSON(), 0); err != nil {
-			return xerrors.Errorf("fetching proof parameters: %w", err)
+			return fmt.Errorf("fetching proof parameters: %w", err)
 		}
 
 		var genBytes []byte
 		if c.String("genesis") != "" {
 			genBytes, err = ioutil.ReadFile(daemonFlags.genesis)
 			if err != nil {
-				return xerrors.Errorf("reading genesis: %w", err)
+				return fmt.Errorf("reading genesis: %w", err)
 			}
 		} else {
 			genBytes = lotusbuild.MaybeGenesis()
@@ -278,12 +278,12 @@ Note that jobs are not persisted between restarts of the daemon. See
 			),
 		)
 		if err != nil {
-			return xerrors.Errorf("initializing node: %w", err)
+			return fmt.Errorf("initializing node: %w", err)
 		}
 
 		endpoint, err := r.APIEndpoint()
 		if err != nil {
-			return xerrors.Errorf("getting api endpoint: %w", err)
+			return fmt.Errorf("getting api endpoint: %w", err)
 		}
 
 		// TODO: properly parse api endpoint (or make it a URL)

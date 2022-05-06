@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/version"
 
@@ -84,20 +83,20 @@ var MigrateCmd = &cli.Command{
 	),
 	Action: func(cctx *cli.Context) error {
 		if err := setupLogging(LilyLogFlags); err != nil {
-			return xerrors.Errorf("setup logging: %w", err)
+			return fmt.Errorf("setup logging: %w", err)
 		}
 
 		ctx := cctx.Context
 
 		db, err := storage.NewDatabase(ctx, LilyDBFlags.DB, LilyDBFlags.DBPoolSize, LilyDBFlags.Name, LilyDBFlags.DBSchema, false)
 		if err != nil {
-			return xerrors.Errorf("connect database: %w", err)
+			return fmt.Errorf("connect database: %w", err)
 		}
 
 		if cctx.IsSet("to") {
 			targetVersion, err := model.ParseVersion(cctx.String("to"))
 			if err != nil {
-				return xerrors.Errorf("invalid schema version: %w", err)
+				return fmt.Errorf("invalid schema version: %w", err)
 			}
 
 			return db.MigrateSchemaTo(ctx, targetVersion)
@@ -109,13 +108,13 @@ var MigrateCmd = &cli.Command{
 
 		dbVersion, latestVersion, err := db.GetSchemaVersions(ctx)
 		if err != nil {
-			return xerrors.Errorf("get schema versions: %w", err)
+			return fmt.Errorf("get schema versions: %w", err)
 		}
 
 		log.Infof("current database schema is version %s, latest is %s", dbVersion, latestVersion)
 
 		if err := db.VerifyCurrentSchema(ctx); err != nil {
-			return xerrors.Errorf("verify schema: %w", err)
+			return fmt.Errorf("verify schema: %w", err)
 		}
 
 		log.Infof("database schema is supported by this version of visor")

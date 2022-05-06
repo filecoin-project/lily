@@ -1,19 +1,21 @@
 package aerrors_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/filecoin-project/go-state-types/exitcode"
+	"golang.org/x/xerrors"
+
 	. "github.com/filecoin-project/lily/chain/actors/aerrors"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/xerrors"
 )
 
 func TestFatalError(t *testing.T) {
 	e1 := xerrors.New("out of disk space")
-	e2 := xerrors.Errorf("could not put node: %w", e1)
-	e3 := xerrors.Errorf("could not save head: %w", e2)
+	e2 := fmt.Errorf("could not put node: %w", e1)
+	e3 := fmt.Errorf("could not save head: %w", e2)
 	ae := Escalate(e3, "failed to save the head")
 	aw1 := Wrap(ae, "saving head of new miner actor")
 	aw2 := Absorb(aw1, 1, "try to absorb fatal error")
@@ -25,7 +27,7 @@ func TestFatalError(t *testing.T) {
 }
 func TestAbsorbeError(t *testing.T) {
 	e1 := xerrors.New("EOF")
-	e2 := xerrors.Errorf("could not decode: %w", e1)
+	e2 := fmt.Errorf("could not decode: %w", e1)
 	ae := Absorb(e2, 35, "failed to decode CBOR")
 	aw1 := Wrap(ae, "saving head of new miner actor")
 	aw2 := Wrap(aw1, "initializing actor")

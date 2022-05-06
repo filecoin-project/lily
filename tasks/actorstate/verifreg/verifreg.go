@@ -2,10 +2,10 @@ package verifreg
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/tasks/actorstate"
 
@@ -30,7 +30,7 @@ func (v *VerifiedRegistryExtractionContext) HasPreviousState() bool {
 func NewVerifiedRegistryExtractorContext(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (*VerifiedRegistryExtractionContext, error) {
 	curState, err := verifreg.Load(node.Store(), &a.Actor)
 	if err != nil {
-		return nil, xerrors.Errorf("loading current verified registry state: %w", err)
+		return nil, fmt.Errorf("loading current verified registry state: %w", err)
 	}
 
 	prevState := curState
@@ -48,12 +48,12 @@ func NewVerifiedRegistryExtractorContext(ctx context.Context, a actorstate.Actor
 					Store:     node.Store(),
 				}, nil
 			}
-			return nil, xerrors.Errorf("loading previous verified registry actor at tipset %s epoch %d: %w", a.Executed.Key(), a.Current.Height(), err)
+			return nil, fmt.Errorf("loading previous verified registry actor at tipset %s epoch %d: %w", a.Executed.Key(), a.Current.Height(), err)
 		}
 
 		prevState, err = verifreg.Load(node.Store(), prevActor)
 		if err != nil {
-			return nil, xerrors.Errorf("loading previous verified registry state: %w", err)
+			return nil, fmt.Errorf("loading previous verified registry state: %w", err)
 		}
 	}
 	return &VerifiedRegistryExtractionContext{
