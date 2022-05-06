@@ -24,7 +24,7 @@ var log = logging.Logger("lily/chain/watch")
 
 type WatcherAPI interface {
 	Observe(obs events.TipSetObserver) *types.TipSet
-	//Unregister(obs events.TipSetObserver) bool
+	Unregister(obs events.TipSetObserver) bool
 	ChainGetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error)
 }
 
@@ -135,8 +135,11 @@ func (c *Watcher) close() {
 	// ensure we reset the tipset cache to avoid process stale state if watcher is restarted.
 	c.cache.Reset()
 	// unregister the observer
-	// TODO https://github.com/filecoin-project/lotus/pull/8441
-	//c.api.Unregister(notifier)
+	if !c.api.Unregister(c.tsObserver) {
+		log.Errorf("watcher failed to unregister observer %T", c.tsObserver)
+	} else {
+		log.Infof("watcher successfully unregistered observer %T", c.tsObserver)
+	}
 	// close channel to signal completion
 	close(c.done)
 }
