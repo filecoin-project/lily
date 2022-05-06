@@ -3,6 +3,7 @@ package util
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
@@ -18,7 +19,7 @@ import (
 	"github.com/filecoin-project/lotus/journal/fsjournal"
 	"github.com/filecoin-project/lotus/node/repo"
 	"github.com/mitchellh/go-homedir"
-	"golang.org/x/xerrors"
+
 	"gopkg.in/cheggaaa/pb.v1"
 )
 
@@ -32,7 +33,7 @@ func ImportFromFsFile(ctx context.Context, r repo.Repo, fs fs.File, snapshot boo
 
 	bs, err := lr.Blockstore(ctx, repo.UniversalBlockstore)
 	if err != nil {
-		return xerrors.Errorf("failed to open blockstore: %w", err)
+		return fmt.Errorf("failed to open blockstore: %w", err)
 	}
 
 	mds, err := lr.Datastore(context.TODO(), "/metadata")
@@ -42,7 +43,7 @@ func ImportFromFsFile(ctx context.Context, r repo.Repo, fs fs.File, snapshot boo
 
 	j, err := fsjournal.OpenFSJournal(lr, journal.EnvDisabledEvents())
 	if err != nil {
-		return xerrors.Errorf("failed to open journal: %w", err)
+		return fmt.Errorf("failed to open journal: %w", err)
 	}
 
 	cst := store.NewChainStore(bs, bs, mds, filcns.Weight, j)
@@ -51,11 +52,11 @@ func ImportFromFsFile(ctx context.Context, r repo.Repo, fs fs.File, snapshot boo
 	ts, err := cst.Import(ctx, fs)
 
 	if err != nil {
-		return xerrors.Errorf("importing chain failed: %w", err)
+		return fmt.Errorf("importing chain failed: %w", err)
 	}
 
 	if err := cst.FlushValidationCache(ctx); err != nil {
-		return xerrors.Errorf("flushing validation cache failed: %w", err)
+		return fmt.Errorf("flushing validation cache failed: %w", err)
 	}
 
 	gb, err := cst.GetTipsetByHeight(ctx, 0, ts, true)
@@ -76,7 +77,7 @@ func ImportFromFsFile(ctx context.Context, r repo.Repo, fs fs.File, snapshot boo
 	if !snapshot {
 		log.Infof("validating imported chain...")
 		if err := stm.ValidateChain(ctx, ts); err != nil {
-			return xerrors.Errorf("chain validation failed: %w", err)
+			return fmt.Errorf("chain validation failed: %w", err)
 		}
 	}
 
@@ -99,7 +100,7 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 		defer resp.Body.Close() //nolint:errcheck
 
 		if resp.StatusCode != http.StatusOK {
-			return xerrors.Errorf("non-200 response: %d", resp.StatusCode)
+			return fmt.Errorf("non-200 response: %d", resp.StatusCode)
 		}
 
 		rd = resp.Body
@@ -133,7 +134,7 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 
 	bs, err := lr.Blockstore(ctx, repo.UniversalBlockstore)
 	if err != nil {
-		return xerrors.Errorf("failed to open blockstore: %w", err)
+		return fmt.Errorf("failed to open blockstore: %w", err)
 	}
 
 	mds, err := lr.Datastore(context.TODO(), "/metadata")
@@ -143,7 +144,7 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 
 	j, err := fsjournal.OpenFSJournal(lr, journal.EnvDisabledEvents())
 	if err != nil {
-		return xerrors.Errorf("failed to open journal: %w", err)
+		return fmt.Errorf("failed to open journal: %w", err)
 	}
 
 	cst := store.NewChainStore(bs, bs, mds, filcns.Weight, j)
@@ -165,11 +166,11 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 	bar.Finish()
 
 	if err != nil {
-		return xerrors.Errorf("importing chain failed: %w", err)
+		return fmt.Errorf("importing chain failed: %w", err)
 	}
 
 	if err := cst.FlushValidationCache(ctx); err != nil {
-		return xerrors.Errorf("flushing validation cache failed: %w", err)
+		return fmt.Errorf("flushing validation cache failed: %w", err)
 	}
 
 	gb, err := cst.GetTipsetByHeight(ctx, 0, ts, true)
@@ -190,7 +191,7 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 	if !snapshot {
 		log.Infof("validating imported chain...")
 		if err := stm.ValidateChain(ctx, ts); err != nil {
-			return xerrors.Errorf("chain validation failed: %w", err)
+			return fmt.Errorf("chain validation failed: %w", err)
 		}
 	}
 

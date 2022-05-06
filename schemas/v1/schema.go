@@ -7,7 +7,6 @@ import (
 	"text/template"
 
 	"github.com/go-pg/migrations/v8"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/schemas"
@@ -22,11 +21,11 @@ func init() {
 func GetBase(cfg schemas.Config) (string, error) {
 	tmpl, err := template.New("base").Funcs(schemaTemplateFuncMap).Parse(BaseTemplate)
 	if err != nil {
-		return "", xerrors.Errorf("parse base template: %w", err)
+		return "", fmt.Errorf("parse base template: %w", err)
 	}
 	var buf strings.Builder
 	if err := tmpl.Execute(&buf, cfg); err != nil {
-		return "", xerrors.Errorf("execute base template: %w", err)
+		return "", fmt.Errorf("execute base template: %w", err)
 	}
 	return buf.String(), nil
 }
@@ -84,13 +83,13 @@ func (pl *patchList) Collection(cfg schemas.Config) (*migrations.Collection, err
 
 	// patch 0 must not exist - it's the base schema by definition
 	if _, exists := pl.pm[0]; exists {
-		return nil, xerrors.Errorf("found patch 0, which should not exist")
+		return nil, fmt.Errorf("found patch 0, which should not exist")
 	}
 
 	// index from 1 since schema seq 0 is the base and not in `pm`
 	for i := 1; i <= count; i++ {
 		if _, exists := pl.pm[i]; !exists {
-			return nil, xerrors.Errorf("missing patch %d", i)
+			return nil, fmt.Errorf("missing patch %d", i)
 		}
 	}
 
@@ -100,7 +99,7 @@ func (pl *patchList) Collection(cfg schemas.Config) (*migrations.Collection, err
 
 		var buf strings.Builder
 		if err := p.tmpl.Execute(&buf, cfg); err != nil {
-			return nil, xerrors.Errorf("execute patch template: %w", err)
+			return nil, fmt.Errorf("execute patch template: %w", err)
 		}
 		sql := buf.String()
 

@@ -2,13 +2,13 @@ package parsed_message
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/go-state-types/exitcode"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model"
@@ -48,7 +48,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 	tsMsgs, err := t.node.ExecutedAndBlockMessages(ctx, current, executed)
 	if err != nil {
-		report.ErrorsDetected = xerrors.Errorf("getting executed and block messages: %w", err)
+		report.ErrorsDetected = fmt.Errorf("getting executed and block messages: %w", err)
 		return nil, report, nil
 	}
 	emsgs := tsMsgs.Executed
@@ -65,7 +65,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		// Stop processing if we have been told to cancel
 		select {
 		case <-ctx.Done():
-			return nil, nil, xerrors.Errorf("context done: %w", ctx.Err())
+			return nil, nil, fmt.Errorf("context done: %w", ctx.Err())
 		default:
 		}
 
@@ -99,7 +99,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				} else {
 					errorsDetected = append(errorsDetected, &messages.MessageError{
 						Cid:   m.Cid,
-						Error: xerrors.Errorf("failed to parse message params: %w", err).Error(),
+						Error: fmt.Errorf("failed to parse message params: %w", err).Error(),
 					})
 				}
 			}
@@ -112,7 +112,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			if m.Receipt.ExitCode == 0 {
 				errorsDetected = append(errorsDetected, &messages.MessageError{
 					Cid:   m.Cid,
-					Error: xerrors.Errorf("failed to parse message params: missing to actor code").Error(),
+					Error: fmt.Errorf("failed to parse message params: missing to actor code").Error(),
 				})
 			}
 		}

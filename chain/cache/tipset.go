@@ -3,10 +3,10 @@ package cache
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
-	"golang.org/x/xerrors"
 )
 
 var (
@@ -177,7 +177,7 @@ func (c *TipSetCache) Warm(ctx context.Context, head *types.TipSet, getTipSetFn 
 			return err
 		}
 		if expectNil != nil {
-			return xerrors.Errorf("unexpected tipset returned while warming tipset cache: %s", expectNil)
+			return fmt.Errorf("unexpected tipset returned while warming tipset cache: %s", expectNil)
 		}
 	}
 	return nil

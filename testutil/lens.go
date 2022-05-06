@@ -3,6 +3,7 @@ package testutil
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
@@ -11,7 +12,6 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	cid "github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/lens"
 )
@@ -38,34 +38,34 @@ func (aw *APIWrapper) Store() adt.Store {
 }
 
 func (aw *APIWrapper) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
-	return nil, xerrors.Errorf("ExecutedAndBlockMessages is not implemented")
+	return nil, fmt.Errorf("ExecutedAndBlockMessages is not implemented")
 }
 
 func (aw *APIWrapper) GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {
-	return nil, xerrors.Errorf("MessageExecutions is not implemented")
+	return nil, fmt.Errorf("MessageExecutions is not implemented")
 }
 
 func (aw *APIWrapper) Get(ctx context.Context, c cid.Cid, out interface{}) error {
 	cu, ok := out.(cbg.CBORUnmarshaler)
 	if !ok {
-		return xerrors.Errorf("out parameter does not implement CBORUnmarshaler")
+		return fmt.Errorf("out parameter does not implement CBORUnmarshaler")
 	}
 
 	// miss :(
 	raw, err := aw.ChainReadObj(ctx, c)
 	if err != nil {
-		return xerrors.Errorf("read obj: %w", err)
+		return fmt.Errorf("read obj: %w", err)
 	}
 
 	if err := cu.UnmarshalCBOR(bytes.NewReader(raw)); err != nil {
-		return xerrors.Errorf("unmarshal obj: %w", err)
+		return fmt.Errorf("unmarshal obj: %w", err)
 	}
 
 	return nil
 }
 
 func (aw *APIWrapper) Put(ctx context.Context, v interface{}) (cid.Cid, error) {
-	return cid.Undef, xerrors.Errorf("put is not implemented")
+	return cid.Undef, fmt.Errorf("put is not implemented")
 }
 
 func (aw *APIWrapper) Context() context.Context {

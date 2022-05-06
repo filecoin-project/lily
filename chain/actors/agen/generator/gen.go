@@ -7,8 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"text/template"
-
-	"golang.org/x/xerrors"
 )
 
 var latestVersion = 7
@@ -69,7 +67,7 @@ func generateAdapters() error {
 		{
 			af, err := ioutil.ReadFile(filepath.Join(actDir, "actor.go.template"))
 			if err != nil {
-				return xerrors.Errorf("loading actor template: %w", err)
+				return fmt.Errorf("loading actor template: %w", err)
 			}
 
 			tpl := template.Must(template.New("").Funcs(template.FuncMap{
@@ -102,7 +100,7 @@ func generateState(actDir string) error {
 			return nil // skip
 		}
 
-		return xerrors.Errorf("loading state adapter template: %w", err)
+		return fmt.Errorf("loading state adapter template: %w", err)
 	}
 
 	for _, version := range versions {
@@ -134,7 +132,7 @@ func generateMessages(actDir string) error {
 			return nil // skip
 		}
 
-		return xerrors.Errorf("loading message adapter template: %w", err)
+		return fmt.Errorf("loading message adapter template: %w", err)
 	}
 
 	for _, version := range versions {
@@ -166,7 +164,7 @@ func generatePolicy() error {
 			return nil // skip
 		}
 
-		return xerrors.Errorf("loading policy template file: %w", err)
+		return fmt.Errorf("loading policy template file: %w", err)
 	}
 
 	tpl := template.Must(template.New("").Funcs(template.FuncMap{
@@ -197,7 +195,7 @@ func generateBuiltin() error {
 			return nil // skip
 		}
 
-		return xerrors.Errorf("loading builtin template file: %w", err)
+		return fmt.Errorf("loading builtin template file: %w", err)
 	}
 
 	tpl := template.Must(template.New("").Funcs(template.FuncMap{

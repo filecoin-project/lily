@@ -2,15 +2,14 @@ package miner
 
 import (
 	"context"
-
-	cbg "github.com/whyrusleeping/cbor-gen"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
+	"fmt"
 
 	"github.com/filecoin-project/go-amt-ipld/v4"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/go-state-types/abi"
+	cbg "github.com/whyrusleeping/cbor-gen"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
@@ -48,7 +47,7 @@ func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreC
 		}
 		err = diff.CompareMap(prep, curp, diffContainer)
 		if err != nil {
-			return nil, xerrors.Errorf("diff miner precommit: %w", err)
+			return nil, fmt.Errorf("diff miner precommit: %w", err)
 		}
 		return diffContainer.Results, nil
 	}
@@ -112,7 +111,7 @@ type preCommitDiffContainer struct {
 func (m *preCommitDiffContainer) AsKey(key string) (abi.Keyer, error) {
 	sector, err := abi.ParseUIntKey(key)
 	if err != nil {
-		return nil, xerrors.Errorf("pre commit diff container as key: %w", err)
+		return nil, fmt.Errorf("pre commit diff container as key: %w", err)
 	}
 	return abi.UIntKey(sector), nil
 }
@@ -120,7 +119,7 @@ func (m *preCommitDiffContainer) AsKey(key string) (abi.Keyer, error) {
 func (m *preCommitDiffContainer) Add(key string, val *cbg.Deferred) error {
 	sp, err := m.after.DecodeSectorPreCommitOnChainInfo(val)
 	if err != nil {
-		return xerrors.Errorf("pre commit diff container add: %w", err)
+		return fmt.Errorf("pre commit diff container add: %w", err)
 	}
 	m.Results.Added = append(m.Results.Added, sp)
 	return nil
@@ -133,7 +132,7 @@ func (m *preCommitDiffContainer) Modify(key string, from, to *cbg.Deferred) erro
 func (m *preCommitDiffContainer) Remove(key string, val *cbg.Deferred) error {
 	sp, err := m.pre.DecodeSectorPreCommitOnChainInfo(val)
 	if err != nil {
-		return xerrors.Errorf("pre commit diff container remove: %w", err)
+		return fmt.Errorf("pre commit diff container remove: %w", err)
 	}
 	m.Results.Removed = append(m.Results.Removed, sp)
 	return nil
@@ -161,7 +160,7 @@ func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorC
 		}
 		err = diff.CompareArray(pres, curs, diffContainer)
 		if err != nil {
-			return nil, xerrors.Errorf("diff miner sectors: %w", err)
+			return nil, fmt.Errorf("diff miner sectors: %w", err)
 		}
 		return diffContainer.Results, nil
 	}
@@ -209,7 +208,7 @@ type sectorDiffContainer struct {
 func (m *sectorDiffContainer) Add(key uint64, val *cbg.Deferred) error {
 	si, err := m.after.DecodeSectorOnChainInfo(val)
 	if err != nil {
-		return xerrors.Errorf("sector diff container add: %w", err)
+		return fmt.Errorf("sector diff container add: %w", err)
 	}
 	m.Results.Added = append(m.Results.Added, si)
 	return nil
@@ -218,12 +217,12 @@ func (m *sectorDiffContainer) Add(key uint64, val *cbg.Deferred) error {
 func (m *sectorDiffContainer) Modify(key uint64, from, to *cbg.Deferred) error {
 	siFrom, err := m.pre.DecodeSectorOnChainInfo(from)
 	if err != nil {
-		return xerrors.Errorf("sector diff container modify from: %w", err)
+		return fmt.Errorf("sector diff container modify from: %w", err)
 	}
 
 	siTo, err := m.after.DecodeSectorOnChainInfo(to)
 	if err != nil {
-		return xerrors.Errorf("sector diff container modify to: %w", err)
+		return fmt.Errorf("sector diff container modify to: %w", err)
 	}
 
 	if siFrom.Expiration != siTo.Expiration {
@@ -247,7 +246,7 @@ func (m *sectorDiffContainer) Modify(key uint64, from, to *cbg.Deferred) error {
 func (m *sectorDiffContainer) Remove(key uint64, val *cbg.Deferred) error {
 	si, err := m.pre.DecodeSectorOnChainInfo(val)
 	if err != nil {
-		return xerrors.Errorf("sector diff container remove: %w", err)
+		return fmt.Errorf("sector diff container remove: %w", err)
 	}
 	m.Results.Removed = append(m.Results.Removed, si)
 	return nil

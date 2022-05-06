@@ -4,12 +4,12 @@ package msapprovals
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/actors/builtin"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
 	"github.com/filecoin-project/lily/tasks"
@@ -54,7 +54,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 	tsMsgs, err := p.node.ExecutedAndBlockMessages(ctx, current, executed)
 	if err != nil {
-		report.ErrorsDetected = xerrors.Errorf("getting executed and block messages: %w", err)
+		report.ErrorsDetected = fmt.Errorf("getting executed and block messages: %w", err)
 		return nil, report, nil
 	}
 	emsgs := tsMsgs.Executed
@@ -66,7 +66,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		// Stop processing if we have been told to cancel
 		select {
 		case <-ctx.Done():
-			return nil, nil, xerrors.Errorf("context done: %w", ctx.Err())
+			return nil, nil, fmt.Errorf("context done: %w", ctx.Err())
 		default:
 		}
 
@@ -89,7 +89,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
-				Error: xerrors.Errorf("failed to find transaction: %w", err).Error(),
+				Error: fmt.Errorf("failed to find transaction: %w", err).Error(),
 			})
 			continue
 		}
@@ -117,7 +117,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
-				Error: xerrors.Errorf("failed to load actor: %w", err).Error(),
+				Error: fmt.Errorf("failed to load actor: %w", err).Error(),
 			})
 			continue
 		}
@@ -126,7 +126,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
-				Error: xerrors.Errorf("failed to load actor state: %w", err).Error(),
+				Error: fmt.Errorf("failed to load actor state: %w", err).Error(),
 			})
 			continue
 		}
@@ -135,7 +135,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
-				Error: xerrors.Errorf("failed to read initial balance: %w", err).Error(),
+				Error: fmt.Errorf("failed to read initial balance: %w", err).Error(),
 			})
 			continue
 		}
@@ -145,7 +145,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
-				Error: xerrors.Errorf("failed to read initial balance: %w", err).Error(),
+				Error: fmt.Errorf("failed to read initial balance: %w", err).Error(),
 			})
 			continue
 		}
@@ -155,7 +155,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if err != nil {
 			errorsDetected = append(errorsDetected, &MultisigError{
 				Addr:  m.Message.To.String(),
-				Error: xerrors.Errorf("failed to read signers: %w", err).Error(),
+				Error: fmt.Errorf("failed to read signers: %w", err).Error(),
 			})
 			continue
 		}
@@ -195,7 +195,7 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		var ret multisig.ProposeReturn
 		err := ret.UnmarshalCBOR(bytes.NewReader(rcpt.Return))
 		if err != nil {
-			return false, nil, xerrors.Errorf("failed to decode return value: %w", err)
+			return false, nil, fmt.Errorf("failed to decode return value: %w", err)
 		}
 
 		// Only interested in applied transactions
@@ -207,7 +207,7 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		var params multisig.ProposeParams
 		err = params.UnmarshalCBOR(bytes.NewReader(msg.Params))
 		if err != nil {
-			return false, nil, xerrors.Errorf("failed to decode message params: %w", err)
+			return false, nil, fmt.Errorf("failed to decode message params: %w", err)
 		}
 
 		return true, &transaction{
@@ -223,7 +223,7 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		var ret multisig.ApproveReturn
 		err := ret.UnmarshalCBOR(bytes.NewReader(rcpt.Return))
 		if err != nil {
-			return false, nil, xerrors.Errorf("failed to decode return value: %w", err)
+			return false, nil, fmt.Errorf("failed to decode return value: %w", err)
 		}
 
 		// Only interested in applied transactions
@@ -235,7 +235,7 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		var params multisig.TxnIDParams
 		err = params.UnmarshalCBOR(bytes.NewReader(msg.Params))
 		if err != nil {
-			return false, nil, xerrors.Errorf("failed to decode message params: %w", err)
+			return false, nil, fmt.Errorf("failed to decode message params: %w", err)
 		}
 
 		// Get state of actor before the message was applied
@@ -243,12 +243,12 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 		// for that tipset
 		act, err := p.node.Actor(ctx, msg.To, pts.Parents())
 		if err != nil {
-			return false, nil, xerrors.Errorf("failed to load previous actor: %w", err)
+			return false, nil, fmt.Errorf("failed to load previous actor: %w", err)
 		}
 
 		prevActorState, err := multisig.Load(p.node.Store(), act)
 		if err != nil {
-			return false, nil, xerrors.Errorf("failed to load previous actor state: %w", err)
+			return false, nil, fmt.Errorf("failed to load previous actor state: %w", err)
 		}
 
 		var tx *transaction
@@ -263,11 +263,11 @@ func (p *Task) getTransactionIfApplied(ctx context.Context, msg *types.Message, 
 			}
 			return nil
 		}); err != nil {
-			return false, nil, xerrors.Errorf("failed to read transaction details: %w", err)
+			return false, nil, fmt.Errorf("failed to read transaction details: %w", err)
 		}
 
 		if tx == nil {
-			return false, nil, xerrors.Errorf("pending transaction %d not found", params.ID)
+			return false, nil, fmt.Errorf("pending transaction %d not found", params.ID)
 		}
 
 		return true, tx, nil

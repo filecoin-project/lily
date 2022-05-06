@@ -3,6 +3,7 @@ package schedule
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -11,7 +12,6 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/storage"
@@ -250,7 +250,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 func (s *Scheduler) StartJob(id JobID) error {
 	job, err := s.getJob(id)
 	if err != nil {
-		return xerrors.Errorf("start job: %w", err)
+		return fmt.Errorf("start job: %w", err)
 	}
 
 	job.lk.Lock()
@@ -258,7 +258,7 @@ func (s *Scheduler) StartJob(id JobID) error {
 	job.errorMsg = ""
 	if job.running {
 		job.lk.Unlock()
-		return xerrors.Errorf("starting worker ID: %d already running", id)
+		return fmt.Errorf("starting worker ID: %d already running", id)
 	}
 	job.lk.Unlock()
 
@@ -270,14 +270,14 @@ func (s *Scheduler) StartJob(id JobID) error {
 func (s *Scheduler) StopJob(id JobID) error {
 	job, err := s.getJob(id)
 	if err != nil {
-		return xerrors.Errorf("stop job: %w", err)
+		return fmt.Errorf("stop job: %w", err)
 	}
 
 	job.lk.Lock()
 	defer job.lk.Unlock()
 
 	if !job.running {
-		return xerrors.Errorf("stopping job ID: %d already stopped", id)
+		return fmt.Errorf("stopping job ID: %d already stopped", id)
 	}
 
 	job.log.Infow("stopping job", "id", job)
@@ -288,7 +288,7 @@ func (s *Scheduler) StopJob(id JobID) error {
 func (s *Scheduler) WaitJob(id JobID) (*JobListResult, error) {
 	job, err := s.getJob(id)
 	if err != nil {
-		return nil, xerrors.Errorf("wait job: %w", err)
+		return nil, fmt.Errorf("wait job: %w", err)
 	}
 
 	// wait on the job to complete
@@ -297,7 +297,7 @@ func (s *Scheduler) WaitJob(id JobID) (*JobListResult, error) {
 	// fetch the job to get the latest results (EndedAt and Running will have changed)
 	job, err = s.getJob(id)
 	if err != nil {
-		return nil, xerrors.Errorf("wait job: %w", err)
+		return nil, fmt.Errorf("wait job: %w", err)
 	}
 	return &JobListResult{
 		ID:                  job.id,
@@ -320,7 +320,7 @@ func (s *Scheduler) getJob(id JobID) (*JobConfig, error) {
 	job, ok := s.jobs[id]
 	s.jobsMu.Unlock()
 	if !ok {
-		return nil, xerrors.Errorf("job id: %d not found", id)
+		return nil, fmt.Errorf("job id: %d not found", id)
 	}
 	return job, nil
 }

@@ -2,12 +2,12 @@ package verifreg
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/model"
@@ -50,7 +50,7 @@ func (ClientExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node
 
 	changes, err := verifreg.DiffVerifiedClients(ctx, ec.Store, ec.PrevState, ec.CurrState)
 	if err != nil {
-		return nil, xerrors.Errorf("diffing verified registry clients: %w", err)
+		return nil, fmt.Errorf("diffing verified registry clients: %w", err)
 	}
 
 	for _, change := range changes.Added {

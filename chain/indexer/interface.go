@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/filecoin-project/lotus/chain/types"
-	"golang.org/x/xerrors"
 )
 
 // Option specifies the index processing behavior. The interface allows implementations of the Indexer interface
@@ -100,7 +99,7 @@ func ConstructOptions(opts ...Option) (IndexerOptions, error) {
 		case tasksTypeOption:
 			res.Tasks = []string(o)
 			if len(res.Tasks) == 0 {
-				return IndexerOptions{}, xerrors.Errorf("tasks options cannot be empty")
+				return IndexerOptions{}, fmt.Errorf("tasks options cannot be empty")
 			}
 		default:
 		}

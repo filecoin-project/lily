@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -12,7 +13,6 @@ import (
 	"github.com/go-pg/pg/v10/types"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/raulk/clock"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/actors/common"
@@ -106,7 +106,7 @@ func NewDatabase(ctx context.Context, url string, poolSize int, name string, sch
 
 	opt, err := pg.ParseURL(url)
 	if err != nil {
-		return nil, xerrors.Errorf("parse database URL: %w", err)
+		return nil, fmt.Errorf("parse database URL: %w", err)
 	}
 	opt.PoolSize = poolSize
 	if opt.ApplicationName == "" {
@@ -179,7 +179,7 @@ type Database struct {
 func (d *Database) Connect(ctx context.Context) error {
 	db, err := connect(ctx, d.opt)
 	if err != nil {
-		return xerrors.Errorf("connect: %w", err)
+		return fmt.Errorf("connect: %w", err)
 	}
 
 	dbVersion, err := validateDatabaseSchemaVersion(ctx, db, d.SchemaConfig())
@@ -208,13 +208,13 @@ func connect(ctx context.Context, opt *pg.Options) (*pg.DB, error) {
 
 	// Check if connection credentials are valid and PostgreSQL is up and running.
 	if err := db.Ping(ctx); err != nil {
-		return nil, xerrors.Errorf("ping database: %w", err)
+		return nil, fmt.Errorf("ping database: %w", err)
 	}
 
 	// Acquire a shared lock on the schema to notify other instances that we are running
 	if err := SchemaLock.LockShared(ctx, db); err != nil {
 		_ = db.Close() // nolint: errcheck
-		return nil, xerrors.Errorf("failed to acquire schema lock, possible migration in progress: %w", err)
+		return nil, fmt.Errorf("failed to acquire schema lock, possible migration in progress: %w", err)
 	}
 
 	return db, nil
@@ -258,7 +258,7 @@ func (d *Database) VerifyCurrentSchema(ctx context.Context) error {
 	// Temporarily connect
 	db, err := connect(ctx, d.opt)
 	if err != nil {
-		return xerrors.Errorf("connect: %w", err)
+		return fmt.Errorf("connect: %w", err)
 	}
 	defer db.Close() // nolint: errcheck
 	return verifyCurrentSchema(ctx, db, d.SchemaConfig())
@@ -271,11 +271,11 @@ func verifyCurrentSchema(ctx context.Context, db *pg.DB, cfg schemas.Config) err
 
 	version, initialized, err := getDatabaseSchemaVersion(ctx, db, cfg)
 	if err != nil {
-		return xerrors.Errorf("get schema version: %w", err)
+		return fmt.Errorf("get schema version: %w", err)
 	}
 
 	if !initialized {
-		return xerrors.Errorf("schema not installed in database")
+		return fmt.Errorf("schema not installed in database")
 	}
 
 	valid := true
@@ -283,7 +283,7 @@ func verifyCurrentSchema(ctx context.Context, db *pg.DB, cfg schemas.Config) err
 		if vm, ok := model.(versionable); ok {
 			m, ok := vm.AsVersion(version)
 			if !ok {
-				return xerrors.Errorf("model %T does not support version %s", model, version)
+				return fmt.Errorf("model %T does not support version %s", model, version)
 			}
 			model = m
 		}
@@ -299,7 +299,7 @@ func verifyCurrentSchema(ctx context.Context, db *pg.DB, cfg schemas.Config) err
 
 	}
 	if !valid {
-		return xerrors.Errorf("database schema was not compatible with current models")
+		return fmt.Errorf("database schema was not compatible with current models")
 	}
 	return nil
 }
@@ -309,10 +309,10 @@ func verifyModel(ctx context.Context, db *pg.DB, schemaName string, m *orm.Table
 
 	exists, err := tableExists(ctx, db, schemaName, tableName)
 	if err != nil {
-		return xerrors.Errorf("querying table: %v", err)
+		return fmt.Errorf("querying table: %v", err)
 	}
 	if !exists {
-		return xerrors.Errorf("required table %s not found", m.SQLName)
+		return fmt.Errorf("required table %s not found", m.SQLName)
 	}
 
 	for _, fld := range m.Fields {
@@ -320,17 +320,17 @@ func verifyModel(ctx context.Context, db *pg.DB, schemaName string, m *orm.Table
 		_, err := db.QueryOne(pg.Scan(&datatype), `SELECT data_type FROM information_schema.columns WHERE table_schema=? AND table_name=? AND column_name=?`, schemaName, tableName, fld.SQLName)
 		if err != nil {
 			if errors.Is(err, pg.ErrNoRows) {
-				return xerrors.Errorf("required column %s.%s not found", tableName, fld.SQLName)
+				return fmt.Errorf("required column %s.%s not found", tableName, fld.SQLName)
 			}
-			return xerrors.Errorf("querying field: %v %T", err, err)
+			return fmt.Errorf("querying field: %v %T", err, err)
 		}
 		if datatype == "USER-DEFINED" {
 			_, err := db.QueryOne(pg.Scan(&datatype), `SELECT udt_name FROM information_schema.columns WHERE table_schema=? AND table_name=? AND column_name=?`, schemaName, tableName, fld.SQLName)
 			if err != nil {
 				if errors.Is(err, pg.ErrNoRows) {
-					return xerrors.Errorf("required column %s.%s not found", tableName, fld.SQLName)
+					return fmt.Errorf("required column %s.%s not found", tableName, fld.SQLName)
 				}
-				return xerrors.Errorf("querying field: %v %T", err, err)
+				return fmt.Errorf("querying field: %v %T", err, err)
 			}
 		}
 
@@ -342,7 +342,7 @@ func verifyModel(ctx context.Context, db *pg.DB, schemaName string, m *orm.Table
 		}
 
 		if datatype != fld.SQLType {
-			return xerrors.Errorf("column %s.%s had datatype %s, expected %s", tableName, fld.SQLName, datatype, fld.SQLType)
+			return fmt.Errorf("column %s.%s had datatype %s, expected %s", tableName, fld.SQLName, datatype, fld.SQLType)
 		}
 
 	}
@@ -354,7 +354,7 @@ func tableExists(ctx context.Context, db *pg.DB, schemaName string, tableName st
 	var exists bool
 	_, err := db.QueryOneContext(ctx, pg.Scan(&exists), `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema=? AND table_name=?)`, schemaName, tableName)
 	if err != nil {
-		return false, xerrors.Errorf("querying table: %v", err)
+		return false, fmt.Errorf("querying table: %v", err)
 	}
 
 	return exists, nil
@@ -374,7 +374,7 @@ func (d *Database) PersistBatch(ctx context.Context, ps ...model.Persistable) er
 
 		for _, p := range ps {
 			if err := p.Persist(ctx, txs, d.version); err != nil {
-				return xerrors.Errorf("persisting %T: %w", p, err)
+				return fmt.Errorf("persisting %T: %w", p, err)
 			}
 		}
 
@@ -420,13 +420,13 @@ func (s *TxStorage) PersistModel(ctx context.Context, m interface{}) error {
 			OnConflict(conflict).
 			Set(upsert).
 			Insert(); err != nil {
-			return xerrors.Errorf("upserting model: %w", err)
+			return fmt.Errorf("upserting model: %w", err)
 		}
 	} else {
 		if _, err := s.tx.ModelContext(ctx, m).
 			OnConflict("do nothing").
 			Insert(); err != nil {
-			return xerrors.Errorf("persisting model: %w", err)
+			return fmt.Errorf("persisting model: %w", err)
 		}
 	}
 	return nil
@@ -522,7 +522,7 @@ func (d *Database) QueryGaps(ctx context.Context, minHeight, maxHeight int64, ta
 			Where("height >= ?", minHeight).
 			Where("height <= ?", maxHeight).
 			Select(); err != nil {
-			return nil, xerrors.Errorf("querying gap reports: %w", err)
+			return nil, fmt.Errorf("querying gap reports: %w", err)
 		}
 	} else {
 		if err := d.AsORM().ModelContext(ctx, &out).
@@ -531,7 +531,7 @@ func (d *Database) QueryGaps(ctx context.Context, minHeight, maxHeight int64, ta
 			Where("height >= ?", minHeight).
 			Where("height <= ?", maxHeight).
 			Select(); err != nil {
-			return nil, xerrors.Errorf("querying gap reports: %w", err)
+			return nil, fmt.Errorf("querying gap reports: %w", err)
 		}
 	}
 	return out, nil

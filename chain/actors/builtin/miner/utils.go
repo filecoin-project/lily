@@ -1,7 +1,7 @@
 package miner
 
 import (
-	"golang.org/x/xerrors"
+	"fmt"
 
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
@@ -15,7 +15,7 @@ func AllPartSectors(mas State, sget func(Partition) (bitfield.BitField, error)) 
 		return dl.ForEachPartition(func(partidx uint64, part Partition) error {
 			s, err := sget(part)
 			if err != nil {
-				return xerrors.Errorf("getting sector list (dl: %d, part %d): %w", dlidx, partidx, err)
+				return fmt.Errorf("getting sector list (dl: %d, part %d): %w", dlidx, partidx, err)
 			}
 
 			parts = append(parts, s)
@@ -46,7 +46,7 @@ func SealProofTypeFromSectorSize(ssize abi.SectorSize, nv network.Version) (abi.
 		case 64 << 30:
 			return abi.RegisteredSealProof_StackedDrg64GiBV1, nil
 		default:
-			return 0, xerrors.Errorf("unsupported sector size for miner: %v", ssize)
+			return 0, fmt.Errorf("unsupported sector size for miner: %v", ssize)
 		}
 	case nv >= network.Version7:
 		switch ssize {
@@ -61,9 +61,9 @@ func SealProofTypeFromSectorSize(ssize abi.SectorSize, nv network.Version) (abi.
 		case 64 << 30:
 			return abi.RegisteredSealProof_StackedDrg64GiBV1_1, nil
 		default:
-			return 0, xerrors.Errorf("unsupported sector size for miner: %v", ssize)
+			return 0, fmt.Errorf("unsupported sector size for miner: %v", ssize)
 		}
 	}
 
-	return 0, xerrors.Errorf("unsupported network version")
+	return 0, fmt.Errorf("unsupported network version")
 }

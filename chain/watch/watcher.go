@@ -3,6 +3,7 @@ package watch
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -12,7 +13,6 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/otel"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/cache"
 	"github.com/filecoin-project/lily/chain/indexer"
@@ -165,7 +165,7 @@ func (c *Watcher) Run(ctx context.Context) error {
 			}
 
 			if err := c.index(ctx, he); err != nil {
-				return xerrors.Errorf("index: %w", err)
+				return fmt.Errorf("index: %w", err)
 			}
 		}
 	}
@@ -187,7 +187,7 @@ func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {
 		// If we have a zero confidence window then we need to notify every tipset we see
 		if c.confidence == 0 {
 			if err := c.indexTipSetAsync(ctx, he.TipSet); err != nil {
-				return xerrors.Errorf("notify tipset: %w", err)
+				return fmt.Errorf("notify tipset: %w", err)
 			}
 		}
 	case HeadEventApply:
@@ -199,7 +199,7 @@ func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {
 		// Send the tipset that fell out of the confidence window to the observer
 		if tail != nil {
 			if err := c.indexTipSetAsync(ctx, tail); err != nil {
-				return xerrors.Errorf("notify tipset: %w", err)
+				return fmt.Errorf("notify tipset: %w", err)
 			}
 		}
 

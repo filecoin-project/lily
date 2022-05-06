@@ -14,7 +14,6 @@ import (
 	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/config"
 	"github.com/filecoin-project/lily/lens"
@@ -365,7 +364,7 @@ func collectEpochsWithNullRoundsRange(ctx context.Context, api lens.API, from, t
 	}
 	if int64(head.Height()) != to {
 		// TODO
-		return nil, xerrors.Errorf("TODO to (%d) was a null round, not handled yet", to)
+		return nil, fmt.Errorf("TODO to (%d) was a null round, not handled yet", to)
 	}
 
 	tail, err := api.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(from), types.EmptyTSK)
@@ -374,7 +373,7 @@ func collectEpochsWithNullRoundsRange(ctx context.Context, api lens.API, from, t
 	}
 	if int64(tail.Height()) != from {
 		// TODO
-		return nil, xerrors.Errorf("TODO from (%d) was a null round, not handled yet", from)
+		return nil, fmt.Errorf("TODO from (%d) was a null round, not handled yet", from)
 	}
 
 	out := make(map[int64]*types.TipSet)
@@ -403,7 +402,7 @@ func collectTipSetRange(ctx context.Context, api lens.API, from, to int64) ([]*t
 	}
 	if int64(head.Height()) != to {
 		// TODO
-		return nil, xerrors.Errorf("TODO to (%d) was a null round, not handled yet", to)
+		return nil, fmt.Errorf("TODO to (%d) was a null round, not handled yet", to)
 	}
 
 	tail, err := api.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(from), types.EmptyTSK)
@@ -412,7 +411,7 @@ func collectTipSetRange(ctx context.Context, api lens.API, from, to int64) ([]*t
 	}
 	if int64(tail.Height()) != from {
 		// TODO
-		return nil, xerrors.Errorf("TODO from (%d) was a null round, not handled yet", from)
+		return nil, fmt.Errorf("TODO from (%d) was a null round, not handled yet", from)
 	}
 
 	out := make([]*types.TipSet, 0, head.Height()-tail.Height())

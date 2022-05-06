@@ -2,10 +2,10 @@ package miner
 
 import (
 	"context"
+	"fmt"
 
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -65,7 +65,7 @@ func (m *MinerLockedFund) Persist(ctx context.Context, s model.StorageBatch, ver
 
 	vm, ok := m.AsVersion(version)
 	if !ok {
-		return xerrors.Errorf("MinerLockedFund not supported for schema version %s", version)
+		return fmt.Errorf("MinerLockedFund not supported for schema version %s", version)
 	}
 
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)

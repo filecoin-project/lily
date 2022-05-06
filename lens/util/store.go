@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"reflect"
 	"sync/atomic"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
 	cbg "github.com/whyrusleeping/cbor-gen"
-	"golang.org/x/xerrors"
 )
 
 type CacheConfig struct {
@@ -141,7 +141,7 @@ type CachingBlockstore struct {
 func NewCachingBlockstore(blocks blockstore.Blockstore, cacheSize int) (*CachingBlockstore, error) {
 	cache, err := lru.NewARC(cacheSize)
 	if err != nil {
-		return nil, xerrors.Errorf("new arc: %w", err)
+		return nil, fmt.Errorf("new arc: %w", err)
 	}
 
 	return &CachingBlockstore{
@@ -248,7 +248,7 @@ type CachingStateStore struct {
 func NewCachingStateStore(blocks blockstore.Blockstore, cacheSize int) (*CachingStateStore, error) {
 	cache, err := lru.NewARC(cacheSize)
 	if err != nil {
-		return nil, xerrors.Errorf("new arc: %w", err)
+		return nil, fmt.Errorf("new arc: %w", err)
 	}
 
 	store := adt.WrapStore(context.Background(), cbor.NewCborStore(blocks))
@@ -273,7 +273,7 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 
 	cu, ok := out.(cbg.CBORUnmarshaler)
 	if !ok {
-		return xerrors.Errorf("out parameter does not implement CBORUnmarshaler")
+		return fmt.Errorf("out parameter does not implement CBORUnmarshaler")
 	}
 
 	v, hit := cas.cache.Get(c)
@@ -305,11 +305,11 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 func (cas *CachingStateStore) tryAssign(value interface{}, out interface{}) error {
 	o := reflect.ValueOf(out).Elem()
 	if !o.CanSet() {
-		return xerrors.Errorf("out parameter (type %s) cannot be set", o.Type().Name())
+		return fmt.Errorf("out parameter (type %s) cannot be set", o.Type().Name())
 	}
 
 	if !value.(reflect.Value).Type().AssignableTo(o.Type()) {
-		return xerrors.Errorf("out parameter (type %s) cannot be assigned cached value (type %s)", o.Type().Name(), value.(reflect.Value).Type().Name())
+		return fmt.Errorf("out parameter (type %s) cannot be assigned cached value (type %s)", o.Type().Name(), value.(reflect.Value).Type().Name())
 	}
 
 	o.Set(value.(reflect.Value))

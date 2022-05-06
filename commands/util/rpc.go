@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -17,7 +18,6 @@ import (
 	manet "github.com/multiformats/go-multiaddr/net"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lotus/metrics"
 	"github.com/filecoin-project/lotus/node"
@@ -98,7 +98,7 @@ func ServeRPC(a lily.LilyAPI, stop node.StopFunc, addr multiaddr.Multiaddr, shut
 	http.Handle("/rpc/v0", ah)
 	lst, err := manet.Listen(addr)
 	if err != nil {
-		return xerrors.Errorf("could not listen: %w", err)
+		return fmt.Errorf("could not listen: %w", err)
 	}
 
 	srv := &http.Server{

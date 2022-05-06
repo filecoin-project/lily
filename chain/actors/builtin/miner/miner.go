@@ -2,12 +2,12 @@
 package miner
 
 import (
+	"fmt"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/go-state-types/network"
 	"github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p-core/peer"
 	cbg "github.com/whyrusleeping/cbor-gen"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
@@ -120,7 +120,7 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 		return load7(store, act.Head)
 
 	}
-	return nil, xerrors.Errorf("unknown actor code %s", act.Code)
+	return nil, fmt.Errorf("unknown actor code %s", act.Code)
 }
 
 type State interface {
@@ -262,7 +262,7 @@ func PreferredSealProofTypeFromWindowPoStType(nver network.Version, proof abi.Re
 		case abi.RegisteredPoStProof_StackedDrgWindow64GiBV1:
 			return abi.RegisteredSealProof_StackedDrg64GiBV1, nil
 		default:
-			return -1, xerrors.Errorf("unrecognized window post type: %d", proof)
+			return -1, fmt.Errorf("unrecognized window post type: %d", proof)
 		}
 	}
 
@@ -278,7 +278,7 @@ func PreferredSealProofTypeFromWindowPoStType(nver network.Version, proof abi.Re
 	case abi.RegisteredPoStProof_StackedDrgWindow64GiBV1:
 		return abi.RegisteredSealProof_StackedDrg64GiBV1_1, nil
 	default:
-		return -1, xerrors.Errorf("unrecognized window post type: %d", proof)
+		return -1, fmt.Errorf("unrecognized window post type: %d", proof)
 	}
 }
 
@@ -295,7 +295,7 @@ func WinningPoStProofTypeFromWindowPoStProofType(nver network.Version, proof abi
 	case abi.RegisteredPoStProof_StackedDrgWindow64GiBV1:
 		return abi.RegisteredPoStProof_StackedDrgWinning64GiBV1, nil
 	default:
-		return -1, xerrors.Errorf("unknown proof type %d", proof)
+		return -1, fmt.Errorf("unknown proof type %d", proof)
 	}
 }
 

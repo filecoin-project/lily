@@ -7,7 +7,6 @@ import (
 
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 )
 
 var LogCmd = &cli.Command{
@@ -103,7 +102,7 @@ var LogSetLevel = &cli.Command{
 
 		for _, system := range systems {
 			if err := api.LogSetLevel(ctx, system, cctx.Args().First()); err != nil {
-				return xerrors.Errorf("setting log level on %s: %v", system, err)
+				return fmt.Errorf("setting log level on %s: %v", system, err)
 			}
 		}
 
@@ -156,7 +155,7 @@ var LogSetLevelRegex = &cli.Command{
 		}
 
 		if err := api.LogSetLevelRegex(ctx, cctx.Args().Get(1), cctx.Args().First()); err != nil {
-			return xerrors.Errorf("setting log level via regex: %w", err)
+			return fmt.Errorf("setting log level via regex: %w", err)
 		}
 
 		return nil

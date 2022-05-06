@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"time"
@@ -8,7 +9,6 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/filecoin-project/lotus/node/config"
 	logging "github.com/ipfs/go-log/v2"
-	"golang.org/x/xerrors"
 )
 
 var log = logging.Logger("lily/config")
@@ -163,16 +163,16 @@ func EnsureExists(path string) error {
 
 	comm, err := config.ConfigComment(SampleConf())
 	if err != nil {
-		return xerrors.Errorf("comment: %w", err)
+		return fmt.Errorf("comment: %w", err)
 	}
 	_, err = c.Write(comm)
 	if err != nil {
 		_ = c.Close() // ignore error since we are recovering from a write error anyway
-		return xerrors.Errorf("write config: %w", err)
+		return fmt.Errorf("write config: %w", err)
 	}
 
 	if err := c.Close(); err != nil {
-		return xerrors.Errorf("close config: %w", err)
+		return fmt.Errorf("close config: %w", err)
 	}
 	return nil
 }

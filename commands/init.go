@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"fmt"
 
 	paramfetch "github.com/filecoin-project/go-paramfetch"
 	lotusbuild "github.com/filecoin-project/lotus/build"
@@ -10,7 +11,6 @@ import (
 	"github.com/filecoin-project/lotus/node/repo"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/commands/util"
 	"github.com/filecoin-project/lily/config"
@@ -60,23 +60,23 @@ var InitCmd = &cli.Command{
 
 		r, err := repo.NewFS(initFlags.repo)
 		if err != nil {
-			return xerrors.Errorf("opening fs repo: %w", err)
+			return fmt.Errorf("opening fs repo: %w", err)
 		}
 
 		if initFlags.config != "" {
 			if err := config.EnsureExists(initFlags.config); err != nil {
-				return xerrors.Errorf("ensuring config is present at %q: %w", initFlags.config, err)
+				return fmt.Errorf("ensuring config is present at %q: %w", initFlags.config, err)
 			}
 			r.SetConfigPath(initFlags.config)
 		}
 
 		err = r.Init(repo.FullNode)
 		if err != nil && err != repo.ErrRepoExists {
-			return xerrors.Errorf("repo init error: %w", err)
+			return fmt.Errorf("repo init error: %w", err)
 		}
 
 		if err := paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), lotusbuild.SrsJSON(), 0); err != nil {
-			return xerrors.Errorf("fetching proof parameters: %w", err)
+			return fmt.Errorf("fetching proof parameters: %w", err)
 		}
 
 		if initFlags.importSnapshot != "" {

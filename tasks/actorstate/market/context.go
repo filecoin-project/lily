@@ -2,11 +2,11 @@ package market
 
 import (
 	"context"
+	"fmt"
 	"unicode/utf8"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"golang.org/x/text/runes"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/tasks/actorstate"
@@ -28,7 +28,7 @@ type MarketStateExtractionContext struct {
 func NewMarketStateExtractionContext(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (*MarketStateExtractionContext, error) {
 	curState, err := market.Load(node.Store(), &a.Actor)
 	if err != nil {
-		return nil, xerrors.Errorf("loading current market state: %w", err)
+		return nil, fmt.Errorf("loading current market state: %w", err)
 	}
 
 	prevTipset := a.Current
@@ -38,12 +38,12 @@ func NewMarketStateExtractionContext(ctx context.Context, a actorstate.ActorInfo
 
 		prevActor, err := node.Actor(ctx, a.Address, a.Executed.Key())
 		if err != nil {
-			return nil, xerrors.Errorf("loading previous market actor state at tipset %s epoch %d: %w", a.Executed.Key(), a.Current.Height(), err)
+			return nil, fmt.Errorf("loading previous market actor state at tipset %s epoch %d: %w", a.Executed.Key(), a.Current.Height(), err)
 		}
 
 		prevState, err = market.Load(node.Store(), prevActor)
 		if err != nil {
-			return nil, xerrors.Errorf("loading previous market actor state: %w", err)
+			return nil, fmt.Errorf("loading previous market actor state: %w", err)
 		}
 
 	}

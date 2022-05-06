@@ -11,7 +11,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/sync/errgroup"
-	"golang.org/x/xerrors"
 	"k8s.io/utils/keymutex"
 
 	"github.com/filecoin-project/lily/metrics"
@@ -64,7 +63,7 @@ func (me *ModelExporter) ExportResult(ctx context.Context, strg model.Storage, h
 
 			if err := strg.PersistBatch(ctx, res.Model); err != nil {
 				stats.Record(ctx, metrics.PersistFailure.M(1))
-				return xerrors.Errorf("persist result (%s.%T): %w", res.Name, res.Model, err)
+				return fmt.Errorf("persist result (%s.%T): %w", res.Name, res.Model, err)
 			}
 			log.Infow("model data persisted", "height", height, "task", res.Name, "duration", time.Since(start), "reporter", me.name)
 			return nil

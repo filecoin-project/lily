@@ -2,12 +2,12 @@ package market
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
 	"github.com/filecoin-project/lily/model"
@@ -36,7 +36,7 @@ func (DealProposalExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 
 	currDealProposals, err := ec.CurrState.Proposals()
 	if err != nil {
-		return nil, xerrors.Errorf("loading current market deal proposals: %w:", err)
+		return nil, fmt.Errorf("loading current market deal proposals: %w", err)
 	}
 
 	if ec.IsGenesis() {
@@ -61,7 +61,7 @@ func (DealProposalExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			})
 			return nil
 		}); err != nil {
-			return nil, xerrors.Errorf("walking current deal states: %w", err)
+			return nil, fmt.Errorf("walking current deal states: %w", err)
 		}
 		return out, nil
 
@@ -69,7 +69,7 @@ func (DealProposalExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 
 	changed, err := ec.CurrState.ProposalsChanged(ec.PrevState)
 	if err != nil {
-		return nil, xerrors.Errorf("checking for deal proposal changes: %w", err)
+		return nil, fmt.Errorf("checking for deal proposal changes: %w", err)
 	}
 
 	if !changed {
@@ -78,7 +78,7 @@ func (DealProposalExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 
 	changes, err := market.DiffDealProposals(ctx, ec.Store, ec.PrevState, ec.CurrState)
 	if err != nil {
-		return nil, xerrors.Errorf("diffing deal states: %w", err)
+		return nil, fmt.Errorf("diffing deal states: %w", err)
 	}
 
 	out := make(marketmodel.MarketDealProposals, len(changes.Added))

@@ -2,12 +2,12 @@ package miner
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/model"
@@ -27,7 +27,7 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 
 	ec, err := NewMinerStateExtractionContext(ctx, a, node)
 	if err != nil {
-		return nil, xerrors.Errorf("creating miner state extraction context: %w", err)
+		return nil, fmt.Errorf("creating miner state extraction context: %w", err)
 	}
 
 	var sectorChanges *miner.SectorChanges
@@ -36,7 +36,7 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		// If the miner doesn't have previous state list all of its current sectors and precommits
 		sectors, err := ec.CurrState.LoadSectors(nil)
 		if err != nil {
-			return nil, xerrors.Errorf("loading miner sectors: %w", err)
+			return nil, fmt.Errorf("loading miner sectors: %w", err)
 		}
 
 		sectorChanges = miner.MakeSectorChanges()
@@ -79,7 +79,7 @@ func extractSectorEvents(ctx context.Context, a actorstate.ActorInfo, ec *MinerS
 
 	partitionEvents, err := extractMinerPartitionsDiff(ctx, a, ec)
 	if err != nil {
-		return nil, xerrors.Errorf("extracting miner partition diff: %w", err)
+		return nil, fmt.Errorf("extracting miner partition diff: %w", err)
 	}
 
 	sectorEvents := extractMinerSectorEvents(a, sc)
@@ -200,7 +200,7 @@ func extractMinerPartitionsDiff(ctx context.Context, a actorstate.ActorInfo, ec 
 
 	removedSectors, err := ec.CurrState.LoadSectors(&removed)
 	if err != nil {
-		return nil, xerrors.Errorf("fetching miners removed sectors: %w", err)
+		return nil, fmt.Errorf("fetching miners removed sectors: %w", err)
 	}
 	rmExpireIndex := make(map[uint64]abi.ChainEpoch)
 	for _, rm := range removedSectors {
@@ -225,7 +225,7 @@ func extractMinerPartitionsDiff(ctx context.Context, a actorstate.ActorInfo, ec 
 		})
 		return nil
 	}); err != nil {
-		return nil, xerrors.Errorf("walking miners removed sectors: %w", err)
+		return nil, fmt.Errorf("walking miners removed sectors: %w", err)
 	}
 
 	// track recovering sectors
@@ -239,7 +239,7 @@ func extractMinerPartitionsDiff(ctx context.Context, a actorstate.ActorInfo, ec 
 		})
 		return nil
 	}); err != nil {
-		return nil, xerrors.Errorf("walking miners recovering sectors: %w", err)
+		return nil, fmt.Errorf("walking miners recovering sectors: %w", err)
 	}
 
 	// track faulted sectors
@@ -253,7 +253,7 @@ func extractMinerPartitionsDiff(ctx context.Context, a actorstate.ActorInfo, ec 
 		})
 		return nil
 	}); err != nil {
-		return nil, xerrors.Errorf("walking miners faulted sectors: %w", err)
+		return nil, fmt.Errorf("walking miners faulted sectors: %w", err)
 	}
 
 	// track recovered sectors
@@ -267,7 +267,7 @@ func extractMinerPartitionsDiff(ctx context.Context, a actorstate.ActorInfo, ec 
 		})
 		return nil
 	}); err != nil {
-		return nil, xerrors.Errorf("walking miners recovered sectors: %w", err)
+		return nil, fmt.Errorf("walking miners recovered sectors: %w", err)
 	}
 	return out, nil
 }

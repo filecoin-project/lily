@@ -2,11 +2,11 @@ package internal_parsed_message
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model"
@@ -46,7 +46,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 	mex, err := p.node.MessageExecutions(ctx, current, executed)
 	if err != nil {
-		report.ErrorsDetected = xerrors.Errorf("getting messages executions for tipset: %w", err)
+		report.ErrorsDetected = fmt.Errorf("getting messages executions for tipset: %w", err)
 		return nil, report, nil
 	}
 
@@ -58,7 +58,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	for _, m := range mex {
 		select {
 		case <-ctx.Done():
-			return nil, nil, xerrors.Errorf("context done: %w", ctx.Err())
+			return nil, nil, fmt.Errorf("context done: %w", ctx.Err())
 		default:
 		}
 
@@ -68,7 +68,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			if err != nil {
 				errorsDetected = append(errorsDetected, &messages.MessageError{
 					Cid:   m.Cid,
-					Error: xerrors.Errorf("failed parse method and params for message: %w", err).Error(),
+					Error: fmt.Errorf("failed parse method and params for message: %w", err).Error(),
 				})
 			}
 			internalParsedResult = append(internalParsedResult, &messagemodel.InternalParsedMessage{

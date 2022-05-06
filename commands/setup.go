@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/pprof"
 	"strings"
@@ -21,7 +22,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/zpages"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/version"
@@ -59,7 +59,7 @@ var LilyMetricFlags LilyMetricOpts
 func setupLogging(flags LilyLogOpts) error {
 	ll := flags.LogLevel
 	if err := logging.SetLogLevel("*", ll); err != nil {
-		return xerrors.Errorf("set log level: %w", err)
+		return fmt.Errorf("set log level: %w", err)
 	}
 
 	llnamed := flags.LogLevelNamed
@@ -67,10 +67,10 @@ func setupLogging(flags LilyLogOpts) error {
 		for _, llname := range strings.Split(llnamed, ",") {
 			parts := strings.Split(llname, ":")
 			if len(parts) != 2 {
-				return xerrors.Errorf("invalid named log level format: %q", llname)
+				return fmt.Errorf("invalid named log level format: %q", llname)
 			}
 			if err := logging.SetLogLevel(parts[0], parts[1]); err != nil {
-				return xerrors.Errorf("set named log level %q to %q: %w", parts[0], parts[1], err)
+				return fmt.Errorf("set named log level %q to %q: %w", parts[0], parts[1], err)
 			}
 
 		}
@@ -153,7 +153,7 @@ func setupTracing(flags LilyTracingOpts) error {
 
 	tp, err := metrics.NewJaegerTraceProvider(LilyTracingFlags.ServiceName, LilyTracingFlags.ProviderURL, LilyTracingFlags.JaegerSamplerParam)
 	if err != nil {
-		return xerrors.Errorf("setup tracing: %w", err)
+		return fmt.Errorf("setup tracing: %w", err)
 	}
 	otel.SetTracerProvider(tp)
 	// upgrades libraries (lotus) that use OpenCensus to OpenTelemetry to facilitate a migration.

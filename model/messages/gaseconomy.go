@@ -2,9 +2,9 @@ package messages
 
 import (
 	"context"
+	"fmt"
 
 	"go.opencensus.io/tag"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -76,7 +76,7 @@ func (g *MessageGasEconomy) Persist(ctx context.Context, s model.StorageBatch, v
 
 	vm, ok := g.AsVersion(version)
 	if !ok {
-		return xerrors.Errorf("MessageGasEconomy not supported for schema version %s", version)
+		return fmt.Errorf("MessageGasEconomy not supported for schema version %s", version)
 	}
 
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)

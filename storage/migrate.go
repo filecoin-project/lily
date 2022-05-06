@@ -2,11 +2,11 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/go-pg/migrations/v8"
 	"github.com/go-pg/pg/v10"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/schemas"
@@ -27,7 +27,7 @@ func (d *Database) GetSchemaVersions(ctx context.Context) (model.Version, model.
 	// Temporarily connect
 	db, err := connect(ctx, d.opt)
 	if err != nil {
-		return model.Version{}, model.Version{}, xerrors.Errorf("connect: %w", err)
+		return model.Version{}, model.Version{}, fmt.Errorf("connect: %w", err)
 	}
 	defer db.Close() // nolint: errcheck
 	dbVersion, _, err := getDatabaseSchemaVersion(ctx, db, d.SchemaConfig())
@@ -41,12 +41,12 @@ func (d *Database) GetSchemaVersions(ctx context.Context) (model.Version, model.
 func getDatabaseSchemaVersion(ctx context.Context, db *pg.DB, cfg schemas.Config) (model.Version, bool, error) {
 	vvExists, err := tableExists(ctx, db, cfg.SchemaName, "visor_version")
 	if err != nil {
-		return model.Version{}, false, xerrors.Errorf("checking if visor_version exists:%w", err)
+		return model.Version{}, false, fmt.Errorf("checking if visor_version exists:%w", err)
 	}
 
 	migExists, err := tableExists(ctx, db, cfg.SchemaName, "gopg_migrations")
 	if err != nil {
-		return model.Version{}, false, xerrors.Errorf("checking if gopg_migrations exists:%w", err)
+		return model.Version{}, false, fmt.Errorf("checking if gopg_migrations exists:%w", err)
 	}
 
 	if !migExists && !vvExists {
@@ -71,7 +71,7 @@ func getDatabaseSchemaVersion(ctx context.Context, db *pg.DB, cfg schemas.Config
 
 	migration, err := coll.Version(db)
 	if err != nil {
-		return model.Version{}, false, xerrors.Errorf("unable to determine schema version: %w", err)
+		return model.Version{}, false, fmt.Errorf("unable to determine schema version: %w", err)
 	}
 
 	if major == 0 && migration == 0 {
@@ -92,7 +92,7 @@ func initDatabaseSchema(ctx context.Context, db *pg.DB, cfg schemas.Config) erro
 	if cfg.SchemaName != "public" {
 		_, err := db.Exec(`CREATE SCHEMA IF NOT EXISTS ?`, pg.SafeQuery(cfg.SchemaName))
 		if err != nil {
-			return xerrors.Errorf("ensure schema exists :%w", err)
+			return fmt.Errorf("ensure schema exists :%w", err)
 		}
 	}
 
@@ -105,7 +105,7 @@ func initDatabaseSchema(ctx context.Context, db *pg.DB, cfg schemas.Config) erro
 		)
 	`, pg.SafeQuery(vvTableName))
 	if err != nil {
-		return xerrors.Errorf("ensure visor_version exists :%w", err)
+		return fmt.Errorf("ensure visor_version exists :%w", err)
 	}
 
 	// Ensure the gopg migrations table exists
@@ -118,7 +118,7 @@ func initDatabaseSchema(ctx context.Context, db *pg.DB, cfg schemas.Config) erro
 		)
 	`, pg.SafeQuery(migTableName))
 	if err != nil {
-		return xerrors.Errorf("ensure visor_version exists :%w", err)
+		return fmt.Errorf("ensure visor_version exists :%w", err)
 	}
 
 	return nil
@@ -128,22 +128,22 @@ func validateDatabaseSchemaVersion(ctx context.Context, db *pg.DB, cfg schemas.C
 	// Check if the version of the schema is compatible
 	dbVersion, initialized, err := getDatabaseSchemaVersion(ctx, db, cfg)
 	if err != nil {
-		return model.Version{}, xerrors.Errorf("get schema version: %w", err)
+		return model.Version{}, fmt.Errorf("get schema version: %w", err)
 	}
 
 	if !initialized {
-		return model.Version{}, xerrors.Errorf("schema not installed in database")
+		return model.Version{}, fmt.Errorf("schema not installed in database")
 	}
 
 	if dbVersion.Before(LatestSchemaVersion()) {
 		// the latest schema version supported by lily (LatestSchemaVersion()) is newer than the schema version in use by the database (`dbVersion`)
 		// running lily this way will cause models data persistence failures.
-		return model.Version{}, xerrors.Errorf("the latest schema version supported by lily (%s) is newer than the schema version in use by the database (%s) running lily this way will cause models data persistence failures: %w", LatestSchemaVersion(), dbVersion, ErrSchemaTooOld)
+		return model.Version{}, fmt.Errorf("the latest schema version supported by lily (%s) is newer than the schema version in use by the database (%s) running lily this way will cause models data persistence failures: %w", LatestSchemaVersion(), dbVersion, ErrSchemaTooOld)
 	}
 	if LatestSchemaVersion().Before(dbVersion) {
 		// the latest schema version supported by lily (LatestSchemaVersion()) is older than the schema version in use by the database (`dbVersion`)
 		// running lily this way will cause undefined behaviour.
-		return model.Version{}, xerrors.Errorf("the latest schema version supported by lily (%s) is older than the schema version in use by the database (%s) running lily this way will cause undefined behaviour: %w", LatestSchemaVersion(), dbVersion, ErrSchemaTooNew)
+		return model.Version{}, fmt.Errorf("the latest schema version supported by lily (%s) is older than the schema version in use by the database (%s) running lily this way will cause undefined behaviour: %w", LatestSchemaVersion(), dbVersion, ErrSchemaTooNew)
 	}
 	return dbVersion, nil
 }
@@ -161,7 +161,7 @@ func latestSchemaVersionForMajor(major int) model.Version {
 	case 1:
 		return v1.Version()
 	default:
-		return model.Version{} //, xerrors.Errorf("unsupported major version: %d", version.Major)
+		return model.Version{} //, fmt.Errorf("unsupported major version: %d", version.Major)
 	}
 }
 
@@ -175,46 +175,46 @@ func (d *Database) MigrateSchema(ctx context.Context) error {
 func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) error {
 	db, err := connect(ctx, d.opt)
 	if err != nil {
-		return xerrors.Errorf("connect: %w", err)
+		return fmt.Errorf("connect: %w", err)
 	}
 	defer db.Close() // nolint: errcheck
 
 	dbVersion, initialized, err := getDatabaseSchemaVersion(ctx, db, d.SchemaConfig())
 	if err != nil {
-		return xerrors.Errorf("get schema versions: %w", err)
+		return fmt.Errorf("get schema versions: %w", err)
 	}
 	log.Infof("current database schema is version %s", dbVersion)
 
 	// Check that we are not trying to migrate to a different major version of an already installed schema
 	if initialized && target.Major != dbVersion.Major {
-		return xerrors.Errorf("cannot migrate to a different major schema version. database version=%s, target version=%s", dbVersion, target)
+		return fmt.Errorf("cannot migrate to a different major schema version. database version=%s, target version=%s", dbVersion, target)
 	}
 
 	latestVersion := latestSchemaVersionForMajor(target.Major)
 	if latestVersion.Patch < target.Patch {
-		return xerrors.Errorf("no migrations found for version %s", target)
+		return fmt.Errorf("no migrations found for version %s", target)
 	}
 
 	if dbVersion == target {
-		return xerrors.Errorf("database schema is already at version %d", dbVersion)
+		return fmt.Errorf("database schema is already at version %d", dbVersion)
 	}
 
 	coll, err := collectionForVersion(target, d.SchemaConfig())
 	if err != nil {
-		return xerrors.Errorf("no schema definition corresponds to version %s: %w", target, err)
+		return fmt.Errorf("no schema definition corresponds to version %s: %w", target, err)
 	}
 
 	if err := checkMigrationSequence(ctx, coll, dbVersion.Patch, target.Patch); err != nil {
-		return xerrors.Errorf("check migration sequence: %w", err)
+		return fmt.Errorf("check migration sequence: %w", err)
 	}
 
 	// Acquire an exclusive lock on the schema so we know no other instances are running
 	if err := SchemaLock.LockExclusive(ctx, db); err != nil {
-		return xerrors.Errorf("acquiring schema lock: %w", err)
+		return fmt.Errorf("acquiring schema lock: %w", err)
 	}
 
 	if err := initDatabaseSchema(ctx, db, d.SchemaConfig()); err != nil {
-		return xerrors.Errorf("initializing schema version tables: %w", err)
+		return fmt.Errorf("initializing schema version tables: %w", err)
 	}
 
 	// Check if we need to create the base schema
@@ -223,11 +223,11 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) er
 
 		base, err := baseForVersion(target, d.SchemaConfig())
 		if err != nil {
-			return xerrors.Errorf("no base schema defined for version %s: %w", target, err)
+			return fmt.Errorf("no base schema defined for version %s: %w", target, err)
 		}
 
 		if _, err := db.Exec(base); err != nil {
-			return xerrors.Errorf("creating base schema: %w", err)
+			return fmt.Errorf("creating base schema: %w", err)
 		}
 
 		dbVersion.Major = target.Major
@@ -247,7 +247,7 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) er
 			log.Warnf("running destructive schema migration from patch %d to patch %d", dbVersion.Patch, dbVersion.Patch-1)
 			_, newDBPatch, err := coll.Run(db, "down")
 			if err != nil {
-				return xerrors.Errorf("run migration: %w", err)
+				return fmt.Errorf("run migration: %w", err)
 			}
 			dbVersion.Patch = int(newDBPatch)
 			log.Infof("current database schema is now version %s", dbVersion)
@@ -259,7 +259,7 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) er
 	log.Infof("running schema migration from version %s to version %s", dbVersion, target)
 	_, newDBPatch, err := coll.Run(db, "up", strconv.Itoa(target.Patch))
 	if err != nil {
-		return xerrors.Errorf("run migration: %w", err)
+		return fmt.Errorf("run migration: %w", err)
 	}
 
 	dbVersion.Patch = int(newDBPatch)
@@ -274,7 +274,7 @@ func checkMigrationSequence(ctx context.Context, coll *migrations.Collection, fr
 	ms := coll.Migrations()
 	for _, m := range ms {
 		if versions[m.Version] {
-			return xerrors.Errorf("duplication migration for schema version %d", m.Version)
+			return fmt.Errorf("duplication migration for schema version %d", m.Version)
 		}
 		versions[m.Version] = true
 	}
@@ -294,7 +294,7 @@ func checkMigrationSequence(ctx context.Context, coll *migrations.Collection, fr
 		}
 
 		if !versions[int64(i)] {
-			return xerrors.Errorf("missing migration for schema version %d", i)
+			return fmt.Errorf("missing migration for schema version %d", i)
 		}
 	}
 
@@ -306,7 +306,7 @@ func collectionForVersion(version model.Version, cfg schemas.Config) (*migration
 	case 1:
 		return v1.GetPatches(cfg)
 	default:
-		return nil, xerrors.Errorf("unsupported major version: %d", version.Major)
+		return nil, fmt.Errorf("unsupported major version: %d", version.Major)
 	}
 }
 
@@ -315,6 +315,6 @@ func baseForVersion(version model.Version, cfg schemas.Config) (string, error) {
 	case 1:
 		return v1.GetBase(cfg)
 	default:
-		return "", xerrors.Errorf("unsupported major version: %d", version.Major)
+		return "", fmt.Errorf("unsupported major version: %d", version.Major)
 	}
 }

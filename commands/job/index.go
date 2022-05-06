@@ -1,6 +1,7 @@
 package job
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/filecoin-project/go-state-types/abi"
@@ -8,7 +9,6 @@ import (
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/ipfs/go-cid"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/commands"
 	"github.com/filecoin-project/lily/lens/lily"
@@ -52,7 +52,7 @@ var IndexTipSetCmd = &cli.Command{
 	Before: func(cctx *cli.Context) error {
 		tsk, err := parseTipSetKey(indexFlags.tsKey)
 		if err != nil {
-			return xerrors.Errorf("failed to parse tipset key: %w", err)
+			return fmt.Errorf("failed to parse tipset key: %w", err)
 		}
 		indexFlags.tipsetKey = tsk
 
@@ -111,7 +111,7 @@ var IndexHeightCmd = &cli.Command{
 		}
 
 		if indexFlags.height != int64(ts.Height()) {
-			return xerrors.Errorf("height (%d) is null round, next non-null round height: %d", indexFlags.height, ts.Height())
+			return fmt.Errorf("height (%d) is null round, next non-null round height: %d", indexFlags.height, ts.Height())
 		}
 		indexFlags.tipsetKey = ts.Key()
 

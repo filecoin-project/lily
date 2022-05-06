@@ -2,11 +2,12 @@ package miner
 
 import (
 	"context"
+	"fmt"
+
 	"go.opentelemetry.io/otel/attribute"
 
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -94,7 +95,7 @@ func (mpi *MinerPreCommitInfo) Persist(ctx context.Context, s model.StorageBatch
 
 	m, ok := mpi.AsVersion(version)
 	if !ok {
-		return xerrors.Errorf("MinerPreCommitInfo not supported for schema version %s", version)
+		return fmt.Errorf("MinerPreCommitInfo not supported for schema version %s", version)
 	}
 
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)

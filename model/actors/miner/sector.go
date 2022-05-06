@@ -2,11 +2,11 @@ package miner
 
 import (
 	"context"
+	"fmt"
 
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -118,7 +118,7 @@ func (msi *MinerSectorInfoV7) Persist(ctx context.Context, s model.StorageBatch,
 
 	m, ok := msi.AsVersion(version)
 	if !ok {
-		return xerrors.Errorf("MinerSectorInfoV7 not supported for schema version %s", version)
+		return fmt.Errorf("MinerSectorInfoV7 not supported for schema version %s", version)
 	}
 
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
@@ -193,7 +193,7 @@ func (msi *MinerSectorInfoV1_6) Persist(ctx context.Context, s model.StorageBatc
 
 	m, ok := msi.AsVersion(version)
 	if !ok {
-		return xerrors.Errorf("MinerSectorInfoV7 not supported for schema version %s", version)
+		return fmt.Errorf("MinerSectorInfoV7 not supported for schema version %s", version)
 	}
 
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)

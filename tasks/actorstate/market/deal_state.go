@@ -2,11 +2,11 @@ package market
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
 	"github.com/filecoin-project/lily/model"
@@ -33,7 +33,7 @@ func (DealStateExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, n
 
 	currDealStates, err := ec.CurrState.States()
 	if err != nil {
-		return nil, xerrors.Errorf("loading current market deal states: %w", err)
+		return nil, fmt.Errorf("loading current market deal states: %w", err)
 	}
 
 	if ec.IsGenesis() {
@@ -49,14 +49,14 @@ func (DealStateExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, n
 			})
 			return nil
 		}); err != nil {
-			return nil, xerrors.Errorf("walking current deal states: %w", err)
+			return nil, fmt.Errorf("walking current deal states: %w", err)
 		}
 		return out, nil
 	}
 
 	changed, err := ec.CurrState.StatesChanged(ec.PrevState)
 	if err != nil {
-		return nil, xerrors.Errorf("checking for deal state changes: %w", err)
+		return nil, fmt.Errorf("checking for deal state changes: %w", err)
 	}
 
 	if !changed {
@@ -65,7 +65,7 @@ func (DealStateExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, n
 
 	changes, err := market.DiffDealStates(ctx, ec.Store, ec.PrevState, ec.CurrState)
 	if err != nil {
-		return nil, xerrors.Errorf("diffing deal states: %w", err)
+		return nil, fmt.Errorf("diffing deal states: %w", err)
 	}
 
 	out := make(marketmodel.MarketDealStates, len(changes.Added)+len(changes.Modified))

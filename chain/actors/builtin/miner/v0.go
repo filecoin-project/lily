@@ -4,6 +4,7 @@ package miner
 import (
 	"bytes"
 	"errors"
+	"fmt"
 
 	"github.com/filecoin-project/go-state-types/big"
 
@@ -15,7 +16,6 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p-core/peer"
 	cbg "github.com/whyrusleeping/cbor-gen"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 
@@ -61,7 +61,7 @@ func (s *state0) SectorsAmtBitwidth() int {
 func (s *state0) AvailableBalance(bal abi.TokenAmount) (available abi.TokenAmount, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = xerrors.Errorf("failed to get available balance: %w", r)
+			err = fmt.Errorf("failed to get available balance: %w", r)
 			available = abi.NewTokenAmount(0)
 		}
 	}()
@@ -196,7 +196,7 @@ func (s *state0) GetSectorExpiration(num abi.SectorNumber) (*SectorExpiration, e
 		return nil, err
 	}
 	if out.Early == 0 && out.OnTime == 0 {
-		return nil, xerrors.Errorf("failed to find sector %d", num)
+		return nil, fmt.Errorf("failed to find sector %d", num)
 	}
 	return &out, nil
 }
