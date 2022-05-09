@@ -11,7 +11,6 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/distributed"
 	"github.com/filecoin-project/lily/chain/indexer/distributed/queue/tasks"
-	"github.com/filecoin-project/lily/config"
 )
 
 var _ distributed.Queue = (*AsynQ)(nil)
@@ -20,17 +19,8 @@ type AsynQ struct {
 	c *asynq.Client
 }
 
-func NewAsynq(cfg config.AsynqRedisConfig) *AsynQ {
-	asynqClient := asynq.NewClient(asynq.RedisClientOpt{
-		Network:  cfg.Network,
-		Addr:     cfg.Addr,
-		Username: cfg.Username,
-		Password: cfg.Password,
-		DB:       cfg.DB,
-		PoolSize: cfg.PoolSize,
-	})
-
-	return &AsynQ{c: asynqClient}
+func NewAsynq(client *asynq.Client) *AsynQ {
+	return &AsynQ{c: client}
 }
 
 func (r *AsynQ) EnqueueTipSet(ctx context.Context, ts *types.TipSet, indexType indexer.IndexerType, taskNames ...string) error {

@@ -21,7 +21,8 @@ const (
 )
 
 type GapFillTipSetPayload struct {
-	TipSet       *types.TipSet
+	TipSet *types.TipSet
+	// TODO include the height of the tipset here to correctly mark the epoch as gap filled cuz Null rounds
 	Tasks        []string
 	TraceCarrier *tracing.TraceCarrier `json:",omitempty"`
 }

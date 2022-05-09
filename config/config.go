@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/filecoin-project/lotus/node/config"
+	"github.com/hibiken/asynq"
 	logging "github.com/ipfs/go-log/v2"
+
+	"github.com/filecoin-project/lily/chain/indexer"
 )
 
 var log = logging.Logger("lily/config")
@@ -44,27 +48,109 @@ type FileStorageConf struct {
 }
 
 type QueueConfig struct {
-	Asynq map[string]AsynqRedisConfig
+	Workers   map[string]AsynqWorkerConfig
+	Notifiers map[string]RedisConfig
 }
 
-type AsynqRedisConfig struct {
+type AsynqWorkerConfig struct {
+	RedisConfig  RedisConfig
+	WorkerConfig WorkerConfig
+}
+
+type RedisConfig struct {
 	// Network type to use, either tcp or unix.
 	// Default is tcp.
 	Network string
+
 	// Redis server address in "host:port" format.
 	Addr string
+
 	// Username to authenticate the current connection when Redis ACLs are used.
 	// See: https://redis.io/commands/auth.
 	Username string
+
 	// Password to authenticate the current connection.
 	// See: https://redis.io/commands/auth.
-	Password string
+	Password    string
+	PasswordEnv string
+
 	// Redis DB to select after connecting to a server.
 	// See: https://redis.io/commands/select.
 	DB int
+
 	// Maximum number of socket connections.
 	// Default is 10 connections per every CPU as reported by runtime.NumCPU.
 	PoolSize int
+}
+
+type WorkerConfig struct {
+	// Maximum number of concurrent processing of tasks.
+	//
+	// If set to a zero or negative value, NewServer will overwrite the value
+	// to the number of CPUs usable by the current process.
+	Concurrency int
+
+	// LogLevel specifies the minimum log level to enable.
+	//
+	// If unset, InfoLevel is used by default.
+	LoggerLevel string
+
+	// Priority is treated as follows to avoid starving low priority queues.
+	//
+	// Example:
+	//
+	//	 WatchQueuePriority: 	5
+	//	 FillQueuePriority:		3
+	//	 IndexQueuePriority:	1
+	//	 WalkQueuePriority: 	1
+	//
+	// With the above config and given that all queues are not empty, the tasks
+	// in "watch", "fill", "index", "walk" should be processed 50%, 30%, 10%, 10% of
+	// the time respectively.
+	WatchQueuePriority int
+	FillQueuePriority  int
+	IndexQueuePriority int
+	WalkQueuePriority  int
+
+	// StrictPriority indicates whether the queue priority should be treated strictly.
+	//
+	// If set to true, tasks in the queue with the highest priority is processed first.
+	// The tasks in lower priority queues are processed only when those queues with
+	// higher priorities are empty.
+	StrictPriority bool
+
+	// ShutdownTimeout specifies the duration to wait to let workers finish their tasks
+	// before forcing them to abort when stopping the server.
+	//
+	// If unset or zero, default timeout of 8 seconds is used.
+	ShutdownTimeout time.Duration
+}
+
+func (q WorkerConfig) Queues() map[string]int {
+	return map[string]int{
+		indexer.Watch.String(): q.WatchQueuePriority,
+		indexer.Fill.String():  q.FillQueuePriority,
+		indexer.Index.String(): q.IndexQueuePriority,
+		indexer.Walk.String():  q.WalkQueuePriority,
+	}
+}
+
+func (q WorkerConfig) LogLevel() asynq.LogLevel {
+	switch strings.ToLower(q.LoggerLevel) {
+	case "debug":
+		return asynq.DebugLevel
+	case "info":
+		return asynq.InfoLevel
+	case "warn":
+		return asynq.WarnLevel
+	case "error":
+		return asynq.ErrorLevel
+	case "fatal":
+		return asynq.FatalLevel
+	default:
+		log.Warnf("invalid log level given (%s) defaulting to level 'INFO'", q.LoggerLevel)
+		return asynq.InfoLevel
+	}
 }
 
 func DefaultConf() *Conf {
@@ -133,14 +219,38 @@ func SampleConf() *Conf {
 		},
 	}
 	cfg.Queue = QueueConfig{
-		Asynq: map[string]AsynqRedisConfig{
-			"Asynq1": {
-				Network:  "tcp",
-				Addr:     "127.0.0.1:6379",
-				Username: "",
-				Password: "",
-				DB:       0,
-				PoolSize: 0,
+		Workers: map[string]AsynqWorkerConfig{
+			"Worker1": {
+				RedisConfig: RedisConfig{
+					Network:     "tcp",
+					Addr:        "127.0.0.1:6379",
+					Username:    "",
+					Password:    "",
+					PasswordEnv: "LILY_ASYNQ_REDIS_PASSWORD",
+					DB:          0,
+					PoolSize:    0,
+				},
+				WorkerConfig: WorkerConfig{
+					Concurrency:        1,
+					LoggerLevel:        "debug",
+					WatchQueuePriority: 5,
+					FillQueuePriority:  3,
+					IndexQueuePriority: 1,
+					WalkQueuePriority:  1,
+					StrictPriority:     false,
+					ShutdownTimeout:    time.Second * 30,
+				},
+			},
+		},
+		Notifiers: map[string]RedisConfig{
+			"Notifier1": {
+				Network:     "tcp",
+				Addr:        "127.0.0.1:6379",
+				Username:    "",
+				Password:    "",
+				PasswordEnv: "LILY_ASYNQ_REDIS_PASSWORD",
+				DB:          0,
+				PoolSize:    0,
 			},
 		},
 	}
@@ -161,7 +271,7 @@ func EnsureExists(path string) error {
 		return err
 	}
 
-	comm, err := config.ConfigComment(SampleConf())
+	comm, err := config.ConfigUpdate(SampleConf(), nil, false)
 	if err != nil {
 		return fmt.Errorf("comment: %w", err)
 	}
