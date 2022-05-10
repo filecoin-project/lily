@@ -3,6 +3,7 @@ package market
 import (
 	"context"
 	"fmt"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/filecoin-project/lotus/chain/types"
@@ -61,8 +62,11 @@ func (m *MarketStateExtractionContext) IsGenesis() bool {
 	return m.CurrTs.Height() == 0
 }
 
-// SanitizeLabel ensures that s is a valid utf8 string by replacing any ill formed bytes with a replacement character.
+// SanitizeLabel ensures:
+// - s is a valid utf8 string by removing any ill formed bytes.
+// - s does not contain any nil (\x00) bytes because postgres doesn't support storing NULL (\0x00) characters in text fields.
 func SanitizeLabel(s string) string {
+	s = strings.Replace(s, "\000", "", -1)
 	if utf8.ValidString(s) {
 		return s
 	}
