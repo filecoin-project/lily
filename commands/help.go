@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
@@ -16,7 +17,7 @@ var HelpModelsListCmd = &cli.Command{
 		t.AppendHeader(table.Row{"Model", "Description"})
 		for _, m := range tasktype.AllTableTasks {
 			comment := tasktype.TableComment[m]
-			t.AppendRow(table.Row{m, comment})
+			t.AppendRow(table.Row{m, text.WrapSoft(comment, 80)})
 			t.AppendSeparator()
 		}
 		fmt.Println(t.Render())
