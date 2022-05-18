@@ -7,7 +7,6 @@ import (
 	"os"
 
 	logging "github.com/ipfs/go-log/v2"
-	"golang.org/x/xerrors"
 
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/trace"
@@ -115,12 +114,12 @@ func (c *Catalog) Worker(name string) (*asynq.Server, error) {
 // *asynq.Client doesn't exist for `name`.
 func (c *Catalog) Notifier(name string) (*asynq.Client, error) {
 	if name == "" {
-		return nil, xerrors.Errorf("client config name required")
+		return nil, fmt.Errorf("client config name required")
 	}
 
 	client, exists := c.clients[name]
 	if !exists {
-		return nil, xerrors.Errorf("unknown client: %q", name)
+		return nil, fmt.Errorf("unknown client: %q", name)
 	}
 	return client, nil
 }
