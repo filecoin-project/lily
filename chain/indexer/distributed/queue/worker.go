@@ -6,18 +6,19 @@ import (
 	"github.com/hibiken/asynq"
 
 	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/distributed"
 	"github.com/filecoin-project/lily/chain/indexer/distributed/queue/tasks"
 	"github.com/filecoin-project/lily/storage"
 )
 
 type AsynqWorker struct {
 	done   chan struct{}
-	server *asynq.Server
+	server *distributed.TipSetWorker
 	index  indexer.Indexer
 	db     *storage.Database
 }
 
-func NewAsynqWorker(i indexer.Indexer, db *storage.Database, server *asynq.Server) *AsynqWorker {
+func NewAsynqWorker(i indexer.Indexer, db *storage.Database, server *distributed.TipSetWorker) *AsynqWorker {
 	return &AsynqWorker{
 		server: server,
 		index:  i,
@@ -33,11 +34,16 @@ func (t *AsynqWorker) Run(ctx context.Context) error {
 	mux.HandleFunc(tasks.TypeIndexTipSet, tasks.NewIndexHandler(t.index).HandleIndexTipSetTask)
 	mux.HandleFunc(tasks.TypeGapFillTipSet, tasks.NewGapFillHandler(t.index, t.db).HandleGapFillTipSetTask)
 
+	if err := t.server.Run(mux); err != nil {
+		return err
+	}
+
 	go func() {
 		<-ctx.Done()
 		t.server.Shutdown()
 	}()
-	return t.server.Run(mux)
+
+	return nil
 }
 
 func (t *AsynqWorker) Done() <-chan struct{} {

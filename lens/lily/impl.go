@@ -90,6 +90,10 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 		return nil, err
 	}
 
+	if worker.Running() {
+		return nil, fmt.Errorf("worker %s already running", cfg.Queue)
+	}
+
 	taskAPI, err := datasource.NewDataSource(m)
 	if err != nil {
 		return nil, err

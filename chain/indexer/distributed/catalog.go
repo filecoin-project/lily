@@ -7,6 +7,7 @@ import (
 	"os"
 
 	logging "github.com/ipfs/go-log/v2"
+	"go.uber.org/atomic"
 
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/trace"
@@ -21,7 +22,7 @@ var log = logging.Logger("lily/distributed")
 // config.QueueConfig contains a duplicate queue name.
 func NewCatalog(cfg config.QueueConfig) (*Catalog, error) {
 	c := &Catalog{
-		servers: map[string]*asynq.Server{},
+		servers: map[string]*TipSetWorker{},
 		clients: map[string]*asynq.Client{},
 	}
 
@@ -40,26 +41,30 @@ func NewCatalog(cfg config.QueueConfig) (*Catalog, error) {
 			queuePassword = sc.RedisConfig.Password
 		}
 
-		c.servers[name] = asynq.NewServer(
-			asynq.RedisClientOpt{
-				Network:  sc.RedisConfig.Network,
-				Addr:     sc.RedisConfig.Addr,
-				Username: sc.RedisConfig.Username,
-				Password: queuePassword,
-				DB:       sc.RedisConfig.DB,
-				PoolSize: sc.RedisConfig.PoolSize,
-			},
-			asynq.Config{
-				LogLevel:        sc.WorkerConfig.LogLevel(),
-				Queues:          sc.WorkerConfig.Queues(),
-				ShutdownTimeout: sc.WorkerConfig.ShutdownTimeout,
-				Concurrency:     sc.WorkerConfig.Concurrency,
-				StrictPriority:  sc.WorkerConfig.StrictPriority,
-				Logger:          logging.Logger(fmt.Sprintf("lily/queue/%s", name)),
-				ErrorHandler:    &QueueErrorHandler{},
-			},
-		)
+		c.servers[name] = &TipSetWorker{
+			server: asynq.NewServer(
+				asynq.RedisClientOpt{
+					Network:  sc.RedisConfig.Network,
+					Addr:     sc.RedisConfig.Addr,
+					Username: sc.RedisConfig.Username,
+					Password: queuePassword,
+					DB:       sc.RedisConfig.DB,
+					PoolSize: sc.RedisConfig.PoolSize,
+				},
+				asynq.Config{
+					LogLevel:        sc.WorkerConfig.LogLevel(),
+					Queues:          sc.WorkerConfig.Queues(),
+					ShutdownTimeout: sc.WorkerConfig.ShutdownTimeout,
+					Concurrency:     sc.WorkerConfig.Concurrency,
+					StrictPriority:  sc.WorkerConfig.StrictPriority,
+					Logger:          log.With("worker", name),
+					ErrorHandler:    &QueueErrorHandler{},
+				},
+			),
+			running: atomic.NewBool(false),
+		}
 	}
+
 	for name, cc := range cfg.Notifiers {
 		if _, exists := c.servers[name]; exists {
 			return nil, fmt.Errorf("duplicate queue name: %q", name)
@@ -89,16 +94,37 @@ func NewCatalog(cfg config.QueueConfig) (*Catalog, error) {
 	return c, nil
 }
 
+type TipSetWorker struct {
+	server  *asynq.Server
+	running *atomic.Bool
+}
+
+func (w *TipSetWorker) Running() bool {
+	return w.running.Load()
+}
+
+func (w *TipSetWorker) Run(mux *asynq.ServeMux) error {
+	if w.running.Load() {
+		return fmt.Errorf("server already running")
+	}
+	w.running.Swap(true)
+	return w.server.Run(mux)
+}
+
+func (w *TipSetWorker) Shutdown() {
+	w.server.Shutdown()
+}
+
 // Catalog contains a map of workers and clients
 // Catalog is used to configure the distributed indexer.
 type Catalog struct {
-	servers map[string]*asynq.Server
+	servers map[string]*TipSetWorker
 	clients map[string]*asynq.Client
 }
 
 // Worker returns a runnable *asynq.Server by `name`. An error is returned if name is empty or if a
 // *asynq.Server doesn't exist for `name`.
-func (c *Catalog) Worker(name string) (*asynq.Server, error) {
+func (c *Catalog) Worker(name string) (*TipSetWorker, error) {
 	if name == "" {
 		return nil, fmt.Errorf("server config name required")
 	}
