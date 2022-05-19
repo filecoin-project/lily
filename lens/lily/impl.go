@@ -85,9 +85,13 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 		return nil, err
 	}
 
-	qcfg, err := m.QueueCatalog.AsynqConfig(cfg.Queue)
+	worker, err := m.QueueCatalog.Worker(cfg.Queue)
 	if err != nil {
 		return nil, err
+	}
+
+	if worker.Running() {
+		return nil, fmt.Errorf("worker %s already running", cfg.Queue)
 	}
 
 	taskAPI, err := datasource.NewDataSource(m)
@@ -113,7 +117,7 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 			"storage":     cfg.JobConfig.Storage,
 			"concurrency": strconv.Itoa(cfg.Concurrency),
 		},
-		Job:                 queue.NewAsynqWorker(im, db, cfg.JobConfig.Name, 1, qcfg),
+		Job:                 queue.NewAsynqWorker(im, db, worker),
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,
@@ -159,7 +163,7 @@ func (m *LilyNodeAPI) LilyIndexNotify(_ context.Context, cfg *LilyIndexNotifyCon
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
 
-	qcfg, err := m.QueueCatalog.AsynqConfig(cfg.Queue)
+	notifier, err := m.QueueCatalog.Notifier(cfg.Queue)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +173,7 @@ func (m *LilyNodeAPI) LilyIndexNotify(_ context.Context, cfg *LilyIndexNotifyCon
 		return nil, err
 	}
 
-	idx := distributed.NewTipSetIndexer(queue.NewAsynq(qcfg))
+	idx := distributed.NewTipSetIndexer(queue.NewAsynq(notifier))
 
 	return idx.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Index), indexer.WithTasks(cfg.IndexConfig.JobConfig.Tasks))
 }
@@ -242,11 +246,11 @@ func (m *LilyNodeAPI) LilyWatchNotify(_ context.Context, cfg *LilyWatchNotifyCon
 		ChainModuleAPI: m.ChainModuleAPI,
 	}
 
-	qcfg, err := m.QueueCatalog.AsynqConfig(cfg.Queue)
+	notifier, err := m.QueueCatalog.Notifier(cfg.Queue)
 	if err != nil {
 		return nil, err
 	}
-	idx := distributed.NewTipSetIndexer(queue.NewAsynq(qcfg))
+	idx := distributed.NewTipSetIndexer(queue.NewAsynq(notifier))
 
 	watchJob := watch.NewWatcher(wapi, idx, cfg.JobConfig.Name,
 		watch.WithTasks(cfg.JobConfig.Tasks...),
@@ -317,11 +321,11 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 }
 
 func (m *LilyNodeAPI) LilyWalkNotify(_ context.Context, cfg *LilyWalkNotifyConfig) (*schedule.JobSubmitResult, error) {
-	qcfg, err := m.QueueCatalog.AsynqConfig(cfg.Queue)
+	notifier, err := m.QueueCatalog.Notifier(cfg.Queue)
 	if err != nil {
 		return nil, err
 	}
-	idx := distributed.NewTipSetIndexer(queue.NewAsynq(qcfg))
+	idx := distributed.NewTipSetIndexer(queue.NewAsynq(notifier))
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
 		Name: cfg.WalkConfig.JobConfig.Name,
@@ -413,7 +417,7 @@ func (m *LilyNodeAPI) LilyGapFillNotify(_ context.Context, cfg *LilyGapFillNotif
 		JobName: cfg.GapFillConfig.JobConfig.Name,
 	}
 
-	qcfg, err := m.QueueCatalog.AsynqConfig(cfg.Queue)
+	notifier, err := m.QueueCatalog.Notifier(cfg.Queue)
 	if err != nil {
 		return nil, err
 	}
@@ -433,7 +437,7 @@ func (m *LilyNodeAPI) LilyGapFillNotify(_ context.Context, cfg *LilyGapFillNotif
 			"queue":     cfg.Queue,
 		},
 		Tasks:               cfg.GapFillConfig.JobConfig.Tasks,
-		Job:                 gap.NewNotifier(m, db, queue.NewAsynq(qcfg), cfg.GapFillConfig.JobConfig.Name, cfg.GapFillConfig.From, cfg.GapFillConfig.To, cfg.GapFillConfig.JobConfig.Tasks),
+		Job:                 gap.NewNotifier(m, db, queue.NewAsynq(notifier), cfg.GapFillConfig.JobConfig.Name, cfg.GapFillConfig.From, cfg.GapFillConfig.To, cfg.GapFillConfig.JobConfig.Tasks),
 		RestartOnFailure:    cfg.GapFillConfig.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.GapFillConfig.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.GapFillConfig.JobConfig.RestartDelay,
