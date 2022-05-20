@@ -143,10 +143,6 @@ type LilyTipSetWorkerConfig struct {
 
 	// Queue is the name of the queueing system the worker will consume work from.
 	Queue string
-	// Concurrency sets the maximum number of concurrent processing of tasks.
-	// If set to a zero or negative value, NewServer will overwrite the value
-	// to the number of CPUs usable by the current process.
-	Concurrency int
 }
 
 type LilySurveyConfig struct {
