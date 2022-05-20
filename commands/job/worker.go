@@ -11,20 +11,13 @@ import (
 )
 
 var tipsetWorkerFlags struct {
-	queue       string
-	concurrency int
+	queue string
 }
 
 var TipSetWorkerCmd = &cli.Command{
 	Name:  "tipset-worker",
 	Usage: "start a tipset-worker that consumes tasks from the provided queuing system and performs indexing",
 	Flags: []cli.Flag{
-		&cli.IntFlag{
-			Name:        "concurrency",
-			Usage:       "Concurrency sets the maximum number of concurrent processing of tasks. If set to a zero or negative value it will be set to the number of CPUs usable by the current process.",
-			Value:       1,
-			Destination: &tipsetWorkerFlags.concurrency,
-		},
 		&cli.StringFlag{
 			Name:        "queue",
 			Usage:       "Name of queue system worker will consume work from.",
@@ -43,9 +36,8 @@ var TipSetWorkerCmd = &cli.Command{
 		defer closer()
 
 		res, err := api.StartTipSetWorker(ctx, &lily.LilyTipSetWorkerConfig{
-			JobConfig:   RunFlags.ParseJobConfig("tipset-worker"),
-			Queue:       tipsetWorkerFlags.queue,
-			Concurrency: tipsetWorkerFlags.concurrency,
+			JobConfig: RunFlags.ParseJobConfig("tipset-worker"),
+			Queue:     tipsetWorkerFlags.queue,
 		})
 		if err != nil {
 			return err

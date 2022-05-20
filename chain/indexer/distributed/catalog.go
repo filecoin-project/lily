@@ -1,18 +1,12 @@
 package distributed
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 
-	logging "github.com/ipfs/go-log/v2"
-	"go.uber.org/atomic"
-
 	"github.com/hibiken/asynq"
-	"go.opentelemetry.io/otel/trace"
+	logging "github.com/ipfs/go-log/v2"
 
-	"github.com/filecoin-project/lily/chain/indexer/distributed/queue/tasks"
 	"github.com/filecoin-project/lily/config"
 )
 
@@ -30,7 +24,7 @@ func NewCatalog(cfg config.QueueConfig) (*Catalog, error) {
 		if _, exists := c.servers[name]; exists {
 			return nil, fmt.Errorf("duplicate queue name: %q", name)
 		}
-		log.Infow("registering worker queue config", "name", name, "type", "redis")
+		log.Infow("registering worker queue config", "name", name, "type", "redis", "addr", sc.RedisConfig.Addr)
 
 		// Find the password of the queue, which is either indirectly specified using PasswordEnv or explicit via Password.
 		// TODO use github.com/kelseyhightower/envconfig
@@ -42,26 +36,21 @@ func NewCatalog(cfg config.QueueConfig) (*Catalog, error) {
 		}
 
 		c.servers[name] = &TipSetWorker{
-			server: asynq.NewServer(
-				asynq.RedisClientOpt{
-					Network:  sc.RedisConfig.Network,
-					Addr:     sc.RedisConfig.Addr,
-					Username: sc.RedisConfig.Username,
-					Password: queuePassword,
-					DB:       sc.RedisConfig.DB,
-					PoolSize: sc.RedisConfig.PoolSize,
-				},
-				asynq.Config{
-					LogLevel:        sc.WorkerConfig.LogLevel(),
-					Queues:          sc.WorkerConfig.Queues(),
-					ShutdownTimeout: sc.WorkerConfig.ShutdownTimeout,
-					Concurrency:     sc.WorkerConfig.Concurrency,
-					StrictPriority:  sc.WorkerConfig.StrictPriority,
-					Logger:          log.With("worker", name),
-					ErrorHandler:    &QueueErrorHandler{},
-				},
-			),
-			running: atomic.NewBool(false),
+			RedisConfig: asynq.RedisClientOpt{
+				Network:  sc.RedisConfig.Network,
+				Addr:     sc.RedisConfig.Addr,
+				Username: sc.RedisConfig.Username,
+				Password: queuePassword,
+				DB:       sc.RedisConfig.DB,
+				PoolSize: sc.RedisConfig.PoolSize,
+			},
+			ServerConfig: asynq.Config{
+				LogLevel:        sc.WorkerConfig.LogLevel(),
+				Queues:          sc.WorkerConfig.Queues(),
+				ShutdownTimeout: sc.WorkerConfig.ShutdownTimeout,
+				Concurrency:     sc.WorkerConfig.Concurrency,
+				StrictPriority:  sc.WorkerConfig.StrictPriority,
+			},
 		}
 	}
 
@@ -69,7 +58,7 @@ func NewCatalog(cfg config.QueueConfig) (*Catalog, error) {
 		if _, exists := c.servers[name]; exists {
 			return nil, fmt.Errorf("duplicate queue name: %q", name)
 		}
-		log.Infow("registering notifier queue config", "name", name, "type", "redis")
+		log.Infow("registering notifier queue config", "name", name, "type", "redis", "addr", cc.Addr)
 
 		// Find the password of the queue, which is either indirectly specified using PasswordEnv or explicit via Password.
 		// TODO use github.com/kelseyhightower/envconfig
@@ -95,24 +84,8 @@ func NewCatalog(cfg config.QueueConfig) (*Catalog, error) {
 }
 
 type TipSetWorker struct {
-	server  *asynq.Server
-	running *atomic.Bool
-}
-
-func (w *TipSetWorker) Running() bool {
-	return w.running.Load()
-}
-
-func (w *TipSetWorker) Run(mux *asynq.ServeMux) error {
-	if w.running.Load() {
-		return fmt.Errorf("server already running")
-	}
-	w.running.Swap(true)
-	return w.server.Run(mux)
-}
-
-func (w *TipSetWorker) Shutdown() {
-	w.server.Shutdown()
+	RedisConfig  asynq.RedisClientOpt
+	ServerConfig asynq.Config
 }
 
 // Catalog contains a map of workers and clients
@@ -148,35 +121,4 @@ func (c *Catalog) Notifier(name string) (*asynq.Client, error) {
 		return nil, fmt.Errorf("unknown client: %q", name)
 	}
 	return client, nil
-}
-
-type QueueErrorHandler struct{}
-
-func (w *QueueErrorHandler) HandleError(ctx context.Context, task *asynq.Task, err error) {
-	switch task.Type() {
-	case tasks.TypeIndexTipSet:
-		var p tasks.IndexTipSetPayload
-		if err := json.Unmarshal(task.Payload(), &p); err != nil {
-			log.Errorw("failed to decode task type (developer error?)", "error", err)
-		}
-		if p.HasTraceCarrier() {
-			if sc := p.TraceCarrier.AsSpanContext(); sc.IsValid() {
-				ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
-				trace.SpanFromContext(ctx).RecordError(err)
-			}
-		}
-		log.Errorw("task failed", "type", task.Type(), "tipset", p.TipSet.Key().String(), "height", p.TipSet.Height(), "tasks", p.Tasks, "error", err)
-	case tasks.TypeGapFillTipSet:
-		var p tasks.GapFillTipSetPayload
-		if err := json.Unmarshal(task.Payload(), &p); err != nil {
-			log.Errorw("failed to decode task type (developer error?)", "error", err)
-		}
-		if p.HasTraceCarrier() {
-			if sc := p.TraceCarrier.AsSpanContext(); sc.IsValid() {
-				ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
-				trace.SpanFromContext(ctx).RecordError(err)
-			}
-		}
-		log.Errorw("task failed", "type", task.Type(), "tipset", p.TipSet.Key().String(), "height", p.TipSet.Height(), "tasks", p.Tasks, "error", err)
-	}
 }

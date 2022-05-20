@@ -90,10 +90,6 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 		return nil, err
 	}
 
-	if worker.Running() {
-		return nil, fmt.Errorf("worker %s already running", cfg.Queue)
-	}
-
 	taskAPI, err := datasource.NewDataSource(m)
 	if err != nil {
 		return nil, err
@@ -113,11 +109,10 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 		Name: cfg.JobConfig.Name,
 		Type: "tipset-worker",
 		Params: map[string]string{
-			"queue":       cfg.Queue,
-			"storage":     cfg.JobConfig.Storage,
-			"concurrency": strconv.Itoa(cfg.Concurrency),
+			"queue":   cfg.Queue,
+			"storage": cfg.JobConfig.Storage,
 		},
-		Job:                 queue.NewAsynqWorker(im, db, worker),
+		Job:                 queue.NewAsynqWorker(cfg.JobConfig.Name, im, db, worker),
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,
