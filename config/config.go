@@ -306,8 +306,7 @@ func FromFile(path string) (*Conf, error) {
 // FromReader loads config from a reader instance.
 func FromReader(reader io.Reader, def *Conf) (*Conf, error) {
 	cfg := *def
-	_, err := toml.DecodeReader(reader, &cfg)
-	if err != nil {
+	if _, err := toml.NewDecoder(reader).Decode(&cfg); err != nil {
 		return nil, err
 	}
 
