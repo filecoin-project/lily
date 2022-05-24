@@ -5,6 +5,40 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.10.0"></a>
+## [v0.10.0] - 2022-05-23
+
+### Feat
+
+- Distributed Worker Pattern (#929)
+  - Implementation of pattern described in [Distributed Lily Worker Pattern Doc](https://www.notion.so/pl-strflt/Distributed-Lily-Worker-Pattern-bbf101e392144e4184fae1ef7074ee02)
+  - Modifies Lily to distribute tipset indexing across a pool of lily nodes using a redis queue. Lily may now run as a tipset-worker or a notifier
+    - Notifier
+      - Lily will add tipsets for indexing to a redis queue, walk, watch, fill, and index jobs may be used to notify the queue of tipsets to index.
+    - Tipset-Worker
+      - Lily will consume tipsets from a redis queue and index their state.
+- Improved Job CLI (#944)
+  - All jobs: `watch`, `walk`, `index`, `find`, `fill`, and `survey` are now under the `job run` command.
+  - Improved documentation describing how to run each type of job and the work it performs.
+  - Extend `watch`, `walk`, `index` and `fill` jobs with a sub-command `notify` which causes the corresponding job to notify configured redis queue of work to process.
+- Parallel HAMT Diffing (#952)
+  - Allows HAMTs to be diffed in parallel with a configurable number of goroutines, improving indexing performance.
+- Parallel AMT Diffing (#953)
+  - Allows AMTs to be diffed in parallel with a configurable number of goroutines, improving indexing performance.
+
+### Fix
+- Include parsed_message task in alias (#951)
+  - includes the `parsed_message` task in the `messages` task alias. 
+- Update urfave/cli to the latest version (#965)
+  - fixes #964 ensuring task names are properly parsed on the CLI.
+- Remove null characters from market_deal_proposal label field (#957)
+  - fixes #930 by preventing invalid data from being written to CSV files for the market_deal_proposal model
+
+### Chore
+- Adjust help models-list width (#959)
+- Update to lotus@v1.15.2 by (#954)
+
+
 <a name="v0.9.0"></a>
 ## [v0.9.0] - 2022-04-21
 
