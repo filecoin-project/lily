@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -16,7 +17,17 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/urfave/cli/v2"
 
+	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/chain/actors/builtin/account"
+	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
+	"github.com/filecoin-project/lily/chain/actors/builtin/market"
+	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
+	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
+	"github.com/filecoin-project/lily/chain/actors/builtin/power"
+	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
+	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/lens/lily"
+	"github.com/filecoin-project/lily/lens/util"
 )
 
 var ChainCmd = &cli.Command{
@@ -30,6 +41,63 @@ var ChainCmd = &cli.Command{
 		ChainGetMsgCmd,
 		ChainListCmd,
 		ChainSetHeadCmd,
+		ChainParseMessageParams,
+		ChainListActorCodeNames,
+	},
+}
+
+var ChainListActorCodeNames = &cli.Command{
+	Name: "list-actor-codes",
+	Action: func(cctx *cli.Context) error {
+		// build full actor code list
+		allActorCodes := []cid.Cid{}
+		allActorCodes = append(allActorCodes, multisig.AllCodes()...)
+		allActorCodes = append(allActorCodes, miner.AllCodes()...)
+		allActorCodes = append(allActorCodes, account.AllCodes()...)
+		allActorCodes = append(allActorCodes, power.AllCodes()...)
+		allActorCodes = append(allActorCodes, verifreg.AllCodes()...)
+		allActorCodes = append(allActorCodes, reward.AllCodes()...)
+		allActorCodes = append(allActorCodes, market.AllCodes()...)
+		allActorCodes = append(allActorCodes, init_.AllCodes()...)
+
+		for _, actorCode := range allActorCodes {
+			fmt.Printf("Name\t%s\tCode:\t%s\n", builtin.ActorNameByCode(actorCode), actorCode.String())
+			fmt.Println()
+		}
+		return nil
+	},
+}
+
+var ChainParseMessageParams = &cli.Command{
+	Name: "parse-msg-params",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name: "hex-params",
+		},
+		&cli.StringFlag{
+			Name: "actor-code",
+		},
+		&cli.Int64Flag{
+			Name: "method-number",
+		},
+	},
+	Action: func(cctx *cli.Context) error {
+		actorCid, err := cid.Decode(cctx.String("actor-code"))
+		if err != nil {
+			return err
+		}
+		params := make([]byte, hex.DecodedLen(len(cctx.String("hex-params"))))
+		_, err = hex.Decode(params, []byte(cctx.String("hex-params")))
+		if err != nil {
+			return err
+		}
+
+		parsed, _, err := util.ParseParams(params, abi.MethodNum(cctx.Int64("method-number")), actorCid)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%+v\n", parsed)
+		return nil
 	},
 }
 
