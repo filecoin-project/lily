@@ -455,9 +455,8 @@ func (m *LilyNodeAPI) LilyJobStop(_ context.Context, ID schedule.JobID) error {
 	return nil
 }
 
-// TODO pass context to fix wait
 func (m *LilyNodeAPI) LilyJobWait(ctx context.Context, ID schedule.JobID) (*schedule.JobListResult, error) {
-	res, err := m.Scheduler.WaitJob(ID)
+	res, err := m.Scheduler.WaitJob(ctx, ID)
 	if err != nil {
 		return nil, err
 	}
