@@ -285,14 +285,20 @@ func (s *Scheduler) StopJob(id JobID) error {
 	return nil
 }
 
-func (s *Scheduler) WaitJob(id JobID) (*JobListResult, error) {
+func (s *Scheduler) WaitJob(ctx context.Context, id JobID) (*JobListResult, error) {
 	job, err := s.getJob(id)
 	if err != nil {
 		return nil, fmt.Errorf("wait job: %w", err)
 	}
 
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-job.Job.Done():
+		break
+
+	}
 	// wait on the job to complete
-	<-job.Job.Done()
 
 	// fetch the job to get the latest results (EndedAt and Running will have changed)
 	job, err = s.getJob(id)
