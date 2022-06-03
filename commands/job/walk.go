@@ -1,11 +1,13 @@
 package job
 
 import (
+	"fmt"
 	"os"
 
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
 
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/commands"
 	"github.com/filecoin-project/lily/lens/lily"
 )
@@ -30,6 +32,14 @@ The status of each epoch and its set of tasks can be observed in the visor_proce
 		WalkNotifyCmd,
 	},
 	Before: func(cctx *cli.Context) error {
+		tasks := RunFlags.Tasks.Value()
+		for _, taskName := range tasks {
+			if _, found := tasktype.TaskLookup[taskName]; found {
+			} else if _, found := tasktype.TableLookup[taskName]; found {
+			} else {
+				return fmt.Errorf("unknown task: %s", taskName)
+			}
+		}
 		return rangeFlags.validate()
 	},
 	Action: func(cctx *cli.Context) error {

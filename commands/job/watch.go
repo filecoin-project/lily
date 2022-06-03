@@ -1,11 +1,13 @@
 package job
 
 import (
+	"fmt"
 	"os"
 
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
 
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/commands"
 	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lily/schedule"
@@ -85,6 +87,17 @@ watches the chain head and only indexes a tipset after observing 10 subsequent t
 		WatchConfidenceFlag,
 		WatchWorkersFlag,
 		WatchBufferSizeFlag,
+	},
+	Before: func(cctx *cli.Context) error {
+		tasks := RunFlags.Tasks.Value()
+		for _, taskName := range tasks {
+			if _, found := tasktype.TaskLookup[taskName]; found {
+			} else if _, found := tasktype.TableLookup[taskName]; found {
+			} else {
+				return fmt.Errorf("unknown task: %s", taskName)
+			}
+		}
+		return nil
 	},
 	Subcommands: []*cli.Command{
 		WatchNotifyCmd,

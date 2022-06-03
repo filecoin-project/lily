@@ -1,6 +1,7 @@
 package job
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 
 	"github.com/filecoin-project/lily/commands"
 	"github.com/filecoin-project/lily/lens/lily"
+	"github.com/filecoin-project/lily/network"
 )
 
 var surveyFlags struct {
@@ -28,6 +30,16 @@ var SurveyCmd = &cli.Command{
 			Value:       10 * time.Minute,
 			Destination: &surveyFlags.interval,
 		},
+	},
+	Before: func(cctx *cli.Context) error {
+		tasks := RunFlags.Tasks.Value()
+		if len(tasks) != 1 {
+			return fmt.Errorf("survey accepts single task type: '%s'", network.PeerAgentsTask)
+		}
+		if tasks[0] != network.PeerAgentsTask {
+			return fmt.Errorf("unknown task: %s", tasks[0])
+		}
+		return nil
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
