@@ -20,6 +20,8 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/urfave/cli/v2"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 
 	"github.com/filecoin-project/lily/chain/indexer/distributed"
 	"github.com/filecoin-project/lily/commands/util"
@@ -27,8 +29,10 @@ import (
 	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lily/lens/lily/modules"
 	lutil "github.com/filecoin-project/lily/lens/util"
+	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
+	"github.com/filecoin-project/lily/version"
 )
 
 var ClientAPIFlags struct {
@@ -204,6 +208,11 @@ Note that jobs are not persisted between restarts of the daemon. See
 				log.Infof("lily config: %s", daemonFlags.config)
 			}
 		}
+
+		ctx, _ = tag.New(ctx,
+			tag.Insert(metrics.Version, version.String()),
+		)
+		stats.Record(ctx, metrics.LilyInfo.M(1))
 
 		if err := config.EnsureExists(daemonFlags.config); err != nil {
 			return fmt.Errorf("ensuring config is present at %q: %w", daemonFlags.config, err)

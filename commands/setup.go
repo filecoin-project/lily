@@ -94,17 +94,18 @@ func setupMetrics(flags LilyMetricOpts) error {
 		return err
 	}
 
-	inspector := asynq.NewInspector(asynq.RedisClientOpt{
-		Addr:     flags.RedisAddr,
-		DB:       flags.RedisDB,
-		Password: flags.RedisPassword,
-		Username: flags.RedisUsername,
-	})
-	registry.MustRegister(
-		goCollector,
-		procCollector,
-		asynqmetrics.NewQueueMetricsCollector(inspector),
-	)
+	metricCollectors := []prom.Collector{goCollector, procCollector}
+	if flags.RedisNetwork != "" {
+		inspector := asynq.NewInspector(asynq.RedisClientOpt{
+			Addr:     flags.RedisAddr,
+			DB:       flags.RedisDB,
+			Password: flags.RedisPassword,
+			Username: flags.RedisUsername,
+		})
+		metricCollectors = append(metricCollectors, asynqmetrics.NewQueueMetricsCollector(inspector))
+	}
+	registry.MustRegister(metricCollectors...)
+
 	// register prometheus with opencensus
 	view.RegisterExporter(pe)
 	view.SetReportingPeriod(2 * time.Second)
@@ -139,6 +140,7 @@ func setupMetrics(flags LilyMetricOpts) error {
 		mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
 		mux.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
 		mux.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
+		log.Infof("serving metrics on %s", flags.PrometheusPort)
 		if err := http.ListenAndServe(flags.PrometheusPort, mux); err != nil {
 			log.Fatalf("Failed to run Prometheus /metrics endpoint: %v", err)
 		}
