@@ -388,6 +388,7 @@ func (s *Scheduler) Jobs() []JobListResult {
 func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 	ctx, cancel := context.WithCancel(s.context)
 	ctx = metrics.WithTagValue(ctx, metrics.Job, jc.Name)
+	ctx = metrics.WithTagValue(ctx, metrics.JobType, jc.Type)
 
 	jc.lk.Lock()
 	jc.cancel = cancel
@@ -452,7 +453,9 @@ func (s *Scheduler) execute(jc *JobConfig, complete chan struct{}) {
 		}
 
 		metrics.RecordInc(ctx, metrics.JobStart)
+		metrics.RecordInc(ctx, metrics.JobRunning)
 		err := jc.Job.Run(ctx)
+		metrics.RecordDec(ctx, metrics.JobRunning)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				break
