@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/lily/chain/datasource"
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/integrated"
+	"github.com/filecoin-project/lily/chain/indexer/integrated/tipset"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/storage"
 )
@@ -54,7 +55,7 @@ func (g *Filler) Run(ctx context.Context) error {
 		return err
 	}
 
-	index, err := integrated.NewManager(taskAPI, g.DB, g.name)
+	index, err := integrated.NewManager(g.DB, tipset.NewBuilder(taskAPI, g.name), g.name)
 	if err != nil {
 		return err
 	}

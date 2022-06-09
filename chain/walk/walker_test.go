@@ -14,6 +14,7 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/chain/datasource"
 	"github.com/filecoin-project/lily/chain/indexer/integrated"
+	"github.com/filecoin-project/lily/chain/indexer/integrated/tipset"
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/model/blocks"
 	"github.com/filecoin-project/lily/storage"
@@ -63,7 +64,7 @@ func TestWalker(t *testing.T) {
 	taskAPI, err := datasource.NewDataSource(nodeAPI)
 	require.NoError(t, err)
 
-	im, err := integrated.NewManager(taskAPI, strg, t.Name(), integrated.WithWindow(builtin.EpochDurationSeconds*time.Second))
+	im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, t.Name()), t.Name(), integrated.WithWindow(builtin.EpochDurationSeconds*time.Second))
 	require.NoError(t, err, "NewManager")
 
 	t.Logf("initializing indexer")

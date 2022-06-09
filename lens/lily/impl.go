@@ -26,6 +26,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/distributed"
 	"github.com/filecoin-project/lily/chain/indexer/distributed/queue"
 	"github.com/filecoin-project/lily/chain/indexer/integrated"
+	"github.com/filecoin-project/lily/chain/indexer/integrated/tipset"
 	"github.com/filecoin-project/lily/chain/walk"
 	"github.com/filecoin-project/lily/chain/watch"
 	"github.com/filecoin-project/lily/lens"
@@ -95,7 +96,7 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 		return nil, err
 	}
 
-	im, err := integrated.NewManager(taskAPI, strg, cfg.JobConfig.Name)
+	im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), cfg.JobConfig.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +140,7 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := integrated.NewManager(taskAPI, strg, cfg.JobConfig.Name, integrated.WithWindow(cfg.JobConfig.Window))
+	im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), cfg.JobConfig.Name, integrated.WithWindow(cfg.JobConfig.Window))
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +204,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	idx, err := integrated.NewManager(taskAPI, strg, cfg.JobConfig.Name, integrated.WithWindow(cfg.JobConfig.Window))
+	idx, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), cfg.JobConfig.Name, integrated.WithWindow(cfg.JobConfig.Window))
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +292,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	idx, err := integrated.NewManager(taskAPI, strg, cfg.JobConfig.Name, integrated.WithWindow(cfg.JobConfig.Window))
+	idx, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), cfg.JobConfig.Name, integrated.WithWindow(cfg.JobConfig.Window))
 	if err != nil {
 		return nil, err
 	}
@@ -562,19 +563,19 @@ func (m *LilyNodeAPI) StateGetReceipt(ctx context.Context, msg cid.Cid, from typ
 	return &ml.Receipt, nil
 }
 
-func (m *LilyNodeAPI) LogList(ctx context.Context) ([]string, error) {
+func (m *LilyNodeAPI) LogList(_ context.Context) ([]string, error) {
 	return logging.GetSubsystems(), nil
 }
 
-func (m *LilyNodeAPI) LogSetLevel(ctx context.Context, subsystem, level string) error {
+func (m *LilyNodeAPI) LogSetLevel(_ context.Context, subsystem, level string) error {
 	return logging.SetLogLevel(subsystem, level)
 }
 
-func (m *LilyNodeAPI) LogSetLevelRegex(ctx context.Context, regex, level string) error {
+func (m *LilyNodeAPI) LogSetLevelRegex(_ context.Context, regex, level string) error {
 	return logging.SetLogLevelRegex(regex, level)
 }
 
-func (m *LilyNodeAPI) Shutdown(ctx context.Context) error {
+func (m *LilyNodeAPI) Shutdown(_ context.Context) error {
 	m.ShutdownChan <- struct{}{}
 	return nil
 }
@@ -628,6 +629,6 @@ func (l *LogQueryHook) BeforeQuery(ctx context.Context, evt *pg.QueryEvent) (con
 	return ctx, nil
 }
 
-func (l *LogQueryHook) AfterQuery(ctx context.Context, event *pg.QueryEvent) error {
+func (l *LogQueryHook) AfterQuery(_ context.Context, _ *pg.QueryEvent) error {
 	return nil
 }

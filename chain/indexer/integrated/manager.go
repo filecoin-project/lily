@@ -7,11 +7,13 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/atomic"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/integrated/tipset"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 var log = logging.Logger("lily/index/manager")
@@ -22,9 +24,8 @@ type Exporter interface {
 
 // Manager manages the execution of an Indexer. It may be used to index TipSets both serially or in parallel.
 type Manager struct {
-	api          tasks.DataSource
 	storage      model.Storage
-	indexBuilder *Builder
+	indexBuilder tipset.IndexerBuilder
 	exporter     Exporter
 	window       time.Duration
 	name         string
@@ -41,10 +42,15 @@ func WithWindow(w time.Duration) ManagerOpt {
 	}
 }
 
+func WithExporter(e Exporter) ManagerOpt {
+	return func(m *Manager) {
+		m.exporter = e
+	}
+}
+
 // NewManager returns a default Manager. Any provided ManagerOpt's will override Manager's default values.
-func NewManager(api tasks.DataSource, strg model.Storage, name string, opts ...ManagerOpt) (*Manager, error) {
+func NewManager(strg model.Storage, idxBuilder tipset.IndexerBuilder, name string, opts ...ManagerOpt) (*Manager, error) {
 	im := &Manager{
-		api:     api,
 		storage: strg,
 		window:  0,
 		name:    name,
@@ -54,7 +60,7 @@ func NewManager(api tasks.DataSource, strg model.Storage, name string, opts ...M
 		opt(im)
 	}
 
-	im.indexBuilder = NewBuilder(api, name)
+	im.indexBuilder = idxBuilder
 
 	if im.exporter == nil {
 		im.exporter = indexer.NewModelExporter(name)
@@ -104,20 +110,17 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 		return true, nil
 	}
 
-	var modelResults []*indexer.ModelResult
-	success := true
-	// collect all the results, recording if any of the tasks were skipped or errored
-	for res := range taskResults {
-		select {
-		case fatal := <-taskErrors:
-			lg.Errorw("fatal indexer error", "error", fatal)
-			return false, fatal
-		default:
+	success := atomic.NewBool(true)
+	grp, ctx := errgroup.WithContext(ctx)
+	grp.Go(func() error {
+		var modelResults []*indexer.ModelResult
+		// collect all the results, recording if any of the tasks were skipped or errored
+		for res := range taskResults {
 			for _, report := range res.Report {
 				if report.Status != visormodel.ProcessingStatusOK &&
 					report.Status != visormodel.ProcessingStatusInfo {
 					lg.Warnw("task failed", "task", res.Name, "status", report.Status, "errors", report.ErrorsDetected, "info", report.StatusInformation)
-					success = false
+					success.Store(false)
 				} else {
 					lg.Infow("task success", "task", res.Name, "status", report.Status, "duration", report.CompletedAt.Sub(report.StartedAt))
 				}
@@ -128,13 +131,28 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 			})
 
 		}
-	}
 
-	// synchronously export extracted data and its report. If datas at this height are currently being persisted this method will block to avoid deadlocking the database.
-	if err := i.exporter.ExportResult(ctx, i.storage, int64(ts.Height()), modelResults); err != nil {
+		if len(modelResults) > 0 {
+			// synchronously export extracted data and its report. If datas at this height are currently being persisted this method will block to avoid deadlocking the database.
+			if err := i.exporter.ExportResult(ctx, i.storage, int64(ts.Height()), modelResults); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	grp.Go(func() error {
+		for fatal := range taskErrors {
+			success.Store(false)
+			return fatal
+		}
+		return nil
+	})
+
+	if err := grp.Wait(); err != nil {
 		return false, err
 	}
 
-	lg.Infow("index tipset complete", "success", success)
-	return success, nil
+	return success.Load(), nil
 }
