@@ -3,11 +3,13 @@ package internal_message
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model"
 	messagemodel "github.com/filecoin-project/lily/model/messages"
@@ -55,36 +57,62 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		errorsDetected = make([]*messages.MessageError, 0) // we don't know the cap since mex is recursive in nature.
 	)
 
-	for _, m := range mex {
+	for _, parent := range mex {
 		select {
 		case <-ctx.Done():
 			return nil, nil, fmt.Errorf("context done: %w", ctx.Err())
 		default:
 		}
 
-		// we don't yet record implicit messages in the other message task, record them here.
-		if m.Implicit {
-			toName, toFamily, err := util.ActorNameAndFamilyFromCode(m.ToActorCode)
-			if err != nil {
-				errorsDetected = append(errorsDetected, &messages.MessageError{
-					Cid:   m.Cid,
-					Error: fmt.Errorf("failed get message to actor name and family: %w", err).Error(),
-				})
-			}
+		toName, toFamily, err := util.ActorNameAndFamilyFromCode(parent.ToActorCode)
+		if err != nil {
+			// TODO what do we do if there is an error? Continue with unknown family names or abort?
+			errorsDetected = append(errorsDetected, &messages.MessageError{
+				Cid:   parent.Cid,
+				Error: fmt.Errorf("failed get message (%s) to actor name and family: %w", parent.Cid, err).Error(),
+			})
+		}
+		if parent.Implicit {
 			internalResult = append(internalResult, &messagemodel.InternalMessage{
-				Height:        int64(m.Height),
-				Cid:           m.Cid.String(),
+				Height:        int64(parent.Height),
+				Cid:           parent.Cid.String(),
 				SourceMessage: "", // there is no source for implicit messages, they include cron tick and reward messages only
-				StateRoot:     m.StateRoot.String(),
-				From:          m.Message.From.String(),
-				To:            m.Message.To.String(),
+				StateRoot:     parent.StateRoot.String(),
+				From:          parent.Message.From.String(),
+				To:            parent.Message.To.String(),
 				ActorName:     toName,
 				ActorFamily:   toFamily,
-				Value:         m.Message.Value.String(),
-				Method:        uint64(m.Message.Method),
-				ExitCode:      int64(m.Ret.ExitCode),
-				GasUsed:       m.Ret.GasUsed,
+				Value:         parent.Message.Value.String(),
+				Method:        uint64(parent.Message.Method),
+				ExitCode:      int64(parent.Ret.ExitCode),
+				GasUsed:       parent.Ret.GasUsed,
 			})
+		} else {
+			for _, child := range getChildMessagesOf(parent) {
+				// Cid() computes a CID, so only call it once
+				childCid := child.Message.Cid()
+				childToName, childToFamily, err := util.ActorNameAndFamilyFromCode(childCid)
+				if err != nil {
+					errorsDetected = append(errorsDetected, &messages.MessageError{
+						Cid:   parent.Cid,
+						Error: fmt.Errorf("failed get child message (%s) to actor name and family: %w", childCid, err).Error(),
+					})
+				}
+				internalResult = append(internalResult, &messagemodel.InternalMessage{
+					Height:        int64(parent.Height),
+					Cid:           childCid.String(),
+					StateRoot:     parent.StateRoot.String(),
+					SourceMessage: parent.Cid.String(),
+					From:          child.Message.From.String(),
+					To:            child.Message.To.String(),
+					Value:         child.Message.Value.String(),
+					Method:        uint64(child.Message.Method),
+					ActorName:     childToName,
+					ActorFamily:   childToFamily,
+					ExitCode:      int64(child.Receipt.ExitCode),
+					GasUsed:       child.Receipt.GasUsed,
+				})
+			}
 		}
 
 	}
@@ -92,4 +120,31 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		report.ErrorsDetected = errorsDetected
 	}
 	return internalResult, report, nil
+}
+
+func walkExecutionTrace(et *types.ExecutionTrace, trace *[]*MessageTrace) {
+	for _, sub := range et.Subcalls {
+		*trace = append(*trace, &MessageTrace{
+			Message:   sub.Msg,
+			Receipt:   sub.MsgRct,
+			Error:     sub.Error,
+			Duration:  sub.Duration,
+			GasCharge: sub.GasCharges,
+		})
+		walkExecutionTrace(&sub, trace) //nolint:scopelint,gosec
+	}
+}
+
+type MessageTrace struct {
+	Message   *types.Message
+	Receipt   *types.MessageReceipt
+	Error     string
+	Duration  time.Duration
+	GasCharge []*types.GasTrace
+}
+
+func getChildMessagesOf(m *lens.MessageExecution) []*MessageTrace {
+	var out []*MessageTrace
+	walkExecutionTrace(&m.Ret.ExecutionTrace, &out)
+	return out
 }
