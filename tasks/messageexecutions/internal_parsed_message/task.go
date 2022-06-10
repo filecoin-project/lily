@@ -3,11 +3,16 @@ package internal_parsed_message
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
+	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/sync/errgroup"
 
+	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model"
 	messagemodel "github.com/filecoin-project/lily/model/messages"
@@ -19,6 +24,8 @@ import (
 type Task struct {
 	node tasks.DataSource
 }
+
+var log = logging.Logger("lily/tasks/pimsg")
 
 func NewTask(node tasks.DataSource) *Task {
 	return &Task{
@@ -55,36 +62,122 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		errorsDetected       = make([]*messages.MessageError, 0) // we don't know the cap since mex is recursive in nature.
 	)
 
-	for _, m := range mex {
+	getActorCode, err := util.MakeGetActorCodeFunc(ctx, p.node.Store(), current, executed)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to make actor code query function: %w", err)
+	}
+	results := make(chan *messagemodel.InternalParsedMessage)
+	errors := make(chan *messages.MessageError)
+	grp, ctx := errgroup.WithContext(ctx)
+	for _, parent := range mex {
 		select {
 		case <-ctx.Done():
 			return nil, nil, fmt.Errorf("context done: %w", ctx.Err())
 		default:
 		}
 
-		// we don't yet record implicit messages in the other message task, record them here.
-		if m.Implicit {
-			method, params, err := util.MethodAndParamsForMessage(m.Message, m.ToActorCode)
-			if err != nil {
-				errorsDetected = append(errorsDetected, &messages.MessageError{
-					Cid:   m.Cid,
-					Error: fmt.Errorf("failed parse method and params for message: %w", err).Error(),
-				})
+		grp.Go(func() error {
+			if parent.Implicit {
+				method, params, err := util.MethodAndParamsForMessage(parent.Message, parent.ToActorCode)
+				if err != nil {
+					errors <- &messages.MessageError{
+						Cid:   parent.Cid,
+						Error: fmt.Errorf("failed parse method and params for message: %w", err).Error(),
+					}
+				}
+				results <- &messagemodel.InternalParsedMessage{
+					Height: int64(parent.Height),
+					Cid:    parent.Cid.String(),
+					From:   parent.Message.From.String(),
+					To:     parent.Message.To.String(),
+					Value:  parent.Message.Value.String(),
+					Method: method,
+					Params: params,
+				}
+			} else {
+				for _, child := range getChildMessagesOf(parent) {
+					// Cid() computes a CID, so only call it once
+					childCid := child.Message.Cid()
+					toCode, ok := getActorCode(child.Message.To)
+					if !ok {
+						errors <- &messages.MessageError{
+							Cid:   childCid,
+							Error: fmt.Errorf("failed to get to actor code for message: %s", childCid).Error(),
+						}
+					}
+					method, params, err := util.MethodAndParamsForMessage(child.Message, toCode)
+					if err != nil {
+						errors <- &messages.MessageError{
+							Cid:   childCid,
+							Error: fmt.Errorf("failed get child message (%s) to actor name and family: %w", childCid, err).Error(),
+						}
+					}
+					results <- &messagemodel.InternalParsedMessage{
+						Height: int64(parent.Height),
+						Cid:    childCid.String(),
+						From:   child.Message.From.String(),
+						To:     child.Message.To.String(),
+						Value:  child.Message.Value.String(),
+						Method: method,
+						Params: params,
+					}
+				}
 			}
-			internalParsedResult = append(internalParsedResult, &messagemodel.InternalParsedMessage{
-				Height: int64(m.Height),
-				Cid:    m.Cid.String(),
-				From:   m.Message.From.String(),
-				To:     m.Message.To.String(),
-				Value:  m.Message.Value.String(),
-				Method: method,
-				Params: params,
-			})
-		}
-
+			return nil
+		})
 	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for res := range results {
+			internalParsedResult = append(internalParsedResult, res)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for err := range errors {
+			errorsDetected = append(errorsDetected, err)
+		}
+	}()
+
+	err = grp.Wait()
+	close(errors)
+	close(results)
+	wg.Wait()
+
 	if len(errorsDetected) != 0 {
 		report.ErrorsDetected = errorsDetected
 	}
-	return internalParsedResult, report, nil
+	return internalParsedResult, report, err
+}
+
+func walkExecutionTrace(et *types.ExecutionTrace, trace *[]*MessageTrace) {
+	for _, sub := range et.Subcalls {
+		*trace = append(*trace, &MessageTrace{
+			Message:   sub.Msg,
+			Receipt:   sub.MsgRct,
+			Error:     sub.Error,
+			Duration:  sub.Duration,
+			GasCharge: sub.GasCharges,
+		})
+		walkExecutionTrace(&sub, trace) //nolint:scopelint,gosec
+	}
+}
+
+type MessageTrace struct {
+	Message   *types.Message
+	Receipt   *types.MessageReceipt
+	Error     string
+	Duration  time.Duration
+	GasCharge []*types.GasTrace
+}
+
+func getChildMessagesOf(m *lens.MessageExecution) []*MessageTrace {
+	var out []*MessageTrace
+	walkExecutionTrace(&m.Ret.ExecutionTrace, &out)
+	return out
 }

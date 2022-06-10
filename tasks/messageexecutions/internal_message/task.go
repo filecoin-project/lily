@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
+	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
@@ -17,6 +18,8 @@ import (
 	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lily/tasks/messages"
 )
+
+var log = logging.Logger("lily/tasks/imsg")
 
 type Task struct {
 	node tasks.DataSource
@@ -57,6 +60,10 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		errorsDetected = make([]*messages.MessageError, 0) // we don't know the cap since mex is recursive in nature.
 	)
 
+	getActorCode, err := util.MakeGetActorCodeFunc(ctx, p.node.Store(), current, executed)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to make actor code query function: %w", err)
+	}
 	for _, parent := range mex {
 		select {
 		case <-ctx.Done():
@@ -91,7 +98,11 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			for _, child := range getChildMessagesOf(parent) {
 				// Cid() computes a CID, so only call it once
 				childCid := child.Message.Cid()
-				childToName, childToFamily, err := util.ActorNameAndFamilyFromCode(childCid)
+				toCode, ok := getActorCode(child.Message.To)
+				if !ok {
+					log.Errorf("failed to get to actor %s", err)
+				}
+				childToName, childToFamily, err := util.ActorNameAndFamilyFromCode(toCode)
 				if err != nil {
 					errorsDetected = append(errorsDetected, &messages.MessageError{
 						Cid:   parent.Cid,
