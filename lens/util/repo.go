@@ -159,10 +159,6 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		return nil, fmt.Errorf("mismatching number of receipts: got %d wanted %d", rs.Length(), len(emsgs))
 	}
 
-	filVested, err := sm.GetFilVested(ctx, current.Height())
-	if err != nil {
-		return nil, err
-	}
 	// Create a skeleton vm just for calling ShouldBurn
 	// NB: VM is only required to process state prior to network v13
 	vmi, err := vm.NewVM(ctx, &vm.VMOpts{
@@ -174,7 +170,6 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 		Syscalls:       sm.Syscalls,
 		CircSupplyCalc: sm.GetVMCirculatingSupply,
 		BaseFee:        current.Blocks()[0].ParentBaseFee,
-		FilVested:      filVested,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("creating temporary vm: %w", err)

@@ -13,15 +13,15 @@ require (
 	github.com/filecoin-project/go-hamt-ipld/v3 v3.1.1-0.20220505191157-d7766f8628ec
 	github.com/filecoin-project/go-jsonrpc v0.1.5
 	github.com/filecoin-project/go-paramfetch v0.0.4
-	github.com/filecoin-project/go-state-types v0.1.3
-	github.com/filecoin-project/lotus v1.15.3
-	github.com/filecoin-project/specs-actors v0.9.14
+	github.com/filecoin-project/go-state-types v0.1.9
+	github.com/filecoin-project/lotus v1.16.0-rc1
+	github.com/filecoin-project/specs-actors v0.9.15
 	github.com/filecoin-project/specs-actors/v2 v2.3.6
-	github.com/filecoin-project/specs-actors/v3 v3.1.1
-	github.com/filecoin-project/specs-actors/v4 v4.0.1
-	github.com/filecoin-project/specs-actors/v5 v5.0.4
-	github.com/filecoin-project/specs-actors/v6 v6.0.1
-	github.com/filecoin-project/specs-actors/v7 v7.0.0
+	github.com/filecoin-project/specs-actors/v3 v3.1.2
+	github.com/filecoin-project/specs-actors/v4 v4.0.2
+	github.com/filecoin-project/specs-actors/v5 v5.0.6
+	github.com/filecoin-project/specs-actors/v6 v6.0.2
+	github.com/filecoin-project/specs-actors/v7 v7.0.1
 	github.com/gammazero/workerpool v1.1.2
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.10.6
@@ -45,7 +45,7 @@ require (
 	github.com/raulk/clock v1.1.0
 	github.com/stretchr/testify v1.7.1
 	github.com/urfave/cli/v2 v2.8.0
-	github.com/whyrusleeping/cbor-gen v0.0.0-20220302191723-37c43cae8e14
+	github.com/whyrusleeping/cbor-gen v0.0.0-20220323183124-98fa8256a799
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/otel v1.3.0
 	go.opentelemetry.io/otel/bridge/opencensus v0.25.0
@@ -124,17 +124,18 @@ require (
 	github.com/filecoin-project/go-ds-versioning v0.1.1 // indirect
 	github.com/filecoin-project/go-fil-commcid v0.1.0 // indirect
 	github.com/filecoin-project/go-fil-commp-hashhash v0.1.0 // indirect
-	github.com/filecoin-project/go-fil-markets v1.20.1 // indirect
+	github.com/filecoin-project/go-fil-markets v1.20.1-v16-1 // indirect
 	github.com/filecoin-project/go-hamt-ipld v0.1.5 // indirect
 	github.com/filecoin-project/go-hamt-ipld/v2 v2.0.0 // indirect
-	github.com/filecoin-project/go-legs v0.3.7 // indirect
+	github.com/filecoin-project/go-legs v0.3.10 // indirect
 	github.com/filecoin-project/go-padreader v0.0.1 // indirect
 	github.com/filecoin-project/go-statemachine v1.0.2 // indirect
 	github.com/filecoin-project/go-statestore v0.2.0 // indirect
 	github.com/filecoin-project/go-storedcounter v0.1.0 // indirect
 	github.com/filecoin-project/index-provider v0.5.0 // indirect
 	github.com/filecoin-project/pubsub v1.0.0 // indirect
-	github.com/filecoin-project/specs-storage v0.2.4 // indirect
+	github.com/filecoin-project/specs-actors/v8 v8.0.0 // indirect
+	github.com/filecoin-project/specs-storage v0.4.1 // indirect
 	github.com/filecoin-project/storetheindex v0.3.5 // indirect
 	github.com/flynn/noise v1.0.0 // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect
@@ -229,7 +230,7 @@ require (
 	github.com/libp2p/go-conn-security-multistream v0.3.0 // indirect
 	github.com/libp2p/go-eventbus v0.2.1 // indirect
 	github.com/libp2p/go-flow-metrics v0.0.3 // indirect
-	github.com/libp2p/go-libp2p v0.19.3 // indirect
+	github.com/libp2p/go-libp2p v0.19.4 // indirect
 	github.com/libp2p/go-libp2p-asn-util v0.1.0 // indirect
 	github.com/libp2p/go-libp2p-blankhost v0.3.0 // indirect
 	github.com/libp2p/go-libp2p-connmgr v0.3.1 // indirect
@@ -263,7 +264,7 @@ require (
 	github.com/libp2p/go-stream-muxer-multistream v0.4.0 // indirect
 	github.com/libp2p/go-tcp-transport v0.5.1 // indirect
 	github.com/libp2p/go-ws-transport v0.6.0 // indirect
-	github.com/libp2p/go-yamux/v3 v3.1.1 // indirect
+	github.com/libp2p/go-yamux/v3 v3.1.2 // indirect
 	github.com/lucas-clemente/quic-go v0.27.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.0.3 // indirect
 	github.com/magefile/mage v1.9.0 // indirect
