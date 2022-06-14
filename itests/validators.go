@@ -32,6 +32,7 @@ var TaskValidators = map[string][]interface{}{
 	tasktype.BlocksTask:         {BlockHeaderValidator{}, BlockParentsValidator{}, DrandBlockEntriesValidator{}},
 	tasktype.ChainConsensusTask: {ChainConsensusValidator{}},
 	tasktype.ActorStatesRawTask: {ActorStatesValidator{}, ActorValidator{}},
+	tasktype.InternalMessage:    {nil},
 }
 
 type TipSetStateValidator interface {

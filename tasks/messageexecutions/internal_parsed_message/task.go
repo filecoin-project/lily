@@ -3,10 +3,11 @@ package internal_parsed_message
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -25,7 +26,7 @@ type Task struct {
 	node tasks.DataSource
 }
 
-var log = logging.Logger("lily/tasks/pimsg")
+var log = logging.Logger("lily/tasks/ipm")
 
 func NewTask(node tasks.DataSource) *Task {
 	return &Task{
@@ -46,14 +47,36 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	}
 	defer span.End()
 
+	// execute in parallel as both operations are slow
+	grp, _ := errgroup.WithContext(ctx)
+	var mex []*lens.MessageExecution
+	grp.Go(func() error {
+		var err error
+		mex, err = p.node.MessageExecutions(ctx, current, executed)
+		if err != nil {
+			return fmt.Errorf("getting messages executions for tipset: %w", err)
+		}
+		return nil
+	})
+
+	var getActorCode func(a address.Address) (cid.Cid, bool)
+	grp.Go(func() error {
+		var err error
+		getActorCode, err = util.MakeGetActorCodeFunc(ctx, p.node.Store(), current, executed)
+		if err != nil {
+			return fmt.Errorf("failed to make actor code query function: %w", err)
+		}
+		return nil
+	})
+
 	report := &visormodel.ProcessingReport{
 		Height:    int64(current.Height()),
 		StateRoot: current.ParentState().String(),
 	}
 
-	mex, err := p.node.MessageExecutions(ctx, current, executed)
-	if err != nil {
-		report.ErrorsDetected = fmt.Errorf("getting messages executions for tipset: %w", err)
+	// if either fail, report error and bail
+	if err := grp.Wait(); err != nil {
+		report.ErrorsDetected = err
 		return nil, report, nil
 	}
 
@@ -62,13 +85,6 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		errorsDetected       = make([]*messages.MessageError, 0) // we don't know the cap since mex is recursive in nature.
 	)
 
-	getActorCode, err := util.MakeGetActorCodeFunc(ctx, p.node.Store(), current, executed)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to make actor code query function: %w", err)
-	}
-	results := make(chan *messagemodel.InternalParsedMessage)
-	errors := make(chan *messages.MessageError)
-	grp, ctx := errgroup.WithContext(ctx)
 	for _, parent := range mex {
 		select {
 		case <-ctx.Done():
@@ -76,83 +92,58 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		default:
 		}
 
-		grp.Go(func() error {
-			if parent.Implicit {
-				method, params, err := util.MethodAndParamsForMessage(parent.Message, parent.ToActorCode)
-				if err != nil {
-					errors <- &messages.MessageError{
+		if parent.Implicit {
+			method, params, err := util.MethodAndParamsForMessage(parent.Message, parent.ToActorCode)
+			if err != nil {
+				errorsDetected = append(errorsDetected, &messages.MessageError{
+					Cid:   parent.Cid,
+					Error: fmt.Errorf("failed parse method and params for message: %w", err).Error(),
+				})
+			}
+			internalParsedResult = append(internalParsedResult, &messagemodel.InternalParsedMessage{
+				Height: int64(parent.Height),
+				Cid:    parent.Cid.String(),
+				From:   parent.Message.From.String(),
+				To:     parent.Message.To.String(),
+				Value:  parent.Message.Value.String(),
+				Method: method,
+				Params: params,
+			})
+		} else {
+			for _, child := range getChildMessagesOf(parent) {
+				// Cid() computes a CID, so only call it once
+				childCid := child.Message.Cid()
+				toCode, ok := getActorCode(child.Message.To)
+				if !ok {
+					errorsDetected = append(errorsDetected, &messages.MessageError{
 						Cid:   parent.Cid,
-						Error: fmt.Errorf("failed parse method and params for message: %w", err).Error(),
-					}
+						Error: fmt.Errorf("failed to get to actor code for message: %s", childCid).Error(),
+					})
 				}
-				results <- &messagemodel.InternalParsedMessage{
+				method, params, err := util.MethodAndParamsForMessage(child.Message, toCode)
+				if err != nil {
+					errorsDetected = append(errorsDetected, &messages.MessageError{
+						Cid:   parent.Cid,
+						Error: fmt.Errorf("failed get child message (%s) to actor name and family: %w", childCid, err).Error(),
+					})
+				}
+				internalParsedResult = append(internalParsedResult, &messagemodel.InternalParsedMessage{
 					Height: int64(parent.Height),
-					Cid:    parent.Cid.String(),
-					From:   parent.Message.From.String(),
-					To:     parent.Message.To.String(),
-					Value:  parent.Message.Value.String(),
+					Cid:    childCid.String(),
+					From:   child.Message.From.String(),
+					To:     child.Message.To.String(),
+					Value:  child.Message.Value.String(),
 					Method: method,
 					Params: params,
-				}
-			} else {
-				for _, child := range getChildMessagesOf(parent) {
-					// Cid() computes a CID, so only call it once
-					childCid := child.Message.Cid()
-					toCode, ok := getActorCode(child.Message.To)
-					if !ok {
-						errors <- &messages.MessageError{
-							Cid:   childCid,
-							Error: fmt.Errorf("failed to get to actor code for message: %s", childCid).Error(),
-						}
-					}
-					method, params, err := util.MethodAndParamsForMessage(child.Message, toCode)
-					if err != nil {
-						errors <- &messages.MessageError{
-							Cid:   childCid,
-							Error: fmt.Errorf("failed get child message (%s) to actor name and family: %w", childCid, err).Error(),
-						}
-					}
-					results <- &messagemodel.InternalParsedMessage{
-						Height: int64(parent.Height),
-						Cid:    childCid.String(),
-						From:   child.Message.From.String(),
-						To:     child.Message.To.String(),
-						Value:  child.Message.Value.String(),
-						Method: method,
-						Params: params,
-					}
-				}
+				})
 			}
-			return nil
-		})
+		}
 	}
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for res := range results {
-			internalParsedResult = append(internalParsedResult, res)
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for err := range errors {
-			errorsDetected = append(errorsDetected, err)
-		}
-	}()
-
-	err = grp.Wait()
-	close(errors)
-	close(results)
-	wg.Wait()
 
 	if len(errorsDetected) != 0 {
 		report.ErrorsDetected = errorsDetected
 	}
-	return internalParsedResult, report, err
+	return internalParsedResult, report, nil
 }
 
 func walkExecutionTrace(et *types.ExecutionTrace, trace *[]*MessageTrace) {

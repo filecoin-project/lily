@@ -43,6 +43,7 @@ import (
 	rawtask "github.com/filecoin-project/lily/tasks/actorstate/raw"
 	rewardtask "github.com/filecoin-project/lily/tasks/actorstate/reward"
 	verifregtask "github.com/filecoin-project/lily/tasks/actorstate/verifreg"
+	"github.com/filecoin-project/lily/tasks/actorstate/vm"
 	"github.com/filecoin-project/lily/tasks/blocks/drand"
 	"github.com/filecoin-project/lily/tasks/blocks/headers"
 	"github.com/filecoin-project/lily/tasks/blocks/parents"
@@ -248,6 +249,8 @@ func (ti *TipSetIndexer) init() error {
 			tipsetsProcessors[t] = gas_economy.NewTask(ti.node)
 		case tasktype.MultisigApproval:
 			tipsetsProcessors[t] = msapprovals.NewTask(ti.node)
+		case tasktype.VmMessage:
+			tipsetsProcessors[t] = vm.NewTask(ti.node)
 
 			//
 			// Blocks

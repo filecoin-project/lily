@@ -28,6 +28,7 @@ import (
 
 	builtininit "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/tasks/messages"
 )
 
 var ActorRegistry *vm.ActorRegistry
@@ -271,6 +272,34 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (string, 
 	return string(b), m.Name, err
 }
 
+func ParseReturn(ret []byte, method abi.MethodNum, actCode cid.Cid) (string, string, error) {
+	m, found := ActorRegistry.Methods[actCode][method]
+	if !found {
+		return "", "", fmt.Errorf("unknown method %d for actor %s", method, actCode)
+	}
+
+	// if the actor method doesn't expect returns don't parse them
+	if m.Ret == reflect.TypeOf(new(abi.EmptyValue)) {
+		return "", m.Name, nil
+	}
+
+	p := reflect.New(m.Ret.Elem()).Interface().(cbg.CBORUnmarshaler)
+	if err := p.UnmarshalCBOR(bytes.NewReader(ret)); err != nil {
+		actorName := builtin.ActorNameByCode(actCode)
+		return "", m.Name, fmt.Errorf("cbor decode into %s %s:(%s.%d) failed: %v", m.Name, actorName, actCode, method, err)
+	}
+
+	b, err := MarshalWithOverrides(p, map[reflect.Type]marshaller{
+		reflect.TypeOf(bitfield.BitField{}): bitfieldCountMarshaller,
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("failed to parse message return method: %d, actor code: %s, return: %s: %w", method, actCode, string(ret), err)
+	}
+
+	return string(b), m.Name, err
+
+}
+
 func MethodAndParamsForMessage(m *types.Message, destCode cid.Cid) (string, string, error) {
 	// Method is optional, zero means a plain value transfer
 	if m.Method == 0 {
@@ -295,6 +324,44 @@ func MethodAndParamsForMessage(m *types.Message, destCode cid.Cid) (string, stri
 	}
 
 	return method, params, nil
+}
+
+type MessageParamsReturn struct {
+	MethodName string
+	Params     string
+	Return     string
+}
+
+func MethodParamsReturnForMessage(m *messages.MessageTrace, destCode cid.Cid) (*MessageParamsReturn, error) {
+	// Method is optional, zero means a plain value transfer
+	if m.Message.Method == 0 {
+		return &MessageParamsReturn{
+			MethodName: "Sent",
+			Params:     "",
+			Return:     "",
+		}, nil
+	}
+
+	if !destCode.Defined() {
+		return nil, fmt.Errorf("missing actor code")
+	}
+
+	params, method, err := ParseParams(m.Message.Params, m.Message.Method, destCode)
+	if err != nil {
+		log.Warnf("failed to parse parameters of message %s: %v", m.Message.Cid(), err)
+		return nil, fmt.Errorf("unknown method for actor type %s method %d: %w", destCode.String(), int64(m.Message.Method), err)
+	}
+	ret, method, err := ParseReturn(m.Receipt.Return, m.Message.Method, destCode)
+	if err != nil {
+		log.Warnf("failed to parse return of message %s: %v", m.Message.Cid(), err)
+		return nil, fmt.Errorf("unknown method for actor type %s method %d: %w", destCode.String(), int64(m.Message.Method), err)
+	}
+
+	return &MessageParamsReturn{
+		MethodName: method,
+		Params:     params,
+		Return:     ret,
+	}, nil
 }
 
 func ActorNameAndFamilyFromCode(c cid.Cid) (name string, family string, err error) {

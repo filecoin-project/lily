@@ -24,6 +24,7 @@ const (
 	ParsedMessage                  = "parsed_message"
 	InternalMessage                = "internal_messages"
 	InternalParsedMessage          = "internal_parsed_messages"
+	VmMessage                      = "vm_messages"
 	MultisigTransaction            = "multisig_transaction"
 	ChainPower                     = "chain_power"
 	PowerActorClaim                = "power_actor_claim"
@@ -62,6 +63,7 @@ var AllTableTasks = []string{
 	ParsedMessage,
 	InternalMessage,
 	InternalParsedMessage,
+	VmMessage,
 	MultisigTransaction,
 	ChainPower,
 	PowerActorClaim,
@@ -100,6 +102,7 @@ var TableLookup = map[string]struct{}{
 	ParsedMessage:                  {},
 	InternalMessage:                {},
 	InternalParsedMessage:          {},
+	VmMessage:                      {},
 	MultisigTransaction:            {},
 	ChainPower:                     {},
 	PowerActorClaim:                {},
@@ -138,6 +141,7 @@ var TableComment = map[string]string{
 	ParsedMessage:                  ``,
 	InternalMessage:                ``,
 	InternalParsedMessage:          ``,
+	VmMessage:                      ``,
 	MultisigTransaction:            ``,
 	ChainPower:                     ``,
 	PowerActorClaim:                ``,
@@ -197,6 +201,21 @@ var TableFieldComments = map[string]map[string]string{
 	ParsedMessage:         {},
 	InternalMessage:       {},
 	InternalParsedMessage: {},
+	VmMessage: {
+		"ActorName": "ActorName of To (receiver)",
+		"Cid":       "Cid of the message.",
+		"ExitCode":  "ExitCode of message execution.",
+		"From":      "From sender of message.",
+		"GasUsed":   "GasUsed by message.",
+		"Height":    "Height message was executed at.",
+		"Method":    "Method called on To (receiver)",
+		"Params":    "Params contained in message.",
+		"Parent":    "Parent message triggering the message.",
+		"Return":    "Return value of message.",
+		"StateRoot": "StateRoot created by messages execution.",
+		"To":        "To receiver of message.",
+		"Value":     "Value FIL contained in message.",
+	},
 	MultisigTransaction: {
 		"To": "Transaction State",
 	},
