@@ -96,14 +96,13 @@ func (gh *AsynqGapFillTipSetTaskHandler) HandleGapFillTipSetTask(ctx context.Con
 			log.Errorw("failed to index tipset for gap fill", zap.Inline(p), "error", err)
 			// return SkipRetry to prevent the task from being retried since nodes do not contain the block
 			return fmt.Errorf("indexing tipset for gap fill %s.(%d) taskID %s: Error %s : %w", p.TipSet.Key().String(), p.TipSet.Height(), taskID, err, asynq.SkipRetry)
-		} else {
-			return err
 		}
+		return err
 	}
 	if !success {
 		log.Errorw("failed to gap fill task successfully", "taskID", taskID, zap.Inline(p))
 		return fmt.Errorf("gap filling tipset.(height) %s.(%d) taskID: %s", p.TipSet.Key(), p.TipSet.Height(), taskID)
-	} else {
+	} else { // nolint: revive
 		if err := gh.db.SetGapsFilled(ctx, int64(p.TipSet.Height()), p.Tasks...); err != nil {
 			log.Errorw("failed to mark gap as filled", "taskID", taskID, zap.Inline(p), "error", err)
 			return err

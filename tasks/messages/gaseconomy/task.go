@@ -1,4 +1,4 @@
-package gas_economy
+package gaseconomy
 
 import (
 	"context"

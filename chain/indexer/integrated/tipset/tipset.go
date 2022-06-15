@@ -50,13 +50,13 @@ import (
 	"github.com/filecoin-project/lily/tasks/chaineconomics"
 	"github.com/filecoin-project/lily/tasks/consensus"
 	indexTask "github.com/filecoin-project/lily/tasks/indexer"
-	"github.com/filecoin-project/lily/tasks/messageexecutions/internal_message"
-	"github.com/filecoin-project/lily/tasks/messageexecutions/internal_parsed_message"
-	"github.com/filecoin-project/lily/tasks/messages/block_message"
-	"github.com/filecoin-project/lily/tasks/messages/gas_economy"
-	"github.com/filecoin-project/lily/tasks/messages/gas_output"
+	"github.com/filecoin-project/lily/tasks/messageexecutions/internalmessage"
+	"github.com/filecoin-project/lily/tasks/messageexecutions/internalparsedmessage"
+	"github.com/filecoin-project/lily/tasks/messages/blockmessage"
+	"github.com/filecoin-project/lily/tasks/messages/gaseconomy"
+	"github.com/filecoin-project/lily/tasks/messages/gasoutput"
 	"github.com/filecoin-project/lily/tasks/messages/message"
-	"github.com/filecoin-project/lily/tasks/messages/parsed_message"
+	"github.com/filecoin-project/lily/tasks/messages/parsedmessage"
 	"github.com/filecoin-project/lily/tasks/messages/receipt"
 	"github.com/filecoin-project/lily/tasks/msapprovals"
 )
@@ -236,19 +236,19 @@ func (ti *TipSetIndexer) init() error {
 		case tasktype.Message:
 			tipsetsProcessors[t] = message.NewTask(ti.node)
 		case tasktype.GasOutputs:
-			tipsetsProcessors[t] = gas_output.NewTask(ti.node)
+			tipsetsProcessors[t] = gasoutput.NewTask(ti.node)
 		case tasktype.BlockMessage:
-			tipsetsProcessors[t] = block_message.NewTask(ti.node)
+			tipsetsProcessors[t] = blockmessage.NewTask(ti.node)
 		case tasktype.ParsedMessage:
-			tipsetsProcessors[t] = parsed_message.NewTask(ti.node)
+			tipsetsProcessors[t] = parsedmessage.NewTask(ti.node)
 		case tasktype.Receipt:
 			tipsetsProcessors[t] = receipt.NewTask(ti.node)
 		case tasktype.InternalMessage:
-			tipsetsProcessors[t] = internal_message.NewTask(ti.node)
+			tipsetsProcessors[t] = internalmessage.NewTask(ti.node)
 		case tasktype.InternalParsedMessage:
-			tipsetsProcessors[t] = internal_parsed_message.NewTask(ti.node)
+			tipsetsProcessors[t] = internalparsedmessage.NewTask(ti.node)
 		case tasktype.MessageGasEconomy:
-			tipsetsProcessors[t] = gas_economy.NewTask(ti.node)
+			tipsetsProcessors[t] = gaseconomy.NewTask(ti.node)
 		case tasktype.MultisigApproval:
 			tipsetsProcessors[t] = msapprovals.NewTask(ti.node)
 
@@ -293,10 +293,10 @@ type Result struct {
 // TipSet keeps no internal state and asynchronously indexes `ts` returning Result's as they extracted.
 // If the TipSetIndexer encounters an error (fails to fetch ts's parent) it returns immediately and performs no work.
 // If one of the TipSetIndexer's tasks encounters a fatal error, the error is return on the error channel.
-func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Result, chan error, error) {
+func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Result, chan error, error) {
 	start := time.Now()
 
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Name, t.name))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Name, ti.name))
 	ctx, span := otel.Tracer("").Start(ctx, "TipSetIndexer.TipSet")
 
 	if ts.Height() == 0 {
@@ -305,7 +305,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Res
 	}
 
 	var executed, current *types.TipSet
-	pts, err := t.node.TipSet(ctx, ts.Parents())
+	pts, err := ti.node.TipSet(ctx, ts.Parents())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -318,13 +318,13 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Res
 			attribute.Int64("current_height", int64(current.Height())),
 			attribute.String("executed_tipset", executed.String()),
 			attribute.Int64("executed_height", int64(executed.Height())),
-			attribute.String("name", t.name),
-			attribute.StringSlice("tasks", t.taskNames),
+			attribute.String("name", ti.name),
+			attribute.StringSlice("tasks", ti.taskNames),
 		)
 	}
 
-	log.Infow("index", "reporter", t.name, "current", current.Height(), "executed", executed.Height())
-	stateResults, taskNames := t.procBuilder.Build().State(ctx, current, executed)
+	log.Infow("index", "reporter", ti.name, "current", current.Height(), "executed", executed.Height())
+	stateResults, taskNames := ti.procBuilder.Build().State(ctx, current, executed)
 
 	// build list of executing tasks, used below to label incomplete tasks as skipped.
 	executingTasks := make(map[string]bool, len(taskNames))
@@ -359,7 +359,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Res
 							&visormodel.ProcessingReport{
 								Height:            int64(current.Height()),
 								StateRoot:         current.ParentState().String(),
-								Reporter:          t.name,
+								Reporter:          ti.name,
 								Task:              name,
 								StartedAt:         start,
 								CompletedAt:       time.Now(),
@@ -372,7 +372,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Res
 			default:
 				// received a result
 
-				llt := log.With("height", current.Height(), "task", res.Task, "reporter", t.name)
+				llt := log.With("height", current.Height(), "task", res.Task, "reporter", ti.name)
 
 				// Was there a fatal error?
 				if res.Error != nil {
@@ -391,7 +391,7 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Res
 
 				for idx := range res.Report {
 					// Fill in some report metadata
-					res.Report[idx].Reporter = t.name
+					res.Report[idx].Reporter = ti.name
 					res.Report[idx].Task = res.Task
 					res.Report[idx].StartedAt = res.StartedAt
 					res.Report[idx].CompletedAt = res.CompletedAt

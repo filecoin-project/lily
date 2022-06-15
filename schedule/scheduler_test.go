@@ -3,11 +3,12 @@ package schedule_test
 import (
 	"context"
 	"errors"
+	"testing"
+	"time"
+
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/fx/fxtest"
-	"testing"
-	"time"
 
 	"github.com/filecoin-project/lily/schedule"
 )

@@ -1,4 +1,4 @@
-package init_
+package init_ // nolint: revive
 
 import (
 	"context"
@@ -37,13 +37,13 @@ func (InitExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 			return nil, err
 		}
 
-		out := initmodel.IdAddressList{}
+		out := initmodel.IDAddressList{}
 		for _, builtinAddress := range []address.Address{
 			builtin.SystemActorAddr, builtin.InitActorAddr,
 			builtin.RewardActorAddr, builtin.CronActorAddr, builtin.StoragePowerActorAddr, builtin.StorageMarketActorAddr,
 			builtin.VerifiedRegistryActorAddr, builtin.BurntFundsActorAddr,
 		} {
-			out = append(out, &initmodel.IdAddress{
+			out = append(out, &initmodel.IDAddress{
 				Height:    0,
 				ID:        builtinAddress.String(),
 				Address:   builtinAddress.String(),
@@ -55,7 +55,7 @@ func (InitExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 			if err != nil {
 				return err
 			}
-			out = append(out, &initmodel.IdAddress{
+			out = append(out, &initmodel.IDAddress{
 				Height:    int64(a.Current.Height()),
 				ID:        idAddr.String(),
 				Address:   addr.String(),
@@ -87,9 +87,9 @@ func (InitExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 		return nil, fmt.Errorf("diffing init actor state: %w", err)
 	}
 
-	out := make(initmodel.IdAddressList, 0, len(addressChanges.Added)+len(addressChanges.Modified))
+	out := make(initmodel.IDAddressList, 0, len(addressChanges.Added)+len(addressChanges.Modified))
 	for _, newAddr := range addressChanges.Added {
-		out = append(out, &initmodel.IdAddress{
+		out = append(out, &initmodel.IDAddress{
 			Height:    int64(a.Current.Height()),
 			StateRoot: a.Current.ParentState().String(),
 			ID:        newAddr.ID.String(),
@@ -97,7 +97,7 @@ func (InitExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 		})
 	}
 	for _, modAddr := range addressChanges.Modified {
-		out = append(out, &initmodel.IdAddress{
+		out = append(out, &initmodel.IDAddress{
 			Height:    int64(a.Current.Height()),
 			StateRoot: a.Current.ParentState().String(),
 			ID:        modAddr.To.ID.String(),

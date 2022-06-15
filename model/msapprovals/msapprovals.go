@@ -10,14 +10,13 @@ import (
 )
 
 type MultisigApproval struct {
-	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName      struct{} `pg:"multisig_approvals"`
+	tableName      struct{} `pg:"multisig_approvals"` // nolint structcheck
 	Height         int64    `pg:",pk,notnull,use_zero"`
 	StateRoot      string   `pg:",pk,notnull"`
 	MultisigID     string   `pg:",pk,notnull"`
 	Message        string   `pg:",pk,notnull"`       // cid of message
 	Method         uint64   `pg:",notnull,use_zero"` // method number used for the approval 2=propose, 3=approve
-	Approver       string   `pg:",pk,notnull"`       // address of signer that triggerd approval
+	Approver       string   `pg:",pk,notnull"`       // address of signer that triggered approval
 	Threshold      uint64   `pg:",notnull,use_zero"`
 	InitialBalance string   `pg:"type:numeric,notnull"`
 	Signers        []string `pg:",notnull"`

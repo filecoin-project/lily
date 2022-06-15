@@ -42,12 +42,12 @@ func (SectorDealsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo,
 			return nil, err
 		}
 		// sectors that were added _may_ contain dealIDs'
-		for _, sector := range sectorChanges.Added {
-			sectors = append(sectors, &sector)
+		for i := range sectorChanges.Added {
+			sectors = append(sectors, &sectorChanges.Added[i])
 		}
 		// sectors that were snapped _will_ contain dealID's per: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0019.md#spec
-		for _, sector := range sectorChanges.Snapped {
-			sectors = append(sectors, &sector.To)
+		for i := range sectorChanges.Snapped {
+			sectors = append(sectors, &sectorChanges.Snapped[i].To)
 		}
 	}
 

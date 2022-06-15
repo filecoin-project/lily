@@ -110,6 +110,6 @@ func ConstructOptions(opts ...Option) (IndexerOptions, error) {
 // Indexer implemented to index TipSets.
 type Indexer interface {
 	// TipSet indexes a TipSet. The returned error is non-nill if a fatal error is encountered. True is returned if the
-	// TipSet is indexed successfully, false if returned if the TipSet was only paritally indexer.
+	// TipSet is indexed successfully, false if returned if the TipSet was only partially indexer.
 	TipSet(ctx context.Context, ts *types.TipSet, opts ...Option) (bool, error)
 }

@@ -71,7 +71,7 @@ var Models = []interface{}{
 	(*common.Actor)(nil),
 	(*common.ActorState)(nil),
 
-	(*init_.IdAddress)(nil),
+	(*init_.IDAddress)(nil),
 
 	(*derived.GasOutputs)(nil),
 

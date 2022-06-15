@@ -67,7 +67,9 @@ func (s *Surveyer) Run(ctx context.Context) error {
 	defer close(s.done)
 
 	// Perform an initial tick before waiting
-	s.Tick(ctx)
+	if err := s.Tick(ctx); err != nil {
+		return err
+	}
 
 	ticker := time.NewTicker(s.interval)
 	defer ticker.Stop()
@@ -77,7 +79,9 @@ func (s *Surveyer) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-			s.Tick(ctx)
+			if err := s.Tick(ctx); err != nil {
+				return err
+			}
 		}
 	}
 }
@@ -87,7 +91,7 @@ func (s *Surveyer) Done() <-chan struct{} {
 }
 
 func (s *Surveyer) Details() (string, map[string]interface{}) {
-	return "surveyer", map[string]interface{}{
+	return "surveyer", map[string]interface{}{ // nolint: misspell
 		"name":     s.name,
 		"interval": s.interval,
 	}

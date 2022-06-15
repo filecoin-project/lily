@@ -42,8 +42,14 @@ func init() {
 	power.ConsensusMinerMinPower = big.NewInt(2048)
 	verifreg.MinVerifiedDealSize = big.NewInt(256)
 
-	logging.SetLogLevel("*", "ERROR")
-	logging.SetLogLevelRegex("lily/.+", "DEBUG")
+	err = logging.SetLogLevel("*", "ERROR")
+	if err != nil {
+		panic(err)
+	}
+	err = logging.SetLogLevelRegex("lily/.+", "DEBUG")
+	if err != nil {
+		panic(err)
+	}
 }
 
 func TestWatcher(t *testing.T) {

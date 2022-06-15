@@ -3,16 +3,16 @@ package messages
 import (
 	"context"
 
-	"github.com/filecoin-project/lily/metrics"
-	"github.com/filecoin-project/lily/model"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
 )
 
 type InternalMessage struct {
-	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName     struct{} `pg:"internal_messages"`
+	tableName     struct{} `pg:"internal_messages"` // nolint: structcheck
 	Height        int64    `pg:",pk,notnull,use_zero"`
 	Cid           string   `pg:",pk,notnull"`
 	StateRoot     string   `pg:",notnull"`
@@ -57,8 +57,7 @@ func (l InternalMessageList) Persist(ctx context.Context, s model.StorageBatch, 
 }
 
 type InternalParsedMessage struct {
-	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName struct{} `pg:"internal_parsed_messages"`
+	tableName struct{} `pg:"internal_parsed_messages"` // nolint: structcheck
 	Height    int64    `pg:",pk,notnull,use_zero"`
 	Cid       string   `pg:",pk,notnull"`
 	From      string   `pg:",notnull"`

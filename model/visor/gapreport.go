@@ -4,16 +4,16 @@ import (
 	"context"
 	"time"
 
-	"github.com/filecoin-project/lily/metrics"
-	"github.com/filecoin-project/lily/model"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
 )
 
 type GapReport struct {
-	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName struct{} `pg:"visor_gap_reports"`
+	tableName struct{} `pg:"visor_gap_reports"` // nolint: structcheck
 
 	Height int64  `pg:",pk,use_zero"`
 	Task   string `pg:",pk"`

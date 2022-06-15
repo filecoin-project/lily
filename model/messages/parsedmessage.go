@@ -23,8 +23,7 @@ type ParsedMessage struct {
 }
 
 type ParsedMessageV0 struct {
-	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName struct{} `pg:"parsed_messages"`
+	tableName struct{} `pg:"parsed_messages"` // nolint: structcheck
 	Height    int64    `pg:",pk,notnull,use_zero"`
 	Cid       string   `pg:",pk,notnull"`
 	From      string   `pg:",notnull"`

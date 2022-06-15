@@ -26,8 +26,7 @@ type ChainReward struct {
 }
 
 type ChainRewardV0 struct {
-	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName                         struct{} `pg:"chain_rewards"`
+	tableName                         struct{} `pg:"chain_rewards"` // nolint:structcheck
 	Height                            int64    `pg:",pk,notnull,use_zero"`
 	StateRoot                         string   `pg:",pk,notnull"`
 	CumSumBaseline                    string   `pg:",notnull"`

@@ -1,4 +1,4 @@
-package gas_output
+package gasoutput
 
 import (
 	"context"

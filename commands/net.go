@@ -136,7 +136,9 @@ var NetPeers = &cli.Command{
 				}
 				fmt.Fprintf(w, "%s\t%s\t%s\n", peer.ID, peer.Addrs, agent)
 			}
-			w.Flush()
+			if err := w.Flush(); err != nil {
+				return err
+			}
 
 		}
 
@@ -204,7 +206,9 @@ var NetScores = &cli.Command{
 			for _, peer := range scores {
 				fmt.Fprintf(w, "%s\t%f\n", peer.ID, peer.Score.Score)
 			}
-			w.Flush()
+			if err := w.Flush(); err != nil {
+				return err
+			}
 		}
 
 		return nil

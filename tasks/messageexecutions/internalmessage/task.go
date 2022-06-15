@@ -1,4 +1,4 @@
-package internal_message
+package internalmessage
 
 import (
 	"context"

@@ -16,8 +16,7 @@ import (
 // the table is returned iff the miner actor code is greater than or equal to v7.
 // The table receives a new name since we cannot rename the miner_sector_info table, else we will break backfill.
 type MinerSectorInfoV7 struct {
-	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName struct{} `pg:"miner_sector_infos_v7"`
+	tableName struct{} `pg:"miner_sector_infos_v7"` // nolint: structcheck
 	Height    int64    `pg:",pk,notnull,use_zero"`
 	MinerID   string   `pg:",pk,notnull"`
 	SectorID  uint64   `pg:",pk,use_zero"`
@@ -42,8 +41,7 @@ type MinerSectorInfoV7 struct {
 // MinerSectorInfoV1_6 is exported from the miner actor iff the actor code is less than v7.
 // The table keeps its original name since that's a requirement to support lily backfills
 type MinerSectorInfoV1_6 struct {
-	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName struct{} `pg:"miner_sector_infos"`
+	tableName struct{} `pg:"miner_sector_infos"` // nolint: structcheck
 	Height    int64    `pg:",pk,notnull,use_zero"`
 	MinerID   string   `pg:",pk,notnull"`
 	SectorID  uint64   `pg:",pk,use_zero"`
@@ -63,8 +61,7 @@ type MinerSectorInfoV1_6 struct {
 }
 
 type MinerSectorInfoV0 struct {
-	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName struct{} `pg:"miner_sector_infos"`
+	tableName struct{} `pg:"miner_sector_infos"` // nolint: structcheck
 	Height    int64    `pg:",pk,notnull,use_zero"`
 	MinerID   string   `pg:",pk,notnull"`
 	SectorID  uint64   `pg:",pk,use_zero"`

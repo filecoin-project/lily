@@ -12,8 +12,9 @@ import (
 	"github.com/filecoin-project/lily/model"
 )
 
-// IdAddress contains a mapping of ID addresses to robust addresses from the init actor’s state.
-type IdAddress struct {
+// IDAddress contains a mapping of ID addresses to robust addresses from the init actor’s state.
+type IDAddress struct {
+	tableName struct{} `pg:"id_addresses"` // nolint: structcheck
 	// Epoch when this address mapping was created or updated.
 	Height int64 `pg:",pk,notnull,use_zero"`
 	// ID address
@@ -24,22 +25,21 @@ type IdAddress struct {
 	StateRoot string `pg:",pk,notnull"`
 }
 
-type IdAddressV0 struct {
-	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName struct{} `pg:"id_addresses"`
+type IDAddressV0 struct {
+	tableName struct{} `pg:"id_addresses"` // nolint: structcheck
 	ID        string   `pg:",pk,notnull"`
 	Address   string   `pg:",pk,notnull"`
 	StateRoot string   `pg:",pk,notnull"`
 }
 
-func (ia *IdAddress) AsVersion(version model.Version) (interface{}, bool) {
+func (ia *IDAddress) AsVersion(version model.Version) (interface{}, bool) {
 	switch version.Major {
 	case 0:
 		if ia == nil {
-			return (*IdAddressV0)(nil), true
+			return (*IDAddressV0)(nil), true
 		}
 
-		return &IdAddressV0{
+		return &IDAddressV0{
 			ID:        ia.ID,
 			Address:   ia.Address,
 			StateRoot: ia.StateRoot,
@@ -51,24 +51,24 @@ func (ia *IdAddress) AsVersion(version model.Version) (interface{}, bool) {
 	}
 }
 
-func (ia *IdAddress) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (ia *IDAddress) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "id_addresses"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
 
 	m, ok := ia.AsVersion(version)
 	if !ok {
-		return fmt.Errorf("IdAddress not supported for schema version %s", version)
+		return fmt.Errorf("IDAddress not supported for schema version %s", version)
 	}
 
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, m)
 }
 
-type IdAddressList []*IdAddress
+type IDAddressList []*IDAddress
 
-func (ias IdAddressList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := otel.Tracer("").Start(ctx, "IdAddressList.PersistWithTx")
+func (ias IDAddressList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+	ctx, span := otel.Tracer("").Start(ctx, "IDAddressList.PersistWithTx")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.Int("count", len(ias)))
 	}

@@ -51,8 +51,6 @@ build/.update-modules:
 
 CLEAN+=build/.update-modules
 
-# tools
-toolspath:=support/tools
 
 ldflags=-X=github.com/filecoin-project/lily/version.GitVersion=$(LILY_VERSION)
 ifneq ($(strip $(LDFLAGS)),)
@@ -113,6 +111,7 @@ test-coverage:
 	LILY_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test -coverprofile=coverage.out ./...
 
 # tools
+toolspath:=support/tools
 
 $(toolspath)/bin/golangci-lint: $(toolspath)/go.mod
 	@mkdir -p $(dir $@)
@@ -120,7 +119,7 @@ $(toolspath)/bin/golangci-lint: $(toolspath)/go.mod
 
 .PHONY: lint
 lint: $(toolspath)/bin/golangci-lint
-	$(toolspath)/bin/golangci-lint run ./...
+	$(toolspath)/bin/golangci-lint run --concurrency 8 ./...
 
 .PHONY: actors-gen
 actors-gen:

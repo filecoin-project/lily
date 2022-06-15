@@ -98,7 +98,7 @@ func vectorsForNetwork(fileName string, meta fetch.VectorFile) (*TestVector, err
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer f.Close() // nolint: errcheck
 
 	tareader := tar.NewReader(f)
 	var genesis, snapshot *os.File

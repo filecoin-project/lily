@@ -408,7 +408,7 @@ func TestCSVPersistValueStringSlice(t *testing.T) {
 
 type VersionedModelLatest struct {
 	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName struct{} `pg:"versioned_model"`
+	tableName struct{} `pg:"versioned_model"` // nolint: structcheck
 	Height    int64    `pg:",pk,notnull,use_zero"`
 	Block     string   `pg:",notnull"`
 	Message   string   `pg:",notnull"`
@@ -417,7 +417,7 @@ type VersionedModelLatest struct {
 // VersionedModelV2 is an older version of VersionedModel that uses same table name but different structure
 type VersionedModelV2 struct {
 	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName struct{} `pg:"versioned_model"`
+	tableName struct{} `pg:"versioned_model"` // nolint: structcheck
 	Height    int64    `pg:",pk,notnull,use_zero"`
 	Block     string   `pg:",notnull"`
 }

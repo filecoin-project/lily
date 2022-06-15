@@ -1,4 +1,4 @@
-package internal_parsed_message
+package internalparsedmessage
 
 import (
 	"context"
