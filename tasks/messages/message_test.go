@@ -19,7 +19,6 @@ import (
 	paych6 "github.com/filecoin-project/specs-actors/v6/actors/builtin/paych"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
-	"github.com/filecoin-project/lily/chain/actors/builtin/market"
 	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/lens/util"
 
@@ -151,10 +150,10 @@ func TestParseMessageParams(t *testing.T) {
 			name:      "issue-741",
 			method:    4,
 			actorCode: builtin3.StorageMarketActorCodeID,
-			params: mustMarshalCbor(t, &market.PublishStorageDealsParams{
-				Deals: []market.ClientDealProposal{
+			params: mustMarshalCbor(t, &market0.PublishStorageDealsParams{
+				Deals: []market0.ClientDealProposal{
 					{
-						Proposal: market0.DealProposal(market.DealProposal{
+						Proposal: market0.DealProposal(market0.DealProposal{
 							PieceCID:             mustDecodeCID(t, "baga6ea4seaqgqzxo27ongakwwef5x3cihl6fgritvgeq5akvjqij6lpgofsogiq"),
 							PieceSize:            1310720,
 							VerifiedDeal:         false,
