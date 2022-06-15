@@ -6,6 +6,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	logging "github.com/ipfs/go-log/v2"
+	"github.com/libp2p/go-libp2p-core/peer"
 	maddr "github.com/multiformats/go-multiaddr"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -46,8 +47,12 @@ func (InfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 	}
 
 	var newWorker string
-	if newInfo.NewWorker != address.Undef {
-		newWorker = newInfo.NewWorker.String()
+	var newWorkerEpoch int64
+	if pendingWorkerKey := newInfo.PendingWorkerKey; pendingWorkerKey != nil {
+		if pendingWorkerKey.NewWorker != address.Undef {
+			newWorker = pendingWorkerKey.NewWorker.String()
+		}
+		newWorkerEpoch = int64(pendingWorkerKey.EffectiveAt)
 	}
 
 	var newCtrlAddresses []string
@@ -72,7 +77,7 @@ func (InfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 		OwnerID:                 newInfo.Owner.String(),
 		WorkerID:                newInfo.Worker.String(),
 		NewWorker:               newWorker,
-		WorkerChangeEpoch:       int64(newInfo.WorkerChangeEpoch),
+		WorkerChangeEpoch:       newWorkerEpoch,
 		ConsensusFaultedElapsed: int64(newInfo.ConsensusFaultElapsed),
 		ControlAddresses:        newCtrlAddresses,
 		MultiAddresses:          newMultiAddrs,
@@ -80,7 +85,12 @@ func (InfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 	}
 
 	if newInfo.PeerId != nil {
-		mi.PeerID = newInfo.PeerId.String()
+		newPeerID, err := peer.IDFromBytes(newInfo.PeerId)
+		if err != nil {
+			log.Warnw("failed to decode miner peerID", "miner", a.Address, "head", a.Actor.Head.String(), "error", err)
+		} else {
+			mi.PeerID = newPeerID.String()
+		}
 	}
 
 	return mi, nil

@@ -9,6 +9,7 @@ import (
 
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/big"
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	"github.com/filecoin-project/go-state-types/cbor"
 	"github.com/filecoin-project/go-state-types/crypto"
 	market0 "github.com/filecoin-project/specs-actors/actors/builtin/market"
@@ -19,7 +20,6 @@ import (
 	paych6 "github.com/filecoin-project/specs-actors/v6/actors/builtin/paych"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
-	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/lens/util"
 
 	"github.com/filecoin-project/go-address"
@@ -185,9 +185,9 @@ func TestParseMessageParams(t *testing.T) {
 			name:      "SubmitWindowedPost",
 			method:    5,
 			actorCode: builtin3.StorageMinerActorCodeID,
-			params: mustMarshalCbor(t, &miner.SubmitWindowedPoStParams{
+			params: mustMarshalCbor(t, &minertypes.SubmitWindowedPoStParams{
 				Deadline: 38,
-				Partitions: []miner.PoStPartition{
+				Partitions: []minertypes.PoStPartition{
 					{
 						Index:   0,
 						Skipped: bitfield.BitField{},
@@ -212,7 +212,7 @@ func TestParseMessageParams(t *testing.T) {
 			name:      "ProveCommitSector",
 			method:    7,
 			actorCode: builtin3.StorageMinerActorCodeID,
-			params: mustMarshalCbor(t, &miner.ProveCommitSectorParams{
+			params: mustMarshalCbor(t, &minertypes.ProveCommitSectorParams{
 				SectorNumber: 299696,
 				Proof:        mustDecodeBase64(t, "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"),
 			}),
@@ -225,8 +225,8 @@ func TestParseMessageParams(t *testing.T) {
 			name:      "DeclareFaultsRecovered",
 			method:    11,
 			actorCode: builtin5.StorageMinerActorCodeID,
-			params: mustMarshalCbor(t, &miner.DeclareFaultsRecoveredParams{
-				Recoveries: []miner.RecoveryDeclaration{
+			params: mustMarshalCbor(t, &minertypes.DeclareFaultsRecoveredParams{
+				Recoveries: []minertypes.RecoveryDeclaration{
 					{
 						Deadline:  1,
 						Partition: 1,

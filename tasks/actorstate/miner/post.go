@@ -7,6 +7,7 @@ import (
 
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
@@ -64,7 +65,7 @@ func (PoStExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 		if msg.Receipt == nil || msg.Receipt.ExitCode.IsError() {
 			return nil
 		}
-		params := miner.SubmitWindowedPoStParams{}
+		params := minertypes.SubmitWindowedPoStParams{}
 		if err := params.UnmarshalCBOR(bytes.NewBuffer(msg.Message.Params)); err != nil {
 			return fmt.Errorf("unmarshal post params: %w", err)
 		}
