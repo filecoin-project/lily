@@ -5,13 +5,10 @@ package market
 import (
 	"unicode/utf8"
 
-	"github.com/filecoin-project/go-state-types/network"
 	"golang.org/x/xerrors"
 	"github.com/ipfs/go-cid"
 
-	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/go-state-types/cbor"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
@@ -63,40 +60,16 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 	return nil, xerrors.Errorf("unknown actor code %s", act.Code)
 }
 
-func MakeState(store adt.Store, av actors.Version) (State, error) {
-	switch av {
-{{range .versions}}
-	case actors.Version{{.}}:
-		return make{{.}}(store)
-{{end}}
-}
-	return nil, xerrors.Errorf("unknown actor version %d", av)
-}
-
 type State interface {
 	cbor.Marshaler
 	Code() cid.Cid
-	BalancesChanged(State) (bool, error)
-	EscrowTable() (BalanceTable, error)
-	LockedTable() (BalanceTable, error)
-	TotalLocked() (abi.TokenAmount, error)
 	StatesChanged(State) (bool, error)
 	States() (DealStates, error)
 	ProposalsChanged(State) (bool, error)
 	Proposals() (DealProposals, error)
-	VerifyDealsForActivation(
-		minerAddr address.Address, deals []abi.DealID, currEpoch, sectorExpiry abi.ChainEpoch,
-	) (weight, verifiedWeight abi.DealWeight, err error)
-	NextID() (abi.DealID, error)
-	GetState() interface{}
 
 	DealProposalsAmtBitwidth() int
 	DealStatesAmtBitwidth() int
-}
-
-type BalanceTable interface {
-	ForEach(cb func(address.Address, abi.TokenAmount) error) error
-	Get(key address.Address) (abi.TokenAmount, error)
 }
 
 type DealStates interface {
@@ -115,27 +88,6 @@ type DealProposals interface {
 	decode(*cbg.Deferred) (*market{{.latestVersion}}.DealProposal, error)
 }
 
-
-type PublishStorageDealsReturn interface {
-    DealIDs() ([]abi.DealID, error)
-	// Note that this index is based on the batch of deals that were published, NOT the DealID
-	IsDealValid(index uint64) (bool, int, error)
-}
-
-func DecodePublishStorageDealsReturn(b []byte, nv network.Version) (PublishStorageDealsReturn, error) {
-	av, err := actors.VersionForNetwork(nv)
-	if err != nil {
-		return nil, err
-	}
-
-	switch av {
-{{range .versions}}
-	case actors.Version{{.}}:
-		return decodePublishStorageDealsReturn{{.}}(b)
-{{end}}
-}
-	return nil, xerrors.Errorf("unknown actor version %d", av)
-}
 
 type DealProposal = market{{.latestVersion}}.DealProposal
 
@@ -167,30 +119,6 @@ type DealProposalChanges struct {
 type ProposalIDState struct {
 	ID		 abi.DealID
 	Proposal market{{.latestVersion}}.DealProposal
-}
-
-func EmptyDealState() *DealState {
-	return &DealState{
-		SectorStartEpoch: -1,
-		SlashEpoch:		  -1,
-		LastUpdatedEpoch: -1,
-	}
-}
-
-// returns the earned fees and pending fees for a given deal
-func GetDealFees(deal market{{.latestVersion}}.DealProposal, height abi.ChainEpoch) (abi.TokenAmount, abi.TokenAmount) {
-	   tf := big.Mul(deal.StoragePricePerEpoch, big.NewInt(int64(deal.EndEpoch-deal.StartEpoch)))
-
-	   ef := big.Mul(deal.StoragePricePerEpoch, big.NewInt(int64(height-deal.StartEpoch)))
-	   if ef.LessThan(big.Zero()) {
-			   ef = big.Zero()
-	   }
-
-	   if ef.GreaterThan(tf) {
-			   ef = tf
-	   }
-
-	   return ef, big.Sub(tf, ef)
 }
 
 func labelFromGoString(s string) (market{{.latestVersion}}.DealLabel, error) {

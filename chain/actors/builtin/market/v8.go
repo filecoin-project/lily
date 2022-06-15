@@ -5,17 +5,12 @@ package market
 import (
 	"bytes"
 
-	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/go-bitfield"
-	rlepluslazy "github.com/filecoin-project/go-bitfield/rle"
-
 	"github.com/filecoin-project/lotus/chain/actors/adt"
-	"github.com/filecoin-project/lotus/chain/types"
 
 	market8 "github.com/filecoin-project/go-state-types/builtin/v8/market"
 	adt8 "github.com/filecoin-project/go-state-types/builtin/v8/util/adt"
@@ -52,22 +47,6 @@ type state8 struct {
 	store adt.Store
 }
 
-func (s *state8) TotalLocked() (abi.TokenAmount, error) {
-	fml := types.BigAdd(s.TotalClientLockedCollateral, s.TotalProviderLockedCollateral)
-	fml = types.BigAdd(fml, s.TotalClientStorageFee)
-	return fml, nil
-}
-
-func (s *state8) BalancesChanged(otherState State) (bool, error) {
-	otherState8, ok := otherState.(*state8)
-	if !ok {
-		// there's no way to compare different versions of the state, so let's
-		// just say that means the state of balances has changed
-		return true, nil
-	}
-	return !s.State.EscrowTable.Equals(otherState8.State.EscrowTable) || !s.State.LockedTable.Equals(otherState8.State.LockedTable), nil
-}
-
 func (s *state8) StatesChanged(otherState State) (bool, error) {
 	otherState8, ok := otherState.(*state8)
 	if !ok {
@@ -102,49 +81,6 @@ func (s *state8) Proposals() (DealProposals, error) {
 		return nil, err
 	}
 	return &dealProposals8{proposalArray}, nil
-}
-
-func (s *state8) EscrowTable() (BalanceTable, error) {
-	bt, err := adt8.AsBalanceTable(s.store, s.State.EscrowTable)
-	if err != nil {
-		return nil, err
-	}
-	return &balanceTable8{bt}, nil
-}
-
-func (s *state8) LockedTable() (BalanceTable, error) {
-	bt, err := adt8.AsBalanceTable(s.store, s.State.LockedTable)
-	if err != nil {
-		return nil, err
-	}
-	return &balanceTable8{bt}, nil
-}
-
-func (s *state8) VerifyDealsForActivation(
-	minerAddr address.Address, deals []abi.DealID, currEpoch, sectorExpiry abi.ChainEpoch,
-) (weight, verifiedWeight abi.DealWeight, err error) {
-	w, vw, _, err := market8.ValidateDealsForActivation(&s.State, s.store, deals, minerAddr, sectorExpiry, currEpoch)
-	return w, vw, err
-}
-
-func (s *state8) NextID() (abi.DealID, error) {
-	return s.State.NextID, nil
-}
-
-type balanceTable8 struct {
-	*adt8.BalanceTable
-}
-
-func (bt *balanceTable8) ForEach(cb func(address.Address, abi.TokenAmount) error) error {
-	asMap := (*adt8.Map)(bt.BalanceTable)
-	var ta abi.TokenAmount
-	return asMap.ForEach(&ta, func(key string) error {
-		a, err := address.NewFromBytes([]byte(key))
-		if err != nil {
-			return err
-		}
-		return cb(a, ta)
-	})
 }
 
 type dealStates8 struct {
@@ -260,52 +196,6 @@ func fromV8DealProposal(v8 market8.DealProposal) (DealProposal, error) {
 		ProviderCollateral: v8.ProviderCollateral,
 		ClientCollateral:   v8.ClientCollateral,
 	}, nil
-}
-
-func (s *state8) GetState() interface{} {
-	return &s.State
-}
-
-var _ PublishStorageDealsReturn = (*publishStorageDealsReturn8)(nil)
-
-func decodePublishStorageDealsReturn8(b []byte) (PublishStorageDealsReturn, error) {
-	var retval market8.PublishStorageDealsReturn
-	if err := retval.UnmarshalCBOR(bytes.NewReader(b)); err != nil {
-		return nil, xerrors.Errorf("failed to unmarshal PublishStorageDealsReturn: %w", err)
-	}
-
-	return &publishStorageDealsReturn8{retval}, nil
-}
-
-type publishStorageDealsReturn8 struct {
-	market8.PublishStorageDealsReturn
-}
-
-func (r *publishStorageDealsReturn8) IsDealValid(index uint64) (bool, int, error) {
-
-	set, err := r.ValidDeals.IsSet(index)
-	if err != nil || !set {
-		return false, -1, err
-	}
-	maskBf, err := bitfield.NewFromIter(&rlepluslazy.RunSliceIterator{
-		Runs: []rlepluslazy.Run{rlepluslazy.Run{Val: true, Len: index}}})
-	if err != nil {
-		return false, -1, err
-	}
-	before, err := bitfield.IntersectBitField(maskBf, r.ValidDeals)
-	if err != nil {
-		return false, -1, err
-	}
-	outIdx, err := before.Count()
-	if err != nil {
-		return false, -1, err
-	}
-	return set, int(outIdx), nil
-
-}
-
-func (r *publishStorageDealsReturn8) DealIDs() ([]abi.DealID, error) {
-	return r.IDs, nil
 }
 
 func (s *state8) Code() cid.Cid {

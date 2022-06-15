@@ -5,19 +5,12 @@ package market
 import (
 	"bytes"
 
-	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
-	{{if (ge .v 6)}}
-	rlepluslazy "github.com/filecoin-project/go-bitfield/rle"
-	"github.com/filecoin-project/go-bitfield"
-	{{end}}
-
 
 	"github.com/filecoin-project/lotus/chain/actors/adt"
-	"github.com/filecoin-project/lotus/chain/types"
 
 {{if (le .v 7)}}
 	market{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin/market"
@@ -70,22 +63,6 @@ type state{{.v}} struct {
 	store adt.Store
 }
 
-func (s *state{{.v}}) TotalLocked() (abi.TokenAmount, error) {
-	fml := types.BigAdd(s.TotalClientLockedCollateral, s.TotalProviderLockedCollateral)
-	fml = types.BigAdd(fml, s.TotalClientStorageFee)
-	return fml, nil
-}
-
-func (s *state{{.v}}) BalancesChanged(otherState State) (bool, error) {
-	otherState{{.v}}, ok := otherState.(*state{{.v}})
-	if !ok {
-		// there's no way to compare different versions of the state, so let's
-		// just say that means the state of balances has changed
-		return true, nil
-	}
-	return !s.State.EscrowTable.Equals(otherState{{.v}}.State.EscrowTable) || !s.State.LockedTable.Equals(otherState{{.v}}.State.LockedTable), nil
-}
-
 func (s *state{{.v}}) StatesChanged(otherState State) (bool, error) {
 	otherState{{.v}}, ok := otherState.(*state{{.v}})
 	if !ok {
@@ -120,49 +97,6 @@ func (s *state{{.v}}) Proposals() (DealProposals, error) {
 		return nil, err
 	}
 	return &dealProposals{{.v}}{proposalArray}, nil
-}
-
-func (s *state{{.v}}) EscrowTable() (BalanceTable, error) {
-	bt, err := adt{{.v}}.AsBalanceTable(s.store, s.State.EscrowTable)
-	if err != nil {
-		return nil, err
-	}
-	return &balanceTable{{.v}}{bt}, nil
-}
-
-func (s *state{{.v}}) LockedTable() (BalanceTable, error) {
-	bt, err := adt{{.v}}.AsBalanceTable(s.store, s.State.LockedTable)
-	if err != nil {
-		return nil, err
-	}
-	return &balanceTable{{.v}}{bt}, nil
-}
-
-func (s *state{{.v}}) VerifyDealsForActivation(
-	minerAddr address.Address, deals []abi.DealID, currEpoch, sectorExpiry abi.ChainEpoch,
-) (weight, verifiedWeight abi.DealWeight, err error) {
-	w, vw{{if (ge .v 2)}}, _{{end}}, err := market{{.v}}.ValidateDealsForActivation(&s.State, s.store, deals, minerAddr, sectorExpiry, currEpoch)
-	return w, vw, err
-}
-
-func (s *state{{.v}}) NextID() (abi.DealID, error) {
-	return s.State.NextID, nil
-}
-
-type balanceTable{{.v}} struct {
-	*adt{{.v}}.BalanceTable
-}
-
-func (bt *balanceTable{{.v}}) ForEach(cb func(address.Address, abi.TokenAmount) error) error {
-	asMap := (*adt{{.v}}.Map)(bt.BalanceTable)
-	var ta abi.TokenAmount
-	return asMap.ForEach(&ta, func(key string) error {
-		a, err := address.NewFromBytes([]byte(key))
-		if err != nil {
-			return err
-		}
-		return cb(a, ta)
-	})
 }
 
 type dealStates{{.v}} struct {
@@ -286,55 +220,6 @@ func fromV{{.v}}DealProposal(v{{.v}} market{{.v}}.DealProposal) (DealProposal, e
     }, nil
 }
 
-
-func (s *state{{.v}}) GetState() interface{} {
-	return &s.State
-}
-
-var _ PublishStorageDealsReturn = (*publishStorageDealsReturn{{.v}})(nil)
-
-func decodePublishStorageDealsReturn{{.v}}(b []byte) (PublishStorageDealsReturn, error) {
-	var retval market{{.v}}.PublishStorageDealsReturn
-	if err := retval.UnmarshalCBOR(bytes.NewReader(b)); err != nil {
-		return nil, xerrors.Errorf("failed to unmarshal PublishStorageDealsReturn: %w", err)
-	}
-
-	return &publishStorageDealsReturn{{.v}}{retval}, nil
-}
-
-type publishStorageDealsReturn{{.v}} struct {
-	market{{.v}}.PublishStorageDealsReturn
-}
-
-func (r *publishStorageDealsReturn{{.v}}) IsDealValid(index uint64) (bool, int, error) {
-	{{if (ge .v 6)}}
-	set, err := r.ValidDeals.IsSet(index)
-	if err != nil || !set {
-		return false, -1, err
-	}
-	maskBf, err := bitfield.NewFromIter(&rlepluslazy.RunSliceIterator{
-		Runs: []rlepluslazy.Run{rlepluslazy.Run{Val: true, Len: index}}})
-	if err != nil {
-		return false, -1, err
-	}
-	before, err := bitfield.IntersectBitField(maskBf, r.ValidDeals)
-	if err != nil {
-		return false, -1, err
-	}
-	outIdx, err := before.Count()
-	if err != nil {
-		return false, -1, err
-	}
-	return set, int(outIdx), nil
-	{{else}}
-	    // PublishStorageDeals only succeeded if all deals were valid in this version of actors
-	    return true, int(index), nil
-	{{end}}
-}
-
-func (r *publishStorageDealsReturn{{.v}}) DealIDs() ([]abi.DealID, error) {
-    return r.IDs, nil
-}
 
 func (s *state{{.v}}) Code() cid.Cid {
     return builtin{{.v}}.StorageMarketActorCodeID

@@ -5,14 +5,12 @@ package market
 import (
 	"bytes"
 
-	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lotus/chain/actors/adt"
-	"github.com/filecoin-project/lotus/chain/types"
 
 	market3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/market"
 	adt3 "github.com/filecoin-project/specs-actors/v3/actors/util/adt"
@@ -49,22 +47,6 @@ type state3 struct {
 	store adt.Store
 }
 
-func (s *state3) TotalLocked() (abi.TokenAmount, error) {
-	fml := types.BigAdd(s.TotalClientLockedCollateral, s.TotalProviderLockedCollateral)
-	fml = types.BigAdd(fml, s.TotalClientStorageFee)
-	return fml, nil
-}
-
-func (s *state3) BalancesChanged(otherState State) (bool, error) {
-	otherState3, ok := otherState.(*state3)
-	if !ok {
-		// there's no way to compare different versions of the state, so let's
-		// just say that means the state of balances has changed
-		return true, nil
-	}
-	return !s.State.EscrowTable.Equals(otherState3.State.EscrowTable) || !s.State.LockedTable.Equals(otherState3.State.LockedTable), nil
-}
-
 func (s *state3) StatesChanged(otherState State) (bool, error) {
 	otherState3, ok := otherState.(*state3)
 	if !ok {
@@ -99,49 +81,6 @@ func (s *state3) Proposals() (DealProposals, error) {
 		return nil, err
 	}
 	return &dealProposals3{proposalArray}, nil
-}
-
-func (s *state3) EscrowTable() (BalanceTable, error) {
-	bt, err := adt3.AsBalanceTable(s.store, s.State.EscrowTable)
-	if err != nil {
-		return nil, err
-	}
-	return &balanceTable3{bt}, nil
-}
-
-func (s *state3) LockedTable() (BalanceTable, error) {
-	bt, err := adt3.AsBalanceTable(s.store, s.State.LockedTable)
-	if err != nil {
-		return nil, err
-	}
-	return &balanceTable3{bt}, nil
-}
-
-func (s *state3) VerifyDealsForActivation(
-	minerAddr address.Address, deals []abi.DealID, currEpoch, sectorExpiry abi.ChainEpoch,
-) (weight, verifiedWeight abi.DealWeight, err error) {
-	w, vw, _, err := market3.ValidateDealsForActivation(&s.State, s.store, deals, minerAddr, sectorExpiry, currEpoch)
-	return w, vw, err
-}
-
-func (s *state3) NextID() (abi.DealID, error) {
-	return s.State.NextID, nil
-}
-
-type balanceTable3 struct {
-	*adt3.BalanceTable
-}
-
-func (bt *balanceTable3) ForEach(cb func(address.Address, abi.TokenAmount) error) error {
-	asMap := (*adt3.Map)(bt.BalanceTable)
-	var ta abi.TokenAmount
-	return asMap.ForEach(&ta, func(key string) error {
-		a, err := address.NewFromBytes([]byte(key))
-		if err != nil {
-			return err
-		}
-		return cb(a, ta)
-	})
 }
 
 type dealStates3 struct {
@@ -260,36 +199,6 @@ func fromV3DealProposal(v3 market3.DealProposal) (DealProposal, error) {
 		ProviderCollateral: v3.ProviderCollateral,
 		ClientCollateral:   v3.ClientCollateral,
 	}, nil
-}
-
-func (s *state3) GetState() interface{} {
-	return &s.State
-}
-
-var _ PublishStorageDealsReturn = (*publishStorageDealsReturn3)(nil)
-
-func decodePublishStorageDealsReturn3(b []byte) (PublishStorageDealsReturn, error) {
-	var retval market3.PublishStorageDealsReturn
-	if err := retval.UnmarshalCBOR(bytes.NewReader(b)); err != nil {
-		return nil, xerrors.Errorf("failed to unmarshal PublishStorageDealsReturn: %w", err)
-	}
-
-	return &publishStorageDealsReturn3{retval}, nil
-}
-
-type publishStorageDealsReturn3 struct {
-	market3.PublishStorageDealsReturn
-}
-
-func (r *publishStorageDealsReturn3) IsDealValid(index uint64) (bool, int, error) {
-
-	// PublishStorageDeals only succeeded if all deals were valid in this version of actors
-	return true, int(index), nil
-
-}
-
-func (r *publishStorageDealsReturn3) DealIDs() ([]abi.DealID, error) {
-	return r.IDs, nil
 }
 
 func (s *state3) Code() cid.Cid {
