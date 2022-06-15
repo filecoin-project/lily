@@ -25,7 +25,6 @@ var versionImports = map[int]string{
 }
 
 var actors = map[string][]int{
-	"cron":     versions,
 	"init":     versions,
 	"market":   versions,
 	"miner":    versions,
