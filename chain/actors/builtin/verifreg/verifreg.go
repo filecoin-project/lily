@@ -17,6 +17,7 @@ import (
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
 	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
+	builtin8 "github.com/filecoin-project/specs-actors/v8/actors/builtin"
 
 	"github.com/filecoin-project/lotus/chain/types"
 
@@ -54,11 +55,15 @@ func init() {
 		return load7(store, root)
 	})
 
+	builtin.RegisterActorState(builtin8.VerifiedRegistryActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
+		return load8(store, root)
+	})
+
 }
 
 var (
-	Address = builtin7.VerifiedRegistryActorAddr
-	Methods = builtin7.MethodsVerifiedRegistry
+	Address = builtin8.VerifiedRegistryActorAddr
+	Methods = builtin8.MethodsVerifiedRegistry
 )
 
 func AllCodes() []cid.Cid {
@@ -70,6 +75,7 @@ func AllCodes() []cid.Cid {
 		builtin5.VerifiedRegistryActorCodeID,
 		builtin6.VerifiedRegistryActorCodeID,
 		builtin7.VerifiedRegistryActorCodeID,
+		builtin8.VerifiedRegistryActorCodeID,
 	}
 }
 
@@ -96,6 +102,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 	case builtin7.VerifiedRegistryActorCodeID:
 		return load7(store, act.Head)
+
+	case builtin8.VerifiedRegistryActorCodeID:
+		return load8(store, act.Head)
 
 	}
 	return nil, fmt.Errorf("unknown actor code %s", act.Code)

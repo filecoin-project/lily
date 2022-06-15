@@ -16,6 +16,7 @@ import (
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
 	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
+	builtin8 "github.com/filecoin-project/specs-actors/v8/actors/builtin"
 
 	"github.com/filecoin-project/lotus/chain/types"
 
@@ -52,11 +53,15 @@ func init() {
 	builtin.RegisterActorState(builtin7.RewardActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
 		return load7(store, root)
 	})
+
+	builtin.RegisterActorState(builtin8.RewardActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
+		return load8(store, root)
+	})
 }
 
 var (
-	Address = builtin7.RewardActorAddr
-	Methods = builtin7.MethodsReward
+	Address = builtin8.RewardActorAddr
+	Methods = builtin8.MethodsReward
 )
 
 func AllCodes() []cid.Cid {
@@ -68,6 +73,7 @@ func AllCodes() []cid.Cid {
 		builtin5.RewardActorCodeID,
 		builtin6.RewardActorCodeID,
 		builtin7.RewardActorCodeID,
+		builtin8.RewardActorCodeID,
 	}
 }
 
@@ -94,6 +100,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 	case builtin7.RewardActorCodeID:
 		return load7(store, act.Head)
+
+	case builtin8.RewardActorCodeID:
+		return load8(store, act.Head)
 
 	}
 	return nil, fmt.Errorf("unknown actor code %s", act.Code)

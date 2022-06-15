@@ -43,14 +43,19 @@ import (
 	miner7 "github.com/filecoin-project/specs-actors/v7/actors/builtin/miner"
 	verifreg7 "github.com/filecoin-project/specs-actors/v7/actors/builtin/verifreg"
 
-	paych7 "github.com/filecoin-project/specs-actors/v7/actors/builtin/paych"
+	builtin8 "github.com/filecoin-project/specs-actors/v8/actors/builtin"
+	market8 "github.com/filecoin-project/specs-actors/v8/actors/builtin/market"
+	miner8 "github.com/filecoin-project/specs-actors/v8/actors/builtin/miner"
+	verifreg8 "github.com/filecoin-project/specs-actors/v8/actors/builtin/verifreg"
+
+	paych8 "github.com/filecoin-project/specs-actors/v8/actors/builtin/paych"
 )
 
 const (
-	ChainFinality                  = miner7.ChainFinality
+	ChainFinality                  = miner8.ChainFinality
 	SealRandomnessLookback         = ChainFinality
-	PaychSettleDelay               = paych7.SettleDelay
-	MaxPreCommitRandomnessLookback = builtin7.EpochsInDay + SealRandomnessLookback
+	PaychSettleDelay               = paych8.SettleDelay
+	MaxPreCommitRandomnessLookback = builtin8.EpochsInDay + SealRandomnessLookback
 )
 
 // SetSupportedProofTypes sets supported proof types, across all actor versions.
@@ -77,6 +82,8 @@ func SetSupportedProofTypes(types ...abi.RegisteredSealProof) {
 	miner6.PreCommitSealProofTypesV8 = make(map[abi.RegisteredSealProof]struct{}, len(types))
 
 	miner7.PreCommitSealProofTypesV8 = make(map[abi.RegisteredSealProof]struct{}, len(types))
+
+	miner8.PreCommitSealProofTypesV8 = make(map[abi.RegisteredSealProof]struct{}, len(types))
 
 	AddSupportedProofTypes(types...)
 }
@@ -113,6 +120,8 @@ func AddSupportedProofTypes(types ...abi.RegisteredSealProof) {
 
 		miner7.PreCommitSealProofTypesV8[t+abi.RegisteredSealProof_StackedDrg2KiBV1_1] = struct{}{}
 
+		miner8.PreCommitSealProofTypesV8[t+abi.RegisteredSealProof_StackedDrg2KiBV1_1] = struct{}{}
+
 	}
 }
 
@@ -135,11 +144,13 @@ func SetPreCommitChallengeDelay(delay abi.ChainEpoch) {
 
 	miner7.PreCommitChallengeDelay = delay
 
+	miner8.PreCommitChallengeDelay = delay
+
 }
 
 // TODO: this function shouldn't really exist. Instead, the API should expose the precommit delay.
 func GetPreCommitChallengeDelay() abi.ChainEpoch {
-	return miner7.PreCommitChallengeDelay
+	return miner8.PreCommitChallengeDelay
 }
 
 // SetConsensusMinerMinPower sets the minimum power of an individual miner must
@@ -173,6 +184,10 @@ func SetConsensusMinerMinPower(p abi.StoragePower) {
 		policy.ConsensusMinerMinPower = p
 	}
 
+	for _, policy := range builtin8.PoStProofPolicies {
+		policy.ConsensusMinerMinPower = p
+	}
+
 }
 
 // SetMinVerifiedDealSize sets the minimum size of a verified deal. This should
@@ -192,6 +207,8 @@ func SetMinVerifiedDealSize(size abi.StoragePower) {
 	verifreg6.MinVerifiedDealSize = size
 
 	verifreg7.MinVerifiedDealSize = size
+
+	verifreg8.MinVerifiedDealSize = size
 
 }
 
@@ -225,6 +242,10 @@ func GetMaxProveCommitDuration(ver actors.Version, t abi.RegisteredSealProof) ab
 	case actors.Version7:
 
 		return miner7.MaxProveCommitDuration[t]
+
+	case actors.Version8:
+
+		return miner8.MaxProveCommitDuration[t]
 
 	default:
 		panic("unsupported actors version")
@@ -266,13 +287,17 @@ func DealProviderCollateralBounds(
 
 		return market7.DealProviderCollateralBounds(size, verified, rawBytePower, qaPower, baselinePower, circulatingFil)
 
+	case actors.Version8:
+
+		return market8.DealProviderCollateralBounds(size, verified, rawBytePower, qaPower, baselinePower, circulatingFil)
+
 	default:
 		panic("unsupported actors version")
 	}
 }
 
 func DealDurationBounds(pieceSize abi.PaddedPieceSize) (min, max abi.ChainEpoch) {
-	return market7.DealDurationBounds(pieceSize)
+	return market8.DealDurationBounds(pieceSize)
 }
 
 // Sets the challenge window and scales the proving period to match (such that
@@ -320,6 +345,13 @@ func SetWPoStChallengeWindow(period abi.ChainEpoch) {
 	// scale it if we're scaling the challenge period.
 	miner7.WPoStDisputeWindow = period * 30
 
+	miner8.WPoStChallengeWindow = period
+	miner8.WPoStProvingPeriod = period * abi.ChainEpoch(miner8.WPoStPeriodDeadlines)
+
+	// by default, this is 2x finality which is 30 periods.
+	// scale it if we're scaling the challenge period.
+	miner8.WPoStDisputeWindow = period * 30
+
 }
 
 func GetWinningPoStSectorSetLookback(nwVer network.Version) abi.ChainEpoch {
@@ -332,22 +364,22 @@ func GetWinningPoStSectorSetLookback(nwVer network.Version) abi.ChainEpoch {
 }
 
 func GetMaxSectorExpirationExtension() abi.ChainEpoch {
-	return miner7.MaxSectorExpirationExtension
+	return miner8.MaxSectorExpirationExtension
 }
 
 // TODO: we'll probably need to abstract over this better in the future.
 func GetMaxPoStPartitions(p abi.RegisteredPoStProof) (int, error) {
-	sectorsPerPart, err := builtin7.PoStProofWindowPoStPartitionSectors(p)
+	sectorsPerPart, err := builtin8.PoStProofWindowPoStPartitionSectors(p)
 	if err != nil {
 		return 0, err
 	}
-	return int(miner7.AddressedSectorsMax / sectorsPerPart), nil
+	return int(miner8.AddressedSectorsMax / sectorsPerPart), nil
 }
 
 func GetDefaultSectorSize() abi.SectorSize {
 	// supported sector sizes are the same across versions.
-	szs := make([]abi.SectorSize, 0, len(miner7.PreCommitSealProofTypesV8))
-	for spt := range miner7.PreCommitSealProofTypesV8 {
+	szs := make([]abi.SectorSize, 0, len(miner8.PreCommitSealProofTypesV8))
+	for spt := range miner8.PreCommitSealProofTypesV8 {
 		ss, err := spt.SectorSize()
 		if err != nil {
 			panic(err)
@@ -369,7 +401,7 @@ func GetSectorMaxLifetime(proof abi.RegisteredSealProof, nwVer network.Version) 
 		return builtin4.SealProofPoliciesV0[proof].SectorMaxLifetime
 	}
 
-	return builtin7.SealProofPoliciesV11[proof].SectorMaxLifetime
+	return builtin8.SealProofPoliciesV11[proof].SectorMaxLifetime
 }
 
 func GetAddressedSectorsMax(nwVer network.Version) int {
@@ -395,6 +427,9 @@ func GetAddressedSectorsMax(nwVer network.Version) int {
 
 	case actors.Version7:
 		return miner7.AddressedSectorsMax
+
+	case actors.Version8:
+		return miner8.AddressedSectorsMax
 
 	default:
 		panic("unsupported network version")
@@ -432,6 +467,10 @@ func GetDeclarationsMax(nwVer network.Version) int {
 	case actors.Version7:
 
 		return miner7.DeclarationsMax
+
+	case actors.Version8:
+
+		return miner8.DeclarationsMax
 
 	default:
 		panic("unsupported network version")
