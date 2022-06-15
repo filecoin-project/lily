@@ -31,7 +31,6 @@ var actors = map[string][]int{
 	"market":   versions,
 	"miner":    versions,
 	"multisig": versions,
-	"paych":    versions,
 	"power":    versions,
 	"reward":   versions,
 	"verifreg": versions,
