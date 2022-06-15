@@ -64,6 +64,7 @@ require k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 
 require (
 	github.com/filecoin-project/go-amt-ipld/v4 v4.0.1-0.20220601173204-7b82b2c4bc9c
+	github.com/filecoin-project/specs-actors/v8 v8.0.0
 	github.com/hibiken/asynq v0.23.0
 	github.com/hibiken/asynq/x v0.0.0-20220413130846-5c723f597e01
 	github.com/jedib0t/go-pretty/v6 v6.2.7
@@ -134,7 +135,6 @@ require (
 	github.com/filecoin-project/go-storedcounter v0.1.0 // indirect
 	github.com/filecoin-project/index-provider v0.5.0 // indirect
 	github.com/filecoin-project/pubsub v1.0.0 // indirect
-	github.com/filecoin-project/specs-actors/v8 v8.0.0 // indirect
 	github.com/filecoin-project/specs-storage v0.4.1 // indirect
 	github.com/filecoin-project/storetheindex v0.3.5 // indirect
 	github.com/flynn/noise v1.0.0 // indirect
@@ -304,7 +304,6 @@ require (
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/prometheus/statsd_exporter v0.21.0 // indirect
 	github.com/raulk/go-watchdog v1.2.0 // indirect
-	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rs/cors v1.7.0 // indirect
@@ -316,7 +315,6 @@ require (
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
-	github.com/tj/go-spin v1.1.0 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.0.1 // indirect
@@ -331,8 +329,6 @@ require (
 	github.com/whyrusleeping/ledger-filecoin-go v0.9.1-0.20201010031517-c3dcc1bddce4 // indirect
 	github.com/whyrusleeping/multiaddr-filter v0.0.0-20160516205228-e903e4adabd7 // indirect
 	github.com/whyrusleeping/timecache v0.0.0-20160911033111-cfcb2f1abfee // indirect
-	github.com/xlab/c-for-go v0.0.0-20201112171043-ea6dce5809cb // indirect
-	github.com/xlab/pkgconfig v0.0.0-20170226114623-cea12a0fd245 // indirect
 	github.com/zondax/hid v0.9.0 // indirect
 	github.com/zondax/ledger-go v0.12.1 // indirect
 	go.opentelemetry.io/otel/metric v0.25.0 // indirect
@@ -356,11 +352,6 @@ require (
 	howett.net/plist v0.0.0-20181124034731-591f970eefbb // indirect
 	lukechampine.com/blake3 v1.1.7 // indirect
 	mellium.im/sasl v0.2.1 // indirect
-	modernc.org/cc v1.0.0 // indirect
-	modernc.org/golex v1.0.1 // indirect
-	modernc.org/mathutil v1.1.1 // indirect
-	modernc.org/strutil v1.1.0 // indirect
-	modernc.org/xc v1.0.0 // indirect
 )
 
 replace (
