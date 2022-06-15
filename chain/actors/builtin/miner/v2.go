@@ -4,18 +4,17 @@ package miner
 import (
 	"bytes"
 	"errors"
-	"fmt"
 
-	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
 	rle "github.com/filecoin-project/go-bitfield/rle"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/dline"
 	"github.com/ipfs/go-cid"
-	"github.com/libp2p/go-libp2p-core/peer"
 	cbg "github.com/whyrusleeping/cbor-gen"
+	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/lily/chain/actors/adt"
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
+	"github.com/filecoin-project/lotus/chain/actors/adt"
 
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	miner2 "github.com/filecoin-project/specs-actors/v2/actors/builtin/miner"
@@ -30,6 +29,12 @@ func load2(store adt.Store, root cid.Cid) (State, error) {
 	if err != nil {
 		return nil, err
 	}
+	return &out, nil
+}
+
+func make2(store adt.Store) (State, error) {
+	out := state2{store: store}
+	out.State = miner2.State{}
 	return &out, nil
 }
 
@@ -48,18 +53,10 @@ type partition2 struct {
 	store adt.Store
 }
 
-func (s *state2) Code() cid.Cid {
-	return builtin2.StorageMinerActorCodeID
-}
-
-func (s *state2) SectorsAmtBitwidth() int {
-	return 3
-}
-
 func (s *state2) AvailableBalance(bal abi.TokenAmount) (available abi.TokenAmount, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("failed to get available balance: %w", r)
+			err = xerrors.Errorf("failed to get available balance: %w", r)
 			available = abi.NewTokenAmount(0)
 		}
 	}()
@@ -194,12 +191,12 @@ func (s *state2) GetSectorExpiration(num abi.SectorNumber) (*SectorExpiration, e
 		return nil, err
 	}
 	if out.Early == 0 && out.OnTime == 0 {
-		return nil, fmt.Errorf("failed to find sector %d", num)
+		return nil, xerrors.Errorf("failed to find sector %d", num)
 	}
 	return &out, nil
 }
 
-func (s *state2) GetPrecommittedSector(num abi.SectorNumber) (*SectorPreCommitOnChainInfo, error) {
+func (s *state2) GetPrecommittedSector(num abi.SectorNumber) (*minertypes.SectorPreCommitOnChainInfo, error) {
 	info, ok, err := s.State.GetPrecommittedSector(s.store, num)
 	if !ok || err != nil {
 		return nil, err
@@ -210,7 +207,7 @@ func (s *state2) GetPrecommittedSector(num abi.SectorNumber) (*SectorPreCommitOn
 	return &ret, nil
 }
 
-func (s *state2) ForEachPrecommittedSector(cb func(SectorPreCommitOnChainInfo) error) error {
+func (s *state2) ForEachPrecommittedSector(cb func(minertypes.SectorPreCommitOnChainInfo) error) error {
 	precommitted, err := adt2.AsMap(s.store, s.State.PreCommittedSectors)
 	if err != nil {
 		return err
@@ -374,11 +371,6 @@ func (s *state2) Info() (MinerInfo, error) {
 		return MinerInfo{}, err
 	}
 
-	var pid *peer.ID
-	if peerID, err := peer.IDFromBytes(info.PeerId); err == nil {
-		pid = &peerID
-	}
-
 	wpp, err := info.SealProofType.RegisteredWindowPoStProof()
 	if err != nil {
 		return MinerInfo{}, err
@@ -389,20 +381,14 @@ func (s *state2) Info() (MinerInfo, error) {
 		Worker:           info.Worker,
 		ControlAddresses: info.ControlAddresses,
 
-		NewWorker:         address.Undef,
-		WorkerChangeEpoch: -1,
+		PendingWorkerKey: (*WorkerKeyChange)(info.PendingWorkerKey),
 
-		PeerId:                     pid,
+		PeerId:                     info.PeerId,
 		Multiaddrs:                 info.Multiaddrs,
 		WindowPoStProofType:        wpp,
 		SectorSize:                 info.SectorSize,
 		WindowPoStPartitionSectors: info.WindowPoStPartitionSectors,
 		ConsensusFaultElapsed:      info.ConsensusFaultElapsed,
-	}
-
-	if info.PendingWorkerKey != nil {
-		mi.NewWorker = info.PendingWorkerKey.NewWorker
-		mi.WorkerChangeEpoch = info.PendingWorkerKey.EffectiveAt
 	}
 
 	return mi, nil
@@ -416,7 +402,7 @@ func (s *state2) DeadlineCronActive() (bool, error) {
 	return true, nil // always active in this version
 }
 
-func (s *state2) SectorArray() (adt.Array, error) {
+func (s *state2) SectorsArray() (adt.Array, error) {
 	return adt2.AsArray(s.store, s.Sectors)
 }
 
@@ -430,15 +416,15 @@ func (s *state2) DecodeSectorOnChainInfo(val *cbg.Deferred) (SectorOnChainInfo, 
 	return fromV2SectorOnChainInfo(si), nil
 }
 
-func (s *state2) PreCommitMap() (adt.Map, error) {
+func (s *state2) PrecommitsMap() (adt.Map, error) {
 	return adt2.AsMap(s.store, s.PreCommittedSectors)
 }
 
-func (s *state2) DecodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (SectorPreCommitOnChainInfo, error) {
+func (s *state2) DecodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (minertypes.SectorPreCommitOnChainInfo, error) {
 	var sp miner2.SectorPreCommitOnChainInfo
 	err := sp.UnmarshalCBOR(bytes.NewReader(val.Raw))
 	if err != nil {
-		return SectorPreCommitOnChainInfo{}, err
+		return minertypes.SectorPreCommitOnChainInfo{}, err
 	}
 
 	return fromV2SectorPreCommitOnChainInfo(sp), nil
@@ -556,18 +542,26 @@ func fromV2SectorOnChainInfo(v2 miner2.SectorOnChainInfo) SectorOnChainInfo {
 	return info
 }
 
-func fromV2SectorPreCommitOnChainInfo(v2 miner2.SectorPreCommitOnChainInfo) SectorPreCommitOnChainInfo {
-
-	return SectorPreCommitOnChainInfo{
-		Info:               (SectorPreCommitInfo)(v2.Info),
+func fromV2SectorPreCommitOnChainInfo(v2 miner2.SectorPreCommitOnChainInfo) minertypes.SectorPreCommitOnChainInfo {
+	return minertypes.SectorPreCommitOnChainInfo{
+		Info:               (minertypes.SectorPreCommitInfo)(v2.Info),
 		PreCommitDeposit:   v2.PreCommitDeposit,
 		PreCommitEpoch:     v2.PreCommitEpoch,
 		DealWeight:         v2.DealWeight,
 		VerifiedDealWeight: v2.VerifiedDealWeight,
 	}
-
 }
 
 func (s *state2) GetState() interface{} {
 	return &s.State
+}
+
+func (s *state2) Code() cid.Cid {
+
+	return builtin2.StorageMinerActorCodeID
+
+}
+
+func (s *state2) SectorsAmtBitwidth() int {
+	return 3
 }
