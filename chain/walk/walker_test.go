@@ -64,7 +64,7 @@ func TestWalker(t *testing.T) {
 	taskAPI, err := datasource.NewDataSource(nodeAPI)
 	require.NoError(t, err)
 
-	im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, t.Name()), t.Name(), integrated.WithWindow(builtin.EpochDurationSeconds*time.Second))
+	im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, t.Name()), integrated.WithWindow(builtin.EpochDurationSeconds*time.Second))
 	require.NoError(t, err, "NewManager")
 
 	t.Logf("initializing indexer")

@@ -55,7 +55,7 @@ func (g *Filler) Run(ctx context.Context) error {
 		return err
 	}
 
-	index, err := integrated.NewManager(g.DB, tipset.NewBuilder(taskAPI, g.name), g.name)
+	index, err := integrated.NewManager(g.DB, tipset.NewBuilder(taskAPI, g.name))
 	if err != nil {
 		return err
 	}

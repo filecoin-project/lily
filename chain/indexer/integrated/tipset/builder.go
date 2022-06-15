@@ -11,6 +11,7 @@ import (
 type IndexerBuilder interface {
 	WithTasks(tasks []string) IndexerBuilder
 	Build() (Indexer, error)
+	Name() string
 }
 
 type Indexer interface {
@@ -27,6 +28,10 @@ type Builder struct {
 	options []func(ti *TipSetIndexer)
 	api     tasks.DataSource
 	name    string
+}
+
+func (b *Builder) Name() string {
+	return b.name
 }
 
 func (b *Builder) add(cb func(ti *TipSetIndexer)) {

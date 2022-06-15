@@ -16,6 +16,10 @@ type MockIndexBuilder struct {
 	mock.Mock
 }
 
+func (t *MockIndexBuilder) Name() string {
+	return "mockindexbuilder"
+}
+
 func (t *MockIndexBuilder) WithTasks(tasks []string) tipset.IndexerBuilder {
 	return t
 }

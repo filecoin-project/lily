@@ -96,7 +96,7 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 		return nil, err
 	}
 
-	im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), cfg.JobConfig.Name)
+	im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), cfg.JobConfig.Name, integrated.WithWindow(cfg.JobConfig.Window))
+	im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	idx, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), cfg.JobConfig.Name, integrated.WithWindow(cfg.JobConfig.Window))
+	idx, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +292,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 	}
 
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	idx, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), cfg.JobConfig.Name, integrated.WithWindow(cfg.JobConfig.Window))
+	idx, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
 	if err != nil {
 		return nil, err
 	}

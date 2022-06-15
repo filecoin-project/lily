@@ -16,7 +16,7 @@ import (
 	visormodel "github.com/filecoin-project/lily/model/visor"
 )
 
-func TestManagerStatusOK(t *testing.T) {
+func TestManagerWithResultStatusOK(t *testing.T) {
 	ctx := context.Background()
 
 	// mock index builder and mock indexer
@@ -29,7 +29,7 @@ func TestManagerStatusOK(t *testing.T) {
 	mExporter := new(test.MockExporter)
 
 	// create new index manager with mocks values
-	manager, err := NewManager(fStorage, mIdxBuilder, t.Name(), WithExporter(mExporter))
+	manager, err := NewManager(fStorage, mIdxBuilder, WithExporter(mExporter))
 	require.NoError(t, err)
 
 	// a fake tipset to index
@@ -81,7 +81,7 @@ func TestManagerStatusOK(t *testing.T) {
 	require.True(t, success)
 }
 
-func TestManagerStatusInfo(t *testing.T) {
+func TestManagerWithResultStatusInfo(t *testing.T) {
 	ctx := context.Background()
 
 	// mock index builder and mock indexer
@@ -94,7 +94,7 @@ func TestManagerStatusInfo(t *testing.T) {
 	mExporter := new(test.MockExporter)
 
 	// create new index manager with mocks values
-	manager, err := NewManager(fStorage, mIdxBuilder, t.Name(), WithExporter(mExporter))
+	manager, err := NewManager(fStorage, mIdxBuilder, WithExporter(mExporter))
 	require.NoError(t, err)
 
 	// a fake tipset to index
@@ -146,7 +146,7 @@ func TestManagerStatusInfo(t *testing.T) {
 	require.True(t, success)
 }
 
-func TestManagerStatusOKAndError(t *testing.T) {
+func TestManagerWithResultStatusContainOKAndError(t *testing.T) {
 	ctx := context.Background()
 
 	// mock index builder and mock indexer
@@ -159,7 +159,7 @@ func TestManagerStatusOKAndError(t *testing.T) {
 	mExporter := new(test.MockExporter)
 
 	// create new index manager with mocks values
-	manager, err := NewManager(fStorage, mIdxBuilder, t.Name(), WithExporter(mExporter))
+	manager, err := NewManager(fStorage, mIdxBuilder, WithExporter(mExporter))
 	require.NoError(t, err)
 
 	// a fake tipset to index
@@ -236,7 +236,7 @@ func TestManagerStatusOKAndError(t *testing.T) {
 
 }
 
-func TestManagerStatusOKAndSkip(t *testing.T) {
+func TestManagerWithResultStatusContainOKAndSkip(t *testing.T) {
 	ctx := context.Background()
 
 	// mock index builder and mock indexer
@@ -249,7 +249,7 @@ func TestManagerStatusOKAndSkip(t *testing.T) {
 	mExporter := new(test.MockExporter)
 
 	// create new index manager with mocks values
-	manager, err := NewManager(fStorage, mIdxBuilder, t.Name(), WithExporter(mExporter))
+	manager, err := NewManager(fStorage, mIdxBuilder, WithExporter(mExporter))
 	require.NoError(t, err)
 
 	// a fake tipset to index
@@ -326,7 +326,7 @@ func TestManagerStatusOKAndSkip(t *testing.T) {
 
 }
 
-func TestManagerStatusError(t *testing.T) {
+func TestManagerWithResultStatusError(t *testing.T) {
 	ctx := context.Background()
 
 	// mock index builder and mock indexer
@@ -339,7 +339,7 @@ func TestManagerStatusError(t *testing.T) {
 	mExporter := new(test.MockExporter)
 
 	// create new index manager with mocks values
-	manager, err := NewManager(fStorage, mIdxBuilder, t.Name(), WithExporter(mExporter))
+	manager, err := NewManager(fStorage, mIdxBuilder, WithExporter(mExporter))
 	require.NoError(t, err)
 
 	// a fake tipset to index
@@ -391,7 +391,7 @@ func TestManagerStatusError(t *testing.T) {
 	require.False(t, success)
 }
 
-func TestManagerStatusSkip(t *testing.T) {
+func TestManagerWithResultStatusSkip(t *testing.T) {
 	ctx := context.Background()
 
 	// mock index builder and mock indexer
@@ -404,7 +404,7 @@ func TestManagerStatusSkip(t *testing.T) {
 	mExporter := new(test.MockExporter)
 
 	// create new index manager with mocks values
-	manager, err := NewManager(fStorage, mIdxBuilder, t.Name(), WithExporter(mExporter))
+	manager, err := NewManager(fStorage, mIdxBuilder, WithExporter(mExporter))
 	require.NoError(t, err)
 
 	// a fake tipset to index
@@ -469,7 +469,7 @@ func TestManagerFatalError(t *testing.T) {
 	mExporter := new(test.MockExporter)
 
 	// create new index manager with mocks values
-	manager, err := NewManager(fStorage, mIdxBuilder, t.Name(), WithExporter(mExporter))
+	manager, err := NewManager(fStorage, mIdxBuilder, WithExporter(mExporter))
 	require.NoError(t, err)
 
 	// a fake tipset to index
@@ -482,6 +482,7 @@ func TestManagerFatalError(t *testing.T) {
 
 	// expect index manager to pass MockedIndexer anything (ctx) and the tipset, returning the channels created above.
 	mIdxBuilder.MockIndexer.On("TipSet", mock.Anything, ts1).Return(resChan, errChan, nil)
+	mExporter.On("ExportResult", mock.Anything, fStorage, tsHeight, []*indexer.ModelResult(nil)).Return(nil)
 
 	// send a fatal error to the index manager
 	errChan <- fmt.Errorf("fatal error")
@@ -493,7 +494,7 @@ func TestManagerFatalError(t *testing.T) {
 	require.False(t, success)
 }
 
-func TestManagerFatalErrorAndOkReport(t *testing.T) {
+func TestManagerFatalErrorAndResultStatusOk(t *testing.T) {
 	ctx := context.Background()
 
 	// mock index builder and mock indexer
@@ -506,7 +507,7 @@ func TestManagerFatalErrorAndOkReport(t *testing.T) {
 	mExporter := new(test.MockExporter)
 
 	// create new index manager with mocks values
-	manager, err := NewManager(fStorage, mIdxBuilder, t.Name(), WithExporter(mExporter))
+	manager, err := NewManager(fStorage, mIdxBuilder, WithExporter(mExporter))
 	require.NoError(t, err)
 
 	// a fake tipset to index

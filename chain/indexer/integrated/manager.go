@@ -49,11 +49,11 @@ func WithExporter(e Exporter) ManagerOpt {
 }
 
 // NewManager returns a default Manager. Any provided ManagerOpt's will override Manager's default values.
-func NewManager(strg model.Storage, idxBuilder tipset.IndexerBuilder, name string, opts ...ManagerOpt) (*Manager, error) {
+func NewManager(strg model.Storage, idxBuilder tipset.IndexerBuilder, opts ...ManagerOpt) (*Manager, error) {
 	im := &Manager{
 		storage: strg,
 		window:  0,
-		name:    name,
+		name:    idxBuilder.Name(),
 	}
 
 	for _, opt := range opts {
@@ -63,7 +63,7 @@ func NewManager(strg model.Storage, idxBuilder tipset.IndexerBuilder, name strin
 	im.indexBuilder = idxBuilder
 
 	if im.exporter == nil {
-		im.exporter = indexer.NewModelExporter(name)
+		im.exporter = indexer.NewModelExporter(idxBuilder.Name())
 	}
 	return im, nil
 }
@@ -132,11 +132,9 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 
 		}
 
-		if len(modelResults) > 0 {
-			// synchronously export extracted data and its report. If datas at this height are currently being persisted this method will block to avoid deadlocking the database.
-			if err := i.exporter.ExportResult(ctx, i.storage, int64(ts.Height()), modelResults); err != nil {
-				return err
-			}
+		// synchronously export extracted data and its report. If datas at this height are currently being persisted this method will block to avoid deadlocking the database.
+		if err := i.exporter.ExportResult(ctx, i.storage, int64(ts.Height()), modelResults); err != nil {
+			return err
 		}
 
 		return nil
