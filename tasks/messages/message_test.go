@@ -153,7 +153,7 @@ func TestParseMessageParams(t *testing.T) {
 			params: mustMarshalCbor(t, &market0.PublishStorageDealsParams{
 				Deals: []market0.ClientDealProposal{
 					{
-						Proposal: market0.DealProposal(market0.DealProposal{
+						Proposal: market0.DealProposal{
 							PieceCID:             mustDecodeCID(t, "baga6ea4seaqgqzxo27ongakwwef5x3cihl6fgritvgeq5akvjqij6lpgofsogiq"),
 							PieceSize:            1310720,
 							VerifiedDeal:         false,
@@ -165,7 +165,7 @@ func TestParseMessageParams(t *testing.T) {
 							StoragePricePerEpoch: abi.NewTokenAmount(61035),
 							ProviderCollateral:   abi.NewTokenAmount(0),
 							ClientCollateral:     abi.NewTokenAmount(0),
-						}),
+						},
 						ClientSignature: crypto.Signature{
 							Type: 1,
 							Data: mustDecodeBase64(t, "9a8sdvutVlu0fizD0JmqZjKJaQLj3W3ZtJ2yTReIry8kZ8cDa33V3Pe0sdZzSjz9mRdM/KPm1jL/PZhqpDeYNwE="),
