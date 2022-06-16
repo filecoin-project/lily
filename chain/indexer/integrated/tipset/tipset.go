@@ -1,4 +1,4 @@
-package integrated
+package tipset
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
@@ -59,6 +60,8 @@ import (
 	"github.com/filecoin-project/lily/tasks/messages/receipt"
 	"github.com/filecoin-project/lily/tasks/msapprovals"
 )
+
+var log = logging.Logger("lily/integrated/tipset")
 
 // TipSetIndexer extracts block, message and actor state data from a tipset and persists it to storage. Extraction
 // and persistence are concurrent. Extraction of the a tipset can proceed while data from the previous extraction is
@@ -331,11 +334,12 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Res
 
 	var (
 		outCh = make(chan *Result, len(stateResults))
-		errCh = make(chan error)
+		errCh = make(chan error, 1)
 	)
 	go func() {
 		defer func() {
 			close(outCh)
+			close(errCh)
 			defer span.End()
 		}()
 
@@ -365,8 +369,8 @@ func (t *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Res
 					}
 				}
 				return
-				// received a result
 			default:
+				// received a result
 
 				llt := log.With("height", current.Height(), "task", res.Task, "reporter", t.name)
 
