@@ -21,6 +21,9 @@ func (m *MockActorStateAPI) MinerLoad(store adt.Store, act *types.Actor) (miner.
 	args := m.Called(store, act)
 	state := args.Get(0)
 	err := args.Error(1)
+	if state == nil {
+		return nil, err
+	}
 	return state.(miner.State), err
 }
 
@@ -28,6 +31,9 @@ func (m *MockActorStateAPI) Actor(ctx context.Context, addr address.Address, tsk
 	args := m.Called(ctx, addr, tsk)
 	act := args.Get(0)
 	err := args.Error(1)
+	if act == nil {
+		return nil, err
+	}
 	return act.(*types.Actor), err
 }
 
@@ -46,9 +52,8 @@ func (m *MockActorStateAPI) ActorState(ctx context.Context, addr address.Address
 }
 
 func (m *MockActorStateAPI) Store() adt.Store {
-	args := m.Called()
-	store := args.Get(0)
-	return store.(adt.Store)
+	m.Called()
+	return nil
 }
 
 func (m *MockActorStateAPI) ExecutedAndBlockMessages(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
