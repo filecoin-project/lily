@@ -30,6 +30,7 @@ import (
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/adt/diff"
+	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/tasks"
@@ -273,6 +274,10 @@ func (t *DataSource) ExecutedAndBlockMessages(ctx context.Context, ts, pts *type
 		return nil, err
 	}
 	return value.(*lens.TipSetMessages), nil
+}
+
+func (t *DataSource) MinerLoad(store adt.Store, act *types.Actor) (miner.State, error) {
+	return miner.Load(store, act)
 }
 
 func GetActorStateChanges(ctx context.Context, store adt.Store, current, executed *types.TipSet) (tasks.ActorStateChangeDiff, error) {

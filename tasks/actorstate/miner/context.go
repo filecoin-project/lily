@@ -16,7 +16,7 @@ func NewMinerStateExtractionContext(ctx context.Context, a actorstate.ActorInfo,
 	ctx, span := otel.Tracer("").Start(ctx, "NewMinerExtractionContext")
 	defer span.End()
 
-	curState, err := miner.Load(node.Store(), &a.Actor)
+	curState, err := node.MinerLoad(node.Store(), &a.Actor)
 	if err != nil {
 		return nil, fmt.Errorf("loading current miner state: %w", err)
 	}
@@ -42,7 +42,7 @@ func NewMinerStateExtractionContext(ctx context.Context, a actorstate.ActorInfo,
 			return nil, fmt.Errorf("loading previous miner %s at tipset %s epoch %d: %w", a.Address, a.Executed.Key(), a.Current.Height(), err)
 		}
 
-		prevState, err = miner.Load(node.Store(), prevActor)
+		prevState, err = node.MinerLoad(node.Store(), prevActor)
 		if err != nil {
 			return nil, fmt.Errorf("loading previous miner actor state: %w", err)
 		}
