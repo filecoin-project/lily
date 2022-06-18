@@ -15,9 +15,9 @@ import (
 )
 
 func GetAPI(ctx context.Context) (lily.LilyAPI, jsonrpc.ClientCloser, error) {
-	addrStr := strings.TrimSpace(ClientAPIFlags.ApiAddr)
+	addrStr := strings.TrimSpace(ClientAPIFlags.APIAddr)
 
-	ainfo := cliutil.APIInfo{Addr: addrStr, Token: []byte(ClientAPIFlags.ApiToken)}
+	ainfo := cliutil.APIInfo{Addr: addrStr, Token: []byte(ClientAPIFlags.APIToken)}
 
 	addr, err := ainfo.DialArgs("v0")
 	if err != nil {

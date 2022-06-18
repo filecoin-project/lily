@@ -10,7 +10,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/filecoin-project/lily/model"
-	"github.com/filecoin-project/lily/model/surveyed"
+	observed "github.com/filecoin-project/lily/model/surveyed"
 )
 
 var log = logging.Logger("visor/tasks")

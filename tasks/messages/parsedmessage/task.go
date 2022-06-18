@@ -1,4 +1,4 @@
-package parsed_message
+package parsedmessage
 
 import (
 	"context"

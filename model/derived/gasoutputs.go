@@ -13,8 +13,7 @@ import (
 )
 
 type GasOutputs struct {
-	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName          struct{} `pg:"derived_gas_outputs"`
+	tableName          struct{} `pg:"derived_gas_outputs"` // nolint: structcheck
 	Height             int64    `pg:",pk,use_zero,notnull"`
 	Cid                string   `pg:",pk,notnull"`
 	StateRoot          string   `pg:",pk,notnull"`
@@ -42,8 +41,7 @@ type GasOutputs struct {
 }
 
 type GasOutputsV0 struct {
-	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName          struct{} `pg:"derived_gas_outputs"`
+	tableName          struct{} `pg:"derived_gas_outputs"` // nolint: structcheck
 	Height             int64    `pg:",pk,use_zero,notnull"`
 	Cid                string   `pg:",pk,notnull"`
 	StateRoot          string   `pg:",pk,notnull"`

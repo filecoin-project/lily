@@ -5,7 +5,7 @@ import (
 	"regexp"
 )
 
-var GitVersion string = "unknown"
+var GitVersion = "unknown"
 
 var reVersion = regexp.MustCompile(`^(v\d+\.\d+.\d+)(?:-)?(.+)?$`)
 

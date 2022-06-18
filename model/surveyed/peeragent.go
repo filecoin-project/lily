@@ -2,18 +2,19 @@ package observed
 
 import (
 	"context"
-	"go.opentelemetry.io/otel/attribute"
 	"time"
+
+	"go.opentelemetry.io/otel/attribute"
+
+	"go.opencensus.io/tag"
+	"go.opentelemetry.io/otel"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
-	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel"
 )
 
 type PeerAgent struct {
-	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName struct{} `pg:"surveyed_peer_agents"`
+	tableName struct{} `pg:"surveyed_peer_agents"` // nolint: structcheck
 
 	// SurveyerPeerID is the peer ID of the node performing the survey
 	SurveyerPeerID string `pg:",pk,notnull"`

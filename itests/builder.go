@@ -91,7 +91,7 @@ func (b VectorWalkValidatorBuilder) Build(ctx context.Context, t testing.TB) *Ve
 		RepoPath:    t.TempDir(),
 		Snapshot:    b.vector.Snapshot,
 		Genesis:     b.vector.Genesis,
-		ApiEndpoint: "/ip4/127.0.0.1/tcp/4321",
+		APIEndpoint: "/ip4/127.0.0.1/tcp/4321",
 	}
 
 	vw := &VectorWalkValidator{
@@ -142,7 +142,7 @@ type VectorWalkValidator struct {
 
 func (vw *VectorWalkValidator) Run(ctx context.Context) node.StopFunc {
 	// start the lily node
-	lilyAPI, apiCleanup := NewTestNode(vw.t, ctx, vw.lilyCfg)
+	lilyAPI, apiCleanup := NewTestNode(ctx, vw.t, vw.lilyCfg)
 	api := lilyAPI.(*lily.LilyNodeAPI)
 	vw.api = api
 

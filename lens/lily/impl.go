@@ -590,7 +590,7 @@ func (m *LilyNodeAPI) LilySurvey(_ context.Context, cfg *LilySurveyConfig) (*sch
 		return nil, err
 	}
 
-	// instantiate a new surveyer.
+	// instantiate a new survey.
 	surv, err := network.NewSurveyer(m, strg, cfg.Interval, cfg.JobConfig.Name, cfg.JobConfig.Tasks)
 	if err != nil {
 		return nil, err

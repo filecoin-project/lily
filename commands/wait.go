@@ -10,7 +10,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var WaitApiCmd = &cli.Command{
+var WaitAPICmd = &cli.Command{
 	Name:  "wait-api",
 	Usage: "Wait for lily api to come online",
 	Flags: []cli.Flag{
@@ -30,7 +30,7 @@ var WaitApiCmd = &cli.Command{
 		}
 
 		for {
-			err := checkAPI(ctx, ClientAPIFlags.ApiAddr, ClientAPIFlags.ApiToken)
+			err := checkAPI(ctx, ClientAPIFlags.APIAddr, ClientAPIFlags.APIToken)
 			if err == nil {
 				return nil
 			}

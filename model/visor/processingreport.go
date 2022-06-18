@@ -4,11 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/filecoin-project/lily/metrics"
-	"github.com/filecoin-project/lily/model"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
 )
 
 const (
@@ -25,8 +26,7 @@ const (
 )
 
 type ProcessingReport struct {
-	//lint:ignore U1000 tableName is a convention used by go-pg
-	tableName struct{} `pg:"visor_processing_reports"`
+	tableName struct{} `pg:"visor_processing_reports"` // nolint: structcheck
 
 	Height    int64  `pg:",pk,use_zero"`
 	StateRoot string `pg:",pk,notnull"`

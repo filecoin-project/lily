@@ -45,7 +45,7 @@ var WatchBufferSizeFlag = &cli.IntFlag{
 
 var WatchCmd = &cli.Command{
 	Name:  "watch",
-	Usage: "watch the head of the filecoin blockchain and index each new head as it becomes avaiable",
+	Usage: "watch the head of the filecoin blockchain and index each new head as it becomes available",
 	Description: `
 The watch command subscribes to incoming tipsets from the filecoin blockchain and indexes them as the arrive.
 

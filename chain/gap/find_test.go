@@ -246,7 +246,7 @@ func TestFind(t *testing.T) {
 		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
-		// expect nothing since tasks have an OK status dispite the error
+		// expect nothing since tasks have an OK status despite the error
 		require.Len(t, actual, 0)
 	})
 

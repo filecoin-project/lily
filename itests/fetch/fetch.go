@@ -179,7 +179,7 @@ func (ft *fetch) checkFile(path string, info VectorFile) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer f.Close() // nolint: errcheck
 
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
@@ -212,7 +212,7 @@ func doFetch(ctx context.Context, out string, info VectorFile) error {
 	if err != nil {
 		return err
 	}
-	defer outf.Close()
+	defer outf.Close() // nolint: errcheck
 
 	fStat, err := outf.Stat()
 	if err != nil {
@@ -237,7 +237,7 @@ func doFetch(ctx context.Context, out string, info VectorFile) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint: errcheck
 
 	bar := pb.New64(fStat.Size() + resp.ContentLength)
 	bar.Set64(fStat.Size())

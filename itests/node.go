@@ -33,10 +33,10 @@ type TestNodeConfig struct {
 	RepoPath    string
 	Snapshot    fs.File
 	Genesis     fs.File
-	ApiEndpoint string
+	APIEndpoint string
 }
 
-func NewTestNode(t testing.TB, ctx context.Context, cfg *TestNodeConfig) (lily.LilyAPI, node.StopFunc) {
+func NewTestNode(ctx context.Context, t testing.TB, cfg *TestNodeConfig) (lily.LilyAPI, node.StopFunc) {
 	r, err := repo.NewFS(cfg.RepoPath)
 	require.NoError(t, err)
 
@@ -90,7 +90,7 @@ func NewTestNode(t testing.TB, ctx context.Context, cfg *TestNodeConfig) (lily.L
 		node.Unset(new(*peermgr.PeerMgr)),
 
 		node.Override(node.SetApiEndpointKey, func(lr repo.LockedRepo) error {
-			apima, err := multiaddr.NewMultiaddr(cfg.ApiEndpoint)
+			apima, err := multiaddr.NewMultiaddr(cfg.APIEndpoint)
 			if err != nil {
 				return err
 			}

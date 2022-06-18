@@ -36,8 +36,8 @@ import (
 )
 
 var ClientAPIFlags struct {
-	ApiAddr  string
-	ApiToken string
+	APIAddr  string
+	APIToken string
 }
 
 var ClientAPIFlag = &cli.StringFlag{
@@ -45,7 +45,7 @@ var ClientAPIFlag = &cli.StringFlag{
 	Usage:       "Address of lily api in multiaddr format.",
 	EnvVars:     []string{"LILY_API"},
 	Value:       "/ip4/127.0.0.1/tcp/1234",
-	Destination: &ClientAPIFlags.ApiAddr,
+	Destination: &ClientAPIFlags.APIAddr,
 }
 
 var ClientTokenFlag = &cli.StringFlag{
@@ -53,7 +53,7 @@ var ClientTokenFlag = &cli.StringFlag{
 	Usage:       "Authentication token for lily api.",
 	EnvVars:     []string{"LILY_API_TOKEN"},
 	Value:       "",
-	Destination: &ClientAPIFlags.ApiToken,
+	Destination: &ClientAPIFlags.APIToken,
 }
 
 // ClientAPIFlagSet are used by commands that act as clients of a daemon's API
@@ -275,7 +275,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 
 			node.ApplyIf(func(s *node.Settings) bool { return c.IsSet("api") },
 				node.Override(node.SetApiEndpointKey, func(lr repo.LockedRepo) error {
-					apima, err := multiaddr.NewMultiaddr(ClientAPIFlags.ApiAddr)
+					apima, err := multiaddr.NewMultiaddr(ClientAPIFlags.APIAddr)
 					if err != nil {
 						return err
 					}

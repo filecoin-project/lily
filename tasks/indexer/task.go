@@ -52,7 +52,7 @@ func (t *Task) ProcessTipSet(ctx context.Context, current *types.TipSet) (visorm
 				StatusInformation: visormodel.ProcessingStatusInformationNullRound,
 			}
 		}
-		idx += 1
+		idx++
 	}
 	return rp, nil
 }

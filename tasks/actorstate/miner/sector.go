@@ -41,11 +41,11 @@ func (SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, 
 		if err != nil {
 			return nil, err
 		}
-		for _, sector := range sectorChanges.Added {
-			sectors = append(sectors, &sector)
+		for i := range sectorChanges.Added {
+			sectors = append(sectors, &sectorChanges.Added[i])
 		}
-		for _, sector := range sectorChanges.Extended {
-			sectors = append(sectors, &sector.To)
+		for i := range sectorChanges.Extended {
+			sectors = append(sectors, &sectorChanges.Extended[i].To)
 		}
 	}
 

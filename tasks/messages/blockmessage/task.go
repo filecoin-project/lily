@@ -1,4 +1,4 @@
-package block_message
+package blockmessage
 
 import (
 	"context"

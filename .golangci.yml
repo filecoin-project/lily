@@ -6,15 +6,14 @@ linters:
     - goimports
     - misspell
     - goconst
-    - golint
+    - revive
     - errcheck
-    - gosec
     - unconvert
     - staticcheck
     - varcheck
     - structcheck
     - deadcode
-    - scopelint
+    - exportloopref
 
 
 issues:
@@ -35,14 +34,17 @@ issues:
 
   exclude-use-default: false
   exclude-rules:
-    - path: lens/util/.*
-      linters:
-        - golint
-
     - path: storage/migrations/.*
+      linters:
+        - misspell
+    - path: schemas/.*
       linters:
         - misspell
 
 linters-settings:
   goconst:
     min-occurrences: 6
+  misspell:
+    ignore-words:
+      - "surveyer"
+      - "Surveyer"

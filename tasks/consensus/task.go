@@ -64,7 +64,7 @@ func (t *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 				TipSet:          "",
 			}
 		}
-		idx += 1
+		idx++
 	}
 	if executed.Height() == 0 {
 		pl = append(pl, &chain.ChainConsensus{

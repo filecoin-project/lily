@@ -98,7 +98,7 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 		return false, err
 	}
 
-	// asynchronously begin indexing tipset `ts`, returning results as they become avaiable.
+	// asynchronously begin indexing tipset `ts`, returning results as they become available.
 	taskResults, taskErrors, err := idxer.TipSet(procCtx, ts)
 	// indexer suffered fatal error, abort.
 	if err != nil {

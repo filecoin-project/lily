@@ -165,7 +165,7 @@ func main() {
 			commands.NetCmd,
 			commands.StopCmd,
 			commands.SyncCmd,
-			commands.WaitApiCmd,
+			commands.WaitAPICmd,
 			job.JobCmd,
 		},
 	}

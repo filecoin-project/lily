@@ -52,7 +52,7 @@ type patchList struct {
 	pm map[int]patch
 }
 
-func NewPatchList() patchList {
+func NewPatchList() patchList { // nolint: revive
 	return patchList{map[int]patch{}}
 }
 
