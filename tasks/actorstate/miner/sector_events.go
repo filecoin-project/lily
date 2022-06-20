@@ -13,6 +13,7 @@ import (
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	"github.com/filecoin-project/lily/tasks/actorstate"
+	"github.com/filecoin-project/lily/tasks/actorstate/miner/extraction"
 )
 
 type SectorEventsExtractor struct{}
@@ -25,16 +26,16 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		span.SetAttributes(a.Attributes()...)
 	}
 
-	ec, err := NewMinerStateExtractionContext(ctx, a, node)
+	ec, err := extraction.LoadMinerStates(ctx, a, node)
 	if err != nil {
 		return nil, fmt.Errorf("creating miner state extraction context: %w", err)
 	}
 
 	var sectorChanges *miner.SectorChanges
 	var preCommitChanges *miner.PreCommitChanges
-	if !ec.HasPreviousState() {
+	if ec.ParentState() == nil {
 		// If the miner doesn't have previous state list all of its current sectors and precommits
-		sectors, err := ec.CurrState.LoadSectors(nil)
+		sectors, err := ec.CurrentState().LoadSectors(nil)
 		if err != nil {
 			return nil, fmt.Errorf("loading miner sectors: %w", err)
 		}
@@ -45,7 +46,7 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		}
 
 		preCommitChanges = miner.MakePreCommitChanges()
-		if err = ec.CurrState.ForEachPrecommittedSector(func(info miner.SectorPreCommitOnChainInfo) error {
+		if err = ec.CurrentState().ForEachPrecommittedSector(func(info miner.SectorPreCommitOnChainInfo) error {
 			preCommitChanges.Added = append(preCommitChanges.Added, info)
 			return nil
 		}); err != nil {
@@ -54,18 +55,18 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 
 	} else {
 		// If the miner has previous state compute the list of new sectors and precommit in its current state.
-		preCommitChanges, err = node.DiffPreCommits(ctx, a.Address, a.Current, a.Executed, ec.PrevState, ec.CurrState)
+		preCommitChanges, err = node.DiffPreCommits(ctx, a.Address, a.Current, a.Executed, ec.ParentState(), ec.CurrentState())
 		if err != nil {
 			return nil, err
 		}
 
-		sectorChanges, err = node.DiffSectors(ctx, a.Address, a.Current, a.Executed, ec.PrevState, ec.CurrState)
+		sectorChanges, err = node.DiffSectors(ctx, a.Address, a.Current, a.Executed, ec.ParentState(), ec.CurrentState())
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	sectorEventModel, err := extractSectorEvents(ctx, a, ec, sectorChanges, preCommitChanges)
+	sectorEventModel, err := extractSectorEvents(ctx, ec, sectorChanges, preCommitChanges)
 	if err != nil {
 		return nil, err
 	}
@@ -73,18 +74,18 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 	return sectorEventModel, nil
 }
 
-func extractSectorEvents(ctx context.Context, a actorstate.ActorInfo, ec *MinerStateExtractionContext, sc *miner.SectorChanges, pc *miner.PreCommitChanges) (minermodel.MinerSectorEventList, error) {
+func extractSectorEvents(ctx context.Context, ec extraction.State, sc *miner.SectorChanges, pc *miner.PreCommitChanges) (minermodel.MinerSectorEventList, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "extractMinerSectorEvents")
 	defer span.End()
 
-	partitionEvents, err := extractMinerPartitionsDiff(ctx, a, ec)
+	partitionEvents, err := extractMinerPartitionsDiff(ctx, ec)
 	if err != nil {
 		return nil, fmt.Errorf("extracting miner partition diff: %w", err)
 	}
 
-	sectorEvents := extractMinerSectorEvents(a, sc)
+	sectorEvents := extractMinerSectorEvents(ec, sc)
 
-	preCommitEvents := extractMinerPreCommitEvents(a, pc)
+	preCommitEvents := extractMinerPreCommitEvents(ec, pc)
 
 	out := make(minermodel.MinerSectorEventList, 0, len(partitionEvents)+len(sectorEvents)+len(preCommitEvents))
 	out = append(out, partitionEvents...)
@@ -94,7 +95,7 @@ func extractSectorEvents(ctx context.Context, a actorstate.ActorInfo, ec *MinerS
 	return out, nil
 }
 
-func extractMinerSectorEvents(a actorstate.ActorInfo, sectors *miner.SectorChanges) minermodel.MinerSectorEventList {
+func extractMinerSectorEvents(ec extraction.State, sectors *miner.SectorChanges) minermodel.MinerSectorEventList {
 	out := make(minermodel.MinerSectorEventList, 0, len(sectors.Added)+len(sectors.Extended)+len(sectors.Snapped))
 
 	// track sector add and commit-capacity add
@@ -104,9 +105,9 @@ func extractMinerSectorEvents(a actorstate.ActorInfo, sectors *miner.SectorChang
 			event = minermodel.CommitCapacityAdded
 		}
 		out = append(out, &minermodel.MinerSectorEvent{
-			Height:    int64(a.Current.Height()),
-			MinerID:   a.Address.String(),
-			StateRoot: a.Current.ParentState().String(),
+			Height:    int64(ec.CurrentTipSet().Height()),
+			MinerID:   ec.Address().String(),
+			StateRoot: ec.CurrentTipSet().ParentState().String(),
 			SectorID:  uint64(add.SectorNumber),
 			Event:     event,
 		})
@@ -115,9 +116,9 @@ func extractMinerSectorEvents(a actorstate.ActorInfo, sectors *miner.SectorChang
 	// sector extension events
 	for _, mod := range sectors.Extended {
 		out = append(out, &minermodel.MinerSectorEvent{
-			Height:    int64(a.Current.Height()),
-			MinerID:   a.Address.String(),
-			StateRoot: a.Current.ParentState().String(),
+			Height:    int64(ec.CurrentTipSet().Height()),
+			MinerID:   ec.Address().String(),
+			StateRoot: ec.CurrentTipSet().ParentState().String(),
 			SectorID:  uint64(mod.To.SectorNumber),
 			Event:     minermodel.SectorExtended,
 		})
@@ -126,9 +127,9 @@ func extractMinerSectorEvents(a actorstate.ActorInfo, sectors *miner.SectorChang
 	// sector snapped events
 	for _, snap := range sectors.Snapped {
 		out = append(out, &minermodel.MinerSectorEvent{
-			Height:    int64(a.Current.Height()),
-			MinerID:   a.Address.String(),
-			StateRoot: a.Current.ParentState().String(),
+			Height:    int64(ec.CurrentTipSet().Height()),
+			MinerID:   ec.Address().String(),
+			StateRoot: ec.CurrentTipSet().ParentState().String(),
 			SectorID:  uint64(snap.To.SectorNumber),
 			Event:     minermodel.SectorSnapped,
 		})
@@ -137,14 +138,14 @@ func extractMinerSectorEvents(a actorstate.ActorInfo, sectors *miner.SectorChang
 	return out
 }
 
-func extractMinerPreCommitEvents(a actorstate.ActorInfo, preCommits *miner.PreCommitChanges) minermodel.MinerSectorEventList {
+func extractMinerPreCommitEvents(ec extraction.State, preCommits *miner.PreCommitChanges) minermodel.MinerSectorEventList {
 	out := make(minermodel.MinerSectorEventList, len(preCommits.Added))
 	// track precommit addition
 	for i, add := range preCommits.Added {
 		out[i] = &minermodel.MinerSectorEvent{
-			Height:    int64(a.Current.Height()),
-			MinerID:   a.Address.String(),
-			StateRoot: a.Current.ParentState().String(),
+			Height:    int64(ec.CurrentTipSet().Height()),
+			MinerID:   ec.Address().String(),
+			StateRoot: ec.CurrentTipSet().ParentState().String(),
 			SectorID:  uint64(add.Info.SectorNumber),
 			Event:     minermodel.PreCommitAdded,
 		}
@@ -153,16 +154,16 @@ func extractMinerPreCommitEvents(a actorstate.ActorInfo, preCommits *miner.PreCo
 	return out
 }
 
-func extractMinerPartitionsDiff(ctx context.Context, a actorstate.ActorInfo, ec *MinerStateExtractionContext) (minermodel.MinerSectorEventList, error) {
+func extractMinerPartitionsDiff(ctx context.Context, ec extraction.State) (minermodel.MinerSectorEventList, error) {
 	_, span := otel.Tracer("").Start(ctx, "extractMinerPartitionDiff") // nolint: ineffassign,staticcheck
 	defer span.End()
 
 	// short circuit genesis state.
-	if !ec.HasPreviousState() {
+	if ec.ParentState() == nil {
 		return nil, nil
 	}
 
-	dlDiff, err := miner.DiffDeadlines(ec.PrevState, ec.CurrState)
+	dlDiff, err := miner.DiffDeadlines(ec.ParentState(), ec.CurrentState())
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +199,7 @@ func extractMinerPartitionsDiff(ctx context.Context, a actorstate.ActorInfo, ec 
 	}
 	// build an index of removed sector expiration's for comparison below.
 
-	removedSectors, err := ec.CurrState.LoadSectors(&removed)
+	removedSectors, err := ec.CurrentState().LoadSectors(&removed)
 	if err != nil {
 		return nil, fmt.Errorf("fetching miners removed sectors: %w", err)
 	}
@@ -213,13 +214,13 @@ func extractMinerPartitionsDiff(ctx context.Context, a actorstate.ActorInfo, ec 
 	if err := removed.ForEach(func(u uint64) error {
 		event := minermodel.SectorTerminated
 		expiration := rmExpireIndex[u]
-		if expiration == a.Current.Height() {
+		if expiration == ec.CurrentTipSet().Height() {
 			event = minermodel.SectorExpired
 		}
 		out = append(out, &minermodel.MinerSectorEvent{
-			Height:    int64(a.Current.Height()),
-			MinerID:   a.Address.String(),
-			StateRoot: a.Current.ParentState().String(),
+			Height:    int64(ec.CurrentTipSet().Height()),
+			MinerID:   ec.Address().String(),
+			StateRoot: ec.CurrentTipSet().ParentState().String(),
 			SectorID:  u,
 			Event:     event,
 		})
@@ -231,9 +232,9 @@ func extractMinerPartitionsDiff(ctx context.Context, a actorstate.ActorInfo, ec 
 	// track recovering sectors
 	if err := recovering.ForEach(func(u uint64) error {
 		out = append(out, &minermodel.MinerSectorEvent{
-			Height:    int64(a.Current.Height()),
-			MinerID:   a.Address.String(),
-			StateRoot: a.Current.ParentState().String(),
+			Height:    int64(ec.CurrentTipSet().Height()),
+			MinerID:   ec.Address().String(),
+			StateRoot: ec.CurrentTipSet().ParentState().String(),
 			SectorID:  u,
 			Event:     minermodel.SectorRecovering,
 		})
@@ -245,9 +246,9 @@ func extractMinerPartitionsDiff(ctx context.Context, a actorstate.ActorInfo, ec 
 	// track faulted sectors
 	if err := faulted.ForEach(func(u uint64) error {
 		out = append(out, &minermodel.MinerSectorEvent{
-			Height:    int64(a.Current.Height()),
-			MinerID:   a.Address.String(),
-			StateRoot: a.Current.ParentState().String(),
+			Height:    int64(ec.CurrentTipSet().Height()),
+			MinerID:   ec.Address().String(),
+			StateRoot: ec.CurrentTipSet().ParentState().String(),
 			SectorID:  u,
 			Event:     minermodel.SectorFaulted,
 		})
@@ -259,9 +260,9 @@ func extractMinerPartitionsDiff(ctx context.Context, a actorstate.ActorInfo, ec 
 	// track recovered sectors
 	if err := recovered.ForEach(func(u uint64) error {
 		out = append(out, &minermodel.MinerSectorEvent{
-			Height:    int64(a.Current.Height()),
-			MinerID:   a.Address.String(),
-			StateRoot: a.Current.ParentState().String(),
+			Height:    int64(ec.CurrentTipSet().Height()),
+			MinerID:   ec.Address().String(),
+			StateRoot: ec.CurrentTipSet().ParentState().String(),
 			SectorID:  u,
 			Event:     minermodel.SectorRecovered,
 		})
