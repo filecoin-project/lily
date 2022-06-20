@@ -115,7 +115,7 @@ func (ti *TipSetIndexer) init() error {
 			))
 		case tasktype.MinerLockedFund:
 			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.InfoExtractor{},
+				miner.AllCodes(), minertask.LockedFundsExtractor{},
 			))
 		case tasktype.MinerPreCommitInfo:
 			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
