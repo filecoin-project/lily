@@ -1,5 +1,7 @@
 package tasktype
 
+import "fmt"
+
 const (
 	ActorStatesRawTask      = "actorstatesraw"      // task that only extracts raw actor state
 	ActorStatesPowerTask    = "actorstatespower"    // task that only extracts power actor states (but not the raw state)
@@ -81,4 +83,21 @@ var TaskLookup = map[string][]string{
 	ChainConsensusTask: {
 		ChainConsensus,
 	},
+}
+
+func MakeTaskNames(tasks []string) ([]string, error) {
+	// builtin always runs
+	var indexerTasks []string
+	for _, taskName := range tasks {
+		if tables, found := TaskLookup[taskName]; found {
+			// if this is a task look up its corresponding tables
+			indexerTasks = append(indexerTasks, tables...)
+		} else if _, found := TableLookup[taskName]; found {
+			// it's not a task, maybe it's a table, if it is added to task list, else this is an unknown task
+			indexerTasks = append(indexerTasks, taskName)
+		} else {
+			return nil, fmt.Errorf("unknown task: %s", taskName)
+		}
+	}
+	return indexerTasks, nil
 }
