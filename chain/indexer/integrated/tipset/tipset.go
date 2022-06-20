@@ -2,10 +2,8 @@ package tipset
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -14,51 +12,12 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 
-	saminer1 "github.com/filecoin-project/specs-actors/actors/builtin/miner"
-	saminer2 "github.com/filecoin-project/specs-actors/v2/actors/builtin/miner"
-	saminer3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/miner"
-	saminer4 "github.com/filecoin-project/specs-actors/v4/actors/builtin/miner"
-	saminer5 "github.com/filecoin-project/specs-actors/v5/actors/builtin/miner"
-	saminer6 "github.com/filecoin-project/specs-actors/v6/actors/builtin/miner"
-	saminer7 "github.com/filecoin-project/specs-actors/v7/actors/builtin/miner"
-
-	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
-	"github.com/filecoin-project/lily/chain/actors/builtin/market"
-	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
-	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
-	"github.com/filecoin-project/lily/chain/actors/builtin/power"
-	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
-	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/chain/indexer/integrated/processor"
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	taskapi "github.com/filecoin-project/lily/tasks"
-	"github.com/filecoin-project/lily/tasks/actorstate"
-	inittask "github.com/filecoin-project/lily/tasks/actorstate/init_"
-	markettask "github.com/filecoin-project/lily/tasks/actorstate/market"
-	minertask "github.com/filecoin-project/lily/tasks/actorstate/miner"
-	multisigtask "github.com/filecoin-project/lily/tasks/actorstate/multisig"
-	powertask "github.com/filecoin-project/lily/tasks/actorstate/power"
-	rawtask "github.com/filecoin-project/lily/tasks/actorstate/raw"
-	rewardtask "github.com/filecoin-project/lily/tasks/actorstate/reward"
-	verifregtask "github.com/filecoin-project/lily/tasks/actorstate/verifreg"
-	"github.com/filecoin-project/lily/tasks/blocks/drand"
-	"github.com/filecoin-project/lily/tasks/blocks/headers"
-	"github.com/filecoin-project/lily/tasks/blocks/parents"
-	"github.com/filecoin-project/lily/tasks/chaineconomics"
-	"github.com/filecoin-project/lily/tasks/consensus"
-	indexTask "github.com/filecoin-project/lily/tasks/indexer"
-	"github.com/filecoin-project/lily/tasks/messageexecutions/internalmessage"
-	"github.com/filecoin-project/lily/tasks/messageexecutions/internalparsedmessage"
-	"github.com/filecoin-project/lily/tasks/messages/blockmessage"
-	"github.com/filecoin-project/lily/tasks/messages/gaseconomy"
-	"github.com/filecoin-project/lily/tasks/messages/gasoutput"
-	"github.com/filecoin-project/lily/tasks/messages/message"
-	"github.com/filecoin-project/lily/tasks/messages/parsedmessage"
-	"github.com/filecoin-project/lily/tasks/messages/receipt"
-	"github.com/filecoin-project/lily/tasks/msapprovals"
 )
 
 var log = logging.Logger("lily/integrated/tipset")
@@ -72,211 +31,19 @@ type TipSetIndexer struct {
 	node      taskapi.DataSource
 	taskNames []string
 
-	procBuilder *processor.Builder
+	processor *processor.StateProcessor
 }
 
 func (ti *TipSetIndexer) init() error {
-	var indexerTasks []string
-	for _, taskName := range ti.taskNames {
-		if tables, found := tasktype.TaskLookup[taskName]; found {
-			// if this is a task look up its corresponding tables
-			indexerTasks = append(indexerTasks, tables...)
-		} else if _, found := tasktype.TableLookup[taskName]; found {
-			// it's not a task, maybe it's a table, if it is added to task list, else this is an unknown task
-			indexerTasks = append(indexerTasks, taskName)
-		} else {
-			return fmt.Errorf("unknown task: %s", taskName)
-		}
+	indexerTasks, err := tasktype.MakeTaskNames(ti.taskNames)
+	if err != nil {
+		return err
 	}
 
-	tipsetProcessors := map[string]processor.TipSetProcessor{}
-	tipsetsProcessors := map[string]processor.TipSetsProcessor{}
-	actorProcessors := map[string]processor.ActorProcessor{}
-	reportProcessors := map[string]processor.ReportProcessor{
-		"builtin": indexTask.NewTask(ti.node),
+	ti.processor, err = processor.New(ti.node, ti.name, indexerTasks)
+	if err != nil {
+		return err
 	}
-
-	for _, t := range indexerTasks {
-		switch t {
-		//
-		// miners
-		//
-		case tasktype.MinerCurrentDeadlineInfo:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.DeadlineInfoExtractor{},
-			))
-		case tasktype.MinerFeeDebt:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.FeeDebtExtractor{},
-			))
-		case tasktype.MinerInfo:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.InfoExtractor{},
-			))
-		case tasktype.MinerLockedFund:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.LockedFundsExtractor{},
-			))
-		case tasktype.MinerPreCommitInfo:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.PreCommitInfoExtractor{},
-			))
-		case tasktype.MinerSectorDeal:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.SectorDealsExtractor{},
-			))
-		case tasktype.MinerSectorEvent:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.SectorEventsExtractor{},
-			))
-		case tasktype.MinerSectorPost:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.PoStExtractor{},
-			))
-		case tasktype.MinerSectorInfoV1_6:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewCustomTypedActorExtractorMap(
-				map[cid.Cid][]actorstate.ActorStateExtractor{
-					saminer1.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-					saminer2.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-					saminer3.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-					saminer4.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-					saminer5.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-					saminer6.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-				},
-			))
-		case tasktype.MinerSectorInfoV7:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewCustomTypedActorExtractorMap(
-				map[cid.Cid][]actorstate.ActorStateExtractor{
-					saminer7.Actor{}.Code(): {minertask.V7SectorInfoExtractor{}},
-				},
-			))
-
-			//
-			// Power
-			//
-		case tasktype.PowerActorClaim:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				power.AllCodes(),
-				powertask.ClaimedPowerExtractor{},
-			))
-		case tasktype.ChainPower:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				power.AllCodes(),
-				powertask.ChainPowerExtractor{},
-			))
-
-			//
-			// Reward
-			//
-		case tasktype.ChainReward:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				reward.AllCodes(),
-				rewardtask.RewardExtractor{},
-			))
-
-			//
-			// Init
-			//
-		case tasktype.IdAddress:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				init_.AllCodes(),
-				inittask.InitExtractor{},
-			))
-
-			//
-			// Market
-			//
-		case tasktype.MarketDealState:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				market.AllCodes(),
-				markettask.DealStateExtractor{},
-			))
-		case tasktype.MarketDealProposal:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				market.AllCodes(),
-				markettask.DealProposalExtractor{},
-			))
-
-			//
-			// Multisig
-			//
-		case tasktype.MultisigTransaction:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				multisig.AllCodes(),
-				multisigtask.MultiSigActorExtractor{},
-			))
-
-			//
-			// Verified Registry
-			//
-		case tasktype.VerifiedRegistryVerifier:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes(),
-				verifregtask.VerifierExtractor{},
-			))
-		case tasktype.VerifiedRegistryVerifiedClient:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes(),
-				verifregtask.ClientExtractor{},
-			))
-
-			//
-			// Raw Actors
-			//
-		case tasktype.Actor:
-			rae := &actorstate.RawActorExtractorMap{}
-			rae.Register(&rawtask.RawActorExtractor{})
-			actorProcessors[t] = actorstate.NewTask(ti.node, rae)
-		case tasktype.ActorState:
-			rae := &actorstate.RawActorExtractorMap{}
-			rae.Register(&rawtask.RawActorStateExtractor{})
-			actorProcessors[t] = actorstate.NewTask(ti.node, rae)
-
-			//
-			// Messages
-			//
-		case tasktype.Message:
-			tipsetsProcessors[t] = message.NewTask(ti.node)
-		case tasktype.GasOutputs:
-			tipsetsProcessors[t] = gasoutput.NewTask(ti.node)
-		case tasktype.BlockMessage:
-			tipsetsProcessors[t] = blockmessage.NewTask(ti.node)
-		case tasktype.ParsedMessage:
-			tipsetsProcessors[t] = parsedmessage.NewTask(ti.node)
-		case tasktype.Receipt:
-			tipsetsProcessors[t] = receipt.NewTask(ti.node)
-		case tasktype.InternalMessage:
-			tipsetsProcessors[t] = internalmessage.NewTask(ti.node)
-		case tasktype.InternalParsedMessage:
-			tipsetsProcessors[t] = internalparsedmessage.NewTask(ti.node)
-		case tasktype.MessageGasEconomy:
-			tipsetsProcessors[t] = gaseconomy.NewTask(ti.node)
-		case tasktype.MultisigApproval:
-			tipsetsProcessors[t] = msapprovals.NewTask(ti.node)
-
-			//
-			// Blocks
-			//
-		case tasktype.BlockHeader:
-			tipsetProcessors[t] = headers.NewTask()
-		case tasktype.BlockParent:
-			tipsetProcessors[t] = parents.NewTask()
-		case tasktype.DrandBlockEntrie:
-			tipsetProcessors[t] = drand.NewTask()
-
-		case tasktype.ChainEconomics:
-			tipsetProcessors[t] = chaineconomics.NewTask(ti.node)
-		case tasktype.ChainConsensus:
-			tipsetProcessors[t] = consensus.NewTask(ti.node)
-
-		default:
-			return fmt.Errorf("unknown task: %s", t)
-		}
-	}
-
-	ti.procBuilder = processor.NewBuilder(ti.node, ti.name).
-		WithTipSetProcessors(tipsetProcessors).
-		WithTipSetsProcessors(tipsetsProcessors).
-		WithActorProcessors(actorProcessors).
-		WithBuiltinProcessors(reportProcessors)
 
 	return nil
 }
@@ -324,7 +91,7 @@ func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Re
 	}
 
 	log.Infow("index", "reporter", ti.name, "current", current.Height(), "executed", executed.Height())
-	stateResults, taskNames := ti.procBuilder.Build().State(ctx, current, executed)
+	stateResults, taskNames := ti.processor.State(ctx, current, executed)
 
 	// build list of executing tasks, used below to label incomplete tasks as skipped.
 	executingTasks := make(map[string]bool, len(taskNames))
