@@ -41,8 +41,8 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		}
 
 		sectorChanges = miner.MakeSectorChanges()
-		for i, sector := range sectors {
-			sectorChanges.Added[i] = *sector
+		for _, sector := range sectors {
+			sectorChanges.Added = append(sectorChanges.Added, *sector)
 		}
 
 		preCommitChanges = miner.MakePreCommitChanges()
@@ -66,7 +66,12 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		}
 	}
 
-	sectorEventModel, err := extractSectorEvents(ctx, ec, sectorChanges, preCommitChanges)
+	dlDiff, err := miner.DiffDeadlines(ec.ParentState(), ec.CurrentState())
+	if err != nil {
+		return nil, err
+	}
+
+	sectorEventModel, err := ExtractSectorEvents(ctx, ec, sectorChanges, preCommitChanges, dlDiff)
 	if err != nil {
 		return nil, err
 	}
@@ -74,18 +79,18 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 	return sectorEventModel, nil
 }
 
-func extractSectorEvents(ctx context.Context, ec extraction.State, sc *miner.SectorChanges, pc *miner.PreCommitChanges) (minermodel.MinerSectorEventList, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "extractMinerSectorEvents")
+func ExtractSectorEvents(ctx context.Context, ec extraction.State, sc *miner.SectorChanges, pc *miner.PreCommitChanges, dlDiff miner.DeadlinesDiff) (minermodel.MinerSectorEventList, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "ExtractSectorEvents")
 	defer span.End()
 
-	partitionEvents, err := extractMinerPartitionsDiff(ctx, ec)
+	partitionEvents, err := ExtractMinerPartitionsDiff(ctx, ec, dlDiff)
 	if err != nil {
 		return nil, fmt.Errorf("extracting miner partition diff: %w", err)
 	}
 
-	sectorEvents := extractMinerSectorEvents(ec, sc)
+	sectorEvents := ExtractMinerSectorEvents(ec, sc)
 
-	preCommitEvents := extractMinerPreCommitEvents(ec, pc)
+	preCommitEvents := ExtractMinerPreCommitEvents(ec, pc)
 
 	out := make(minermodel.MinerSectorEventList, 0, len(partitionEvents)+len(sectorEvents)+len(preCommitEvents))
 	out = append(out, partitionEvents...)
@@ -95,7 +100,7 @@ func extractSectorEvents(ctx context.Context, ec extraction.State, sc *miner.Sec
 	return out, nil
 }
 
-func extractMinerSectorEvents(ec extraction.State, sectors *miner.SectorChanges) minermodel.MinerSectorEventList {
+func ExtractMinerSectorEvents(ec extraction.State, sectors *miner.SectorChanges) minermodel.MinerSectorEventList {
 	out := make(minermodel.MinerSectorEventList, 0, len(sectors.Added)+len(sectors.Extended)+len(sectors.Snapped))
 
 	// track sector add and commit-capacity add
@@ -138,7 +143,7 @@ func extractMinerSectorEvents(ec extraction.State, sectors *miner.SectorChanges)
 	return out
 }
 
-func extractMinerPreCommitEvents(ec extraction.State, preCommits *miner.PreCommitChanges) minermodel.MinerSectorEventList {
+func ExtractMinerPreCommitEvents(ec extraction.State, preCommits *miner.PreCommitChanges) minermodel.MinerSectorEventList {
 	out := make(minermodel.MinerSectorEventList, len(preCommits.Added))
 	// track precommit addition
 	for i, add := range preCommits.Added {
@@ -154,18 +159,13 @@ func extractMinerPreCommitEvents(ec extraction.State, preCommits *miner.PreCommi
 	return out
 }
 
-func extractMinerPartitionsDiff(ctx context.Context, ec extraction.State) (minermodel.MinerSectorEventList, error) {
-	_, span := otel.Tracer("").Start(ctx, "extractMinerPartitionDiff") // nolint: ineffassign,staticcheck
+func ExtractMinerPartitionsDiff(ctx context.Context, ec extraction.State, dlDiff miner.DeadlinesDiff) (minermodel.MinerSectorEventList, error) {
+	_, span := otel.Tracer("").Start(ctx, "ExtractMinerPartitionsDiff") // nolint: ineffassign,staticcheck
 	defer span.End()
 
 	// short circuit genesis state.
 	if ec.ParentState() == nil {
 		return nil, nil
-	}
-
-	dlDiff, err := miner.DiffDeadlines(ec.ParentState(), ec.CurrentState())
-	if err != nil {
-		return nil, err
 	}
 
 	if dlDiff == nil {
@@ -177,6 +177,7 @@ func extractMinerPartitionsDiff(ctx context.Context, ec extraction.State) (miner
 	recovered := bitfield.New()
 	recovering := bitfield.New()
 
+	var err error
 	for _, deadline := range dlDiff {
 		for _, partition := range deadline {
 			removed, err = bitfield.MergeBitFields(removed, partition.Removed)
