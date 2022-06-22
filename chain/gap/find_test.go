@@ -101,7 +101,7 @@ func TestFind(t *testing.T) {
 		pre := NewPREditor(t, db, t.Name())
 		pre.initialize(maxHeight, tasktype.AllTableTasks...)
 		pre.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(tasktype.MinerInfo, tasktype.IdAddress))
-		pre.deleteEpochStatus(10, visor.ProcessingStatusOK, WithTasks(tasktype.BlockHeader, tasktype.Message, tasktype.MarketDealProposal))
+		pre.deleteEpochStatus(10, visor.ProcessingStatusOK, WithTasks(tasktype.BlockHeader, tasktype.Message, tasktype.MarketDealProposalV1_7))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
@@ -110,7 +110,7 @@ func TestFind(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := makeGapReportList(2, tasktype.MinerInfo, tasktype.IdAddress)
-		expected = append(expected, makeGapReportList(10, tasktype.BlockHeader, tasktype.Message, tasktype.MarketDealProposal)...)
+		expected = append(expected, makeGapReportList(10, tasktype.BlockHeader, tasktype.Message, tasktype.MarketDealProposalV1_7)...)
 		assertGapReportsEqual(t, expected, actual)
 	})
 

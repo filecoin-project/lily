@@ -21,6 +21,16 @@ import (
 	saminer5 "github.com/filecoin-project/specs-actors/v5/actors/builtin/miner"
 	saminer6 "github.com/filecoin-project/specs-actors/v6/actors/builtin/miner"
 	saminer7 "github.com/filecoin-project/specs-actors/v7/actors/builtin/miner"
+	saminer8 "github.com/filecoin-project/specs-actors/v8/actors/builtin/miner"
+
+	samarket1 "github.com/filecoin-project/specs-actors/actors/builtin/market"
+	samarket2 "github.com/filecoin-project/specs-actors/v2/actors/builtin/market"
+	samarket3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/market"
+	samarket4 "github.com/filecoin-project/specs-actors/v4/actors/builtin/market"
+	samarket5 "github.com/filecoin-project/specs-actors/v5/actors/builtin/market"
+	samarket6 "github.com/filecoin-project/specs-actors/v6/actors/builtin/market"
+	samarket7 "github.com/filecoin-project/specs-actors/v7/actors/builtin/market"
+	samarket8 "github.com/filecoin-project/specs-actors/v7/actors/builtin/market"
 
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
@@ -148,6 +158,7 @@ func (ti *TipSetIndexer) init() error {
 			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewCustomTypedActorExtractorMap(
 				map[cid.Cid][]actorstate.ActorStateExtractor{
 					saminer7.Actor{}.Code(): {minertask.V7SectorInfoExtractor{}},
+					saminer8.Actor{}.Code(): {minertask.V7SectorInfoExtractor{}},
 				},
 			))
 
@@ -191,10 +202,23 @@ func (ti *TipSetIndexer) init() error {
 				market.AllCodes(),
 				markettask.DealStateExtractor{},
 			))
-		case tasktype.MarketDealProposal:
-			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewTypedActorExtractorMap(
-				market.AllCodes(),
-				markettask.DealProposalExtractor{},
+		case tasktype.MarketDealProposalV1_7:
+			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewCustomTypedActorExtractorMap(
+				map[cid.Cid][]actorstate.ActorStateExtractor{
+					samarket1.Actor{}.Code(): {markettask.DealProposalExtractor{}},
+					samarket2.Actor{}.Code(): {markettask.DealProposalExtractor{}},
+					samarket3.Actor{}.Code(): {markettask.DealProposalExtractor{}},
+					samarket4.Actor{}.Code(): {markettask.DealProposalExtractor{}},
+					samarket5.Actor{}.Code(): {markettask.DealProposalExtractor{}},
+					samarket6.Actor{}.Code(): {markettask.DealProposalExtractor{}},
+					samarket7.Actor{}.Code(): {markettask.DealProposalExtractor{}},
+				},
+			))
+		case tasktype.MarketDealProposalV8:
+			actorProcessors[t] = actorstate.NewTask(ti.node, actorstate.NewCustomTypedActorExtractorMap(
+				map[cid.Cid][]actorstate.ActorStateExtractor{
+					samarket8.Actor{}.Code(): {markettask.V8DealProposalExtractor{}},
+				},
 			))
 
 			//

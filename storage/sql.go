@@ -50,7 +50,8 @@ var Models = []interface{}{
 	(*miner.MinerLockedFund)(nil),
 	(*miner.MinerInfo)(nil),
 
-	(*market.MarketDealProposal)(nil),
+	(*market.MarketDealProposalV1_7)(nil),
+	(*market.MarketDealProposalV8)(nil),
 	(*market.MarketDealState)(nil),
 
 	(*messages.Message)(nil),

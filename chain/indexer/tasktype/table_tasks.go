@@ -15,7 +15,8 @@ const (
 	MinerFeeDebt                   = "miner_fee_debt"
 	MinerLockedFund                = "miner_locked_fund"
 	MinerInfo                      = "miner_info"
-	MarketDealProposal             = "market_deal_proposal"
+	MarketDealProposalV1_7         = "market_deal_proposals"
+	MarketDealProposalV8           = "market_deal_proposals_v8"
 	MarketDealState                = "market_deal_state"
 	Message                        = "message"
 	BlockMessage                   = "block_message"
@@ -53,7 +54,8 @@ var AllTableTasks = []string{
 	MinerFeeDebt,
 	MinerLockedFund,
 	MinerInfo,
-	MarketDealProposal,
+	MarketDealProposalV1_7,
+	MarketDealProposalV8,
 	MarketDealState,
 	Message,
 	BlockMessage,
@@ -91,7 +93,8 @@ var TableLookup = map[string]struct{}{
 	MinerFeeDebt:                   {},
 	MinerLockedFund:                {},
 	MinerInfo:                      {},
-	MarketDealProposal:             {},
+	MarketDealProposalV1_7:         {},
+	MarketDealProposalV8:           {},
 	MarketDealState:                {},
 	Message:                        {},
 	BlockMessage:                   {},
@@ -129,7 +132,8 @@ var TableComment = map[string]string{
 	MinerFeeDebt:                   ``,
 	MinerLockedFund:                ``,
 	MinerInfo:                      ``,
-	MarketDealProposal:             `MarketDealProposal contains all storage deal states with latest values applied to end_epoch when updates are detected on-chain.`,
+	MarketDealProposalV1_7:         `MarketDealProposalV1_7 is exported from the market actor iff the actor code is less than v8. MarketDealProposalV1_7 contains all storage deal states with latest values applied to end_epoch when updates are detected on-chain.`,
+	MarketDealProposalV8:           `MarketDealProposalV8 is the default model exported fromt he market actor. The table is returned iff the market actor code is greater than or equal to v8. The table contains all storage deal states with the latest values applied to end_epoch when updates are detected on-chain.`,
 	MarketDealState:                ``,
 	Message:                        ``,
 	BlockMessage:                   ``,
@@ -144,7 +148,7 @@ var TableComment = map[string]string{
 	ChainReward:                    ``,
 	Actor:                          `Actor on chain that were added or updated at an epoch. Associates the actor's state root CID (head) with the chain state root CID from which it decends. Includes account ID nonce and balance at each state.`,
 	ActorState:                     `ActorState that were changed at an epoch. Associates actors states as single-level trees with CIDs pointing to complete state tree with the root CID (head) for that actor’s state.`,
-	IdAddress:                      `IdAddress contains a mapping of ID addresses to robust addresses from the init actor’s state.`,
+	IdAddress:                      `IDAddress contains a mapping of ID addresses to robust addresses from the init actor’s state.`,
 	GasOutputs:                     ``,
 	ChainEconomics:                 ``,
 	ChainConsensus:                 ``,
@@ -172,7 +176,7 @@ var TableFieldComments = map[string]map[string]string{
 	MinerFeeDebt:             {},
 	MinerLockedFund:          {},
 	MinerInfo:                {},
-	MarketDealProposal: {
+	MarketDealProposalV1_7: {
 		"ClientCollateral":     "The amount of FIL (in attoFIL) the client has pledged as collateral.",
 		"ClientID":             "Address of the actor proposing the deal.",
 		"DealID":               "Identifier for the deal.",
@@ -180,6 +184,24 @@ var TableFieldComments = map[string]map[string]string{
 		"Height":               "Epoch at which this deal proposal was added or changed.",
 		"IsVerified":           "Deal is with a verified provider.",
 		"Label":                "An arbitrary client chosen label to apply to the deal.",
+		"PaddedPieceSize":      "The piece size in bytes with padding.",
+		"PieceCID":             "CID of a sector piece. A Piece is an object that represents a whole or part of a File.",
+		"ProviderCollateral":   "The amount of FIL (in attoFIL) the provider has pledged as collateral. The Provider deal collateral is only slashed when a sector is terminated before the deal expires.",
+		"ProviderID":           "Address of the actor providing the services.",
+		"StartEpoch":           "The epoch at which this deal with begin. Storage deal must appear in a sealed (proven) sector no later than start_epoch, otherwise it is invalid.",
+		"StateRoot":            "CID of the parent state root for this deal.",
+		"StoragePricePerEpoch": "The amount of FIL (in attoFIL) that will be transferred from the client to the provider every epoch this deal is active for.",
+		"UnpaddedPieceSize":    "The piece size in bytes without padding.",
+	},
+	MarketDealProposalV8: {
+		"ClientCollateral":     "The amount of FIL (in attoFIL) the client has pledged as collateral.",
+		"ClientID":             "Address of the actor proposing the deal.",
+		"DealID":               "Identifier for the deal.",
+		"EndEpoch":             "The epoch at which this deal with end.",
+		"Height":               "Epoch at which this deal proposal was added or changed.",
+		"IsString":             "Related to FIP: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0027.md",
+		"IsVerified":           "Deal is with a verified provider.",
+		"Label":                "Related to FIP: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0027.md",
 		"PaddedPieceSize":      "The piece size in bytes with padding.",
 		"PieceCID":             "CID of a sector piece. A Piece is an object that represents a whole or part of a File.",
 		"ProviderCollateral":   "The amount of FIL (in attoFIL) the provider has pledged as collateral. The Provider deal collateral is only slashed when a sector is terminated before the deal expires.",

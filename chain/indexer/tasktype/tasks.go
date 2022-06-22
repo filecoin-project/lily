@@ -45,7 +45,8 @@ var TaskLookup = map[string][]string{
 		IdAddress,
 	},
 	ActorStatesMarketTask: {
-		MarketDealProposal,
+		MarketDealProposalV8,
+		MarketDealProposalV1_7,
 		MarketDealState,
 	},
 	ActorStatesMultisigTask: {
