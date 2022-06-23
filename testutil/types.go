@@ -1,4 +1,4 @@
-package testing
+package testutil
 
 import (
 	"testing"
@@ -35,4 +35,10 @@ func MustFakeTipSet(t *testing.T, height int64) *types.TipSet {
 		t.Fatal(err)
 	}
 	return ts
+}
+
+func MustMakeAddress(t *testing.T, id uint64) address.Address {
+	addr, err := address.NewIDAddress(id)
+	require.NoError(t, err)
+	return addr
 }

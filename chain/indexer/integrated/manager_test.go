@@ -14,6 +14,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/integrated/tipset"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
+	"github.com/filecoin-project/lily/testutil"
 )
 
 func TestManagerWithResultStatusOK(t *testing.T) {
@@ -34,7 +35,7 @@ func TestManagerWithResultStatusOK(t *testing.T) {
 
 	// a fake tipset to index
 	tsHeight := int64(1)
-	ts1 := test.MustFakeTipSet(t, tsHeight)
+	ts1 := testutil.MustFakeTipSet(t, tsHeight)
 
 	// results channel and error channel MockIndexer will return.
 	resChan := make(chan *tipset.Result, 1)
@@ -99,7 +100,7 @@ func TestManagerWithResultStatusInfo(t *testing.T) {
 
 	// a fake tipset to index
 	tsHeight := int64(1)
-	ts1 := test.MustFakeTipSet(t, tsHeight)
+	ts1 := testutil.MustFakeTipSet(t, tsHeight)
 
 	// results channel and error channel MockIndexer will return.
 	resChan := make(chan *tipset.Result, 1)
@@ -164,7 +165,7 @@ func TestManagerWithResultStatusContainOKAndError(t *testing.T) {
 
 	// a fake tipset to index
 	tsHeight := int64(1)
-	ts1 := test.MustFakeTipSet(t, tsHeight)
+	ts1 := testutil.MustFakeTipSet(t, tsHeight)
 
 	// results channel and error channel MockIndexer will return.
 	resChan := make(chan *tipset.Result, 2)
@@ -254,7 +255,7 @@ func TestManagerWithResultStatusContainOKAndSkip(t *testing.T) {
 
 	// a fake tipset to index
 	tsHeight := int64(1)
-	ts1 := test.MustFakeTipSet(t, tsHeight)
+	ts1 := testutil.MustFakeTipSet(t, tsHeight)
 
 	// results channel and error channel MockIndexer will return.
 	resChan := make(chan *tipset.Result, 2)
@@ -344,7 +345,7 @@ func TestManagerWithResultStatusError(t *testing.T) {
 
 	// a fake tipset to index
 	tsHeight := int64(1)
-	ts1 := test.MustFakeTipSet(t, tsHeight)
+	ts1 := testutil.MustFakeTipSet(t, tsHeight)
 
 	// results channel and error channel MockIndexer will return.
 	resChan := make(chan *tipset.Result, 1)
@@ -409,7 +410,7 @@ func TestManagerWithResultStatusSkip(t *testing.T) {
 
 	// a fake tipset to index
 	tsHeight := int64(1)
-	ts1 := test.MustFakeTipSet(t, tsHeight)
+	ts1 := testutil.MustFakeTipSet(t, tsHeight)
 
 	// results channel and error channel MockIndexer will return.
 	resChan := make(chan *tipset.Result, 1)
@@ -474,7 +475,7 @@ func TestManagerFatalError(t *testing.T) {
 
 	// a fake tipset to index
 	tsHeight := int64(1)
-	ts1 := test.MustFakeTipSet(t, tsHeight)
+	ts1 := testutil.MustFakeTipSet(t, tsHeight)
 
 	// results channel and error channel MockIndexer will return.
 	resChan := make(chan *tipset.Result, 1)
@@ -512,7 +513,7 @@ func TestManagerFatalErrorAndResultStatusOk(t *testing.T) {
 
 	// a fake tipset to index
 	tsHeight := int64(1)
-	ts1 := test.MustFakeTipSet(t, tsHeight)
+	ts1 := testutil.MustFakeTipSet(t, tsHeight)
 
 	// results channel and error channel MockIndexer will return.
 	resChan := make(chan *tipset.Result, 1)
