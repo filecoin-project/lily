@@ -7,12 +7,13 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/chain/actors/adt"
-	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	logging "github.com/ipfs/go-log/v2"
 	typegen "github.com/whyrusleeping/cbor-gen"
+
+	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 )
 
 var log = logging.Logger("lily/actors")
@@ -34,12 +35,12 @@ func DiffAddressMap(ctx context.Context, store adt.Store, pre, cur State) (*Addr
 		return nil, err
 	}
 
-	prem, err := pre.addressMap()
+	prem, err := pre.AddressMap()
 	if err != nil {
 		return nil, err
 	}
 
-	curm, err := cur.addressMap()
+	curm, err := cur.AddressMap()
 	if err != nil {
 		return nil, err
 	}
