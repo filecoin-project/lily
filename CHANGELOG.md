@@ -10,7 +10,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 # IMPORTANT!
 
-This release fixes a bug which was causes data to be lost. This bug was introduced in `v0.9.0` and may require special attention around production of certain `miner`-based datasets. You can find details of the bug in [this issue](https://github.com/filecoin-project/lily/issues/997) along with their associated fixes. If you rely on your own Lily instances _AND HAVE DEPLOYED_ Lily `v0.9.0`, we recommend updating to `v0.10.1` or later. With `v0.10.1`, you may lily walk the epochs which were produced by `v0.9.0` and Lily will fill in the missing data.
+This release fixes a bug which causes data to be lost. This bug was introduced in `v0.9.0` and may require special attention around production of certain `miner`-based datasets. You can find details of the bug in [this issue](https://github.com/filecoin-project/lily/issues/997) along with their associated fixes. If you rely on your own Lily instances _AND HAVE DEPLOYED_ Lily `v0.9.0`, we recommend updating to `v0.10.1` or later. With `v0.10.1`, you may lily walk the epochs which were produced by `v0.9.0` and Lily will fill in the missing data.
 
 The following datasets are affected:
 - `miner_sector_infos_v7`
