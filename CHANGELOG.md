@@ -5,6 +5,37 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.10.1"></a>
+## [v0.10.1] - 2022-05-23
+
+# IMPORTANT!
+
+This release fixes a bug which causes data to be lost. This bug was introduced in `v0.9.0` and may require special attention around production of certain `miner`-based datasets. You can find details of the bug in [this issue](https://github.com/filecoin-project/lily/issues/997) along with their associated fixes. If you rely on your own Lily instances _AND HAVE DEPLOYED_ Lily `v0.9.0`, we recommend updating to `v0.10.1` or later. With `v0.10.1`, you may lily walk the epochs which were produced by `v0.9.0` and Lily will fill in the missing data.
+
+The following datasets are affected:
+- `miner_sector_infos_v7`
+- `miner_sector_infos`
+- `miner_sector_deals`
+- `miner_locked_funds`
+
+### Fix
+
+- `lily job wait` respects Ctrl-C ([#976](https://github.com/filecoin-project/lily/pull/976))
+- Register Miner Locked Funds ([#996](https://github.com/filecoin-project/lily/pull/996))
+
+### Chore
+
+- Update dependencies
+  - lotus and FFI ([#973](https://github.com/filecoin-project/lily/pull/973))
+  - go-amt-ipld ([#974](https://github.com/filecoin-project/lily/pull/974))
+- Reject invalid tasks on client during job creation ([#975](https://github.com/filecoin-project/lily/pull/975))
+- Improve distributed indexing metrics ([#981](https://github.com/filecoin-project/lily/pull/981))
+- Fix `make test` ([#995](https://github.com/filecoin-project/lily/pull/995))
+- Index manager unit tests ([#982](https://github.com/filecoin-project/lily/pull/982))
+- Unify dev and CI linting ([#990](https://github.com/filecoin-project/lily/pull/990))
+- Implement unit tests for Miner Deal extraction ([#994](https://github.com/filecoin-project/lily/pull/994))
+- Implement unit tests for Tasktype and state processor lists ([#998](https://github.com/filecoin-project/lily/pull/998))
+
 <a name="v0.10.0"></a>
 ## [v0.10.0] - 2022-05-23
 
