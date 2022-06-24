@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
@@ -78,6 +79,13 @@ var SyncStatusCmd = &cli.Command{
 	},
 }
 
+type syncWaitOptions struct{
+	watch bool
+	untilEpoch int
+}
+
+var opts syncWaitOptions
+
 var SyncWaitCmd = &cli.Command{
 	Name:  "wait",
 	Usage: "Wait for sync to be complete",
@@ -85,9 +93,24 @@ var SyncWaitCmd = &cli.Command{
 		&cli.BoolFlag{
 			Name:  "watch",
 			Usage: "don't exit after node is synced",
+			Destination: &opts.watch,
+		},
+		&cli.IntFlag{
+			Name:  "until-epoch",
+			Usage: "returns after the epoch provided",
+			Destination: &opts.untilEpoch,
 		},
 	},
 	Action: func(cctx *cli.Context) error {
+		if opts.untilEpoch > 0 && opts.watch {
+			return fmt.Errorf("until-epoch and watch flags cannot be used together")
+		}
+		// ensure default doesn't cause an internal exit by making the value
+		// impossibly large
+		if opts.untilEpoch == 0 {
+			opts.untilEpoch = abi.ChainEpoch(math.MaxInt64)
+		}
+
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)
 		if err != nil {
@@ -95,11 +118,11 @@ var SyncWaitCmd = &cli.Command{
 		}
 		defer closer()
 
-		return SyncWait(ctx, lapi, cctx.Bool("watch"))
+		return SyncWait(ctx, lapi, opts)
 	},
 }
 
-func SyncWait(ctx context.Context, lapi lily.LilyAPI, watch bool) error {
+func SyncWait(ctx context.Context, lapi lily.LilyAPI, o syncWaitOptions) error {
 	tick := time.Second / 4
 
 	lastLines := 0
@@ -130,6 +153,13 @@ func SyncWait(ctx context.Context, lapi lily.LilyAPI, watch bool) error {
 		head, err := lapi.ChainHead(ctx)
 		if err != nil {
 			return err
+		}
+
+		// stopping one epoch after requested to ensure receipts are processed
+		// and included in the repo state
+		if head.Height() > abi.ChainEpoch(o.untilEpoch + 1) {
+			fmt.Println("\nDone!")
+			return nil
 		}
 
 		working := -1
@@ -186,7 +216,7 @@ func SyncWait(ctx context.Context, lapi lily.LilyAPI, watch bool) error {
 
 		_ = target // todo: maybe print? (creates a bunch of line wrapping issues with most tipsets)
 
-		if !watch && time.Now().Unix()-int64(head.MinTimestamp()) < int64(builtin.EpochDurationSeconds) {
+		if !o.watch && time.Now().Unix()-int64(head.MinTimestamp()) < int64(builtin.EpochDurationSeconds) {
 			fmt.Println("\nDone!")
 			return nil
 		}
