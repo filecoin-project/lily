@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -16,6 +17,11 @@ import (
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
+type SyncStatus struct {
+	Stage  api.SyncStateStage
+	Height abi.ChainEpoch
+}
+
 var SyncCmd = &cli.Command{
 	Name:  "sync",
 	Usage: "Inspect or interact with the chain syncer",
@@ -28,6 +34,14 @@ var SyncCmd = &cli.Command{
 var SyncStatusCmd = &cli.Command{
 	Name:  "status",
 	Usage: "Report sync status of a running lily daemon",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:     "output",
+			Usage:    "Print only the current sync stage at the latest height. One of [text, json]",
+			Aliases:  []string{"o"},
+			Required: false,
+		},
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)
@@ -41,9 +55,16 @@ var SyncStatusCmd = &cli.Command{
 			return err
 		}
 
-		fmt.Println("sync status:")
+		output := cctx.String("output")
+
+		var max abi.ChainEpoch = -1
+		maxStateSync := api.StageIdle
 		for _, ss := range state.ActiveSyncs {
-			fmt.Printf("worker %d:\n", ss.WorkerID)
+			if max < ss.Height && maxStateSync <= ss.Stage {
+				max = ss.Height
+				maxStateSync = ss.Stage
+			}
+
 			var base, target []cid.Cid
 			var heightDiff int64
 			var theight abi.ChainEpoch
@@ -58,21 +79,38 @@ var SyncStatusCmd = &cli.Command{
 			} else {
 				heightDiff = 0
 			}
-			fmt.Printf("\tBase:\t%s\n", base)
-			fmt.Printf("\tTarget:\t%s (%d)\n", target, theight)
-			fmt.Printf("\tHeight diff:\t%d\n", heightDiff)
-			fmt.Printf("\tStage: %s\n", ss.Stage)
-			fmt.Printf("\tHeight: %d\n", ss.Height)
-			if ss.End.IsZero() {
-				if !ss.Start.IsZero() {
-					fmt.Printf("\tElapsed: %s\n", time.Since(ss.Start))
+
+			switch output {
+			case "json":
+				j, err := json.Marshal(SyncStatus{Stage: maxStateSync, Height: max})
+				if err != nil {
+					return err
 				}
-			} else {
-				fmt.Printf("\tElapsed: %s\n", ss.End.Sub(ss.Start))
+				fmt.Printf(string(j) + "\n")
+			case "":
+				fmt.Printf("worker %d:\n", ss.WorkerID)
+				fmt.Printf("\tBase:\t%s\n", base)
+				fmt.Printf("\tTarget:\t%s (%d)\n", target, theight)
+				fmt.Printf("\tHeight diff:\t%d\n", heightDiff)
+				fmt.Printf("\tStage: %s\n", ss.Stage)
+				fmt.Printf("\tHeight: %d\n", ss.Height)
+				if ss.End.IsZero() {
+					if !ss.Start.IsZero() {
+						fmt.Printf("\tElapsed: %s\n", time.Since(ss.Start))
+					}
+				} else {
+					fmt.Printf("\tElapsed: %s\n", ss.End.Sub(ss.Start))
+				}
+			case "text":
+				fallthrough
+			default:
+				fmt.Printf("%s %d\n", maxStateSync, max)
 			}
-			if ss.Stage == api.StageSyncErrored {
+
+			if ss.Stage == api.StageSyncErrored && output != "json" {
 				fmt.Printf("\tError: %s\n", ss.Message)
 			}
+
 		}
 		return nil
 	},
