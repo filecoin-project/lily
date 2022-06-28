@@ -208,7 +208,7 @@ func TestExtractMinerSectorEvents(t *testing.T) {
 	sort.Slice(snapped, func(i, j int) bool {
 		return snapped[i].SectorID < snapped[j].SectorID
 	})
-	for i, e := range events[minermodel.SectorSnapped] {
+	for i, e := range snapped {
 		require.Equal(t, minermodel.SectorSnapped, e.Event)
 		require.Equal(t, int64(ts.Height()), e.Height)
 		require.Equal(t, addr.String(), e.MinerID)
@@ -326,7 +326,7 @@ func TestExtractSectorEvents(t *testing.T) {
 	sort.Slice(snapped, func(i, j int) bool {
 		return snapped[i].SectorID < snapped[j].SectorID
 	})
-	for i, e := range events[minermodel.SectorSnapped] {
+	for i, e := range snapped {
 		require.Equal(t, minermodel.SectorSnapped, e.Event)
 		require.Equal(t, int64(ts.Height()), e.Height)
 		require.Equal(t, addr.String(), e.MinerID)
@@ -393,7 +393,6 @@ func TestExtractSectorEvents(t *testing.T) {
 		require.Equal(t, minermodel.PreCommitAdded, res.Event)
 		require.EqualValues(t, fakePrecommitChanges.Added[i].Info.SectorNumber, res.SectorID)
 	}
-
 }
 
 func generateFakeSectorOnChainInfo(sectorNumber uint64, dealIDs ...abi.DealID) miner.SectorOnChainInfo {
@@ -461,7 +460,6 @@ func generateFakeSectorPreCommitChanges(add uint64, rm uint64) *miner.PreCommitC
 		Added:   added,
 		Removed: removed,
 	}
-
 }
 
 func generateFakePartitionDiff(removed, recovered, faulted, recovering uint64) *miner.PartitionDiff {
