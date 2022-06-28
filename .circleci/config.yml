@@ -187,7 +187,7 @@ jobs:
       - prepare
       - go/mod-tidy-check
   test:
-    resource_class: large
+    resource_class: xlarge
     docker:
       - image: cimg/go:1.17.6
       - image: timescale/timescaledb:2.5.0-pg13
