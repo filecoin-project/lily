@@ -6,7 +6,6 @@ import (
 	"time"
 
 	itestkit "github.com/filecoin-project/lotus/itests/kit"
-	"github.com/go-pg/pg/v10"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,22 +21,11 @@ import (
 )
 
 func TestWalker(t *testing.T) {
-	if testing.Short() {
-		t.Skip("short testing requested")
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
 	defer cancel()
-
-	db, cleanup, err := testutil.WaitForExclusiveDatabase(ctx, t)
-	require.NoError(t, err)
-	defer func() { require.NoError(t, cleanup()) }()
-
-	t.Logf("truncating database tables")
-	err = testutil.TruncateBlockTables(t, db)
-	require.NoError(t, err, "truncating tables")
-
 	t.Logf("preparing chain")
+
+	logging.SetAllLoggers(logging.LevelInfo)
 	full, miner, _ := itestkit.EnsembleMinimal(t, itestkit.MockProofs())
 
 	nodeAPI := testutil.NewAPIWrapper(full)
@@ -47,19 +35,17 @@ func TestWalker(t *testing.T) {
 
 	head, err := full.ChainHead(ctx)
 	require.NoError(t, err, "chain head")
+	t.Logf("got chain head: %v height %d", head, head.Height())
 
 	t.Logf("collecting chain blocks from tipset before head")
-
 	bhs, err := testutil.CollectBlockHeaders(nodeAPI, head)
 	require.NoError(t, err, "collect chain blocks")
 
-	cids := bhs.Cids()
-	rounds := bhs.Rounds()
+	t.Logf("collected chain blocks: %v heights %v", bhs.Cids(), bhs.Heights())
+	expectedCIDs := bhs.Cids()
+	expectedRounds := bhs.Rounds()
 
-	strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
-	require.NoError(t, err, "NewDatabaseFromDB")
-
-	logging.SetAllLoggers(logging.LevelInfo)
+	strg := storage.NewMemStorageLatest()
 
 	taskAPI, err := datasource.NewDataSource(nodeAPI)
 	require.NoError(t, err)
@@ -75,43 +61,46 @@ func TestWalker(t *testing.T) {
 	require.NoError(t, err, "WalkChain")
 
 	t.Run("block_headers", func(t *testing.T) {
-		var count int
-		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM block_headers`)
-		require.NoError(t, err)
-		assert.Equal(t, len(cids), count)
+		// expected count
+		assert.Equal(t, len(expectedCIDs), len(strg.Data["block_headers"]))
 
-		var m *blocks.BlockHeader
-		for _, cid := range cids {
-			exists, err := db.Model(m).Where("cid = ?", cid).Exists()
-			require.NoError(t, err)
+		// models exist
+		actualHeaders := make(map[string]struct{})
+		for _, bh := range strg.Data["block_headers"] {
+			actualHeaders[bh.(*blocks.BlockHeader).Cid] = struct{}{}
+		}
+		for _, cid := range expectedCIDs {
+			_, exists := actualHeaders[cid]
 			assert.True(t, exists, "cid: %s", cid)
 		}
 	})
 
 	t.Run("block_parents", func(t *testing.T) {
-		var count int
-		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM block_parents`)
-		require.NoError(t, err)
-		assert.Equal(t, len(cids), count)
+		// expected count
+		assert.Equal(t, len(expectedCIDs), len(strg.Data["block_parents"]))
 
-		var m *blocks.BlockParent
-		for _, cid := range cids {
-			exists, err := db.Model(m).Where("block = ?", cid).Exists()
-			require.NoError(t, err)
-			assert.True(t, exists, "block: %s", cid)
+		// models exist
+		actualParents := make(map[string]struct{})
+		for _, bh := range strg.Data["block_parents"] {
+			actualParents[bh.(*blocks.BlockParent).Block] = struct{}{}
+		}
+		for _, cid := range expectedCIDs {
+			_, exists := actualParents[cid]
+			assert.True(t, exists, "cid: %s", cid)
 		}
 	})
 
 	t.Run("drand_block_entries", func(t *testing.T) {
-		var count int
-		_, err := db.QueryOne(pg.Scan(&count), `SELECT COUNT(*) FROM drand_block_entries`)
-		require.NoError(t, err)
-		assert.Equal(t, len(rounds), count)
+		// expected count
+		assert.Equal(t, len(expectedRounds), len(strg.Data["drand_block_entries"]))
 
-		var m *blocks.DrandBlockEntrie
-		for _, round := range rounds {
-			exists, err := db.Model(m).Where("round = ?", round).Exists()
-			require.NoError(t, err)
+		// models exist
+		actualParents := make(map[uint64]struct{})
+		for _, bh := range strg.Data["drand_block_entries"] {
+			actualParents[bh.(*blocks.DrandBlockEntrie).Round] = struct{}{}
+		}
+		for _, round := range expectedRounds {
+			_, exists := actualParents[round]
 			assert.True(t, exists, "round: %d", round)
 		}
 	})

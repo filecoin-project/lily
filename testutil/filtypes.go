@@ -45,6 +45,15 @@ func (b BlockHeaderList) Cids() []string {
 	return cids
 }
 
+func (b BlockHeaderList) Heights() []int64 {
+	var heights []int64
+	for _, bh := range b {
+		heights = append(heights, int64(bh.Height))
+	}
+	return heights
+
+}
+
 func (b BlockHeaderList) Rounds() []uint64 {
 	var rounds []uint64
 	for _, bh := range b {
