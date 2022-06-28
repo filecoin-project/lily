@@ -22,6 +22,7 @@ The following datasets are affected:
 
 - `lily job wait` respects Ctrl-C ([#976](https://github.com/filecoin-project/lily/pull/976))
 - Register Miner Locked Funds ([#996](https://github.com/filecoin-project/lily/pull/996))
+- Ensure redis queue inspector is registered for metric export ([#1011](https://github.com/filecoin-project/lily/pull/1011))
 
 ### Chore
 
@@ -35,6 +36,8 @@ The following datasets are affected:
 - Unify dev and CI linting ([#990](https://github.com/filecoin-project/lily/pull/990))
 - Implement unit tests for Miner Deal extraction ([#994](https://github.com/filecoin-project/lily/pull/994))
 - Implement unit tests for Tasktype and state processor lists ([#998](https://github.com/filecoin-project/lily/pull/998))
+- Walk test uses in memory storage ([#1000](https://github.com/filecoin-project/lily/pull/1000))
+- Increase resource_class for CI test ([#1003](https://github.com/filecoin-project/lily/pull/1003))
 
 <a name="v0.10.0"></a>
 ## [v0.10.0] - 2022-05-23
