@@ -47,7 +47,6 @@ var LilyTracingFlags LilyTracingOpts
 
 type LilyMetricOpts struct {
 	PrometheusPort string
-	RedisNetwork   string
 	RedisAddr      string
 	RedisUsername  string
 	RedisPassword  string
@@ -81,6 +80,25 @@ func setupLogging(flags LilyLogOpts) error {
 	return nil
 }
 
+func newAsynqInspector(addr string, db int, user, passwd string) (inspector *asynq.Inspector, err error) {
+	// Annoyingly NewInspector panics on invalid args, so we need to recover if args are invalid.
+	defer func() {
+		if r := recover(); r != nil {
+			inspector = nil
+			err = fmt.Errorf("failed to create asynq inspector: %v", r)
+			return
+		}
+	}()
+	inspector = asynq.NewInspector(asynq.RedisClientOpt{
+		Addr:     addr,
+		DB:       db,
+		Password: passwd,
+		Username: user,
+	})
+	err = nil
+	return
+}
+
 func setupMetrics(flags LilyMetricOpts) error {
 	// setup Prometheus
 	registry := prom.NewRegistry()
@@ -95,15 +113,14 @@ func setupMetrics(flags LilyMetricOpts) error {
 	}
 
 	metricCollectors := []prom.Collector{goCollector, procCollector}
-	if flags.RedisNetwork != "" {
-		inspector := asynq.NewInspector(asynq.RedisClientOpt{
-			Addr:     flags.RedisAddr,
-			DB:       flags.RedisDB,
-			Password: flags.RedisPassword,
-			Username: flags.RedisUsername,
-		})
+	if flags.RedisAddr != "" {
+		inspector, err := newAsynqInspector(flags.RedisAddr, flags.RedisDB, flags.RedisUsername, flags.RedisPassword)
+		if err != nil {
+			return err
+		}
 		metricCollectors = append(metricCollectors, asynqmetrics.NewQueueMetricsCollector(inspector))
 	}
+
 	registry.MustRegister(metricCollectors...)
 
 	// register prometheus with opencensus

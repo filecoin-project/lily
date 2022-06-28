@@ -126,7 +126,7 @@ func main() {
 				Name:        "redis-addr",
 				EnvVars:     []string{"LILY_REDIS_ADDR"},
 				Usage:       `Redis server address in "host:port" format`,
-				Value:       "127.0.0.1:6379",
+				Value:       "",
 				Destination: &commands.LilyMetricFlags.RedisAddr,
 			},
 
