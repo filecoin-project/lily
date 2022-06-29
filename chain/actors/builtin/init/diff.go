@@ -7,12 +7,13 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/chain/actors/adt"
-	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	logging "github.com/ipfs/go-log/v2"
 	typegen "github.com/whyrusleeping/cbor-gen"
+
+	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 )
 
 var log = logging.Logger("lily/actors")
@@ -24,28 +25,26 @@ type AddressMapChanges struct {
 }
 
 func DiffAddressMap(ctx context.Context, store adt.Store, pre, cur State) (*AddressMapChanges, error) {
-	preOpts, err := adt.MapOptsForActorCode(pre.Code())
+	prem, err := pre.AddressMap()
 	if err != nil {
 		return nil, err
 	}
 
-	curOpts, err := adt.MapOptsForActorCode(cur.Code())
-	if err != nil {
-		return nil, err
-	}
-
-	prem, err := pre.addressMap()
-	if err != nil {
-		return nil, err
-	}
-
-	curm, err := cur.addressMap()
+	curm, err := cur.AddressMap()
 	if err != nil {
 		return nil, err
 	}
 
 	mapDiffer := NewAddressMapDiffer(pre, cur)
-	if requiresLegacyDiffing(pre, cur, preOpts, curOpts) {
+	if requiresLegacyDiffing(pre, cur,
+		&adt.MapOpts{
+			Bitwidth: pre.AddressMapBitWidth(),
+			HashFunc: pre.AddressMapHashFunction(),
+		},
+		&adt.MapOpts{
+			Bitwidth: cur.AddressMapBitWidth(),
+			HashFunc: cur.AddressMapHashFunction(),
+		}) {
 		log.Warnw("actor HAMT opts differ, running slower generic map diff", "preCID", pre.Code(), "curCID", cur.Code())
 		if err := diff.CompareMap(prem, curm, mapDiffer); err != nil {
 			return nil, err
@@ -53,7 +52,7 @@ func DiffAddressMap(ctx context.Context, store adt.Store, pre, cur State) (*Addr
 		return mapDiffer.Results, nil
 	}
 
-	changes, err := diff.Hamt(ctx, prem, curm, store, store, hamt.UseTreeBitWidth(preOpts.Bitwidth), hamt.UseHashFunction(hamt.HashFunc(preOpts.HashFunc)))
+	changes, err := diff.Hamt(ctx, prem, curm, store, store, hamt.UseTreeBitWidth(pre.AddressMapBitWidth()), hamt.UseHashFunction(pre.AddressMapHashFunction()))
 	if err != nil {
 		return nil, err
 	}
