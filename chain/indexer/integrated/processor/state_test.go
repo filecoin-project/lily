@@ -3,16 +3,10 @@ package processor_test
 import (
 	"testing"
 
-	saminer1 "github.com/filecoin-project/specs-actors/actors/builtin/miner"
-	saminer2 "github.com/filecoin-project/specs-actors/v2/actors/builtin/miner"
-	saminer3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/miner"
-	saminer4 "github.com/filecoin-project/specs-actors/v4/actors/builtin/miner"
-	saminer5 "github.com/filecoin-project/specs-actors/v5/actors/builtin/miner"
-	saminer6 "github.com/filecoin-project/specs-actors/v6/actors/builtin/miner"
-	saminer7 "github.com/filecoin-project/specs-actors/v7/actors/builtin/miner"
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/lily/chain/actors"
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -90,12 +84,12 @@ func TestMakeProcessorsActors(t *testing.T) {
 				taskName: tasktype.MinerSectorInfoV1_6,
 				extractor: actorstate.NewCustomTypedActorExtractorMap(
 					map[cid.Cid][]actorstate.ActorStateExtractor{
-						saminer1.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-						saminer2.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-						saminer3.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-						saminer4.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-						saminer5.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-						saminer6.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
+						miner.VersionCodes()[actors.Version0]: {minertask.SectorInfoExtractor{}},
+						miner.VersionCodes()[actors.Version2]: {minertask.SectorInfoExtractor{}},
+						miner.VersionCodes()[actors.Version3]: {minertask.SectorInfoExtractor{}},
+						miner.VersionCodes()[actors.Version4]: {minertask.SectorInfoExtractor{}},
+						miner.VersionCodes()[actors.Version5]: {minertask.SectorInfoExtractor{}},
+						miner.VersionCodes()[actors.Version6]: {minertask.SectorInfoExtractor{}},
 					},
 				),
 			},
@@ -103,7 +97,8 @@ func TestMakeProcessorsActors(t *testing.T) {
 				taskName: tasktype.MinerSectorInfoV7,
 				extractor: actorstate.NewCustomTypedActorExtractorMap(
 					map[cid.Cid][]actorstate.ActorStateExtractor{
-						saminer7.Actor{}.Code(): {minertask.V7SectorInfoExtractor{}},
+						miner.VersionCodes()[actors.Version7]: {minertask.V7SectorInfoExtractor{}},
+						miner.VersionCodes()[actors.Version8]: {minertask.V7SectorInfoExtractor{}},
 					},
 				),
 			},
