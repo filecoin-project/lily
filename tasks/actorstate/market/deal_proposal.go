@@ -42,6 +42,16 @@ func (DealProposalExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 	if ec.IsGenesis() {
 		var out marketmodel.MarketDealProposals
 		if err := currDealProposals.ForEach(func(id abi.DealID, dp market.DealProposal) error {
+			var label string
+			if dp.Label.IsString() {
+				var err error
+				label, err = dp.Label.ToString()
+				if err != nil {
+					return fmt.Errorf("creating deal proposal label string: %w", err)
+				}
+			} else {
+				label = ""
+			}
 			out = append(out, &marketmodel.MarketDealProposal{
 				Height:               int64(ec.CurrTs.Height()),
 				DealID:               uint64(id),
@@ -57,7 +67,7 @@ func (DealProposalExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 				StoragePricePerEpoch: dp.StoragePricePerEpoch.String(),
 				PieceCID:             dp.PieceCID.String(),
 				IsVerified:           dp.VerifiedDeal,
-				Label:                SanitizeLabel(dp.Label),
+				Label:                SanitizeLabel(label),
 			})
 			return nil
 		}); err != nil {
@@ -83,6 +93,16 @@ func (DealProposalExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 
 	out := make(marketmodel.MarketDealProposals, len(changes.Added))
 	for idx, add := range changes.Added {
+		var label string
+		if add.Proposal.Label.IsString() {
+			var err error
+			label, err = add.Proposal.Label.ToString()
+			if err != nil {
+				return nil, fmt.Errorf("creating deal proposal label string: %w", err)
+			}
+		} else {
+			label = ""
+		}
 		out[idx] = &marketmodel.MarketDealProposal{
 			Height:               int64(ec.CurrTs.Height()),
 			DealID:               uint64(add.ID),
@@ -98,7 +118,7 @@ func (DealProposalExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			StoragePricePerEpoch: add.Proposal.StoragePricePerEpoch.String(),
 			PieceCID:             add.Proposal.PieceCID.String(),
 			IsVerified:           add.Proposal.VerifiedDeal,
-			Label:                SanitizeLabel(add.Proposal.Label),
+			Label:                SanitizeLabel(label),
 		}
 	}
 	return out, nil
