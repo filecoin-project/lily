@@ -17,63 +17,34 @@ import (
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
 	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
+	builtin8 "github.com/filecoin-project/specs-actors/v8/actors/builtin"
 
 	"github.com/filecoin-project/lotus/chain/types"
 
+	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/filecoin-project/lily/chain/actors/adt"
-	"github.com/filecoin-project/lily/chain/actors/builtin"
+	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 )
-
-func init() {
-
-	builtin.RegisterActorState(builtin0.VerifiedRegistryActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
-		return load0(store, root)
-	})
-
-	builtin.RegisterActorState(builtin2.VerifiedRegistryActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
-		return load2(store, root)
-	})
-
-	builtin.RegisterActorState(builtin3.VerifiedRegistryActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
-		return load3(store, root)
-	})
-
-	builtin.RegisterActorState(builtin4.VerifiedRegistryActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
-		return load4(store, root)
-	})
-
-	builtin.RegisterActorState(builtin5.VerifiedRegistryActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
-		return load5(store, root)
-	})
-
-	builtin.RegisterActorState(builtin6.VerifiedRegistryActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
-		return load6(store, root)
-	})
-
-	builtin.RegisterActorState(builtin7.VerifiedRegistryActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
-		return load7(store, root)
-	})
-
-}
 
 var (
-	Address = builtin7.VerifiedRegistryActorAddr
-	Methods = builtin7.MethodsVerifiedRegistry
+	Address = builtin8.VerifiedRegistryActorAddr
+	Methods = builtin8.MethodsVerifiedRegistry
 )
 
-func AllCodes() []cid.Cid {
-	return []cid.Cid{
-		builtin0.VerifiedRegistryActorCodeID,
-		builtin2.VerifiedRegistryActorCodeID,
-		builtin3.VerifiedRegistryActorCodeID,
-		builtin4.VerifiedRegistryActorCodeID,
-		builtin5.VerifiedRegistryActorCodeID,
-		builtin6.VerifiedRegistryActorCodeID,
-		builtin7.VerifiedRegistryActorCodeID,
-	}
-}
-
 func Load(store adt.Store, act *types.Actor) (State, error) {
+	if name, av, ok := lotusactors.GetActorMetaByCode(act.Code); ok {
+		if name != actors.VerifregKey {
+			return nil, fmt.Errorf("actor code is not verifreg: %s", name)
+		}
+
+		switch actors.Version(av) {
+
+		case actors.Version8:
+			return load8(store, act.Head)
+
+		}
+	}
+
 	switch act.Code {
 
 	case builtin0.VerifiedRegistryActorCodeID:
@@ -98,6 +69,7 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 		return load7(store, act.Head)
 
 	}
+
 	return nil, fmt.Errorf("unknown actor code %s", act.Code)
 }
 
@@ -105,6 +77,8 @@ type State interface {
 	cbor.Marshaler
 
 	Code() cid.Cid
+	ActorKey() string
+	ActorVersion() actors.Version
 
 	RootKey() (address.Address, error)
 	VerifiedClientDataCap(address.Address) (bool, abi.StoragePower, error)
@@ -112,8 +86,13 @@ type State interface {
 	ForEachVerifier(func(addr address.Address, dcap abi.StoragePower) error) error
 	ForEachClient(func(addr address.Address, dcap abi.StoragePower) error) error
 
-	verifiers() (adt.Map, error)
-	verifiedClients() (adt.Map, error)
+	VerifiersMap() (adt.Map, error)
+	VerifiersMapBitWidth() int
+	VerifiersMapHashFunction() func(input []byte) []byte
+
+	VerifiedClientsMap() (adt.Map, error)
+	VerifiedClientsMapBitWidth() int
+	VerifiedClientsMapHashFunction() func(input []byte) []byte
 }
 
 type VerifierInfo struct {
@@ -130,4 +109,30 @@ type VerifierChanges struct {
 	Added    []VerifierInfo
 	Modified []VerifierChange
 	Removed  []VerifierInfo
+}
+
+func AllCodes() []cid.Cid {
+	return []cid.Cid{
+		(&state0{}).Code(),
+		(&state2{}).Code(),
+		(&state3{}).Code(),
+		(&state4{}).Code(),
+		(&state5{}).Code(),
+		(&state6{}).Code(),
+		(&state7{}).Code(),
+		(&state8{}).Code(),
+	}
+}
+
+func VersionCodes() map[actors.Version]cid.Cid {
+	return map[actors.Version]cid.Cid{
+		actors.Version0: (&state0{}).Code(),
+		actors.Version2: (&state2{}).Code(),
+		actors.Version3: (&state3{}).Code(),
+		actors.Version4: (&state4{}).Code(),
+		actors.Version5: (&state5{}).Code(),
+		actors.Version6: (&state6{}).Code(),
+		actors.Version7: (&state7{}).Code(),
+		actors.Version8: (&state8{}).Code(),
+	}
 }

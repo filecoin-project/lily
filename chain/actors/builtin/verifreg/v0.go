@@ -2,6 +2,8 @@
 package verifreg
 
 import (
+	"fmt"
+
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
@@ -9,7 +11,8 @@ import (
 	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/filecoin-project/lily/chain/actors/adt"
 
-	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
+	sha256simd "github.com/minio/sha256-simd"
+
 	verifreg0 "github.com/filecoin-project/specs-actors/actors/builtin/verifreg"
 	adt0 "github.com/filecoin-project/specs-actors/actors/util/adt"
 )
@@ -30,34 +33,77 @@ type state0 struct {
 	store adt.Store
 }
 
-func (s *state0) Code() cid.Cid {
-	return builtin0.VerifiedRegistryActorCodeID
-}
-
 func (s *state0) RootKey() (address.Address, error) {
 	return s.State.RootKey, nil
 }
 
 func (s *state0) VerifiedClientDataCap(addr address.Address) (bool, abi.StoragePower, error) {
-	return getDataCap(s.store, actors.Version0, s.verifiedClients, addr)
+	return getDataCap(s.store, actors.Version0, s.VerifiedClientsMap, addr)
 }
 
 func (s *state0) VerifierDataCap(addr address.Address) (bool, abi.StoragePower, error) {
-	return getDataCap(s.store, actors.Version0, s.verifiers, addr)
+	return getDataCap(s.store, actors.Version0, s.VerifiersMap, addr)
 }
 
 func (s *state0) ForEachVerifier(cb func(addr address.Address, dcap abi.StoragePower) error) error {
-	return forEachCap(s.store, actors.Version0, s.verifiers, cb)
+	return forEachCap(s.store, actors.Version0, s.VerifiersMap, cb)
 }
 
 func (s *state0) ForEachClient(cb func(addr address.Address, dcap abi.StoragePower) error) error {
-	return forEachCap(s.store, actors.Version0, s.verifiedClients, cb)
+	return forEachCap(s.store, actors.Version0, s.VerifiedClientsMap, cb)
 }
 
-func (s *state0) verifiedClients() (adt.Map, error) {
+func (s *state0) VerifiedClientsMap() (adt.Map, error) {
 	return adt0.AsMap(s.store, s.VerifiedClients)
 }
 
-func (s *state0) verifiers() (adt.Map, error) {
+func (s *state0) VerifiedClientsMapBitWidth() int {
+
+	return 5
+
+}
+
+func (s *state0) VerifiedClientsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256simd.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state0) VerifiersMap() (adt.Map, error) {
 	return adt0.AsMap(s.store, s.Verifiers)
+}
+
+func (s *state0) VerifiersMapBitWidth() int {
+
+	return 5
+
+}
+
+func (s *state0) VerifiersMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256simd.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state0) ActorKey() string {
+	return actors.VerifregKey
+}
+
+func (s *state0) ActorVersion() actors.Version {
+	return actors.Version0
+}
+
+func (s *state0) Code() cid.Cid {
+	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
+	if !ok {
+		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))
+	}
+
+	return code
 }
