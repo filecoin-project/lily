@@ -33,6 +33,7 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 
 	var sectorChanges *miner.SectorChanges
 	var preCommitChanges *miner.PreCommitChanges
+	var deadlineChanges miner.DeadlinesDiff
 	if extState.ParentState() == nil {
 		// If the miner doesn't have previous state list all of its current sectors and precommits
 		sectors, err := extState.CurrentState().LoadSectors(nil)
@@ -64,14 +65,14 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		if err != nil {
 			return nil, err
 		}
+
+		deadlineChanges, err = miner.DiffDeadlines(extState.ParentState(), extState.CurrentState())
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	dlDiff, err := miner.DiffDeadlines(extState.ParentState(), extState.CurrentState())
-	if err != nil {
-		return nil, err
-	}
-
-	sectorEventModel, err := ExtractSectorEvents(ctx, extState, sectorChanges, preCommitChanges, dlDiff)
+	sectorEventModel, err := ExtractSectorEvents(ctx, extState, sectorChanges, preCommitChanges, deadlineChanges)
 	if err != nil {
 		return nil, err
 	}
