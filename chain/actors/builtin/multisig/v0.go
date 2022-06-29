@@ -10,12 +10,14 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 
-	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
+	sha256simd "github.com/minio/sha256-simd"
+
 	msig0 "github.com/filecoin-project/specs-actors/actors/builtin/multisig"
 )
 
@@ -33,10 +35,6 @@ func load0(store adt.Store, root cid.Cid) (State, error) {
 type state0 struct {
 	msig0.State
 	store adt.Store
-}
-
-func (s *state0) Code() cid.Cid {
-	return builtin0.MultisigActorCodeID
 }
 
 func (s *state0) LockedBalance(currEpoch abi.ChainEpoch) (abi.TokenAmount, error) {
@@ -87,8 +85,23 @@ func (s *state0) PendingTxnChanged(other State) (bool, error) {
 	return !s.State.PendingTxns.Equals(other0.PendingTxns), nil
 }
 
-func (s *state0) transactions() (adt.Map, error) {
+func (s *state0) PendingTransactionsMap() (adt.Map, error) {
 	return adt0.AsMap(s.store, s.PendingTxns)
+}
+
+func (s *state0) PendingTransactionsMapBitWidth() int {
+
+	return 5
+
+}
+
+func (s *state0) PendingTransactionsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256simd.Sum256(input)
+		return res[:]
+	}
+
 }
 
 func (s *state0) decodeTransaction(val *cbg.Deferred) (Transaction, error) {
@@ -97,4 +110,21 @@ func (s *state0) decodeTransaction(val *cbg.Deferred) (Transaction, error) {
 		return Transaction{}, err
 	}
 	return tx, nil
+}
+
+func (s *state0) ActorKey() string {
+	return actors.MultisigKey
+}
+
+func (s *state0) ActorVersion() actors.Version {
+	return actors.Version0
+}
+
+func (s *state0) Code() cid.Cid {
+	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
+	if !ok {
+		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))
+	}
+
+	return code
 }
