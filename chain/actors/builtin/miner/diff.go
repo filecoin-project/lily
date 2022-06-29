@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/go-amt-ipld/v4"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/go-state-types/abi"
+	miner8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -21,27 +22,26 @@ import (
 func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreCommitChanges, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "DiffPreCommits")
 	defer span.End()
-	prep, err := pre.PreCommitMap()
+	prep, err := pre.PrecommitsMap()
 	if err != nil {
 		return nil, err
 	}
 
-	curp, err := cur.PreCommitMap()
-	if err != nil {
-		return nil, err
-	}
-
-	preOpts, err := adt.MapOptsForActorCode(pre.Code())
-	if err != nil {
-		return nil, err
-	}
-	curOpts, err := adt.MapOptsForActorCode(cur.Code())
+	curp, err := cur.PrecommitsMap()
 	if err != nil {
 		return nil, err
 	}
 
 	diffContainer := NewPreCommitDiffContainer(pre, cur)
-	if MapRequiresLegacyDiffing(pre, cur, preOpts, curOpts) {
+	if MapRequiresLegacyDiffing(pre, cur,
+		&adt.MapOpts{
+			Bitwidth: pre.SectorsAmtBitwidth(),
+			HashFunc: pre.PrecommitsMapHashFunction(),
+		},
+		&adt.MapOpts{
+			Bitwidth: cur.PrecommitsMapBitWidth(),
+			HashFunc: cur.PrecommitsMapHashFunction(),
+		}) {
 		if span.IsRecording() {
 			span.SetAttributes(attribute.String("diff", "slow"))
 		}
@@ -55,7 +55,7 @@ func DiffPreCommits(ctx context.Context, store adt.Store, pre, cur State) (*PreC
 		span.SetAttributes(attribute.String("diff", "fast"))
 	}
 
-	changes, err := diff.Hamt(ctx, prep, curp, store, store, hamt.UseHashFunction(hamt.HashFunc(preOpts.HashFunc)), hamt.UseTreeBitWidth(preOpts.Bitwidth))
+	changes, err := diff.Hamt(ctx, prep, curp, store, store, hamt.UseHashFunction(pre.PrecommitsMapHashFunction()), hamt.UseTreeBitWidth(pre.PrecommitsMapBitWidth()))
 	if err != nil {
 		return nil, err
 	}
@@ -90,8 +90,8 @@ func MakeSectorChanges() *SectorChanges {
 
 func MakePreCommitChanges() *PreCommitChanges {
 	return &PreCommitChanges{
-		Added:   []SectorPreCommitOnChainInfo{},
-		Removed: []SectorPreCommitOnChainInfo{},
+		Added:   []miner8.SectorPreCommitOnChainInfo{},
+		Removed: []miner8.SectorPreCommitOnChainInfo{},
 	}
 }
 
@@ -141,12 +141,12 @@ func (m *preCommitDiffContainer) Remove(key string, val *cbg.Deferred) error {
 func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorChanges, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "DiffSectors")
 	defer span.End()
-	pres, err := pre.SectorArray()
+	pres, err := pre.SectorsArray()
 	if err != nil {
 		return nil, err
 	}
 
-	curs, err := cur.SectorArray()
+	curs, err := cur.SectorsArray()
 	if err != nil {
 		return nil, err
 	}
