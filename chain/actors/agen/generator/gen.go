@@ -9,9 +9,9 @@ import (
 	"text/template"
 )
 
-var latestVersion = 7
+var latestVersion = 8
 
-var versions = []int{0, 2, 3, 4, 5, 6, latestVersion}
+var versions = []int{0, 2, 3, 4, 5, 6, 7, latestVersion}
 
 var versionImports = map[int]string{
 	0:             "/",
@@ -20,17 +20,15 @@ var versionImports = map[int]string{
 	4:             "/v4/",
 	5:             "/v5/",
 	6:             "/v6/",
-	latestVersion: "/v7/",
+	7:             "/v7/",
+	latestVersion: "/v8/",
 }
 
 var actors = map[string][]int{
-	"account":  versions,
-	"cron":     versions,
 	"init":     versions,
 	"market":   versions,
 	"miner":    versions,
 	"multisig": versions,
-	"paych":    versions,
 	"power":    versions,
 	"reward":   versions,
 	"verifreg": versions,
