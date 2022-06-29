@@ -37,6 +37,7 @@ import (
 	"github.com/filecoin-project/lily/storage"
 )
 
+var _ lens.API = (*LilyNodeAPI)(nil)
 var _ LilyAPI = (*LilyNodeAPI)(nil)
 
 type LilyNodeAPI struct {
