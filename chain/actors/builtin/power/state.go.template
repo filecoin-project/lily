@@ -3,18 +3,31 @@ package power
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 
-	builtin{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin"
-	power{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin/power"
-	adt{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/util/adt"
+    {{if (le .v 1)}}
+        sha256simd "github.com/minio/sha256-simd"
+    {{else}}
+        "crypto/sha256"
+    {{end}}
+
+    {{if (le .v 2)}}
+        power{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin/power"
+        adt{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/util/adt"
+    {{else}}
+        builtin{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin"
+        power{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin/power"
+        adt{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/util/adt"
+    {{end}}
 )
 
 var _ State = (*state{{.v}})(nil)
@@ -31,10 +44,6 @@ func load{{.v}}(store adt.Store, root cid.Cid) (State, error) {
 type state{{.v}} struct {
 	power{{.v}}.State
 	store adt.Store
-}
-
-func (s *state{{.v}}) Code() cid.Cid {
-    return builtin{{.v}}.StoragePowerActorCodeID
 }
 
 func (s *state{{.v}}) TotalLocked() (abi.TokenAmount, error) {
@@ -57,7 +66,7 @@ func (s *state{{.v}}) TotalCommitted() (Claim, error) {
 }
 
 func (s *state{{.v}}) MinerPower(addr address.Address) (Claim, bool, error) {
-	claims, err := s.claims()
+	claims, err := s.ClaimsMap()
 	if err != nil {
 		return Claim{}, false, err
 	}
@@ -85,7 +94,7 @@ func (s *state{{.v}}) MinerCounts() (uint64, uint64, error) {
 }
 
 func (s *state{{.v}}) ListAllMiners() ([]address.Address, error) {
-	claims, err := s.claims()
+	claims, err := s.ClaimsMap()
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +116,7 @@ func (s *state{{.v}}) ListAllMiners() ([]address.Address, error) {
 }
 
 func (s *state{{.v}}) ForEachClaim(cb func(miner address.Address, claim Claim) error) error {
-	claims, err := s.claims()
+	claims, err := s.ClaimsMap()
 	if err != nil {
 		return err
 	}
@@ -134,8 +143,30 @@ func (s *state{{.v}}) ClaimsChanged(other State) (bool, error) {
 	return !s.State.Claims.Equals(other{{.v}}.State.Claims), nil
 }
 
-func (s *state{{.v}}) claims() (adt.Map, error) {
+func (s *state{{.v}}) ClaimsMap() (adt.Map, error) {
 	return adt{{.v}}.AsMap(s.store, s.Claims{{if (ge .v 3)}}, builtin{{.v}}.DefaultHamtBitwidth{{end}})
+}
+
+func (s *state{{.v}}) ClaimsMapBitWidth() int {
+    {{if (ge .v 3)}}
+        return builtin{{.v}}.DefaultHamtBitwidth
+    {{else}}
+        return 5
+    {{end}}
+}
+
+func (s *state{{.v}}) ClaimsMapHashFunction() func(input []byte) []byte {
+    {{if (le .v 1)}}
+        return func(input []byte) []byte {
+            res := sha256simd.Sum256(input)
+            return res[:]
+        }
+    {{else}}
+        return func(input []byte) []byte {
+            res := sha256.Sum256(input)
+            return res[:]
+        }
+    {{end}}
 }
 
 func (s *state{{.v}}) decodeClaim(val *cbg.Deferred) (Claim, error) {
@@ -151,4 +182,21 @@ func fromV{{.v}}Claim(v{{.v}} power{{.v}}.Claim) Claim {
 		RawBytePower:    v{{.v}}.RawBytePower,
 		QualityAdjPower: v{{.v}}.QualityAdjPower,
 	}
+}
+
+func (s *state{{.v}}) ActorKey() string {
+    return actors.PowerKey
+}
+
+func (s *state{{.v}}) ActorVersion() actors.Version {
+    return actors.Version{{.v}}
+}
+
+func (s *state{{.v}}) Code() cid.Cid {
+	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
+	if !ok {
+		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))
+	}
+
+	return code
 }

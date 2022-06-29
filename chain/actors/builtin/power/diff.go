@@ -6,11 +6,12 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/chain/actors/adt"
-	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	cbg "github.com/whyrusleeping/cbor-gen"
+
+	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 )
 
 type ClaimChanges struct {
@@ -31,36 +32,33 @@ type ClaimInfo struct {
 }
 
 func DiffClaims(ctx context.Context, store adt.Store, pre, cur State) (*ClaimChanges, error) {
-	prec, err := pre.claims()
+	prec, err := pre.ClaimsMap()
 	if err != nil {
 		return nil, err
 	}
 
-	curc, err := cur.claims()
-	if err != nil {
-		return nil, err
-	}
-
-	preOpts, err := adt.MapOptsForActorCode(pre.Code())
-	if err != nil {
-		return nil, err
-	}
-
-	curOpts, err := adt.MapOptsForActorCode(cur.Code())
+	curc, err := cur.ClaimsMap()
 	if err != nil {
 		return nil, err
 	}
 
 	diffContainer := NewClaimDiffContainer(pre, cur)
-
-	if requiresLegacyDiffing(pre, cur, preOpts, curOpts) {
+	if requiresLegacyDiffing(pre, cur,
+		&adt.MapOpts{
+			Bitwidth: pre.ClaimsMapBitWidth(),
+			HashFunc: pre.ClaimsMapHashFunction(),
+		},
+		&adt.MapOpts{
+			Bitwidth: cur.ClaimsMapBitWidth(),
+			HashFunc: cur.ClaimsMapHashFunction(),
+		}) {
 		if err := diff.CompareMap(prec, curc, diffContainer); err != nil {
 			return nil, err
 		}
 		return diffContainer.Results, nil
 	}
 
-	changes, err := diff.Hamt(ctx, prec, curc, store, store, hamt.UseTreeBitWidth(preOpts.Bitwidth), hamt.UseHashFunction(hamt.HashFunc(preOpts.HashFunc)))
+	changes, err := diff.Hamt(ctx, prec, curc, store, store, hamt.UseTreeBitWidth(pre.ClaimsMapBitWidth()), hamt.UseHashFunction(pre.ClaimsMapHashFunction()))
 	if err != nil {
 		return nil, err
 	}

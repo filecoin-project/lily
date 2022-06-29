@@ -3,14 +3,18 @@ package power
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin"
+
+	"crypto/sha256"
 
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
 	power7 "github.com/filecoin-project/specs-actors/v7/actors/builtin/power"
@@ -33,10 +37,6 @@ type state7 struct {
 	store adt.Store
 }
 
-func (s *state7) Code() cid.Cid {
-	return builtin7.StoragePowerActorCodeID
-}
-
 func (s *state7) TotalLocked() (abi.TokenAmount, error) {
 	return s.TotalPledgeCollateral, nil
 }
@@ -57,7 +57,7 @@ func (s *state7) TotalCommitted() (Claim, error) {
 }
 
 func (s *state7) MinerPower(addr address.Address) (Claim, bool, error) {
-	claims, err := s.claims()
+	claims, err := s.ClaimsMap()
 	if err != nil {
 		return Claim{}, false, err
 	}
@@ -85,7 +85,7 @@ func (s *state7) MinerCounts() (uint64, uint64, error) {
 }
 
 func (s *state7) ListAllMiners() ([]address.Address, error) {
-	claims, err := s.claims()
+	claims, err := s.ClaimsMap()
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (s *state7) ListAllMiners() ([]address.Address, error) {
 }
 
 func (s *state7) ForEachClaim(cb func(miner address.Address, claim Claim) error) error {
-	claims, err := s.claims()
+	claims, err := s.ClaimsMap()
 	if err != nil {
 		return err
 	}
@@ -134,8 +134,23 @@ func (s *state7) ClaimsChanged(other State) (bool, error) {
 	return !s.State.Claims.Equals(other7.State.Claims), nil
 }
 
-func (s *state7) claims() (adt.Map, error) {
+func (s *state7) ClaimsMap() (adt.Map, error) {
 	return adt7.AsMap(s.store, s.Claims, builtin7.DefaultHamtBitwidth)
+}
+
+func (s *state7) ClaimsMapBitWidth() int {
+
+	return builtin7.DefaultHamtBitwidth
+
+}
+
+func (s *state7) ClaimsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
 }
 
 func (s *state7) decodeClaim(val *cbg.Deferred) (Claim, error) {
@@ -151,4 +166,21 @@ func fromV7Claim(v7 power7.Claim) Claim {
 		RawBytePower:    v7.RawBytePower,
 		QualityAdjPower: v7.QualityAdjPower,
 	}
+}
+
+func (s *state7) ActorKey() string {
+	return actors.PowerKey
+}
+
+func (s *state7) ActorVersion() actors.Version {
+	return actors.Version7
+}
+
+func (s *state7) Code() cid.Cid {
+	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
+	if !ok {
+		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))
+	}
+
+	return code
 }
