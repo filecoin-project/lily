@@ -2,12 +2,16 @@
 package verifreg
 
 import (
+	"fmt"
+
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/filecoin-project/lily/chain/actors/adt"
+
+	"crypto/sha256"
 
 	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
 	verifreg6 "github.com/filecoin-project/specs-actors/v6/actors/builtin/verifreg"
@@ -30,34 +34,77 @@ type state6 struct {
 	store adt.Store
 }
 
-func (s *state6) Code() cid.Cid {
-	return builtin6.VerifiedRegistryActorCodeID
-}
-
 func (s *state6) RootKey() (address.Address, error) {
 	return s.State.RootKey, nil
 }
 
 func (s *state6) VerifiedClientDataCap(addr address.Address) (bool, abi.StoragePower, error) {
-	return getDataCap(s.store, actors.Version6, s.verifiedClients, addr)
+	return getDataCap(s.store, actors.Version6, s.VerifiedClientsMap, addr)
 }
 
 func (s *state6) VerifierDataCap(addr address.Address) (bool, abi.StoragePower, error) {
-	return getDataCap(s.store, actors.Version6, s.verifiers, addr)
+	return getDataCap(s.store, actors.Version6, s.VerifiersMap, addr)
 }
 
 func (s *state6) ForEachVerifier(cb func(addr address.Address, dcap abi.StoragePower) error) error {
-	return forEachCap(s.store, actors.Version6, s.verifiers, cb)
+	return forEachCap(s.store, actors.Version6, s.VerifiersMap, cb)
 }
 
 func (s *state6) ForEachClient(cb func(addr address.Address, dcap abi.StoragePower) error) error {
-	return forEachCap(s.store, actors.Version6, s.verifiedClients, cb)
+	return forEachCap(s.store, actors.Version6, s.VerifiedClientsMap, cb)
 }
 
-func (s *state6) verifiedClients() (adt.Map, error) {
+func (s *state6) VerifiedClientsMap() (adt.Map, error) {
 	return adt6.AsMap(s.store, s.VerifiedClients, builtin6.DefaultHamtBitwidth)
 }
 
-func (s *state6) verifiers() (adt.Map, error) {
+func (s *state6) VerifiedClientsMapBitWidth() int {
+
+	return builtin6.DefaultHamtBitwidth
+
+}
+
+func (s *state6) VerifiedClientsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state6) VerifiersMap() (adt.Map, error) {
 	return adt6.AsMap(s.store, s.Verifiers, builtin6.DefaultHamtBitwidth)
+}
+
+func (s *state6) VerifiersMapBitWidth() int {
+
+	return builtin6.DefaultHamtBitwidth
+
+}
+
+func (s *state6) VerifiersMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state6) ActorKey() string {
+	return actors.VerifregKey
+}
+
+func (s *state6) ActorVersion() actors.Version {
+	return actors.Version6
+}
+
+func (s *state6) Code() cid.Cid {
+	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
+	if !ok {
+		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))
+	}
+
+	return code
 }
