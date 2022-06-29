@@ -6,6 +6,7 @@ import (
 
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
@@ -47,7 +48,7 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		}
 
 		preCommitChanges = miner.MakePreCommitChanges()
-		if err = extState.CurrentState().ForEachPrecommittedSector(func(info miner.SectorPreCommitOnChainInfo) error {
+		if err = extState.CurrentState().ForEachPrecommittedSector(func(info minertypes.SectorPreCommitOnChainInfo) error {
 			preCommitChanges.Added = append(preCommitChanges.Added, info)
 			return nil
 		}); err != nil {

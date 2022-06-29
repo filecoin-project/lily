@@ -8,6 +8,7 @@ import (
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -421,8 +422,8 @@ func generateFakeSectorOnChainInfos(sectors map[uint64][]abi.DealID) []miner.Sec
 	return out
 }
 
-func generateFakeSectorPreCommitInfo(sectorNumber uint64) miner.SectorPreCommitInfo {
-	return miner.SectorPreCommitInfo{
+func generateFakeSectorPreCommitInfo(sectorNumber uint64) minertypes.SectorPreCommitInfo {
+	return minertypes.SectorPreCommitInfo{
 		SealProof:              0,
 		SectorNumber:           abi.SectorNumber(sectorNumber),
 		SealedCID:              cid.Undef,
@@ -436,8 +437,8 @@ func generateFakeSectorPreCommitInfo(sectorNumber uint64) miner.SectorPreCommitI
 	}
 }
 
-func generateFakeSectorPreCommitOnChainInfo(sectorNumber uint64) miner.SectorPreCommitOnChainInfo {
-	return miner.SectorPreCommitOnChainInfo{
+func generateFakeSectorPreCommitOnChainInfo(sectorNumber uint64) minertypes.SectorPreCommitOnChainInfo {
+	return minertypes.SectorPreCommitOnChainInfo{
 		Info:               generateFakeSectorPreCommitInfo(sectorNumber),
 		PreCommitDeposit:   abi.NewTokenAmount(0),
 		PreCommitEpoch:     0,
@@ -447,8 +448,8 @@ func generateFakeSectorPreCommitOnChainInfo(sectorNumber uint64) miner.SectorPre
 }
 
 func generateFakeSectorPreCommitChanges(add uint64, rm uint64) *miner.PreCommitChanges {
-	added := make([]miner.SectorPreCommitOnChainInfo, add)
-	removed := make([]miner.SectorPreCommitOnChainInfo, rm)
+	added := make([]minertypes.SectorPreCommitOnChainInfo, add)
+	removed := make([]minertypes.SectorPreCommitOnChainInfo, rm)
 	for i := uint64(0); i < add; i++ {
 		added[i] = generateFakeSectorPreCommitOnChainInfo(i)
 	}

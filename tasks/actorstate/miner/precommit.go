@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
-	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	"github.com/filecoin-project/lily/tasks/actorstate"
@@ -28,9 +28,9 @@ func (PreCommitInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInf
 		return nil, fmt.Errorf("creating miner state extraction context: %w", err)
 	}
 
-	var preCommits []miner.SectorPreCommitOnChainInfo
+	var preCommits []minertypes.SectorPreCommitOnChainInfo
 	if !ec.HasPreviousState() {
-		if err := ec.CurrState.ForEachPrecommittedSector(func(info miner.SectorPreCommitOnChainInfo) error {
+		if err := ec.CurrState.ForEachPrecommittedSector(func(info minertypes.SectorPreCommitOnChainInfo) error {
 			preCommits = append(preCommits, info)
 			return nil
 		}); err != nil {
