@@ -13,26 +13,18 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 
-	saminer1 "github.com/filecoin-project/specs-actors/actors/builtin/miner"
-	saminer2 "github.com/filecoin-project/specs-actors/v2/actors/builtin/miner"
-	saminer3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/miner"
-	saminer4 "github.com/filecoin-project/specs-actors/v4/actors/builtin/miner"
-	saminer5 "github.com/filecoin-project/specs-actors/v5/actors/builtin/miner"
-	saminer6 "github.com/filecoin-project/specs-actors/v6/actors/builtin/miner"
-	saminer7 "github.com/filecoin-project/specs-actors/v7/actors/builtin/miner"
+	// actor accessors
+	actors "github.com/filecoin-project/lily/chain/actors"
+	initactors "github.com/filecoin-project/lily/chain/actors/builtin/init"
+	marketactors "github.com/filecoin-project/lily/chain/actors/builtin/market"
+	mineractors "github.com/filecoin-project/lily/chain/actors/builtin/miner"
+	multisigactors "github.com/filecoin-project/lily/chain/actors/builtin/multisig"
+	poweractors "github.com/filecoin-project/lily/chain/actors/builtin/power"
+	rewardactors "github.com/filecoin-project/lily/chain/actors/builtin/reward"
+	verifregactors "github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 
-	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
-	"github.com/filecoin-project/lily/chain/actors/builtin/market"
-	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
-	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
-	"github.com/filecoin-project/lily/chain/actors/builtin/power"
-	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
-	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
-	"github.com/filecoin-project/lily/chain/indexer/tasktype"
-	"github.com/filecoin-project/lily/metrics"
-	"github.com/filecoin-project/lily/model"
-	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
+	// actor tasks
 	"github.com/filecoin-project/lily/tasks/actorstate"
 	inittask "github.com/filecoin-project/lily/tasks/actorstate/init_"
 	markettask "github.com/filecoin-project/lily/tasks/actorstate/market"
@@ -42,21 +34,28 @@ import (
 	rawtask "github.com/filecoin-project/lily/tasks/actorstate/raw"
 	rewardtask "github.com/filecoin-project/lily/tasks/actorstate/reward"
 	verifregtask "github.com/filecoin-project/lily/tasks/actorstate/verifreg"
-	"github.com/filecoin-project/lily/tasks/blocks/drand"
-	"github.com/filecoin-project/lily/tasks/blocks/headers"
-	"github.com/filecoin-project/lily/tasks/blocks/parents"
-	"github.com/filecoin-project/lily/tasks/chaineconomics"
-	"github.com/filecoin-project/lily/tasks/consensus"
-	"github.com/filecoin-project/lily/tasks/indexer"
-	"github.com/filecoin-project/lily/tasks/messageexecutions/internalmessage"
-	"github.com/filecoin-project/lily/tasks/messageexecutions/internalparsedmessage"
-	"github.com/filecoin-project/lily/tasks/messages/blockmessage"
-	"github.com/filecoin-project/lily/tasks/messages/gaseconomy"
-	"github.com/filecoin-project/lily/tasks/messages/gasoutput"
-	"github.com/filecoin-project/lily/tasks/messages/message"
-	"github.com/filecoin-project/lily/tasks/messages/parsedmessage"
-	"github.com/filecoin-project/lily/tasks/messages/receipt"
-	"github.com/filecoin-project/lily/tasks/msapprovals"
+
+	// chain state tasks
+	drandtask "github.com/filecoin-project/lily/tasks/blocks/drand"
+	headerstask "github.com/filecoin-project/lily/tasks/blocks/headers"
+	parentstask "github.com/filecoin-project/lily/tasks/blocks/parents"
+	chainecontask "github.com/filecoin-project/lily/tasks/chaineconomics"
+	consensustask "github.com/filecoin-project/lily/tasks/consensus"
+	indexertask "github.com/filecoin-project/lily/tasks/indexer"
+	imtask "github.com/filecoin-project/lily/tasks/messageexecutions/internalmessage"
+	ipmtask "github.com/filecoin-project/lily/tasks/messageexecutions/internalparsedmessage"
+	bmtask "github.com/filecoin-project/lily/tasks/messages/blockmessage"
+	gasecontask "github.com/filecoin-project/lily/tasks/messages/gaseconomy"
+	gasouttask "github.com/filecoin-project/lily/tasks/messages/gasoutput"
+	messagetask "github.com/filecoin-project/lily/tasks/messages/message"
+	parentmessagetask "github.com/filecoin-project/lily/tasks/messages/parsedmessage"
+	receipttask "github.com/filecoin-project/lily/tasks/messages/receipt"
+	msapprovaltask "github.com/filecoin-project/lily/tasks/msapprovals"
+
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
+	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/model"
+	visormodel "github.com/filecoin-project/lily/model/visor"
 )
 
 type TipSetProcessor interface {
@@ -407,51 +406,52 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 		//
 		case tasktype.MinerCurrentDeadlineInfo:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.DeadlineInfoExtractor{},
+				mineractors.AllCodes(), minertask.DeadlineInfoExtractor{},
 			))
 		case tasktype.MinerFeeDebt:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.FeeDebtExtractor{},
+				mineractors.AllCodes(), minertask.FeeDebtExtractor{},
 			))
 		case tasktype.MinerInfo:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.InfoExtractor{},
+				mineractors.AllCodes(), minertask.InfoExtractor{},
 			))
 		case tasktype.MinerLockedFund:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.LockedFundsExtractor{},
+				mineractors.AllCodes(), minertask.LockedFundsExtractor{},
 			))
 		case tasktype.MinerPreCommitInfo:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.PreCommitInfoExtractor{},
+				mineractors.AllCodes(), minertask.PreCommitInfoExtractor{},
 			))
 		case tasktype.MinerSectorDeal:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.SectorDealsExtractor{},
+				mineractors.AllCodes(), minertask.SectorDealsExtractor{},
 			))
 		case tasktype.MinerSectorEvent:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.SectorEventsExtractor{},
+				mineractors.AllCodes(), minertask.SectorEventsExtractor{},
 			))
 		case tasktype.MinerSectorPost:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				miner.AllCodes(), minertask.PoStExtractor{},
+				mineractors.AllCodes(), minertask.PoStExtractor{},
 			))
 		case tasktype.MinerSectorInfoV1_6:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
 				map[cid.Cid][]actorstate.ActorStateExtractor{
-					saminer1.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-					saminer2.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-					saminer3.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-					saminer4.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-					saminer5.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
-					saminer6.Actor{}.Code(): {minertask.SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actors.Version0]: {minertask.SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actors.Version2]: {minertask.SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actors.Version3]: {minertask.SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actors.Version4]: {minertask.SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actors.Version5]: {minertask.SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actors.Version6]: {minertask.SectorInfoExtractor{}},
 				},
 			))
 		case tasktype.MinerSectorInfoV7:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
 				map[cid.Cid][]actorstate.ActorStateExtractor{
-					saminer7.Actor{}.Code(): {minertask.V7SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actors.Version7]: {minertask.V7SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actors.Version8]: {minertask.V7SectorInfoExtractor{}},
 				},
 			))
 
@@ -460,12 +460,12 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			//
 		case tasktype.PowerActorClaim:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				power.AllCodes(),
+				poweractors.AllCodes(),
 				powertask.ClaimedPowerExtractor{},
 			))
 		case tasktype.ChainPower:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				power.AllCodes(),
+				poweractors.AllCodes(),
 				powertask.ChainPowerExtractor{},
 			))
 
@@ -474,7 +474,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			//
 		case tasktype.ChainReward:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				reward.AllCodes(),
+				rewardactors.AllCodes(),
 				rewardtask.RewardExtractor{},
 			))
 
@@ -483,7 +483,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			//
 		case tasktype.IdAddress:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				init_.AllCodes(),
+				initactors.AllCodes(),
 				inittask.InitExtractor{},
 			))
 
@@ -492,12 +492,12 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			//
 		case tasktype.MarketDealState:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				market.AllCodes(),
+				marketactors.AllCodes(),
 				markettask.DealStateExtractor{},
 			))
 		case tasktype.MarketDealProposal:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				market.AllCodes(),
+				marketactors.AllCodes(),
 				markettask.DealProposalExtractor{},
 			))
 
@@ -506,7 +506,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			//
 		case tasktype.MultisigTransaction:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				multisig.AllCodes(),
+				multisigactors.AllCodes(),
 				multisigtask.MultiSigActorExtractor{},
 			))
 
@@ -514,11 +514,13 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			// Verified Registry
 			//
 		case tasktype.VerifiedRegistryVerifier:
-			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes(),
+			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
+				verifregactors.AllCodes(),
 				verifregtask.VerifierExtractor{},
 			))
 		case tasktype.VerifiedRegistryVerifiedClient:
-			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(verifreg.AllCodes(),
+			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
+				verifregactors.AllCodes(),
 				verifregtask.ClientExtractor{},
 			))
 
@@ -538,41 +540,41 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			// Messages
 			//
 		case tasktype.Message:
-			out.TipsetsProcessors[t] = message.NewTask(api)
+			out.TipsetsProcessors[t] = messagetask.NewTask(api)
 		case tasktype.GasOutputs:
-			out.TipsetsProcessors[t] = gasoutput.NewTask(api)
+			out.TipsetsProcessors[t] = gasouttask.NewTask(api)
 		case tasktype.BlockMessage:
-			out.TipsetsProcessors[t] = blockmessage.NewTask(api)
+			out.TipsetsProcessors[t] = bmtask.NewTask(api)
 		case tasktype.ParsedMessage:
-			out.TipsetsProcessors[t] = parsedmessage.NewTask(api)
+			out.TipsetsProcessors[t] = parentmessagetask.NewTask(api)
 		case tasktype.Receipt:
-			out.TipsetsProcessors[t] = receipt.NewTask(api)
+			out.TipsetsProcessors[t] = receipttask.NewTask(api)
 		case tasktype.InternalMessage:
-			out.TipsetsProcessors[t] = internalmessage.NewTask(api)
+			out.TipsetsProcessors[t] = imtask.NewTask(api)
 		case tasktype.InternalParsedMessage:
-			out.TipsetsProcessors[t] = internalparsedmessage.NewTask(api)
+			out.TipsetsProcessors[t] = ipmtask.NewTask(api)
 		case tasktype.MessageGasEconomy:
-			out.TipsetsProcessors[t] = gaseconomy.NewTask(api)
+			out.TipsetsProcessors[t] = gasecontask.NewTask(api)
 		case tasktype.MultisigApproval:
-			out.TipsetsProcessors[t] = msapprovals.NewTask(api)
+			out.TipsetsProcessors[t] = msapprovaltask.NewTask(api)
 
 			//
 			// Blocks
 			//
 		case tasktype.BlockHeader:
-			out.TipsetProcessors[t] = headers.NewTask()
+			out.TipsetProcessors[t] = headerstask.NewTask()
 		case tasktype.BlockParent:
-			out.TipsetProcessors[t] = parents.NewTask()
+			out.TipsetProcessors[t] = parentstask.NewTask()
 		case tasktype.DrandBlockEntrie:
-			out.TipsetProcessors[t] = drand.NewTask()
+			out.TipsetProcessors[t] = drandtask.NewTask()
 
 		case tasktype.ChainEconomics:
-			out.TipsetProcessors[t] = chaineconomics.NewTask(api)
+			out.TipsetProcessors[t] = chainecontask.NewTask(api)
 		case tasktype.ChainConsensus:
-			out.TipsetProcessors[t] = consensus.NewTask(api)
+			out.TipsetProcessors[t] = consensustask.NewTask(api)
 
 		case BuiltinTaskName:
-			out.ReportProcessors[t] = indexer.NewTask(api)
+			out.ReportProcessors[t] = indexertask.NewTask(api)
 		default:
 			return nil, fmt.Errorf("unknown task: %s", t)
 		}
