@@ -12,7 +12,7 @@ import (
 	"github.com/filecoin-project/go-state-types/cbor"
 	"github.com/ipfs/go-cid"
 
-	msig7 "github.com/filecoin-project/specs-actors/v4/actors/builtin/multisig"
+	msig8 "github.com/filecoin-project/specs-actors/v4/actors/builtin/multisig"
 
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
@@ -21,46 +21,29 @@ import (
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
 	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
+	builtin8 "github.com/filecoin-project/specs-actors/v8/actors/builtin"
 
 	"github.com/filecoin-project/lotus/chain/types"
 
 	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/filecoin-project/lily/chain/actors/adt"
-	"github.com/filecoin-project/lily/chain/actors/builtin"
+	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 )
 
-func init() {
-
-	builtin.RegisterActorState(builtin0.MultisigActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
-		return load0(store, root)
-	})
-
-	builtin.RegisterActorState(builtin2.MultisigActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
-		return load2(store, root)
-	})
-
-	builtin.RegisterActorState(builtin3.MultisigActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
-		return load3(store, root)
-	})
-
-	builtin.RegisterActorState(builtin4.MultisigActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
-		return load4(store, root)
-	})
-
-	builtin.RegisterActorState(builtin5.MultisigActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
-		return load5(store, root)
-	})
-
-	builtin.RegisterActorState(builtin6.MultisigActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
-		return load6(store, root)
-	})
-
-	builtin.RegisterActorState(builtin7.MultisigActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
-		return load7(store, root)
-	})
-}
-
 func Load(store adt.Store, act *types.Actor) (State, error) {
+	if name, av, ok := lotusactors.GetActorMetaByCode(act.Code); ok {
+		if name != actors.MultisigKey {
+			return nil, fmt.Errorf("actor code is not multisig: %s", name)
+		}
+
+		switch actors.Version(av) {
+
+		case actors.Version8:
+			return load8(store, act.Head)
+
+		}
+	}
+
 	switch act.Code {
 
 	case builtin0.MultisigActorCodeID:
@@ -85,6 +68,7 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 		return load7(store, act.Head)
 
 	}
+
 	return nil, fmt.Errorf("unknown actor code %s", act.Code)
 }
 
@@ -92,6 +76,8 @@ type State interface {
 	cbor.Marshaler
 
 	Code() cid.Cid
+	ActorKey() string
+	ActorVersion() actors.Version
 
 	LockedBalance(epoch abi.ChainEpoch) (abi.TokenAmount, error)
 	StartEpoch() (abi.ChainEpoch, error)
@@ -103,80 +89,25 @@ type State interface {
 	ForEachPendingTxn(func(id int64, txn Transaction) error) error
 	PendingTxnChanged(State) (bool, error)
 
-	transactions() (adt.Map, error)
+	PendingTransactionsMap() (adt.Map, error)
+	PendingTransactionsMapBitWidth() int
+	PendingTransactionsMapHashFunction() func(input []byte) []byte
 	decodeTransaction(val *cbg.Deferred) (Transaction, error)
 }
 
-type Transaction = msig7.Transaction
+type Transaction = msig8.Transaction
 
-var Methods = builtin7.MethodsMultisig
-
-func AllCodes() []cid.Cid {
-	return []cid.Cid{
-		builtin0.MultisigActorCodeID,
-		builtin2.MultisigActorCodeID,
-		builtin3.MultisigActorCodeID,
-		builtin4.MultisigActorCodeID,
-		builtin5.MultisigActorCodeID,
-		builtin6.MultisigActorCodeID,
-		builtin7.MultisigActorCodeID,
-	}
-}
-
-func Message(version actors.Version, from address.Address) MessageBuilder {
-	switch version {
-
-	case actors.Version0:
-		return message0{from}
-
-	case actors.Version2:
-		return message2{message0{from}}
-
-	case actors.Version3:
-		return message3{message0{from}}
-
-	case actors.Version4:
-		return message4{message0{from}}
-
-	case actors.Version5:
-		return message5{message0{from}}
-
-	case actors.Version6:
-		return message6{message0{from}}
-
-	case actors.Version7:
-		return message7{message0{from}}
-	default:
-		panic(fmt.Sprintf("unsupported actors version: %d", version))
-	}
-}
-
-type MessageBuilder interface {
-	// Create a new multisig with the specified parameters.
-	Create(signers []address.Address, threshold uint64,
-		vestingStart, vestingDuration abi.ChainEpoch,
-		initialAmount abi.TokenAmount) (*types.Message, error)
-
-	// Propose a transaction to the given multisig.
-	Propose(msig, target address.Address, amt abi.TokenAmount,
-		method abi.MethodNum, params []byte) (*types.Message, error)
-
-	// Approve a multisig transaction. The "hash" is optional.
-	Approve(msig address.Address, txID uint64, hash *ProposalHashData) (*types.Message, error)
-
-	// Cancel a multisig transaction. The "hash" is optional.
-	Cancel(msig address.Address, txID uint64, hash *ProposalHashData) (*types.Message, error)
-}
+var Methods = builtin8.MethodsMultisig
 
 // these types are the same between v0 and v6
-type ProposalHashData = msig7.ProposalHashData
-type ProposeReturn = msig7.ProposeReturn
-type ProposeParams = msig7.ProposeParams
-type ApproveReturn = msig7.ApproveReturn
-type TxnIDParams = msig7.TxnIDParams
+type ProposalHashData = msig8.ProposalHashData
+type ProposeReturn = msig8.ProposeReturn
+type ProposeParams = msig8.ProposeParams
+type ApproveReturn = msig8.ApproveReturn
+type TxnIDParams = msig8.TxnIDParams
 
 func txnParams(id uint64, data *ProposalHashData) ([]byte, error) {
-	params := msig7.TxnIDParams{ID: msig7.TxnID(id)}
+	params := msig8.TxnIDParams{ID: msig8.TxnID(id)}
 	if data != nil {
 		if data.Requester.Protocol() != address.ID {
 			return nil, fmt.Errorf("proposer address must be an ID address, was %s", data.Requester)
@@ -196,4 +127,30 @@ func txnParams(id uint64, data *ProposalHashData) ([]byte, error) {
 	}
 
 	return actors.SerializeParams(&params)
+}
+
+func AllCodes() []cid.Cid {
+	return []cid.Cid{
+		(&state0{}).Code(),
+		(&state2{}).Code(),
+		(&state3{}).Code(),
+		(&state4{}).Code(),
+		(&state5{}).Code(),
+		(&state6{}).Code(),
+		(&state7{}).Code(),
+		(&state8{}).Code(),
+	}
+}
+
+func VersionCodes() map[actors.Version]cid.Cid {
+	return map[actors.Version]cid.Cid{
+		actors.Version0: (&state0{}).Code(),
+		actors.Version2: (&state2{}).Code(),
+		actors.Version3: (&state3{}).Code(),
+		actors.Version4: (&state4{}).Code(),
+		actors.Version5: (&state5{}).Code(),
+		actors.Version6: (&state6{}).Code(),
+		actors.Version7: (&state7{}).Code(),
+		actors.Version8: (&state8{}).Code(),
+	}
 }
