@@ -82,7 +82,7 @@ func (DealProposalExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		if add.Proposal.Label.IsString() {
 			labelString, err := add.Proposal.Label.ToString()
 			if err != nil {
-				return nil, fmt.Errorf("deal proposal (ID: %d) label is not a string dispite claiming it is (developer error?)", add.ID)
+				return nil, fmt.Errorf("deal proposal (ID: %d) label is not a string despite claiming it is (developer error?)", add.ID)
 			}
 
 			isString = true
@@ -91,7 +91,7 @@ func (DealProposalExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		} else if add.Proposal.Label.IsBytes() {
 			labelBytes, err := add.Proposal.Label.ToBytes()
 			if err != nil {
-				return nil, fmt.Errorf("deal proposal (ID: %d) label is not bytes dispite claiming it is (developer error?)", add.ID)
+				return nil, fmt.Errorf("deal proposal (ID: %d) label is not bytes despit claiming it is (developer error?)", add.ID)
 			}
 
 			isString = false
