@@ -2,6 +2,7 @@ package market
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 
 	"github.com/filecoin-project/go-state-types/abi"
@@ -34,74 +35,71 @@ func (DealProposalExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		return nil, err
 	}
 
-	currDealProposals, err := ec.CurrState.Proposals()
-	if err != nil {
-		return nil, fmt.Errorf("loading current market deal proposals: %w", err)
-	}
-
+	var dealProposals []market.ProposalIDState
+	// if this is genesis iterator actors current state.
 	if ec.IsGenesis() {
-		var out marketmodel.MarketDealProposals
+		currDealProposals, err := ec.CurrState.Proposals()
+		if err != nil {
+			return nil, fmt.Errorf("loading current market deal proposals: %w", err)
+		}
+
 		if err := currDealProposals.ForEach(func(id abi.DealID, dp market.DealProposal) error {
-			var label string
-			if dp.Label.IsString() {
-				var err error
-				label, err = dp.Label.ToString()
-				if err != nil {
-					return fmt.Errorf("creating deal proposal label string: %w", err)
-				}
-			} else {
-				label = ""
-			}
-			out = append(out, &marketmodel.MarketDealProposal{
-				Height:               int64(ec.CurrTs.Height()),
-				DealID:               uint64(id),
-				StateRoot:            ec.CurrTs.ParentState().String(),
-				PaddedPieceSize:      uint64(dp.PieceSize),
-				UnpaddedPieceSize:    uint64(dp.PieceSize.Unpadded()),
-				StartEpoch:           int64(dp.StartEpoch),
-				EndEpoch:             int64(dp.EndEpoch),
-				ClientID:             dp.Client.String(),
-				ProviderID:           dp.Provider.String(),
-				ClientCollateral:     dp.ClientCollateral.String(),
-				ProviderCollateral:   dp.ProviderCollateral.String(),
-				StoragePricePerEpoch: dp.StoragePricePerEpoch.String(),
-				PieceCID:             dp.PieceCID.String(),
-				IsVerified:           dp.VerifiedDeal,
-				Label:                SanitizeLabel(label),
+			dealProposals = append(dealProposals, market.ProposalIDState{
+				ID:       id,
+				Proposal: dp,
 			})
 			return nil
 		}); err != nil {
-			return nil, fmt.Errorf("walking current deal states: %w", err)
+			return nil, err
 		}
-		return out, nil
+	} else {
+		// else diff the actor against previous state and collect any additions that occurred.
+		changed, err := ec.CurrState.ProposalsChanged(ec.PrevState)
+		if err != nil {
+			return nil, fmt.Errorf("checking for deal proposal changes: %w", err)
+		}
+		if !changed {
+			return nil, nil
+		}
 
+		changes, err := market.DiffDealProposals(ctx, ec.Store, ec.PrevState, ec.CurrState)
+		if err != nil {
+			return nil, fmt.Errorf("diffing deal proposals: %w", err)
+		}
+
+		for _, change := range changes.Added {
+			dealProposals = append(dealProposals, market.ProposalIDState{
+				ID:       change.ID,
+				Proposal: change.Proposal,
+			})
+		}
 	}
 
-	changed, err := ec.CurrState.ProposalsChanged(ec.PrevState)
-	if err != nil {
-		return nil, fmt.Errorf("checking for deal proposal changes: %w", err)
-	}
-
-	if !changed {
-		return nil, nil
-	}
-
-	changes, err := market.DiffDealProposals(ctx, ec.Store, ec.PrevState, ec.CurrState)
-	if err != nil {
-		return nil, fmt.Errorf("diffing deal states: %w", err)
-	}
-
-	out := make(marketmodel.MarketDealProposals, len(changes.Added))
-	for idx, add := range changes.Added {
-		var label string
+	out := make(marketmodel.MarketDealProposals, len(dealProposals))
+	for idx, add := range dealProposals {
+		var isString bool
+		var base64Label string
 		if add.Proposal.Label.IsString() {
-			var err error
-			label, err = add.Proposal.Label.ToString()
+			labelString, err := add.Proposal.Label.ToString()
 			if err != nil {
-				return nil, fmt.Errorf("creating deal proposal label string: %w", err)
+				return nil, fmt.Errorf("deal proposal (ID: %d) label is not a string dispite claiming it is (developer error?)", add.ID)
 			}
+
+			isString = true
+			base64Label = base64.StdEncoding.EncodeToString([]byte(labelString))
+
+		} else if add.Proposal.Label.IsBytes() {
+			labelBytes, err := add.Proposal.Label.ToBytes()
+			if err != nil {
+				return nil, fmt.Errorf("deal proposal (ID: %d) label is not bytes dispite claiming it is (developer error?)", add.ID)
+			}
+
+			isString = false
+			base64Label = base64.StdEncoding.EncodeToString(labelBytes)
+
 		} else {
-			label = ""
+			// TODO this should never happen, but if it does it indicates a logic.
+			return nil, fmt.Errorf("deal proposal (ID: %d) label is neither bytes nor string (DEVELOPER ERROR)", add.ID)
 		}
 		out[idx] = &marketmodel.MarketDealProposal{
 			Height:               int64(ec.CurrTs.Height()),
@@ -118,7 +116,8 @@ func (DealProposalExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			StoragePricePerEpoch: add.Proposal.StoragePricePerEpoch.String(),
 			PieceCID:             add.Proposal.PieceCID.String(),
 			IsVerified:           add.Proposal.VerifiedDeal,
-			Label:                SanitizeLabel(label),
+			Label:                base64Label,
+			IsString:             isString,
 		}
 	}
 	return out, nil
