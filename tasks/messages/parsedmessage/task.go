@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/go-state-types/exitcode"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
@@ -17,6 +18,8 @@ import (
 	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lily/tasks/messages"
 )
+
+var log = logging.Logger("lily/tasks/parsedmsg")
 
 type Task struct {
 	node tasks.DataSource
@@ -94,9 +97,14 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				}
 				parsedMessageResults = append(parsedMessageResults, pm)
 			} else {
-				if m.Receipt.ExitCode == exitcode.ErrSerialization || m.Receipt.ExitCode == exitcode.ErrIllegalArgument || m.Receipt.ExitCode == exitcode.SysErrInvalidMethod {
+				if m.Receipt.ExitCode == exitcode.ErrSerialization ||
+					m.Receipt.ExitCode == exitcode.ErrIllegalArgument ||
+					m.Receipt.ExitCode == exitcode.SysErrInvalidMethod ||
+					// UsrErrUnsupportedMethod TODO: https://github.com/filecoin-project/go-state-types/pull/44
+					m.Receipt.ExitCode == exitcode.ExitCode(22) {
 					// ignore the parse error since the params are probably malformed, as reported by the vm
 				} else {
+					log.Errorw("parsing message", "error", err, "cid", m.Message.Cid().String(), "receipt", m.Receipt)
 					errorsDetected = append(errorsDetected, &messages.MessageError{
 						Cid:   m.Cid,
 						Error: fmt.Errorf("failed to parse message params: %w", err).Error(),
@@ -110,6 +118,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			// If the message was executed it means we are out of step with Lotus behaviour somehow. This probably
 			// indicates that Lily actor type detection is out of date.
 			if m.Receipt.ExitCode == 0 {
+				log.Errorw("parsing message", "error", err, "cid", m.Message.Cid().String(), "receipt", m.Receipt)
 				errorsDetected = append(errorsDetected, &messages.MessageError{
 					Cid:   m.Cid,
 					Error: fmt.Errorf("failed to parse message params: missing to actor code").Error(),
