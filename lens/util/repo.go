@@ -10,6 +10,7 @@ import (
 
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/exitcode"
+	"github.com/filecoin-project/go-state-types/network"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -161,47 +162,62 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 
 	// Create a skeleton vm just for calling ShouldBurn
 	// NB: VM is only required to process state prior to network v13
-	vmi, err := vm.NewVM(ctx, &vm.VMOpts{
-		StateBase:      current.ParentState(),
-		Epoch:          current.Height(),
-		Bstore:         cs.StateBlockstore(),
-		NetworkVersion: DefaultNetwork.Version(ctx, current.Height()),
-		Actors:         filcns.NewActorRegistry(),
-		Syscalls:       sm.Syscalls,
-		CircSupplyCalc: sm.GetVMCirculatingSupply,
-		BaseFee:        current.Blocks()[0].ParentBaseFee,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("creating temporary vm: %w", err)
-	}
-
-	parentStateTree, err := state.LoadStateTree(cs.ActorStore(ctx), executed.ParentState())
-	if err != nil {
-		return nil, fmt.Errorf("load state tree: %w", err)
-	}
-	span.AddEvent("loaded parent state tree")
-
-	vmw := &vmWrapper{vm: vmi}
-
-	// Receipts are in same order as BlockMsgsForTipset
-	for _, em := range emsgs {
-		var r types.MessageReceipt
-		if found, err := rs.Get(em.Index, &r); err != nil {
-			return nil, err
-		} else if !found {
-			return nil, fmt.Errorf("failed to find receipt %d", em.Index)
-		}
-		em.Receipt = &r
-
-		burn, err := vmw.ShouldBurn(ctx, parentStateTree, em.Message, em.Receipt.ExitCode)
+	if DefaultNetwork.Version(ctx, executed.Height()) <= network.Version12 {
+		vmi, err := vm.NewVM(ctx, &vm.VMOpts{
+			StateBase:      current.ParentState(),
+			Epoch:          current.Height(),
+			Bstore:         cs.StateBlockstore(),
+			Actors:         filcns.NewActorRegistry(),
+			Syscalls:       sm.Syscalls,
+			CircSupplyCalc: sm.GetVMCirculatingSupply,
+			NetworkVersion: DefaultNetwork.Version(ctx, current.Height()),
+			BaseFee:        current.Blocks()[0].ParentBaseFee,
+		})
 		if err != nil {
-			return nil, fmt.Errorf("deciding whether should burn failed: %w", err)
+			return nil, fmt.Errorf("creating temporary vm: %w", err)
 		}
+		parentStateTree, err := state.LoadStateTree(cs.ActorStore(ctx), executed.ParentState())
+		if err != nil {
+			return nil, fmt.Errorf("load state tree: %w", err)
+		}
+		span.AddEvent("loaded parent state tree")
 
-		em.GasOutputs = vm.ComputeGasOutputs(em.Receipt.GasUsed, em.Message.GasLimit, em.BlockHeader.ParentBaseFee, em.Message.GasFeeCap, em.Message.GasPremium, burn)
+		vmw := &vmWrapper{vm: vmi}
+		// Receipts are in same order as BlockMsgsForTipset
+		for _, em := range emsgs {
+			var r types.MessageReceipt
+			if found, err := rs.Get(em.Index, &r); err != nil {
+				return nil, err
+			} else if !found {
+				return nil, fmt.Errorf("failed to find receipt %d", em.Index)
+			}
+			em.Receipt = &r
+
+			burn, err := vmw.ShouldBurn(ctx, parentStateTree, em.Message, em.Receipt.ExitCode)
+			if err != nil {
+				return nil, fmt.Errorf("deciding whether should burn failed: %w", err)
+			}
+
+			em.GasOutputs = vm.ComputeGasOutputs(em.Receipt.GasUsed, em.Message.GasLimit, em.BlockHeader.ParentBaseFee, em.Message.GasFeeCap, em.Message.GasPremium, burn)
+			span.AddEvent("computed executed message gas usage")
+		}
+	} else {
+		// Receipts are in same order as BlockMsgsForTipset
+		for _, em := range emsgs {
+			var r types.MessageReceipt
+			if found, err := rs.Get(em.Index, &r); err != nil {
+				return nil, err
+			} else if !found {
+				return nil, fmt.Errorf("failed to find receipt %d", em.Index)
+			}
+			em.Receipt = &r
+			// always burn after Network Verions 12
+			shouldBurn := true
+			em.GasOutputs = vm.ComputeGasOutputs(em.Receipt.GasUsed, em.Message.GasLimit, em.BlockHeader.ParentBaseFee, em.Message.GasFeeCap, em.Message.GasPremium, shouldBurn)
+		}
+		span.AddEvent("computed executed message gas usage")
 
 	}
-	span.AddEvent("computed executed message gas usage")
 
 	blkMsgs := make([]*lens.BlockMessages, len(current.Blocks()))
 	for idx, blk := range current.Blocks() {
@@ -281,7 +297,7 @@ func MethodAndParamsForMessage(m *types.Message, destCode cid.Cid) (string, stri
 		return "", "", fmt.Errorf("unknown method for actor type %s: %d", destCode.String(), int64(m.Method))
 	}
 	if err != nil {
-		log.Warnf("failed to parse parameters of message %s: %v", m.Cid, err)
+		log.Warnf("failed to parse parameters of message %s: %v", m.Cid().String(), err)
 		// this can occur when the message is not valid cbor
 		return method, "", err
 	}
