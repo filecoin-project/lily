@@ -37,7 +37,6 @@ services:
       - '--web.console.templates=/usr/share/prometheus/consoles'
     ports:
       - 9090:9090
-    network_mode: "host"
     restart: always
 
   grafana:
@@ -47,7 +46,6 @@ services:
       - prometheus
     ports:
       - 3000:3000
-    network_mode: "host"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./build/grafana/provisioning/:/etc/grafana/provisioning/
@@ -55,30 +53,41 @@ services:
       - ./build/grafana/config.monitoring
     restart: always
 
-  #lily:
-    #container_name: lily
-    ## Select (only one) image
-    #image: filecoin/lily:v0.8.0
-    #image: filecoin/lily:v0.8.0-calibnet
-    #image: filecoin/lily:v0.8.0-calibnet-dev
-    #env_file:
-      ## Check envvars for configurable options
-      #- ./build/lily/docker.env
-    #depends_on:
-      #- prometheus
-      #- timescaledb
-      #- jaeger
-    #ports:
-      #- 1234:1234
-    #volumes:
-      #- lily_data:/var/lib/lily
-      #- ./build/lily/docker_init.sh:/usr/bin/docker_init.sh
-    #entrypoint: /usr/bin/docker_init.sh
-    #command:
-      #- daemon
+  redis:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass password
+    volumes:
+      - redis:/data
+
+ #lily:
+ #  container_name: lily
+ #  ## Select (only one) image
+ #  #image: filecoin/lily:v0.10.1
+ #  image: filecoin/lily:v0.10.1-calibnet
+ #  env_file:
+ #    ## Check envvars for configurable options
+ #    - ./build/lily/docker.env
+ #  depends_on:
+ #    - prometheus
+ #    - timescaledb
+ #    - jaeger
+ #    - redis
+ #  ports:
+ #    - '1234:1234'
+ #  volumes:
+ #    - lily_data:/var/lib/lily
+ #    - ./build/lily/docker_init.sh:/usr/bin/docker_init.sh
+ #  entrypoint: /usr/bin/docker_init.sh
+ #  command:
+ #    - daemon
 
 volumes:
   timescaledb: {}
   prometheus_data: {}
   grafana_data: {}
   lily_data: {}
+  redis:
+    driver: local
