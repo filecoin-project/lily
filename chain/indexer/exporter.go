@@ -41,6 +41,8 @@ type ModelResult struct {
 // - if data with height N and SR1 is being persisted and a request to persist data with the same values is made, allow it
 // - if data with height N and SR2 is being persisted and a request to persist data with height N and SR1 is made, block
 func (me *ModelExporter) ExportResult(ctx context.Context, strg model.Storage, height int64, results []*ModelResult) error {
+	ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("ModelExporter.ExportResult"))
+	defer span.End()
 	if len(results) == 0 {
 		return nil
 	}
@@ -59,8 +61,6 @@ func (me *ModelExporter) ExportResult(ctx context.Context, strg model.Storage, h
 		res := res
 
 		grp.Go(func() error {
-			ctx, span := otel.Tracer("").Start(ctx, fmt.Sprintf("ModelExporter.ExportResult.%s", res.Name))
-			defer span.End()
 			start := time.Now()
 			ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, res.Name))
 
