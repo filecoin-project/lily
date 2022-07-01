@@ -86,7 +86,7 @@ func (DealProposalExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			}
 
 			isString = true
-			base64Label = base64.StdEncoding.EncodeToString([]byte(labelString))
+			base64Label = base64.StdEncoding.EncodeToString([]byte(SanitizeLabel(labelString)))
 
 		} else if add.Proposal.Label.IsBytes() {
 			labelBytes, err := add.Proposal.Label.ToBytes()
