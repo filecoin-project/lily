@@ -14,6 +14,7 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
@@ -345,6 +346,9 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 	return func(a address.Address) (cid.Cid, bool) {
 		_, innerSpan := otel.Tracer("").Start(ctx, "GetActorCode")
 		defer innerSpan.End()
+		if innerSpan.IsRecording() {
+			span.SetAttributes(attribute.String("address", a.String()))
+		}
 		// Shortcut lookup before resolving
 		c, ok := actorCodes[a]
 		if ok {
