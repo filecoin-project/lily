@@ -2,6 +2,7 @@ package metrics
 
 import (
 	logging "github.com/ipfs/go-log/v2"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
@@ -37,5 +38,6 @@ func NewJaegerTraceProvider(serviceName, agentEndpoint string, sampleRatio float
 			semconv.ServiceNameKey.String(serviceName),
 		)),
 	)
+	otel.SetTracerProvider(tp)
 	return tp, nil
 }
