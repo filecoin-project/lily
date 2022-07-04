@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
-	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/attribute"
@@ -85,18 +83,14 @@ func (gh *AsynqGapFillTipSetTaskHandler) HandleGapFillTipSetTask(ctx context.Con
 		}
 		span := trace.SpanFromContext(ctx)
 		if span.IsRecording() {
-			span.SetAttributes(attribute.String("taskID", t.ResultWriter().TaskID()))
+			span.SetAttributes(attribute.String("taskID", taskID))
 			span.SetAttributes(p.Attributes()...)
 		}
 	}
 
 	success, err := gh.indexer.TipSet(ctx, p.TipSet, indexer.WithTasks(p.Tasks))
 	if err != nil {
-		if strings.Contains(err.Error(), blockstore.ErrNotFound.Error()) {
-			log.Errorw("failed to index tipset for gap fill", zap.Inline(p), "error", err)
-			// return SkipRetry to prevent the task from being retried since nodes do not contain the block
-			return fmt.Errorf("indexing tipset for gap fill %s.(%d) taskID %s: Error %s : %w", p.TipSet.Key().String(), p.TipSet.Height(), taskID, err, asynq.SkipRetry)
-		}
+		log.Errorw("failed to index tipset for gap fill", "taskID", taskID, zap.Inline(p), "error", err)
 		return err
 	}
 	if !success {
