@@ -5,6 +5,29 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.11.0"></a>
+## [v0.11.0] - 2022-06-05
+
+
+## DATABASE MIGRATION
+
+This release includes a migration which must be applied before deploying against an existing database.
+
+### Feat
+* support network version 16 [#988](https://github.com/filecoin-project/lily/pull/988)
+* add is_string column to market_deal_proposal model [#1015](https://github.com/filecoin-project/lily/pull/1015)
+
+### Fix
+* prevent panic on parent miner state nil [#1013](https://github.com/filecoin-project/lily/pull/1013)
+* allow tasks to be retired with block not found [#1016](https://github.com/filecoin-project/lily/pull/1016)
+* many incorrect pointer equality comparisons [#1018](https://github.com/filecoin-project/lily/pull/1018)
+
+### Chore
+* implement miner sector event extractor tests [#999](https://github.com/filecoin-project/lily/pull/999)
+* add output flag to sync status command [#1010](https://github.com/filecoin-project/lily/pull/1010)
+
+
+
 <a name="v0.10.1"></a>
 ## [v0.10.1] - 2022-05-23
 
