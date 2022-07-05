@@ -20,11 +20,12 @@ type VerifiedRegistryExtractionContext struct {
 	PrevState, CurrState verifreg.State
 	PrevTs, CurrTs       *types.TipSet
 
-	Store adt.Store
+	Store                adt.Store
+	PreviousStatePresent bool
 }
 
 func (v *VerifiedRegistryExtractionContext) HasPreviousState() bool {
-	return !(v.CurrTs.Height() == 1 || v.PrevState == v.CurrState)
+	return v.PreviousStatePresent
 }
 
 func NewVerifiedRegistryExtractorContext(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (*VerifiedRegistryExtractionContext, error) {
@@ -33,35 +34,34 @@ func NewVerifiedRegistryExtractorContext(ctx context.Context, a actorstate.Actor
 		return nil, fmt.Errorf("loading current verified registry state: %w", err)
 	}
 
-	prevState := curState
-	if a.Current.Height() != 0 {
-		prevActor, err := node.Actor(ctx, a.Address, a.Executed.Key())
-		if err != nil {
-			// if the actor exists in the current state and not in the parent state then the
-			// actor was created in the current state.
-			if err == types.ErrActorNotFound {
-				return &VerifiedRegistryExtractionContext{
-					PrevState: prevState,
-					CurrState: curState,
-					PrevTs:    a.Executed,
-					CurrTs:    a.Current,
-					Store:     node.Store(),
-				}, nil
-			}
-			return nil, fmt.Errorf("loading previous verified registry actor at tipset %s epoch %d: %w", a.Executed.Key(), a.Current.Height(), err)
+	prevActor, err := node.Actor(ctx, a.Address, a.Executed.Key())
+	if err != nil {
+		// actor doesn't exist yet, may have just been created.
+		if err == types.ErrActorNotFound {
+			return &VerifiedRegistryExtractionContext{
+				CurrState:            curState,
+				PrevTs:               a.Executed,
+				CurrTs:               a.Current,
+				Store:                node.Store(),
+				PrevState:            nil,
+				PreviousStatePresent: false,
+			}, nil
 		}
+		return nil, fmt.Errorf("loading previous verified registry actor from parent tipset %s current height epoch %d: %w", a.Executed.Key(), a.Current.Height(), err)
+	}
 
-		prevState, err = verifreg.Load(node.Store(), prevActor)
-		if err != nil {
-			return nil, fmt.Errorf("loading previous verified registry state: %w", err)
-		}
+	// actor exists in previous state, load it.
+	prevState, err := verifreg.Load(node.Store(), prevActor)
+	if err != nil {
+		return nil, fmt.Errorf("loading previous verified registry state: %w", err)
 	}
 	return &VerifiedRegistryExtractionContext{
-		PrevState: prevState,
-		CurrState: curState,
-		PrevTs:    a.Executed,
-		CurrTs:    a.Current,
-		Store:     node.Store(),
+		PrevState:            prevState,
+		CurrState:            curState,
+		PrevTs:               a.Executed,
+		CurrTs:               a.Current,
+		Store:                node.Store(),
+		PreviousStatePresent: true,
 	}, nil
 }
 

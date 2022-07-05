@@ -14,16 +14,17 @@ import (
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 	"github.com/filecoin-project/lotus/node/modules/dtypes"
 
-	sha256simd "github.com/minio/sha256-simd"
+	"crypto/sha256"
 
-	init0 "github.com/filecoin-project/specs-actors/actors/builtin/init"
-	adt0 "github.com/filecoin-project/specs-actors/actors/util/adt"
+	builtin8 "github.com/filecoin-project/go-state-types/builtin"
+	init8 "github.com/filecoin-project/go-state-types/builtin/v8/init"
+	adt8 "github.com/filecoin-project/go-state-types/builtin/v8/util/adt"
 )
 
-var _ State = (*state0)(nil)
+var _ State = (*state8)(nil)
 
-func load0(store adt.Store, root cid.Cid) (State, error) {
-	out := state0{store: store}
+func load8(store adt.Store, root cid.Cid) (State, error) {
+	out := state8{store: store}
 	err := store.Get(store.Context(), root, &out)
 	if err != nil {
 		return nil, err
@@ -31,34 +32,34 @@ func load0(store adt.Store, root cid.Cid) (State, error) {
 	return &out, nil
 }
 
-func make0(store adt.Store, networkName string) (State, error) {
-	out := state0{store: store}
+func make8(store adt.Store, networkName string) (State, error) {
+	out := state8{store: store}
 
-	mr, err := adt0.MakeEmptyMap(store).Root()
+	s, err := init8.ConstructState(store, networkName)
 	if err != nil {
 		return nil, err
 	}
 
-	out.State = *init0.ConstructState(mr, networkName)
+	out.State = *s
 
 	return &out, nil
 }
 
-type state0 struct {
-	init0.State
+type state8 struct {
+	init8.State
 	store adt.Store
 }
 
-func (s *state0) ResolveAddress(address address.Address) (address.Address, bool, error) {
+func (s *state8) ResolveAddress(address address.Address) (address.Address, bool, error) {
 	return s.State.ResolveAddress(s.store, address)
 }
 
-func (s *state0) MapAddressToNewID(address address.Address) (address.Address, error) {
+func (s *state8) MapAddressToNewID(address address.Address) (address.Address, error) {
 	return s.State.MapAddressToNewID(s.store, address)
 }
 
-func (s *state0) ForEachActor(cb func(id abi.ActorID, address address.Address) error) error {
-	addrs, err := adt0.AsMap(s.store, s.State.AddressMap)
+func (s *state8) ForEachActor(cb func(id abi.ActorID, address address.Address) error) error {
+	addrs, err := adt8.AsMap(s.store, s.State.AddressMap, builtin8.DefaultHamtBitwidth)
 	if err != nil {
 		return err
 	}
@@ -72,22 +73,22 @@ func (s *state0) ForEachActor(cb func(id abi.ActorID, address address.Address) e
 	})
 }
 
-func (s *state0) NetworkName() (dtypes.NetworkName, error) {
+func (s *state8) NetworkName() (dtypes.NetworkName, error) {
 	return dtypes.NetworkName(s.State.NetworkName), nil
 }
 
-func (s *state0) SetNetworkName(name string) error {
+func (s *state8) SetNetworkName(name string) error {
 	s.State.NetworkName = name
 	return nil
 }
 
-func (s *state0) SetNextID(id abi.ActorID) error {
+func (s *state8) SetNextID(id abi.ActorID) error {
 	s.State.NextID = id
 	return nil
 }
 
-func (s *state0) Remove(addrs ...address.Address) (err error) {
-	m, err := adt0.AsMap(s.store, s.State.AddressMap)
+func (s *state8) Remove(addrs ...address.Address) (err error) {
+	m, err := adt8.AsMap(s.store, s.State.AddressMap, builtin8.DefaultHamtBitwidth)
 	if err != nil {
 		return err
 	}
@@ -104,43 +105,43 @@ func (s *state0) Remove(addrs ...address.Address) (err error) {
 	return nil
 }
 
-func (s *state0) SetAddressMap(mcid cid.Cid) error {
+func (s *state8) SetAddressMap(mcid cid.Cid) error {
 	s.State.AddressMap = mcid
 	return nil
 }
 
-func (s *state0) AddressMap() (adt.Map, error) {
-	return adt0.AsMap(s.store, s.State.AddressMap)
+func (s *state8) AddressMap() (adt.Map, error) {
+	return adt8.AsMap(s.store, s.State.AddressMap, builtin8.DefaultHamtBitwidth)
 }
 
-func (s *state0) AddressMapBitWidth() int {
+func (s *state8) AddressMapBitWidth() int {
 
-	return 5
+	return builtin8.DefaultHamtBitwidth
 
 }
 
-func (s *state0) AddressMapHashFunction() func(input []byte) []byte {
+func (s *state8) AddressMapHashFunction() func(input []byte) []byte {
 
 	return func(input []byte) []byte {
-		res := sha256simd.Sum256(input)
+		res := sha256.Sum256(input)
 		return res[:]
 	}
 
 }
 
-func (s *state0) GetState() interface{} {
+func (s *state8) GetState() interface{} {
 	return &s.State
 }
 
-func (s *state0) ActorKey() string {
+func (s *state8) ActorKey() string {
 	return actors.InitKey
 }
 
-func (s *state0) ActorVersion() actors.Version {
-	return actors.Version0
+func (s *state8) ActorVersion() actors.Version {
+	return actors.Version8
 }
 
-func (s *state0) Code() cid.Cid {
+func (s *state8) Code() cid.Cid {
 	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
 	if !ok {
 		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))

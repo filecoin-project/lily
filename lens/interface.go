@@ -51,7 +51,7 @@ type StateAPI interface {
 
 	StateMinerPower(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.MinerPower, error)
 
-	StateMarketDeals(context.Context, types.TipSetKey) (map[string]api.MarketDeal, error)
+	StateMarketDeals(context.Context, types.TipSetKey) (map[string]*api.MarketDeal, error)
 
 	StateReadState(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*api.ActorState, error)
 	StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error)

@@ -16,15 +16,15 @@ import (
 
 	"crypto/sha256"
 
-	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
-	power5 "github.com/filecoin-project/specs-actors/v5/actors/builtin/power"
-	adt5 "github.com/filecoin-project/specs-actors/v5/actors/util/adt"
+	builtin8 "github.com/filecoin-project/specs-actors/v8/actors/builtin"
+	power8 "github.com/filecoin-project/specs-actors/v8/actors/builtin/power"
+	adt8 "github.com/filecoin-project/specs-actors/v8/actors/util/adt"
 )
 
-var _ State = (*state5)(nil)
+var _ State = (*state8)(nil)
 
-func load5(store adt.Store, root cid.Cid) (State, error) {
-	out := state5{store: store}
+func load8(store adt.Store, root cid.Cid) (State, error) {
+	out := state8{store: store}
 	err := store.Get(store.Context(), root, &out)
 	if err != nil {
 		return nil, err
@@ -32,16 +32,16 @@ func load5(store adt.Store, root cid.Cid) (State, error) {
 	return &out, nil
 }
 
-type state5 struct {
-	power5.State
+type state8 struct {
+	power8.State
 	store adt.Store
 }
 
-func (s *state5) TotalLocked() (abi.TokenAmount, error) {
+func (s *state8) TotalLocked() (abi.TokenAmount, error) {
 	return s.TotalPledgeCollateral, nil
 }
 
-func (s *state5) TotalPower() (Claim, error) {
+func (s *state8) TotalPower() (Claim, error) {
 	return Claim{
 		RawBytePower:    s.TotalRawBytePower,
 		QualityAdjPower: s.TotalQualityAdjPower,
@@ -49,19 +49,19 @@ func (s *state5) TotalPower() (Claim, error) {
 }
 
 // Committed power to the network. Includes miners below the minimum threshold.
-func (s *state5) TotalCommitted() (Claim, error) {
+func (s *state8) TotalCommitted() (Claim, error) {
 	return Claim{
 		RawBytePower:    s.TotalBytesCommitted,
 		QualityAdjPower: s.TotalQABytesCommitted,
 	}, nil
 }
 
-func (s *state5) MinerPower(addr address.Address) (Claim, bool, error) {
+func (s *state8) MinerPower(addr address.Address) (Claim, bool, error) {
 	claims, err := s.ClaimsMap()
 	if err != nil {
 		return Claim{}, false, err
 	}
-	var claim power5.Claim
+	var claim power8.Claim
 	ok, err := claims.Get(abi.AddrKey(addr), &claim)
 	if err != nil {
 		return Claim{}, false, err
@@ -72,19 +72,19 @@ func (s *state5) MinerPower(addr address.Address) (Claim, bool, error) {
 	}, ok, nil
 }
 
-func (s *state5) MinerNominalPowerMeetsConsensusMinimum(a address.Address) (bool, error) {
+func (s *state8) MinerNominalPowerMeetsConsensusMinimum(a address.Address) (bool, error) {
 	return s.State.MinerNominalPowerMeetsConsensusMinimum(s.store, a)
 }
 
-func (s *state5) TotalPowerSmoothed() (builtin.FilterEstimate, error) {
-	return builtin.FromV5FilterEstimate(s.State.ThisEpochQAPowerSmoothed), nil
+func (s *state8) TotalPowerSmoothed() (builtin.FilterEstimate, error) {
+	return builtin.FromV8FilterEstimate(s.State.ThisEpochQAPowerSmoothed), nil
 }
 
-func (s *state5) MinerCounts() (uint64, uint64, error) {
+func (s *state8) MinerCounts() (uint64, uint64, error) {
 	return uint64(s.State.MinerAboveMinPowerCount), uint64(s.State.MinerCount), nil
 }
 
-func (s *state5) ListAllMiners() ([]address.Address, error) {
+func (s *state8) ListAllMiners() ([]address.Address, error) {
 	claims, err := s.ClaimsMap()
 	if err != nil {
 		return nil, err
@@ -106,13 +106,13 @@ func (s *state5) ListAllMiners() ([]address.Address, error) {
 	return miners, nil
 }
 
-func (s *state5) ForEachClaim(cb func(miner address.Address, claim Claim) error) error {
+func (s *state8) ForEachClaim(cb func(miner address.Address, claim Claim) error) error {
 	claims, err := s.ClaimsMap()
 	if err != nil {
 		return err
 	}
 
-	var claim power5.Claim
+	var claim power8.Claim
 	return claims.ForEach(&claim, func(k string) error {
 		a, err := address.NewFromBytes([]byte(k))
 		if err != nil {
@@ -125,26 +125,26 @@ func (s *state5) ForEachClaim(cb func(miner address.Address, claim Claim) error)
 	})
 }
 
-func (s *state5) ClaimsChanged(other State) (bool, error) {
-	other5, ok := other.(*state5)
+func (s *state8) ClaimsChanged(other State) (bool, error) {
+	other8, ok := other.(*state8)
 	if !ok {
 		// treat an upgrade as a change, always
 		return true, nil
 	}
-	return !s.State.Claims.Equals(other5.State.Claims), nil
+	return !s.State.Claims.Equals(other8.State.Claims), nil
 }
 
-func (s *state5) ClaimsMap() (adt.Map, error) {
-	return adt5.AsMap(s.store, s.Claims, builtin5.DefaultHamtBitwidth)
+func (s *state8) ClaimsMap() (adt.Map, error) {
+	return adt8.AsMap(s.store, s.Claims, builtin8.DefaultHamtBitwidth)
 }
 
-func (s *state5) ClaimsMapBitWidth() int {
+func (s *state8) ClaimsMapBitWidth() int {
 
-	return builtin5.DefaultHamtBitwidth
+	return builtin8.DefaultHamtBitwidth
 
 }
 
-func (s *state5) ClaimsMapHashFunction() func(input []byte) []byte {
+func (s *state8) ClaimsMapHashFunction() func(input []byte) []byte {
 
 	return func(input []byte) []byte {
 		res := sha256.Sum256(input)
@@ -153,30 +153,30 @@ func (s *state5) ClaimsMapHashFunction() func(input []byte) []byte {
 
 }
 
-func (s *state5) decodeClaim(val *cbg.Deferred) (Claim, error) {
-	var ci power5.Claim
+func (s *state8) decodeClaim(val *cbg.Deferred) (Claim, error) {
+	var ci power8.Claim
 	if err := ci.UnmarshalCBOR(bytes.NewReader(val.Raw)); err != nil {
 		return Claim{}, err
 	}
-	return fromV5Claim(ci), nil
+	return fromV8Claim(ci), nil
 }
 
-func fromV5Claim(v5 power5.Claim) Claim {
+func fromV8Claim(v8 power8.Claim) Claim {
 	return Claim{
-		RawBytePower:    v5.RawBytePower,
-		QualityAdjPower: v5.QualityAdjPower,
+		RawBytePower:    v8.RawBytePower,
+		QualityAdjPower: v8.QualityAdjPower,
 	}
 }
 
-func (s *state5) ActorKey() string {
+func (s *state8) ActorKey() string {
 	return actors.PowerKey
 }
 
-func (s *state5) ActorVersion() actors.Version {
-	return actors.Version5
+func (s *state8) ActorVersion() actors.Version {
+	return actors.Version8
 }
 
-func (s *state5) Code() cid.Cid {
+func (s *state8) Code() cid.Cid {
 	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
 	if !ok {
 		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))

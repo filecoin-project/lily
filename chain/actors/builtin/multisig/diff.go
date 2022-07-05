@@ -6,11 +6,12 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/chain/actors/adt"
-	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 	cbg "github.com/whyrusleeping/cbor-gen"
+
+	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 )
 
 type PendingTransactionChanges struct {
@@ -31,33 +32,33 @@ type TransactionModification struct {
 }
 
 func DiffPendingTransactions(ctx context.Context, store adt.Store, pre, cur State) (*PendingTransactionChanges, error) {
-	pret, err := pre.transactions()
+	pret, err := pre.PendingTransactionsMap()
 	if err != nil {
 		return nil, err
 	}
 
-	curt, err := cur.transactions()
+	curt, err := cur.PendingTransactionsMap()
 	if err != nil {
 		return nil, err
 	}
 
-	preOpts, err := adt.MapOptsForActorCode(pre.Code())
-	if err != nil {
-		return nil, err
-	}
-	curOpts, err := adt.MapOptsForActorCode(cur.Code())
-	if err != nil {
-		return nil, err
-	}
 	diffContainer := NewTransactionDiffContainer(pre, cur)
-	if requiresLegacyDiffing(pre, cur, preOpts, curOpts) {
+	if requiresLegacyDiffing(pre, cur,
+		&adt.MapOpts{
+			Bitwidth: pre.PendingTransactionsMapBitWidth(),
+			HashFunc: pre.PendingTransactionsMapHashFunction(),
+		},
+		&adt.MapOpts{
+			Bitwidth: cur.PendingTransactionsMapBitWidth(),
+			HashFunc: pre.PendingTransactionsMapHashFunction(),
+		}) {
 		if err := diff.CompareMap(pret, curt, diffContainer); err != nil {
 			return nil, err
 		}
 		return diffContainer.Results, nil
 	}
 
-	changes, err := diff.Hamt(ctx, pret, curt, store, store, hamt.UseTreeBitWidth(preOpts.Bitwidth), hamt.UseHashFunction(hamt.HashFunc(preOpts.HashFunc)))
+	changes, err := diff.Hamt(ctx, pret, curt, store, store, hamt.UseTreeBitWidth(pre.PendingTransactionsMapBitWidth()), hamt.UseHashFunction(pre.PendingTransactionsMapHashFunction()))
 	if err != nil {
 		return nil, err
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/big"
+	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
@@ -19,34 +20,40 @@ import (
 {{range .versions}}
 	builtin{{.}} "github.com/filecoin-project/specs-actors{{import .}}actors/builtin"
 {{- end}}
-)
 
-func init() {
-{{range .versions}}
-	builtin.RegisterActorState(builtin{{.}}.StoragePowerActorCodeID, func(store adt.Store, root cid.Cid) (cbor.Marshaler, error) {
-		return load{{.}}(store, root)
-	})
-{{end}}}
+	"github.com/filecoin-project/lily/chain/actors"
+)
 
 var (
 	Address = builtin{{.latestVersion}}.StoragePowerActorAddr
 	Methods = builtin{{.latestVersion}}.MethodsPower
 )
 
-func AllCodes() []cid.Cid {
-	return []cid.Cid{ {{range .versions}}
-        builtin{{.}}.StoragePowerActorCodeID,
-    {{- end}}
-    }
-}
-
 func Load(store adt.Store, act *types.Actor) (State, error) {
+	if name, av, ok := lotusactors.GetActorMetaByCode(act.Code); ok {
+       if name != actors.PowerKey {
+          return nil, fmt.Errorf("actor code is not power: %s", name)
+       }
+
+       switch actors.Version(av) {
+            {{range .versions}}
+                {{if (ge . 8)}}
+                case actors.Version{{.}}:
+                     return load{{.}}(store, act.Head)
+                 {{end}}
+            {{end}}
+       }
+	}
+
 	switch act.Code {
 {{range .versions}}
-	case builtin{{.}}.StoragePowerActorCodeID:
-		return load{{.}}(store, act.Head)
+    {{if (le . 7)}}
+        case builtin{{.}}.StoragePowerActorCodeID:
+            return load{{.}}(store, act.Head)
+    {{end}}
 {{end}}
 	}
+
 	return nil, fmt.Errorf("unknown actor code %s", act.Code)
 }
 
@@ -54,6 +61,8 @@ type State interface {
 	cbor.Marshaler
 
 	Code() cid.Cid
+	ActorKey() string
+	ActorVersion() actors.Version
 
 	TotalLocked() (abi.TokenAmount, error)
 	TotalPower() (Claim, error)
@@ -70,7 +79,9 @@ type State interface {
 	ClaimsChanged(State) (bool, error)
 
 	// Diff helpers. Used by Diff* functions internally.
-	claims() (adt.Map, error)
+	ClaimsMap() (adt.Map, error)
+	ClaimsMapBitWidth() int
+	ClaimsMapHashFunction() func(input []byte) []byte
 	decodeClaim(*cbg.Deferred) (Claim, error)
 }
 
@@ -88,3 +99,19 @@ func AddClaims(a Claim, b Claim) Claim {
 		QualityAdjPower: big.Add(a.QualityAdjPower, b.QualityAdjPower),
 	}
 }
+
+func AllCodes() []cid.Cid {
+	return []cid.Cid{ {{range .versions}}
+        (&state{{.}}{}).Code(),
+    {{- end}}
+    }
+}
+
+func VersionCodes() map[actors.Version]cid.Cid {
+	return map[actors.Version]cid.Cid{
+        {{- range .versions}}
+            actors.Version{{.}}: (&state{{.}}{}).Code(),
+        {{- end}}
+	}
+}
+

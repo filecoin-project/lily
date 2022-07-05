@@ -8,18 +8,20 @@ import (
 
 	"github.com/filecoin-project/go-state-types/big"
 
-	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
 	rle "github.com/filecoin-project/go-bitfield/rle"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/dline"
+	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/ipfs/go-cid"
-	"github.com/libp2p/go-libp2p-core/peer"
 	cbg "github.com/whyrusleeping/cbor-gen"
+	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/lily/chain/actors/adt"
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
+	"github.com/filecoin-project/lotus/chain/actors/adt"
 
-	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
+	sha256simd "github.com/minio/sha256-simd"
+
 	miner0 "github.com/filecoin-project/specs-actors/actors/builtin/miner"
 	adt0 "github.com/filecoin-project/specs-actors/actors/util/adt"
 )
@@ -32,6 +34,12 @@ func load0(store adt.Store, root cid.Cid) (State, error) {
 	if err != nil {
 		return nil, err
 	}
+	return &out, nil
+}
+
+func make0(store adt.Store) (State, error) {
+	out := state0{store: store}
+	out.State = miner0.State{}
 	return &out, nil
 }
 
@@ -50,18 +58,10 @@ type partition0 struct {
 	store adt.Store
 }
 
-func (s *state0) Code() cid.Cid {
-	return builtin0.StorageMinerActorCodeID
-}
-
-func (s *state0) SectorsAmtBitwidth() int {
-	return 3
-}
-
 func (s *state0) AvailableBalance(bal abi.TokenAmount) (available abi.TokenAmount, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("failed to get available balance: %w", r)
+			err = xerrors.Errorf("failed to get available balance: %w", r)
 			available = abi.NewTokenAmount(0)
 		}
 	}()
@@ -196,12 +196,12 @@ func (s *state0) GetSectorExpiration(num abi.SectorNumber) (*SectorExpiration, e
 		return nil, err
 	}
 	if out.Early == 0 && out.OnTime == 0 {
-		return nil, fmt.Errorf("failed to find sector %d", num)
+		return nil, xerrors.Errorf("failed to find sector %d", num)
 	}
 	return &out, nil
 }
 
-func (s *state0) GetPrecommittedSector(num abi.SectorNumber) (*SectorPreCommitOnChainInfo, error) {
+func (s *state0) GetPrecommittedSector(num abi.SectorNumber) (*minertypes.SectorPreCommitOnChainInfo, error) {
 	info, ok, err := s.State.GetPrecommittedSector(s.store, num)
 	if !ok || err != nil {
 		return nil, err
@@ -212,7 +212,7 @@ func (s *state0) GetPrecommittedSector(num abi.SectorNumber) (*SectorPreCommitOn
 	return &ret, nil
 }
 
-func (s *state0) ForEachPrecommittedSector(cb func(SectorPreCommitOnChainInfo) error) error {
+func (s *state0) ForEachPrecommittedSector(cb func(minertypes.SectorPreCommitOnChainInfo) error) error {
 	precommitted, err := adt0.AsMap(s.store, s.State.PreCommittedSectors)
 	if err != nil {
 		return err
@@ -376,11 +376,6 @@ func (s *state0) Info() (MinerInfo, error) {
 		return MinerInfo{}, err
 	}
 
-	var pid *peer.ID
-	if peerID, err := peer.IDFromBytes(info.PeerId); err == nil {
-		pid = &peerID
-	}
-
 	wpp, err := info.SealProofType.RegisteredWindowPoStProof()
 	if err != nil {
 		return MinerInfo{}, err
@@ -391,20 +386,14 @@ func (s *state0) Info() (MinerInfo, error) {
 		Worker:           info.Worker,
 		ControlAddresses: info.ControlAddresses,
 
-		NewWorker:         address.Undef,
-		WorkerChangeEpoch: -1,
+		PendingWorkerKey: (*WorkerKeyChange)(info.PendingWorkerKey),
 
-		PeerId:                     pid,
+		PeerId:                     info.PeerId,
 		Multiaddrs:                 info.Multiaddrs,
 		WindowPoStProofType:        wpp,
 		SectorSize:                 info.SectorSize,
 		WindowPoStPartitionSectors: info.WindowPoStPartitionSectors,
 		ConsensusFaultElapsed:      -1,
-	}
-
-	if info.PendingWorkerKey != nil {
-		mi.NewWorker = info.PendingWorkerKey.NewWorker
-		mi.WorkerChangeEpoch = info.PendingWorkerKey.EffectiveAt
 	}
 
 	return mi, nil
@@ -418,7 +407,7 @@ func (s *state0) DeadlineCronActive() (bool, error) {
 	return true, nil // always active in this version
 }
 
-func (s *state0) SectorArray() (adt.Array, error) {
+func (s *state0) SectorsArray() (adt.Array, error) {
 	return adt0.AsArray(s.store, s.Sectors)
 }
 
@@ -432,15 +421,30 @@ func (s *state0) DecodeSectorOnChainInfo(val *cbg.Deferred) (SectorOnChainInfo, 
 	return fromV0SectorOnChainInfo(si), nil
 }
 
-func (s *state0) PreCommitMap() (adt.Map, error) {
+func (s *state0) PrecommitsMap() (adt.Map, error) {
 	return adt0.AsMap(s.store, s.PreCommittedSectors)
 }
 
-func (s *state0) DecodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (SectorPreCommitOnChainInfo, error) {
+func (s *state0) PrecommitsMapBitWidth() int {
+
+	return 5
+
+}
+
+func (s *state0) PrecommitsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256simd.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state0) DecodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (minertypes.SectorPreCommitOnChainInfo, error) {
 	var sp miner0.SectorPreCommitOnChainInfo
 	err := sp.UnmarshalCBOR(bytes.NewReader(val.Raw))
 	if err != nil {
-		return SectorPreCommitOnChainInfo{}, err
+		return minertypes.SectorPreCommitOnChainInfo{}, err
 	}
 
 	return fromV0SectorPreCommitOnChainInfo(sp), nil
@@ -526,12 +530,37 @@ func fromV0SectorOnChainInfo(v0 miner0.SectorOnChainInfo) SectorOnChainInfo {
 	return info
 }
 
-func fromV0SectorPreCommitOnChainInfo(v0 miner0.SectorPreCommitOnChainInfo) SectorPreCommitOnChainInfo {
-
-	return (SectorPreCommitOnChainInfo)(v0)
-
+func fromV0SectorPreCommitOnChainInfo(v0 miner0.SectorPreCommitOnChainInfo) minertypes.SectorPreCommitOnChainInfo {
+	return minertypes.SectorPreCommitOnChainInfo{
+		Info:               (minertypes.SectorPreCommitInfo)(v0.Info),
+		PreCommitDeposit:   v0.PreCommitDeposit,
+		PreCommitEpoch:     v0.PreCommitEpoch,
+		DealWeight:         v0.DealWeight,
+		VerifiedDealWeight: v0.VerifiedDealWeight,
+	}
 }
 
 func (s *state0) GetState() interface{} {
 	return &s.State
+}
+
+func (s *state0) SectorsAmtBitwidth() int {
+	return 3
+}
+
+func (s *state0) ActorKey() string {
+	return actors.MinerKey
+}
+
+func (s *state0) ActorVersion() actors.Version {
+	return actors.Version0
+}
+
+func (s *state0) Code() cid.Cid {
+	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
+	if !ok {
+		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))
+	}
+
+	return code
 }

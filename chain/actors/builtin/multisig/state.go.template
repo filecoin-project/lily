@@ -12,11 +12,22 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
+	"github.com/filecoin-project/lily/chain/actors"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 
-	builtin{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin"
-	msig{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin/multisig"
+    {{if (le .v 1)}}
+        sha256simd "github.com/minio/sha256-simd"
+    {{else}}
+        "crypto/sha256"
+    {{end}}
+
+    {{if (le .v 2)}}
+        msig{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin/multisig"
+    {{else}}
+        builtin{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin"
+        msig{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin/multisig"
+    {{end}}
 )
 
 var _ State = (*state{{.v}})(nil)
@@ -33,10 +44,6 @@ func load{{.v}}(store adt.Store, root cid.Cid) (State, error) {
 type state{{.v}} struct {
 	msig{{.v}}.State
 	store adt.Store
-}
-
-func (s *state{{.v}}) Code() cid.Cid {
-    return builtin{{.v}}.MultisigActorCodeID
 }
 
 func (s *state{{.v}}) LockedBalance(currEpoch abi.ChainEpoch) (abi.TokenAmount, error) {
@@ -87,8 +94,30 @@ func (s *state{{.v}}) PendingTxnChanged(other State) (bool, error) {
 	return !s.State.PendingTxns.Equals(other{{.v}}.PendingTxns), nil
 }
 
-func (s *state{{.v}}) transactions() (adt.Map, error) {
+func (s *state{{.v}}) PendingTransactionsMap() (adt.Map, error) {
 	return adt{{.v}}.AsMap(s.store, s.PendingTxns{{if (ge .v 3)}}, builtin{{.v}}.DefaultHamtBitwidth{{end}})
+}
+
+func (s *state{{.v}}) PendingTransactionsMapBitWidth() int {
+    {{if (ge .v 3)}}
+        return builtin{{.v}}.DefaultHamtBitwidth
+    {{else}}
+        return 5
+    {{end}}
+}
+
+func (s *state{{.v}}) PendingTransactionsMapHashFunction() func(input []byte) []byte {
+    {{if (le .v 1)}}
+        return func(input []byte) []byte {
+            res := sha256simd.Sum256(input)
+            return res[:]
+        }
+    {{else}}
+        return func(input []byte) []byte {
+            res := sha256.Sum256(input)
+            return res[:]
+        }
+    {{end}}
 }
 
 func (s *state{{.v}}) decodeTransaction(val *cbg.Deferred) (Transaction, error) {
@@ -97,4 +126,21 @@ func (s *state{{.v}}) decodeTransaction(val *cbg.Deferred) (Transaction, error) 
 		return Transaction{}, err
 	}
 	return tx, nil
+}
+
+func (s *state{{.v}}) ActorKey() string {
+    return actors.MultisigKey
+}
+
+func (s *state{{.v}}) ActorVersion() actors.Version {
+    return actors.Version{{.v}}
+}
+
+func (s *state{{.v}}) Code() cid.Cid {
+	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
+	if !ok {
+		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))
+	}
+
+	return code
 }

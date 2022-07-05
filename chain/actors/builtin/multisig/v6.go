@@ -10,10 +10,13 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
+
+	"crypto/sha256"
 
 	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
 	msig6 "github.com/filecoin-project/specs-actors/v6/actors/builtin/multisig"
@@ -33,10 +36,6 @@ func load6(store adt.Store, root cid.Cid) (State, error) {
 type state6 struct {
 	msig6.State
 	store adt.Store
-}
-
-func (s *state6) Code() cid.Cid {
-	return builtin6.MultisigActorCodeID
 }
 
 func (s *state6) LockedBalance(currEpoch abi.ChainEpoch) (abi.TokenAmount, error) {
@@ -87,8 +86,23 @@ func (s *state6) PendingTxnChanged(other State) (bool, error) {
 	return !s.State.PendingTxns.Equals(other6.PendingTxns), nil
 }
 
-func (s *state6) transactions() (adt.Map, error) {
+func (s *state6) PendingTransactionsMap() (adt.Map, error) {
 	return adt6.AsMap(s.store, s.PendingTxns, builtin6.DefaultHamtBitwidth)
+}
+
+func (s *state6) PendingTransactionsMapBitWidth() int {
+
+	return builtin6.DefaultHamtBitwidth
+
+}
+
+func (s *state6) PendingTransactionsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
 }
 
 func (s *state6) decodeTransaction(val *cbg.Deferred) (Transaction, error) {
@@ -97,4 +111,21 @@ func (s *state6) decodeTransaction(val *cbg.Deferred) (Transaction, error) {
 		return Transaction{}, err
 	}
 	return tx, nil
+}
+
+func (s *state6) ActorKey() string {
+	return actors.MultisigKey
+}
+
+func (s *state6) ActorVersion() actors.Version {
+	return actors.Version6
+}
+
+func (s *state6) Code() cid.Cid {
+	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
+	if !ok {
+		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))
+	}
+
+	return code
 }

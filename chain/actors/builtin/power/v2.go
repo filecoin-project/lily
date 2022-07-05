@@ -3,16 +3,19 @@ package power
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 
-	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
+	"crypto/sha256"
+
 	power2 "github.com/filecoin-project/specs-actors/v2/actors/builtin/power"
 	adt2 "github.com/filecoin-project/specs-actors/v2/actors/util/adt"
 )
@@ -31,10 +34,6 @@ func load2(store adt.Store, root cid.Cid) (State, error) {
 type state2 struct {
 	power2.State
 	store adt.Store
-}
-
-func (s *state2) Code() cid.Cid {
-	return builtin2.StoragePowerActorCodeID
 }
 
 func (s *state2) TotalLocked() (abi.TokenAmount, error) {
@@ -57,7 +56,7 @@ func (s *state2) TotalCommitted() (Claim, error) {
 }
 
 func (s *state2) MinerPower(addr address.Address) (Claim, bool, error) {
-	claims, err := s.claims()
+	claims, err := s.ClaimsMap()
 	if err != nil {
 		return Claim{}, false, err
 	}
@@ -85,7 +84,7 @@ func (s *state2) MinerCounts() (uint64, uint64, error) {
 }
 
 func (s *state2) ListAllMiners() ([]address.Address, error) {
-	claims, err := s.claims()
+	claims, err := s.ClaimsMap()
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +106,7 @@ func (s *state2) ListAllMiners() ([]address.Address, error) {
 }
 
 func (s *state2) ForEachClaim(cb func(miner address.Address, claim Claim) error) error {
-	claims, err := s.claims()
+	claims, err := s.ClaimsMap()
 	if err != nil {
 		return err
 	}
@@ -134,8 +133,23 @@ func (s *state2) ClaimsChanged(other State) (bool, error) {
 	return !s.State.Claims.Equals(other2.State.Claims), nil
 }
 
-func (s *state2) claims() (adt.Map, error) {
+func (s *state2) ClaimsMap() (adt.Map, error) {
 	return adt2.AsMap(s.store, s.Claims)
+}
+
+func (s *state2) ClaimsMapBitWidth() int {
+
+	return 5
+
+}
+
+func (s *state2) ClaimsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
 }
 
 func (s *state2) decodeClaim(val *cbg.Deferred) (Claim, error) {
@@ -151,4 +165,21 @@ func fromV2Claim(v2 power2.Claim) Claim {
 		RawBytePower:    v2.RawBytePower,
 		QualityAdjPower: v2.QualityAdjPower,
 	}
+}
+
+func (s *state2) ActorKey() string {
+	return actors.PowerKey
+}
+
+func (s *state2) ActorVersion() actors.Version {
+	return actors.Version2
+}
+
+func (s *state2) Code() cid.Cid {
+	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
+	if !ok {
+		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))
+	}
+
+	return code
 }
