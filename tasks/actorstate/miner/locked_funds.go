@@ -36,7 +36,11 @@ func (LockedFundsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo,
 		if err != nil {
 			return nil, fmt.Errorf("loading previous miner locked funds: %w", err)
 		}
-		if prevLocked == currLocked {
+
+		// if all values are equal there is no change.
+		if prevLocked.VestingFunds.Equals(currLocked.VestingFunds) &&
+			prevLocked.PreCommitDeposits.Equals(currLocked.PreCommitDeposits) &&
+			prevLocked.InitialPledgeRequirement.Equals(currLocked.InitialPledgeRequirement) {
 			return nil, nil
 		}
 	}

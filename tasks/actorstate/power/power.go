@@ -25,33 +25,32 @@ func NewPowerStateExtractionContext(ctx context.Context, a actorstate.ActorInfo,
 		return nil, fmt.Errorf("loading current power state: %w", err)
 	}
 
-	prevState := curState
-	if a.Current.Height() != 1 {
-		prevActor, err := node.Actor(ctx, a.Address, a.Executed.Key())
-		if err != nil {
-			// if the actor exists in the current state and not in the parent state then the
-			// actor was created in the current state.
-			if err == types.ErrActorNotFound {
-				return &PowerStateExtractionContext{
-					PrevState: prevState,
-					CurrState: curState,
-					CurrTs:    a.Current,
-					Store:     node.Store(),
-				}, nil
-			}
-			return nil, fmt.Errorf("loading previous power actor at tipset %s epoch %d: %w", a.Executed.Key(), a.Current.Height(), err)
+	prevActor, err := node.Actor(ctx, a.Address, a.Executed.Key())
+	if err != nil {
+		// actor doesn't exist yet, may have just been created.
+		if err == types.ErrActorNotFound {
+			return &PowerStateExtractionContext{
+				CurrState:            curState,
+				CurrTs:               a.Current,
+				Store:                node.Store(),
+				PrevState:            nil,
+				PreviousStatePresent: false,
+			}, nil
 		}
+		return nil, fmt.Errorf("loading previous power actor from parent tipset %s current epoch %d: %w", a.Executed.Key(), a.Current.Height(), err)
+	}
 
-		prevState, err = power.Load(node.Store(), prevActor)
-		if err != nil {
-			return nil, fmt.Errorf("loading previous power actor state: %w", err)
-		}
+	// actor exists in previous state, load it.
+	prevState, err := power.Load(node.Store(), prevActor)
+	if err != nil {
+		return nil, fmt.Errorf("loading previous power actor state: %w", err)
 	}
 	return &PowerStateExtractionContext{
-		PrevState: prevState,
-		CurrState: curState,
-		CurrTs:    a.Current,
-		Store:     node.Store(),
+		PrevState:            prevState,
+		CurrState:            curState,
+		CurrTs:               a.Current,
+		Store:                node.Store(),
+		PreviousStatePresent: true,
 	}, nil
 }
 
@@ -60,11 +59,12 @@ type PowerStateExtractionContext struct {
 	CurrState power.State
 	CurrTs    *types.TipSet
 
-	Store adt.Store
+	Store                adt.Store
+	PreviousStatePresent bool
 }
 
 func (p *PowerStateExtractionContext) HasPreviousState() bool {
-	return !(p.CurrTs.Height() == 1 || p.PrevState == p.CurrState)
+	return p.PreviousStatePresent
 }
 
 func (StoragePowerExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
