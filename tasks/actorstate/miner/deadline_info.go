@@ -38,11 +38,15 @@ func (DeadlineInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		}
 		// TODO implement equality function
 		// dereference pointers to check equality
-		if *prevDeadlineInfo == *currDeadlineInfo {
+		// if these are different then return a model in the bottom of function
+		if prevDeadlineInfo != nil &&
+			currDeadlineInfo != nil &&
+			*prevDeadlineInfo == *currDeadlineInfo {
 			return nil, nil
 		}
 	}
 
+	// if there is no previous state and the deadlines have changed, return a model
 	return &minermodel.MinerCurrentDeadlineInfo{
 		Height:        int64(ec.CurrTs.Height()),
 		MinerID:       a.Address.String(),
