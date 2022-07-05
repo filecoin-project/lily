@@ -9,11 +9,14 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [v0.11.0] - 2022-06-05
 
 ### Feat
-* Support network version 16 [#988](https://github.com/filecoin-project/lily/pull/988)
+* support network version 16 [#988](https://github.com/filecoin-project/lily/pull/988)
+* add is_string column to market_deal_proposal model [#1015](https://github.com/filecoin-project/lily/pull/1015)
+  * REQUIRES MIGRATION 
 
 ### Fix
 * prevent panic on parent miner state nil [#1013](https://github.com/filecoin-project/lily/pull/1013)
 * allow tasks to be retired with block not found [#1016](https://github.com/filecoin-project/lily/pull/1016)
+* many incorrect pointer equality comparisons [#1018](https://github.com/filecoin-project/lily/pull/1018)
 
 ### Chore
 * implement miner sector event extractor tests [#999](https://github.com/filecoin-project/lily/pull/999)
