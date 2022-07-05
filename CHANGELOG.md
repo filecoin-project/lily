@@ -8,10 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 <a name="v0.11.0"></a>
 ## [v0.11.0] - 2022-06-05
 
+
+## DATABASE MIGRATION
+
+This release includes a migration which must be applied before deploying against an existing database.
+
 ### Feat
 * support network version 16 [#988](https://github.com/filecoin-project/lily/pull/988)
 * add is_string column to market_deal_proposal model [#1015](https://github.com/filecoin-project/lily/pull/1015)
-  * REQUIRES MIGRATION 
 
 ### Fix
 * prevent panic on parent miner state nil [#1013](https://github.com/filecoin-project/lily/pull/1013)
