@@ -36,7 +36,9 @@ func (DeadlineInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		if err != nil {
 			return nil, err
 		}
-		if prevDeadlineInfo == currDeadlineInfo {
+		// TODO implement equality function
+		// dereference pointers to check equality
+		if *prevDeadlineInfo == *currDeadlineInfo {
 			return nil, nil
 		}
 	}

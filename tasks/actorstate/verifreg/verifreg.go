@@ -20,11 +20,12 @@ type VerifiedRegistryExtractionContext struct {
 	PrevState, CurrState verifreg.State
 	PrevTs, CurrTs       *types.TipSet
 
-	Store adt.Store
+	Store         adt.Store
+	PreviousState bool
 }
 
 func (v *VerifiedRegistryExtractionContext) HasPreviousState() bool {
-	return !(v.CurrTs.Height() == 1 || v.PrevState == v.CurrState)
+	return v.PreviousState
 }
 
 func NewVerifiedRegistryExtractorContext(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (*VerifiedRegistryExtractionContext, error) {
@@ -41,11 +42,12 @@ func NewVerifiedRegistryExtractorContext(ctx context.Context, a actorstate.Actor
 			// actor was created in the current state.
 			if err == types.ErrActorNotFound {
 				return &VerifiedRegistryExtractionContext{
-					PrevState: prevState,
-					CurrState: curState,
-					PrevTs:    a.Executed,
-					CurrTs:    a.Current,
-					Store:     node.Store(),
+					PrevState:     prevState,
+					CurrState:     curState,
+					PrevTs:        a.Executed,
+					CurrTs:        a.Current,
+					Store:         node.Store(),
+					PreviousState: false,
 				}, nil
 			}
 			return nil, fmt.Errorf("loading previous verified registry actor at tipset %s epoch %d: %w", a.Executed.Key(), a.Current.Height(), err)
@@ -57,11 +59,12 @@ func NewVerifiedRegistryExtractorContext(ctx context.Context, a actorstate.Actor
 		}
 	}
 	return &VerifiedRegistryExtractionContext{
-		PrevState: prevState,
-		CurrState: curState,
-		PrevTs:    a.Executed,
-		CurrTs:    a.Current,
-		Store:     node.Store(),
+		PrevState:     prevState,
+		CurrState:     curState,
+		PrevTs:        a.Executed,
+		CurrTs:        a.Current,
+		Store:         node.Store(),
+		PreviousState: true,
 	}, nil
 }
 

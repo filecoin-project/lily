@@ -119,11 +119,12 @@ type MsigExtractionContext struct {
 	CurrState multisig.State
 	CurrTs    *types.TipSet
 
-	Store adt.Store
+	Store         adt.Store
+	PreviousState bool
 }
 
 func (m *MsigExtractionContext) HasPreviousState() bool {
-	return !(m.CurrTs.Height() == 1 || m.CurrState == m.PrevState)
+	return m.PreviousState
 }
 
 func NewMultiSigExtractionContext(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (*MsigExtractionContext, error) {
@@ -140,11 +141,12 @@ func NewMultiSigExtractionContext(ctx context.Context, a actorstate.ActorInfo, n
 			// actor was created in the current state.
 			if err == types.ErrActorNotFound {
 				return &MsigExtractionContext{
-					PrevState: prevState,
-					CurrActor: &a.Actor,
-					CurrState: curState,
-					CurrTs:    a.Current,
-					Store:     node.Store(),
+					PrevState:     prevState,
+					CurrActor:     &a.Actor,
+					CurrState:     curState,
+					CurrTs:        a.Current,
+					Store:         node.Store(),
+					PreviousState: false,
 				}, nil
 			}
 			return nil, fmt.Errorf("loading previous multisig %s at tipset %s epoch %d: %w", a.Address, a.Executed.Key(), a.Current.Height(), err)
@@ -157,10 +159,11 @@ func NewMultiSigExtractionContext(ctx context.Context, a actorstate.ActorInfo, n
 	}
 
 	return &MsigExtractionContext{
-		PrevState: prevState,
-		CurrActor: &a.Actor,
-		CurrState: curState,
-		CurrTs:    a.Current,
-		Store:     node.Store(),
+		PrevState:     prevState,
+		CurrActor:     &a.Actor,
+		CurrState:     curState,
+		CurrTs:        a.Current,
+		Store:         node.Store(),
+		PreviousState: true,
 	}, nil
 }

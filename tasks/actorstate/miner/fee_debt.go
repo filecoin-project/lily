@@ -36,7 +36,7 @@ func (FeeDebtExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, nod
 		if err != nil {
 			return nil, fmt.Errorf("loading previous miner fee debt: %w", err)
 		}
-		if prevDebt == currDebt {
+		if prevDebt.Equals(currDebt) {
 			return nil, nil
 		}
 	}

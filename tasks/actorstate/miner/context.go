@@ -22,7 +22,7 @@ func NewMinerStateExtractionContext(ctx context.Context, a actorstate.ActorInfo,
 	}
 
 	prevTipset := a.Current
-	prevState := curState
+	var prevState miner.State
 	if a.Current.Height() != 1 {
 		prevTipset = a.Executed
 
@@ -32,11 +32,12 @@ func NewMinerStateExtractionContext(ctx context.Context, a actorstate.ActorInfo,
 			// actor was created in the current state.
 			if err == types.ErrActorNotFound {
 				return &MinerStateExtractionContext{
-					PrevState: prevState,
-					PrevTs:    prevTipset,
-					CurrActor: &a.Actor,
-					CurrState: curState,
-					CurrTs:    a.Current,
+					PrevState:     prevState,
+					PrevTs:        prevTipset,
+					CurrActor:     &a.Actor,
+					CurrState:     curState,
+					CurrTs:        a.Current,
+					PreviousState: false,
 				}, nil
 			}
 			return nil, fmt.Errorf("loading previous miner %s at tipset %s epoch %d: %w", a.Address, a.Executed.Key(), a.Current.Height(), err)
@@ -49,11 +50,12 @@ func NewMinerStateExtractionContext(ctx context.Context, a actorstate.ActorInfo,
 	}
 
 	return &MinerStateExtractionContext{
-		PrevState: prevState,
-		PrevTs:    prevTipset,
-		CurrActor: &a.Actor,
-		CurrState: curState,
-		CurrTs:    a.Current,
+		PrevState:     prevState,
+		PrevTs:        prevTipset,
+		CurrActor:     &a.Actor,
+		CurrState:     curState,
+		CurrTs:        a.Current,
+		PreviousState: true,
 	}, nil
 }
 
@@ -61,11 +63,12 @@ type MinerStateExtractionContext struct {
 	PrevState miner.State
 	PrevTs    *types.TipSet
 
-	CurrActor *types.Actor
-	CurrState miner.State
-	CurrTs    *types.TipSet
+	CurrActor     *types.Actor
+	CurrState     miner.State
+	CurrTs        *types.TipSet
+	PreviousState bool
 }
 
 func (m *MinerStateExtractionContext) HasPreviousState() bool {
-	return !(m.CurrTs.Height() == 1 || m.PrevState == m.CurrState)
+	return m.PreviousState
 }
