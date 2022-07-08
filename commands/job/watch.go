@@ -80,7 +80,7 @@ the --confidence flag may be used to buffer the amount of tipsets observed befor
                                               (process)       (process)
 
 As and example, the below command:
-  $ lily job run --tasks-block_headers,messages watch --confidence=10 --workers=2
+  $ lily job run --tasks-block_header,messages watch --confidence=10 --workers=2
 watches the chain head and only indexes a tipset after observing 10 subsequent tipsets indexing at most two tipset simultaneously.
 `,
 	Flags: []cli.Flag{
