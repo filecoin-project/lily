@@ -24,7 +24,7 @@ An epoch is considered to have gaps iff:
 The results of the find job are written to the visor_gap_reports table with status 'GAP'.
 
 As an example, the below command:
- $ lily job run --tasks=block_headers,messages find --from=10 --to=20
+ $ lily job run --tasks=block_header,messages find --from=10 --to=20
 searches for gaps in block_headers and messages tasks from epoch 10 to 20 (inclusive). 
 
 Constraints:
