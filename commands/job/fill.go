@@ -23,8 +23,8 @@ Each epoch and its corresponding list of tasks found in the visor_gap_reports ta
 When the gap is successfully filled its corresponding entry in the visor_gap_reports table will be updated with status 'FILLED'.
 
 As an example, the below command:
-  $ lily job run --tasks=block_headers,message fill --from=10 --to=20
-fills gaps for block_headers and messages tasks from epoch 10 to 20 (inclusive)
+  $ lily job run --tasks=block_header,message fill --from=10 --to=20
+fills gaps for block_header and messages tasks from epoch 10 to 20 (inclusive)
 
 Constraints:
 - the fill job must be executed AFTER a find job. These jobs must NOT be executed simultaneously.
