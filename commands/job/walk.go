@@ -20,8 +20,8 @@ The walk command will index state based on the list of tasks (--tasks) provided 
 Each epoch will be indexed serially starting from the heaviest tipset at the upper height (--to) to the lower height (--to).
 
 As and example, the below command:
-  $ lily job run --tasks=block_headers,messages walk --from=10 --to=20
-walks epochs 20 through 10 (inclusive) executing the block_headers and messages task for each epoch.
+  $ lily job run --tasks=block_header,messages walk --from=10 --to=20
+walks epochs 20 through 10 (inclusive) executing the block_header and messages task for each epoch.
 The status of each epoch and its set of tasks can be observed in the visor_processing_reports table.
 `,
 	Flags: []cli.Flag{

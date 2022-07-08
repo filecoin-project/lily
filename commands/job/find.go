@@ -25,7 +25,7 @@ The results of the find job are written to the visor_gap_reports table with stat
 
 As an example, the below command:
  $ lily job run --tasks=block_header,messages find --from=10 --to=20
-searches for gaps in block_headers and messages tasks from epoch 10 to 20 (inclusive). 
+searches for gaps in block_header and messages tasks from epoch 10 to 20 (inclusive). 
 
 Constraints:
 - the find job must NOT be executed against heights that were imported from historical data dumps: https://lilium.sh/data/dumps/ 
