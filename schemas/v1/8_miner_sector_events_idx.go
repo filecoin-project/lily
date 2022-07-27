@@ -8,7 +8,7 @@ func init() {
 -- Name: miner_sector_events_event_idx
 -- Model: miner.MinerSectorEvent
 -- ----------------------------------------------------------------
-CREATE INDEX miner_sector_events_event_idx ON {{ .SchemaName | default "public"}}.miner_sector_events USING btree(event) INCLUDE(height, miner_id);
+CREATE INDEX CONCURRENTLY miner_sector_events_event_idx ON {{ .SchemaName | default "public"}}.miner_sector_events USING btree(event) INCLUDE(height, miner_id);
 `,
 	)
 }
