@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -14,9 +15,19 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/ipfs/go-cid"
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/urfave/cli/v2"
 
+	"github.com/filecoin-project/lily/chain/actors"
+	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
+	"github.com/filecoin-project/lily/chain/actors/builtin/market"
+	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
+	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
+	"github.com/filecoin-project/lily/chain/actors/builtin/power"
+	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
+	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/lens/lily"
+	"github.com/filecoin-project/lily/lens/util"
 )
 
 var ChainCmd = &cli.Command{
@@ -30,7 +41,57 @@ var ChainCmd = &cli.Command{
 		ChainGetMsgCmd,
 		ChainListCmd,
 		ChainSetHeadCmd,
+		ChainActorCodesCmd,
 	},
+}
+
+var ChainActorCodesCmd = &cli.Command{
+	Name:  "actor-codes",
+	Usage: "Print actor codes and names",
+	Action: func(cctx *cli.Context) error {
+		if err := printSortedActorVersions(init_.VersionCodes()); err != nil {
+			return err
+		}
+		if err := printSortedActorVersions(power.VersionCodes()); err != nil {
+			return err
+		}
+		if err := printSortedActorVersions(miner.VersionCodes()); err != nil {
+			return err
+		}
+		if err := printSortedActorVersions(market.VersionCodes()); err != nil {
+			return err
+		}
+		if err := printSortedActorVersions(verifreg.VersionCodes()); err != nil {
+			return err
+		}
+		if err := printSortedActorVersions(multisig.VersionCodes()); err != nil {
+			return err
+		}
+		if err := printSortedActorVersions(reward.VersionCodes()); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
+func printSortedActorVersions(av map[actors.Version]cid.Cid) error {
+	t := table.NewWriter()
+	t.AppendHeader(table.Row{"Version", "Name", "Family", "Code"})
+	var versions []int
+	for v := range av {
+		versions = append(versions, int(v))
+	}
+	sort.Ints(versions)
+	for _, v := range versions {
+		name, family, err := util.ActorNameAndFamilyFromCode(av[actors.Version(v)])
+		if err != nil {
+			return err
+		}
+		t.AppendRow(table.Row{v, name, family, av[actors.Version(v)]})
+		t.AppendSeparator()
+	}
+	fmt.Println(t.Render())
+	return nil
 }
 
 var ChainHeadCmd = &cli.Command{
