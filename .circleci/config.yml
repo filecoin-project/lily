@@ -193,6 +193,7 @@ jobs:
       - image: timescale/timescaledb:2.5.0-pg13
         environment:
           POSTGRES_PASSWORD: password
+          TS_TUNE_NUM_CPUS: 0
     steps:
       - checkout
       - prepare
@@ -228,6 +229,7 @@ jobs:
       - image: timescale/timescaledb:2.5.0-pg13
         environment:
           POSTGRES_PASSWORD: password
+          TS_TUNE_NUM_CPUS: 0
     steps:
       - checkout
       - prepare
