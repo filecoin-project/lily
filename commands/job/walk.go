@@ -17,7 +17,7 @@ var WalkCmd = &cli.Command{
 	Usage: "walk and index a range of the filecoin blockchain.",
 	Description: `
 The walk command will index state based on the list of tasks (--tasks) provided over the specified range (--from --to).
-Each epoch will be indexed serially starting from the heaviest tipset at the upper height (--to) to the lower height (--to).
+Each epoch will be indexed serially, starting from the heaviest tipset at the upper height (--to) to the lower height (--from).
 
 As and example, the below command:
   $ lily job run --tasks=block_header,messages walk --from=10 --to=20
