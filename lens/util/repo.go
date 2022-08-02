@@ -357,7 +357,7 @@ func MethodParamsReturnForMessage(m *MessageTrace, destCode cid.Cid) (*MessagePa
 		return nil, fmt.Errorf("missing actor code")
 	}
 
-	params, method, err := ParseParams(m.Message.Params, m.Message.Method, destCode)
+	params, _, err := ParseParams(m.Message.Params, m.Message.Method, destCode)
 	if err != nil {
 		log.Warnf("failed to parse parameters of message %s: %v", m.Message.Cid(), err)
 		return nil, fmt.Errorf("unknown method for actor type %s method %d: %w", destCode.String(), int64(m.Message.Method), err)

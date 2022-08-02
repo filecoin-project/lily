@@ -75,7 +75,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	}
 
 	var (
-		vmMessageResults = make(messagemodel.VmMessageList, 0, len(mex))
+		vmMessageResults = make(messagemodel.VMMessageList, 0, len(mex))
 		errorsDetected   = make([]*messages.MessageError, 0)
 	)
 	for _, parentMsg := range mex {
@@ -104,7 +104,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				})
 				continue
 			}
-			vmMessageResults = append(vmMessageResults, &messagemodel.VmMessage{
+			vmMessageResults = append(vmMessageResults, &messagemodel.VMMessage{
 				Height:    int64(parentMsg.Height),
 				StateRoot: parentMsg.StateRoot.String(),
 				Source:    parentMsg.Cid.String(),

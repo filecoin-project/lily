@@ -9,8 +9,8 @@ import (
 	"github.com/filecoin-project/lily/model"
 )
 
-type VmMessage struct {
-	tableName struct{} `pg:"vm_messages"`
+type VMMessage struct {
+	tableName struct{} `pg:"vm_messages"` // nolint: structcheck
 
 	// Height message was executed at.
 	Height int64 `pg:",pk,notnull,use_zero"`
@@ -41,7 +41,7 @@ type VmMessage struct {
 	Returns string `pg:",type:jsonb"`
 }
 
-func (v *VmMessage) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (v *VMMessage) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "vm_messages"))
 	stop := metrics.Timer(ctx, metrics.PersistDuration)
 	defer stop()
@@ -50,9 +50,9 @@ func (v *VmMessage) Persist(ctx context.Context, s model.StorageBatch, version m
 	return s.PersistModel(ctx, v)
 }
 
-type VmMessageList []*VmMessage
+type VMMessageList []*VMMessage
 
-func (vl VmMessageList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (vl VMMessageList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(vl) == 0 {
 		return nil
 	}

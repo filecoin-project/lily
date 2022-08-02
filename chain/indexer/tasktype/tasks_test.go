@@ -66,7 +66,7 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 		},
 		{
 			taskAlias: tasktype.ImplicitMessageTask,
-			tasks:     []string{tasktype.InternalMessage, tasktype.InternalParsedMessage},
+			tasks:     []string{tasktype.InternalMessage, tasktype.InternalParsedMessage, tasktype.VmMessage},
 		},
 		{
 			taskAlias: tasktype.ChainConsensusTask,
@@ -99,9 +99,8 @@ func TestMakeAllTaskAliasNames(t *testing.T) {
 	require.Len(t, actual, len(storage.Models))
 }
 
-const TotalTableTasks = 35
-
 func TestMakeAllTaskNames(t *testing.T) {
+	const TotalTableTasks = 36
 	actual, err := tasktype.MakeTaskNames(tasktype.AllTableTasks)
 	require.NoError(t, err)
 	// if this test fails it means a new task name was added, update the above test
