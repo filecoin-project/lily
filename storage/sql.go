@@ -60,6 +60,7 @@ var Models = []interface{}{
 	(*messages.ParsedMessage)(nil),
 	(*messages.InternalMessage)(nil),
 	(*messages.InternalParsedMessage)(nil),
+	(*messages.VmMessage)(nil),
 
 	(*multisig.MultisigTransaction)(nil),
 

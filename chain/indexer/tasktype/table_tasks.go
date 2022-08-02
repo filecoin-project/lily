@@ -24,6 +24,7 @@ const (
 	ParsedMessage                  = "parsed_message"
 	InternalMessage                = "internal_messages"
 	InternalParsedMessage          = "internal_parsed_messages"
+	VmMessage                      = "vm_messages"
 	MultisigTransaction            = "multisig_transaction"
 	ChainPower                     = "chain_power"
 	PowerActorClaim                = "power_actor_claim"
@@ -62,6 +63,7 @@ var AllTableTasks = []string{
 	ParsedMessage,
 	InternalMessage,
 	InternalParsedMessage,
+	VmMessage,
 	MultisigTransaction,
 	ChainPower,
 	PowerActorClaim,
@@ -100,6 +102,7 @@ var TableLookup = map[string]struct{}{
 	ParsedMessage:                  {},
 	InternalMessage:                {},
 	InternalParsedMessage:          {},
+	VmMessage:                      {},
 	MultisigTransaction:            {},
 	ChainPower:                     {},
 	PowerActorClaim:                {},
@@ -138,6 +141,7 @@ var TableComment = map[string]string{
 	ParsedMessage:                  ``,
 	InternalMessage:                ``,
 	InternalParsedMessage:          ``,
+	VmMessage:                      ``,
 	MultisigTransaction:            ``,
 	ChainPower:                     ``,
 	PowerActorClaim:                ``,
@@ -178,8 +182,9 @@ var TableFieldComments = map[string]map[string]string{
 		"DealID":               "Identifier for the deal.",
 		"EndEpoch":             "The epoch at which this deal with end.",
 		"Height":               "Epoch at which this deal proposal was added or changed.",
+		"IsString":             "Related to FIP: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0027.md",
 		"IsVerified":           "Deal is with a verified provider.",
-		"Label":                "An arbitrary client chosen label to apply to the deal.",
+		"Label":                "An arbitrary client chosen label to apply to the deal. The value is base64 encoded before persisting.",
 		"PaddedPieceSize":      "The piece size in bytes with padding.",
 		"PieceCID":             "CID of a sector piece. A Piece is an object that represents a whole or part of a File.",
 		"ProviderCollateral":   "The amount of FIL (in attoFIL) the provider has pledged as collateral. The Provider deal collateral is only slashed when a sector is terminated before the deal expires.",
@@ -197,6 +202,21 @@ var TableFieldComments = map[string]map[string]string{
 	ParsedMessage:         {},
 	InternalMessage:       {},
 	InternalParsedMessage: {},
+	VmMessage: {
+		"ActorCode": "ActorCode of To (receiver)",
+		"Cid":       "Cid of the message.",
+		"ExitCode":  "ExitCode of message execution.",
+		"From":      "From sender of message.",
+		"GasUsed":   "GasUsed by message.",
+		"Height":    "Height message was executed at.",
+		"Method":    "Method called on To (receiver)",
+		"Params":    "Params contained in message.",
+		"Returns":   "Return value of message.",
+		"Source":    "On-chain message triggering the message.",
+		"StateRoot": "StateRoot message was applied to.",
+		"To":        "To receiver of message.",
+		"Value":     "Value attoFIL contained in message.",
+	},
 	MultisigTransaction: {
 		"To": "Transaction State",
 	},

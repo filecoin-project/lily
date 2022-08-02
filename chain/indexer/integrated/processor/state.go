@@ -22,6 +22,7 @@ import (
 	poweractors "github.com/filecoin-project/lily/chain/actors/builtin/power"
 	rewardactors "github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	verifregactors "github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
+	"github.com/filecoin-project/lily/tasks/messageexecutions/vm"
 
 	"github.com/filecoin-project/lily/tasks"
 	// actor tasks
@@ -557,6 +558,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			out.TipsetsProcessors[t] = gasecontask.NewTask(api)
 		case tasktype.MultisigApproval:
 			out.TipsetsProcessors[t] = msapprovaltask.NewTask(api)
+		case tasktype.VmMessage:
+			out.TipsetsProcessors[t] = vm.NewTask(api)
 
 			//
 			// Blocks
