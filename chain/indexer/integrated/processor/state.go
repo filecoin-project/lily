@@ -3,6 +3,7 @@ package processor
 import (
 	"context"
 	"fmt"
+	"plugin"
 	"sync"
 	"time"
 
@@ -37,7 +38,6 @@ import (
 
 	// chain state tasks
 	drandtask "github.com/filecoin-project/lily/tasks/blocks/drand"
-	headerstask "github.com/filecoin-project/lily/tasks/blocks/headers"
 	parentstask "github.com/filecoin-project/lily/tasks/blocks/parents"
 	chainecontask "github.com/filecoin-project/lily/tasks/chaineconomics"
 	consensustask "github.com/filecoin-project/lily/tasks/consensus"
@@ -562,7 +562,20 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			// Blocks
 			//
 		case tasktype.BlockHeader:
-			out.TipsetProcessors[t] = headerstask.NewTask()
+			plug, err := plugin.Open("./plugins/blocks/block.so")
+			if err != nil {
+				return nil, err
+			}
+			symBlocks, err := plug.Lookup("BlockPlugin")
+			if err != nil {
+				return nil, fmt.Errorf("failed to lookup plugin %w", err)
+			}
+			btp, ok := symBlocks.(TipSetProcessor)
+			if !ok {
+				panic("not ok")
+			}
+			out.TipsetProcessors[t] = btp
+			//out.TipsetProcessors[t] = headerstask.NewTask()
 		case tasktype.BlockParent:
 			out.TipsetProcessors[t] = parentstask.NewTask()
 		case tasktype.DrandBlockEntrie:
