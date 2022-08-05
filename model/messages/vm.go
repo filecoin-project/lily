@@ -28,13 +28,13 @@ type VMMessage struct {
 	// Value attoFIL contained in message.
 	Value string `pg:"type:numeric,notnull"`
 	// Method called on To (receiver).
-	Method uint64 `pg:",use_zero"`
+	Method uint64 `pg:",notnull,use_zero"`
 	// ActorCode of To (receiver).
 	ActorCode string `pg:",notnull"`
 	// ExitCode of message execution.
-	ExitCode int64 `pg:",use_zero"`
+	ExitCode int64 `pg:",notnull,use_zero"`
 	// GasUsed by message.
-	GasUsed int64 `pg:",use_zero"`
+	GasUsed int64 `pg:",notnull,use_zero"`
 	// Params contained in message.
 	Params string `pg:",type:jsonb"`
 	// Return value of message.
