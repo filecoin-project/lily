@@ -27,9 +27,9 @@ type VMMessage struct {
 	To string `pg:",notnull"`
 	// Value attoFIL contained in message.
 	Value string `pg:"type:numeric,notnull"`
-	// Method called on To (receiver)
+	// Method called on To (receiver).
 	Method uint64 `pg:",use_zero"`
-	// ActorCode of To (receiver)
+	// ActorCode of To (receiver).
 	ActorCode string `pg:",notnull"`
 	// ExitCode of message execution.
 	ExitCode int64 `pg:",use_zero"`
