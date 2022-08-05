@@ -182,7 +182,7 @@ var TableFieldComments = map[string]map[string]string{
 		"DealID":               "Identifier for the deal.",
 		"EndEpoch":             "The epoch at which this deal with end.",
 		"Height":               "Epoch at which this deal proposal was added or changed.",
-		"IsString":             "Related to FIP: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0027.md",
+		"IsString":             "When true Label contains a valid UTF-8 string encoded in base64. When false Label contains raw bytes encoded in base64. Related to FIP: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0027.md",
 		"IsVerified":           "Deal is with a verified provider.",
 		"Label":                "An arbitrary client chosen label to apply to the deal. The value is base64 encoded before persisting.",
 		"PaddedPieceSize":      "The piece size in bytes with padding.",
