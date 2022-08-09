@@ -33,7 +33,7 @@ require (
 	github.com/ipfs/go-ipld-cbor v0.0.6
 	github.com/ipfs/go-log/v2 v2.5.1
 	github.com/ipfs/go-metrics-prometheus v0.0.2
-	github.com/ipld/go-car v0.3.3
+	github.com/ipld/go-car v2.3.0
 	github.com/lib/pq v1.9.0
 	github.com/libp2p/go-libp2p-core v0.15.1
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
