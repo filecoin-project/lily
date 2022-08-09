@@ -21,8 +21,6 @@ func init() {
 );
 ALTER TABLE ONLY {{ .SchemaName | default "public"}}.vm_messages ADD CONSTRAINT vm_messages_pkey PRIMARY KEY (height, state_root, cid, source);
 CREATE INDEX vm_messages_height_idx ON {{ .SchemaName | default "public"}}.vm_messages USING BTREE (height);
-CREATE INDEX vm_messages_cid_idx ON {{ .SchemaName | default "public"}}.vm_messages USING HASH (cid);
-CREATE INDEX vm_messages_source_idx ON {{ .SchemaName | default "public"}}.vm_messages USING HASH (source);
 CREATE INDEX vm_messages_from_idx ON {{ .SchemaName | default "public"}}.vm_messages USING HASH ("from");
 CREATE INDEX vm_messages_to_idx ON {{ .SchemaName | default "public"}}.vm_messages USING HASH ("to");
 CREATE INDEX vm_messages_actor_code_method_idx ON {{ .SchemaName | default "public"}}.vm_messages USING BTREE (actor_code, method);
