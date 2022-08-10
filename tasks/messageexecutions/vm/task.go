@@ -36,7 +36,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			attribute.Int64("current_height", int64(current.Height())),
 			attribute.String("executed", executed.String()),
 			attribute.Int64("executed_height", int64(executed.Height())),
-			attribute.String("processor", "internal_parsed_message"),
+			attribute.String("processor", "vm_messages"),
 		)
 	}
 	defer span.End()
