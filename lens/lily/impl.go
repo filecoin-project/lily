@@ -25,6 +25,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/distributed"
 	"github.com/filecoin-project/lily/chain/indexer/distributed/queue"
+	"github.com/filecoin-project/lily/chain/indexer/distributed/queue/tasks"
 	"github.com/filecoin-project/lily/chain/indexer/integrated"
 	"github.com/filecoin-project/lily/chain/indexer/integrated/tipset"
 	"github.com/filecoin-project/lily/chain/walk"
@@ -102,6 +103,49 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 		return nil, err
 	}
 
+	res := m.Scheduler.Submit(&schedule.JobConfig{
+		Name: cfg.JobConfig.Name,
+		Type: "tipset-worker",
+		Params: map[string]string{
+			"queue":   cfg.Queue,
+			"storage": cfg.JobConfig.Storage,
+		},
+		Job:                 queue.NewAsynqWorker(cfg.JobConfig.Name, worker, tasks.NewIndexTipSetProcessor(im)),
+		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
+		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
+		RestartDelay:        cfg.JobConfig.RestartDelay,
+	})
+	return res, nil
+}
+
+func (m *LilyNodeAPI) StartGapFillWorker(_ context.Context, cfg *LilyGapFillWorkerConfig) (*schedule.JobSubmitResult, error) {
+	ctx := context.Background()
+	log.Infow("starting TipSetWorker", "name", cfg.JobConfig.Name)
+	md := storage.Metadata{
+		JobName: cfg.JobConfig.Name,
+	}
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
+	if err != nil {
+		return nil, err
+	}
+
+	worker, err := m.QueueCatalog.Worker(cfg.Queue)
+	if err != nil {
+		return nil, err
+	}
+
+	taskAPI, err := datasource.NewDataSource(m)
+	if err != nil {
+		return nil, err
+	}
+
+	im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name))
+	if err != nil {
+		return nil, err
+	}
+
 	db, err := m.StorageCatalog.ConnectAsDatabase(ctx, cfg.JobConfig.Storage, md)
 	if err != nil {
 		return nil, err
@@ -114,12 +158,13 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 			"queue":   cfg.Queue,
 			"storage": cfg.JobConfig.Storage,
 		},
-		Job:                 queue.NewAsynqWorker(cfg.JobConfig.Name, im, db, worker),
+		Job:                 queue.NewAsynqWorker(cfg.JobConfig.Name, worker, tasks.NewGapFillTipSetProcessor(im, db)),
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,
 	})
 	return res, nil
+
 }
 
 func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interface{}, error) {

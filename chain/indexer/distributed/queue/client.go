@@ -30,12 +30,12 @@ func (r *AsynQ) EnqueueTipSet(ctx context.Context, ts *types.TipSet, indexType i
 	var task *asynq.Task
 	var err error
 	if indexType == indexer.Fill {
-		task, err = tasks.NewGapFillTipSetTask(ctx, ts, taskNames)
+		task, err = tasks.NewGapFillTask(ctx, ts, taskNames)
 		if err != nil {
 			return err
 		}
 	} else {
-		task, err = tasks.NewIndexTipSetTask(ctx, ts, taskNames)
+		task, err = tasks.NewIndexTask(ctx, ts, taskNames)
 		if err != nil {
 			return err
 		}

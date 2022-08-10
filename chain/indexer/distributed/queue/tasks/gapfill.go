@@ -21,14 +21,14 @@ const (
 	TypeGapFillTipSet = "tipset:gapfill"
 )
 
-type GapFillTipSetPayload struct {
+type GapFillPayload struct {
 	TipSet       *types.TipSet
 	Tasks        []string
 	TraceCarrier *tracing.TraceCarrier `json:",omitempty"`
 }
 
 // Attributes returns a slice of attributes for populating tracing span attributes.
-func (g GapFillTipSetPayload) Attributes() []attribute.KeyValue {
+func (g GapFillPayload) Attributes() []attribute.KeyValue {
 	return []attribute.KeyValue{
 		attribute.Int64("height", int64(g.TipSet.Height())),
 		attribute.String("tipset", g.TipSet.Key().String()),
@@ -39,7 +39,7 @@ func (g GapFillTipSetPayload) Attributes() []attribute.KeyValue {
 // MarshalLogObject implement ObjectMarshaler and allows user-defined types to efficiently add themselves to the
 // logging context, and to selectively omit information which shouldn't be
 // included in logs (e.g., passwords).
-func (g GapFillTipSetPayload) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+func (g GapFillPayload) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("tipset", g.TipSet.Key().String())
 	enc.AddInt64("height", int64(g.TipSet.Height()))
 	enc.AddString("tasks", fmt.Sprint(g.Tasks))
@@ -47,29 +47,50 @@ func (g GapFillTipSetPayload) MarshalLogObject(enc zapcore.ObjectEncoder) error 
 }
 
 // HasTraceCarrier returns true iff payload contains a trace.
-func (g GapFillTipSetPayload) HasTraceCarrier() bool {
+func (g GapFillPayload) HasTraceCarrier() bool {
 	return !(g.TraceCarrier == nil)
 }
 
-func NewGapFillTipSetTask(ctx context.Context, ts *types.TipSet, tasks []string) (*asynq.Task, error) {
-	payload, err := json.Marshal(GapFillTipSetPayload{TipSet: ts, Tasks: tasks, TraceCarrier: tracing.NewTraceCarrier(trace.SpanFromContext(ctx).SpanContext())})
+func NewGapFillTask(ctx context.Context, ts *types.TipSet, tasks []string) (*asynq.Task, error) {
+	payload, err := json.Marshal(GapFillPayload{TipSet: ts, Tasks: tasks, TraceCarrier: tracing.NewTraceCarrier(trace.SpanFromContext(ctx).SpanContext())})
 	if err != nil {
 		return nil, err
 	}
 	return asynq.NewTask(TypeGapFillTipSet, payload), nil
 }
 
-type AsynqGapFillTipSetTaskHandler struct {
+func NewGapFillTipSetProcessor(indexer indexer.Indexer, db *storage.Database) *GapFillTipSetProcessor {
+	return &GapFillTipSetProcessor{indexer: indexer, db: db}
+}
+
+type GapFillTipSetProcessor struct {
 	indexer indexer.Indexer
 	db      *storage.Database
 }
 
-func NewGapFillHandler(indexer indexer.Indexer, db *storage.Database) *AsynqGapFillTipSetTaskHandler {
-	return &AsynqGapFillTipSetTaskHandler{indexer: indexer, db: db}
+func (gh *GapFillTipSetProcessor) Type() string {
+	return TypeGapFillTipSet
 }
 
-func (gh *AsynqGapFillTipSetTaskHandler) HandleGapFillTipSetTask(ctx context.Context, t *asynq.Task) error {
-	var p GapFillTipSetPayload
+func (gh *GapFillTipSetProcessor) TaskHandler() asynq.HandlerFunc {
+	th := &gapFillTipSetTaskHandler{
+		idx: gh.indexer,
+		db:  gh.db,
+	}
+	return th.HandleGapFillTipSetTask
+}
+
+func (gh *GapFillTipSetProcessor) ErrorHandler() asynq.ErrorHandler {
+	return &gapFillTipSetTaskErrorHandler{}
+}
+
+type gapFillTipSetTaskHandler struct {
+	idx indexer.Indexer
+	db  *storage.Database
+}
+
+func (gh *gapFillTipSetTaskHandler) HandleGapFillTipSetTask(ctx context.Context, t *asynq.Task) error {
+	var p GapFillPayload
 	if err := json.Unmarshal(t.Payload(), &p); err != nil {
 		return err
 	}
@@ -88,7 +109,7 @@ func (gh *AsynqGapFillTipSetTaskHandler) HandleGapFillTipSetTask(ctx context.Con
 		}
 	}
 
-	success, err := gh.indexer.TipSet(ctx, p.TipSet, indexer.WithTasks(p.Tasks))
+	success, err := gh.idx.TipSet(ctx, p.TipSet, indexer.WithTasks(p.Tasks))
 	if err != nil {
 		log.Errorw("failed to index tipset for gap fill", "taskID", taskID, zap.Inline(p), "error", err)
 		return err
@@ -104,4 +125,21 @@ func (gh *AsynqGapFillTipSetTaskHandler) HandleGapFillTipSetTask(ctx context.Con
 	}
 	log.Infow("gap fill tipset success", "taskID", taskID, zap.Inline(p))
 	return nil
+}
+
+type gapFillTipSetTaskErrorHandler struct{}
+
+func (eh *gapFillTipSetTaskErrorHandler) HandleError(ctx context.Context, task *asynq.Task, err error) {
+	var p GapFillPayload
+	if err := json.Unmarshal(task.Payload(), &p); err != nil {
+		log.Errorw("failed to decode task type (developer error?)", "error", err)
+		return
+	}
+	if p.HasTraceCarrier() {
+		if sc := p.TraceCarrier.AsSpanContext(); sc.IsValid() {
+			ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
+			trace.SpanFromContext(ctx).RecordError(err)
+		}
+	}
+	log.Errorw("task failed", zap.Inline(p), "type", task.Type(), "error", err)
 }

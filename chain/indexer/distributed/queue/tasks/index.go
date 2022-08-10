@@ -23,14 +23,22 @@ const (
 	TypeIndexTipSet = "tipset:index"
 )
 
-type IndexTipSetPayload struct {
+func NewIndexTask(ctx context.Context, ts *types.TipSet, tasks []string) (*asynq.Task, error) {
+	payload, err := json.Marshal(IndexTaskPayload{TipSet: ts, Tasks: tasks, TraceCarrier: tracing.NewTraceCarrier(trace.SpanFromContext(ctx).SpanContext())})
+	if err != nil {
+		return nil, err
+	}
+	return asynq.NewTask(TypeIndexTipSet, payload), nil
+}
+
+type IndexTaskPayload struct {
 	TipSet       *types.TipSet
 	Tasks        []string
 	TraceCarrier *tracing.TraceCarrier `json:",omitempty"`
 }
 
 // Attributes returns a slice of attributes for populating tracing span attributes.
-func (i IndexTipSetPayload) Attributes() []attribute.KeyValue {
+func (i IndexTaskPayload) Attributes() []attribute.KeyValue {
 	return []attribute.KeyValue{
 		attribute.Int64("height", int64(i.TipSet.Height())),
 		attribute.String("tipset", i.TipSet.Key().String()),
@@ -41,7 +49,7 @@ func (i IndexTipSetPayload) Attributes() []attribute.KeyValue {
 // MarshalLogObject implement ObjectMarshaler and allows user-defined types to efficiently add themselves to the
 // logging context, and to selectively omit information which shouldn't be
 // included in logs (e.g., passwords).
-func (i IndexTipSetPayload) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+func (i IndexTaskPayload) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("tipset", i.TipSet.Key().String())
 	enc.AddInt64("height", int64(i.TipSet.Height()))
 	enc.AddString("tasks", fmt.Sprint(i.Tasks))
@@ -49,28 +57,37 @@ func (i IndexTipSetPayload) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 }
 
 // HasTraceCarrier returns true iff payload contains a trace.
-func (i IndexTipSetPayload) HasTraceCarrier() bool {
+func (i IndexTaskPayload) HasTraceCarrier() bool {
 	return !(i.TraceCarrier == nil)
 }
 
-func NewIndexTipSetTask(ctx context.Context, ts *types.TipSet, tasks []string) (*asynq.Task, error) {
-	payload, err := json.Marshal(IndexTipSetPayload{TipSet: ts, Tasks: tasks, TraceCarrier: tracing.NewTraceCarrier(trace.SpanFromContext(ctx).SpanContext())})
-	if err != nil {
-		return nil, err
-	}
-	return asynq.NewTask(TypeIndexTipSet, payload), nil
+func NewIndexTipSetProcessor(i indexer.Indexer) *IndexTipSetProcessor {
+	return &IndexTipSetProcessor{indexer: i}
 }
 
-type AsynqTipSetTaskHandler struct {
+type IndexTipSetProcessor struct {
 	indexer indexer.Indexer
 }
 
-func NewIndexHandler(i indexer.Indexer) *AsynqTipSetTaskHandler {
-	return &AsynqTipSetTaskHandler{indexer: i}
+func (ih *IndexTipSetProcessor) Type() string {
+	return TypeIndexTipSet
 }
 
-func (ih *AsynqTipSetTaskHandler) HandleIndexTipSetTask(ctx context.Context, t *asynq.Task) error {
-	var p IndexTipSetPayload
+func (ih *IndexTipSetProcessor) TaskHandler() asynq.HandlerFunc {
+	th := &indexTipSetTaskHandler{idx: ih.indexer}
+	return th.HandleIndexTipSetTask
+}
+
+func (ih *IndexTipSetProcessor) ErrorHandler() asynq.ErrorHandler {
+	return &indexTipSetTaskErrorHandler{}
+}
+
+type indexTipSetTaskHandler struct {
+	idx indexer.Indexer
+}
+
+func (th *indexTipSetTaskHandler) HandleIndexTipSetTask(ctx context.Context, t *asynq.Task) error {
+	var p IndexTaskPayload
 	if err := json.Unmarshal(t.Payload(), &p); err != nil {
 		return err
 	}
@@ -89,7 +106,7 @@ func (ih *AsynqTipSetTaskHandler) HandleIndexTipSetTask(ctx context.Context, t *
 		}
 	}
 
-	success, err := ih.indexer.TipSet(ctx, p.TipSet, indexer.WithTasks(p.Tasks))
+	success, err := th.idx.TipSet(ctx, p.TipSet, indexer.WithTasks(p.Tasks))
 	if err != nil {
 		log.Errorw("failed to index tipset", "taskID", taskID, zap.Inline(p), "error", err)
 		return err
@@ -100,4 +117,21 @@ func (ih *AsynqTipSetTaskHandler) HandleIndexTipSetTask(ctx context.Context, t *
 	}
 	log.Infow("index tipset success", "taskID", taskID, zap.Inline(p))
 	return nil
+}
+
+type indexTipSetTaskErrorHandler struct{}
+
+func (eh *indexTipSetTaskErrorHandler) HandleError(ctx context.Context, task *asynq.Task, err error) {
+	var p IndexTaskPayload
+	if err := json.Unmarshal(task.Payload(), &p); err != nil {
+		log.Errorw("failed to decode task type (developer error?)", "error", err)
+		return
+	}
+	if p.HasTraceCarrier() {
+		if sc := p.TraceCarrier.AsSpanContext(); sc.IsValid() {
+			ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
+			trace.SpanFromContext(ctx).RecordError(err)
+		}
+	}
+	log.Errorw("task failed", zap.Inline(p), "type", task.Type(), "error", err)
 }

@@ -2,20 +2,14 @@ package queue
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/hibiken/asynq"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 
-	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/distributed"
-	"github.com/filecoin-project/lily/chain/indexer/distributed/queue/tasks"
 	"github.com/filecoin-project/lily/metrics"
-	"github.com/filecoin-project/lily/storage"
 )
 
 var log = logging.Logger("lily/distributed/worker")
@@ -23,18 +17,22 @@ var log = logging.Logger("lily/distributed/worker")
 type AsynqWorker struct {
 	done chan struct{}
 
-	name   string
-	server *distributed.TipSetWorker
-	index  indexer.Indexer
-	db     *storage.Database
+	name    string
+	server  *distributed.TipSetWorker
+	handler TaskProcessor
 }
 
-func NewAsynqWorker(name string, i indexer.Indexer, db *storage.Database, server *distributed.TipSetWorker) *AsynqWorker {
+type TaskProcessor interface {
+	Type() string
+	TaskHandler() asynq.HandlerFunc
+	ErrorHandler() asynq.ErrorHandler
+}
+
+func NewAsynqWorker(name string, server *distributed.TipSetWorker, handler TaskProcessor) *AsynqWorker {
 	return &AsynqWorker{
-		name:   name,
-		server: server,
-		index:  i,
-		db:     db,
+		name:    name,
+		server:  server,
+		handler: handler,
 	}
 }
 
@@ -43,11 +41,9 @@ func (t *AsynqWorker) Run(ctx context.Context) error {
 	defer close(t.done)
 
 	mux := asynq.NewServeMux()
-	mux.HandleFunc(tasks.TypeIndexTipSet, tasks.NewIndexHandler(t.index).HandleIndexTipSetTask)
-	mux.HandleFunc(tasks.TypeGapFillTipSet, tasks.NewGapFillHandler(t.index, t.db).HandleGapFillTipSetTask)
-
+	mux.HandleFunc(t.handler.Type(), t.handler.TaskHandler())
+	t.server.ServerConfig.ErrorHandler = t.handler.ErrorHandler()
 	t.server.ServerConfig.Logger = log.With("name", t.name)
-	t.server.ServerConfig.ErrorHandler = &WorkerErrorHandler{}
 
 	stats.Record(ctx, metrics.TipSetWorkerConcurrency.M(int64(t.server.ServerConfig.Concurrency)))
 	for queueName, priority := range t.server.ServerConfig.Queues {
@@ -69,37 +65,4 @@ func (t *AsynqWorker) Run(ctx context.Context) error {
 
 func (t *AsynqWorker) Done() <-chan struct{} {
 	return t.done
-}
-
-type WorkerErrorHandler struct{}
-
-func (w *WorkerErrorHandler) HandleError(ctx context.Context, task *asynq.Task, err error) {
-	switch task.Type() {
-	case tasks.TypeIndexTipSet:
-		var p tasks.IndexTipSetPayload
-		if err := json.Unmarshal(task.Payload(), &p); err != nil {
-			log.Errorw("failed to decode task type (developer error?)", "error", err)
-			return
-		}
-		if p.HasTraceCarrier() {
-			if sc := p.TraceCarrier.AsSpanContext(); sc.IsValid() {
-				ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
-				trace.SpanFromContext(ctx).RecordError(err)
-			}
-		}
-		log.Errorw("task failed", zap.Inline(p), "type", task.Type(), "error", err)
-	case tasks.TypeGapFillTipSet:
-		var p tasks.GapFillTipSetPayload
-		if err := json.Unmarshal(task.Payload(), &p); err != nil {
-			log.Errorw("failed to decode task type (developer error?)", "error", err)
-			return
-		}
-		if p.HasTraceCarrier() {
-			if sc := p.TraceCarrier.AsSpanContext(); sc.IsValid() {
-				ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
-				trace.SpanFromContext(ctx).RecordError(err)
-			}
-		}
-		log.Errorw("task failed", zap.Inline(p), "type", task.Type(), "error", err)
-	}
 }

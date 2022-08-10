@@ -76,7 +76,8 @@ type LilyAPIStruct struct {
 		NetAgentVersion  func(ctx context.Context, p peer.ID) (string, error)          `perm:"read"`
 		NetPeerInfo      func(context.Context, peer.ID) (*api.ExtendedPeerInfo, error) `perm:"read"`
 
-		StartTipSetWorker func(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
+		StartTipSetWorker  func(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error)  `perm:"read"`
+		StartGapFillWorker func(ctx context.Context, cfg *LilyGapFillWorkerConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
 	}
 }
 
@@ -226,6 +227,10 @@ func (s *LilyAPIStruct) NetPeerInfo(ctx context.Context, p peer.ID) (*api.Extend
 
 func (s *LilyAPIStruct) StartTipSetWorker(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error) {
 	return s.Internal.StartTipSetWorker(ctx, cfg)
+}
+
+func (s *LilyAPIStruct) StartGapFillWorker(ctx context.Context, cfg *LilyGapFillWorkerConfig) (*schedule.JobSubmitResult, error) {
+	return s.Internal.StartGapFillWorker(ctx, cfg)
 }
 
 func (s *LilyAPIStruct) LilyIndexNotify(ctx context.Context, cfg *LilyIndexNotifyConfig) (interface{}, error) {
