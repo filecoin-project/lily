@@ -347,6 +347,6 @@ func TestMakeProcessorsAllTasks(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, proc.ActorProcessors, 21)
 	require.Len(t, proc.TipsetProcessors, 5)
-	require.Len(t, proc.TipsetsProcessors, 9)
+	require.Len(t, proc.TipsetsProcessors, 10)
 	require.Len(t, proc.ReportProcessors, 1)
 }
