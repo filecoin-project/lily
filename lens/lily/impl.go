@@ -153,7 +153,7 @@ func (m *LilyNodeAPI) StartGapFillWorker(_ context.Context, cfg *LilyGapFillWork
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
 		Name: cfg.JobConfig.Name,
-		Type: "tipset-worker",
+		Type: "gapfill-worker",
 		Params: map[string]string{
 			"queue":   cfg.Queue,
 			"storage": cfg.JobConfig.Storage,
