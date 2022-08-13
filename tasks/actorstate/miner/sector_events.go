@@ -96,6 +96,7 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		}
 	}
 
+	// transform the sector events to a model.
 	sectorEventModel, err := ExtractSectorEvents(ctx, extState, sectorChanges, preCommitChanges, sectorStateChanges)
 	if err != nil {
 		return nil, err
@@ -104,6 +105,7 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 	return sectorEventModel, nil
 }
 
+// ExtractSectorEvents transforms sectorChanges, preCommitChanges, and sectorStateChanges to a MinerSectorEventList.
 func ExtractSectorEvents(ctx context.Context, extState extraction.State, sectorChanges *miner.SectorChanges, preCommitChanges *miner.PreCommitChanges, sectorStateChanges *SectorStateEvents) (minermodel.MinerSectorEventList, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ExtractSectorEvents")
 	defer span.End()
@@ -125,6 +127,8 @@ func ExtractSectorEvents(ctx context.Context, extState extraction.State, sectorC
 	return out, nil
 }
 
+// ExtractMinerSectorStateEvents transforms the removed, recovering, faulted, and recovered sectors from `events` to a
+// MinerSectorEventList.
 func ExtractMinerSectorStateEvents(extState extraction.State, events *SectorStateEvents) (minermodel.MinerSectorEventList, error) {
 	out := minermodel.MinerSectorEventList{}
 
@@ -184,6 +188,7 @@ func ExtractMinerSectorStateEvents(extState extraction.State, events *SectorStat
 	return out, nil
 }
 
+// ExtractMinerSectorEvents transforms the added, extended and snapped sectors from `sectors` to a MinerSectorEventList.
 func ExtractMinerSectorEvents(extState extraction.State, sectors *miner.SectorChanges) minermodel.MinerSectorEventList {
 	out := make(minermodel.MinerSectorEventList, 0, len(sectors.Added)+len(sectors.Extended)+len(sectors.Snapped))
 
@@ -227,6 +232,7 @@ func ExtractMinerSectorEvents(extState extraction.State, sectors *miner.SectorCh
 	return out
 }
 
+// ExtractMinerPreCommitEvents transforms the added PreCommits from `preCommits` to a MinerSectorEventList.
 func ExtractMinerPreCommitEvents(extState extraction.State, preCommits *miner.PreCommitChanges) minermodel.MinerSectorEventList {
 	out := make(minermodel.MinerSectorEventList, len(preCommits.Added))
 	// track precommit addition
@@ -243,6 +249,7 @@ func ExtractMinerPreCommitEvents(extState extraction.State, preCommits *miner.Pr
 	return out
 }
 
+// SectorStates contains a set of bitfields for active, live, fault, and recovering sectors.
 type SectorStates struct {
 	// Active sectors are those that are neither terminated nor faulty nor unproven, i.e. actively contributing power.
 	Active bitfield.BitField
@@ -254,6 +261,8 @@ type SectorStates struct {
 	Recovering bitfield.BitField
 }
 
+// LoadSectorState loads all sectors from a miners partitions and returns a SectorStates structure containing individual
+// bitfields for all active, live, faulty and recovering sector.
 func LoadSectorState(state miner.State) (*SectorStates, error) {
 	sectorStates := &SectorStates{}
 	// iterate the sector states
@@ -299,6 +308,7 @@ func LoadSectorState(state miner.State) (*SectorStates, error) {
 	return sectorStates, nil
 }
 
+// SectorStateEvents contains bitfields for sectors that were removed, recovered, faulted, and recovering.
 type SectorStateEvents struct {
 	// Removed sectors this epoch
 	Removed bitfield.BitField
@@ -310,6 +320,9 @@ type SectorStateEvents struct {
 	Recovered bitfield.BitField
 }
 
+// DiffMinerSectorStates loads the SectorStates for the current and parent miner states in parallel from `extState`.
+// Then compares current and parent SectorStates to produce a SectorStateEvents structure containing all sectors that are
+// removed, recovering, faulted, and recovered for the state transition from parent miner state to current miner state.
 func DiffMinerSectorStates(ctx context.Context, extState extraction.State) (*SectorStateEvents, error) {
 	var (
 		previous, current *SectorStates
