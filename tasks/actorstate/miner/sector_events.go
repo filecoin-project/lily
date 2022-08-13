@@ -97,7 +97,7 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 	}
 
 	// transform the sector events to a model.
-	sectorEventModel, err := ExtractSectorEvents(ctx, extState, sectorChanges, preCommitChanges, sectorStateChanges)
+	sectorEventModel, err := ExtractSectorEvents(extState, sectorChanges, preCommitChanges, sectorStateChanges)
 	if err != nil {
 		return nil, err
 	}
@@ -106,10 +106,7 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 }
 
 // ExtractSectorEvents transforms sectorChanges, preCommitChanges, and sectorStateChanges to a MinerSectorEventList.
-func ExtractSectorEvents(ctx context.Context, extState extraction.State, sectorChanges *miner.SectorChanges, preCommitChanges *miner.PreCommitChanges, sectorStateChanges *SectorStateEvents) (minermodel.MinerSectorEventList, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "ExtractSectorEvents")
-	defer span.End()
-
+func ExtractSectorEvents(extState extraction.State, sectorChanges *miner.SectorChanges, preCommitChanges *miner.PreCommitChanges, sectorStateChanges *SectorStateEvents) (minermodel.MinerSectorEventList, error) {
 	sectorStateEvents, err := ExtractMinerSectorStateEvents(extState, sectorStateChanges)
 	if err != nil {
 		return nil, err
@@ -330,7 +327,7 @@ func DiffMinerSectorStates(ctx context.Context, extState extraction.State) (*Sec
 	)
 
 	// load previous and current miner sector states in parallel
-	grp, ctx := errgroup.WithContext(ctx)
+	grp, _ := errgroup.WithContext(ctx)
 	grp.Go(func() error {
 		previous, err = LoadSectorState(extState.ParentState())
 		if err != nil {

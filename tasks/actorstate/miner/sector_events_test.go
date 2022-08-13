@@ -1,7 +1,6 @@
 package miner_test
 
 import (
-	"context"
 	"sort"
 	"testing"
 
@@ -218,7 +217,6 @@ func TestExtractMinerSectorEvents(t *testing.T) {
 }
 
 func TestExtractSectorEvents(t *testing.T) {
-	ctx := context.Background()
 	minerContext := new(mocks.MockMinerState)
 	parentMinerState := new(minerstatemocks.State)
 	currentMinerState := new(minerstatemocks.State)
@@ -276,7 +274,7 @@ func TestExtractSectorEvents(t *testing.T) {
 	fakeSectorStateChanges := generateFakeSectorStateChanges(numTerminated, numRecovered, numFaulted, numRecovering)
 	currentMinerState.On("LoadSectors", mock.Anything).Return([]*miner.SectorOnChainInfo{}, nil)
 
-	result, err := minerex.ExtractSectorEvents(ctx, minerContext, sectorChanges, fakePrecommitChanges, fakeSectorStateChanges)
+	result, err := minerex.ExtractSectorEvents(minerContext, sectorChanges, fakePrecommitChanges, fakeSectorStateChanges)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.Len(t, result, int(numPrecommitChanges+numSectorChanges+numTerminated+numRecovered+numFaulted+numRecovering))
