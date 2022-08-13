@@ -40,8 +40,7 @@ func TestExtractMinerPreCommitEvents(t *testing.T) {
 	}
 }
 
-func TestExtractMinerPartitionsDiff(t *testing.T) {
-	ctx := context.Background()
+func TestExtractMinerSectorStateEvents(t *testing.T) {
 	minerContext := new(mocks.MockMinerState)
 	parentMinerState := new(minerstatemocks.State)
 	currentMinerState := new(minerstatemocks.State)
@@ -55,10 +54,10 @@ func TestExtractMinerPartitionsDiff(t *testing.T) {
 	numRecovered := uint64(3)
 	numFaulted := uint64(4)
 	numRecovering := uint64(5)
-	// deadline 0 partition 1 has 2 removed sectors, 3 recovered, 4 faulted, and 5 recovering, total of 14 sector events
-	fakeDl := generateFakeDeadlinesDiff(0, 1, numTerminated, numRecovered, numFaulted, numRecovering)
+	// 2 removed sectors, 3 recovered, 4 faulted, and 5 recovering, total of 14 sector events
+	fakeSectorStateChanges := generateFakeSectorStateChanges(numTerminated, numRecovered, numFaulted, numRecovering)
 	currentMinerState.On("LoadSectors", mock.Anything).Return([]*miner.SectorOnChainInfo{}, nil)
-	result, err := minerex.ExtractMinerPartitionsDiff(ctx, minerContext, fakeDl)
+	result, err := minerex.ExtractMinerSectorStateEvents(minerContext, fakeSectorStateChanges)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.Len(t, result, int(numTerminated+numRecovered+numFaulted+numRecovering))
@@ -150,7 +149,7 @@ func TestExtractMinerSectorEvents(t *testing.T) {
 			},
 		},
 		// 6 sectors removed, this value is ignored as sectors can be removed for a variety of reasons.
-		// sector removal is tested in TestExtractMinerPartitionsDiff
+		// sector removal is tested in TestExtractMinerSectorStateEvents
 		Removed: generateFakeSectorOnChainInfos(map[uint64][]abi.DealID{
 			0: {},
 			1: {},
@@ -259,7 +258,7 @@ func TestExtractSectorEvents(t *testing.T) {
 			},
 		},
 		// 6 sectors removed, this value is ignored as sectors can be removed for a variety of reasons.
-		// sector removal is tested in TestExtractMinerPartitionsDiff
+		// sector removal is tested in TestExtractMinerSectorStateEvents
 		Removed: generateFakeSectorOnChainInfos(map[uint64][]abi.DealID{
 			0: {},
 			1: {},
@@ -273,11 +272,11 @@ func TestExtractSectorEvents(t *testing.T) {
 	numRecovered := uint64(3)
 	numFaulted := uint64(4)
 	numRecovering := uint64(5)
-	// deadline 0 partition 1 has 2 removed sectors, 3 recovered, 4 faulted, and 5 recovering, total of 15 sector events
-	fakeDl := generateFakeDeadlinesDiff(0, 1, numTerminated, numRecovered, numFaulted, numRecovering)
+	// 2 removed sectors, 3 recovered, 4 faulted, and 5 recovering, total of 15 sector events
+	fakeSectorStateChanges := generateFakeSectorStateChanges(numTerminated, numRecovered, numFaulted, numRecovering)
 	currentMinerState.On("LoadSectors", mock.Anything).Return([]*miner.SectorOnChainInfo{}, nil)
 
-	result, err := minerex.ExtractSectorEvents(ctx, minerContext, sectorChanges, fakePrecommitChanges, fakeDl)
+	result, err := minerex.ExtractSectorEvents(ctx, minerContext, sectorChanges, fakePrecommitChanges, fakeSectorStateChanges)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.Len(t, result, int(numPrecommitChanges+numSectorChanges+numTerminated+numRecovered+numFaulted+numRecovering))
@@ -463,7 +462,7 @@ func generateFakeSectorPreCommitChanges(add uint64, rm uint64) *miner.PreCommitC
 	}
 }
 
-func generateFakePartitionDiff(removed, recovered, faulted, recovering uint64) *miner.PartitionDiff {
+func generateFakeSectorStateChanges(removed, recovered, faulted, recovering uint64) *minerex.SectorStateEvents {
 	rm := bitfield.New()
 	for i := uint64(0); i < removed; i++ {
 		rm.Set(i)
@@ -480,24 +479,10 @@ func generateFakePartitionDiff(removed, recovered, faulted, recovering uint64) *
 	for i := uint64(0); i < recovering; i++ {
 		recing.Set(i)
 	}
-	return &miner.PartitionDiff{
+	return &minerex.SectorStateEvents{
 		Removed:    rm,
 		Recovered:  rec,
 		Faulted:    flt,
 		Recovering: recing,
 	}
-}
-
-func generateFakDeadlineDiff(partition uint64, removed, recovered, faulted, recovering uint64) miner.DeadlineDiff {
-	partDiff := generateFakePartitionDiff(removed, recovered, faulted, recovering)
-	return map[uint64]*miner.PartitionDiff{
-		partition: partDiff,
-	}
-}
-
-func generateFakeDeadlinesDiff(deadline uint64, partition uint64, removed, recovered, faulted, recovering uint64) miner.DeadlinesDiff {
-	out := make(map[uint64]miner.DeadlineDiff, 1)
-	dld := generateFakDeadlineDiff(partition, removed, recovered, faulted, recovering)
-	out[deadline] = dld
-	return out
 }
