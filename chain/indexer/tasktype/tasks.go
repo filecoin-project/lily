@@ -79,6 +79,7 @@ var TaskLookup = map[string][]string{
 	ImplicitMessageTask: {
 		InternalMessage,
 		InternalParsedMessage,
+		VmMessage,
 	},
 	ChainConsensusTask: {
 		ChainConsensus,

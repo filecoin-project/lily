@@ -49,8 +49,7 @@ type MarketDealProposal struct {
 	// An arbitrary client chosen label to apply to the deal. The value is base64 encoded before persisting.
 	Label string
 
-	// When true Label contains a valid UTF-8 string encoded in base64. When false Label contains raw bytes encoded in base64.
-	// Related to FIP: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0027.md
+	// When true Label contains a valid UTF-8 string encoded in base64. When false Label contains raw bytes encoded in base64. Related to FIP: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0027.md
 	IsString bool
 }
 

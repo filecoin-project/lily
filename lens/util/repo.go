@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/exitcode"
@@ -282,6 +283,34 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (string, 
 	return string(b), m.Name, err
 }
 
+func ParseReturn(ret []byte, method abi.MethodNum, actCode cid.Cid) (string, string, error) {
+	m, found := ActorRegistry.Methods[actCode][method]
+	if !found {
+		return "", "", fmt.Errorf("unknown method %d for actor %s", method, actCode)
+	}
+
+	// if the actor method doesn't expect returns don't parse them
+	if m.Ret == reflect.TypeOf(new(abi.EmptyValue)) {
+		return "", m.Name, nil
+	}
+
+	p := reflect.New(m.Ret.Elem()).Interface().(cbg.CBORUnmarshaler)
+	if err := p.UnmarshalCBOR(bytes.NewReader(ret)); err != nil {
+		actorName := builtin.ActorNameByCode(actCode)
+		return "", m.Name, fmt.Errorf("cbor decode into %s %s:(%s.%d) failed: %v", m.Name, actorName, actCode, method, err)
+	}
+
+	b, err := MarshalWithOverrides(p, map[reflect.Type]marshaller{
+		reflect.TypeOf(bitfield.BitField{}): bitfieldCountMarshaller,
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("failed to parse message return method: %d, actor code: %s, return: %s: %w", method, actCode, string(ret), err)
+	}
+
+	return string(b), m.Name, err
+
+}
+
 func MethodAndParamsForMessage(m *types.Message, destCode cid.Cid) (string, string, error) {
 	// Method is optional, zero means a plain value transfer
 	if m.Method == 0 {
@@ -306,6 +335,71 @@ func MethodAndParamsForMessage(m *types.Message, destCode cid.Cid) (string, stri
 	}
 
 	return method, params, nil
+}
+
+type MessageParamsReturn struct {
+	MethodName string
+	Params     string
+	Return     string
+}
+
+func MethodParamsReturnForMessage(m *MessageTrace, destCode cid.Cid) (*MessageParamsReturn, error) {
+	// Method is optional, zero means a plain value transfer
+	if m.Message.Method == 0 {
+		return &MessageParamsReturn{
+			MethodName: "Send",
+			Params:     "",
+			Return:     "",
+		}, nil
+	}
+
+	if !destCode.Defined() {
+		return nil, fmt.Errorf("missing actor code")
+	}
+
+	params, _, err := ParseParams(m.Message.Params, m.Message.Method, destCode)
+	if err != nil {
+		log.Warnf("failed to parse parameters of message %s: %v", m.Message.Cid(), err)
+		return nil, fmt.Errorf("unknown method for actor type %s method %d: %w", destCode.String(), int64(m.Message.Method), err)
+	}
+	ret, method, err := ParseReturn(m.Receipt.Return, m.Message.Method, destCode)
+	if err != nil {
+		log.Warnf("failed to parse return of message %s: %v", m.Message.Cid(), err)
+		return nil, fmt.Errorf("unknown method for actor type %s method %d: %w", destCode.String(), int64(m.Message.Method), err)
+	}
+
+	return &MessageParamsReturn{
+		MethodName: method,
+		Params:     params,
+		Return:     ret,
+	}, nil
+}
+
+func walkExecutionTrace(et *types.ExecutionTrace, trace *[]*MessageTrace) {
+	for _, sub := range et.Subcalls {
+		*trace = append(*trace, &MessageTrace{
+			Message:   sub.Msg,
+			Receipt:   sub.MsgRct,
+			Error:     sub.Error,
+			Duration:  sub.Duration,
+			GasCharge: sub.GasCharges,
+		})
+		walkExecutionTrace(&sub, trace) //nolint:scopelint,gosec
+	}
+}
+
+type MessageTrace struct {
+	Message   *types.Message
+	Receipt   *types.MessageReceipt
+	Error     string
+	Duration  time.Duration
+	GasCharge []*types.GasTrace
+}
+
+func GetChildMessagesOf(m *lens.MessageExecution) []*MessageTrace {
+	var out []*MessageTrace
+	walkExecutionTrace(&m.Ret.ExecutionTrace, &out)
+	return out
 }
 
 func ActorNameAndFamilyFromCode(c cid.Cid) (name string, family string, err error) {

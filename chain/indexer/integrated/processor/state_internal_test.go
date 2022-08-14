@@ -15,6 +15,7 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
+	"github.com/filecoin-project/lily/tasks/messageexecutions/vm"
 
 	"github.com/filecoin-project/lily/tasks/actorstate"
 	inittask "github.com/filecoin-project/lily/tasks/actorstate/init_"
@@ -48,7 +49,7 @@ func TestNewProcessor(t *testing.T) {
 	require.Equal(t, t.Name(), proc.name)
 	require.Len(t, proc.actorProcessors, 21)
 	require.Len(t, proc.tipsetProcessors, 5)
-	require.Len(t, proc.tipsetsProcessors, 9)
+	require.Len(t, proc.tipsetsProcessors, 10)
 	require.Len(t, proc.builtinProcessors, 1)
 
 	require.Equal(t, message.NewTask(nil), proc.tipsetsProcessors[tasktype.Message])
@@ -60,6 +61,7 @@ func TestNewProcessor(t *testing.T) {
 	require.Equal(t, internalparsedmessage.NewTask(nil), proc.tipsetsProcessors[tasktype.InternalParsedMessage])
 	require.Equal(t, gaseconomy.NewTask(nil), proc.tipsetsProcessors[tasktype.MessageGasEconomy])
 	require.Equal(t, msapprovals.NewTask(nil), proc.tipsetsProcessors[tasktype.MultisigApproval])
+	require.Equal(t, vm.NewTask(nil), proc.tipsetsProcessors[tasktype.VmMessage])
 
 	require.Equal(t, headers.NewTask(), proc.tipsetProcessors[tasktype.BlockHeader])
 	require.Equal(t, parents.NewTask(), proc.tipsetProcessors[tasktype.BlockParent])
