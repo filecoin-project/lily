@@ -365,7 +365,7 @@ func DiffMinerSectorStates(ctx context.Context, extState extraction.State) (*Sec
 		return nil, fmt.Errorf("comparing current faulty sectors to previous faulty sectors %w", err)
 	}
 
-	// previous faulty sectors minus current active sectors are sectors recovered this epoch.
+	// previous faulty sectors matching (intersect) active sectors are sectors recovered this epoch.
 	recovered, err := bitfield.IntersectBitField(previous.Faulty, current.Active)
 	if err != nil {
 		return nil, fmt.Errorf("comparing previous faulty sectors to current active sectors %w", err)
