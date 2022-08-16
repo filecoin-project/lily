@@ -61,15 +61,23 @@ func NewIndexTipSetTask(ctx context.Context, ts *types.TipSet, tasks []string) (
 	return asynq.NewTask(TypeIndexTipSet, payload), nil
 }
 
-type AsynqTipSetTaskHandler struct {
+func NewIndexHandler(i indexer.Indexer) *TipSetTaskHandler {
+	return &TipSetTaskHandler{indexer: i}
+}
+
+type TipSetTaskHandler struct {
 	indexer indexer.Indexer
 }
 
-func NewIndexHandler(i indexer.Indexer) *AsynqTipSetTaskHandler {
-	return &AsynqTipSetTaskHandler{indexer: i}
+func (ih *TipSetTaskHandler) Type() string {
+	return TypeIndexTipSet
 }
 
-func (ih *AsynqTipSetTaskHandler) HandleIndexTipSetTask(ctx context.Context, t *asynq.Task) error {
+func (ih *TipSetTaskHandler) Handler() asynq.HandlerFunc {
+	return ih.HandleIndexTipSetTask
+}
+
+func (ih *TipSetTaskHandler) HandleIndexTipSetTask(ctx context.Context, t *asynq.Task) error {
 	var p IndexTipSetPayload
 	if err := json.Unmarshal(t.Payload(), &p); err != nil {
 		return err
