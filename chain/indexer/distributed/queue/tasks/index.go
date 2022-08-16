@@ -78,10 +78,6 @@ func (ih *IndexTipSetProcessor) TaskHandler() asynq.HandlerFunc {
 	return th.HandleIndexTipSetTask
 }
 
-func (ih *IndexTipSetProcessor) ErrorHandler() asynq.ErrorHandler {
-	return &indexTipSetTaskErrorHandler{}
-}
-
 type indexTipSetTaskHandler struct {
 	idx indexer.Indexer
 }
@@ -117,21 +113,4 @@ func (th *indexTipSetTaskHandler) HandleIndexTipSetTask(ctx context.Context, t *
 	}
 	log.Infow("index tipset success", "taskID", taskID, zap.Inline(p))
 	return nil
-}
-
-type indexTipSetTaskErrorHandler struct{}
-
-func (eh *indexTipSetTaskErrorHandler) HandleError(ctx context.Context, task *asynq.Task, err error) {
-	var p IndexTaskPayload
-	if err := json.Unmarshal(task.Payload(), &p); err != nil {
-		log.Errorw("failed to decode task type (developer error?)", "error", err)
-		return
-	}
-	if p.HasTraceCarrier() {
-		if sc := p.TraceCarrier.AsSpanContext(); sc.IsValid() {
-			ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
-			trace.SpanFromContext(ctx).RecordError(err)
-		}
-	}
-	log.Errorw("task failed", zap.Inline(p), "type", task.Type(), "error", err)
 }

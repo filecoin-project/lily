@@ -9,6 +9,7 @@ import (
 	"go.opencensus.io/tag"
 
 	"github.com/filecoin-project/lily/chain/indexer/distributed"
+	"github.com/filecoin-project/lily/chain/indexer/distributed/queue/tasks"
 	"github.com/filecoin-project/lily/metrics"
 )
 
@@ -17,22 +18,21 @@ var log = logging.Logger("lily/distributed/worker")
 type AsynqWorker struct {
 	done chan struct{}
 
-	name    string
-	server  *distributed.TipSetWorker
-	handler TaskProcessor
+	name     string
+	server   *distributed.TipSetWorker
+	handlers []TaskProcessor
 }
 
 type TaskProcessor interface {
 	Type() string
 	TaskHandler() asynq.HandlerFunc
-	ErrorHandler() asynq.ErrorHandler
 }
 
-func NewAsynqWorker(name string, server *distributed.TipSetWorker, handler TaskProcessor) *AsynqWorker {
+func NewAsynqWorker(name string, server *distributed.TipSetWorker, handlers ...TaskProcessor) *AsynqWorker {
 	return &AsynqWorker{
-		name:    name,
-		server:  server,
-		handler: handler,
+		name:     name,
+		server:   server,
+		handlers: handlers,
 	}
 }
 
@@ -41,8 +41,12 @@ func (t *AsynqWorker) Run(ctx context.Context) error {
 	defer close(t.done)
 
 	mux := asynq.NewServeMux()
-	mux.HandleFunc(t.handler.Type(), t.handler.TaskHandler())
-	t.server.ServerConfig.ErrorHandler = t.handler.ErrorHandler()
+	for _, handler := range t.handlers {
+		log.Infow("registered task handler", "type", handler.Type())
+		mux.HandleFunc(handler.Type(), handler.TaskHandler())
+	}
+
+	t.server.ServerConfig.ErrorHandler = &tasks.ErrorHandler{}
 	t.server.ServerConfig.Logger = log.With("name", t.name)
 
 	stats.Record(ctx, metrics.TipSetWorkerConcurrency.M(int64(t.server.ServerConfig.Concurrency)))

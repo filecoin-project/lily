@@ -80,10 +80,6 @@ func (gh *GapFillTipSetProcessor) TaskHandler() asynq.HandlerFunc {
 	return th.HandleGapFillTipSetTask
 }
 
-func (gh *GapFillTipSetProcessor) ErrorHandler() asynq.ErrorHandler {
-	return &gapFillTipSetTaskErrorHandler{}
-}
-
 type gapFillTipSetTaskHandler struct {
 	idx indexer.Indexer
 	db  *storage.Database
@@ -125,21 +121,4 @@ func (gh *gapFillTipSetTaskHandler) HandleGapFillTipSetTask(ctx context.Context,
 	}
 	log.Infow("gap fill tipset success", "taskID", taskID, zap.Inline(p))
 	return nil
-}
-
-type gapFillTipSetTaskErrorHandler struct{}
-
-func (eh *gapFillTipSetTaskErrorHandler) HandleError(ctx context.Context, task *asynq.Task, err error) {
-	var p GapFillPayload
-	if err := json.Unmarshal(task.Payload(), &p); err != nil {
-		log.Errorw("failed to decode task type (developer error?)", "error", err)
-		return
-	}
-	if p.HasTraceCarrier() {
-		if sc := p.TraceCarrier.AsSpanContext(); sc.IsValid() {
-			ctx = trace.ContextWithRemoteSpanContext(ctx, sc)
-			trace.SpanFromContext(ctx).RecordError(err)
-		}
-	}
-	log.Errorw("task failed", zap.Inline(p), "type", task.Type(), "error", err)
 }

@@ -71,7 +71,6 @@ type LilyAPI interface {
 	NetPeerInfo(context.Context, peer.ID) (*api.ExtendedPeerInfo, error)
 
 	StartTipSetWorker(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error)
-	StartGapFillWorker(ctx context.Context, cfg *LilyGapFillWorkerConfig) (*schedule.JobSubmitResult, error)
 }
 type LilyJobConfig struct {
 	// Name is the name of the job.

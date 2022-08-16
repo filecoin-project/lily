@@ -82,41 +82,54 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 		JobName: cfg.JobConfig.Name,
 	}
 
-	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	// create a storage connection for this worker. If the configured storage is a database ensure its pingable, and run
+	// migrations if needed/configured to. If its CSV storage no connection of migrations are required.
 	strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
 	if err != nil {
 		return nil, err
 	}
 
+	// find tipset-worker config from queue catalog for the specified queue
 	worker, err := m.QueueCatalog.Worker(cfg.Queue)
 	if err != nil {
 		return nil, err
 	}
 
+	// create a taskAPI used by the indexer to extract chain states.
 	taskAPI, err := datasource.NewDataSource(m)
 	if err != nil {
 		return nil, err
 	}
 
-	im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name))
+	// create an indexer used to extract state for tipsets
+	indx, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name))
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO provide code comments
-	var handler queue.TaskProcessor
-	handler = tasks.NewIndexTipSetProcessor(im)
+	// handlers are used by the AsynqWorker to handle processing tasks added to the queue.
+	handlers := []queue.TaskProcessor{
+		// default to IndexTipSetProcessor for handling tasks, this processor _cannot_ perform gap fill task as it doesn't
+		// have a RW database
+		tasks.NewIndexTipSetProcessor(indx),
+	}
+
+	// check if queue config contains configuration for gap fill tasks and if it expects the tasks to be processed. This
+	// is specified by giving the Fill queue a priority greater than 1.
 	priority, ok := worker.ServerConfig.Queues[indexer.Fill.String()]
 	if ok {
 		if priority > 0 {
+			// if gap fill tasks have a priority storage much be transactional.
 			db, ok := strg.(*storage.Database)
 			if !ok {
 				return nil, fmt.Errorf("storage type (%T) is unsupported for %s queue", strg, indexer.Fill.String())
 			}
-			handler = tasks.NewGapFillTipSetProcessor(im, db)
+			// override the handler with a gap fill processor capable of performing all tasks including gap filling.
+			handlers = append(handlers, tasks.NewGapFillTipSetProcessor(indx, db))
 		}
 	}
 
+	// submit the job
 	res := m.Scheduler.Submit(&schedule.JobConfig{
 		Name: cfg.JobConfig.Name,
 		Type: "tipset-worker",
@@ -124,7 +137,7 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 			"queue":   cfg.Queue,
 			"storage": cfg.JobConfig.Storage,
 		},
-		Job:                 queue.NewAsynqWorker(cfg.JobConfig.Name, worker, handler),
+		Job:                 queue.NewAsynqWorker(cfg.JobConfig.Name, worker, handlers...),
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,

@@ -44,7 +44,6 @@ var JobRunCmd = &cli.Command{
 		GapFillCmd,
 		GapFindCmd,
 		TipSetWorkerCmd,
-		GapFillWorkerCmd,
 	},
 }
 
