@@ -17,7 +17,6 @@ import (
 	messagemodel "github.com/filecoin-project/lily/model/messages"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
-	"github.com/filecoin-project/lily/tasks/messages"
 )
 
 type Task struct {
@@ -48,21 +47,19 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		StateRoot: current.ParentState().String(),
 	}
 
-	tsMsgs, err := t.node.ExecutedAndBlockMessages(ctx, current, executed)
+	msgrec, err := t.node.TipSetMessageReceipts(ctx, current, executed)
 	if err != nil {
-		report.ErrorsDetected = fmt.Errorf("getting executed and block messages: %w", err)
+		report.ErrorsDetected = fmt.Errorf("getting tipset messages receipts: %w", err)
 		return nil, report, nil
 	}
-	emsgs := tsMsgs.Executed
 
 	var (
-		exeMsgSeen        = make(map[cid.Cid]bool, len(emsgs))
+		exeMsgSeen        = make(map[cid.Cid]bool)
 		totalGasLimit     int64
 		totalUniqGasLimit int64
-		errorsDetected    = make([]*messages.MessageError, 0, len(emsgs))
 	)
 
-	for _, m := range emsgs {
+	for _, mr := range msgrec {
 		// Stop processing if we have been told to cancel
 		select {
 		case <-ctx.Done():
@@ -70,16 +67,21 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		default:
 		}
 
-		// calculate total gas limit of executed messages regardless of duplicates.
-		for range m.Blocks {
-			totalGasLimit += m.Message.GasLimit
+		itr, err := mr.Iterator()
+		if err != nil {
+			return nil, nil, err
 		}
-
-		if exeMsgSeen[m.Cid] {
-			continue
+		if itr.HasNext() {
+			m, _ := itr.Next()
+			// calculate total gas limit of executed messages regardless of duplicates.
+			totalGasLimit += m.GasLimit
+			if exeMsgSeen[m.Cid()] {
+				continue
+			}
+			exeMsgSeen[m.Cid()] = true
+			// calculate unique gas limit
+			totalUniqGasLimit += m.GasLimit
 		}
-		exeMsgSeen[m.Cid] = true
-		totalUniqGasLimit += m.Message.GasLimit
 	}
 
 	newBaseFee := store.ComputeNextBaseFee(executed.Blocks()[0].ParentBaseFee, totalUniqGasLimit, len(executed.Blocks()), executed.Height())
@@ -99,10 +101,6 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		GasFillRatio:        float64(totalGasLimit) / float64(len(executed.Blocks())*build.BlockGasTarget),
 		GasCapacityRatio:    float64(totalUniqGasLimit) / float64(len(executed.Blocks())*build.BlockGasTarget),
 		GasWasteRatio:       float64(totalGasLimit-totalUniqGasLimit) / float64(len(executed.Blocks())*build.BlockGasTarget),
-	}
-
-	if len(errorsDetected) != 0 {
-		report.ErrorsDetected = errorsDetected
 	}
 
 	return messageGasEconomyResult, report, nil
