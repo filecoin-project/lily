@@ -17,6 +17,7 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/urfave/cli/v2"
+	"gopkg.in/cheggaaa/pb.v1"
 
 	"github.com/filecoin-project/lily/chain/actors"
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
@@ -42,6 +43,10 @@ var ChainCmd = &cli.Command{
 		ChainListCmd,
 		ChainSetHeadCmd,
 		ChainActorCodesCmd,
+		ChainFindOldestState,
+		ChainListStates,
+		ChainStateCompute,
+		ChainStateComputeRange,
 	},
 }
 
@@ -74,24 +79,170 @@ var ChainActorCodesCmd = &cli.Command{
 	},
 }
 
-func printSortedActorVersions(av map[actors.Version]cid.Cid) error {
+func printReport(r []*lily.StateReport) {
 	t := table.NewWriter()
-	t.AppendHeader(table.Row{"Version", "Name", "Family", "Code"})
-	var versions []int
-	for v := range av {
-		versions = append(versions, int(v))
-	}
-	sort.Ints(versions)
-	for _, v := range versions {
-		name, family, err := util.ActorNameAndFamilyFromCode(av[actors.Version(v)])
-		if err != nil {
-			return err
-		}
-		t.AppendRow(table.Row{v, name, family, av[actors.Version(v)]})
+	t.AppendHeader(table.Row{"Height", "StateTree", "Messages"})
+	for _, v := range r {
+		t.AppendRow(table.Row{v.Height, v.HasState, v.HasMessages})
 		t.AppendSeparator()
 	}
 	fmt.Println(t.Render())
-	return nil
+}
+
+var ChainListStates = &cli.Command{
+	Name:  "list-state",
+	Usage: "List states and their completeness",
+	Flags: []cli.Flag{
+		&cli.Uint64Flag{
+			Name:  "limit",
+			Value: 0,
+		},
+	},
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+		lapi, closer, err := GetAPI(ctx)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		report, err := lapi.FindOldestState(ctx, cctx.Int64("limit"))
+		if err != nil {
+			return err
+		}
+		sort.Slice(report, func(i, j int) bool {
+			return report[i].Height > report[j].Height
+		})
+		printReport(report)
+		return nil
+	},
+}
+
+var ChainFindOldestState = &cli.Command{
+	Name:  "find-oldest",
+	Usage: "Find the oldest full statetree",
+	Flags: []cli.Flag{
+		&cli.Uint64Flag{
+			Name:  "limit",
+			Value: 0,
+		},
+	},
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+		lapi, closer, err := GetAPI(ctx)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		report, err := lapi.FindOldestState(ctx, cctx.Int64("limit"))
+		if err != nil {
+			return err
+		}
+		sort.Slice(report, func(i, j int) bool {
+			return report[i].Height > report[j].Height
+		})
+
+		head := report[0]
+		oldestStateRoot := &lily.StateReport{}
+		oldestMessage := &lily.StateReport{}
+		headSet := false
+		for _, r := range report {
+			if !headSet && (r.HasState && r.HasMessages && r.HasReceipts) {
+				head = r
+				headSet = true
+			}
+			if r.HasState {
+				oldestStateRoot = r
+			}
+			if r.HasMessages {
+				oldestMessage = r
+			}
+		}
+		fmt.Printf("Newest:\n")
+		fmt.Printf("\tStateRoot:\t%d\n", head.Height)
+		fmt.Printf("\tMessages:\t%d\n", head.Height)
+		fmt.Printf("Oldest:\n")
+		fmt.Printf("\tStateRoot:\t%d\n", oldestStateRoot.Height)
+		fmt.Printf("\tMessages:\t%d\n", oldestMessage.Height)
+
+		return nil
+	},
+}
+
+var ChainStateComputeRange = &cli.Command{
+	Name: "compute",
+	Flags: []cli.Flag{
+		&cli.Uint64Flag{
+			Name: "epoch",
+		},
+	},
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+		lapi, closer, err := GetAPI(ctx)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		head, err := lapi.ChainHead(ctx)
+		if err != nil {
+			return err
+		}
+		ts, err := lapi.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(cctx.Uint64("epoch")), head.Key())
+		if err != nil {
+			return err
+		}
+
+		_, err = lapi.StateCompute(ctx, ts.Key())
+		return err
+
+	},
+}
+
+var ChainStateCompute = &cli.Command{
+	Name: "compute-range",
+	Flags: []cli.Flag{
+		&cli.Uint64Flag{
+			Name: "from",
+		},
+		&cli.Uint64Flag{
+			Name: "to",
+		},
+	},
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+		lapi, closer, err := GetAPI(ctx)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		head, err := lapi.ChainHead(ctx)
+		if err != nil {
+			return err
+		}
+		bar := pb.StartNew(int(cctx.Uint64("to") - cctx.Uint64("from")))
+		bar.ShowTimeLeft = true
+		bar.ShowPercent = true
+		bar.ShowSpeed = true
+		bar.Units = pb.U_NO
+		for i := cctx.Int64("from"); i <= cctx.Int64("to"); i++ {
+			ts, err := lapi.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(i), head.Key())
+			if err != nil {
+				return err
+			}
+
+			_, err = lapi.StateCompute(ctx, ts.Key())
+			if err != nil {
+				return err
+			}
+			bar.Add(1)
+		}
+		bar.Finish()
+		return nil
+
+	},
 }
 
 var ChainHeadCmd = &cli.Command{
@@ -546,4 +697,24 @@ func parseTipSet(ctx context.Context, api lily.LilyAPI, vals []string) (*types.T
 	}
 
 	return types.NewTipSet(headers)
+}
+
+func printSortedActorVersions(av map[actors.Version]cid.Cid) error {
+	t := table.NewWriter()
+	t.AppendHeader(table.Row{"Version", "Name", "Family", "Code"})
+	var versions []int
+	for v := range av {
+		versions = append(versions, int(v))
+	}
+	sort.Ints(versions)
+	for _, v := range versions {
+		name, family, err := util.ActorNameAndFamilyFromCode(av[actors.Version(v)])
+		if err != nil {
+			return err
+		}
+		t.AppendRow(table.Row{v, name, family, av[actors.Version(v)]})
+		t.AppendSeparator()
+	}
+	fmt.Println(t.Render())
+	return nil
 }
