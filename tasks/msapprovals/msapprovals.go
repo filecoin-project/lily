@@ -6,12 +6,16 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/actors/builtin"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/ipfs/go-cid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
+	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/tasks"
 
 	"github.com/filecoin-project/lily/model"
@@ -52,17 +56,37 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		StateRoot: current.ParentState().String(),
 	}
 
-	tsMsgs, err := p.node.ExecutedAndBlockMessages(ctx, current, executed)
-	if err != nil {
-		report.ErrorsDetected = fmt.Errorf("getting executed and block messages: %w", err)
+	grp, ctx := errgroup.WithContext(ctx)
+
+	var getActorCodeFn func(address address.Address) (cid.Cid, bool)
+	grp.Go(func() error {
+		var err error
+		getActorCodeFn, err = util.MakeGetActorCodeFunc(ctx, p.node.Store(), current, executed)
+		if err != nil {
+			return fmt.Errorf("getting actor code lookup function: %w", err)
+		}
+		return nil
+	})
+
+	var blkMsgRec []*tasks.BlockMessageReceipts
+	grp.Go(func() error {
+		var err error
+		blkMsgRec, err = p.node.TipSetMessageReceipts(ctx, current, executed)
+		if err != nil {
+			return fmt.Errorf("getting messages and receipts: %w", err)
+		}
+		return nil
+	})
+
+	if err := grp.Wait(); err != nil {
+		report.ErrorsDetected = err
 		return nil, report, nil
 	}
-	emsgs := tsMsgs.Executed
 
-	errorsDetected := make([]*MultisigError, 0, len(emsgs))
+	errorsDetected := make([]*MultisigError, 0)
 	results := make(msapprovals.MultisigApprovalList, 0) // no initial size capacity since approvals are rare
 
-	for _, m := range emsgs {
+	for _, msgrec := range blkMsgRec {
 		// Stop processing if we have been told to cancel
 		select {
 		case <-ctx.Done():
@@ -70,100 +94,112 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		default:
 		}
 
-		// Only interested in messages to multisig actors
-		if !builtin.IsMultisigActor(m.ToActorCode) {
-			continue
-		}
-
-		// Only interested in successful messages
-		if !m.Receipt.ExitCode.IsSuccess() {
-			continue
-		}
-
-		// Only interested in propose and approve messages
-		if m.Message.Method != ProposeMethodNum && m.Message.Method != ApproveMethodNum {
-			continue
-		}
-
-		applied, tx, err := p.getTransactionIfApplied(ctx, m.Message, m.Receipt, current)
+		itr, err := msgrec.Iterator()
 		if err != nil {
-			errorsDetected = append(errorsDetected, &MultisigError{
-				Addr:  m.Message.To.String(),
-				Error: fmt.Errorf("failed to find transaction: %w", err).Error(),
-			})
-			continue
+			return nil, nil, err
 		}
 
-		// Only interested in messages that applied a transaction
-		if !applied {
-			continue
-		}
+		for itr.HasNext() {
+			msg, rec := itr.Next()
+			// Only interested in successful messages
+			if !rec.ExitCode.IsSuccess() {
+				continue
+			}
 
-		appr := msapprovals.MultisigApproval{
-			Height:        int64(executed.Height()),
-			StateRoot:     executed.ParentState().String(),
-			MultisigID:    m.Message.To.String(),
-			Message:       m.Cid.String(),
-			Method:        uint64(m.Message.Method),
-			Approver:      m.Message.From.String(),
-			GasUsed:       m.Receipt.GasUsed,
-			TransactionID: tx.id,
-			To:            tx.to,
-			Value:         tx.value,
-		}
+			// Only interested in messages to multisig actors
+			msgToCode, found := getActorCodeFn(msg.To)
+			if !found {
+				return nil, nil, fmt.Errorf("failed to find to actor %s height %d message %s", msg.To, current.Height(), msg.Cid())
+			}
+			if !builtin.IsMultisigActor(msgToCode) {
+				continue
+			}
 
-		// Get state of actor after the message has been applied
-		act, err := p.node.Actor(ctx, m.Message.To, current.Key())
-		if err != nil {
-			errorsDetected = append(errorsDetected, &MultisigError{
-				Addr:  m.Message.To.String(),
-				Error: fmt.Errorf("failed to load actor: %w", err).Error(),
-			})
-			continue
-		}
+			// Only interested in propose and approve messages
+			if msg.Method != ProposeMethodNum && msg.Method != ApproveMethodNum {
+				continue
+			}
 
-		actorState, err := multisig.Load(p.node.Store(), act)
-		if err != nil {
-			errorsDetected = append(errorsDetected, &MultisigError{
-				Addr:  m.Message.To.String(),
-				Error: fmt.Errorf("failed to load actor state: %w", err).Error(),
-			})
-			continue
-		}
+			applied, tx, err := p.getTransactionIfApplied(ctx, msg, rec, current)
+			if err != nil {
+				errorsDetected = append(errorsDetected, &MultisigError{
+					Addr:  msg.To.String(),
+					Error: fmt.Errorf("failed to find transaction: %w", err).Error(),
+				})
+				continue
+			}
 
-		ib, err := actorState.InitialBalance()
-		if err != nil {
-			errorsDetected = append(errorsDetected, &MultisigError{
-				Addr:  m.Message.To.String(),
-				Error: fmt.Errorf("failed to read initial balance: %w", err).Error(),
-			})
-			continue
-		}
-		appr.InitialBalance = ib.String()
+			// Only interested in messages that applied a transaction
+			if !applied {
+				continue
+			}
 
-		threshold, err := actorState.Threshold()
-		if err != nil {
-			errorsDetected = append(errorsDetected, &MultisigError{
-				Addr:  m.Message.To.String(),
-				Error: fmt.Errorf("failed to read initial balance: %w", err).Error(),
-			})
-			continue
-		}
-		appr.Threshold = threshold
+			appr := msapprovals.MultisigApproval{
+				Height:        int64(executed.Height()),
+				StateRoot:     executed.ParentState().String(),
+				MultisigID:    msg.To.String(),
+				Message:       msg.Cid().String(),
+				Method:        uint64(msg.Method),
+				Approver:      msg.From.String(),
+				GasUsed:       rec.GasUsed,
+				TransactionID: tx.id,
+				To:            tx.to,
+				Value:         tx.value,
+			}
 
-		signers, err := actorState.Signers()
-		if err != nil {
-			errorsDetected = append(errorsDetected, &MultisigError{
-				Addr:  m.Message.To.String(),
-				Error: fmt.Errorf("failed to read signers: %w", err).Error(),
-			})
-			continue
-		}
-		for _, addr := range signers {
-			appr.Signers = append(appr.Signers, addr.String())
-		}
+			// Get state of actor after the message has been applied
+			act, err := p.node.Actor(ctx, msg.To, current.Key())
+			if err != nil {
+				errorsDetected = append(errorsDetected, &MultisigError{
+					Addr:  msg.To.String(),
+					Error: fmt.Errorf("failed to load actor: %w", err).Error(),
+				})
+				continue
+			}
 
-		results = append(results, &appr)
+			actorState, err := multisig.Load(p.node.Store(), act)
+			if err != nil {
+				errorsDetected = append(errorsDetected, &MultisigError{
+					Addr:  msg.To.String(),
+					Error: fmt.Errorf("failed to load actor state: %w", err).Error(),
+				})
+				continue
+			}
+
+			ib, err := actorState.InitialBalance()
+			if err != nil {
+				errorsDetected = append(errorsDetected, &MultisigError{
+					Addr:  msg.To.String(),
+					Error: fmt.Errorf("failed to read initial balance: %w", err).Error(),
+				})
+				continue
+			}
+			appr.InitialBalance = ib.String()
+
+			threshold, err := actorState.Threshold()
+			if err != nil {
+				errorsDetected = append(errorsDetected, &MultisigError{
+					Addr:  msg.To.String(),
+					Error: fmt.Errorf("failed to read initial balance: %w", err).Error(),
+				})
+				continue
+			}
+			appr.Threshold = threshold
+
+			signers, err := actorState.Signers()
+			if err != nil {
+				errorsDetected = append(errorsDetected, &MultisigError{
+					Addr:  msg.To.String(),
+					Error: fmt.Errorf("failed to read signers: %w", err).Error(),
+				})
+				continue
+			}
+			for _, addr := range signers {
+				appr.Signers = append(appr.Signers, addr.String())
+			}
+
+			results = append(results, &appr)
+		}
 	}
 
 	if len(errorsDetected) != 0 {
