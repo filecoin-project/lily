@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/api"
@@ -45,9 +46,46 @@ type ActorStateChangeDiff map[address.Address]ActorStateChange
 
 type BlockMessageReceipts struct {
 	Block   *types.BlockHeader
-	Message *types.Message
-	Receipt *types.MessageReceipt
-	Index   int
+	Message []*types.Message
+	Receipt []*types.MessageReceipt
+}
+
+func (bmr *BlockMessageReceipts) Iterator() (*MessageReceiptIterator, error) {
+	if len(bmr.Message) != len(bmr.Receipt) {
+		return nil, fmt.Errorf("invalid construction, expected equal number receipts (%d) and messages (%d)", len(bmr.Receipt), len(bmr.Message))
+	}
+	return &MessageReceiptIterator{
+		idx:      0,
+		msgs:     bmr.Message,
+		receipts: bmr.Receipt,
+	}, nil
+}
+
+type MessageReceiptIterator struct {
+	idx      int
+	msgs     []*types.Message
+	receipts []*types.MessageReceipt
+}
+
+func (mri *MessageReceiptIterator) HasNext() bool {
+	if mri.idx < len(mri.msgs) {
+		return true
+	}
+	return false
+}
+
+func (mri *MessageReceiptIterator) Next() (*types.Message, *types.MessageReceipt) {
+	if mri.HasNext() {
+		msg := mri.msgs[mri.idx]
+		rec := mri.receipts[mri.idx]
+		mri.idx++
+		return msg, rec
+	}
+	return nil, nil
+}
+
+func (mri *MessageReceiptIterator) Index() int {
+	return mri.idx
 }
 
 type DataSource interface {

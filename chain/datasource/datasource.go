@@ -122,7 +122,8 @@ func (t *DataSource) BlockMessageForTipSet(ctx context.Context, ts *types.TipSet
 	return t.node.BlockMessageForTipSet(ctx, ts)
 }
 
-// TipSetMessageReceipts returns the blocks and messages in ts and their corresponding receipts from pts.
+// TipSetMessageReceipts returns the blocks and messages in `ts` and their corresponding receipts from `pts` matching block order in tipset (`ts`).
+// TODO replace with lotus chainstore method when https://github.com/filecoin-project/lotus/pull/9186 lands
 func (t *DataSource) TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*tasks.BlockMessageReceipts, error) {
 	// retrieve receipts using a block from the child (ts) tipset
 	// TODO this operation can fail when the node is imported from a snapshot that does not contain receipts (most don't)
@@ -142,7 +143,7 @@ func (t *DataSource) TipSetMessageReceipts(ctx context.Context, ts, pts *types.T
 		return &r, nil
 	}
 
-	// get message from parent tipset ordered by block
+	// returned BlockMessages match block order in tipset
 	blkMsgs, err := t.BlockMessageForTipSet(ctx, pts)
 	if err != nil {
 		return nil, err
@@ -152,34 +153,41 @@ func (t *DataSource) TipSetMessageReceipts(ctx context.Context, ts, pts *types.T
 		return nil, fmt.Errorf("mismatching number of blocks returned from block messages, got %d wanted %d", len(blkMsgs), len(pts.Blocks()))
 	}
 
-	// index of the receipt in the receipt array
-	receiptIdx := 0
-	var out []*tasks.BlockMessageReceipts
-	for blkIdx, blkMsg := range blkMsgs {
-		for _, blsMsg := range blkMsg.BlsMessages {
-			r, err := getReceipt(receiptIdx)
+	out := make([]*tasks.BlockMessageReceipts, len(pts.Blocks()))
+	// walk each block in tipset, `pts.Blocks()` has same ordering as `blkMsgs`.
+	for blkIdx := range pts.Blocks() {
+		// bls and secp messages for block
+		msgs := blkMsgs[blkIdx]
+		// index of messages in `out.Messages`
+		msgIdx := 0
+		// index or receipts in `out.Receipts`
+		receiptIdx := 0
+		// block containing messages
+		out[blkIdx].Block = pts.Blocks()[blkIdx]
+		// total messages returned equal to sum of bls and secp messages
+		out[blkIdx].Message = make([]*types.Message, len(msgs.BlsMessages)+len(msgs.SecpkMessages))
+		// total receipts returned equal to sum of bls and secp messages
+		out[blkIdx].Receipt = make([]*types.MessageReceipt, len(msgs.BlsMessages)+len(msgs.SecpkMessages))
+		// walk bls messages and extract their receipts
+		for blsIdx := range msgs.BlsMessages {
+			receipt, err := getReceipt(receiptIdx)
 			if err != nil {
 				return nil, err
 			}
-			out = append(out, &tasks.BlockMessageReceipts{
-				Block:   pts.Blocks()[blkIdx],
-				Message: blsMsg.VMMessage(),
-				Receipt: r,
-				Index:   receiptIdx,
-			})
+			out[blkIdx].Message[msgIdx] = msgs.BlsMessages[blsIdx].VMMessage()
+			out[blkIdx].Receipt[receiptIdx] = receipt
+			msgIdx++
 			receiptIdx++
 		}
-		for _, secpMsg := range blkMsg.SecpkMessages {
-			r, err := getReceipt(receiptIdx)
+		// walk secp messages and extract their receipts
+		for secpIdx := range msgs.SecpkMessages {
+			receipt, err := getReceipt(receiptIdx)
 			if err != nil {
 				return nil, err
 			}
-			out = append(out, &tasks.BlockMessageReceipts{
-				Block:   pts.Blocks()[blkIdx],
-				Message: secpMsg.VMMessage(),
-				Receipt: r,
-				Index:   receiptIdx,
-			})
+			out[blkIdx].Message[msgIdx] = msgs.SecpkMessages[secpIdx].VMMessage()
+			out[blkIdx].Receipt[receiptIdx] = receipt
+			msgIdx++
 			receiptIdx++
 		}
 	}

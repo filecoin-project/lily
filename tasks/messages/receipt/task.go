@@ -63,20 +63,28 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		default:
 		}
 
-		if msgsSeen[m.Message.Cid()] {
-			continue
+		itr, err := m.Iterator()
+		if err != nil {
+			return nil, nil, err
 		}
-		msgsSeen[m.Message.Cid()] = true
 
-		rcpt := &messagemodel.Receipt{
-			Height:    int64(current.Height()),
-			Message:   m.Message.Cid().String(),
-			StateRoot: current.ParentState().String(),
-			Idx:       m.Index,
-			ExitCode:  int64(m.Receipt.ExitCode),
-			GasUsed:   m.Receipt.GasUsed,
+		for itr.HasNext() {
+			msg, rec := itr.Next()
+			if msgsSeen[msg.Cid()] {
+				continue
+			}
+			msgsSeen[msg.Cid()] = true
+
+			rcpt := &messagemodel.Receipt{
+				Height:    int64(current.Height()),
+				Message:   msg.Cid().String(),
+				StateRoot: current.ParentState().String(),
+				Idx:       itr.Index(),
+				ExitCode:  int64(rec.ExitCode),
+				GasUsed:   rec.GasUsed,
+			}
+			receiptResults = append(receiptResults, rcpt)
 		}
-		receiptResults = append(receiptResults, rcpt)
 
 	}
 
