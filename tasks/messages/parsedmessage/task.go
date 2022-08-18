@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model"
 	messagemodel "github.com/filecoin-project/lily/model/messages"
@@ -63,7 +64,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		return nil
 	})
 
-	var blkMsgRec []*tasks.BlockMessageReceipts
+	var blkMsgRec []*lens.BlockMessageReceipts
 	grp.Go(func() error {
 		var err error
 		blkMsgRec, err = t.node.TipSetMessageReceipts(ctx, current, executed)

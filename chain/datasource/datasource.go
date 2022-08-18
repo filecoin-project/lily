@@ -28,8 +28,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/sync/singleflight"
 
-	blockadt "github.com/filecoin-project/specs-actors/actors/util/adt"
-
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -103,6 +101,9 @@ type DataSource struct {
 	executedTsCache *lru.Cache
 	executedTsGroup singleflight.Group
 
+	tsBlkMsgRecCache *lru.Cache
+	tsBlkMsgRecGroup singleflight.Group
+
 	diffSectorsCache *lru.Cache
 	diffSectorsGroup singleflight.Group
 
@@ -124,74 +125,28 @@ func (t *DataSource) BlockMessageForTipSet(ctx context.Context, ts *types.TipSet
 
 // TipSetMessageReceipts returns the blocks and messages in `ts` and their corresponding receipts from `pts` matching block order in tipset (`ts`).
 // TODO replace with lotus chainstore method when https://github.com/filecoin-project/lotus/pull/9186 lands
-func (t *DataSource) TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*tasks.BlockMessageReceipts, error) {
-	// retrieve receipts using a block from the child (ts) tipset
-	// TODO this operation can fail when the node is imported from a snapshot that does not contain receipts (most don't)
-	// the solution is to compute the tipset state which will create the receipts we load here
-	rs, err := blockadt.AsArray(t.Store(), ts.Blocks()[0].ParentMessageReceipts)
+func (t *DataSource) TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*lens.BlockMessageReceipts, error) {
+	key, err := asKey(ts, pts)
 	if err != nil {
 		return nil, err
 	}
-	// so we only load the receipt array one
-	getReceipt := func(idx int) (*types.MessageReceipt, error) {
-		var r types.MessageReceipt
-		if found, err := rs.Get(uint64(idx), &r); err != nil {
-			return nil, err
-		} else if !found {
-			return nil, fmt.Errorf("failed to find receipt %d", idx)
-		}
-		return &r, nil
+	value, found := t.tsBlkMsgRecCache.Get(key)
+	if found {
+		return value.([]*lens.BlockMessageReceipts), nil
 	}
 
-	// returned BlockMessages match block order in tipset
-	blkMsgs, err := t.BlockMessageForTipSet(ctx, pts)
+	value, err, _ = t.tsBlkMsgRecGroup.Do(key, func() (interface{}, error) {
+		data, innerErr := t.node.TipSetMessageReceipts(ctx, ts, pts)
+		if innerErr == nil {
+			t.tsBlkMsgRecCache.Add(key, data)
+		}
+		return data, innerErr
+	})
 	if err != nil {
 		return nil, err
 	}
-	if len(blkMsgs) != len(pts.Blocks()) {
-		// logic error somewhere
-		return nil, fmt.Errorf("mismatching number of blocks returned from block messages, got %d wanted %d", len(blkMsgs), len(pts.Blocks()))
-	}
 
-	out := make([]*tasks.BlockMessageReceipts, len(pts.Blocks()))
-	// walk each block in tipset, `pts.Blocks()` has same ordering as `blkMsgs`.
-	for blkIdx := range pts.Blocks() {
-		// bls and secp messages for block
-		msgs := blkMsgs[blkIdx]
-		// index of messages in `out.Messages`
-		msgIdx := 0
-		// index or receipts in `out.Receipts`
-		receiptIdx := 0
-		// block containing messages
-		out[blkIdx].Block = pts.Blocks()[blkIdx]
-		// total messages returned equal to sum of bls and secp messages
-		out[blkIdx].Message = make([]*types.Message, len(msgs.BlsMessages)+len(msgs.SecpkMessages))
-		// total receipts returned equal to sum of bls and secp messages
-		out[blkIdx].Receipt = make([]*types.MessageReceipt, len(msgs.BlsMessages)+len(msgs.SecpkMessages))
-		// walk bls messages and extract their receipts
-		for blsIdx := range msgs.BlsMessages {
-			receipt, err := getReceipt(receiptIdx)
-			if err != nil {
-				return nil, err
-			}
-			out[blkIdx].Message[msgIdx] = msgs.BlsMessages[blsIdx].VMMessage()
-			out[blkIdx].Receipt[receiptIdx] = receipt
-			msgIdx++
-			receiptIdx++
-		}
-		// walk secp messages and extract their receipts
-		for secpIdx := range msgs.SecpkMessages {
-			receipt, err := getReceipt(receiptIdx)
-			if err != nil {
-				return nil, err
-			}
-			out[blkIdx].Message[msgIdx] = msgs.SecpkMessages[secpIdx].VMMessage()
-			out[blkIdx].Receipt[receiptIdx] = receipt
-			msgIdx++
-			receiptIdx++
-		}
-	}
-	return out, nil
+	return value.([]*lens.BlockMessageReceipts), nil
 }
 
 func NewDataSource(node lens.API) (*DataSource, error) {

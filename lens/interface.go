@@ -2,6 +2,7 @@ package lens
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/node/modules/dtypes"
@@ -50,6 +51,7 @@ type ChainAPI interface {
 	MessagesForBlock(ctx context.Context, b *types.BlockHeader) ([]*types.Message, []*types.SignedMessage, error)
 	MessagesForTipSet(ctx context.Context, ts *types.TipSet) ([]types.ChainMsg, error)
 	MessagesForTipSetBlocks(ctx context.Context, ts *types.TipSet) ([]*BlockMessages, error)
+	TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*BlockMessageReceipts, error)
 }
 
 type StateAPI interface {
@@ -102,4 +104,52 @@ type BlockMessages struct {
 	Block        *types.BlockHeader     // block messages appeared in
 	BlsMessages  []*types.Message       // BLS messages in block `Block`
 	SecpMessages []*types.SignedMessage // SECP messages in block `Block`
+}
+
+type BlockMessageReceipts struct {
+	Block   *types.BlockHeader
+	Message []*types.Message
+	Receipt []*types.MessageReceipt
+}
+
+func (bmr *BlockMessageReceipts) Iterator() (*MessageReceiptIterator, error) {
+	if len(bmr.Message) != len(bmr.Receipt) {
+		return nil, fmt.Errorf("invalid construction, expected equal number receipts (%d) and messages (%d)", len(bmr.Receipt), len(bmr.Message))
+	}
+	return &MessageReceiptIterator{
+		idx:      0,
+		msgs:     bmr.Message,
+		receipts: bmr.Receipt,
+	}, nil
+}
+
+type MessageReceiptIterator struct {
+	idx      int
+	msgs     []*types.Message
+	receipts []*types.MessageReceipt
+}
+
+func (mri *MessageReceiptIterator) HasNext() bool {
+	if mri.idx < len(mri.msgs) {
+		return true
+	}
+	return false
+}
+
+func (mri *MessageReceiptIterator) Next() (*types.Message, *types.MessageReceipt) {
+	if mri.HasNext() {
+		msg := mri.msgs[mri.idx]
+		rec := mri.receipts[mri.idx]
+		mri.idx++
+		return msg, rec
+	}
+	return nil, nil
+}
+
+func (mri *MessageReceiptIterator) Reset() {
+	mri.idx = 0
+}
+
+func (mri *MessageReceiptIterator) Index() int {
+	return mri.idx
 }

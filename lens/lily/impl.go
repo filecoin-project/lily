@@ -71,7 +71,7 @@ func (m *LilyNodeAPI) MessagesForBlock(ctx context.Context, b *types.BlockHeader
 	return m.ChainAPI.Chain.MessagesForBlock(ctx, b)
 }
 
-// returned BlockMessages match block order in tipset, use this for receipt stuufs
+// BlockMessageForTipSet returned BlockMessages match block order in tipset, use this for receipt stuufs
 func (m *LilyNodeAPI) BlockMessageForTipSet(ctx context.Context, ts *types.TipSet) ([]store.BlockMessages, error) {
 	return m.ChainAPI.Chain.BlockMsgsForTipset(ctx, ts)
 }
@@ -94,6 +94,77 @@ func (m *LilyNodeAPI) MessagesForTipSetBlocks(ctx context.Context, ts *types.Tip
 
 func (m *LilyNodeAPI) MessagesForTipSet(ctx context.Context, ts *types.TipSet) ([]types.ChainMsg, error) {
 	return m.ChainAPI.Chain.MessagesForTipset(ctx, ts)
+}
+
+// TipSetMessageReceipts returns the blocks and messages in `ts` and their corresponding receipts from `pts` matching block order in tipset (`ts`).
+func (m *LilyNodeAPI) TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*lens.BlockMessageReceipts, error) {
+	// retrieve receipts using a block from the child (ts) tipset
+	// TODO this operation can fail when the node is imported from a snapshot that does not contain receipts (most don't)
+	// the solution is to compute the tipset state which will create the receipts we load here
+	rs, err := adt.AsArray(m.Store(), ts.Blocks()[0].ParentMessageReceipts)
+	if err != nil {
+		return nil, err
+	}
+	// so we only load the receipt array one
+	getReceipt := func(idx int) (*types.MessageReceipt, error) {
+		var r types.MessageReceipt
+		if found, err := rs.Get(uint64(idx), &r); err != nil {
+			return nil, err
+		} else if !found {
+			return nil, fmt.Errorf("failed to find receipt %d", idx)
+		}
+		return &r, nil
+	}
+
+	// returned BlockMessages match block order in tipset
+	blkMsgs, err := m.BlockMessageForTipSet(ctx, pts)
+	if err != nil {
+		return nil, err
+	}
+	if len(blkMsgs) != len(pts.Blocks()) {
+		// logic error somewhere
+		return nil, fmt.Errorf("mismatching number of blocks returned from block messages, got %d wanted %d", len(blkMsgs), len(pts.Blocks()))
+	}
+
+	out := make([]*lens.BlockMessageReceipts, len(pts.Blocks()))
+	// walk each block in tipset, `pts.Blocks()` has same ordering as `blkMsgs`.
+	for blkIdx := range pts.Blocks() {
+		// bls and secp messages for block
+		msgs := blkMsgs[blkIdx]
+		// index of messages in `out.Messages`
+		msgIdx := 0
+		// index or receipts in `out.Receipts`
+		receiptIdx := 0
+		// block containing messages
+		out[blkIdx].Block = pts.Blocks()[blkIdx]
+		// total messages returned equal to sum of bls and secp messages
+		out[blkIdx].Message = make([]*types.Message, len(msgs.BlsMessages)+len(msgs.SecpkMessages))
+		// total receipts returned equal to sum of bls and secp messages
+		out[blkIdx].Receipt = make([]*types.MessageReceipt, len(msgs.BlsMessages)+len(msgs.SecpkMessages))
+		// walk bls messages and extract their receipts
+		for blsIdx := range msgs.BlsMessages {
+			receipt, err := getReceipt(receiptIdx)
+			if err != nil {
+				return nil, err
+			}
+			out[blkIdx].Message[msgIdx] = msgs.BlsMessages[blsIdx].VMMessage()
+			out[blkIdx].Receipt[receiptIdx] = receipt
+			msgIdx++
+			receiptIdx++
+		}
+		// walk secp messages and extract their receipts
+		for secpIdx := range msgs.SecpkMessages {
+			receipt, err := getReceipt(receiptIdx)
+			if err != nil {
+				return nil, err
+			}
+			out[blkIdx].Message[msgIdx] = msgs.SecpkMessages[secpIdx].VMMessage()
+			out[blkIdx].Receipt[receiptIdx] = receipt
+			msgIdx++
+			receiptIdx++
+		}
+	}
+	return out, nil
 }
 
 func (m *LilyNodeAPI) CirculatingSupply(ctx context.Context, key types.TipSetKey) (api.CirculatingSupply, error) {

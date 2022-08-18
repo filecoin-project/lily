@@ -15,6 +15,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
+	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/tasks"
 
@@ -68,7 +69,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		return nil
 	})
 
-	var blkMsgRec []*tasks.BlockMessageReceipts
+	var blkMsgRec []*lens.BlockMessageReceipts
 	grp.Go(func() error {
 		var err error
 		blkMsgRec, err = p.node.TipSetMessageReceipts(ctx, current, executed)
