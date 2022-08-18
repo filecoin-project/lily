@@ -12,9 +12,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
+	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lily/tasks/actorstate"
 )
 
@@ -60,7 +60,7 @@ func (PoStExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 		return pmap, nil
 	}
 
-	processPostMsg := func(msg *lens.ExecutedMessage) error {
+	processPostMsg := func(msg *tasks.BlockMessageReceipts) error {
 		sectors := make([]uint64, 0)
 		if msg.Receipt == nil || msg.Receipt.ExitCode.IsError() {
 			return nil
@@ -102,18 +102,18 @@ func (PoStExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 				Height:         int64(ec.PrevTs.Height()),
 				MinerID:        addr,
 				SectorID:       s,
-				PostMessageCID: msg.Cid.String(),
+				PostMessageCID: msg.Message.Cid().String(),
 			})
 		}
 		return nil
 	}
 
-	tsMsgs, err := node.ExecutedAndBlockMessages(ctx, a.Current, a.Executed)
+	msgRects, err := node.TipSetMessageReceipts(ctx, a.Current, a.Executed)
 	if err != nil {
-		return nil, fmt.Errorf("getting executed and block messages: %w", err)
+		return nil, err
 	}
 
-	for _, msg := range tsMsgs.Executed {
+	for _, msg := range msgRects {
 		if msg.Message.To == a.Address && msg.Message.Method == 5 /* miner.SubmitWindowedPoSt */ {
 			if err := processPostMsg(msg); err != nil {
 				return nil, fmt.Errorf("process post msg: %w", err)
