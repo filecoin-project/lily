@@ -89,7 +89,7 @@ func ImportFromFsFile(ctx context.Context, r repo.Repo, fs fs.File, snapshot boo
 	return nil
 }
 
-func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) (err error) {
+func ImportChain(ctx context.Context, r repo.Repo, fname string, validate bool) (err error) {
 	var rd io.Reader
 	var l int64
 	if strings.HasPrefix(fname, "http://") || strings.HasPrefix(fname, "https://") {
@@ -188,7 +188,7 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 		return err
 	}
 
-	if !snapshot {
+	if validate {
 		log.Infof("validating imported chain...")
 		if err := stm.ValidateChain(ctx, ts); err != nil {
 			return fmt.Errorf("chain validation failed: %w", err)

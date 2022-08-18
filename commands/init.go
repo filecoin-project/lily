@@ -17,9 +17,10 @@ import (
 )
 
 var initFlags struct {
-	repo           string
-	config         string
-	importSnapshot string
+	repo             string
+	config           string
+	importSnapshot   string
+	validateSnapshot bool
 }
 
 var InitCmd = &cli.Command{
@@ -44,6 +45,13 @@ var InitCmd = &cli.Command{
 			Usage:       "Import chain state from a given chain export file or url.",
 			EnvVars:     []string{"LILY_SNAPSHOT"},
 			Destination: &initFlags.importSnapshot,
+		},
+		&cli.BoolFlag{
+			Name:        "validate-snapshot",
+			Usage:       "Validate snapshot after import by computing state contained in imported tipset",
+			EnvVars:     []string{"LILY_VALIDATE_SNAPSHOT"},
+			Destination: &initFlags.validateSnapshot,
+			Value:       false,
 		},
 	},
 	Action: func(c *cli.Context) error {
@@ -80,7 +88,7 @@ var InitCmd = &cli.Command{
 		}
 
 		if initFlags.importSnapshot != "" {
-			if err := util.ImportChain(ctx, r, initFlags.importSnapshot, true); err != nil {
+			if err := util.ImportChain(ctx, r, initFlags.importSnapshot, initFlags.validateSnapshot); err != nil {
 				return err
 			}
 		}
