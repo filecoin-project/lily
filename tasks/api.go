@@ -84,6 +84,10 @@ func (mri *MessageReceiptIterator) Next() (*types.Message, *types.MessageReceipt
 	return nil, nil
 }
 
+func (mri *MessageReceiptIterator) Reset() {
+	mri.idx = 0
+}
+
 func (mri *MessageReceiptIterator) Index() int {
 	return mri.idx
 }
