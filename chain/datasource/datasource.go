@@ -16,6 +16,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/chain/vm"
 	states0 "github.com/filecoin-project/specs-actors/actors/states"
 	states2 "github.com/filecoin-project/specs-actors/v2/actors/states"
 	states3 "github.com/filecoin-project/specs-actors/v3/actors/states"
@@ -319,6 +320,18 @@ func (t *DataSource) ExecutedAndBlockMessages(ctx context.Context, ts, pts *type
 
 func (t *DataSource) MinerLoad(store adt.Store, act *types.Actor) (miner.State, error) {
 	return miner.Load(store, act)
+}
+
+func (t *DataSource) ShouldBrunFn(ctx context.Context, ts, pts *types.TipSet) (lens.ShouldBurnFn, error) {
+	return t.node.BurnFundsFn(ctx, ts, pts)
+}
+
+func ComputeGasOutputs(ctx context.Context, block *types.BlockHeader, message *types.Message, receipt *types.MessageReceipt, shouldBurnFn lens.ShouldBurnFn) (vm.GasOutputs, error) {
+	burn, err := shouldBurnFn(ctx, message, receipt.ExitCode)
+	if err != nil {
+		return vm.GasOutputs{}, err
+	}
+	return vm.ComputeGasOutputs(receipt.GasUsed, message.GasLimit, block.ParentBaseFee, message.GasFeeCap, message.GasPremium, burn), nil
 }
 
 func GetActorStateChanges(ctx context.Context, store adt.Store, current, executed *types.TipSet) (tasks.ActorStateChangeDiff, error) {

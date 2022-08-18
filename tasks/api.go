@@ -63,4 +63,6 @@ type DataSource interface {
 	DiffPreCommits(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.PreCommitChanges, error)
 
 	MinerLoad(store adt.Store, act *types.Actor) (miner.State, error)
+
+	ShouldBrunFn(ctx context.Context, ts, pts *types.TipSet) (lens.ShouldBurnFn, error)
 }

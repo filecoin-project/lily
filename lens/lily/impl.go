@@ -7,11 +7,16 @@ import (
 	"sync"
 
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/go-state-types/exitcode"
+	network2 "github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/chain/consensus/filcns"
 	"github.com/filecoin-project/lotus/chain/events"
+	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/lotus/node/impl/common"
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/lotus/node/impl/net"
@@ -165,6 +170,51 @@ func (m *LilyNodeAPI) TipSetMessageReceipts(ctx context.Context, ts, pts *types.
 		}
 	}
 	return out, nil
+}
+
+type vmWrapper struct {
+	vm vm.Interface
+	st *state.StateTree
+}
+
+func (v *vmWrapper) ShouldBurn(ctx context.Context, msg *types.Message, errcode exitcode.ExitCode) (bool, error) {
+	if lvmi, ok := v.vm.(*vm.LegacyVM); ok {
+		return lvmi.ShouldBurn(ctx, v.st, msg, errcode)
+	}
+
+	// Any "don't burn" rules from Network v13 onwards go here, for now we always return true
+	// source: https://github.com/filecoin-project/lotus/blob/v1.15.1/chain/vm/vm.go#L647
+	return true, nil
+}
+
+func (m *LilyNodeAPI) BurnFundsFn(ctx context.Context, ts, pts *types.TipSet) (lens.ShouldBurnFn, error) {
+	// Create a skeleton vm just for calling ShouldBurn
+	// NB: VM is only required to process state prior to network v13
+	if util.DefaultNetwork.Version(ctx, pts.Height()) <= network2.Version12 {
+		vmi, err := vm.NewVM(ctx, &vm.VMOpts{
+			StateBase:      ts.ParentState(),
+			Epoch:          ts.Height(),
+			Bstore:         m.ChainAPI.Chain.StateBlockstore(),
+			Actors:         filcns.NewActorRegistry(),
+			Syscalls:       m.StateManager.Syscalls,
+			CircSupplyCalc: m.StateManager.GetVMCirculatingSupply,
+			NetworkVersion: util.DefaultNetwork.Version(ctx, ts.Height()),
+			BaseFee:        ts.Blocks()[0].ParentBaseFee,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("creating temporary vm: %w", err)
+		}
+		parentStateTree, err := state.LoadStateTree(m.ChainAPI.Chain.ActorStore(ctx), pts.ParentState())
+		if err != nil {
+			return nil, err
+		}
+		vmw := &vmWrapper{vm: vmi, st: parentStateTree}
+		return vmw.ShouldBurn, nil
+	}
+	// always burn after Network Verions 12
+	return func(ctx context.Context, msg *types.Message, errcode exitcode.ExitCode) (bool, error) {
+		return true, nil
+	}, nil
 }
 
 func (m *LilyNodeAPI) CirculatingSupply(ctx context.Context, key types.TipSetKey) (api.CirculatingSupply, error) {
