@@ -624,6 +624,108 @@ func (m *LilyNodeAPI) LilySurvey(_ context.Context, cfg *LilySurveyConfig) (*sch
 	return res, nil
 }
 
+type StateReport struct {
+	Height      int64
+	TipSet      *types.TipSet
+	HasMessages bool
+	HasReceipts bool
+	HasState    bool
+}
+
+func (m *LilyNodeAPI) StateCompute(ctx context.Context, key types.TipSetKey) (interface{}, error) {
+	ts, err := m.ChainAPI.ChainGetTipSet(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	_, _, err = m.StateManager.TipSetState(ctx, ts)
+	return nil, err
+}
+
+func (m *LilyNodeAPI) FindOldestState(ctx context.Context, limit int64) ([]*StateReport, error) {
+	head, err := m.ChainHead(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var out []*StateReport
+
+	for i := int64(0); true; i++ {
+		maybeBaseTS, err := m.ChainGetTipSetByHeight(ctx, head.Height()-abi.ChainEpoch(i), head.Key())
+		if err != nil {
+			return nil, err
+		}
+
+		maybeFullTS := TryLoadFullTipSet(ctx, m, maybeBaseTS)
+		out = append(out, &StateReport{
+			Height:      int64(maybeBaseTS.Height()),
+			TipSet:      maybeBaseTS,
+			HasMessages: maybeFullTS.HasMessages,
+			HasReceipts: maybeFullTS.HasReceipts,
+			HasState:    maybeFullTS.HasState,
+		})
+		if !maybeFullTS.HasState || int64(head.Height()-abi.ChainEpoch(i)) == limit {
+			break
+		}
+	}
+	return out, nil
+}
+
+type FullBlock struct {
+	Header       *types.BlockHeader
+	BlsMessages  []*types.Message
+	SecpMessages []*types.SignedMessage
+}
+
+type FullTipSet struct {
+	Blocks []*FullBlock
+	TipSet *types.TipSet
+
+	HasMessages bool
+	HasState    bool
+	HasReceipts bool
+}
+
+func TryLoadFullTipSet(ctx context.Context, m *LilyNodeAPI, ts *types.TipSet) *FullTipSet {
+	var (
+		out         []*FullBlock
+		err         error
+		hasState    = true
+		hasMessages = true
+		hasReceipts = true
+	)
+
+	for _, b := range ts.Blocks() {
+		fb := &FullBlock{Header: b}
+
+		fb.BlsMessages, fb.SecpMessages, err = m.ChainAPI.Chain.MessagesForBlock(ctx, b)
+		if err != nil {
+			log.Debugw("failed to load messages", "height", b.Height)
+			hasMessages = false
+		}
+		out = append(out, fb)
+	}
+
+	_, err = adt.AsArray(m.ChainAPI.Chain.ActorStore(ctx), ts.Blocks()[0].ParentMessageReceipts)
+	if err != nil {
+		log.Debugw("failed to load receipts", "height", ts.Blocks()[0].Height)
+		hasReceipts = false
+	}
+
+	_, err = m.StateManager.ParentState(ts)
+	if err != nil {
+		log.Debugw("failed to load statetree", "height", ts.Blocks()[0].Height)
+		hasState = false
+	}
+
+	return &FullTipSet{
+		Blocks:      out,
+		TipSet:      ts,
+		HasMessages: hasMessages,
+		HasState:    hasState,
+		HasReceipts: hasReceipts,
+	}
+}
+
 // used for debugging querries, call ORM.AddHook and this will print all queries.
 type LogQueryHook struct{}
 

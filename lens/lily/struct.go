@@ -77,7 +77,18 @@ type LilyAPIStruct struct {
 		NetPeerInfo      func(context.Context, peer.ID) (*api.ExtendedPeerInfo, error) `perm:"read"`
 
 		StartTipSetWorker func(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
+
+		FindOldestState func(ctx context.Context, limit int64) ([]*StateReport, error)      `perm:"read"`
+		StateCompute    func(ctx context.Context, tsk types.TipSetKey) (interface{}, error) `perm:"read"`
 	}
+}
+
+func (s *LilyAPIStruct) StateCompute(ctx context.Context, tsk types.TipSetKey) (interface{}, error) {
+	return s.Internal.StateCompute(ctx, tsk)
+}
+
+func (s *LilyAPIStruct) FindOldestState(ctx context.Context, limit int64) ([]*StateReport, error) {
+	return s.Internal.FindOldestState(ctx, limit)
 }
 
 func (s *LilyAPIStruct) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {

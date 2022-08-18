@@ -71,6 +71,9 @@ type LilyAPI interface {
 	NetPeerInfo(context.Context, peer.ID) (*api.ExtendedPeerInfo, error)
 
 	StartTipSetWorker(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error)
+
+	FindOldestState(ctx context.Context, limit int64) ([]*StateReport, error)
+	StateCompute(ctx context.Context, tsk types.TipSetKey) (interface{}, error)
 }
 type LilyJobConfig struct {
 	// Name is the name of the job.
