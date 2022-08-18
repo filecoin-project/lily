@@ -12,9 +12,9 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/state"
-	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	states0 "github.com/filecoin-project/specs-actors/actors/states"
@@ -38,28 +38,28 @@ import (
 )
 
 var (
-	executedBlkMsgCacheSize int
-	executedTsCacheSize     int
-	diffPreCommitCacheSize  int
-	diffSectorCacheSize     int
+	tipsetMessageReceiptCacheSize int
+	executedTsCacheSize           int
+	diffPreCommitCacheSize        int
+	diffSectorCacheSize           int
 
-	executedBlkMsgCacheSizeEnv = "LILY_EXECUTED_BLK_MSG_CACHE_SIZE"
-	executedTsCacheSizeEnv     = "LILY_EXECUTED_TS_CACHE_SIZE"
-	diffPreCommitCacheSizeEnv  = "LILY_DIFF_PRECOMMIT_CACHE_SIZE"
-	diffSectorCacheSizeEnv     = "LILY_DIFF_SECTORS_CACHE_SIZE"
+	tipsetMessageReceiptSizeEnv = "LILY_TIPSET_MSG_RECEIPT_CACHE_SIZE"
+	executedTsCacheSizeEnv      = "LILY_EXECUTED_TS_CACHE_SIZE"
+	diffPreCommitCacheSizeEnv   = "LILY_DIFF_PRECOMMIT_CACHE_SIZE"
+	diffSectorCacheSizeEnv      = "LILY_DIFF_SECTORS_CACHE_SIZE"
 )
 
 func init() {
-	executedBlkMsgCacheSize = 4
+	tipsetMessageReceiptCacheSize = 4
 	executedTsCacheSize = 4
 	diffPreCommitCacheSize = 500
 	diffSectorCacheSize = 500
-	if s := os.Getenv(executedBlkMsgCacheSizeEnv); s != "" {
+	if s := os.Getenv(tipsetMessageReceiptSizeEnv); s != "" {
 		v, err := strconv.ParseInt(s, 10, 64)
 		if err == nil {
-			executedBlkMsgCacheSize = int(v)
+			tipsetMessageReceiptCacheSize = int(v)
 		} else {
-			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, executedBlkMsgCacheSizeEnv, executedBlkMsgCacheSize, err)
+			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, tipsetMessageReceiptSizeEnv, tipsetMessageReceiptCacheSize, err)
 		}
 	}
 	if s := os.Getenv(executedTsCacheSizeEnv); s != "" {
@@ -93,11 +93,37 @@ var _ tasks.DataSource = (*DataSource)(nil)
 
 var log = logging.Logger("lily/datasource")
 
+func NewDataSource(node lens.API) (*DataSource, error) {
+	t := &DataSource{
+		node: node,
+	}
+	var err error
+	t.tsBlkMsgRecCache, err = lru.New(tipsetMessageReceiptCacheSize)
+	if err != nil {
+		return nil, err
+	}
+
+	t.executedTsCache, err = lru.New(executedTsCacheSize)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO these cache sizes will need to increase depending on the number of miner actors at each epoch
+	t.diffPreCommitCache, err = lru.New(diffPreCommitCacheSize)
+	if err != nil {
+		return nil, err
+	}
+
+	t.diffSectorsCache, err = lru.New(diffSectorCacheSize)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
 type DataSource struct {
 	node lens.API
-
-	executedBlkMsgCache *lru.Cache
-	executedBlkMsgGroup singleflight.Group
 
 	executedTsCache *lru.Cache
 	executedTsGroup singleflight.Group
@@ -112,19 +138,15 @@ type DataSource struct {
 	diffPreCommitGroup singleflight.Group
 }
 
+func (t *DataSource) ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi.TokenAmount, error) {
+	return t.node.ComputeBaseFee(ctx, ts)
+}
+
 func (t *DataSource) TipSetBlockMessages(ctx context.Context, ts *types.TipSet) ([]*lens.BlockMessages, error) {
 	return t.node.MessagesForTipSetBlocks(ctx, ts)
 }
 
-func (t *DataSource) TipSetMessages(ctx context.Context, ts *types.TipSet) ([]types.ChainMsg, error) {
-	return t.node.MessagesForTipSet(ctx, ts)
-}
-
-func (t *DataSource) BlockMessageForTipSet(ctx context.Context, ts *types.TipSet) ([]store.BlockMessages, error) {
-	return t.node.BlockMessageForTipSet(ctx, ts)
-}
-
-// TipSetMessageReceipts returns the blocks and messages in `ts` and their corresponding receipts from `pts` matching block order in tipset (`ts`).
+// TipSetMessageReceipts returns the blocks and messages in `pts` and their corresponding receipts from `ts` matching block order in tipset (`pts`).
 // TODO replace with lotus chainstore method when https://github.com/filecoin-project/lotus/pull/9186 lands
 func (t *DataSource) TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*lens.BlockMessageReceipts, error) {
 	key, err := asKey(ts, pts)
@@ -148,35 +170,6 @@ func (t *DataSource) TipSetMessageReceipts(ctx context.Context, ts, pts *types.T
 	}
 
 	return value.([]*lens.BlockMessageReceipts), nil
-}
-
-func NewDataSource(node lens.API) (*DataSource, error) {
-	t := &DataSource{
-		node: node,
-	}
-	var err error
-	t.executedBlkMsgCache, err = lru.New(executedBlkMsgCacheSize)
-	if err != nil {
-		return nil, err
-	}
-
-	t.executedTsCache, err = lru.New(executedTsCacheSize)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO these cache sizes will need to increase depending on the number of miner actors at each epoch
-	t.diffPreCommitCache, err = lru.New(diffPreCommitCacheSize)
-	if err != nil {
-		return nil, err
-	}
-
-	t.diffSectorsCache, err = lru.New(diffSectorCacheSize)
-	if err != nil {
-		return nil, err
-	}
-
-	return t, nil
 }
 
 func (t *DataSource) TipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error) {
@@ -281,49 +274,12 @@ func (t *DataSource) MessageExecutions(ctx context.Context, ts, pts *types.TipSe
 	return value.([]*lens.MessageExecution), nil
 }
 
-func (t *DataSource) ExecutedAndBlockMessages(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
-	metrics.RecordInc(ctx, metrics.DataSourceExecutedAndBlockMessagesRead)
-	ctx, span := otel.Tracer("").Start(ctx, "DataSource.ExecutedAndBlockMessages")
-	if span.IsRecording() {
-		span.SetAttributes(attribute.String("tipset", ts.Key().String()))
-		span.SetAttributes(attribute.String("parent", pts.Key().String()))
-	}
-	defer span.End()
-
-	key, err := asKey(ts, pts)
-	if err != nil {
-		return nil, err
-	}
-	value, found := t.executedBlkMsgCache.Get(key)
-	if found {
-		metrics.RecordInc(ctx, metrics.DataSourceExecutedAndBlockMessagesCacheHit)
-		return value.(*lens.TipSetMessages), nil
-	}
-
-	value, err, shared := t.executedBlkMsgGroup.Do(key, func() (interface{}, error) {
-		data, innerErr := t.node.GetExecutedAndBlockMessagesForTipset(ctx, ts, pts)
-		if innerErr == nil {
-			t.executedBlkMsgCache.Add(key, data)
-		}
-
-		return data, innerErr
-	})
-
-	if span.IsRecording() {
-		span.SetAttributes(attribute.Bool("shared", shared))
-	}
-	if err != nil {
-		return nil, err
-	}
-	return value.(*lens.TipSetMessages), nil
-}
-
 func (t *DataSource) MinerLoad(store adt.Store, act *types.Actor) (miner.State, error) {
 	return miner.Load(store, act)
 }
 
-func (t *DataSource) ShouldBrunFn(ctx context.Context, ts, pts *types.TipSet) (lens.ShouldBurnFn, error) {
-	return t.node.BurnFundsFn(ctx, ts, pts)
+func (t *DataSource) ShouldBrunFn(ctx context.Context, ts *types.TipSet) (lens.ShouldBurnFn, error) {
+	return t.node.BurnFundsFn(ctx, ts)
 }
 
 func ComputeGasOutputs(ctx context.Context, block *types.BlockHeader, message *types.Message, receipt *types.MessageReceipt, shouldBurnFn lens.ShouldBurnFn) (vm.GasOutputs, error) {

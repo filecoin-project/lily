@@ -12,7 +12,6 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p-core/peer"
 
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/schedule"
 )
 
@@ -26,8 +25,7 @@ type LilyAPIStruct struct {
 	v0api.CommonStruct
 
 	Internal struct {
-		Store                                func() adt.Store                                                                  `perm:"read"`
-		GetExecutedAndBlockMessagesForTipset func(context.Context, *types.TipSet, *types.TipSet) (*lens.TipSetMessages, error) `perm:"read"`
+		Store func() adt.Store `perm:"read"`
 
 		LilyIndex  func(ctx context.Context, config *LilyIndexConfig) (interface{}, error)     `perm:"read"`
 		LilyWatch  func(context.Context, *LilyWatchConfig) (*schedule.JobSubmitResult, error)  `perm:"read"`
@@ -181,10 +179,6 @@ func (s *LilyAPIStruct) LilyGapFill(ctx context.Context, cfg *LilyGapFillConfig)
 
 func (s *LilyAPIStruct) Shutdown(ctx context.Context) error {
 	return s.Internal.Shutdown(ctx)
-}
-
-func (s *LilyAPIStruct) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
-	return s.Internal.GetExecutedAndBlockMessagesForTipset(ctx, ts, pts)
 }
 
 func (s *LilyAPIStruct) SyncState(ctx context.Context) (*api.SyncState, error) {

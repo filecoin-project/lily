@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/filecoin-project/go-state-types/exitcode"
-	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/node/modules/dtypes"
 
 	"github.com/filecoin-project/go-address"
@@ -23,7 +22,6 @@ type API interface {
 	StateAPI
 	VMAPI
 
-	GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*TipSetMessages, error)
 	GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*MessageExecution, error)
 }
 type StoreAPI interface {
@@ -46,12 +44,8 @@ type ChainAPI interface {
 	ChainGetBlockMessages(ctx context.Context, msg cid.Cid) (*api.BlockMessages, error)
 	ChainGetParentMessages(ctx context.Context, blockCid cid.Cid) ([]api.Message, error)
 
-	BlockMessageForTipSet(ctx context.Context, ts *types.TipSet) ([]store.BlockMessages, error)
+	ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi.TokenAmount, error)
 
-	GetParentReceipt(ctx context.Context, b *types.BlockHeader, i int) (*types.MessageReceipt, error)
-
-	MessagesForBlock(ctx context.Context, b *types.BlockHeader) ([]*types.Message, []*types.SignedMessage, error)
-	MessagesForTipSet(ctx context.Context, ts *types.TipSet) ([]types.ChainMsg, error)
 	MessagesForTipSetBlocks(ctx context.Context, ts *types.TipSet) ([]*BlockMessages, error)
 	TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*BlockMessageReceipts, error)
 }
@@ -72,12 +66,9 @@ type StateAPI interface {
 }
 
 type ShouldBurnFn func(ctx context.Context, msg *types.Message, errcode exitcode.ExitCode) (bool, error)
-type VMAPI interface {
-	BurnFundsFn(ctx context.Context, ts, pts *types.TipSet) (ShouldBurnFn, error)
-}
 
-type TipSetMessages struct {
-	Executed []*ExecutedMessage
+type VMAPI interface {
+	BurnFundsFn(ctx context.Context, ts *types.TipSet) (ShouldBurnFn, error)
 }
 
 type MessageExecution struct {
@@ -94,19 +85,6 @@ type MessageExecution struct {
 	Implicit bool
 }
 
-type ExecutedMessage struct {
-	Cid           cid.Cid
-	Height        abi.ChainEpoch
-	Message       *types.Message
-	Receipt       *types.MessageReceipt
-	BlockHeader   *types.BlockHeader
-	Blocks        []cid.Cid // blocks this message appeared in
-	Index         uint64    // Message and Receipt sequence in tipset
-	FromActorCode cid.Cid   // code of the actor the message is from
-	ToActorCode   cid.Cid   // code of the actor the message is to
-	GasOutputs    vm.GasOutputs
-}
-
 type BlockMessages struct {
 	Block        *types.BlockHeader     // block messages appeared in
 	BlsMessages  []*types.Message       // BLS messages in block `Block`
@@ -114,9 +92,10 @@ type BlockMessages struct {
 }
 
 type BlockMessageReceipts struct {
-	Block   *types.BlockHeader
-	Message []*types.Message
-	Receipt []*types.MessageReceipt
+	Block                 *types.BlockHeader
+	Message               []types.ChainMsg
+	Receipt               []*types.MessageReceipt
+	MessageExecutionIndex map[types.ChainMsg]int
 }
 
 func (bmr *BlockMessageReceipts) Iterator() (*MessageReceiptIterator, error) {
@@ -127,13 +106,15 @@ func (bmr *BlockMessageReceipts) Iterator() (*MessageReceiptIterator, error) {
 		idx:      0,
 		msgs:     bmr.Message,
 		receipts: bmr.Receipt,
+		exeIdx:   bmr.MessageExecutionIndex,
 	}, nil
 }
 
 type MessageReceiptIterator struct {
 	idx      int
-	msgs     []*types.Message
+	msgs     []types.ChainMsg
 	receipts []*types.MessageReceipt
+	exeIdx   map[types.ChainMsg]int
 }
 
 func (mri *MessageReceiptIterator) HasNext() bool {
@@ -143,20 +124,17 @@ func (mri *MessageReceiptIterator) HasNext() bool {
 	return false
 }
 
-func (mri *MessageReceiptIterator) Next() (*types.Message, *types.MessageReceipt) {
+func (mri *MessageReceiptIterator) Next() (types.ChainMsg, int, *types.MessageReceipt) {
 	if mri.HasNext() {
 		msg := mri.msgs[mri.idx]
+		exeIdx := mri.exeIdx[msg]
 		rec := mri.receipts[mri.idx]
 		mri.idx++
-		return msg, rec
+		return msg, exeIdx, rec
 	}
-	return nil, nil
+	return nil, -1, nil
 }
 
 func (mri *MessageReceiptIterator) Reset() {
 	mri.idx = 0
-}
-
-func (mri *MessageReceiptIterator) Index() int {
-	return mri.idx
 }

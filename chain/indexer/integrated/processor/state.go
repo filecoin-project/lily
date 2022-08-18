@@ -544,6 +544,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			out.TipsetProcessors[t] = messagetask.NewTask(api)
 		case tasktype.BlockMessage:
 			out.TipsetProcessors[t] = bmtask.NewTask(api)
+		case tasktype.MessageGasEconomy:
+			out.TipsetProcessors[t] = gasecontask.NewTask(api)
 
 		case tasktype.GasOutputs:
 			out.TipsetsProcessors[t] = gasouttask.NewTask(api)
@@ -555,8 +557,6 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			out.TipsetsProcessors[t] = imtask.NewTask(api)
 		case tasktype.InternalParsedMessage:
 			out.TipsetsProcessors[t] = ipmtask.NewTask(api)
-		case tasktype.MessageGasEconomy:
-			out.TipsetsProcessors[t] = gasecontask.NewTask(api)
 		case tasktype.MultisigApproval:
 			out.TipsetsProcessors[t] = msapprovaltask.NewTask(api)
 		case tasktype.VmMessage:

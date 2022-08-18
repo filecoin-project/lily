@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-bitfield"
-	"github.com/filecoin-project/go-state-types/exitcode"
-	"github.com/filecoin-project/go-state-types/network"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -22,8 +20,6 @@ import (
 	builtin "github.com/filecoin-project/lotus/chain/actors/builtin"
 	"github.com/filecoin-project/lotus/chain/consensus/filcns"
 	"github.com/filecoin-project/lotus/chain/state"
-	"github.com/filecoin-project/lotus/chain/stmgr"
-	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
@@ -39,205 +35,6 @@ func init() {
 }
 
 var log = logging.Logger("lily/lens")
-
-// GetMessagesForTipset returns a list of messages sent as part of pts (parent) with receipts found in ts (child).
-// No attempt at deduplication of messages is made. A list of blocks with their corresponding messages is also returned - it contains all messages
-// in the block regardless if they were applied during the state change.
-func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainStore, sm *stmgr.StateManager, current, executed *types.TipSet) (*lens.TipSetMessages, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "GetExecutedAndBlockMessagesForTipSet")
-	defer span.End()
-	if !types.CidArrsEqual(current.Parents().Cids(), executed.Cids()) {
-		return nil, fmt.Errorf("current tipset (%s) is not on the same chain as executed (%s)", current.Key(), executed.Key())
-	}
-
-	getActorCode, err := MakeGetActorCodeFunc(ctx, cs.ActorStore(ctx), current, executed)
-	if err != nil {
-		return nil, err
-	}
-
-	// Build a lookup of which blocks each message appears in
-	messageBlocks := map[cid.Cid][]cid.Cid{}
-	for blockIdx, bh := range executed.Blocks() {
-		blscids, secpkcids, err := cs.ReadMsgMetaCids(ctx, bh.Messages)
-		if err != nil {
-			return nil, fmt.Errorf("read messages for block: %w", err)
-		}
-
-		for _, c := range blscids {
-			messageBlocks[c] = append(messageBlocks[c], executed.Cids()[blockIdx])
-		}
-
-		for _, c := range secpkcids {
-			messageBlocks[c] = append(messageBlocks[c], executed.Cids()[blockIdx])
-		}
-	}
-	span.AddEvent("read block message metadata")
-
-	bmsgs, err := cs.BlockMsgsForTipset(ctx, executed)
-	if err != nil {
-		return nil, fmt.Errorf("block messages for tipset: %w", err)
-	}
-
-	span.AddEvent("read block messages for tipset")
-
-	pblocks := executed.Blocks()
-	if len(bmsgs) != len(pblocks) {
-		// logic error somewhere
-		return nil, fmt.Errorf("mismatching number of blocks returned from block messages, got %d wanted %d", len(bmsgs), len(pblocks))
-	}
-
-	count := 0
-	for _, bm := range bmsgs {
-		count += len(bm.BlsMessages) + len(bm.SecpkMessages)
-	}
-
-	// Start building a list of completed message with receipt
-	emsgs := make([]*lens.ExecutedMessage, 0, count)
-
-	// bmsgs is ordered by block
-	var index uint64
-	for blockIdx, bm := range bmsgs {
-		for _, blsm := range bm.BlsMessages {
-			msg := blsm.VMMessage()
-			// if a message ran out of gas while executing this is expected.
-			toCode, found := getActorCode(msg.To)
-			if !found {
-				log.Warnw("failed to find TO actor", "height", current.Height().String(), "message", msg.Cid().String(), "actor", msg.To.String())
-			}
-			// we must always be able to find the sender, else there is a logic error somewhere.
-			fromCode, found := getActorCode(msg.From)
-			if !found {
-				return nil, fmt.Errorf("failed to find from actor %s height %d message %s", msg.From, current.Height(), msg.Cid())
-			}
-			emsgs = append(emsgs, &lens.ExecutedMessage{
-				Cid:           blsm.Cid(),
-				Height:        executed.Height(),
-				Message:       msg,
-				BlockHeader:   pblocks[blockIdx],
-				Blocks:        messageBlocks[blsm.Cid()],
-				Index:         index,
-				FromActorCode: fromCode,
-				ToActorCode:   toCode,
-			})
-			index++
-		}
-
-		for _, secm := range bm.SecpkMessages {
-			msg := secm.VMMessage()
-			toCode, found := getActorCode(msg.To)
-			// if a message ran out of gas while executing this is expected.
-			if !found {
-				log.Warnw("failed to find TO actor", "height", current.Height().String(), "message", msg.Cid().String(), "actor", msg.To.String())
-			}
-			// we must always be able to find the sender, else there is a logic error somewhere.
-			fromCode, found := getActorCode(msg.From)
-			if !found {
-				return nil, fmt.Errorf("failed to find from actor %s height %d message %s", msg.From, current.Height(), msg.Cid())
-			}
-			emsgs = append(emsgs, &lens.ExecutedMessage{
-				Cid:           secm.Cid(),
-				Height:        executed.Height(),
-				Message:       secm.VMMessage(),
-				BlockHeader:   pblocks[blockIdx],
-				Blocks:        messageBlocks[secm.Cid()],
-				Index:         index,
-				FromActorCode: fromCode,
-				ToActorCode:   toCode,
-			})
-			index++
-		}
-
-	}
-	span.AddEvent("built executed message list")
-
-	// Retrieve receipts using a block from the child tipset
-	rs, err := adt.AsArray(cs.ActorStore(ctx), current.Blocks()[0].ParentMessageReceipts)
-	if err != nil {
-		return nil, fmt.Errorf("amt load: %w", err)
-	}
-
-	if rs.Length() != uint64(len(emsgs)) {
-		// logic error somewhere
-		return nil, fmt.Errorf("mismatching number of receipts: got %d wanted %d", rs.Length(), len(emsgs))
-	}
-
-	// Create a skeleton vm just for calling ShouldBurn
-	// NB: VM is only required to process state prior to network v13
-	if DefaultNetwork.Version(ctx, executed.Height()) <= network.Version12 {
-		vmi, err := vm.NewVM(ctx, &vm.VMOpts{
-			StateBase:      current.ParentState(),
-			Epoch:          current.Height(),
-			Bstore:         cs.StateBlockstore(),
-			Actors:         filcns.NewActorRegistry(),
-			Syscalls:       sm.Syscalls,
-			CircSupplyCalc: sm.GetVMCirculatingSupply,
-			NetworkVersion: DefaultNetwork.Version(ctx, current.Height()),
-			BaseFee:        current.Blocks()[0].ParentBaseFee,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("creating temporary vm: %w", err)
-		}
-		parentStateTree, err := state.LoadStateTree(cs.ActorStore(ctx), executed.ParentState())
-		if err != nil {
-			return nil, fmt.Errorf("load state tree: %w", err)
-		}
-		span.AddEvent("loaded parent state tree")
-
-		vmw := &vmWrapper{vm: vmi}
-		// Receipts are in same order as BlockMsgsForTipset
-		for _, em := range emsgs {
-			var r types.MessageReceipt
-			if found, err := rs.Get(em.Index, &r); err != nil {
-				return nil, err
-			} else if !found {
-				return nil, fmt.Errorf("failed to find receipt %d", em.Index)
-			}
-			em.Receipt = &r
-
-			burn, err := vmw.ShouldBurn(ctx, parentStateTree, em.Message, em.Receipt.ExitCode)
-			if err != nil {
-				return nil, fmt.Errorf("deciding whether should burn failed: %w", err)
-			}
-
-			em.GasOutputs = vm.ComputeGasOutputs(em.Receipt.GasUsed, em.Message.GasLimit, em.BlockHeader.ParentBaseFee, em.Message.GasFeeCap, em.Message.GasPremium, burn)
-			span.AddEvent("computed executed message gas usage")
-		}
-	} else {
-		// Receipts are in same order as BlockMsgsForTipset
-		for _, em := range emsgs {
-			var r types.MessageReceipt
-			if found, err := rs.Get(em.Index, &r); err != nil {
-				return nil, err
-			} else if !found {
-				return nil, fmt.Errorf("failed to find receipt %d", em.Index)
-			}
-			em.Receipt = &r
-			// always burn after Network Verions 12
-			shouldBurn := true
-			em.GasOutputs = vm.ComputeGasOutputs(em.Receipt.GasUsed, em.Message.GasLimit, em.BlockHeader.ParentBaseFee, em.Message.GasFeeCap, em.Message.GasPremium, shouldBurn)
-		}
-		span.AddEvent("computed executed message gas usage")
-
-	}
-
-	return &lens.TipSetMessages{
-		Executed: emsgs,
-	}, nil
-}
-
-type vmWrapper struct {
-	vm vm.Interface
-}
-
-func (v *vmWrapper) ShouldBurn(ctx context.Context, st *state.StateTree, msg *types.Message, errcode exitcode.ExitCode) (bool, error) {
-	if lvmi, ok := v.vm.(*vm.LegacyVM); ok {
-		return lvmi.ShouldBurn(ctx, st, msg, errcode)
-	}
-
-	// Any "don't burn" rules from Network v13 onwards go here, for now we always return true
-	// source: https://github.com/filecoin-project/lotus/blob/v1.15.1/chain/vm/vm.go#L647
-	return true, nil
-}
 
 func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (string, string, error) {
 	m, found := ActorRegistry.Methods[actCode][method]
@@ -432,6 +229,7 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 	}
 
 	return func(a address.Address) (cid.Cid, bool) {
+		// TODO accept a context, don't take the function context.
 		_, innerSpan := otel.Tracer("").Start(ctx, "GetActorCode")
 		defer innerSpan.End()
 		// Shortcut lookup before resolving

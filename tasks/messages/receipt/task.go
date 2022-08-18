@@ -69,19 +69,22 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		}
 
 		for itr.HasNext() {
-			msg, rec := itr.Next()
+			msg, index, rec := itr.Next()
 			if msgsSeen[msg.Cid()] {
 				continue
 			}
 			msgsSeen[msg.Cid()] = true
 
 			rcpt := &messagemodel.Receipt{
+				// use current's height and stateroot since receipts returned from TipSetMessageReceipts come from current
+				// the messages from `executed` are applied (executed) to produce the stateroot and receipts in `current`.
 				Height:    int64(current.Height()),
-				Message:   msg.Cid().String(),
 				StateRoot: current.ParentState().String(),
-				Idx:       itr.Index(),
-				ExitCode:  int64(rec.ExitCode),
-				GasUsed:   rec.GasUsed,
+
+				Message:  msg.Cid().String(),
+				Idx:      index,
+				ExitCode: int64(rec.ExitCode),
+				GasUsed:  rec.GasUsed,
 			}
 			receiptResults = append(receiptResults, rcpt)
 		}

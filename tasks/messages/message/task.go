@@ -42,46 +42,69 @@ func (t *Task) ProcessTipSet(ctx context.Context, current *types.TipSet) (model.
 		StateRoot: current.ParentState().String(),
 	}
 
-	blkMsgs, err := t.node.TipSetMessages(ctx, current)
+	blksMsgs, err := t.node.TipSetBlockMessages(ctx, current)
 	if err != nil {
 		report.ErrorsDetected = fmt.Errorf("getting messages for tipset: %w", err)
 		return nil, report, nil
 	}
 
 	var (
-		messageResults = make(messagemodel.Messages, 0, len(blkMsgs))
-		errorsDetected = make([]*messages.MessageError, 0, len(blkMsgs))
+		messageResults = make(messagemodel.Messages, 0)
+		errorsDetected = make([]*messages.MessageError, 0)
 		blkMsgSeen     = make(map[cid.Cid]bool)
 	)
 
 	// record all unique messages in current
-	for _, msg := range blkMsgs {
+	for _, blkMsgs := range blksMsgs {
 		select {
 		case <-ctx.Done():
 			return nil, nil, fmt.Errorf("context done: %w", ctx.Err())
 		default:
 		}
+		for _, msg := range blkMsgs.BlsMessages {
+			if blkMsgSeen[msg.Cid()] {
+				continue
+			}
+			blkMsgSeen[msg.Cid()] = true
 
-		if blkMsgSeen[msg.Cid()] {
-			continue
+			// record all unique messages
+			messageResults = append(messageResults, &messagemodel.Message{
+				Height:     int64(blkMsgs.Block.Height),
+				Cid:        msg.Cid().String(),
+				From:       msg.VMMessage().From.String(),
+				To:         msg.VMMessage().To.String(),
+				Value:      msg.VMMessage().Value.String(),
+				GasFeeCap:  msg.VMMessage().GasFeeCap.String(),
+				GasPremium: msg.VMMessage().GasPremium.String(),
+				GasLimit:   msg.VMMessage().GasLimit,
+				SizeBytes:  msg.ChainLength(),
+				Nonce:      msg.VMMessage().Nonce,
+				Method:     uint64(msg.VMMessage().Method),
+			})
 		}
-		blkMsgSeen[msg.Cid()] = true
+		for _, msg := range blkMsgs.SecpMessages {
+			if blkMsgSeen[msg.Cid()] {
+				continue
+			}
+			blkMsgSeen[msg.Cid()] = true
 
-		// record all unique messages
-		msg := &messagemodel.Message{
-			Height:     int64(current.Height()),
-			Cid:        msg.Cid().String(),
-			From:       msg.VMMessage().From.String(),
-			To:         msg.VMMessage().To.String(),
-			Value:      msg.VMMessage().Value.String(),
-			GasFeeCap:  msg.VMMessage().GasFeeCap.String(),
-			GasPremium: msg.VMMessage().GasPremium.String(),
-			GasLimit:   msg.VMMessage().GasLimit,
-			SizeBytes:  msg.ChainLength(),
-			Nonce:      msg.VMMessage().Nonce,
-			Method:     uint64(msg.VMMessage().Method),
+			// record all unique messages
+			messageResults = append(messageResults, &messagemodel.Message{
+				Height:     int64(blkMsgs.Block.Height),
+				Cid:        msg.Cid().String(),
+				From:       msg.VMMessage().From.String(),
+				To:         msg.VMMessage().To.String(),
+				Value:      msg.VMMessage().Value.String(),
+				GasFeeCap:  msg.VMMessage().GasFeeCap.String(),
+				GasPremium: msg.VMMessage().GasPremium.String(),
+				GasLimit:   msg.VMMessage().GasLimit,
+				SizeBytes:  msg.ChainLength(),
+				Nonce:      msg.VMMessage().Nonce,
+				Method:     uint64(msg.VMMessage().Method),
+			})
+
 		}
-		messageResults = append(messageResults, msg)
+
 	}
 
 	if len(errorsDetected) != 0 {

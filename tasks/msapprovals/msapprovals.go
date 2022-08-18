@@ -57,7 +57,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		StateRoot: current.ParentState().String(),
 	}
 
-	grp, ctx := errgroup.WithContext(ctx)
+	grp, _ := errgroup.WithContext(ctx)
 
 	var getActorCodeFn func(address address.Address) (cid.Cid, bool)
 	grp.Go(func() error {
@@ -101,31 +101,31 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		}
 
 		for itr.HasNext() {
-			msg, rec := itr.Next()
+			msg, _, rec := itr.Next()
 			// Only interested in successful messages
 			if !rec.ExitCode.IsSuccess() {
 				continue
 			}
 
 			// Only interested in messages to multisig actors
-			msgToCode, found := getActorCodeFn(msg.To)
+			msgToCode, found := getActorCodeFn(msg.VMMessage().To)
 			if !found {
-				return nil, nil, fmt.Errorf("failed to find to actor %s height %d message %s", msg.To, current.Height(), msg.Cid())
+				return nil, nil, fmt.Errorf("failed to find to actor %s height %d message %s", msg.VMMessage().To, current.Height(), msg.Cid())
 			}
 			if !builtin.IsMultisigActor(msgToCode) {
 				continue
 			}
 
 			// Only interested in propose and approve messages
-			if msg.Method != ProposeMethodNum && msg.Method != ApproveMethodNum {
+			if msg.VMMessage().Method != ProposeMethodNum && msg.VMMessage().Method != ApproveMethodNum {
 				continue
 			}
 
-			applied, tx, err := p.getTransactionIfApplied(ctx, msg, rec, current)
+			applied, tx, err := p.getTransactionIfApplied(ctx, msg.VMMessage(), rec, current)
 			if err != nil {
 				errorsDetected = append(errorsDetected, &MultisigError{
-					Addr:  msg.To.String(),
-					Error: fmt.Errorf("failed to find transaction: %w", err).Error(),
+					Addr:  msg.VMMessage().To.String(),
+					Error: fmt.Errorf("failed to find transaction for message %s: %w", msg.Cid(), err).Error(),
 				})
 				continue
 			}
@@ -138,10 +138,10 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			appr := msapprovals.MultisigApproval{
 				Height:        int64(executed.Height()),
 				StateRoot:     executed.ParentState().String(),
-				MultisigID:    msg.To.String(),
+				MultisigID:    msg.VMMessage().To.String(),
 				Message:       msg.Cid().String(),
-				Method:        uint64(msg.Method),
-				Approver:      msg.From.String(),
+				Method:        uint64(msg.VMMessage().Method),
+				Approver:      msg.VMMessage().From.String(),
 				GasUsed:       rec.GasUsed,
 				TransactionID: tx.id,
 				To:            tx.to,
@@ -149,10 +149,10 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			}
 
 			// Get state of actor after the message has been applied
-			act, err := p.node.Actor(ctx, msg.To, current.Key())
+			act, err := p.node.Actor(ctx, msg.VMMessage().To, current.Key())
 			if err != nil {
 				errorsDetected = append(errorsDetected, &MultisigError{
-					Addr:  msg.To.String(),
+					Addr:  msg.VMMessage().To.String(),
 					Error: fmt.Errorf("failed to load actor: %w", err).Error(),
 				})
 				continue
@@ -161,7 +161,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			actorState, err := multisig.Load(p.node.Store(), act)
 			if err != nil {
 				errorsDetected = append(errorsDetected, &MultisigError{
-					Addr:  msg.To.String(),
+					Addr:  msg.VMMessage().To.String(),
 					Error: fmt.Errorf("failed to load actor state: %w", err).Error(),
 				})
 				continue
@@ -170,7 +170,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			ib, err := actorState.InitialBalance()
 			if err != nil {
 				errorsDetected = append(errorsDetected, &MultisigError{
-					Addr:  msg.To.String(),
+					Addr:  msg.VMMessage().To.String(),
 					Error: fmt.Errorf("failed to read initial balance: %w", err).Error(),
 				})
 				continue
@@ -180,7 +180,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			threshold, err := actorState.Threshold()
 			if err != nil {
 				errorsDetected = append(errorsDetected, &MultisigError{
-					Addr:  msg.To.String(),
+					Addr:  msg.VMMessage().To.String(),
 					Error: fmt.Errorf("failed to read initial balance: %w", err).Error(),
 				})
 				continue
@@ -190,7 +190,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			signers, err := actorState.Signers()
 			if err != nil {
 				errorsDetected = append(errorsDetected, &MultisigError{
-					Addr:  msg.To.String(),
+					Addr:  msg.VMMessage().To.String(),
 					Error: fmt.Errorf("failed to read signers: %w", err).Error(),
 				})
 				continue

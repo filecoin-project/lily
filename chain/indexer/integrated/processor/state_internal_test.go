@@ -16,6 +16,9 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/tasks/messageexecutions/vm"
+	"github.com/filecoin-project/lily/tasks/messages/blockmessage"
+	"github.com/filecoin-project/lily/tasks/messages/gaseconomy"
+	"github.com/filecoin-project/lily/tasks/messages/message"
 
 	"github.com/filecoin-project/lily/tasks/actorstate"
 	inittask "github.com/filecoin-project/lily/tasks/actorstate/init_"
@@ -34,10 +37,7 @@ import (
 	"github.com/filecoin-project/lily/tasks/consensus"
 	"github.com/filecoin-project/lily/tasks/messageexecutions/internalmessage"
 	"github.com/filecoin-project/lily/tasks/messageexecutions/internalparsedmessage"
-	"github.com/filecoin-project/lily/tasks/messages/blockmessage"
-	"github.com/filecoin-project/lily/tasks/messages/gaseconomy"
 	"github.com/filecoin-project/lily/tasks/messages/gasoutput"
-	"github.com/filecoin-project/lily/tasks/messages/message"
 	"github.com/filecoin-project/lily/tasks/messages/parsedmessage"
 	"github.com/filecoin-project/lily/tasks/messages/receipt"
 	"github.com/filecoin-project/lily/tasks/msapprovals"
@@ -48,26 +48,26 @@ func TestNewProcessor(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, t.Name(), proc.name)
 	require.Len(t, proc.actorProcessors, 21)
-	require.Len(t, proc.tipsetProcessors, 5)
-	require.Len(t, proc.tipsetsProcessors, 10)
+	require.Len(t, proc.tipsetProcessors, 8)
+	require.Len(t, proc.tipsetsProcessors, 7)
 	require.Len(t, proc.builtinProcessors, 1)
 
-	require.Equal(t, message.NewTask(nil), proc.tipsetsProcessors[tasktype.Message])
 	require.Equal(t, gasoutput.NewTask(nil), proc.tipsetsProcessors[tasktype.GasOutputs])
-	require.Equal(t, blockmessage.NewTask(nil), proc.tipsetsProcessors[tasktype.BlockMessage])
 	require.Equal(t, parsedmessage.NewTask(nil), proc.tipsetsProcessors[tasktype.ParsedMessage])
 	require.Equal(t, receipt.NewTask(nil), proc.tipsetsProcessors[tasktype.Receipt])
 	require.Equal(t, internalmessage.NewTask(nil), proc.tipsetsProcessors[tasktype.InternalMessage])
 	require.Equal(t, internalparsedmessage.NewTask(nil), proc.tipsetsProcessors[tasktype.InternalParsedMessage])
-	require.Equal(t, gaseconomy.NewTask(nil), proc.tipsetsProcessors[tasktype.MessageGasEconomy])
 	require.Equal(t, msapprovals.NewTask(nil), proc.tipsetsProcessors[tasktype.MultisigApproval])
 	require.Equal(t, vm.NewTask(nil), proc.tipsetsProcessors[tasktype.VmMessage])
 
+	require.Equal(t, message.NewTask(nil), proc.tipsetProcessors[tasktype.Message])
+	require.Equal(t, blockmessage.NewTask(nil), proc.tipsetProcessors[tasktype.BlockMessage])
 	require.Equal(t, headers.NewTask(), proc.tipsetProcessors[tasktype.BlockHeader])
 	require.Equal(t, parents.NewTask(), proc.tipsetProcessors[tasktype.BlockParent])
 	require.Equal(t, drand.NewTask(), proc.tipsetProcessors[tasktype.DrandBlockEntrie])
 	require.Equal(t, chaineconomics.NewTask(nil), proc.tipsetProcessors[tasktype.ChainEconomics])
 	require.Equal(t, consensus.NewTask(nil), proc.tipsetProcessors[tasktype.ChainConsensus])
+	require.Equal(t, gaseconomy.NewTask(nil), proc.tipsetProcessors[tasktype.MessageGasEconomy])
 
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.DeadlineInfoExtractor{})), proc.actorProcessors[tasktype.MinerCurrentDeadlineInfo])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.FeeDebtExtractor{})), proc.actorProcessors[tasktype.MinerFeeDebt])

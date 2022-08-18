@@ -17,6 +17,13 @@ type MockActorStateAPI struct {
 	mock.Mock
 }
 
+func (m *MockActorStateAPI) TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*lens.BlockMessageReceipts, error) {
+	args := m.Called(ctx, ts, pts)
+	tsmsgs := args.Get(0)
+	err := args.Error(1)
+	return tsmsgs.([]*lens.BlockMessageReceipts), err
+}
+
 func (m *MockActorStateAPI) MinerLoad(store adt.Store, act *types.Actor) (miner.State, error) {
 	args := m.Called(store, act)
 	state := args.Get(0)
@@ -54,13 +61,6 @@ func (m *MockActorStateAPI) ActorState(ctx context.Context, addr address.Address
 func (m *MockActorStateAPI) Store() adt.Store {
 	m.Called()
 	return nil
-}
-
-func (m *MockActorStateAPI) ExecutedAndBlockMessages(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
-	args := m.Called(ctx, ts, pts)
-	tsmsgs := args.Get(0)
-	err := args.Error(1)
-	return tsmsgs.(*lens.TipSetMessages), err
 }
 
 func (m *MockActorStateAPI) DiffPreCommits(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.PreCommitChanges, error) {

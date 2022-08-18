@@ -52,7 +52,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		StateRoot: current.ParentState().String(),
 	}
 
-	grp, ctx := errgroup.WithContext(ctx)
+	grp, _ := errgroup.WithContext(ctx)
 
 	var getActorCodeFn func(address address.Address) (cid.Cid, bool)
 	grp.Go(func() error {
@@ -102,22 +102,22 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 		// calculate total gas limit of executed messages regardless of duplicates.
 		for itr.HasNext() {
-			msg, _ := itr.Next()
-			totalGasLimit += msg.GasLimit
+			msg, _, _ := itr.Next()
+			totalGasLimit += msg.VMMessage().GasLimit
 		}
 
 		// reset the iterator to beginning
 		itr.Reset()
 
 		for itr.HasNext() {
-			m, r := itr.Next()
+			m, _, r := itr.Next()
 			if exeMsgSeen[m.Cid()] {
 				continue
 			}
 			exeMsgSeen[m.Cid()] = true
-			totalUniqGasLimit += m.GasLimit
+			totalUniqGasLimit += m.VMMessage().GasLimit
 
-			toActorCode, found := getActorCodeFn(m.To)
+			toActorCode, found := getActorCodeFn(m.VMMessage().To)
 			if !found && r.ExitCode == 0 {
 				// No destination actor code. Normally Lotus will create an account actor for unknown addresses but if the
 				// message fails then Lotus will not allow the actor to be created and we are left with an address of an
@@ -130,14 +130,14 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 					Error: fmt.Errorf("failed to parse message params: missing to actor code").Error(),
 				})
 			} else {
-				method, params, err := util.MethodAndParamsForMessage(m, toActorCode)
+				method, params, err := util.MethodAndParamsForMessage(m.VMMessage(), toActorCode)
 				if err == nil {
 					pm := &messagemodel.ParsedMessage{
 						Height: int64(msgrec.Block.Height),
 						Cid:    m.Cid().String(),
-						From:   m.From.String(),
-						To:     m.To.String(),
-						Value:  m.Value.String(),
+						From:   m.VMMessage().From.String(),
+						To:     m.VMMessage().To.String(),
+						Value:  m.VMMessage().Value.String(),
 						Method: method,
 						Params: params,
 					}

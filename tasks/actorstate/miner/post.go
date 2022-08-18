@@ -60,13 +60,13 @@ func (PoStExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 		return pmap, nil
 	}
 
-	processPostMsg := func(msg *types.Message, rec *types.MessageReceipt) error {
+	processPostMsg := func(msg types.ChainMsg, rec *types.MessageReceipt) error {
 		sectors := make([]uint64, 0)
 		if rec == nil || rec.ExitCode.IsError() {
 			return nil
 		}
 		params := minertypes.SubmitWindowedPoStParams{}
-		if err := params.UnmarshalCBOR(bytes.NewBuffer(msg.Params)); err != nil {
+		if err := params.UnmarshalCBOR(bytes.NewBuffer(msg.VMMessage().Params)); err != nil {
 			return fmt.Errorf("unmarshal post params: %w", err)
 		}
 
@@ -119,8 +119,8 @@ func (PoStExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 			return nil, err
 		}
 		for itr.HasNext() {
-			msg, rec := itr.Next()
-			if msg.To == a.Address && msg.Method == 5 /* miner.SubmitWindowedPoSt */ {
+			msg, _, rec := itr.Next()
+			if msg.VMMessage().To == a.Address && msg.VMMessage().Method == 5 /* miner.SubmitWindowedPoSt */ {
 				if err := processPostMsg(msg, rec); err != nil {
 					return nil, fmt.Errorf("process post msg: %w", err)
 				}

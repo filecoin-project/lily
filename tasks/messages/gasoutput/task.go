@@ -50,12 +50,12 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		StateRoot: current.ParentState().String(),
 	}
 
-	grp, ctx := errgroup.WithContext(ctx)
+	grp, grpCtx := errgroup.WithContext(ctx)
 
 	var getActorCodeFn func(address address.Address) (cid.Cid, bool)
 	grp.Go(func() error {
 		var err error
-		getActorCodeFn, err = util.MakeGetActorCodeFunc(ctx, t.node.Store(), current, executed)
+		getActorCodeFn, err = util.MakeGetActorCodeFunc(grpCtx, t.node.Store(), current, executed)
 		if err != nil {
 			return fmt.Errorf("getting actor code lookup function: %w", err)
 		}
@@ -65,7 +65,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	var blkMsgRec []*lens.BlockMessageReceipts
 	grp.Go(func() error {
 		var err error
-		blkMsgRec, err = t.node.TipSetMessageReceipts(ctx, current, executed)
+		blkMsgRec, err = t.node.TipSetMessageReceipts(grpCtx, current, executed)
 		if err != nil {
 			return fmt.Errorf("getting messages and receipts: %w", err)
 		}
@@ -74,7 +74,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	var burnFn lens.ShouldBurnFn
 	grp.Go(func() error {
 		var err error
-		burnFn, err = t.node.ShouldBrunFn(ctx, current, executed)
+		burnFn, err = t.node.ShouldBrunFn(grpCtx, executed)
 		if err != nil {
 			return fmt.Errorf("getting should burn function: %w", err)
 		}
@@ -107,47 +107,37 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 		blk := msgrec.Block
 		for itr.HasNext() {
-			m, r := itr.Next()
+			m, _, r := itr.Next()
 			if exeMsgSeen[m.Cid()] {
 				continue
 			}
 			exeMsgSeen[m.Cid()] = true
 
-			var msgSize int
-			if b, err := m.Serialize(); err == nil {
-				msgSize = len(b)
-			} else {
-				errorsDetected = append(errorsDetected, &messages.MessageError{
-					Cid:   m.Cid(),
-					Error: fmt.Errorf("failed to serialize message: %w", err).Error(),
-				})
-			}
-
-			toActorCode, found := getActorCodeFn(m.To)
+			toActorCode, found := getActorCodeFn(m.VMMessage().To)
 			if !found {
 				toActorCode = cid.Undef
 			}
-			gasOutputs, err := datasource.ComputeGasOutputs(ctx, blk, m, r, burnFn)
+			gasOutputs, err := datasource.ComputeGasOutputs(ctx, blk, m.VMMessage(), r, burnFn)
 			if err != nil {
 				return nil, nil, err
 			}
 			actorName := builtin.ActorNameByCode(toActorCode)
 			gasOutput := &derivedmodel.GasOutputs{
 				Height:             int64(blk.Height),
-				Cid:                m.Cid().String(),
-				From:               m.From.String(),
-				To:                 m.To.String(),
-				Value:              m.Value.String(),
-				GasFeeCap:          m.GasFeeCap.String(),
-				GasPremium:         m.GasPremium.String(),
-				GasLimit:           m.GasLimit,
-				Nonce:              m.Nonce,
-				Method:             uint64(m.Method),
 				StateRoot:          blk.ParentStateRoot.String(),
+				ParentBaseFee:      blk.ParentBaseFee.String(),
+				Cid:                m.Cid().String(),
+				From:               m.VMMessage().From.String(),
+				To:                 m.VMMessage().To.String(),
+				Value:              m.VMMessage().Value.String(),
+				GasFeeCap:          m.VMMessage().GasFeeCap.String(),
+				GasPremium:         m.VMMessage().GasPremium.String(),
+				GasLimit:           m.VMMessage().GasLimit,
+				Nonce:              m.VMMessage().Nonce,
+				Method:             uint64(m.VMMessage().Method),
+				SizeBytes:          m.ChainLength(),
 				ExitCode:           int64(r.ExitCode),
 				GasUsed:            r.GasUsed,
-				ParentBaseFee:      blk.ParentBaseFee.String(),
-				SizeBytes:          msgSize,
 				BaseFeeBurn:        gasOutputs.BaseFeeBurn.String(),
 				OverEstimationBurn: gasOutputs.OverEstimationBurn.String(),
 				MinerPenalty:       gasOutputs.MinerPenalty.String(),

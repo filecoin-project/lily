@@ -269,47 +269,47 @@ func TestMakeProcessorsActors(t *testing.T) {
 
 func TestMakeProcessorsTipSet(t *testing.T) {
 	tasks := []string{
+		tasktype.Message,
+		tasktype.BlockMessage,
 		tasktype.BlockHeader,
 		tasktype.BlockParent,
 		tasktype.DrandBlockEntrie,
 		tasktype.ChainEconomics,
 		tasktype.ChainConsensus,
+		tasktype.MessageGasEconomy,
 	}
 	proc, err := processor.MakeProcessors(nil, tasks)
 	require.NoError(t, err)
 	require.Len(t, proc.TipsetProcessors, len(tasks))
 
+	require.Equal(t, message.NewTask(nil), proc.TipsetProcessors[tasktype.Message])
+	require.Equal(t, blockmessage.NewTask(nil), proc.TipsetProcessors[tasktype.BlockMessage])
 	require.Equal(t, headers.NewTask(), proc.TipsetProcessors[tasktype.BlockHeader])
 	require.Equal(t, parents.NewTask(), proc.TipsetProcessors[tasktype.BlockParent])
 	require.Equal(t, drand.NewTask(), proc.TipsetProcessors[tasktype.DrandBlockEntrie])
 	require.Equal(t, chaineconomics.NewTask(nil), proc.TipsetProcessors[tasktype.ChainEconomics])
 	require.Equal(t, consensus.NewTask(nil), proc.TipsetProcessors[tasktype.ChainConsensus])
+	require.Equal(t, gaseconomy.NewTask(nil), proc.TipsetProcessors[tasktype.MessageGasEconomy])
 }
 
 func TestMakeProcessorsTipSets(t *testing.T) {
 	tasks := []string{
-		tasktype.Message,
 		tasktype.GasOutputs,
-		tasktype.BlockMessage,
 		tasktype.ParsedMessage,
 		tasktype.Receipt,
 		tasktype.InternalMessage,
 		tasktype.InternalParsedMessage,
-		tasktype.MessageGasEconomy,
 		tasktype.MultisigApproval,
 	}
 	proc, err := processor.MakeProcessors(nil, tasks)
 	require.NoError(t, err)
 	require.Len(t, proc.TipsetsProcessors, len(tasks))
 
-	require.Equal(t, message.NewTask(nil), proc.TipsetsProcessors[tasktype.Message])
 	require.Equal(t, gasoutput.NewTask(nil), proc.TipsetsProcessors[tasktype.GasOutputs])
-	require.Equal(t, blockmessage.NewTask(nil), proc.TipsetsProcessors[tasktype.BlockMessage])
 	require.Equal(t, parsedmessage.NewTask(nil), proc.TipsetsProcessors[tasktype.ParsedMessage])
 	require.Equal(t, receipt.NewTask(nil), proc.TipsetsProcessors[tasktype.Receipt])
 	require.Equal(t, internalmessage.NewTask(nil), proc.TipsetsProcessors[tasktype.InternalMessage])
 	require.Equal(t, internalparsedmessage.NewTask(nil), proc.TipsetsProcessors[tasktype.InternalParsedMessage])
-	require.Equal(t, gaseconomy.NewTask(nil), proc.TipsetsProcessors[tasktype.MessageGasEconomy])
 	require.Equal(t, msapprovals.NewTask(nil), proc.TipsetsProcessors[tasktype.MultisigApproval])
 }
 
@@ -346,7 +346,7 @@ func TestMakeProcessorsAllTasks(t *testing.T) {
 	proc, err := processor.MakeProcessors(nil, append(tasktype.AllTableTasks, processor.BuiltinTaskName))
 	require.NoError(t, err)
 	require.Len(t, proc.ActorProcessors, 21)
-	require.Len(t, proc.TipsetProcessors, 5)
-	require.Len(t, proc.TipsetsProcessors, 10)
+	require.Len(t, proc.TipsetProcessors, 8)
+	require.Len(t, proc.TipsetsProcessors, 7)
 	require.Len(t, proc.ReportProcessors, 1)
 }
