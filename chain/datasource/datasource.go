@@ -108,6 +108,14 @@ type DataSource struct {
 	diffPreCommitGroup singleflight.Group
 }
 
+func (t *DataSource) TipSetBlockMessages(ctx context.Context, ts *types.TipSet) ([]*lens.BlockMessages, error) {
+	return t.node.MessagesForTipSetBlocks(ctx, ts)
+}
+
+func (t *DataSource) TipSetMessages(ctx context.Context, ts *types.TipSet) ([]types.ChainMsg, error) {
+	return t.node.MessagesForTipSet(ctx, ts)
+}
+
 func NewDataSource(node lens.API) (*DataSource, error) {
 	t := &DataSource{
 		node: node,

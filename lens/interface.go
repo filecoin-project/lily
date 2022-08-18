@@ -42,6 +42,9 @@ type ChainAPI interface {
 	ChainGetBlockMessages(ctx context.Context, msg cid.Cid) (*api.BlockMessages, error)
 	ChainGetParentMessages(ctx context.Context, blockCid cid.Cid) ([]api.Message, error)
 	ChainGetParentReceipts(ctx context.Context, blockCid cid.Cid) ([]*types.MessageReceipt, error)
+
+	MessagesForTipSet(ctx context.Context, ts *types.TipSet) ([]types.ChainMsg, error)
+	MessagesForTipSetBlocks(ctx context.Context, ts *types.TipSet) ([]*BlockMessages, error)
 }
 
 type StateAPI interface {
@@ -61,7 +64,6 @@ type StateAPI interface {
 
 type TipSetMessages struct {
 	Executed []*ExecutedMessage
-	Block    []*BlockMessages
 }
 
 type MessageExecution struct {

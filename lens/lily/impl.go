@@ -62,6 +62,26 @@ type LilyNodeAPI struct {
 	actorStoreInit sync.Once
 }
 
+func (m *LilyNodeAPI) MessagesForTipSetBlocks(ctx context.Context, ts *types.TipSet) ([]*lens.BlockMessages, error) {
+	var out []*lens.BlockMessages
+	for _, blk := range ts.Blocks() {
+		blkMsgs, err := m.ChainAPI.ChainModuleAPI.ChainGetBlockMessages(ctx, blk.Cid())
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, &lens.BlockMessages{
+			Block:        blk,
+			BlsMessages:  blkMsgs.BlsMessages,
+			SecpMessages: blkMsgs.SecpkMessages,
+		})
+	}
+	return out, nil
+}
+
+func (m *LilyNodeAPI) MessagesForTipSet(ctx context.Context, ts *types.TipSet) ([]types.ChainMsg, error) {
+	return m.ChainAPI.Chain.MessagesForTipset(ctx, ts)
+}
+
 func (m *LilyNodeAPI) CirculatingSupply(ctx context.Context, key types.TipSetKey) (api.CirculatingSupply, error) {
 	return m.StateAPI.StateVMCirculatingSupplyInternal(ctx, key)
 }

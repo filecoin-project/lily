@@ -220,24 +220,8 @@ func GetExecutedAndBlockMessagesForTipset(ctx context.Context, cs *store.ChainSt
 
 	}
 
-	blkMsgs := make([]*lens.BlockMessages, len(current.Blocks()))
-	for idx, blk := range current.Blocks() {
-		msgs, smsgs, err := cs.MessagesForBlock(ctx, blk)
-		if err != nil {
-			return nil, err
-		}
-		blkMsgs[idx] = &lens.BlockMessages{
-			Block:        blk,
-			BlsMessages:  msgs,
-			SecpMessages: smsgs,
-		}
-	}
-
-	span.AddEvent("read messages for current block")
-
 	return &lens.TipSetMessages{
 		Executed: emsgs,
-		Block:    blkMsgs,
 	}, nil
 }
 
