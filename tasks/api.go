@@ -43,6 +43,13 @@ type ActorStateChange struct {
 
 type ActorStateChangeDiff map[address.Address]ActorStateChange
 
+type BlockMessageReceipts struct {
+	Block   *types.BlockHeader
+	Message *types.Message
+	Receipt *types.MessageReceipt
+	Index   int
+}
+
 type DataSource interface {
 	TipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error)
 	Actor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error)
@@ -56,6 +63,8 @@ type DataSource interface {
 
 	TipSetMessages(ctx context.Context, ts *types.TipSet) ([]types.ChainMsg, error)
 	TipSetBlockMessages(ctx context.Context, ts *types.TipSet) ([]*lens.BlockMessages, error)
+
+	TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*BlockMessageReceipts, error)
 
 	DiffSectors(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.SectorChanges, error)
 	DiffPreCommits(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.PreCommitChanges, error)

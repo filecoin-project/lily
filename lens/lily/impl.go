@@ -10,6 +10,7 @@ import (
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/stmgr"
+	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/node/impl/common"
 	"github.com/filecoin-project/lotus/node/impl/full"
@@ -60,6 +61,19 @@ type LilyNodeAPI struct {
 
 	actorStore     adt.Store
 	actorStoreInit sync.Once
+}
+
+func (m *LilyNodeAPI) GetParentReceipt(ctx context.Context, b *types.BlockHeader, i int) (*types.MessageReceipt, error) {
+	return m.ChainAPI.Chain.GetParentReceipt(ctx, b, i)
+}
+
+func (m *LilyNodeAPI) MessagesForBlock(ctx context.Context, b *types.BlockHeader) ([]*types.Message, []*types.SignedMessage, error) {
+	return m.ChainAPI.Chain.MessagesForBlock(ctx, b)
+}
+
+// returned BlockMessages match block order in tipset, use this for receipt stuufs
+func (m *LilyNodeAPI) BlockMessageForTipSet(ctx context.Context, ts *types.TipSet) ([]store.BlockMessages, error) {
+	return m.ChainAPI.Chain.BlockMsgsForTipset(ctx, ts)
 }
 
 func (m *LilyNodeAPI) MessagesForTipSetBlocks(ctx context.Context, ts *types.TipSet) ([]*lens.BlockMessages, error) {

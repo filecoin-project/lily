@@ -44,37 +44,35 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		StateRoot: current.ParentState().String(),
 	}
 
-	tsMsgs, err := t.node.ExecutedAndBlockMessages(ctx, current, executed)
+	blkMsgRect, err := t.node.TipSetMessageReceipts(ctx, current, executed)
 	if err != nil {
-		report.ErrorsDetected = fmt.Errorf("getting executed and block messages: %w", err)
+		report.ErrorsDetected = fmt.Errorf("getting tipset message receipet: %w", err)
 		return nil, report, nil
 	}
-	emsgs := tsMsgs.Executed
 
 	var (
-		receiptResults = make(messagemodel.Receipts, 0, len(emsgs))
-		errorsDetected = make([]*messages.MessageError, 0, len(emsgs))
-		exeMsgSeen     = make(map[cid.Cid]bool, len(emsgs))
+		receiptResults = make(messagemodel.Receipts, 0, len(blkMsgRect))
+		errorsDetected = make([]*messages.MessageError, 0, len(blkMsgRect))
+		msgsSeen       = make(map[cid.Cid]bool, len(blkMsgRect))
 	)
 
-	for _, m := range emsgs {
-		// Stop processing if we have been told to cancel
+	for _, m := range blkMsgRect {
 		select {
 		case <-ctx.Done():
 			return nil, nil, fmt.Errorf("context done: %w", ctx.Err())
 		default:
 		}
 
-		if exeMsgSeen[m.Cid] {
+		if msgsSeen[m.Message.Cid()] {
 			continue
 		}
-		exeMsgSeen[m.Cid] = true
+		msgsSeen[m.Message.Cid()] = true
 
 		rcpt := &messagemodel.Receipt{
 			Height:    int64(current.Height()),
-			Message:   m.Cid.String(),
+			Message:   m.Message.Cid().String(),
 			StateRoot: current.ParentState().String(),
-			Idx:       int(m.Index),
+			Idx:       m.Index,
 			ExitCode:  int64(m.Receipt.ExitCode),
 			GasUsed:   m.Receipt.GasUsed,
 		}

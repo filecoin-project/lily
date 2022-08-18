@@ -14,7 +14,13 @@ import (
 	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/state"
+	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
+	states0 "github.com/filecoin-project/specs-actors/actors/states"
+	states2 "github.com/filecoin-project/specs-actors/v2/actors/states"
+	states3 "github.com/filecoin-project/specs-actors/v3/actors/states"
+	states4 "github.com/filecoin-project/specs-actors/v4/actors/states"
+	states5 "github.com/filecoin-project/specs-actors/v5/actors/states"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -22,11 +28,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/sync/singleflight"
 
-	states0 "github.com/filecoin-project/specs-actors/actors/states"
-	states2 "github.com/filecoin-project/specs-actors/v2/actors/states"
-	states3 "github.com/filecoin-project/specs-actors/v3/actors/states"
-	states4 "github.com/filecoin-project/specs-actors/v4/actors/states"
-	states5 "github.com/filecoin-project/specs-actors/v5/actors/states"
+	blockadt "github.com/filecoin-project/specs-actors/actors/util/adt"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/adt/diff"
@@ -114,6 +116,74 @@ func (t *DataSource) TipSetBlockMessages(ctx context.Context, ts *types.TipSet) 
 
 func (t *DataSource) TipSetMessages(ctx context.Context, ts *types.TipSet) ([]types.ChainMsg, error) {
 	return t.node.MessagesForTipSet(ctx, ts)
+}
+
+func (t *DataSource) BlockMessageForTipSet(ctx context.Context, ts *types.TipSet) ([]store.BlockMessages, error) {
+	return t.node.BlockMessageForTipSet(ctx, ts)
+}
+
+// TipSetMessageReceipts returns the blocks and messages in ts and their corresponding receipts from pts.
+func (t *DataSource) TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*tasks.BlockMessageReceipts, error) {
+	// retrieve receipts using a block from the child (ts) tipset
+	// TODO this operation can fail when the node is imported from a snapshot that does not contain receipts (most don't)
+	// the solution is to compute the tipset state which will create the receipts we load here
+	rs, err := blockadt.AsArray(t.Store(), ts.Blocks()[0].ParentMessageReceipts)
+	if err != nil {
+		return nil, err
+	}
+	// so we only load the receipt array one
+	getReceipt := func(idx int) (*types.MessageReceipt, error) {
+		var r types.MessageReceipt
+		if found, err := rs.Get(uint64(idx), &r); err != nil {
+			return nil, err
+		} else if !found {
+			return nil, fmt.Errorf("failed to find receipt %d", idx)
+		}
+		return &r, nil
+	}
+
+	// get message from parent tipset ordered by block
+	blkMsgs, err := t.BlockMessageForTipSet(ctx, pts)
+	if err != nil {
+		return nil, err
+	}
+	if len(blkMsgs) != len(pts.Blocks()) {
+		// logic error somewhere
+		return nil, fmt.Errorf("mismatching number of blocks returned from block messages, got %d wanted %d", len(blkMsgs), len(pts.Blocks()))
+	}
+
+	// index of the receipt in the receipt array
+	receiptIdx := 0
+	var out []*tasks.BlockMessageReceipts
+	for blkIdx, blkMsg := range blkMsgs {
+		for _, blsMsg := range blkMsg.BlsMessages {
+			r, err := getReceipt(receiptIdx)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, &tasks.BlockMessageReceipts{
+				Block:   pts.Blocks()[blkIdx],
+				Message: blsMsg.VMMessage(),
+				Receipt: r,
+				Index:   receiptIdx,
+			})
+			receiptIdx++
+		}
+		for _, secpMsg := range blkMsg.SecpkMessages {
+			r, err := getReceipt(receiptIdx)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, &tasks.BlockMessageReceipts{
+				Block:   pts.Blocks()[blkIdx],
+				Message: secpMsg.VMMessage(),
+				Receipt: r,
+				Index:   receiptIdx,
+			})
+			receiptIdx++
+		}
+	}
+	return out, nil
 }
 
 func NewDataSource(node lens.API) (*DataSource, error) {

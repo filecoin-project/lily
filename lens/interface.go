@@ -3,6 +3,7 @@ package lens
 import (
 	"context"
 
+	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/node/modules/dtypes"
 
 	"github.com/filecoin-project/go-address"
@@ -41,8 +42,12 @@ type ChainAPI interface {
 
 	ChainGetBlockMessages(ctx context.Context, msg cid.Cid) (*api.BlockMessages, error)
 	ChainGetParentMessages(ctx context.Context, blockCid cid.Cid) ([]api.Message, error)
-	ChainGetParentReceipts(ctx context.Context, blockCid cid.Cid) ([]*types.MessageReceipt, error)
 
+	BlockMessageForTipSet(ctx context.Context, ts *types.TipSet) ([]store.BlockMessages, error)
+
+	GetParentReceipt(ctx context.Context, b *types.BlockHeader, i int) (*types.MessageReceipt, error)
+
+	MessagesForBlock(ctx context.Context, b *types.BlockHeader) ([]*types.Message, []*types.SignedMessage, error)
 	MessagesForTipSet(ctx context.Context, ts *types.TipSet) ([]types.ChainMsg, error)
 	MessagesForTipSetBlocks(ctx context.Context, ts *types.TipSet) ([]*BlockMessages, error)
 }
@@ -87,7 +92,7 @@ type ExecutedMessage struct {
 	Receipt       *types.MessageReceipt
 	BlockHeader   *types.BlockHeader
 	Blocks        []cid.Cid // blocks this message appeared in
-	Index         uint64    // Message and receipt sequence in tipset
+	Index         uint64    // Message and Receipt sequence in tipset
 	FromActorCode cid.Cid   // code of the actor the message is from
 	ToActorCode   cid.Cid   // code of the actor the message is to
 	GasOutputs    vm.GasOutputs
