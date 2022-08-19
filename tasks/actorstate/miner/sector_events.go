@@ -60,11 +60,11 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 
 	} else {
 		// If the miner has previous state compute the list of new sectors and precommit in its current state.
-		grp, ctx := errgroup.WithContext(ctx)
+		grp, grpCtx := errgroup.WithContext(ctx)
 		grp.Go(func() error {
 			start := time.Now()
 			// collect changes made to miner precommit map (HAMT)
-			preCommitChanges, err = node.DiffPreCommits(ctx, a.Address, a.Current, a.Executed, extState.ParentState(), extState.CurrentState())
+			preCommitChanges, err = node.DiffPreCommits(grpCtx, a.Address, a.Current, a.Executed, extState.ParentState(), extState.CurrentState())
 			if err != nil {
 				return fmt.Errorf("diffing precommits %w", err)
 			}
@@ -74,7 +74,7 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		grp.Go(func() error {
 			start := time.Now()
 			// collect changes made to miner sector array (AMT)
-			sectorChanges, err = node.DiffSectors(ctx, a.Address, a.Current, a.Executed, extState.ParentState(), extState.CurrentState())
+			sectorChanges, err = node.DiffSectors(grpCtx, a.Address, a.Current, a.Executed, extState.ParentState(), extState.CurrentState())
 			if err != nil {
 				return fmt.Errorf("diffing sectors %w", err)
 			}
@@ -84,7 +84,7 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		grp.Go(func() error {
 			start := time.Now()
 			// collect changes made to miner sectors across all miner partition states
-			sectorStateChanges, err = DiffMinerSectorStates(ctx, extState)
+			sectorStateChanges, err = DiffMinerSectorStates(grpCtx, extState)
 			if err != nil {
 				return fmt.Errorf("diffing sector states %w", err)
 			}
