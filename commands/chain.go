@@ -187,10 +187,13 @@ var ChainStateInspect = &cli.Command{
 }
 
 var ChainStateComputeRange = &cli.Command{
-	Name: "compute",
+	Name: "state-compute",
+	Usage: "Generates the state at epoch `N`",
 	Flags: []cli.Flag{
 		&cli.Uint64Flag{
 			Name: "epoch",
+			Aliases: []string{"e"},
+			Required: true,
 		},
 	},
 	Action: func(cctx *cli.Context) error {
@@ -217,13 +220,16 @@ var ChainStateComputeRange = &cli.Command{
 }
 
 var ChainStateCompute = &cli.Command{
-	Name: "compute-range",
+	Name: "state-compute-range",
+	Usage: "Generates the state from epoch `FROM` to epoch `TO`",
 	Flags: []cli.Flag{
 		&cli.Uint64Flag{
 			Name: "from",
+			Required: true,
 		},
 		&cli.Uint64Flag{
 			Name: "to",
+			Required: true,
 		},
 	},
 	Action: func(cctx *cli.Context) error {
