@@ -22,6 +22,6 @@ else
   lily init
 fi
 
-chmod 0600 ${LILY_REPO}/keystore/*
+chmod -R 0600 ${LILY_REPO}/keystore
 
 lily $@

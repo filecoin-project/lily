@@ -4,4 +4,4 @@ scrape_configs:
     scrape_interval: 5s
 
     static_configs:
-      - targets: ['localhost:9991']
+      - targets: ['notifier:9090', 'worker:9091']

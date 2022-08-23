@@ -1,0 +1,14 @@
+[API]
+  ListenAddress = "/ip4/0.0.0.0/tcp/1234/http"
+[Libp2p]
+  ListenAddresses = ["/ip4/0.0.0.0/tcp/1347"]
+  ConnMgrLow = 400
+  ConnMgrHigh = 500
+  ConnMgrGrace = "5m0s"
+[Queue]
+  [Queue.Notifiers]
+    [Queue.Notifiers.Notifier1]
+        Network = "tcp"
+        Addr = "redis-queue:6379"
+        DB = 0
+        PoolSize = 0
