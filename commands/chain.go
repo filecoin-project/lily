@@ -79,29 +79,29 @@ var ChainActorCodesCmd = &cli.Command{
 }
 
 func marshalReport(reports []*lily.StateReport, verbose bool) ([]byte, error) {
-	type stateHeights struct{
+	type stateHeights struct {
 		Newest int64 `json:"newest"`
 		Oldest int64 `json:"oldest"`
 	}
 	type summarizedHeights struct {
-		Messages stateHeights   `json:"messages"`
+		Messages   stateHeights `json:"messages"`
 		StateRoots stateHeights `json:"stateroots"`
 	}
-	type hasState struct{
+	type hasState struct {
 		Messages  bool `json:"messages"`
 		Receipts  bool `json:"receipts"`
 		StateRoot bool `json:"stateroot"`
 	}
-	type stateReport struct{
-		Summary summarizedHeights `json:"summary"`
-		Detail map[int64]hasState `json:"details,omitempty"`
+	type stateReport struct {
+		Summary summarizedHeights  `json:"summary"`
+		Detail  map[int64]hasState `json:"details,omitempty"`
 	}
 
 	var (
-		details = make(map[int64]hasState)
-		headSet bool
-		head = reports[0]
-		oldestMessage = &lily.StateReport{}
+		details         = make(map[int64]hasState)
+		headSet         bool
+		head            = reports[0]
+		oldestMessage   = &lily.StateReport{}
 		oldestStateRoot = &lily.StateReport{}
 	)
 
@@ -128,8 +128,8 @@ func marshalReport(reports []*lily.StateReport, verbose bool) ([]byte, error) {
 	compiledReport := stateReport{
 		Detail: details,
 		Summary: summarizedHeights{
-			Messages:   stateHeights{ Newest: head.Height, Oldest: oldestMessage.Height },
-			StateRoots: stateHeights{ Newest: head.Height, Oldest: oldestStateRoot.Height },
+			Messages:   stateHeights{Newest: head.Height, Oldest: oldestMessage.Height},
+			StateRoots: stateHeights{Newest: head.Height, Oldest: oldestStateRoot.Height},
 		},
 	}
 
@@ -146,18 +146,18 @@ var ChainStateInspect = &cli.Command{
 	Usage: "Returns details about each epoch's state in the local datastore",
 	Flags: []cli.Flag{
 		&cli.Uint64Flag{
-			Name:  "limit",
+			Name:    "limit",
 			Aliases: []string{"l"},
-			Value: 100,
-			Usage: "Limit traversal of statetree when searching for oldest state by `N` heights starting from most recent",
+			Value:   100,
+			Usage:   "Limit traversal of statetree when searching for oldest state by `N` heights starting from most recent",
 		},
 		&cli.BoolFlag{
-			Name:  "verbose",
+			Name:    "verbose",
 			Aliases: []string{"v"},
-			Usage: "Include detailed information about the completeness of state for all traversed height(s) starting from most recent",
+			Usage:   "Include detailed information about the completeness of state for all traversed height(s) starting from most recent",
 		},
 		&cli.BoolFlag{
-			Name: "compact",
+			Name:  "compact",
 			Usage: "Print JSON without whitespace",
 		},
 	},
@@ -187,12 +187,12 @@ var ChainStateInspect = &cli.Command{
 }
 
 var ChainStateComputeRange = &cli.Command{
-	Name: "state-compute",
+	Name:  "state-compute",
 	Usage: "Generates the state at epoch `N`",
 	Flags: []cli.Flag{
 		&cli.Uint64Flag{
-			Name: "epoch",
-			Aliases: []string{"e"},
+			Name:     "epoch",
+			Aliases:  []string{"e"},
 			Required: true,
 		},
 	},
@@ -220,15 +220,15 @@ var ChainStateComputeRange = &cli.Command{
 }
 
 var ChainStateCompute = &cli.Command{
-	Name: "state-compute-range",
+	Name:  "state-compute-range",
 	Usage: "Generates the state from epoch `FROM` to epoch `TO`",
 	Flags: []cli.Flag{
 		&cli.Uint64Flag{
-			Name: "from",
+			Name:     "from",
 			Required: true,
 		},
 		&cli.Uint64Flag{
-			Name: "to",
+			Name:     "to",
 			Required: true,
 		},
 	},

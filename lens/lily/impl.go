@@ -652,7 +652,7 @@ func (m *LilyNodeAPI) FindOldestState(ctx context.Context, limit int64) ([]*Stat
 			HasReceipts: maybeFullTS.HasReceipts,
 			HasState:    maybeFullTS.HasState,
 		})
-		if (head.Height()-abi.ChainEpoch(i)) <= oldestEpochLimit {
+		if (head.Height() - abi.ChainEpoch(i)) <= oldestEpochLimit {
 			break
 		}
 	}
