@@ -43,8 +43,7 @@ var ChainCmd = &cli.Command{
 		ChainListCmd,
 		ChainSetHeadCmd,
 		ChainActorCodesCmd,
-		ChainFindOldestState,
-		ChainListStates,
+		ChainStateInspect,
 		ChainStateCompute,
 		ChainStateComputeRange,
 	},
@@ -79,23 +78,87 @@ var ChainActorCodesCmd = &cli.Command{
 	},
 }
 
-func printReport(r []*lily.StateReport) {
-	t := table.NewWriter()
-	t.AppendHeader(table.Row{"Height", "StateTree", "Messages"})
-	for _, v := range r {
-		t.AppendRow(table.Row{v.Height, v.HasState, v.HasMessages})
-		t.AppendSeparator()
+func marshalReport(reports []*lily.StateReport, verbose bool) ([]byte, error) {
+	type stateHeights struct{
+		Newest int64 `json:"newest"`
+		Oldest int64 `json:"oldest"`
 	}
-	fmt.Println(t.Render())
+	type summarizedHeights struct {
+		Messages stateHeights   `json:"messages"`
+		StateRoots stateHeights `json:"stateroots"`
+	}
+	type hasState struct{
+		Messages  bool `json:"messages"`
+		Receipts  bool `json:"receipts"`
+		StateRoot bool `json:"stateroot"`
+	}
+	type stateReport struct{
+		Summary summarizedHeights `json:"summary"`
+		Detail map[int64]hasState `json:"details,omitempty"`
+	}
+
+	var (
+		details = make(map[int64]hasState)
+		headSet bool
+		head = reports[0]
+		oldestMessage = &lily.StateReport{}
+		oldestStateRoot = &lily.StateReport{}
+	)
+
+	for _, r := range reports {
+		if verbose {
+			details[r.Height] = hasState{
+				Messages:  r.HasMessages,
+				Receipts:  r.HasReceipts,
+				StateRoot: r.HasState,
+			}
+		}
+		if !headSet && (r.HasState && r.HasMessages && r.HasReceipts) {
+			head = r
+			headSet = true
+		}
+		if r.HasState {
+			oldestStateRoot = r
+		}
+		if r.HasMessages {
+			oldestMessage = r
+		}
+	}
+
+	compiledReport := stateReport{
+		Detail: details,
+		Summary: summarizedHeights{
+			Messages:   stateHeights{ Newest: head.Height, Oldest: oldestMessage.Height },
+			StateRoots: stateHeights{ Newest: head.Height, Oldest: oldestStateRoot.Height },
+		},
+	}
+
+	reportOut, err := json.Marshal(compiledReport)
+	if err != nil {
+		return nil, err
+	}
+
+	return reportOut, nil
 }
 
-var ChainListStates = &cli.Command{
-	Name:  "list-state",
-	Usage: "List states and their completeness",
+var ChainStateInspect = &cli.Command{
+	Name:  "state-inspect",
+	Usage: "Returns details about each epoch's state in the local datastore",
 	Flags: []cli.Flag{
 		&cli.Uint64Flag{
 			Name:  "limit",
-			Value: 0,
+			Aliases: []string{"l"},
+			Value: 100,
+			Usage: "Limit traversal of statetree when searching for oldest state by `N` heights starting from most recent",
+		},
+		&cli.BoolFlag{
+			Name:  "verbose",
+			Aliases: []string{"v"},
+			Usage: "Include detailed information about the completeness of state for all traversed height(s) starting from most recent",
+		},
+		&cli.BoolFlag{
+			Name: "compact",
+			Usage: "Print JSON without whitespace",
 		},
 	},
 	Action: func(cctx *cli.Context) error {
@@ -113,59 +176,12 @@ var ChainListStates = &cli.Command{
 		sort.Slice(report, func(i, j int) bool {
 			return report[i].Height > report[j].Height
 		})
-		printReport(report)
-		return nil
-	},
-}
 
-var ChainFindOldestState = &cli.Command{
-	Name:  "find-oldest",
-	Usage: "Find the oldest full statetree",
-	Flags: []cli.Flag{
-		&cli.Uint64Flag{
-			Name:  "limit",
-			Value: 0,
-		},
-	},
-	Action: func(cctx *cli.Context) error {
-		ctx := lotuscli.ReqContext(cctx)
-		lapi, closer, err := GetAPI(ctx)
+		out, err := marshalReport(report, cctx.Bool("verbose"))
 		if err != nil {
 			return err
 		}
-		defer closer()
-
-		report, err := lapi.FindOldestState(ctx, cctx.Int64("limit"))
-		if err != nil {
-			return err
-		}
-		sort.Slice(report, func(i, j int) bool {
-			return report[i].Height > report[j].Height
-		})
-
-		head := report[0]
-		oldestStateRoot := &lily.StateReport{}
-		oldestMessage := &lily.StateReport{}
-		headSet := false
-		for _, r := range report {
-			if !headSet && (r.HasState && r.HasMessages && r.HasReceipts) {
-				head = r
-				headSet = true
-			}
-			if r.HasState {
-				oldestStateRoot = r
-			}
-			if r.HasMessages {
-				oldestMessage = r
-			}
-		}
-		fmt.Printf("Newest:\n")
-		fmt.Printf("\tStateRoot:\t%d\n", head.Height)
-		fmt.Printf("\tMessages:\t%d\n", head.Height)
-		fmt.Printf("Oldest:\n")
-		fmt.Printf("\tStateRoot:\t%d\n", oldestStateRoot.Height)
-		fmt.Printf("\tMessages:\t%d\n", oldestMessage.Height)
-
+		fmt.Println(string(out))
 		return nil
 	},
 }
