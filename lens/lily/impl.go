@@ -648,6 +648,7 @@ func (m *LilyNodeAPI) FindOldestState(ctx context.Context, limit int64) ([]*Stat
 	}
 
 	var out []*StateReport
+	var oldestEpochLimit = head.Height() - abi.ChainEpoch(limit)
 
 	for i := int64(0); true; i++ {
 		maybeBaseTS, err := m.ChainGetTipSetByHeight(ctx, head.Height()-abi.ChainEpoch(i), head.Key())
@@ -663,7 +664,7 @@ func (m *LilyNodeAPI) FindOldestState(ctx context.Context, limit int64) ([]*Stat
 			HasReceipts: maybeFullTS.HasReceipts,
 			HasState:    maybeFullTS.HasState,
 		})
-		if !maybeFullTS.HasState || int64(head.Height()-abi.ChainEpoch(i)) == limit {
+		if (head.Height() - abi.ChainEpoch(i)) <= oldestEpochLimit {
 			break
 		}
 	}
