@@ -25,6 +25,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/distributed"
 	"github.com/filecoin-project/lily/chain/indexer/distributed/queue"
+	"github.com/filecoin-project/lily/chain/indexer/distributed/queue/tasks"
 	"github.com/filecoin-project/lily/chain/indexer/integrated"
 	"github.com/filecoin-project/lily/chain/indexer/integrated/tipset"
 	"github.com/filecoin-project/lily/chain/walk"
@@ -102,9 +103,20 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 		return nil, err
 	}
 
-	db, err := m.StorageCatalog.ConnectAsDatabase(ctx, cfg.JobConfig.Storage, md)
-	if err != nil {
-		return nil, err
+	handlers := []queue.TaskHandler{tasks.NewIndexHandler(im)}
+	// check if queue config contains configuration for gap fill tasks and if it expects the tasks to be processed. This
+	// is specified by giving the Fill queue a priority greater than 1.
+	priority, ok := worker.ServerConfig.Queues[indexer.Fill.String()]
+	if ok {
+		if priority > 0 {
+			// if gap fill tasks have a priority storage must be a database.
+			db, ok := strg.(*storage.Database)
+			if !ok {
+				return nil, fmt.Errorf("storage type (%T) is unsupported when %s queue is enable", strg, indexer.Fill.String())
+			}
+			//  add gap fill handler to set of worker handlers.
+			handlers = append(handlers, tasks.NewGapFillHandler(im, db))
+		}
 	}
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
@@ -114,7 +126,7 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 			"queue":   cfg.Queue,
 			"storage": cfg.JobConfig.Storage,
 		},
-		Job:                 queue.NewAsynqWorker(cfg.JobConfig.Name, im, db, worker),
+		Job:                 queue.NewAsynqWorker(cfg.JobConfig.Name, worker, handlers...),
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,

@@ -59,16 +59,24 @@ func NewGapFillTipSetTask(ctx context.Context, ts *types.TipSet, tasks []string)
 	return asynq.NewTask(TypeGapFillTipSet, payload), nil
 }
 
-type AsynqGapFillTipSetTaskHandler struct {
+func NewGapFillHandler(indexer indexer.Indexer, db *storage.Database) *GapFillTipSetHandler {
+	return &GapFillTipSetHandler{indexer: indexer, db: db}
+}
+
+type GapFillTipSetHandler struct {
 	indexer indexer.Indexer
 	db      *storage.Database
 }
 
-func NewGapFillHandler(indexer indexer.Indexer, db *storage.Database) *AsynqGapFillTipSetTaskHandler {
-	return &AsynqGapFillTipSetTaskHandler{indexer: indexer, db: db}
+func (gh *GapFillTipSetHandler) Handler() asynq.HandlerFunc {
+	return gh.HandleGapFillTipSetTask
 }
 
-func (gh *AsynqGapFillTipSetTaskHandler) HandleGapFillTipSetTask(ctx context.Context, t *asynq.Task) error {
+func (gh *GapFillTipSetHandler) Type() string {
+	return TypeGapFillTipSet
+}
+
+func (gh *GapFillTipSetHandler) HandleGapFillTipSetTask(ctx context.Context, t *asynq.Task) error {
 	var p GapFillTipSetPayload
 	if err := json.Unmarshal(t.Payload(), &p); err != nil {
 		return err
