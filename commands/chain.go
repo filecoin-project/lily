@@ -156,10 +156,6 @@ var ChainStateInspect = &cli.Command{
 			Aliases: []string{"v"},
 			Usage:   "Include detailed information about the completeness of state for all traversed height(s) starting from most recent",
 		},
-		&cli.BoolFlag{
-			Name:  "compact",
-			Usage: "Print JSON without whitespace",
-		},
 	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
@@ -247,7 +243,6 @@ var ChainStateCompute = &cli.Command{
 		bar := pb.StartNew(int(cctx.Uint64("to") - cctx.Uint64("from")))
 		bar.ShowTimeLeft = true
 		bar.ShowPercent = true
-		bar.ShowSpeed = true
 		bar.Units = pb.U_NO
 		for i := cctx.Int64("from"); i <= cctx.Int64("to"); i++ {
 			ts, err := lapi.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(i), head.Key())
