@@ -8,6 +8,9 @@ if [[ ! -z "${_LILY_DOCKER_INIT_IMPORT_MAINNET_SNAPSHOT}" ]]; then
   # import snapshot when _LILY_DOCKER_INIT_IMPORT_MAINNET_SNAPSHOT is set
   if [[ -f "${LILY_REPO}/datastore/_imported" ]]; then
     echo "Skipping import, found ${LILY_REPO}/datastore/_imported file."
+  elif [[ ! -z "${LILY_DOCKER_INIT_IMPORT_SNAPSHOT_PATH}" ]]; then
+    echo "Importing snapshot from ${LILY_DOCKER_INIT_IMPORT_SNAPSHOT_PATH}"
+    lily init --import-snapshot=${LILY_DOCKER_INIT_IMPORT_SNAPSHOT_PATH}
   else
     echo "Importing snapshot from https://fil-chain-snapshots-fallback.s3.amazonaws.com/mainnet/minimal_finality_stateroots_latest.car..."
     lily init --import-snapshot="https://fil-chain-snapshots-fallback.s3.amazonaws.com/mainnet/minimal_finality_stateroots_latest.car"
