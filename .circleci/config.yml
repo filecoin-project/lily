@@ -82,7 +82,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "20.10.6"
+          version: "20.10.14"
       - run:
           name: Publish Mainnet Production Docker Image from Lily branch to Docker Hub
           command: |
@@ -96,7 +96,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "20.10.6"
+          version: "20.10.14"
       - run:
           name: Publish Calibnet Production Docker Image from Lily branch to Docker Hub
           command: |
@@ -110,7 +110,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "20.10.6"
+          version: "20.10.14"
       - run:
           name: Publish Butterflynet Production Docker Image from Lily branch to Docker Hub
           command: |
@@ -124,7 +124,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "20.10.6"
+          version: "20.10.14"
       - run:
           name: Publish Mainnet Production Docker Image from Lily semver tag to Docker Hub
           command: |
@@ -142,7 +142,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "20.10.6"
+          version: "20.10.14"
       - run:
           name: Publish Calibnet Production Docker Image from Lily semver tag to Docker Hub
           command: |
@@ -159,7 +159,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "20.10.6"
+          version: "20.10.14"
       - run:
           name: Publish Butterflynet Production Docker Image from Lily semver tag to Docker Hub
           command: |
@@ -302,7 +302,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "20.10.6"
+          version: "20.10.14"
       - run:
           name: Build Production Mainnet Docker image
           command: make docker-mainnet
@@ -313,7 +313,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "20.10.6"
+          version: "20.10.14"
       - run:
           name: Build Dev Mainnet Docker image
           command: make docker-mainnet-dev
@@ -324,7 +324,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "20.10.6"
+          version: "20.10.14"
       - run:
           name: Build Production Calibnet Docker image
           command: make docker-calibnet
@@ -335,9 +335,9 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-          version: "20.10.6"
+          version: "20.10.14"
       - run:
-          name: Build Dev Calibnet Docker image
+          name: Build Dev Calinet Docker image
           command: make docker-calibnet-dev
       - validate-docker-executeable
 
