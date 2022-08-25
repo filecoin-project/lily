@@ -64,5 +64,5 @@ type DataSource interface {
 
 	MinerLoad(store adt.Store, act *types.Actor) (miner.State, error)
 
-	ShouldBrunFn(ctx context.Context, ts *types.TipSet) (lens.ShouldBurnFn, error)
+	ShouldBurnFn(ctx context.Context, ts *types.TipSet) (lens.ShouldBurnFn, error)
 }

@@ -74,7 +74,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	var burnFn lens.ShouldBurnFn
 	grp.Go(func() error {
 		var err error
-		burnFn, err = t.node.ShouldBrunFn(grpCtx, executed)
+		burnFn, err = t.node.ShouldBurnFn(grpCtx, executed)
 		if err != nil {
 			return fmt.Errorf("getting should burn function: %w", err)
 		}

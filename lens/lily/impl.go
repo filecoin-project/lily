@@ -563,6 +563,16 @@ func (m *LilyNodeAPI) MessagesForTipSetBlocks(ctx context.Context, ts *types.Tip
 
 // TipSetMessageReceipts returns the blocks and messages in `pts` and their corresponding receipts from `ts` matching block order in tipset (`pts`).
 func (m *LilyNodeAPI) TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*lens.BlockMessageReceipts, error) {
+	// sanity check args
+	if ts.Key().IsEmpty() {
+		return nil, fmt.Errorf("tipset cannot be empty")
+	}
+	if pts.Key().IsEmpty() {
+		return nil, fmt.Errorf("parent tipset cannot be empty")
+	}
+	if !types.CidArrsEqual(ts.Parents().Cids(), pts.Cids()) {
+		return nil, fmt.Errorf("mismatching tipset (%s) and parent tipset (%s)", ts.Key().String(), pts.Key().String())
+	}
 	// returned BlockMessages match block order in tipset
 	blkMsgs, err := m.ChainAPI.Chain.BlockMsgsForTipset(ctx, pts)
 	if err != nil {
@@ -597,7 +607,7 @@ func (m *LilyNodeAPI) TipSetMessageReceipts(ctx context.Context, ts, pts *types.
 			return nil, fmt.Errorf("loading message receipts %w", err)
 		}
 	}
-	// so we only load the receipt array one
+	// so we only load the receipt array once
 	getReceipt := func(idx int) (*types.MessageReceipt, error) {
 		var r types.MessageReceipt
 		if found, err := rs.Get(uint64(idx), &r); err != nil {
@@ -622,9 +632,9 @@ func (m *LilyNodeAPI) TipSetMessageReceipts(ctx context.Context, ts, pts *types.
 			// block containing messages
 			Block: pts.Blocks()[blkIdx],
 			// total messages returned equal to sum of bls and secp messages
-			Message: make([]types.ChainMsg, len(msgs.BlsMessages)+len(msgs.SecpkMessages)),
+			Messages: make([]types.ChainMsg, len(msgs.BlsMessages)+len(msgs.SecpkMessages)),
 			// total receipts returned equal to sum of bls and secp messages
-			Receipt: make([]*types.MessageReceipt, len(msgs.BlsMessages)+len(msgs.SecpkMessages)),
+			Receipts: make([]*types.MessageReceipt, len(msgs.BlsMessages)+len(msgs.SecpkMessages)),
 			// index of message indicating execution order.
 			MessageExecutionIndex: make(map[types.ChainMsg]int),
 		}
@@ -634,8 +644,8 @@ func (m *LilyNodeAPI) TipSetMessageReceipts(ctx context.Context, ts, pts *types.
 			if err != nil {
 				return nil, err
 			}
-			out[blkIdx].Message[msgIdx] = msgs.BlsMessages[blsIdx]
-			out[blkIdx].Receipt[receiptIdx] = receipt
+			out[blkIdx].Messages[msgIdx] = msgs.BlsMessages[blsIdx]
+			out[blkIdx].Receipts[receiptIdx] = receipt
 			out[blkIdx].MessageExecutionIndex[msgs.BlsMessages[blsIdx]] = executionIndex
 			msgIdx++
 			receiptIdx++
@@ -647,8 +657,8 @@ func (m *LilyNodeAPI) TipSetMessageReceipts(ctx context.Context, ts, pts *types.
 			if err != nil {
 				return nil, err
 			}
-			out[blkIdx].Message[msgIdx] = msgs.SecpkMessages[secpIdx]
-			out[blkIdx].Receipt[receiptIdx] = receipt
+			out[blkIdx].Messages[msgIdx] = msgs.SecpkMessages[secpIdx]
+			out[blkIdx].Receipts[receiptIdx] = receipt
 			out[blkIdx].MessageExecutionIndex[msgs.SecpkMessages[secpIdx]] = executionIndex
 			msgIdx++
 			receiptIdx++

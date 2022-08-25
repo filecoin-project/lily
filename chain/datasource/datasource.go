@@ -278,7 +278,7 @@ func (t *DataSource) MinerLoad(store adt.Store, act *types.Actor) (miner.State, 
 	return miner.Load(store, act)
 }
 
-func (t *DataSource) ShouldBrunFn(ctx context.Context, ts *types.TipSet) (lens.ShouldBurnFn, error) {
+func (t *DataSource) ShouldBurnFn(ctx context.Context, ts *types.TipSet) (lens.ShouldBurnFn, error) {
 	return t.node.BurnFundsFn(ctx, ts)
 }
 

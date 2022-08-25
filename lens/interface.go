@@ -91,23 +91,16 @@ type BlockMessages struct {
 	SecpMessages []*types.SignedMessage // SECP messages in block `Block`
 }
 
+// BlockMessageReceipts contains a block its messages and their corresponding receipts.
+// The Receipts are one-to-one with Messages index.
 type BlockMessageReceipts struct {
-	Block                 *types.BlockHeader
-	Message               []types.ChainMsg
-	Receipt               []*types.MessageReceipt
+	Block *types.BlockHeader
+	// Messages contained in Block.
+	Messages []types.ChainMsg
+	// Receipts contained in Block.
+	Receipts []*types.MessageReceipt
+	// MessageExectionIndex contains a mapping of Messages to their execution order in the tipset they were included.
 	MessageExecutionIndex map[types.ChainMsg]int
-}
-
-func (bmr *BlockMessageReceipts) Iterator() (*MessageReceiptIterator, error) {
-	if len(bmr.Message) != len(bmr.Receipt) {
-		return nil, fmt.Errorf("invalid construction, expected equal number receipts (%d) and messages (%d)", len(bmr.Receipt), len(bmr.Message))
-	}
-	return &MessageReceiptIterator{
-		idx:      0,
-		msgs:     bmr.Message,
-		receipts: bmr.Receipt,
-		exeIdx:   bmr.MessageExecutionIndex,
-	}, nil
 }
 
 type MessageReceiptIterator struct {
@@ -117,6 +110,20 @@ type MessageReceiptIterator struct {
 	exeIdx   map[types.ChainMsg]int
 }
 
+// Iterator returns a MessageReceiptIterator to conveniently iterate messages, their execution index, and their respective receipts.
+func (bmr *BlockMessageReceipts) Iterator() (*MessageReceiptIterator, error) {
+	if len(bmr.Messages) != len(bmr.Receipts) {
+		return nil, fmt.Errorf("invalid construction, expected equal number receipts (%d) and messages (%d)", len(bmr.Receipts), len(bmr.Messages))
+	}
+	return &MessageReceiptIterator{
+		idx:      0,
+		msgs:     bmr.Messages,
+		receipts: bmr.Receipts,
+		exeIdx:   bmr.MessageExecutionIndex,
+	}, nil
+}
+
+// HasNext returns `true` while there are messages/receipts to iterate.
 func (mri *MessageReceiptIterator) HasNext() bool {
 	if mri.idx < len(mri.msgs) {
 		return true
@@ -124,6 +131,7 @@ func (mri *MessageReceiptIterator) HasNext() bool {
 	return false
 }
 
+// Next returns the next message, its execution index, and receipt in the MessageReceiptIterator.
 func (mri *MessageReceiptIterator) Next() (types.ChainMsg, int, *types.MessageReceipt) {
 	if mri.HasNext() {
 		msg := mri.msgs[mri.idx]
@@ -135,6 +143,7 @@ func (mri *MessageReceiptIterator) Next() (types.ChainMsg, int, *types.MessageRe
 	return nil, -1, nil
 }
 
+// Reset resets the MessageReceiptIterator to the first message/receipt.
 func (mri *MessageReceiptIterator) Reset() {
 	mri.idx = 0
 }
