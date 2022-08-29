@@ -12,3 +12,11 @@
         Addr = "redis-queue:6379"
         DB = 0
         PoolSize = 0
+[Storage]
+  [Storage.Postgresql]
+    [Storage.Postgresql.postgres]
+      SchemaName = "lily"
+      URLEnv = "LILY_STORAGE_POSTGRESQL_DB_URL"
+      ApplicationName = "lily"
+      PoolSize = 20
+      AllowUpsert = false
