@@ -37,7 +37,7 @@ services:
       - '--web.console.templates=/usr/share/prometheus/consoles'
     ports:
       - 9090:9090
-    network_mode: "host"
+    #network_mode: "host"
     restart: always
 
   grafana:
@@ -47,7 +47,7 @@ services:
       - prometheus
     ports:
       - 3000:3000
-    network_mode: "host"
+    #network_mode: "host"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./build/grafana/provisioning/:/etc/grafana/provisioning/
@@ -55,30 +55,69 @@ services:
       - ./build/grafana/config.monitoring
     restart: always
 
-  #lily:
-    #container_name: lily
-    ## Select (only one) image
-    #image: filecoin/lily:v0.8.0
-    #image: filecoin/lily:v0.8.0-calibnet
-    #image: filecoin/lily:v0.8.0-calibnet-dev
-    #env_file:
-      ## Check envvars for configurable options
-      #- ./build/lily/docker.env
-    #depends_on:
-      #- prometheus
-      #- timescaledb
-      #- jaeger
-    #ports:
-      #- 1234:1234
-    #volumes:
-      #- lily_data:/var/lib/lily
-      #- ./build/lily/docker_init.sh:/usr/bin/docker_init.sh
-    #entrypoint: /usr/bin/docker_init.sh
-    #command:
-      #- daemon
+  redis-queue:
+    image: bitnami/redis:7.0
+    env_file:
+      # Check envvars for configurable options
+      - ./build/lily/redis-queue.env
+    ports:
+      - 6379:6379
+    restart: always
+
+  notifier:
+    image: filecoin/lily:v0.11.0
+    env_file:
+      # Check envvars for configurable options
+      - ./build/lily/notifier.env
+    depends_on:
+      - prometheus
+      - timescaledb
+      - jaeger
+      - redis-queue
+    ports:
+      - 1234:1234
+    volumes:
+      # holds lily datastore repo
+      - lily_notifier_data:/var/lib/lily
+      # persist params through restarts
+      - lily_notifier_tmp:/var/tmp/filecoin-proof-parameters
+      # notifier-specific config
+      - ./build/lily/notifier_config.toml:/var/lib/lily/config.toml
+      - ./build/lily/docker_init.sh:/usr/bin/docker_init.sh
+    entrypoint: /usr/bin/docker_init.sh
+    command:
+      - "daemon --bootstrap=false"
+
+  worker:
+    image: filecoin/lily:v0.11.0
+    env_file:
+      # Check envvars for configurable options
+      - ./build/lily/worker.env
+    depends_on:
+      - prometheus
+      - timescaledb
+      - jaeger
+      - redis-queue
+      - notifier
+    ports:
+      - 1234
+    volumes:
+      # holds lily datastore repo
+      - lily_worker_data:/var/lib/lily
+      # persist params through restarts
+      - lily_worker_tmp:/var/tmp/filecoin-proof-parameters
+      # notifier-specific config
+      - ./build/lily/worker_config.toml:/var/lib/lily/config.toml
+      - ./build/lily/docker_init.sh:/usr/bin/docker_init.sh
+    entrypoint: /usr/bin/docker_init.sh
+    command:
+      - "daemon --bootstrap=false"
 
 volumes:
   timescaledb: {}
   prometheus_data: {}
   grafana_data: {}
-  lily_data: {}
+  lily_notifier_data: {}
+  lily_worker_data: {}
+  lily_notifier_tmp: {}
+  lily_worker_tmp: {}
