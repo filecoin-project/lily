@@ -25,14 +25,12 @@ func NewTask(node tasks.DataSource) *Task {
 	}
 }
 
-func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, executed *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (t *Task) ProcessTipSet(ctx context.Context, current *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ProcessTipSets")
 	if span.IsRecording() {
 		span.SetAttributes(
 			attribute.String("current", current.String()),
 			attribute.Int64("current_height", int64(current.Height())),
-			attribute.String("executed", executed.String()),
-			attribute.Int64("executed_height", int64(executed.Height())),
 			attribute.String("processor", "block_messages"),
 		)
 	}
@@ -42,12 +40,11 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		StateRoot: current.ParentState().String(),
 	}
 
-	tsMsgs, err := t.node.ExecutedAndBlockMessages(ctx, current, executed)
+	blkMsgs, err := t.node.TipSetBlockMessages(ctx, current)
 	if err != nil {
-		report.ErrorsDetected = fmt.Errorf("getting executed and block messages: %w", err)
+		report.ErrorsDetected = fmt.Errorf("getting tipset block messages: %w", err)
 		return nil, report, nil
 	}
-	blkMsgs := tsMsgs.Block
 
 	var (
 		errorsDetected      = make([]*messages.MessageError, 0, len(blkMsgs))

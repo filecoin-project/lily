@@ -12,21 +12,22 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/chain/vm"
+	states0 "github.com/filecoin-project/specs-actors/actors/states"
+	states2 "github.com/filecoin-project/specs-actors/v2/actors/states"
+	states3 "github.com/filecoin-project/specs-actors/v3/actors/states"
+	states4 "github.com/filecoin-project/specs-actors/v4/actors/states"
+	states5 "github.com/filecoin-project/specs-actors/v5/actors/states"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/sync/singleflight"
-
-	states0 "github.com/filecoin-project/specs-actors/actors/states"
-	states2 "github.com/filecoin-project/specs-actors/v2/actors/states"
-	states3 "github.com/filecoin-project/specs-actors/v3/actors/states"
-	states4 "github.com/filecoin-project/specs-actors/v4/actors/states"
-	states5 "github.com/filecoin-project/specs-actors/v5/actors/states"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/adt/diff"
@@ -37,28 +38,28 @@ import (
 )
 
 var (
-	executedBlkMsgCacheSize int
-	executedTsCacheSize     int
-	diffPreCommitCacheSize  int
-	diffSectorCacheSize     int
+	tipsetMessageReceiptCacheSize int
+	executedTsCacheSize           int
+	diffPreCommitCacheSize        int
+	diffSectorCacheSize           int
 
-	executedBlkMsgCacheSizeEnv = "LILY_EXECUTED_BLK_MSG_CACHE_SIZE"
-	executedTsCacheSizeEnv     = "LILY_EXECUTED_TS_CACHE_SIZE"
-	diffPreCommitCacheSizeEnv  = "LILY_DIFF_PRECOMMIT_CACHE_SIZE"
-	diffSectorCacheSizeEnv     = "LILY_DIFF_SECTORS_CACHE_SIZE"
+	tipsetMessageReceiptSizeEnv = "LILY_TIPSET_MSG_RECEIPT_CACHE_SIZE"
+	executedTsCacheSizeEnv      = "LILY_EXECUTED_TS_CACHE_SIZE"
+	diffPreCommitCacheSizeEnv   = "LILY_DIFF_PRECOMMIT_CACHE_SIZE"
+	diffSectorCacheSizeEnv      = "LILY_DIFF_SECTORS_CACHE_SIZE"
 )
 
 func init() {
-	executedBlkMsgCacheSize = 4
+	tipsetMessageReceiptCacheSize = 4
 	executedTsCacheSize = 4
 	diffPreCommitCacheSize = 500
 	diffSectorCacheSize = 500
-	if s := os.Getenv(executedBlkMsgCacheSizeEnv); s != "" {
+	if s := os.Getenv(tipsetMessageReceiptSizeEnv); s != "" {
 		v, err := strconv.ParseInt(s, 10, 64)
 		if err == nil {
-			executedBlkMsgCacheSize = int(v)
+			tipsetMessageReceiptCacheSize = int(v)
 		} else {
-			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, executedBlkMsgCacheSizeEnv, executedBlkMsgCacheSize, err)
+			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, tipsetMessageReceiptSizeEnv, tipsetMessageReceiptCacheSize, err)
 		}
 	}
 	if s := os.Getenv(executedTsCacheSizeEnv); s != "" {
@@ -92,28 +93,12 @@ var _ tasks.DataSource = (*DataSource)(nil)
 
 var log = logging.Logger("lily/datasource")
 
-type DataSource struct {
-	node lens.API
-
-	executedBlkMsgCache *lru.Cache
-	executedBlkMsgGroup singleflight.Group
-
-	executedTsCache *lru.Cache
-	executedTsGroup singleflight.Group
-
-	diffSectorsCache *lru.Cache
-	diffSectorsGroup singleflight.Group
-
-	diffPreCommitCache *lru.Cache
-	diffPreCommitGroup singleflight.Group
-}
-
 func NewDataSource(node lens.API) (*DataSource, error) {
 	t := &DataSource{
 		node: node,
 	}
 	var err error
-	t.executedBlkMsgCache, err = lru.New(executedBlkMsgCacheSize)
+	t.tsBlkMsgRecCache, err = lru.New(tipsetMessageReceiptCacheSize)
 	if err != nil {
 		return nil, err
 	}
@@ -135,6 +120,56 @@ func NewDataSource(node lens.API) (*DataSource, error) {
 	}
 
 	return t, nil
+}
+
+type DataSource struct {
+	node lens.API
+
+	executedTsCache *lru.Cache
+	executedTsGroup singleflight.Group
+
+	tsBlkMsgRecCache *lru.Cache
+	tsBlkMsgRecGroup singleflight.Group
+
+	diffSectorsCache *lru.Cache
+	diffSectorsGroup singleflight.Group
+
+	diffPreCommitCache *lru.Cache
+	diffPreCommitGroup singleflight.Group
+}
+
+func (t *DataSource) ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi.TokenAmount, error) {
+	return t.node.ComputeBaseFee(ctx, ts)
+}
+
+func (t *DataSource) TipSetBlockMessages(ctx context.Context, ts *types.TipSet) ([]*lens.BlockMessages, error) {
+	return t.node.MessagesForTipSetBlocks(ctx, ts)
+}
+
+// TipSetMessageReceipts returns the blocks and messages in `pts` and their corresponding receipts from `ts` matching block order in tipset (`pts`).
+// TODO replace with lotus chainstore method when https://github.com/filecoin-project/lotus/pull/9186 lands
+func (t *DataSource) TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*lens.BlockMessageReceipts, error) {
+	key, err := asKey(ts, pts)
+	if err != nil {
+		return nil, err
+	}
+	value, found := t.tsBlkMsgRecCache.Get(key)
+	if found {
+		return value.([]*lens.BlockMessageReceipts), nil
+	}
+
+	value, err, _ = t.tsBlkMsgRecGroup.Do(key, func() (interface{}, error) {
+		data, innerErr := t.node.TipSetMessageReceipts(ctx, ts, pts)
+		if innerErr == nil {
+			t.tsBlkMsgRecCache.Add(key, data)
+		}
+		return data, innerErr
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return value.([]*lens.BlockMessageReceipts), nil
 }
 
 func (t *DataSource) TipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error) {
@@ -239,45 +274,20 @@ func (t *DataSource) MessageExecutions(ctx context.Context, ts, pts *types.TipSe
 	return value.([]*lens.MessageExecution), nil
 }
 
-func (t *DataSource) ExecutedAndBlockMessages(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
-	metrics.RecordInc(ctx, metrics.DataSourceExecutedAndBlockMessagesRead)
-	ctx, span := otel.Tracer("").Start(ctx, "DataSource.ExecutedAndBlockMessages")
-	if span.IsRecording() {
-		span.SetAttributes(attribute.String("tipset", ts.Key().String()))
-		span.SetAttributes(attribute.String("parent", pts.Key().String()))
-	}
-	defer span.End()
-
-	key, err := asKey(ts, pts)
-	if err != nil {
-		return nil, err
-	}
-	value, found := t.executedBlkMsgCache.Get(key)
-	if found {
-		metrics.RecordInc(ctx, metrics.DataSourceExecutedAndBlockMessagesCacheHit)
-		return value.(*lens.TipSetMessages), nil
-	}
-
-	value, err, shared := t.executedBlkMsgGroup.Do(key, func() (interface{}, error) {
-		data, innerErr := t.node.GetExecutedAndBlockMessagesForTipset(ctx, ts, pts)
-		if innerErr == nil {
-			t.executedBlkMsgCache.Add(key, data)
-		}
-
-		return data, innerErr
-	})
-
-	if span.IsRecording() {
-		span.SetAttributes(attribute.Bool("shared", shared))
-	}
-	if err != nil {
-		return nil, err
-	}
-	return value.(*lens.TipSetMessages), nil
-}
-
 func (t *DataSource) MinerLoad(store adt.Store, act *types.Actor) (miner.State, error) {
 	return miner.Load(store, act)
+}
+
+func (t *DataSource) ShouldBurnFn(ctx context.Context, ts *types.TipSet) (lens.ShouldBurnFn, error) {
+	return t.node.BurnFundsFn(ctx, ts)
+}
+
+func ComputeGasOutputs(ctx context.Context, block *types.BlockHeader, message *types.Message, receipt *types.MessageReceipt, shouldBurnFn lens.ShouldBurnFn) (vm.GasOutputs, error) {
+	burn, err := shouldBurnFn(ctx, message, receipt.ExitCode)
+	if err != nil {
+		return vm.GasOutputs{}, err
+	}
+	return vm.ComputeGasOutputs(receipt.GasUsed, message.GasLimit, block.ParentBaseFee, message.GasFeeCap, message.GasPremium, burn), nil
 }
 
 func GetActorStateChanges(ctx context.Context, store adt.Store, current, executed *types.TipSet) (tasks.ActorStateChangeDiff, error) {

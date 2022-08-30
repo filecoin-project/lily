@@ -26,14 +26,12 @@ func NewTask(node tasks.DataSource) *Task {
 	}
 }
 
-func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, executed *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (t *Task) ProcessTipSet(ctx context.Context, current *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ProcessTipSets")
 	if span.IsRecording() {
 		span.SetAttributes(
 			attribute.String("current", current.String()),
 			attribute.Int64("current_height", int64(current.Height())),
-			attribute.String("executed", executed.String()),
-			attribute.Int64("executed_height", int64(executed.Height())),
 			attribute.String("processor", "messages"),
 		)
 	}
@@ -44,93 +42,69 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		StateRoot: current.ParentState().String(),
 	}
 
-	tsMsgs, err := t.node.ExecutedAndBlockMessages(ctx, current, executed)
+	blksMsgs, err := t.node.TipSetBlockMessages(ctx, current)
 	if err != nil {
-		report.ErrorsDetected = fmt.Errorf("getting executed and block messages: %w", err)
+		report.ErrorsDetected = fmt.Errorf("getting messages for tipset: %w", err)
 		return nil, report, nil
 	}
-	blkMsgs := tsMsgs.Block
 
 	var (
-		messageResults = make(messagemodel.Messages, 0, len(blkMsgs))
-		errorsDetected = make([]*messages.MessageError, 0, len(blkMsgs))
+		messageResults = make(messagemodel.Messages, 0)
+		errorsDetected = make([]*messages.MessageError, 0)
 		blkMsgSeen     = make(map[cid.Cid]bool)
 	)
 
-	// Record which blocks had which messages, regardless of duplicates
-	for _, bm := range blkMsgs {
-		// Stop processing if we have been told to cancel
+	// record all unique messages in current
+	for _, blkMsgs := range blksMsgs {
 		select {
 		case <-ctx.Done():
 			return nil, nil, fmt.Errorf("context done: %w", ctx.Err())
 		default:
 		}
-
-		for _, msg := range bm.SecpMessages {
+		for _, msg := range blkMsgs.BlsMessages {
 			if blkMsgSeen[msg.Cid()] {
 				continue
 			}
 			blkMsgSeen[msg.Cid()] = true
 
-			var msgSize int
-			if b, err := msg.Message.Serialize(); err == nil {
-				msgSize = len(b)
-			} else {
-				errorsDetected = append(errorsDetected, &messages.MessageError{
-					Cid:   msg.Cid(),
-					Error: fmt.Errorf("failed to serialize message: %w", err).Error(),
-				})
-			}
-
-			// record all unique Secp messages
-			msg := &messagemodel.Message{
-				Height:     int64(bm.Block.Height),
+			// record all unique messages
+			messageResults = append(messageResults, &messagemodel.Message{
+				Height:     int64(blkMsgs.Block.Height),
 				Cid:        msg.Cid().String(),
-				From:       msg.Message.From.String(),
-				To:         msg.Message.To.String(),
-				Value:      msg.Message.Value.String(),
-				GasFeeCap:  msg.Message.GasFeeCap.String(),
-				GasPremium: msg.Message.GasPremium.String(),
-				GasLimit:   msg.Message.GasLimit,
-				SizeBytes:  msgSize,
-				Nonce:      msg.Message.Nonce,
-				Method:     uint64(msg.Message.Method),
-			}
-			messageResults = append(messageResults, msg)
-
+				From:       msg.VMMessage().From.String(),
+				To:         msg.VMMessage().To.String(),
+				Value:      msg.VMMessage().Value.String(),
+				GasFeeCap:  msg.VMMessage().GasFeeCap.String(),
+				GasPremium: msg.VMMessage().GasPremium.String(),
+				GasLimit:   msg.VMMessage().GasLimit,
+				SizeBytes:  msg.ChainLength(),
+				Nonce:      msg.VMMessage().Nonce,
+				Method:     uint64(msg.VMMessage().Method),
+			})
 		}
-		for _, msg := range bm.BlsMessages {
+		for _, msg := range blkMsgs.SecpMessages {
 			if blkMsgSeen[msg.Cid()] {
 				continue
 			}
 			blkMsgSeen[msg.Cid()] = true
 
-			var msgSize int
-			if b, err := msg.Serialize(); err == nil {
-				msgSize = len(b)
-			} else {
-				errorsDetected = append(errorsDetected, &messages.MessageError{
-					Cid:   msg.Cid(),
-					Error: fmt.Errorf("failed to serialize message: %w", err).Error(),
-				})
-			}
-
-			// record all unique bls messages
-			msg := &messagemodel.Message{
-				Height:     int64(bm.Block.Height),
+			// record all unique messages
+			messageResults = append(messageResults, &messagemodel.Message{
+				Height:     int64(blkMsgs.Block.Height),
 				Cid:        msg.Cid().String(),
-				From:       msg.From.String(),
-				To:         msg.To.String(),
-				Value:      msg.Value.String(),
-				GasFeeCap:  msg.GasFeeCap.String(),
-				GasPremium: msg.GasPremium.String(),
-				GasLimit:   msg.GasLimit,
-				SizeBytes:  msgSize,
-				Nonce:      msg.Nonce,
-				Method:     uint64(msg.Method),
-			}
-			messageResults = append(messageResults, msg)
+				From:       msg.VMMessage().From.String(),
+				To:         msg.VMMessage().To.String(),
+				Value:      msg.VMMessage().Value.String(),
+				GasFeeCap:  msg.VMMessage().GasFeeCap.String(),
+				GasPremium: msg.VMMessage().GasPremium.String(),
+				GasLimit:   msg.VMMessage().GasLimit,
+				SizeBytes:  msg.ChainLength(),
+				Nonce:      msg.VMMessage().Nonce,
+				Method:     uint64(msg.VMMessage().Method),
+			})
+
 		}
+
 	}
 
 	if len(errorsDetected) != 0 {

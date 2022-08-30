@@ -2,7 +2,9 @@ package lens
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/filecoin-project/go-state-types/exitcode"
 	"github.com/filecoin-project/lotus/node/modules/dtypes"
 
 	"github.com/filecoin-project/go-address"
@@ -18,8 +20,8 @@ type API interface {
 	StoreAPI
 	ChainAPI
 	StateAPI
+	VMAPI
 
-	GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*TipSetMessages, error)
 	GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*MessageExecution, error)
 }
 type StoreAPI interface {
@@ -41,7 +43,11 @@ type ChainAPI interface {
 
 	ChainGetBlockMessages(ctx context.Context, msg cid.Cid) (*api.BlockMessages, error)
 	ChainGetParentMessages(ctx context.Context, blockCid cid.Cid) ([]api.Message, error)
-	ChainGetParentReceipts(ctx context.Context, blockCid cid.Cid) ([]*types.MessageReceipt, error)
+
+	ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi.TokenAmount, error)
+
+	MessagesForTipSetBlocks(ctx context.Context, ts *types.TipSet) ([]*BlockMessages, error)
+	TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*BlockMessageReceipts, error)
 }
 
 type StateAPI interface {
@@ -59,9 +65,10 @@ type StateAPI interface {
 	StateNetworkName(context.Context) (dtypes.NetworkName, error)
 }
 
-type TipSetMessages struct {
-	Executed []*ExecutedMessage
-	Block    []*BlockMessages
+type ShouldBurnFn func(ctx context.Context, msg *types.Message, errcode exitcode.ExitCode) (bool, error)
+
+type VMAPI interface {
+	BurnFundsFn(ctx context.Context, ts *types.TipSet) (ShouldBurnFn, error)
 }
 
 type MessageExecution struct {
@@ -78,21 +85,65 @@ type MessageExecution struct {
 	Implicit bool
 }
 
-type ExecutedMessage struct {
-	Cid           cid.Cid
-	Height        abi.ChainEpoch
-	Message       *types.Message
-	Receipt       *types.MessageReceipt
-	BlockHeader   *types.BlockHeader
-	Blocks        []cid.Cid // blocks this message appeared in
-	Index         uint64    // Message and receipt sequence in tipset
-	FromActorCode cid.Cid   // code of the actor the message is from
-	ToActorCode   cid.Cid   // code of the actor the message is to
-	GasOutputs    vm.GasOutputs
-}
-
 type BlockMessages struct {
 	Block        *types.BlockHeader     // block messages appeared in
 	BlsMessages  []*types.Message       // BLS messages in block `Block`
 	SecpMessages []*types.SignedMessage // SECP messages in block `Block`
+}
+
+// BlockMessageReceipts contains a block its messages and their corresponding receipts.
+// The Receipts are one-to-one with Messages index.
+type BlockMessageReceipts struct {
+	Block *types.BlockHeader
+	// Messages contained in Block.
+	Messages []types.ChainMsg
+	// Receipts contained in Block.
+	Receipts []*types.MessageReceipt
+	// MessageExectionIndex contains a mapping of Messages to their execution order in the tipset they were included.
+	MessageExecutionIndex map[types.ChainMsg]int
+}
+
+type MessageReceiptIterator struct {
+	idx      int
+	msgs     []types.ChainMsg
+	receipts []*types.MessageReceipt
+	exeIdx   map[types.ChainMsg]int
+}
+
+// Iterator returns a MessageReceiptIterator to conveniently iterate messages, their execution index, and their respective receipts.
+func (bmr *BlockMessageReceipts) Iterator() (*MessageReceiptIterator, error) {
+	if len(bmr.Messages) != len(bmr.Receipts) {
+		return nil, fmt.Errorf("invalid construction, expected equal number receipts (%d) and messages (%d)", len(bmr.Receipts), len(bmr.Messages))
+	}
+	return &MessageReceiptIterator{
+		idx:      0,
+		msgs:     bmr.Messages,
+		receipts: bmr.Receipts,
+		exeIdx:   bmr.MessageExecutionIndex,
+	}, nil
+}
+
+// HasNext returns `true` while there are messages/receipts to iterate.
+func (mri *MessageReceiptIterator) HasNext() bool {
+	if mri.idx < len(mri.msgs) {
+		return true
+	}
+	return false
+}
+
+// Next returns the next message, its execution index, and receipt in the MessageReceiptIterator.
+func (mri *MessageReceiptIterator) Next() (types.ChainMsg, int, *types.MessageReceipt) {
+	if mri.HasNext() {
+		msg := mri.msgs[mri.idx]
+		exeIdx := mri.exeIdx[msg]
+		rec := mri.receipts[mri.idx]
+		mri.idx++
+		return msg, exeIdx, rec
+	}
+	return nil, -1, nil
+}
+
+// Reset resets the MessageReceiptIterator to the first message/receipt.
+func (mri *MessageReceiptIterator) Reset() {
+	mri.idx = 0
 }

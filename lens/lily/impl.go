@@ -7,16 +7,22 @@ import (
 	"sync"
 
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/go-state-types/exitcode"
+	network2 "github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/chain/consensus/filcns"
 	"github.com/filecoin-project/lotus/chain/events"
+	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/lotus/node/impl/common"
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/lotus/node/impl/net"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
+	ipld "github.com/ipfs/go-ipld-format"
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
 
@@ -62,17 +68,9 @@ type LilyNodeAPI struct {
 	actorStoreInit sync.Once
 }
 
-func (m *LilyNodeAPI) CirculatingSupply(ctx context.Context, key types.TipSetKey) (api.CirculatingSupply, error) {
-	return m.StateAPI.StateVMCirculatingSupplyInternal(ctx, key)
-}
-
-func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {
-	// TODO (Frrist): I copied this from lotus, I need it now to handle gap filling edge cases.
-	ts, err := m.ChainAPI.Chain.GetTipSetFromKey(ctx, key)
-	if err != nil {
-		return nil, fmt.Errorf("loading tipset %s: %w", key, err)
-	}
-	return m.ChainAPI.Chain.GetTipsetByHeight(ctx, epoch, ts, false)
+type vmWrapper struct {
+	vm vm.Interface
+	st *state.StateTree
 }
 
 func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error) {
@@ -481,10 +479,6 @@ func (m *LilyNodeAPI) LilyJobList(_ context.Context) ([]schedule.JobListResult, 
 	return m.Scheduler.Jobs(), nil
 }
 
-func (m *LilyNodeAPI) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
-	return util.GetExecutedAndBlockMessagesForTipset(ctx, m.ChainAPI.Chain, m.StateManager, ts, pts)
-}
-
 func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, next *types.TipSet, current *types.TipSet) ([]*lens.MessageExecution, error) {
 	// this is defined in the lily daemon dep injection constructor, failure here is a developer error.
 	msgMonitor, ok := m.ExecMonitor.(*modules.BufferedExecMonitor)
@@ -542,6 +536,189 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, next *t
 		}
 	}
 	return out, nil
+}
+
+// ComputeBaseFee calculates the base-fee of the specified tipset.
+func (m *LilyNodeAPI) ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi.TokenAmount, error) {
+	return m.ChainAPI.Chain.ComputeBaseFee(ctx, ts)
+}
+
+// MessagesForTipSetBlocks returns messages stored in the blocks of the specified tipset, messages may be duplicated
+// across the returned set of BlockMessages.
+func (m *LilyNodeAPI) MessagesForTipSetBlocks(ctx context.Context, ts *types.TipSet) ([]*lens.BlockMessages, error) {
+	var out []*lens.BlockMessages
+	for _, blk := range ts.Blocks() {
+		blkMsgs, err := m.ChainAPI.ChainModuleAPI.ChainGetBlockMessages(ctx, blk.Cid())
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, &lens.BlockMessages{
+			Block:        blk,
+			BlsMessages:  blkMsgs.BlsMessages,
+			SecpMessages: blkMsgs.SecpkMessages,
+		})
+	}
+	return out, nil
+}
+
+// TipSetMessageReceipts returns the blocks and messages in `pts` and their corresponding receipts from `ts` matching block order in tipset (`pts`).
+func (m *LilyNodeAPI) TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*lens.BlockMessageReceipts, error) {
+	// sanity check args
+	if ts.Key().IsEmpty() {
+		return nil, fmt.Errorf("tipset cannot be empty")
+	}
+	if pts.Key().IsEmpty() {
+		return nil, fmt.Errorf("parent tipset cannot be empty")
+	}
+	if !types.CidArrsEqual(ts.Parents().Cids(), pts.Cids()) {
+		return nil, fmt.Errorf("mismatching tipset (%s) and parent tipset (%s)", ts.Key().String(), pts.Key().String())
+	}
+	// returned BlockMessages match block order in tipset
+	blkMsgs, err := m.ChainAPI.Chain.BlockMsgsForTipset(ctx, pts)
+	if err != nil {
+		return nil, err
+	}
+	if len(blkMsgs) != len(pts.Blocks()) {
+		// logic error somewhere
+		return nil, fmt.Errorf("mismatching number of blocks returned from block messages, got %d wanted %d", len(blkMsgs), len(pts.Blocks()))
+	}
+
+	// retrieve receipts using a block from the child (ts) tipset
+	rs, err := adt.AsArray(m.Store(), ts.Blocks()[0].ParentMessageReceipts)
+	if err != nil {
+		// if we fail to find the receipts then we need to compute them, which we can safely do since the above `BlockMsgsForTipset` call
+		// returning successfully indicates we have the message available to compute receipts from.
+		if ipld.IsNotFound(err) {
+			log.Debugw("computing tipset to get receipts", "ts", pts.Key().String(), "height", pts.Height())
+			if stateRoot, receiptRoot, err := m.StateManager.TipSetState(ctx, pts); err != nil {
+				log.Errorw("failed to compute tipset state", "tipset", pts.Key().String(), "height", pts.Height())
+				return nil, err
+			} else if !stateRoot.Equals(ts.ParentState()) { // sanity check
+				return nil, fmt.Errorf("computed stateroot (%s) does not match tipset stateroot (%s)", stateRoot.String(), ts.ParentState().String())
+			} else if !receiptRoot.Equals(ts.Blocks()[0].ParentMessageReceipts) { // sanity check
+				return nil, fmt.Errorf("computed receipts (%s) does not match tipset block parent message receipts (%s)", receiptRoot.String(), ts.Blocks()[0].ParentMessageReceipts.String())
+			}
+			// loading after computing state should succeed as tipset computation produces message receipts
+			rs, err = adt.AsArray(m.Store(), ts.Blocks()[0].ParentMessageReceipts)
+			if err != nil {
+				return nil, fmt.Errorf("load message receipts after tipset execution (something if very wrong contact a developer): %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("loading message receipts %w", err)
+		}
+	}
+	// so we only load the receipt array once
+	getReceipt := func(idx int) (*types.MessageReceipt, error) {
+		var r types.MessageReceipt
+		if found, err := rs.Get(uint64(idx), &r); err != nil {
+			return nil, err
+		} else if !found {
+			return nil, fmt.Errorf("failed to find receipt %d", idx)
+		}
+		return &r, nil
+	}
+
+	out := make([]*lens.BlockMessageReceipts, len(pts.Blocks()))
+	executionIndex := 0
+	// walk each block in tipset, `pts.Blocks()` has same ordering as `blkMsgs`.
+	for blkIdx := range pts.Blocks() {
+		// bls and secp messages for block
+		msgs := blkMsgs[blkIdx]
+		// index of messages in `out.Messages`
+		msgIdx := 0
+		// index or receipts in `out.Receipts`
+		receiptIdx := 0
+		out[blkIdx] = &lens.BlockMessageReceipts{
+			// block containing messages
+			Block: pts.Blocks()[blkIdx],
+			// total messages returned equal to sum of bls and secp messages
+			Messages: make([]types.ChainMsg, len(msgs.BlsMessages)+len(msgs.SecpkMessages)),
+			// total receipts returned equal to sum of bls and secp messages
+			Receipts: make([]*types.MessageReceipt, len(msgs.BlsMessages)+len(msgs.SecpkMessages)),
+			// index of message indicating execution order.
+			MessageExecutionIndex: make(map[types.ChainMsg]int),
+		}
+		// walk bls messages and extract their receipts
+		for blsIdx := range msgs.BlsMessages {
+			receipt, err := getReceipt(executionIndex)
+			if err != nil {
+				return nil, err
+			}
+			out[blkIdx].Messages[msgIdx] = msgs.BlsMessages[blsIdx]
+			out[blkIdx].Receipts[receiptIdx] = receipt
+			out[blkIdx].MessageExecutionIndex[msgs.BlsMessages[blsIdx]] = executionIndex
+			msgIdx++
+			receiptIdx++
+			executionIndex++
+		}
+		// walk secp messages and extract their receipts
+		for secpIdx := range msgs.SecpkMessages {
+			receipt, err := getReceipt(executionIndex)
+			if err != nil {
+				return nil, err
+			}
+			out[blkIdx].Messages[msgIdx] = msgs.SecpkMessages[secpIdx]
+			out[blkIdx].Receipts[receiptIdx] = receipt
+			out[blkIdx].MessageExecutionIndex[msgs.SecpkMessages[secpIdx]] = executionIndex
+			msgIdx++
+			receiptIdx++
+			executionIndex++
+		}
+	}
+	return out, nil
+}
+
+func (v *vmWrapper) ShouldBurn(ctx context.Context, msg *types.Message, errcode exitcode.ExitCode) (bool, error) {
+	if lvmi, ok := v.vm.(*vm.LegacyVM); ok {
+		return lvmi.ShouldBurn(ctx, v.st, msg, errcode)
+	}
+
+	// Any "don't burn" rules from Network v13 onwards go here, for now we always return true
+	// source: https://github.com/filecoin-project/lotus/blob/v1.15.1/chain/vm/vm.go#L647
+	return true, nil
+}
+
+func (m *LilyNodeAPI) BurnFundsFn(ctx context.Context, ts *types.TipSet) (lens.ShouldBurnFn, error) {
+	// Create a skeleton vm just for calling ShouldBurn
+	// NB: VM is only required to process state prior to network v13
+	if util.DefaultNetwork.Version(ctx, ts.Height()) <= network2.Version12 {
+		vmi, err := vm.NewVM(ctx, &vm.VMOpts{
+			StateBase:      ts.ParentState(),
+			Epoch:          ts.Height(),
+			Bstore:         m.ChainAPI.Chain.StateBlockstore(),
+			Actors:         filcns.NewActorRegistry(),
+			Syscalls:       m.StateManager.Syscalls,
+			CircSupplyCalc: m.StateManager.GetVMCirculatingSupply,
+			NetworkVersion: util.DefaultNetwork.Version(ctx, ts.Height()),
+			BaseFee:        ts.Blocks()[0].ParentBaseFee,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("creating temporary vm: %w", err)
+		}
+		parentStateTree, err := state.LoadStateTree(m.ChainAPI.Chain.ActorStore(ctx), ts.ParentState())
+		if err != nil {
+			return nil, err
+		}
+		vmw := &vmWrapper{vm: vmi, st: parentStateTree}
+		return vmw.ShouldBurn, nil
+	}
+	// always burn after Network Version 12
+	return func(ctx context.Context, msg *types.Message, errcode exitcode.ExitCode) (bool, error) {
+		return true, nil
+	}, nil
+}
+
+func (m *LilyNodeAPI) CirculatingSupply(ctx context.Context, key types.TipSetKey) (api.CirculatingSupply, error) {
+	return m.StateAPI.StateVMCirculatingSupplyInternal(ctx, key)
+}
+
+func (m *LilyNodeAPI) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {
+	// TODO (Frrist): I copied this from lotus, I need it now to handle gap filling edge cases.
+	ts, err := m.ChainAPI.Chain.GetTipSetFromKey(ctx, key)
+	if err != nil {
+		return nil, fmt.Errorf("loading tipset %s: %w", key, err)
+	}
+	return m.ChainAPI.Chain.GetTipsetByHeight(ctx, epoch, ts, false)
 }
 
 func (m *LilyNodeAPI) Store() adt.Store {

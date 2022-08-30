@@ -8,11 +8,11 @@ import (
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
 	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
+	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
-	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	"github.com/filecoin-project/lily/tasks/actorstate"
@@ -60,13 +60,13 @@ func (PoStExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 		return pmap, nil
 	}
 
-	processPostMsg := func(msg *lens.ExecutedMessage) error {
+	processPostMsg := func(msg types.ChainMsg, rec *types.MessageReceipt) error {
 		sectors := make([]uint64, 0)
-		if msg.Receipt == nil || msg.Receipt.ExitCode.IsError() {
+		if rec == nil || rec.ExitCode.IsError() {
 			return nil
 		}
 		params := minertypes.SubmitWindowedPoStParams{}
-		if err := params.UnmarshalCBOR(bytes.NewBuffer(msg.Message.Params)); err != nil {
+		if err := params.UnmarshalCBOR(bytes.NewBuffer(msg.VMMessage().Params)); err != nil {
 			return fmt.Errorf("unmarshal post params: %w", err)
 		}
 
@@ -102,21 +102,28 @@ func (PoStExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 				Height:         int64(ec.PrevTs.Height()),
 				MinerID:        addr,
 				SectorID:       s,
-				PostMessageCID: msg.Cid.String(),
+				PostMessageCID: msg.Cid().String(),
 			})
 		}
 		return nil
 	}
 
-	tsMsgs, err := node.ExecutedAndBlockMessages(ctx, a.Current, a.Executed)
+	msgRects, err := node.TipSetMessageReceipts(ctx, a.Current, a.Executed)
 	if err != nil {
-		return nil, fmt.Errorf("getting executed and block messages: %w", err)
+		return nil, err
 	}
 
-	for _, msg := range tsMsgs.Executed {
-		if msg.Message.To == a.Address && msg.Message.Method == 5 /* miner.SubmitWindowedPoSt */ {
-			if err := processPostMsg(msg); err != nil {
-				return nil, fmt.Errorf("process post msg: %w", err)
+	for _, blkMsgs := range msgRects {
+		itr, err := blkMsgs.Iterator()
+		if err != nil {
+			return nil, err
+		}
+		for itr.HasNext() {
+			msg, _, rec := itr.Next()
+			if msg.VMMessage().To == a.Address && msg.VMMessage().Method == 5 /* miner.SubmitWindowedPoSt */ {
+				if err := processPostMsg(msg, rec); err != nil {
+					return nil, fmt.Errorf("process post msg: %w", err)
+				}
 			}
 		}
 	}

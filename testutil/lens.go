@@ -25,6 +25,31 @@ type APIWrapper struct {
 	ctx context.Context
 }
 
+func (aw *APIWrapper) BurnFundsFn(ctx context.Context, ts *types.TipSet) (lens.ShouldBurnFn, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (aw *APIWrapper) GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (aw *APIWrapper) ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi.TokenAmount, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (aw *APIWrapper) MessagesForTipSetBlocks(ctx context.Context, ts *types.TipSet) ([]*lens.BlockMessages, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (aw *APIWrapper) TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*lens.BlockMessageReceipts, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (aw *APIWrapper) CirculatingSupply(ctx context.Context, key types.TipSetKey) (api.CirculatingSupply, error) {
 	return aw.StateVMCirculatingSupplyInternal(ctx, key)
 }
@@ -35,14 +60,6 @@ func (aw *APIWrapper) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.C
 
 func (aw *APIWrapper) Store() adt.Store {
 	return aw
-}
-
-func (aw *APIWrapper) GetExecutedAndBlockMessagesForTipset(ctx context.Context, ts, pts *types.TipSet) (*lens.TipSetMessages, error) {
-	return nil, fmt.Errorf("ExecutedAndBlockMessages is not implemented")
-}
-
-func (aw *APIWrapper) GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {
-	return nil, fmt.Errorf("MessageExecutions is not implemented")
 }
 
 func (aw *APIWrapper) Get(ctx context.Context, c cid.Cid, out interface{}) error {

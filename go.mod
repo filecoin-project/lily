@@ -67,6 +67,7 @@ require (
 	github.com/filecoin-project/specs-actors/v8 v8.0.1
 	github.com/hibiken/asynq v0.23.0
 	github.com/hibiken/asynq/x v0.0.0-20220413130846-5c723f597e01
+	github.com/ipfs/go-ipld-format v0.4.0
 	github.com/jedib0t/go-pretty/v6 v6.2.7
 	go.opentelemetry.io/otel/trace v1.3.0
 	go.uber.org/atomic v1.9.0
@@ -196,7 +197,6 @@ require (
 	github.com/ipfs/go-ipfs-pq v0.0.2 // indirect
 	github.com/ipfs/go-ipfs-routing v0.2.1 // indirect
 	github.com/ipfs/go-ipfs-util v0.0.2 // indirect
-	github.com/ipfs/go-ipld-format v0.4.0 // indirect
 	github.com/ipfs/go-ipld-legacy v0.1.1 // indirect
 	github.com/ipfs/go-ipns v0.1.2 // indirect
 	github.com/ipfs/go-log v1.0.5 // indirect
