@@ -84,12 +84,12 @@ func (t *Task) Process(ctx context.Context) (model.Persistable, error) {
 		// only persist miners we received complete data for.
 		if res.Reachable {
 			if res.Error != "" {
-				log.Debugw("miner reachable but encountered error", "error", res.Error)
+				log.Debugw("miner reachable but encountered error", "address", res.MinerID, "error", res.Error)
 			} else {
 				out = append(out, res)
 			}
 		} else {
-			log.Debugw("miner not reachable", "error", res.Error)
+			log.Debugw("miner not reachable", "address", res.MinerID, "error", res.Error)
 		}
 	}
 	return out, nil
