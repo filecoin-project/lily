@@ -24,6 +24,7 @@ import (
 	"github.com/ipfs/go-cid"
 	ipld "github.com/ipfs/go-ipld-format"
 	logging "github.com/ipfs/go-log/v2"
+	"github.com/libp2p/go-libp2p-core/host"
 	"go.uber.org/fx"
 
 	"github.com/filecoin-project/lily/chain/datasource"
@@ -68,9 +69,8 @@ type LilyNodeAPI struct {
 	actorStoreInit sync.Once
 }
 
-type vmWrapper struct {
-	vm vm.Interface
-	st *state.StateTree
+func (m *LilyNodeAPI) Host() host.Host {
+	return m.RawHost
 }
 
 func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error) {
@@ -666,6 +666,11 @@ func (m *LilyNodeAPI) TipSetMessageReceipts(ctx context.Context, ts, pts *types.
 		}
 	}
 	return out, nil
+}
+
+type vmWrapper struct {
+	vm vm.Interface
+	st *state.StateTree
 }
 
 func (v *vmWrapper) ShouldBurn(ctx context.Context, msg *types.Message, errcode exitcode.ExitCode) (bool, error) {

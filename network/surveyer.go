@@ -13,16 +13,19 @@ import (
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/tasks/survey/minerprotocols"
 	"github.com/filecoin-project/lily/tasks/survey/peeragents"
 )
 
 const (
-	PeerAgentsTask = "peeragents" // task that observes connected peer agents
+	MinerProtocolsTask = "minerprotocols" // task that observes the supported protocols of miners on the Filecoin network.
+	PeerAgentsTask     = "peeragents"     // task that observes connected peer agents
 )
 
 var log = logging.Logger("lily/network")
 
 type API interface {
+	minerprotocols.API
 	peeragents.API
 }
 
@@ -42,6 +45,8 @@ func NewSurveyer(api API, storage model.Storage, interval time.Duration, name st
 		switch task {
 		case PeerAgentsTask:
 			obs.tasks[PeerAgentsTask] = peeragents.NewTask(api)
+		case MinerProtocolsTask:
+			obs.tasks[MinerProtocolsTask] = minerprotocols.NewTask(api)
 		default:
 			return nil, fmt.Errorf("unknown task: %s", task)
 		}
