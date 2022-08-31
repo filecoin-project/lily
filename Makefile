@@ -151,6 +151,9 @@ butterflynet: build
 interopnet: GOFLAGS+=-tags=interopnet
 interopnet: build
 
+wallabynet: GOFLAGS+=-tags=wallabynet
+wallabynet: build
+
 # alias to match other network-specific targets
 mainnet: build
 
