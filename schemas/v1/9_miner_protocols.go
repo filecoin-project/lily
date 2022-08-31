@@ -17,9 +17,7 @@ func init() {
 		miner_id			text NOT NULL,
 		peer_id				text,
 		agent				text,
-		protocols 			jsonb,
-		reachable 			boolean,
-		error				text
+		protocols 			jsonb
 	);
 	ALTER TABLE ONLY {{ .SchemaName | default "public"}}.surveyed_miner_protocols ADD CONSTRAINT surveyed_miner_protocols_pkey PRIMARY KEY (observed_at, miner_id);
 
@@ -29,7 +27,5 @@ func init() {
 	COMMENT ON COLUMN {{ .SchemaName | default "public"}}.surveyed_miner_protocols.peer_id IS 'PeerID of the miner advertised in on-chain MinerInfo structure.';
 	COMMENT ON COLUMN {{ .SchemaName | default "public"}}.surveyed_miner_protocols.agent IS 'Agent string as reported by the peer.';
 	COMMENT ON COLUMN {{ .SchemaName | default "public"}}.surveyed_miner_protocols.protocols IS 'List of supported protocol strings supported by the peer.';
-	COMMENT ON COLUMN {{ .SchemaName | default "public"}}.surveyed_miner_protocols.reachable IS 'True if the peer could be connected to via its advertised multi-address in on-chain MinerInfo structure. False otherwise.';
-	COMMENT ON COLUMN {{ .SchemaName | default "public"}}.surveyed_miner_protocols.error IS 'Contains any error encountered while connecting to peer or while querying its supported protocols or agent string.';
 `)
 }

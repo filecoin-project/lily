@@ -29,10 +29,6 @@ type MinerProtocol struct {
 
 	// Protocols is the list of protocols supported by the miner.
 	Protocols []string
-
-	Reachable bool
-
-	Error string
 }
 
 func (m *MinerProtocol) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
