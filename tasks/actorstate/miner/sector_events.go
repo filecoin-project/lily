@@ -34,9 +34,14 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 	}
 
 	var (
-		sectorChanges      *miner.SectorChanges
-		preCommitChanges   *miner.PreCommitChanges
-		sectorStateChanges *SectorStateEvents
+		sectorChanges      = miner.MakeSectorChanges()
+		preCommitChanges   = miner.MakePreCommitChanges()
+		sectorStateChanges = &SectorStateEvents{
+			Removed:    bitfield.New(),
+			Recovering: bitfield.New(),
+			Faulted:    bitfield.New(),
+			Recovered:  bitfield.New(),
+		}
 	)
 	if extState.ParentState() == nil {
 		// If the miner doesn't have previous state list all of its current sectors and precommits
@@ -45,12 +50,10 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			return nil, fmt.Errorf("loading miner sectors: %w", err)
 		}
 
-		sectorChanges = miner.MakeSectorChanges()
 		for _, sector := range sectors {
 			sectorChanges.Added = append(sectorChanges.Added, *sector)
 		}
 
-		preCommitChanges = miner.MakePreCommitChanges()
 		if err = extState.CurrentState().ForEachPrecommittedSector(func(info minertypes.SectorPreCommitOnChainInfo) error {
 			preCommitChanges.Added = append(preCommitChanges.Added, info)
 			return nil
