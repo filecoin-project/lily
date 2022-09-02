@@ -27,7 +27,7 @@ import (
 
 var log = logging.Logger("lily/vectors")
 
-const gateway = "https://dweb.link/ipfs/"
+const gateway = "https://ipfs.w3s.link/ipfs/"
 const lockFile = "fetch.lock"
 const vectordir = "/var/tmp/lily-test-vectors"
 const vectordirenv = "LILY_TEST_VECTORS"
