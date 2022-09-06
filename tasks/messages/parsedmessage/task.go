@@ -112,7 +112,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				// unknown type.
 				// If the message was executed it means we are out of step with Lotus behaviour somehow. This probably
 				// indicates that Lily actor type detection is out of date.
-				log.Errorw("parsing message", "error", err, "cid", m.Cid().String(), "receipt", r)
+				log.Errorw("parsing message", "cid", m.Cid().String(), "receipt", r)
 				errorsDetected = append(errorsDetected, &messages.MessageError{
 					Cid:   m.Cid(),
 					Error: fmt.Errorf("failed to parse message params: missing to actor code").Error(),
