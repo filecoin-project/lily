@@ -29,7 +29,7 @@ CREATE INDEX vm_messages_actor_code_method_idx ON {{ .SchemaName | default "publ
 COMMENT ON COLUMN {{ .SchemaName | default "public"}}.vm_messages.height IS 'Height message was executed at.';
 COMMENT ON COLUMN {{ .SchemaName | default "public"}}.vm_messages.state_root IS 'CID of the parent state root at which this message was executed.';
 COMMENT ON COLUMN {{ .SchemaName | default "public"}}.vm_messages.cid IS 'CID of the message (note this CID does not appear on chain).';
-COMMENT ON COLUMN {{ .SchemaName | default "public"}}.vm_messages.source IS 'CID of the on-chain message that caused this message to be sent.';
+COMMENT ON COLUMN {{ .SchemaName | default "public"}}.vm_messages.source IS 'CID of the on-chain message or implicit (internal) message that caused this message to be sent.';
 COMMENT ON COLUMN {{ .SchemaName | default "public"}}.vm_messages."from" IS 'Address of the actor that sent the message.';
 COMMENT ON COLUMN {{ .SchemaName | default "public"}}.vm_messages."to" IS 'Address of the actor that received the message.';
 COMMENT ON COLUMN {{ .SchemaName | default "public"}}.vm_messages.value IS 'Amount of FIL (in attoFIL) transferred by this message.';
