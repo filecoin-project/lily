@@ -83,8 +83,6 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		parsedMessageResults = make(messagemodel.ParsedMessages, 0)
 		errorsDetected       = make([]*messages.MessageError, 0)
 		exeMsgSeen           = make(map[cid.Cid]bool)
-		totalGasLimit        int64
-		totalUniqGasLimit    int64
 	)
 
 	for _, msgrec := range blkMsgRec {
@@ -100,22 +98,12 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			return nil, nil, err
 		}
 
-		// calculate total gas limit of executed messages regardless of duplicates.
-		for itr.HasNext() {
-			msg, _, _ := itr.Next()
-			totalGasLimit += msg.VMMessage().GasLimit
-		}
-
-		// reset the iterator to beginning
-		itr.Reset()
-
 		for itr.HasNext() {
 			m, _, r := itr.Next()
 			if exeMsgSeen[m.Cid()] {
 				continue
 			}
 			exeMsgSeen[m.Cid()] = true
-			totalUniqGasLimit += m.VMMessage().GasLimit
 
 			toActorCode, found := getActorCodeFn(m.VMMessage().To)
 			if !found && r.ExitCode == 0 {
@@ -124,7 +112,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				// unknown type.
 				// If the message was executed it means we are out of step with Lotus behaviour somehow. This probably
 				// indicates that Lily actor type detection is out of date.
-				log.Errorw("parsing message", "error", err, "cid", m.Cid().String(), "receipt", r)
+				log.Errorw("parsing message", "cid", m.Cid().String(), "receipt", r)
 				errorsDetected = append(errorsDetected, &messages.MessageError{
 					Cid:   m.Cid(),
 					Error: fmt.Errorf("failed to parse message params: missing to actor code").Error(),
