@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -51,14 +52,14 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (string, 
 	p := reflect.New(m.Params.Elem()).Interface().(cbg.CBORUnmarshaler)
 	if err := p.UnmarshalCBOR(bytes.NewReader(params)); err != nil {
 		actorName := builtin.ActorNameByCode(actCode)
-		return "", m.Name, fmt.Errorf("cbor decode into %s %s:(%s.%d) failed: %v", m.Name, actorName, actCode, method, err)
+		return "", m.Name, fmt.Errorf("parse message params cbor decode into %s %s:(%s.%d) return (hex): %s failed: %w", m.Name, actorName, actCode, method, hex.EncodeToString(params), err)
 	}
 
 	b, err := MarshalWithOverrides(p, map[reflect.Type]marshaller{
 		reflect.TypeOf(bitfield.BitField{}): bitfieldCountMarshaller,
 	})
 	if err != nil {
-		return "", "", fmt.Errorf("failed to parse message params method: %d, actor code: %s, params: %s: %w", method, actCode, string(params), err)
+		return "", "", fmt.Errorf("parse message params method: %d actor code: %s params: %s failed: %w", method, actCode, hex.EncodeToString(params), err)
 	}
 
 	return string(b), m.Name, err
@@ -78,14 +79,14 @@ func ParseReturn(ret []byte, method abi.MethodNum, actCode cid.Cid) (string, str
 	p := reflect.New(m.Ret.Elem()).Interface().(cbg.CBORUnmarshaler)
 	if err := p.UnmarshalCBOR(bytes.NewReader(ret)); err != nil {
 		actorName := builtin.ActorNameByCode(actCode)
-		return "", m.Name, fmt.Errorf("cbor decode into %s %s:(%s.%d) failed: %v", m.Name, actorName, actCode, method, err)
+		return "", m.Name, fmt.Errorf("parse message return cbor decode into %s %s:(%s.%d) return (hex): %s failed: %w", m.Name, actorName, actCode, method, hex.EncodeToString(ret), err)
 	}
 
 	b, err := MarshalWithOverrides(p, map[reflect.Type]marshaller{
 		reflect.TypeOf(bitfield.BitField{}): bitfieldCountMarshaller,
 	})
 	if err != nil {
-		return "", "", fmt.Errorf("failed to parse message return method: %d, actor code: %s, return: %s: %w", method, actCode, string(ret), err)
+		return "", "", fmt.Errorf("parse message return method: %d actor code: %s return (hex): %s failed: %w", method, actCode, hex.EncodeToString(ret), err)
 	}
 
 	return string(b), m.Name, err
@@ -122,38 +123,6 @@ type MessageParamsReturn struct {
 	MethodName string
 	Params     string
 	Return     string
-}
-
-func MethodParamsReturnForMessage(m *MessageTrace, destCode cid.Cid) (*MessageParamsReturn, error) {
-	// Method is optional, zero means a plain value transfer
-	if m.Message.Method == 0 {
-		return &MessageParamsReturn{
-			MethodName: "Send",
-			Params:     "",
-			Return:     "",
-		}, nil
-	}
-
-	if !destCode.Defined() {
-		return nil, fmt.Errorf("missing actor code")
-	}
-
-	params, _, err := ParseParams(m.Message.Params, m.Message.Method, destCode)
-	if err != nil {
-		log.Warnf("failed to parse parameters of message %s: %v", m.Message.Cid(), err)
-		return nil, fmt.Errorf("unknown method for actor type %s method %d: %w", destCode.String(), int64(m.Message.Method), err)
-	}
-	ret, method, err := ParseReturn(m.Receipt.Return, m.Message.Method, destCode)
-	if err != nil {
-		log.Warnf("failed to parse return of message %s: %v", m.Message.Cid(), err)
-		return nil, fmt.Errorf("unknown method for actor type %s method %d: %w", destCode.String(), int64(m.Message.Method), err)
-	}
-
-	return &MessageParamsReturn{
-		MethodName: method,
-		Params:     params,
-		Return:     ret,
-	}, nil
 }
 
 func walkExecutionTrace(et *types.ExecutionTrace, trace *[]*MessageTrace) {
