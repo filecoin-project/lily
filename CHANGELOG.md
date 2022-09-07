@@ -5,6 +5,48 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.12.0"></a>
+## [v0.12.0] - 2022-09-07
+
+## DATABASE MIGRATION
+
+This release includes a migration which must be applied before deploying against an existing database.
+
+### Feat
+* implement vm message extraction [#1027](https://github.com/filecoin-project/lily/pull/1027)
+  * task name `vm_messages`
+  * requires migration
+  * requires LOTUS_VM_ENABLE_TRACING=1 to be set on daemon executing task
+* implement miner protocol survey task [#1048](https://github.com/filecoin-project/lily/pull/1048)
+    * task name `minerprotocols`
+    * requires migration
+    * for use with the survey command.
+* add method for finding oldest state and computing state [#1038](https://github.com/filecoin-project/lily/pull/1038)
+    * commands:
+        * `$ lily chain state-inspect`
+        * `$ lily chain state-compute-range`
+        * `$ lily chain state-compute`
+* command to print actor CID's and version [#1026](https://github.com/filecoin-project/lily/pull/1026)
+  * command: `$ lily chain actor-codes`
+* tipSetWorker accepts all storage systems [#1035](https://github.com/filecoin-project/lily/pull/1035)
+* update docker-compose to use lily worker pattern [#1044](https://github.com/filecoin-project/lily/pull/1044)
+
+
+### Fix
+* extract miner sector state changes [#1058](https://github.com/filecoin-project/lily/pull/1032)
+  * improves accuracy of `miner_sector_events` task
+* replace ExecutedAndBlockMessages with individual methods [#1040](https://github.com/filecoin-project/lily/pull/1040)
+  * improves accuracy and performance of all message and receipt related tasks
+
+### Chore
+* lotus v1.17.0 [#1037](https://github.com/filecoin-project/lily/pull/1037)
+* upgrade docker engine [#1047](https://github.com/filecoin-project/lily/pull/1047)
+* removed unused gas calc from parsedmessages [#1056](https://github.com/filecoin-project/lily/pull/1056)
+* use web3.storage gateway [#1051](https://github.com/filecoin-project/lily/pull/1051)
+* prevent MinerSectorEvent panic on empty SectorStateEvents [#1053](https://github.com/filecoin-project/lily/pull/1053)
+* handle vm message param and return parsing [#1057](https://github.com/filecoin-project/lily/pull/1057)
+* correct column comment on vm_messages [#1058](https://github.com/filecoin-project/lily/pull/1058)
+
 <a name="v0.11.0"></a>
 ## [v0.11.0] - 2022-06-05
 
