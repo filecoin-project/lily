@@ -11,6 +11,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## DATABASE MIGRATION
 
 This release includes a migration which must be applied before deploying against an existing database.
+* [1.8](https://github.com/filecoin-project/lily/blob/v0.12.0/schemas/v1/8_vm_messages.go)
+* [1.9](https://github.com/filecoin-project/lily/blob/master/schemas/v1/9_miner_protocols.go)
 
 ### Feat
 * implement vm message extraction [#1027](https://github.com/filecoin-project/lily/pull/1027)
