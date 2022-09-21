@@ -150,8 +150,12 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 		return nil, err
 	}
 
+	lms, err := indexer.NewLilyModelStorage(ctx, m.ExposedBlockstore)
+	if err != nil {
+		return nil, err
+	}
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
+	im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window), integrated.WithCborExporter(lms))
 	if err != nil {
 		return nil, err
 	}
@@ -302,8 +306,12 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		return nil, err
 	}
 
+	lms, err := indexer.NewLilyModelStorage(ctx, m.ExposedBlockstore)
+	if err != nil {
+		return nil, err
+	}
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	idx, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
+	idx, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window), integrated.WithCborExporter(lms))
 	if err != nil {
 		return nil, err
 	}
