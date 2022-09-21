@@ -16,6 +16,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
+	v2 "github.com/filecoin-project/lily/model/v2"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	taskapi "github.com/filecoin-project/lily/tasks"
 )
@@ -55,6 +56,8 @@ type Result struct {
 	Data model.Persistable
 	// Report containing details of task execution success and duration.
 	Report visormodel.ProcessingReportList
+
+	CborData []v2.LilyModel
 }
 
 // TipSet keeps no internal state and asynchronously indexes `ts` returning Result's as they extracted.
@@ -184,9 +187,10 @@ func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Re
 
 				// Persist the processing report and the data in a single transaction
 				outCh <- &Result{
-					Name:   res.Task,
-					Data:   res.Data,
-					Report: res.Report,
+					Name:     res.Task,
+					Data:     res.Data,
+					Report:   res.Report,
+					CborData: res.CBORData,
 				}
 			}
 		}
