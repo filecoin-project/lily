@@ -2,12 +2,15 @@ package indexer
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/specs-actors/v8/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
+	carbs "github.com/ipld/go-car/v2/blockstore"
 	typegen "github.com/whyrusleeping/cbor-gen"
 
 	v2 "github.com/filecoin-project/lily/model/v2"
@@ -17,70 +20,89 @@ import (
 const BitWidth = 8
 
 type LilyModelStorage struct {
-	BS             blockstore.Blockstore
-	Store          adt.Store
-	ModelStateRoot cid.Cid
+	bs    blockstore.Blockstore
+	store adt.Store
 }
 
 func NewLilyModelStorage(ctx context.Context, bs blockstore.Blockstore) (*LilyModelStorage, error) {
 	s := adt.WrapStore(ctx, cbor.NewCborStore(bs))
-	modelRoot, err := adt.StoreEmptyMap(s, BitWidth)
-	if err != nil {
-		return nil, err
-	}
 	return &LilyModelStorage{
-		BS:             bs,
-		Store:          s,
-		ModelStateRoot: modelRoot,
+		bs:    bs,
+		store: s,
 	}, nil
-
 }
 
-func (lms *LilyModelStorage) PersistModels(ctx context.Context, stateroot cid.Cid, models []v2.LilyModel) error {
-	mmapRoot, err := adt.StoreEmptyMultimap(lms.Store, BitWidth, BitWidth)
+func ModelsAsCAR(ctx context.Context, f *os.File, stateroot cid.Cid, models []v2.LilyModel) error {
+	// calculate the root cid of the model hamt
+	// TODO this is hacky but we need to do it in order to calculate the model HAMT root to write the car file with.
+	mbs := blockstore.NewMemory()
+	memModelRoot, err := StoreModels(ctx, adt.WrapStore(ctx, cbor.NewCborStore(mbs)), stateroot, models)
 	if err != nil {
 		return err
 	}
-	mmap, err := adt.AsMultimap(lms.Store, mmapRoot, BitWidth, BitWidth)
+
+	// create a car file using the calculated model root. note this is a v2 car file.
+	carrw, err := carbs.OpenReadWriteFile(f, []cid.Cid{memModelRoot})
 	if err != nil {
 		return err
 	}
+
+	// persist models to car file
+	carModelRoot, err := StoreModels(ctx, adt.WrapStore(ctx, cbor.NewCborStore(carrw)), stateroot, models)
+	if err != nil {
+		return err
+	}
+
+	// sanity check.
+	if !carModelRoot.Equals(memModelRoot) {
+		return fmt.Errorf("calculated model root %s does not match car file model root %s", memModelRoot, carModelRoot)
+	}
+
+	return carrw.Finalize()
+}
+
+func StoreModels(ctx context.Context, store adt.Store, stateroot cid.Cid, models []v2.LilyModel) (cid.Cid, error) {
+	modelRoot, err := PutModels(ctx, store, models)
+	if err != nil {
+		return cid.Undef, err
+	}
+	return PutModelsMap(ctx, store, modelRoot, stateroot)
+}
+
+func PutModelsMap(ctx context.Context, store adt.Store, modelroot, stateroot cid.Cid) (cid.Cid, error) {
+	// create stateroot map
+	// map[stateroot]map[modelType][]Model
+	srm, err := adt.MakeEmptyMap(store, BitWidth)
+	if err != nil {
+		return cid.Undef, err
+	}
+
+	if err := srm.Put(abi.CidKey(stateroot), typegen.CborCid(modelroot)); err != nil {
+		return cid.Undef, err
+	}
+
+	return srm.Root()
+}
+
+func PutModels(ctx context.Context, store adt.Store, models []v2.LilyModel) (cid.Cid, error) {
+	// create model multimap
+	// map[ModelType][]Model
+	mmm, err := adt.MakeEmptyMultimap(store, BitWidth, BitWidth)
+	if err != nil {
+		return cid.Undef, err
+	}
+	// add all the models
 	for _, model := range models {
-		if err := mmap.Add(model, model); err != nil {
-			return err
+		if err := mmm.Add(model, model); err != nil {
+			return cid.Undef, err
 		}
 	}
-	mmapRoot, err = mmap.Root()
-	if err != nil {
-		return err
-	}
+	return mmm.Root()
 
-	rootMap, err := adt.AsMap(lms.Store, lms.ModelStateRoot, BitWidth)
-	if err != nil {
-		return err
-	}
-
-	if err := rootMap.Put(abi.CidKey(stateroot), typegen.CborCid(mmapRoot)); err != nil {
-		return err
-	}
-	newModelRoot, err := rootMap.Root()
-	if err != nil {
-		return err
-	}
-	lms.ModelStateRoot = newModelRoot
-
-	log.Infow("EXPORTED MODELS", "root", lms.ModelStateRoot.String())
-
-	msgs, err := lms.VMMessagesAtStateRoot(stateroot)
-	if err != nil {
-		return err
-	}
-	_ = msgs
-	return nil
 }
 
-func (lms *LilyModelStorage) VMMessagesAtStateRoot(stateroot cid.Cid) ([]messages2.VMMessage, error) {
-	rootMap, err := adt.AsMap(lms.Store, lms.ModelStateRoot, BitWidth)
+func VMMessagesAtStateRoot(store adt.Store, root, stateroot cid.Cid) ([]messages2.VMMessage, error) {
+	rootMap, err := adt.AsMap(store, root, BitWidth)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +114,7 @@ func (lms *LilyModelStorage) VMMessagesAtStateRoot(stateroot cid.Cid) ([]message
 	if !found {
 		panic("here")
 	}
-	mmap, err := adt.AsMultimap(lms.Store, cid.Cid(mmapRoot), BitWidth, BitWidth)
+	mmap, err := adt.AsMultimap(store, cid.Cid(mmapRoot), BitWidth, BitWidth)
 	if err != nil {
 		return nil, err
 	}

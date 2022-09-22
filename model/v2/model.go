@@ -7,9 +7,9 @@ import (
 )
 
 type LilyModel interface {
+	cbor.Er
 	Serialize() ([]byte, error)
 	ToStorageBlock() (blocks.Block, error)
 	Cid() cid.Cid
 	Key() string
-	cbor.Er
 }
