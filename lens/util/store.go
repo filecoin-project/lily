@@ -183,7 +183,7 @@ func (cs *CachingBlockstore) Get(ctx context.Context, c cid.Cid) (blocks.Block, 
 	if reads%1000000 == 0 {
 		hits := atomic.LoadInt64(&cs.hits)
 		by := atomic.LoadInt64(&cs.bytes)
-		log.Debugw("CachingBlockstore stats", "reads", reads, "cache_len", cs.cache.Len(), "hit_rate", float64(hits)/float64(reads), "bytes_read", by)
+		log.Infow("CachingBlockstore stats", "reads", reads, "cache_len", cs.cache.Len(), "hit_rate", float64(hits)/float64(reads), "bytes_read", by)
 	}
 
 	v, hit := cs.cache.Get(c)
@@ -207,7 +207,7 @@ func (cs *CachingBlockstore) View(ctx context.Context, c cid.Cid, callback func(
 	if reads%1000000 == 0 {
 		hits := atomic.LoadInt64(&cs.hits)
 		by := atomic.LoadInt64(&cs.bytes)
-		log.Debugw("CachingBlockstore stats", "reads", reads, "cache_len", cs.cache.Len(), "hit_rate", float64(hits)/float64(reads), "bytes_read", by)
+		log.Infow("CachingBlockstore stats", "reads", reads, "cache_len", cs.cache.Len(), "hit_rate", float64(hits)/float64(reads), "bytes_read", by)
 	}
 	v, hit := cs.cache.Get(c)
 	if hit {
@@ -268,7 +268,7 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 	reads := atomic.AddInt64(&cas.reads, 1)
 	if reads%1000000 == 0 {
 		hits := atomic.LoadInt64(&cas.hits)
-		log.Debugw("CachingStateStore stats", "reads", reads, "cache_len", cas.cache.Len(), "hit_rate", float64(hits)/float64(reads))
+		log.Infow("CachingStateStore stats", "reads", reads, "cache_len", cas.cache.Len(), "hit_rate", float64(hits)/float64(reads))
 	}
 
 	cu, ok := out.(cbg.CBORUnmarshaler)
@@ -285,7 +285,7 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 		}
 
 		// log and fall through to get from store
-		log.Debugw("CachingStateStore failed to read from cache", "error", err.Error())
+		log.Infow("CachingStateStore failed to read from cache", "error", err.Error())
 	}
 
 	blk, err := cas.blocks.Get(ctx, c)

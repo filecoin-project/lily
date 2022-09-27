@@ -3,6 +3,7 @@ package lily
 import (
 	"context"
 	"fmt"
+	"io"
 	"strconv"
 	"sync"
 
@@ -756,6 +757,14 @@ func (m *LilyNodeAPI) StateGetReceipt(ctx context.Context, msg cid.Cid, from typ
 	}
 
 	return &ml.Receipt, nil
+}
+
+func (m *LilyNodeAPI) ChainImport(ctx context.Context, r io.Reader) (*types.TipSet, error) {
+	return m.ChainAPI.Chain.Import(ctx, r)
+}
+
+func (m *LilyNodeAPI) ChainForceHead(ctx context.Context, ts *types.TipSet) error {
+	return m.ChainAPI.Chain.ForceHeadSilent(ctx, ts)
 }
 
 func (m *LilyNodeAPI) LogList(_ context.Context) ([]string, error) {

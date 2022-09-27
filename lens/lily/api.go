@@ -2,6 +2,7 @@ package lily
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/filecoin-project/go-jsonrpc/auth"
@@ -39,6 +40,8 @@ type LilyAPI interface {
 
 	// SyncState returns the current status of the chain sync system.
 	SyncState(context.Context) (*api.SyncState, error) //perm:read
+	ChainImport(ctx context.Context, r io.Reader) (*types.TipSet, error)
+	ChainForceHead(ctx context.Context, ts *types.TipSet) error
 
 	ChainHead(context.Context) (*types.TipSet, error)                                                  //perm:read
 	ChainGetBlock(context.Context, cid.Cid) (*types.BlockHeader, error)                                //perm:read

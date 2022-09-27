@@ -2,6 +2,7 @@ package lily
 
 import (
 	"context"
+	"io"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
@@ -47,7 +48,9 @@ type LilyAPIStruct struct {
 
 		Shutdown func(context.Context) error `perm:"read"`
 
-		SyncState func(ctx context.Context) (*api.SyncState, error) `perm:"read"`
+		SyncState      func(ctx context.Context) (*api.SyncState, error)             `perm:"read"`
+		ChainImport    func(ctx context.Context, r io.Reader) (*types.TipSet, error) `perm:"read"`
+		ChainForceHead func(ctx context.Context, ts *types.TipSet) error             `perm:"read"`
 
 		ChainHead                 func(context.Context) (*types.TipSet, error)                                  `perm:"read"`
 		ChainGetBlock             func(context.Context, cid.Cid) (*types.BlockHeader, error)                    `perm:"read"`
@@ -79,6 +82,14 @@ type LilyAPIStruct struct {
 		FindOldestState func(ctx context.Context, limit int64) ([]*StateReport, error)      `perm:"read"`
 		StateCompute    func(ctx context.Context, tsk types.TipSetKey) (interface{}, error) `perm:"read"`
 	}
+}
+
+func (s *LilyAPIStruct) ChainImport(ctx context.Context, r io.Reader) (*types.TipSet, error) {
+	return s.Internal.ChainImport(ctx, r)
+}
+
+func (s *LilyAPIStruct) ChainForceHead(ctx context.Context, ts *types.TipSet) error {
+	return s.Internal.ChainForceHead(ctx, ts)
 }
 
 func (s *LilyAPIStruct) StateCompute(ctx context.Context, tsk types.TipSetKey) (interface{}, error) {

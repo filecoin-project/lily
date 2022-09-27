@@ -89,6 +89,43 @@ func ImportFromFsFile(ctx context.Context, r repo.Repo, fs fs.File, snapshot boo
 	return nil
 }
 
+func CarImportAsReader(ctx context.Context, fname string) (io.ReadCloser, int64, error) {
+	var rd io.ReadCloser
+	var l int64
+	if strings.HasPrefix(fname, "http://") || strings.HasPrefix(fname, "https://") {
+		resp, err := http.Get(fname) //nolint:gosec
+		if err != nil {
+			return nil, -1, err
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, -1, fmt.Errorf("non-200 response: %d", resp.StatusCode)
+		}
+
+		l = resp.ContentLength
+		rd = resp.Body
+	} else {
+		fname, err := homedir.Expand(fname)
+		if err != nil {
+			return nil, -1, err
+		}
+
+		fi, err := os.Open(fname)
+		if err != nil {
+			return nil, -1, err
+		}
+
+		st, err := os.Stat(fname)
+		if err != nil {
+			return nil, -1, err
+		}
+
+		rd = fi
+		l = st.Size()
+	}
+	return rd, l, nil
+}
+
 func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) (err error) {
 	var rd io.Reader
 	var l int64

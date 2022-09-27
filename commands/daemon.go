@@ -22,6 +22,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
+	"gopkg.in/cheggaaa/pb.v1"
 
 	"github.com/filecoin-project/lily/chain/indexer/distributed"
 	"github.com/filecoin-project/lily/commands/util"
@@ -63,10 +64,11 @@ var ClientAPIFlagSet = []cli.Flag{
 }
 
 type daemonOpts struct {
-	repo      string
-	bootstrap bool // TODO: is this necessary - do we want to run lily in this mode?
-	config    string
-	genesis   string
+	repo           string
+	bootstrap      bool // TODO: is this necessary - do we want to run lily in this mode?
+	config         string
+	genesis        string
+	importSnapshot string
 }
 
 var daemonFlags daemonOpts
@@ -167,6 +169,12 @@ Note that jobs are not persisted between restarts of the daemon. See
 			EnvVars:     []string{"LILY_STATESTORE_CACHE_SIZE"},
 			Value:       0,
 			Destination: &cacheFlags.StatestoreCacheSize,
+		},
+		&cli.StringFlag{
+			Name:        "import-snapshot",
+			Usage:       "Import chain state from a given chain export file or url.",
+			EnvVars:     []string{"LILY_SNAPSHOT"},
+			Destination: &daemonFlags.importSnapshot,
 		},
 	},
 	Action: func(c *cli.Context) error {
@@ -288,6 +296,30 @@ Note that jobs are not persisted between restarts of the daemon. See
 		)
 		if err != nil {
 			return fmt.Errorf("initializing node: %w", err)
+		}
+
+		if daemonFlags.importSnapshot != "" {
+			importReader, size, err := util.CarImportAsReader(ctx, daemonFlags.importSnapshot)
+			if err != nil {
+				return err
+			}
+			defer importReader.Close()
+			bar := pb.New64(size)
+			br := bar.NewProxyReader(importReader)
+			bar.ShowTimeLeft = true
+			bar.ShowPercent = true
+			bar.ShowSpeed = true
+			bar.Units = pb.U_BYTES
+			bar.Start()
+			ts, err := api.ChainImport(ctx, br)
+			if err != nil {
+				return err
+			}
+			bar.Finish()
+			if err := api.ChainForceHead(ctx, ts); err != nil {
+				return err
+			}
+			log.Infow("imported chain", "head", ts.Key().String())
 		}
 
 		endpoint, err := r.APIEndpoint()
