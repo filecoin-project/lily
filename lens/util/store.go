@@ -159,10 +159,14 @@ func (cs *CachingBlockstore) GetSize(ctx context.Context, c cid.Cid) (int, error
 }
 
 func (cs *CachingBlockstore) Put(ctx context.Context, blk blocks.Block) error {
+	cs.cache.Add(blk.Cid(), blk)
 	return cs.blocks.Put(ctx, blk)
 }
 
 func (cs *CachingBlockstore) PutMany(ctx context.Context, blks []blocks.Block) error {
+	for _, b := range blks {
+		cs.cache.Add(b.Cid(), b)
+	}
 	return cs.blocks.PutMany(ctx, blks)
 }
 
@@ -316,6 +320,16 @@ func (cas *CachingStateStore) tryAssign(value interface{}, out interface{}) erro
 	return nil
 }
 
+type cider interface {
+	Cid() cid.Cid
+}
+
 func (cas *CachingStateStore) Put(ctx context.Context, v interface{}) (cid.Cid, error) {
+	c, ok := v.(cider)
+	if ok {
+		cas.cache.Add(c.Cid(), v)
+	} else {
+		log.Infow("type doesn't implement CID method", "type", reflect.TypeOf(v))
+	}
 	return cas.store.Put(ctx, v)
 }
