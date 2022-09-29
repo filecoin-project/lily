@@ -70,6 +70,8 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.2.7
 	github.com/libp2p/go-libp2p v0.22.0
 	github.com/multiformats/go-varint v0.0.6
+	github.com/mustafaturan/bus/v3 v3.0.3
+	github.com/mustafaturan/monoton/v2 v2.0.2
 	go.opentelemetry.io/otel/trace v1.7.0
 	go.uber.org/atomic v1.10.0
 )

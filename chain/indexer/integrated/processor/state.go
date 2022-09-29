@@ -24,7 +24,6 @@ import (
 	rewardactors "github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	verifregactors "github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	v2 "github.com/filecoin-project/lily/model/v2"
-	"github.com/filecoin-project/lily/model/v2/messages"
 	"github.com/filecoin-project/lily/tasks/messageexecutions/vm"
 
 	"github.com/filecoin-project/lily/tasks"
@@ -441,9 +440,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 		TipsetsProcessors: make(map[string]TipSetsProcessor),
 		ActorProcessors:   make(map[string]ActorProcessor),
 		ReportProcessors:  make(map[string]ReportProcessor),
-		CBORProcessors:    messages.NewVMMessageExtractor(api),
 	}
-	return out, nil
+
 	for _, t := range indexerTasks {
 		switch t {
 		case tasktype.DataCapBalance:

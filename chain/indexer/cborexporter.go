@@ -1,5 +1,6 @@
 package indexer
 
+/*
 import (
 	"context"
 	"fmt"
@@ -129,3 +130,6 @@ func VMMessagesAtStateRoot(store adt.Store, root, stateroot cid.Cid) ([]messages
 
 	return out, nil
 }
+
+
+*/
