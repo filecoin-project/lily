@@ -29,7 +29,6 @@ type Manager struct {
 	exporter     Exporter
 	window       time.Duration
 	name         string
-	cborExport   *indexer.LilyModelStorage
 }
 
 type ManagerOpt func(i *Manager)
@@ -46,12 +45,6 @@ func WithWindow(w time.Duration) ManagerOpt {
 func WithExporter(e Exporter) ManagerOpt {
 	return func(m *Manager) {
 		m.exporter = e
-	}
-}
-
-func WithCborExporter(ce *indexer.LilyModelStorage) ManagerOpt {
-	return func(m *Manager) {
-		m.cborExport = ce
 	}
 }
 
@@ -137,11 +130,6 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 				Model: model.PersistableList{res.Report, res.Data},
 			})
 
-			if res.CborData != nil {
-				if err := i.cborExport.PersistModels(ctx, ts.ParentState(), res.CborData); err != nil {
-					return err
-				}
-			}
 		}
 
 		// synchronously export extracted data and its report. If datas at this height are currently being persisted this method will block to avoid deadlocking the database.

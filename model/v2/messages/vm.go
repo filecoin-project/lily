@@ -1,16 +1,15 @@
 package messages
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/go-state-types/exitcode"
 	"github.com/filecoin-project/lotus/chain/types"
-	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/sync/errgroup"
@@ -23,72 +22,59 @@ import (
 
 var log = logging.Logger("shitidk")
 
+func init() {
+	v2.RegisterExtractor(&VMMessage{}, Extract)
+}
+
+var _ v2.LilyModel = (*VMMessage)(nil)
+
 type VMMessage struct {
-	Height     abi.ChainEpoch
-	StateRoot  cid.Cid
-	SourceCID  cid.Cid
-	ActorCode  cid.Cid
-	MessageCID cid.Cid
-	From       address.Address
-	To         address.Address
-	Value      big.Int
-	Method     abi.MethodNum
-	ExitCode   exitcode.ExitCode
-	GasUsed    int64
-	Params     []byte
-	Return     []byte
+	Height      abi.ChainEpoch
+	StateRoot   cid.Cid
+	SourceCID   cid.Cid
+	ToActorCode cid.Cid
+	MessageCID  cid.Cid
+	From        address.Address
+	To          address.Address
+	Value       big.Int
+	Method      abi.MethodNum
+	ExitCode    exitcode.ExitCode
+	GasUsed     int64
+	Params      []byte
+	Return      []byte
 }
 
-func (t *VMMessage) Serialize() ([]byte, error) {
-	buf := new(bytes.Buffer)
-	if err := t.MarshalCBOR(buf); err != nil {
-		return nil, err
+func (t *VMMessage) Meta() v2.ModelMeta {
+	return v2.ModelMeta{
+		Version: t.Version(),
+		Type:    t.Type(),
+		Kind:    v2.ModelTsKind,
 	}
-	return buf.Bytes(), nil
 }
 
-func (t *VMMessage) ToStorageBlock() (blocks.Block, error) {
-	data, err := t.Serialize()
-	if err != nil {
-		return nil, err
+func (t *VMMessage) Type() v2.ModelType {
+	// eww gross
+	return v2.ModelType(reflect.TypeOf(VMMessage{}).Name())
+}
+
+func (t *VMMessage) Version() v2.ModelVersion {
+	return 1
+}
+
+func (t *VMMessage) ChainEpochTime() v2.ChainEpochTime {
+	return v2.ChainEpochTime{
+		Height:    t.Height,
+		StateRoot: t.StateRoot,
 	}
-
-	c, err := abi.CidBuilder.Sum(data)
-	if err != nil {
-		return nil, err
-	}
-
-	return blocks.NewBlockWithCid(data, c)
 }
 
-func (t *VMMessage) Cid() cid.Cid {
-	sb, err := t.ToStorageBlock()
-	if err != nil {
-		panic(err)
-	}
-	return sb.Cid()
-}
-
-func (t *VMMessage) Key() string {
-	return "vmmessage" // TODO I don't really like this, it would be better to derive this value from the structure.
-	// other ideas would be having this return the CID of the structure when empty.
-}
-
-func NewVMMessageExtractor(node tasks.DataSource) *Task {
-	return &Task{node: node}
-}
-
-type Task struct {
-	node tasks.DataSource
-}
-
-func (t *Task) Extract(ctx context.Context, current *types.TipSet, executed *types.TipSet) ([]v2.LilyModel, error) {
+func Extract(ctx context.Context, api tasks.DataSource, current *types.TipSet, executed *types.TipSet) ([]v2.LilyModel, error) {
 	// execute in parallel as both operations are slow
 	grp, _ := errgroup.WithContext(ctx)
 	var mex []*lens.MessageExecution
 	grp.Go(func() error {
 		var err error
-		mex, err = t.node.MessageExecutions(ctx, current, executed)
+		mex, err = api.MessageExecutions(ctx, current, executed)
 		if err != nil {
 			return fmt.Errorf("getting messages executions for tipset: %w", err)
 		}
@@ -98,7 +84,8 @@ func (t *Task) Extract(ctx context.Context, current *types.TipSet, executed *typ
 	var getActorCode func(a address.Address) (cid.Cid, bool)
 	grp.Go(func() error {
 		var err error
-		getActorCode, err = util.MakeGetActorCodeFunc(ctx, t.node.Store(), current, executed)
+		// TODO make this an api method
+		getActorCode, err = util.MakeGetActorCodeFunc(ctx, api.Store(), current, executed)
 		if err != nil {
 			return fmt.Errorf("failed to make actor code query function: %w", err)
 		}
@@ -136,19 +123,19 @@ func (t *Task) Extract(ctx context.Context, current *types.TipSet, executed *typ
 			}
 
 			out = append(out, &VMMessage{
-				Height:     parentMsg.Height,
-				StateRoot:  parentMsg.StateRoot,
-				SourceCID:  parentMsg.Cid,
-				ActorCode:  toCode,
-				MessageCID: childCid,
-				From:       child.Message.From,
-				To:         child.Message.To,
-				Value:      child.Message.Value,
-				Method:     child.Message.Method,
-				ExitCode:   child.Receipt.ExitCode,
-				GasUsed:    child.Receipt.GasUsed,
-				Params:     child.Message.Params,
-				Return:     child.Receipt.Return,
+				Height:      parentMsg.Height,
+				StateRoot:   parentMsg.StateRoot,
+				SourceCID:   parentMsg.Cid,
+				ToActorCode: toCode,
+				MessageCID:  childCid,
+				From:        child.Message.From,
+				To:          child.Message.To,
+				Value:       child.Message.Value,
+				Method:      child.Message.Method,
+				ExitCode:    child.Receipt.ExitCode,
+				GasUsed:     child.Receipt.GasUsed,
+				Params:      child.Message.Params,
+				Return:      child.Receipt.Return,
 			})
 		}
 	}
