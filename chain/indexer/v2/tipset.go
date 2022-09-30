@@ -6,13 +6,14 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/gammazero/workerpool"
 
+	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/tasks"
 )
 
 type TipSetIndexer struct {
 	api       tasks.DataSource
-	processor *StateExtractor
+	processor *extract.StateExtractor
 	tasks     []v2.ModelMeta
 	workers   int
 }
@@ -20,18 +21,38 @@ type TipSetIndexer struct {
 func NewTipSetIndexer(api tasks.DataSource, tasks []v2.ModelMeta, workers int) *TipSetIndexer {
 	return &TipSetIndexer{
 		api:       api,
-		processor: &StateExtractor{},
+		processor: &extract.StateExtractor{},
 		tasks:     tasks,
 		workers:   workers,
 	}
 }
 
 type TipSetResult struct {
-	Task     v2.ModelMeta
-	Current  *types.TipSet
-	Executed *types.TipSet
-	Complete bool
-	Result   *StateResult
+	task     v2.ModelMeta
+	current  *types.TipSet
+	executed *types.TipSet
+	complete bool
+	result   *extract.StateResult
+}
+
+func (t *TipSetResult) Task() v2.ModelMeta {
+	return t.task
+}
+
+func (t *TipSetResult) Current() *types.TipSet {
+	return t.current
+}
+
+func (t *TipSetResult) Executed() *types.TipSet {
+	return t.executed
+}
+
+func (t *TipSetResult) Complete() bool {
+	return t.complete
+}
+
+func (t *TipSetResult) State() *extract.StateResult {
+	return t.result
 }
 
 func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *TipSetResult, error) {
@@ -46,7 +67,7 @@ func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Ti
 	}
 
 	pool := workerpool.New(ti.workers)
-	stateResults := make(chan *StateResult)
+	stateResults := make(chan *extract.StateResult)
 	// start processing all the tasks
 	if err := ti.processor.Start(ctx, ts, pts, ti.api, pool, ti.tasks, stateResults); err != nil {
 		return nil, err
@@ -65,22 +86,22 @@ func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Ti
 						continue
 					}
 					outCh <- &TipSetResult{
-						Task:     task,
-						Current:  ts,
-						Executed: pts,
-						Complete: false,
-						Result:   nil,
+						task:     task,
+						current:  ts,
+						executed: pts,
+						complete: false,
+						result:   nil,
 					}
 				}
 				return
 			default:
 				completedTasks[res.Task] = true
 				outCh <- &TipSetResult{
-					Task:     res.Task,
-					Current:  ts,
-					Executed: pts,
-					Complete: true,
-					Result:   res,
+					task:     res.Task,
+					current:  ts,
+					executed: pts,
+					complete: true,
+					result:   res,
 				}
 			}
 		}
