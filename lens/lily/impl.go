@@ -43,6 +43,7 @@ import (
 	"github.com/filecoin-project/lily/lens/util"
 	v22 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/miner/sectorinfo"
+	"github.com/filecoin-project/lily/model/v2/messages"
 	"github.com/filecoin-project/lily/network"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
@@ -153,9 +154,9 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 		return nil, err
 	}
 
-	//thing := messages.VMMessage{}
+	thing := messages.VMMessage{}
 	thing2 := sectorinfo.SectorInfo{}
-	im := v2.NewIndexManager(strg, taskAPI, []v22.ModelMeta{thing2.Meta()})
+	im := v2.NewIndexManager(strg, taskAPI, []v22.ModelMeta{thing.Meta(), thing2.Meta()})
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
 	/*
 		im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window), integrated.WithCborExporter(lms))

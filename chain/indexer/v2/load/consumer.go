@@ -40,10 +40,11 @@ func NewRouter(handlers ...Handler) (*Router, error) {
 		handlerChans[i] = make(chan transform.Result) // TODO buffer
 		//register handler topic with bus
 		b.Bus.RegisterTopics(string(handler.Type()))
+		hch := handlerChans[i]
 		// register handler for its required model, all models the hander can process are sent on its channel
 		b.Bus.RegisterHandler(string(handler.Type()), evntbus.Handler{
 			Handle: func(ctx context.Context, e evntbus.Event) {
-				handlerChans[i] <- e.Data.(transform.Result)
+				hch <- e.Data.(transform.Result)
 			},
 			Matcher: string(handler.Type()),
 		})

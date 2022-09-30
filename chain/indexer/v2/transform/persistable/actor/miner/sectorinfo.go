@@ -4,35 +4,21 @@ import (
 	"context"
 	"sync"
 
-	"github.com/ipfs/go-cid"
-
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
-	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/miner/sectorinfo"
 	"github.com/filecoin-project/lily/tasks"
 )
 
-type PersistableResult struct {
-	data model.Persistable
-}
-
-func (p *PersistableResult) Kind() transform.Kind {
-	return "persistable"
-}
-
-func (p *PersistableResult) Data() interface{} {
-	return p.data
+type SectorInfoTransform struct {
+	Matcher v2.ModelMeta
 }
 
 func NewSectorInfoTransform() *SectorInfoTransform {
 	info := sectorinfo.SectorInfo{}
 	return &SectorInfoTransform{Matcher: info.Meta()}
-}
-
-type SectorInfoTransform struct {
-	Matcher v2.ModelMeta
 }
 
 func (s SectorInfoTransform) Run(ctx context.Context, wg *sync.WaitGroup, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) {
@@ -46,7 +32,7 @@ func (s SectorInfoTransform) Run(ctx context.Context, wg *sync.WaitGroup, api ta
 			for i, modeldata := range res.State().Data {
 				si := modeldata.(*sectorinfo.SectorInfo)
 				sectorKeyCID := ""
-				if !si.SealedCID.Equals(cid.Undef) {
+				if si.SectorKeyCID.Defined() {
 					sectorKeyCID = si.SectorKeyCID.String()
 				}
 				sqlModels[i] = &minermodel.MinerSectorInfoV7{
@@ -65,7 +51,7 @@ func (s SectorInfoTransform) Run(ctx context.Context, wg *sync.WaitGroup, api ta
 					SectorKeyCID:          sectorKeyCID,
 				}
 			}
-			out <- &PersistableResult{data: sqlModels}
+			out <- &persistable.Result{Model: sqlModels}
 		}
 	}
 }
