@@ -6,8 +6,12 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 
 	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/v2/load"
+	"github.com/filecoin-project/lily/chain/indexer/v2/load/persistable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/miner"
+	"github.com/filecoin-project/lily/model"
 	v2 "github.com/filecoin-project/lily/model/v2"
-	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lily/tasks"
 )
 
@@ -15,13 +19,15 @@ type Manager struct {
 	indexer *TipSetIndexer
 	tasks   []v2.ModelMeta
 	api     tasks.DataSource
+	strg    model.Storage
 }
 
-func NewIndexManager(api tasks.DataSource, tasks []v2.ModelMeta) *Manager {
+func NewIndexManager(strg model.Storage, api tasks.DataSource, tasks []v2.ModelMeta) *Manager {
 	return &Manager{
 		indexer: NewTipSetIndexer(api, tasks, 64),
 		tasks:   tasks,
 		api:     api,
+		strg:    strg,
 	}
 }
 
@@ -31,23 +37,23 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 		return false, err
 	}
 
-	emitter, consumer, err := m.startRouters(ctx,
-		[]Handler{NewSectorInfoToPostgresHandler()},
-		[]ResultConsumer{&PersistableResultConsumer{strg: storage.NewMemStorageLatest()}})
+	router, consumer, err := m.startRouters(ctx,
+		[]transform.Handler{miner.NewSectorInfoTransform()},
+		[]load.Handler{&persistable.PersistableResultConsumer{Strg: m.strg}})
 	if err != nil {
 		return false, err
 	}
 
 	go func() {
 		for res := range results {
-			if err := emitter.Emit(ctx, res); err != nil {
+			if err := router.Route(ctx, res); err != nil {
 				panic(err)
 			}
 		}
-		emitter.Stop()
+		router.Stop()
 	}()
-	for res := range emitter.Results() {
-		if err := consumer.Emit(ctx, res); err != nil {
+	for res := range router.Results() {
+		if err := consumer.Route(ctx, res); err != nil {
 			return false, err
 		}
 	}
@@ -55,37 +61,29 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 	return true, nil
 }
 
-type Emitter interface {
-	// put things in here to process them
-	Emit(ctx context.Context, data *TipSetResult) error
-	// processed items come out here
-	Results() chan HandlerResult
+type Transformer interface {
+	Route(ctx context.Context, data transform.IndexState) error
+	Results() chan transform.Result
 	Stop()
 }
 
-type Consumer interface {
-	Emit(ctx context.Context, data HandlerResult) error
+type Loader interface {
+	Route(ctx context.Context, data transform.Result) error
 	Stop()
 }
 
-func (m *Manager) startRouters(ctx context.Context, handlers []Handler, consumers []ResultConsumer) (Emitter, Consumer, error) {
-	hr, err := NewHandlerRouter()
+func (m *Manager) startRouters(ctx context.Context, handlers []transform.Handler, consumers []load.Handler) (Transformer, Loader, error) {
+	tr, err := transform.NewRouter(handlers...)
 	if err != nil {
 		return nil, nil, err
 	}
-	for _, handler := range handlers {
-		hr.AddHandler(handler)
-	}
-	hr.Start(ctx, m.api)
+	tr.Start(ctx, m.api)
 
-	rr, err := NewResultRouter()
+	lr, err := load.NewRouter(consumers...)
 	if err != nil {
 		return nil, nil, err
 	}
-	for _, consumer := range consumers {
-		rr.AddConsumer(consumer)
-	}
-	rr.Start(ctx)
+	lr.Start(ctx)
 
-	return hr, rr, nil
+	return tr, lr, nil
 }

@@ -138,18 +138,15 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interface{}, error) {
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
-	/*
-		md := storage.Metadata{
-			JobName: cfg.JobConfig.Name,
-		}
+	md := storage.Metadata{
+		JobName: cfg.JobConfig.Name,
+	}
 
-		// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-			strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
-			if err != nil {
-				return nil, err
-			}
-
-	*/
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
+	if err != nil {
+		return nil, err
+	}
 
 	taskAPI, err := datasource.NewDataSource(m)
 	if err != nil {
@@ -158,7 +155,7 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 
 	//thing := messages.VMMessage{}
 	thing2 := sectorinfo.SectorInfo{}
-	im := v2.NewIndexManager(taskAPI, []v22.ModelMeta{thing2.Meta()})
+	im := v2.NewIndexManager(strg, taskAPI, []v22.ModelMeta{thing2.Meta()})
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
 	/*
 		im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window), integrated.WithCborExporter(lms))

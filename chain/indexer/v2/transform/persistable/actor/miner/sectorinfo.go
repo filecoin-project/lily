@@ -1,9 +1,12 @@
-package v2
+package miner
 
 import (
 	"context"
 	"sync"
 
+	"github.com/ipfs/go-cid"
+
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	v2 "github.com/filecoin-project/lily/model/v2"
@@ -15,7 +18,7 @@ type PersistableResult struct {
 	data model.Persistable
 }
 
-func (p *PersistableResult) Type() HandlerResultType {
+func (p *PersistableResult) Kind() transform.Kind {
 	return "persistable"
 }
 
@@ -23,25 +26,29 @@ func (p *PersistableResult) Data() interface{} {
 	return p.data
 }
 
-func NewSectorInfoToPostgresHandler() *SectorInfoToPostgresHandler {
+func NewSectorInfoTransform() *SectorInfoTransform {
 	info := sectorinfo.SectorInfo{}
-	return &SectorInfoToPostgresHandler{Matcher: info.Meta()}
+	return &SectorInfoTransform{Matcher: info.Meta()}
 }
 
-type SectorInfoToPostgresHandler struct {
+type SectorInfoTransform struct {
 	Matcher v2.ModelMeta
 }
 
-func (s SectorInfoToPostgresHandler) Run(ctx context.Context, wg *sync.WaitGroup, api tasks.DataSource, in chan *TipSetResult, out chan HandlerResult) {
+func (s SectorInfoTransform) Run(ctx context.Context, wg *sync.WaitGroup, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) {
 	defer wg.Done()
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			sqlModels := make(minermodel.MinerSectorInfoV7List, len(res.Result.Data))
-			for i, modeldata := range res.Result.Data {
+			sqlModels := make(minermodel.MinerSectorInfoV7List, len(res.State().Data))
+			for i, modeldata := range res.State().Data {
 				si := modeldata.(*sectorinfo.SectorInfo)
+				sectorKeyCID := ""
+				if !si.SealedCID.Equals(cid.Undef) {
+					sectorKeyCID = si.SectorKeyCID.String()
+				}
 				sqlModels[i] = &minermodel.MinerSectorInfoV7{
 					Height:                int64(si.Height),
 					MinerID:               si.Miner.String(),
@@ -55,16 +62,14 @@ func (s SectorInfoToPostgresHandler) Run(ctx context.Context, wg *sync.WaitGroup
 					InitialPledge:         si.InitialPledge.String(),
 					ExpectedDayReward:     si.ExpectedDayReward.String(),
 					ExpectedStoragePledge: si.ExpectedStoragePledge.String(),
-					SectorKeyCID:          si.SectorKeyCID.String(),
+					SectorKeyCID:          sectorKeyCID,
 				}
 			}
 			out <- &PersistableResult{data: sqlModels}
-			log.Infow("handler", "type", res.Task.String())
 		}
 	}
-	log.Info("handler done")
 }
 
-func (s SectorInfoToPostgresHandler) ModelType() v2.ModelMeta {
+func (s SectorInfoTransform) ModelType() v2.ModelMeta {
 	return s.Matcher
 }
