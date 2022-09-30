@@ -10,6 +10,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/v2/load/persistable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/miner"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/message"
 	"github.com/filecoin-project/lily/model"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/tasks"
@@ -38,7 +39,7 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 	}
 
 	router, consumer, err := m.startRouters(ctx,
-		[]transform.Handler{miner.NewSectorInfoTransform()},
+		[]transform.Handler{miner.NewSectorInfoTransform(), message.NewVMMessageTransform()},
 		[]load.Handler{&persistable.PersistableResultConsumer{Strg: m.strg}})
 	if err != nil {
 		return false, err
