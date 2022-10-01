@@ -207,7 +207,7 @@ func getSectorKey(s miner.SectorOnChainInfo) cid.Cid {
 // MinerSectorEventList.
 func ExtractMinerSectorStateEvents(extState extraction.State, events *SectorStateEvents) ([]v2.LilyModel, error) {
 	idx := 0
-	out := make([]v2.LilyModel, len(events.Removed)+len(events.Recovering)+len(events.Faulted)+len(events.Removed))
+	out := make([]v2.LilyModel, len(events.Removed)+len(events.Recovering)+len(events.Faulted)+len(events.Recovered))
 
 	for _, sector := range events.Removed {
 		out[idx] = &SectorEvent{
