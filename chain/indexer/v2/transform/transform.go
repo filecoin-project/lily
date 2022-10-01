@@ -2,16 +2,19 @@ package transform
 
 import (
 	"context"
-	"sync"
 
 	"github.com/filecoin-project/lotus/chain/types"
+	logging "github.com/ipfs/go-log/v2"
 	evntbus "github.com/mustafaturan/bus/v3"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/bus"
 	v22 "github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/tasks"
 )
+
+var log = logging.Logger("transform")
 
 type Kind string
 
@@ -29,7 +32,7 @@ type IndexState interface {
 }
 
 type Handler interface {
-	Run(ctx context.Context, wg *sync.WaitGroup, api tasks.DataSource, in chan IndexState, out chan Result)
+	Run(ctx context.Context, api tasks.DataSource, in chan IndexState, out chan Result) error
 	ModelType() v2.ModelMeta
 }
 
@@ -64,7 +67,7 @@ func NewRouter(handlers ...Handler) (*Router, error) {
 		bus:             b,
 		resultCh:        make(chan Result), // TODO buffer channel
 		handlerChannels: handlerChans,
-		handlerWg:       &sync.WaitGroup{},
+		handlerGrp:      &errgroup.Group{},
 		handlers:        routerHandlers,
 	}, nil
 }
@@ -74,42 +77,43 @@ type Router struct {
 	bus             *bus.Bus
 	resultCh        chan Result
 	handlerChannels []chan IndexState
-	handlerWg       *sync.WaitGroup
+	handlerGrp      *errgroup.Group
 	handlers        []Handler
 }
 
 func (r *Router) Start(ctx context.Context, api tasks.DataSource) {
+	log.Infow("starting router", "topics", r.bus.Bus.Topics())
 	for i, handler := range r.handlers {
-		r.handlerWg.Add(1)
-		go handler.Run(ctx, r.handlerWg, api, r.handlerChannels[i], r.resultCh)
+		log.Infow("start handler", "type", handler.ModelType().String())
+		i := i
+		handler := handler
+		r.handlerGrp.Go(func() error {
+			return handler.Run(ctx, api, r.handlerChannels[i], r.resultCh)
+		})
 	}
 }
 
-func (r *Router) Stop() {
+func (r *Router) Stop() error {
+	log.Info("stopping router")
 	// close all channel feeding handlers
 	for _, c := range r.handlerChannels {
 		close(c)
 	}
+	log.Info("closed handler channels")
 	// wait for handlers to complete and drain their now closed channel
-	r.handlerWg.Wait()
+	err := r.handlerGrp.Wait()
+	log.Infow("handlers completed", "error", err)
 	// close the output channel signaling there are no more results to handle.
 	close(r.resultCh)
+	log.Info("router stopped")
+	return err
 }
 
 func (r *Router) Route(ctx context.Context, data IndexState) error {
+	log.Debugw("routing data", "type", data.Task().String())
 	return r.bus.Bus.Emit(ctx, data.Task().String(), data)
 }
 
 func (r *Router) Results() chan Result {
 	return r.resultCh
-}
-
-func (r *Router) registerHandler(in chan IndexState, matcher string) {
-	r.handlerChannels = append(r.handlerChannels, in)
-	r.bus.Bus.RegisterHandler(matcher, evntbus.Handler{
-		Handle: func(ctx context.Context, e evntbus.Event) {
-			in <- e.Data.(IndexState)
-		},
-		Matcher: matcher,
-	})
 }

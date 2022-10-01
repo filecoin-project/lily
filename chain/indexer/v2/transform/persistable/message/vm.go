@@ -2,7 +2,6 @@ package message
 
 import (
 	"context"
-	"sync"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
@@ -22,31 +21,27 @@ func NewVMMessageTransform() *VMMessageTransform {
 	return &VMMessageTransform{Matcher: info.Meta()}
 }
 
-func (v *VMMessageTransform) Run(ctx context.Context, wg *sync.WaitGroup, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) {
-	defer wg.Done()
+func (v *VMMessageTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
 	for res := range in {
 		select {
 		case <-ctx.Done():
-			return
+			return ctx.Err()
 		default:
 			sqlModels := make(messages2.VMMessageList, len(res.State().Data))
 			for i, modeldata := range res.State().Data {
-				m, ok := modeldata.(*messages.VMMessage)
-				if !ok {
-					return
-				}
+				m := modeldata.(*messages.VMMessage)
 				var params string
 				var returns string
 				var err error
 				if m.ToActorCode.Defined() {
 					params, _, err = util.ParseParams(m.Params, m.Method, m.ToActorCode)
 					if err != nil {
-						panic(err)
+						return err
 					}
 					if m.ExitCode.IsSuccess() {
 						returns, _, err = util.ParseReturn(m.Return, m.Method, m.ToActorCode)
 						if err != nil {
-							panic(err)
+							return err
 						}
 					}
 				}
@@ -69,6 +64,7 @@ func (v *VMMessageTransform) Run(ctx context.Context, wg *sync.WaitGroup, api ta
 			out <- &persistable.Result{Model: sqlModels}
 		}
 	}
+	return nil
 }
 
 func (v *VMMessageTransform) ModelType() v2.ModelMeta {

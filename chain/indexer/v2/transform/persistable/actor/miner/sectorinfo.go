@@ -2,13 +2,12 @@ package miner
 
 import (
 	"context"
-	"sync"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	v2 "github.com/filecoin-project/lily/model/v2"
-	"github.com/filecoin-project/lily/model/v2/actors/miner/sectorinfo"
+	"github.com/filecoin-project/lily/model/v2/actors/miner/sectorevent"
 	"github.com/filecoin-project/lily/tasks"
 )
 
@@ -17,20 +16,24 @@ type SectorInfoTransform struct {
 }
 
 func NewSectorInfoTransform() *SectorInfoTransform {
-	info := sectorinfo.SectorInfo{}
+	info := sectorevent.SectorEvent{}
 	return &SectorInfoTransform{Matcher: info.Meta()}
 }
 
-func (s SectorInfoTransform) Run(ctx context.Context, wg *sync.WaitGroup, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) {
-	defer wg.Done()
+func (s SectorInfoTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
 	for res := range in {
 		select {
 		case <-ctx.Done():
-			return
+			return ctx.Err()
 		default:
 			sqlModels := make(minermodel.MinerSectorInfoV7List, len(res.State().Data))
 			for i, modeldata := range res.State().Data {
-				si := modeldata.(*sectorinfo.SectorInfo)
+				si := modeldata.(*sectorevent.SectorEvent)
+				if si.Event != sectorevent.SectorAdded &&
+					si.Event != sectorevent.SectorExtended &&
+					si.Event != sectorevent.SectorSnapped {
+					continue
+				}
 				sectorKeyCID := ""
 				if si.SectorKeyCID.Defined() {
 					sectorKeyCID = si.SectorKeyCID.String()
@@ -54,6 +57,7 @@ func (s SectorInfoTransform) Run(ctx context.Context, wg *sync.WaitGroup, api ta
 			out <- &persistable.Result{Model: sqlModels}
 		}
 	}
+	return nil
 }
 
 func (s SectorInfoTransform) ModelType() v2.ModelMeta {
