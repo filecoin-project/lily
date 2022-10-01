@@ -26,8 +26,8 @@ func (s SectorInfoTransform) Run(ctx context.Context, api tasks.DataSource, in c
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(minermodel.MinerSectorInfoV7List, len(res.State().Data))
-			for i, modeldata := range res.State().Data {
+			sqlModels := make(minermodel.MinerSectorInfoV7List, 0, len(res.State().Data))
+			for _, modeldata := range res.State().Data {
 				si := modeldata.(*sectorevent.SectorEvent)
 				if si.Event != sectorevent.SectorAdded &&
 					si.Event != sectorevent.SectorExtended &&
@@ -38,7 +38,7 @@ func (s SectorInfoTransform) Run(ctx context.Context, api tasks.DataSource, in c
 				if si.SectorKeyCID.Defined() {
 					sectorKeyCID = si.SectorKeyCID.String()
 				}
-				sqlModels[i] = &minermodel.MinerSectorInfoV7{
+				sqlModels = append(sqlModels, &minermodel.MinerSectorInfoV7{
 					Height:                int64(si.Height),
 					MinerID:               si.Miner.String(),
 					SectorID:              uint64(si.SectorNumber),
@@ -52,7 +52,7 @@ func (s SectorInfoTransform) Run(ctx context.Context, api tasks.DataSource, in c
 					ExpectedDayReward:     si.ExpectedDayReward.String(),
 					ExpectedStoragePledge: si.ExpectedStoragePledge.String(),
 					SectorKeyCID:          sectorKeyCID,
-				}
+				})
 			}
 			out <- &persistable.Result{Model: sqlModels}
 		}

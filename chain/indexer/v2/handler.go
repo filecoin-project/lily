@@ -30,7 +30,7 @@ type Manager struct {
 
 func NewIndexManager(strg model.Storage, api tasks.DataSource, tasks []v2.ModelMeta) *Manager {
 	return &Manager{
-		indexer: NewTipSetIndexer(api, tasks, 256),
+		indexer: NewTipSetIndexer(api, tasks, 1024),
 		tasks:   tasks,
 		api:     api,
 		strg:    strg,
@@ -49,6 +49,7 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 			miner.NewSectorInfoTransform(),
 			miner.NewPrecommitEventTransformer(),
 			miner.NewSectorEventTransformer(),
+			miner.NewSectorDealsTransformer(),
 			message.NewVMMessageTransform(),
 			block.NewBlockHeaderTransform(),
 			block.NewBlockParentsTransform(),
