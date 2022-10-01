@@ -19,7 +19,7 @@ var _ = cid.Undef
 var _ = math.E
 var _ = sort.Sort
 
-var lengthBufSectorEvent = []byte{133}
+var lengthBufSectorEvent = []byte{146}
 
 func (t *SectorEvent) MarshalCBOR(w io.Writer) error {
 	if t == nil {
@@ -55,12 +55,6 @@ func (t *SectorEvent) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.SectorID (abi.SectorNumber) (uint64)
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.SectorID)); err != nil {
-		return err
-	}
-
 	// t.Event (sectorevent.SectorEventType) (int64)
 	if t.Event >= 0 {
 		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Event)); err != nil {
@@ -71,6 +65,113 @@ func (t *SectorEvent) MarshalCBOR(w io.Writer) error {
 			return err
 		}
 	}
+
+	// t.SectorNumber (abi.SectorNumber) (uint64)
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.SectorNumber)); err != nil {
+		return err
+	}
+
+	// t.SealProof (abi.RegisteredSealProof) (int64)
+	if t.SealProof >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.SealProof)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.SealProof-1)); err != nil {
+			return err
+		}
+	}
+
+	// t.SealedCID (cid.Cid) (struct)
+
+	if err := cbg.WriteCid(cw, t.SealedCID); err != nil {
+		return xerrors.Errorf("failed to write cid field t.SealedCID: %w", err)
+	}
+
+	// t.DealIDs ([]abi.DealID) (slice)
+	if len(t.DealIDs) > cbg.MaxLength {
+		return xerrors.Errorf("Slice value in field t.DealIDs was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.DealIDs))); err != nil {
+		return err
+	}
+	for _, v := range t.DealIDs {
+		if err := cw.CborWriteHeader(cbg.MajUnsignedInt, uint64(v)); err != nil {
+			return err
+		}
+	}
+
+	// t.Activation (abi.ChainEpoch) (int64)
+	if t.Activation >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Activation)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.Activation-1)); err != nil {
+			return err
+		}
+	}
+
+	// t.Expiration (abi.ChainEpoch) (int64)
+	if t.Expiration >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Expiration)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.Expiration-1)); err != nil {
+			return err
+		}
+	}
+
+	// t.DealWeight (big.Int) (struct)
+	if err := t.DealWeight.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.VerifiedDealWeight (big.Int) (struct)
+	if err := t.VerifiedDealWeight.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.InitialPledge (big.Int) (struct)
+	if err := t.InitialPledge.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.ExpectedDayReward (big.Int) (struct)
+	if err := t.ExpectedDayReward.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.ExpectedStoragePledge (big.Int) (struct)
+	if err := t.ExpectedStoragePledge.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.ReplacedSectorAge (abi.ChainEpoch) (int64)
+	if t.ReplacedSectorAge >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.ReplacedSectorAge)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.ReplacedSectorAge-1)); err != nil {
+			return err
+		}
+	}
+
+	// t.ReplacedDayReward (big.Int) (struct)
+	if err := t.ReplacedDayReward.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.SectorKeyCID (cid.Cid) (struct)
+
+	if err := cbg.WriteCid(cw, t.SectorKeyCID); err != nil {
+		return xerrors.Errorf("failed to write cid field t.SectorKeyCID: %w", err)
+	}
+
 	return nil
 }
 
@@ -93,7 +194,7 @@ func (t *SectorEvent) UnmarshalCBOR(r io.Reader) (err error) {
 		return fmt.Errorf("cbor input should be of type array")
 	}
 
-	if extra != 5 {
+	if extra != 18 {
 		return fmt.Errorf("cbor input had wrong number of fields")
 	}
 
@@ -143,20 +244,6 @@ func (t *SectorEvent) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 	}
-	// t.SectorID (abi.SectorNumber) (uint64)
-
-	{
-
-		maj, extra, err = cr.ReadHeader()
-		if err != nil {
-			return err
-		}
-		if maj != cbg.MajUnsignedInt {
-			return fmt.Errorf("wrong type for uint64 field")
-		}
-		t.SectorID = abi.SectorNumber(extra)
-
-	}
 	// t.Event (sectorevent.SectorEventType) (int64)
 	{
 		maj, extra, err := cr.ReadHeader()
@@ -181,6 +268,231 @@ func (t *SectorEvent) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		t.Event = SectorEventType(extraI)
+	}
+	// t.SectorNumber (abi.SectorNumber) (uint64)
+
+	{
+
+		maj, extra, err = cr.ReadHeader()
+		if err != nil {
+			return err
+		}
+		if maj != cbg.MajUnsignedInt {
+			return fmt.Errorf("wrong type for uint64 field")
+		}
+		t.SectorNumber = abi.SectorNumber(extra)
+
+	}
+	// t.SealProof (abi.RegisteredSealProof) (int64)
+	{
+		maj, extra, err := cr.ReadHeader()
+		var extraI int64
+		if err != nil {
+			return err
+		}
+		switch maj {
+		case cbg.MajUnsignedInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 positive overflow")
+			}
+		case cbg.MajNegativeInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 negative oveflow")
+			}
+			extraI = -1 - extraI
+		default:
+			return fmt.Errorf("wrong type for int64 field: %d", maj)
+		}
+
+		t.SealProof = abi.RegisteredSealProof(extraI)
+	}
+	// t.SealedCID (cid.Cid) (struct)
+
+	{
+
+		c, err := cbg.ReadCid(cr)
+		if err != nil {
+			return xerrors.Errorf("failed to read cid field t.SealedCID: %w", err)
+		}
+
+		t.SealedCID = c
+
+	}
+	// t.DealIDs ([]abi.DealID) (slice)
+
+	maj, extra, err = cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("t.DealIDs: array too large (%d)", extra)
+	}
+
+	if maj != cbg.MajArray {
+		return fmt.Errorf("expected cbor array")
+	}
+
+	if extra > 0 {
+		t.DealIDs = make([]abi.DealID, extra)
+	}
+
+	for i := 0; i < int(extra); i++ {
+
+		maj, val, err := cr.ReadHeader()
+		if err != nil {
+			return xerrors.Errorf("failed to read uint64 for t.DealIDs slice: %w", err)
+		}
+
+		if maj != cbg.MajUnsignedInt {
+			return xerrors.Errorf("value read for array t.DealIDs was not a uint, instead got %d", maj)
+		}
+
+		t.DealIDs[i] = abi.DealID(val)
+	}
+
+	// t.Activation (abi.ChainEpoch) (int64)
+	{
+		maj, extra, err := cr.ReadHeader()
+		var extraI int64
+		if err != nil {
+			return err
+		}
+		switch maj {
+		case cbg.MajUnsignedInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 positive overflow")
+			}
+		case cbg.MajNegativeInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 negative oveflow")
+			}
+			extraI = -1 - extraI
+		default:
+			return fmt.Errorf("wrong type for int64 field: %d", maj)
+		}
+
+		t.Activation = abi.ChainEpoch(extraI)
+	}
+	// t.Expiration (abi.ChainEpoch) (int64)
+	{
+		maj, extra, err := cr.ReadHeader()
+		var extraI int64
+		if err != nil {
+			return err
+		}
+		switch maj {
+		case cbg.MajUnsignedInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 positive overflow")
+			}
+		case cbg.MajNegativeInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 negative oveflow")
+			}
+			extraI = -1 - extraI
+		default:
+			return fmt.Errorf("wrong type for int64 field: %d", maj)
+		}
+
+		t.Expiration = abi.ChainEpoch(extraI)
+	}
+	// t.DealWeight (big.Int) (struct)
+
+	{
+
+		if err := t.DealWeight.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.DealWeight: %w", err)
+		}
+
+	}
+	// t.VerifiedDealWeight (big.Int) (struct)
+
+	{
+
+		if err := t.VerifiedDealWeight.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.VerifiedDealWeight: %w", err)
+		}
+
+	}
+	// t.InitialPledge (big.Int) (struct)
+
+	{
+
+		if err := t.InitialPledge.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.InitialPledge: %w", err)
+		}
+
+	}
+	// t.ExpectedDayReward (big.Int) (struct)
+
+	{
+
+		if err := t.ExpectedDayReward.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.ExpectedDayReward: %w", err)
+		}
+
+	}
+	// t.ExpectedStoragePledge (big.Int) (struct)
+
+	{
+
+		if err := t.ExpectedStoragePledge.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.ExpectedStoragePledge: %w", err)
+		}
+
+	}
+	// t.ReplacedSectorAge (abi.ChainEpoch) (int64)
+	{
+		maj, extra, err := cr.ReadHeader()
+		var extraI int64
+		if err != nil {
+			return err
+		}
+		switch maj {
+		case cbg.MajUnsignedInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 positive overflow")
+			}
+		case cbg.MajNegativeInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 negative oveflow")
+			}
+			extraI = -1 - extraI
+		default:
+			return fmt.Errorf("wrong type for int64 field: %d", maj)
+		}
+
+		t.ReplacedSectorAge = abi.ChainEpoch(extraI)
+	}
+	// t.ReplacedDayReward (big.Int) (struct)
+
+	{
+
+		if err := t.ReplacedDayReward.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.ReplacedDayReward: %w", err)
+		}
+
+	}
+	// t.SectorKeyCID (cid.Cid) (struct)
+
+	{
+
+		c, err := cbg.ReadCid(cr)
+		if err != nil {
+			return xerrors.Errorf("failed to read cid field t.SectorKeyCID: %w", err)
+		}
+
+		t.SectorKeyCID = c
+
 	}
 	return nil
 }

@@ -2,16 +2,19 @@ package load
 
 import (
 	"context"
-	"sync"
 
+	logging "github.com/ipfs/go-log/v2"
 	evntbus "github.com/mustafaturan/bus/v3"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/bus"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 )
 
+var log = logging.Logger("load")
+
 type Handler interface {
-	Consume(ctx context.Context, wg *sync.WaitGroup, in chan transform.Result)
+	Consume(ctx context.Context, in chan transform.Result) error
 	Type() transform.Kind
 }
 
@@ -19,7 +22,7 @@ type Router struct {
 	registry        map[transform.Kind][]Handler
 	bus             *bus.Bus
 	handlerChannels []chan transform.Result
-	handlerWg       *sync.WaitGroup
+	handlerGrp      *errgroup.Group
 	handlers        []Handler
 }
 
@@ -53,25 +56,36 @@ func NewRouter(handlers ...Handler) (*Router, error) {
 		registry:        registry,
 		bus:             b,
 		handlerChannels: handlerChans,
-		handlerWg:       &sync.WaitGroup{},
+		handlerGrp:      &errgroup.Group{},
 		handlers:        handlers,
 	}, nil
 }
 
 func (r *Router) Start(ctx context.Context) {
+	log.Infow("starting router", "topics", r.bus.Bus.Topics())
 	for i, handler := range r.handlers {
-		r.handlerWg.Add(1)
-		go handler.Consume(ctx, r.handlerWg, r.handlerChannels[i])
+		log.Infow("start handler", "type", handler.Type())
+		i := i
+		handler := handler
+		r.handlerGrp.Go(func() error {
+			return handler.Consume(ctx, r.handlerChannels[i])
+		})
 	}
 }
 
-func (r *Router) Stop() {
+func (r *Router) Stop() error {
+	log.Info("stopping router")
 	for _, c := range r.handlerChannels {
 		close(c)
 	}
-	r.handlerWg.Wait()
+	log.Info("closed handler channels")
+	err := r.handlerGrp.Wait()
+	log.Infow("handlers completed", "error", err)
+	log.Info("router stopped")
+	return err
 }
 
 func (r *Router) Route(ctx context.Context, data transform.Result) error {
+	log.Debugw("routing data", "type", data.Kind())
 	return r.bus.Bus.Emit(ctx, string(data.Kind()), data)
 }
