@@ -2,6 +2,7 @@ package miner
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
@@ -21,6 +22,7 @@ func NewPrecommitEventTransformer() *PrecommitEventTransformer {
 }
 
 func (s *PrecommitEventTransformer) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+	log.Info("run PrecommitEventTransformer")
 	for res := range in {
 		select {
 		case <-ctx.Done():
@@ -41,7 +43,9 @@ func (s *PrecommitEventTransformer) Run(ctx context.Context, api tasks.DataSourc
 					Event:     se.Event.String(),
 				})
 			}
-			out <- &persistable.Result{Model: sqlModels}
+			if len(sqlModels) > 0 {
+				out <- &persistable.Result{Model: sqlModels}
+			}
 		}
 	}
 	return nil
@@ -49,4 +53,9 @@ func (s *PrecommitEventTransformer) Run(ctx context.Context, api tasks.DataSourc
 
 func (s *PrecommitEventTransformer) ModelType() v2.ModelMeta {
 	return s.Matcher
+}
+
+func (s *PrecommitEventTransformer) Name() string {
+	info := PrecommitEventTransformer{}
+	return reflect.TypeOf(info).Name()
 }

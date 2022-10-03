@@ -156,11 +156,12 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 		return nil, err
 	}
 
-	thing := messages.VMMessage{}
-	thing3 := sectorevent.SectorEvent{}
-	thing4 := block.BlockHeader{}
-	thing5 := precommitevent.PreCommitEvent{}
-	im := v2.NewIndexManager(strg, taskAPI, []v22.ModelMeta{thing.Meta(), thing3.Meta(), thing4.Meta(), thing5.Meta()})
+	event := sectorevent.SectorEvent{}
+	commitEvent := precommitevent.PreCommitEvent{}
+	blocks := block.BlockHeader{}
+	message := messages.Message{}
+	vmmessage := messages.VMMessage{}
+	im := v2.NewIndexManager(strg, taskAPI, []v22.ModelMeta{event.Meta(), commitEvent.Meta(), blocks.Meta(), message.Meta(), vmmessage.Meta()})
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
 	/*
 		im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window), integrated.WithCborExporter(lms))

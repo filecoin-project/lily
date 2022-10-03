@@ -2,6 +2,7 @@ package block
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
@@ -41,7 +42,9 @@ func (b *BlockHeaderTransform) Run(ctx context.Context, api tasks.DataSource, in
 					ForkSignaling:   m.ForkSignaling,
 				}
 			}
-			out <- &persistable.Result{Model: sqlModels}
+			if len(sqlModels) > 0 {
+				out <- &persistable.Result{Model: sqlModels}
+			}
 		}
 	}
 	return nil
@@ -49,4 +52,9 @@ func (b *BlockHeaderTransform) Run(ctx context.Context, api tasks.DataSource, in
 
 func (b *BlockHeaderTransform) ModelType() v2.ModelMeta {
 	return b.Matcher
+}
+
+func (b *BlockHeaderTransform) Name() string {
+	info := BlockHeaderTransform{}
+	return reflect.TypeOf(info).Name()
 }

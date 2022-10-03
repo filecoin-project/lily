@@ -468,7 +468,7 @@ func (t *Message) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Method (uint64) (uint64)
+	// t.Method (abi.MethodNum) (uint64)
 
 	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Method)); err != nil {
 		return err
@@ -688,7 +688,7 @@ func (t *Message) UnmarshalCBOR(r io.Reader) (err error) {
 		t.Nonce = uint64(extra)
 
 	}
-	// t.Method (uint64) (uint64)
+	// t.Method (abi.MethodNum) (uint64)
 
 	{
 
@@ -699,7 +699,7 @@ func (t *Message) UnmarshalCBOR(r io.Reader) (err error) {
 		if maj != cbg.MajUnsignedInt {
 			return fmt.Errorf("wrong type for uint64 field")
 		}
-		t.Method = uint64(extra)
+		t.Method = abi.MethodNum(extra)
 
 	}
 	// t.MessageVersion (uint64) (uint64)

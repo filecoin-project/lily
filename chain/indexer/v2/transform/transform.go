@@ -2,6 +2,7 @@ package transform
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
@@ -33,6 +34,7 @@ type IndexState interface {
 
 type Handler interface {
 	Run(ctx context.Context, api tasks.DataSource, in chan IndexState, out chan Result) error
+	Name() string
 	ModelType() v2.ModelMeta
 }
 
@@ -50,22 +52,23 @@ func NewRouter(handlers ...Handler) (*Router, error) {
 		// maintain list of handlers
 		routerHandlers[i] = handler
 		// initialize handler channel
-		handlerChans[i] = make(chan IndexState) // TODO buffer channel
+		handlerChans[i] = make(chan IndexState, 8) // TODO buffer channel
 		// register the handle topic with the bus
 		b.Bus.RegisterTopics(handler.ModelType().String())
 		// register handler for its required model, all models the hander can process are sent on its channel
 		hch := handlerChans[i]
-		b.Bus.RegisterHandler(handler.ModelType().String(), evntbus.Handler{
+		b.Bus.RegisterHandler(handler.Name(), evntbus.Handler{
 			Handle: func(ctx context.Context, e evntbus.Event) {
 				hch <- e.Data.(IndexState)
 			},
-			Matcher: handler.ModelType().String(),
+			// TODO fix this annoying shit, make your own damn bus, this one is falling a bit short..
+			Matcher: fmt.Sprintf("^%s$", handler.ModelType().String()),
 		})
 	}
 	return &Router{
 		registry:        registry,
 		bus:             b,
-		resultCh:        make(chan Result), // TODO buffer channel
+		resultCh:        make(chan Result, len(routerHandlers)), // TODO buffer channel
 		handlerChannels: handlerChans,
 		handlerGrp:      &errgroup.Group{},
 		handlers:        routerHandlers,
@@ -84,7 +87,7 @@ type Router struct {
 func (r *Router) Start(ctx context.Context, api tasks.DataSource) {
 	log.Infow("starting router", "topics", r.bus.Bus.Topics())
 	for i, handler := range r.handlers {
-		log.Infow("start handler", "type", handler.ModelType().String())
+		log.Infow("start handler", "type", handler.Name())
 		i := i
 		handler := handler
 		r.handlerGrp.Go(func() error {

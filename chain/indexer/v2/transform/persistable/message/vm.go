@@ -2,6 +2,9 @@ package message
 
 import (
 	"context"
+	"reflect"
+
+	logging "github.com/ipfs/go-log/v2"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
@@ -11,6 +14,8 @@ import (
 	"github.com/filecoin-project/lily/model/v2/messages"
 	"github.com/filecoin-project/lily/tasks"
 )
+
+var log = logging.Logger("transform/message")
 
 type VMMessageTransform struct {
 	Matcher v2.ModelMeta
@@ -22,11 +27,13 @@ func NewVMMessageTransform() *VMMessageTransform {
 }
 
 func (v *VMMessageTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+	log.Info("run VMMessageTransform")
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
+			log.Infow("received data", "count", len(res.State().Data))
 			sqlModels := make(messages2.VMMessageList, len(res.State().Data))
 			for i, modeldata := range res.State().Data {
 				m := modeldata.(*messages.VMMessage)
@@ -69,4 +76,9 @@ func (v *VMMessageTransform) Run(ctx context.Context, api tasks.DataSource, in c
 
 func (v *VMMessageTransform) ModelType() v2.ModelMeta {
 	return v.Matcher
+}
+
+func (v *VMMessageTransform) Name() string {
+	info := VMMessageTransform{}
+	return reflect.TypeOf(info).Name()
 }

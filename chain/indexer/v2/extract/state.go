@@ -59,7 +59,7 @@ func (se *StateExtractor) Start(ctx context.Context, current, executed *types.Ti
 			default:
 				start := time.Now()
 				data, err := extractor(ctx, api, current, executed)
-				log.Infow("extracted model", "type", task.String(), "duration", time.Since(start))
+				log.Debugw("extracted model", "type", task.String(), "duration", time.Since(start))
 				results <- &StateResult{
 					Task:      task,
 					Error:     err,
@@ -113,7 +113,7 @@ func (se *StateExtractor) Start(ctx context.Context, current, executed *types.Ti
 				default:
 					start := time.Now()
 					data, err := extractor(ctx, api, current, executed, act)
-					log.Infow("extracted model", "type", task.String(), "duration", time.Since(start))
+					log.Debugw("extracted model", "type", task.String(), "duration", time.Since(start))
 					results <- &StateResult{
 						Task:      task,
 						Error:     err,

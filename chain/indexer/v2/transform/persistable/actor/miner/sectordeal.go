@@ -2,6 +2,7 @@ package miner
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
@@ -21,11 +22,13 @@ func NewSectorDealsTransformer() *SectorDealsTransformer {
 }
 
 func (s *SectorDealsTransformer) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+	log.Info("run SectorDealsTransformer")
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
+			log.Infow("SectorDealsTransformer received data", "count", len(res.State().Data))
 			sqlModels := make(minermodel.MinerSectorDealList, 0, len(res.State().Data))
 			for _, modeldata := range res.State().Data {
 				se := modeldata.(*sectorevent.SectorEvent)
@@ -42,7 +45,9 @@ func (s *SectorDealsTransformer) Run(ctx context.Context, api tasks.DataSource, 
 
 				}
 			}
-			out <- &persistable.Result{Model: sqlModels}
+			if len(sqlModels) > 0 {
+				out <- &persistable.Result{Model: sqlModels}
+			}
 		}
 	}
 	return nil
@@ -50,4 +55,9 @@ func (s *SectorDealsTransformer) Run(ctx context.Context, api tasks.DataSource, 
 
 func (s *SectorDealsTransformer) ModelType() v2.ModelMeta {
 	return s.Matcher
+}
+
+func (s *SectorDealsTransformer) Name() string {
+	info := SectorDealsTransformer{}
+	return reflect.TypeOf(info).Name()
 }
