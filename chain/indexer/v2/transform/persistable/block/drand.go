@@ -2,6 +2,7 @@ package block
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
@@ -37,7 +38,9 @@ func (b *DrandBlockEntryTransform) Run(ctx context.Context, api tasks.DataSource
 
 				}
 			}
-			out <- &persistable.Result{Model: sqlModels}
+			if len(sqlModels) > 0 {
+				out <- &persistable.Result{Model: sqlModels}
+			}
 		}
 	}
 	return nil
@@ -45,4 +48,9 @@ func (b *DrandBlockEntryTransform) Run(ctx context.Context, api tasks.DataSource
 
 func (b *DrandBlockEntryTransform) ModelType() v2.ModelMeta {
 	return b.Matcher
+}
+
+func (b *DrandBlockEntryTransform) Name() string {
+	info := DrandBlockEntryTransform{}
+	return reflect.TypeOf(info).Name()
 }

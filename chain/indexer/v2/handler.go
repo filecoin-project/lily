@@ -48,9 +48,12 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 		[]transform.Handler{
 			miner.NewSectorInfoTransform(),
 			miner.NewPrecommitEventTransformer(),
+			// BUG: when the sector event and deals are registered events don't persist
 			miner.NewSectorEventTransformer(),
 			miner.NewSectorDealsTransformer(),
+			miner.NewPrecommitInfoTransformer(),
 			message.NewVMMessageTransform(),
+			message.NewMessageTransform(),
 			block.NewBlockHeaderTransform(),
 			block.NewBlockParentsTransform(),
 			block.NewDrandBlockEntryTransform(),
@@ -65,8 +68,10 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 	//	 this will prevent partial persistence at the cost of more memory.
 	go func() {
 		for res := range results {
-			if err := transformer.Route(ctx, res); err != nil {
-				panic(err)
+			if len(res.State().Data) > 0 {
+				if err := transformer.Route(ctx, res); err != nil {
+					panic(err)
+				}
 			}
 		}
 		if err := transformer.Stop(); err != nil {

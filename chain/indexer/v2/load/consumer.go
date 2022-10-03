@@ -15,6 +15,7 @@ var log = logging.Logger("load")
 
 type Handler interface {
 	Consume(ctx context.Context, in chan transform.Result) error
+	Name() string
 	Type() transform.Kind
 }
 
@@ -40,12 +41,12 @@ func NewRouter(handlers ...Handler) (*Router, error) {
 		// list of all handlers
 		routerHandlers = append(routerHandlers, handler)
 		// init handler channel
-		handlerChans[i] = make(chan transform.Result) // TODO buffer
+		handlerChans[i] = make(chan transform.Result, 8) // TODO buffer
 		//register handler topic with bus
 		b.Bus.RegisterTopics(string(handler.Type()))
 		hch := handlerChans[i]
 		// register handler for its required model, all models the hander can process are sent on its channel
-		b.Bus.RegisterHandler(string(handler.Type()), evntbus.Handler{
+		b.Bus.RegisterHandler(handler.Name(), evntbus.Handler{
 			Handle: func(ctx context.Context, e evntbus.Event) {
 				hch <- e.Data.(transform.Result)
 			},
