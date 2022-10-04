@@ -48,12 +48,18 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 		[]transform.Handler{
 			miner.NewSectorInfoTransform(),
 			miner.NewPrecommitEventTransformer(),
-			// BUG: when the sector event and deals are registered events don't persist
 			miner.NewSectorEventTransformer(),
 			miner.NewSectorDealsTransformer(),
 			miner.NewPrecommitInfoTransformer(),
+
 			message.NewVMMessageTransform(),
 			message.NewMessageTransform(),
+			message.NewParsedMessageTransform(),
+			message.NewBlockMessageTransform(),
+			message.NewGasOutputTransform(),
+			message.NewGasEconomyTransform(),
+			message.NewReceiptTransform(),
+
 			block.NewBlockHeaderTransform(),
 			block.NewBlockParentsTransform(),
 			block.NewDrandBlockEntryTransform(),

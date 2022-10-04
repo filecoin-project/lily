@@ -372,9 +372,9 @@ func (t *VMMessage) UnmarshalCBOR(r io.Reader) (err error) {
 	return nil
 }
 
-var lengthBufMessage = []byte{143}
+var lengthBufExecutedMessage = []byte{152, 28}
 
-func (t *Message) MarshalCBOR(w io.Writer) error {
+func (t *ExecutedMessage) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
 		return err
@@ -382,7 +382,7 @@ func (t *Message) MarshalCBOR(w io.Writer) error {
 
 	cw := cbg.NewCborWriter(w)
 
-	if _, err := cw.Write(lengthBufMessage); err != nil {
+	if _, err := cw.Write(lengthBufExecutedMessage); err != nil {
 		return err
 	}
 
@@ -407,6 +407,12 @@ func (t *Message) MarshalCBOR(w io.Writer) error {
 
 	if err := cbg.WriteCid(cw, t.MessageCid); err != nil {
 		return xerrors.Errorf("failed to write cid field t.MessageCid: %w", err)
+	}
+
+	// t.BlockCid (cid.Cid) (struct)
+
+	if err := cbg.WriteCid(cw, t.BlockCid); err != nil {
+		return xerrors.Errorf("failed to write cid field t.BlockCid: %w", err)
 	}
 
 	// t.ToActorCode (cid.Cid) (struct)
@@ -492,11 +498,109 @@ func (t *Message) MarshalCBOR(w io.Writer) error {
 	if _, err := cw.Write(t.Params[:]); err != nil {
 		return err
 	}
+
+	// t.ExitCode (exitcode.ExitCode) (int64)
+	if t.ExitCode >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.ExitCode)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.ExitCode-1)); err != nil {
+			return err
+		}
+	}
+
+	// t.ReceiptIndex (int64) (int64)
+	if t.ReceiptIndex >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.ReceiptIndex)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.ReceiptIndex-1)); err != nil {
+			return err
+		}
+	}
+
+	// t.GasUsed (int64) (int64)
+	if t.GasUsed >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.GasUsed)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.GasUsed-1)); err != nil {
+			return err
+		}
+	}
+
+	// t.Return ([]uint8) (slice)
+	if len(t.Return) > cbg.ByteArrayMaxLen {
+		return xerrors.Errorf("Byte array in field t.Return was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Return))); err != nil {
+		return err
+	}
+
+	if _, err := cw.Write(t.Return[:]); err != nil {
+		return err
+	}
+
+	// t.ParentBaseFee (big.Int) (struct)
+	if err := t.ParentBaseFee.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.BaseFeeBurn (big.Int) (struct)
+	if err := t.BaseFeeBurn.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.OverEstimationBurn (big.Int) (struct)
+	if err := t.OverEstimationBurn.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.MinerPenalty (big.Int) (struct)
+	if err := t.MinerPenalty.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.MinerTip (big.Int) (struct)
+	if err := t.MinerTip.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.Refund (big.Int) (struct)
+	if err := t.Refund.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.GasRefund (int64) (int64)
+	if t.GasRefund >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.GasRefund)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.GasRefund-1)); err != nil {
+			return err
+		}
+	}
+
+	// t.GasBurned (int64) (int64)
+	if t.GasBurned >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.GasBurned)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.GasBurned-1)); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func (t *Message) UnmarshalCBOR(r io.Reader) (err error) {
-	*t = Message{}
+func (t *ExecutedMessage) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = ExecutedMessage{}
 
 	cr := cbg.NewCborReader(r)
 
@@ -514,7 +618,7 @@ func (t *Message) UnmarshalCBOR(r io.Reader) (err error) {
 		return fmt.Errorf("cbor input should be of type array")
 	}
 
-	if extra != 15 {
+	if extra != 28 {
 		return fmt.Errorf("cbor input had wrong number of fields")
 	}
 
@@ -565,6 +669,18 @@ func (t *Message) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		t.MessageCid = c
+
+	}
+	// t.BlockCid (cid.Cid) (struct)
+
+	{
+
+		c, err := cbg.ReadCid(cr)
+		if err != nil {
+			return xerrors.Errorf("failed to read cid field t.BlockCid: %w", err)
+		}
+
+		t.BlockCid = c
 
 	}
 	// t.ToActorCode (cid.Cid) (struct)
@@ -737,184 +853,6 @@ func (t *Message) UnmarshalCBOR(r io.Reader) (err error) {
 	if _, err := io.ReadFull(cr, t.Params[:]); err != nil {
 		return err
 	}
-	return nil
-}
-
-var lengthBufReceipt = []byte{136}
-
-func (t *Receipt) MarshalCBOR(w io.Writer) error {
-	if t == nil {
-		_, err := w.Write(cbg.CborNull)
-		return err
-	}
-
-	cw := cbg.NewCborWriter(w)
-
-	if _, err := cw.Write(lengthBufReceipt); err != nil {
-		return err
-	}
-
-	// t.Height (abi.ChainEpoch) (int64)
-	if t.Height >= 0 {
-		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Height)); err != nil {
-			return err
-		}
-	} else {
-		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.Height-1)); err != nil {
-			return err
-		}
-	}
-
-	// t.StateRoot (cid.Cid) (struct)
-
-	if err := cbg.WriteCid(cw, t.StateRoot); err != nil {
-		return xerrors.Errorf("failed to write cid field t.StateRoot: %w", err)
-	}
-
-	// t.MessageCid (cid.Cid) (struct)
-
-	if err := cbg.WriteCid(cw, t.MessageCid); err != nil {
-		return xerrors.Errorf("failed to write cid field t.MessageCid: %w", err)
-	}
-
-	// t.MessageToActorCode (cid.Cid) (struct)
-
-	if err := cbg.WriteCid(cw, t.MessageToActorCode); err != nil {
-		return xerrors.Errorf("failed to write cid field t.MessageToActorCode: %w", err)
-	}
-
-	// t.ExitCode (exitcode.ExitCode) (int64)
-	if t.ExitCode >= 0 {
-		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.ExitCode)); err != nil {
-			return err
-		}
-	} else {
-		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.ExitCode-1)); err != nil {
-			return err
-		}
-	}
-
-	// t.Index (int64) (int64)
-	if t.Index >= 0 {
-		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Index)); err != nil {
-			return err
-		}
-	} else {
-		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.Index-1)); err != nil {
-			return err
-		}
-	}
-
-	// t.GasUsed (int64) (int64)
-	if t.GasUsed >= 0 {
-		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.GasUsed)); err != nil {
-			return err
-		}
-	} else {
-		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.GasUsed-1)); err != nil {
-			return err
-		}
-	}
-
-	// t.Return ([]uint8) (slice)
-	if len(t.Return) > cbg.ByteArrayMaxLen {
-		return xerrors.Errorf("Byte array in field t.Return was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Return))); err != nil {
-		return err
-	}
-
-	if _, err := cw.Write(t.Return[:]); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (t *Receipt) UnmarshalCBOR(r io.Reader) (err error) {
-	*t = Receipt{}
-
-	cr := cbg.NewCborReader(r)
-
-	maj, extra, err := cr.ReadHeader()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
-		}
-	}()
-
-	if maj != cbg.MajArray {
-		return fmt.Errorf("cbor input should be of type array")
-	}
-
-	if extra != 8 {
-		return fmt.Errorf("cbor input had wrong number of fields")
-	}
-
-	// t.Height (abi.ChainEpoch) (int64)
-	{
-		maj, extra, err := cr.ReadHeader()
-		var extraI int64
-		if err != nil {
-			return err
-		}
-		switch maj {
-		case cbg.MajUnsignedInt:
-			extraI = int64(extra)
-			if extraI < 0 {
-				return fmt.Errorf("int64 positive overflow")
-			}
-		case cbg.MajNegativeInt:
-			extraI = int64(extra)
-			if extraI < 0 {
-				return fmt.Errorf("int64 negative oveflow")
-			}
-			extraI = -1 - extraI
-		default:
-			return fmt.Errorf("wrong type for int64 field: %d", maj)
-		}
-
-		t.Height = abi.ChainEpoch(extraI)
-	}
-	// t.StateRoot (cid.Cid) (struct)
-
-	{
-
-		c, err := cbg.ReadCid(cr)
-		if err != nil {
-			return xerrors.Errorf("failed to read cid field t.StateRoot: %w", err)
-		}
-
-		t.StateRoot = c
-
-	}
-	// t.MessageCid (cid.Cid) (struct)
-
-	{
-
-		c, err := cbg.ReadCid(cr)
-		if err != nil {
-			return xerrors.Errorf("failed to read cid field t.MessageCid: %w", err)
-		}
-
-		t.MessageCid = c
-
-	}
-	// t.MessageToActorCode (cid.Cid) (struct)
-
-	{
-
-		c, err := cbg.ReadCid(cr)
-		if err != nil {
-			return xerrors.Errorf("failed to read cid field t.MessageToActorCode: %w", err)
-		}
-
-		t.MessageToActorCode = c
-
-	}
 	// t.ExitCode (exitcode.ExitCode) (int64)
 	{
 		maj, extra, err := cr.ReadHeader()
@@ -940,7 +878,7 @@ func (t *Receipt) UnmarshalCBOR(r io.Reader) (err error) {
 
 		t.ExitCode = exitcode.ExitCode(extraI)
 	}
-	// t.Index (int64) (int64)
+	// t.ReceiptIndex (int64) (int64)
 	{
 		maj, extra, err := cr.ReadHeader()
 		var extraI int64
@@ -963,7 +901,7 @@ func (t *Receipt) UnmarshalCBOR(r io.Reader) (err error) {
 			return fmt.Errorf("wrong type for int64 field: %d", maj)
 		}
 
-		t.Index = int64(extraI)
+		t.ReceiptIndex = int64(extraI)
 	}
 	// t.GasUsed (int64) (int64)
 	{
@@ -1009,6 +947,478 @@ func (t *Receipt) UnmarshalCBOR(r io.Reader) (err error) {
 	}
 
 	if _, err := io.ReadFull(cr, t.Return[:]); err != nil {
+		return err
+	}
+	// t.ParentBaseFee (big.Int) (struct)
+
+	{
+
+		if err := t.ParentBaseFee.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.ParentBaseFee: %w", err)
+		}
+
+	}
+	// t.BaseFeeBurn (big.Int) (struct)
+
+	{
+
+		if err := t.BaseFeeBurn.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.BaseFeeBurn: %w", err)
+		}
+
+	}
+	// t.OverEstimationBurn (big.Int) (struct)
+
+	{
+
+		if err := t.OverEstimationBurn.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.OverEstimationBurn: %w", err)
+		}
+
+	}
+	// t.MinerPenalty (big.Int) (struct)
+
+	{
+
+		if err := t.MinerPenalty.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.MinerPenalty: %w", err)
+		}
+
+	}
+	// t.MinerTip (big.Int) (struct)
+
+	{
+
+		if err := t.MinerTip.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.MinerTip: %w", err)
+		}
+
+	}
+	// t.Refund (big.Int) (struct)
+
+	{
+
+		if err := t.Refund.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.Refund: %w", err)
+		}
+
+	}
+	// t.GasRefund (int64) (int64)
+	{
+		maj, extra, err := cr.ReadHeader()
+		var extraI int64
+		if err != nil {
+			return err
+		}
+		switch maj {
+		case cbg.MajUnsignedInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 positive overflow")
+			}
+		case cbg.MajNegativeInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 negative oveflow")
+			}
+			extraI = -1 - extraI
+		default:
+			return fmt.Errorf("wrong type for int64 field: %d", maj)
+		}
+
+		t.GasRefund = int64(extraI)
+	}
+	// t.GasBurned (int64) (int64)
+	{
+		maj, extra, err := cr.ReadHeader()
+		var extraI int64
+		if err != nil {
+			return err
+		}
+		switch maj {
+		case cbg.MajUnsignedInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 positive overflow")
+			}
+		case cbg.MajNegativeInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 negative oveflow")
+			}
+			extraI = -1 - extraI
+		default:
+			return fmt.Errorf("wrong type for int64 field: %d", maj)
+		}
+
+		t.GasBurned = int64(extraI)
+	}
+	return nil
+}
+
+var lengthBufBlockMessage = []byte{143}
+
+func (t *BlockMessage) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+
+	if _, err := cw.Write(lengthBufBlockMessage); err != nil {
+		return err
+	}
+
+	// t.Height (abi.ChainEpoch) (int64)
+	if t.Height >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Height)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.Height-1)); err != nil {
+			return err
+		}
+	}
+
+	// t.StateRoot (cid.Cid) (struct)
+
+	if err := cbg.WriteCid(cw, t.StateRoot); err != nil {
+		return xerrors.Errorf("failed to write cid field t.StateRoot: %w", err)
+	}
+
+	// t.BlockCid (cid.Cid) (struct)
+
+	if err := cbg.WriteCid(cw, t.BlockCid); err != nil {
+		return xerrors.Errorf("failed to write cid field t.BlockCid: %w", err)
+	}
+
+	// t.MessageCid (cid.Cid) (struct)
+
+	if err := cbg.WriteCid(cw, t.MessageCid); err != nil {
+		return xerrors.Errorf("failed to write cid field t.MessageCid: %w", err)
+	}
+
+	// t.From (address.Address) (struct)
+	if err := t.From.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.To (address.Address) (struct)
+	if err := t.To.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.Value (big.Int) (struct)
+	if err := t.Value.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.GasFeeCap (big.Int) (struct)
+	if err := t.GasFeeCap.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.GasPremium (big.Int) (struct)
+	if err := t.GasPremium.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.SizeBytes (int64) (int64)
+	if t.SizeBytes >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.SizeBytes)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.SizeBytes-1)); err != nil {
+			return err
+		}
+	}
+
+	// t.GasLimit (int64) (int64)
+	if t.GasLimit >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.GasLimit)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.GasLimit-1)); err != nil {
+			return err
+		}
+	}
+
+	// t.Nonce (uint64) (uint64)
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Nonce)); err != nil {
+		return err
+	}
+
+	// t.Method (abi.MethodNum) (uint64)
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Method)); err != nil {
+		return err
+	}
+
+	// t.MessageVersion (uint64) (uint64)
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.MessageVersion)); err != nil {
+		return err
+	}
+
+	// t.Params ([]uint8) (slice)
+	if len(t.Params) > cbg.ByteArrayMaxLen {
+		return xerrors.Errorf("Byte array in field t.Params was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Params))); err != nil {
+		return err
+	}
+
+	if _, err := cw.Write(t.Params[:]); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *BlockMessage) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = BlockMessage{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajArray {
+		return fmt.Errorf("cbor input should be of type array")
+	}
+
+	if extra != 15 {
+		return fmt.Errorf("cbor input had wrong number of fields")
+	}
+
+	// t.Height (abi.ChainEpoch) (int64)
+	{
+		maj, extra, err := cr.ReadHeader()
+		var extraI int64
+		if err != nil {
+			return err
+		}
+		switch maj {
+		case cbg.MajUnsignedInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 positive overflow")
+			}
+		case cbg.MajNegativeInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 negative oveflow")
+			}
+			extraI = -1 - extraI
+		default:
+			return fmt.Errorf("wrong type for int64 field: %d", maj)
+		}
+
+		t.Height = abi.ChainEpoch(extraI)
+	}
+	// t.StateRoot (cid.Cid) (struct)
+
+	{
+
+		c, err := cbg.ReadCid(cr)
+		if err != nil {
+			return xerrors.Errorf("failed to read cid field t.StateRoot: %w", err)
+		}
+
+		t.StateRoot = c
+
+	}
+	// t.BlockCid (cid.Cid) (struct)
+
+	{
+
+		c, err := cbg.ReadCid(cr)
+		if err != nil {
+			return xerrors.Errorf("failed to read cid field t.BlockCid: %w", err)
+		}
+
+		t.BlockCid = c
+
+	}
+	// t.MessageCid (cid.Cid) (struct)
+
+	{
+
+		c, err := cbg.ReadCid(cr)
+		if err != nil {
+			return xerrors.Errorf("failed to read cid field t.MessageCid: %w", err)
+		}
+
+		t.MessageCid = c
+
+	}
+	// t.From (address.Address) (struct)
+
+	{
+
+		if err := t.From.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.From: %w", err)
+		}
+
+	}
+	// t.To (address.Address) (struct)
+
+	{
+
+		if err := t.To.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.To: %w", err)
+		}
+
+	}
+	// t.Value (big.Int) (struct)
+
+	{
+
+		if err := t.Value.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.Value: %w", err)
+		}
+
+	}
+	// t.GasFeeCap (big.Int) (struct)
+
+	{
+
+		if err := t.GasFeeCap.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.GasFeeCap: %w", err)
+		}
+
+	}
+	// t.GasPremium (big.Int) (struct)
+
+	{
+
+		if err := t.GasPremium.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.GasPremium: %w", err)
+		}
+
+	}
+	// t.SizeBytes (int64) (int64)
+	{
+		maj, extra, err := cr.ReadHeader()
+		var extraI int64
+		if err != nil {
+			return err
+		}
+		switch maj {
+		case cbg.MajUnsignedInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 positive overflow")
+			}
+		case cbg.MajNegativeInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 negative oveflow")
+			}
+			extraI = -1 - extraI
+		default:
+			return fmt.Errorf("wrong type for int64 field: %d", maj)
+		}
+
+		t.SizeBytes = int64(extraI)
+	}
+	// t.GasLimit (int64) (int64)
+	{
+		maj, extra, err := cr.ReadHeader()
+		var extraI int64
+		if err != nil {
+			return err
+		}
+		switch maj {
+		case cbg.MajUnsignedInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 positive overflow")
+			}
+		case cbg.MajNegativeInt:
+			extraI = int64(extra)
+			if extraI < 0 {
+				return fmt.Errorf("int64 negative oveflow")
+			}
+			extraI = -1 - extraI
+		default:
+			return fmt.Errorf("wrong type for int64 field: %d", maj)
+		}
+
+		t.GasLimit = int64(extraI)
+	}
+	// t.Nonce (uint64) (uint64)
+
+	{
+
+		maj, extra, err = cr.ReadHeader()
+		if err != nil {
+			return err
+		}
+		if maj != cbg.MajUnsignedInt {
+			return fmt.Errorf("wrong type for uint64 field")
+		}
+		t.Nonce = uint64(extra)
+
+	}
+	// t.Method (abi.MethodNum) (uint64)
+
+	{
+
+		maj, extra, err = cr.ReadHeader()
+		if err != nil {
+			return err
+		}
+		if maj != cbg.MajUnsignedInt {
+			return fmt.Errorf("wrong type for uint64 field")
+		}
+		t.Method = abi.MethodNum(extra)
+
+	}
+	// t.MessageVersion (uint64) (uint64)
+
+	{
+
+		maj, extra, err = cr.ReadHeader()
+		if err != nil {
+			return err
+		}
+		if maj != cbg.MajUnsignedInt {
+			return fmt.Errorf("wrong type for uint64 field")
+		}
+		t.MessageVersion = uint64(extra)
+
+	}
+	// t.Params ([]uint8) (slice)
+
+	maj, extra, err = cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+
+	if extra > cbg.ByteArrayMaxLen {
+		return fmt.Errorf("t.Params: byte array too large (%d)", extra)
+	}
+	if maj != cbg.MajByteString {
+		return fmt.Errorf("expected byte array")
+	}
+
+	if extra > 0 {
+		t.Params = make([]uint8, extra)
+	}
+
+	if _, err := io.ReadFull(cr, t.Params[:]); err != nil {
 		return err
 	}
 	return nil

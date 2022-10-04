@@ -15,8 +15,8 @@ import (
 func main() {
 	err := typegen.WriteTupleEncodersToFile("./model/v2/messages/cbor_gen.go", "messages",
 		messages.VMMessage{},
-		messages.Message{},
-		messages.Receipt{},
+		messages.ExecutedMessage{},
+		messages.BlockMessage{},
 	)
 	if err != nil {
 		fmt.Println(err)
