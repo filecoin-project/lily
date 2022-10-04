@@ -69,6 +69,5 @@ func (s *SectorInfoTransform) ModelType() v2.ModelMeta {
 }
 
 func (s *SectorInfoTransform) Name() string {
-	info := SectorInfoTransform{}
-	return reflect.TypeOf(info).Name()
+	return reflect.TypeOf(SectorInfoTransform{}).Name()
 }
