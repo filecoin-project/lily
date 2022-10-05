@@ -38,7 +38,7 @@ LILY_TEST_DB="postgres://username@localhost/lily_test?sslmode=disable" go test .
 
 ## Metrics, tracing and debugging
 
-See https://lilium.sh/lily/operation#metrics-tracing-and-debugging.
+See https://lilium.sh/software/lily/operation/#metrics--debugging.
 
 ## Versioning and Releases
 
