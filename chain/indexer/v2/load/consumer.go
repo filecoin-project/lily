@@ -25,6 +25,7 @@ type Router struct {
 	handlerChannels []chan transform.Result
 	handlerGrp      *errgroup.Group
 	handlers        []Handler
+	count           int64
 }
 
 func NewRouter(handlers ...Handler) (*Router, error) {
@@ -41,7 +42,7 @@ func NewRouter(handlers ...Handler) (*Router, error) {
 		// list of all handlers
 		routerHandlers = append(routerHandlers, handler)
 		// init handler channel
-		handlerChans[i] = make(chan transform.Result, 8) // TODO buffer
+		handlerChans[i] = make(chan transform.Result, 1024) // TODO buffer
 		//register handler topic with bus
 		b.Bus.RegisterTopics(string(handler.Type()))
 		hch := handlerChans[i]
@@ -82,11 +83,12 @@ func (r *Router) Stop() error {
 	log.Info("closed handler channels")
 	err := r.handlerGrp.Wait()
 	log.Infow("handlers completed", "error", err)
-	log.Info("router stopped")
+	log.Infow("router stopped", "count", r.count)
 	return err
 }
 
 func (r *Router) Route(ctx context.Context, data transform.Result) error {
+	r.count++
 	log.Debugw("routing data", "type", data.Kind())
 	return r.bus.Bus.Emit(ctx, string(data.Kind()), data)
 }

@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"math/big"
 	"reflect"
@@ -18,16 +19,16 @@ import (
 )
 
 type GasEconomyTransform struct {
-	Matcher v2.ModelMeta
+	meta v2.ModelMeta
 }
 
 func NewGasEconomyTransform() *GasEconomyTransform {
 	info := messages.BlockMessage{}
-	return &GasEconomyTransform{Matcher: info.Meta()}
+	return &GasEconomyTransform{meta: info.Meta()}
 }
 
 func (g *GasEconomyTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
-	log.Infof("run %s", g.Name())
+	log.Debugf("run %s", g.Name())
 	var (
 		seenMsgs          = cid.NewSet()
 		totalGasLimit     int64
@@ -38,7 +39,7 @@ func (g *GasEconomyTransform) Run(ctx context.Context, api tasks.DataSource, in 
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Infow("received data", "count", len(res.State().Data))
+			log.Debugw("received data", "count", len(res.State().Data))
 			// add up total and unique gas
 			for _, modeldata := range res.State().Data {
 				m := modeldata.(*messages.BlockMessage)
@@ -81,5 +82,9 @@ func (g *GasEconomyTransform) Name() string {
 }
 
 func (g *GasEconomyTransform) ModelType() v2.ModelMeta {
-	return g.Matcher
+	return g.meta
+}
+
+func (g *GasEconomyTransform) Matcher() string {
+	return fmt.Sprintf("^%s$", g.meta.String())
 }

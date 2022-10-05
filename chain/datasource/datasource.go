@@ -138,6 +138,10 @@ type DataSource struct {
 	diffPreCommitGroup singleflight.Group
 }
 
+func (t *DataSource) ChainReadObj(ctx context.Context, obj cid.Cid) ([]byte, error) {
+	return t.node.ChainReadObj(ctx, obj)
+}
+
 func (t *DataSource) ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi.TokenAmount, error) {
 	return t.node.ComputeBaseFee(ctx, ts)
 }

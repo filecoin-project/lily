@@ -1,6 +1,7 @@
 package messages
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"reflect"
@@ -10,6 +11,7 @@ import (
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/go-state-types/exitcode"
 	"github.com/filecoin-project/lotus/chain/types"
+	block "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/sync/errgroup"
@@ -66,6 +68,38 @@ func (t *VMMessage) ChainEpochTime() v2.ChainEpochTime {
 		Height:    t.Height,
 		StateRoot: t.StateRoot,
 	}
+}
+
+func (t *VMMessage) Serialize() ([]byte, error) {
+	buf := new(bytes.Buffer)
+	if err := t.MarshalCBOR(buf); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func (t *VMMessage) ToStorageBlock() (block.Block, error) {
+	data, err := t.Serialize()
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := abi.CidBuilder.Sum(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return block.NewBlockWithCid(data, c)
+}
+
+func (t *VMMessage) Cid() cid.Cid {
+	sb, err := t.ToStorageBlock()
+	if err != nil {
+		panic(err)
+	}
+
+	return sb.Cid()
 }
 
 func Extract(ctx context.Context, api tasks.DataSource, current *types.TipSet, executed *types.TipSet) ([]v2.LilyModel, error) {

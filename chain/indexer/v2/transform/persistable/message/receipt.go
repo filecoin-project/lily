@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
@@ -13,22 +14,22 @@ import (
 )
 
 type ReceiptTransform struct {
-	Matcher v2.ModelMeta
+	meta v2.ModelMeta
 }
 
 func NewReceiptTransform() *ReceiptTransform {
 	info := messages.ExecutedMessage{}
-	return &ReceiptTransform{Matcher: info.Meta()}
+	return &ReceiptTransform{meta: info.Meta()}
 }
 
 func (r *ReceiptTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
-	log.Infof("run %s", r.Name())
+	log.Debugf("run %s", r.Name())
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Infow("received data", "count", len(res.State().Data))
+			log.Debugw("received data", "count", len(res.State().Data))
 			sqlModels := make(messages2.Receipts, 0, len(res.State().Data))
 			for _, modeldata := range res.State().Data {
 				m := modeldata.(*messages.ExecutedMessage)
@@ -54,5 +55,9 @@ func (r *ReceiptTransform) Name() string {
 }
 
 func (r *ReceiptTransform) ModelType() v2.ModelMeta {
-	return r.Matcher
+	return r.meta
+}
+
+func (r *ReceiptTransform) Matcher() string {
+	return fmt.Sprintf("^%s$", r.meta.String())
 }

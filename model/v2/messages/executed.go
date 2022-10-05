@@ -1,6 +1,7 @@
 package messages
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"reflect"
@@ -9,6 +10,7 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/exitcode"
 	"github.com/filecoin-project/lotus/chain/types"
+	block "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	"golang.org/x/sync/errgroup"
 
@@ -76,6 +78,38 @@ func (t *ExecutedMessage) ChainEpochTime() v2.ChainEpochTime {
 		Height:    t.Height,
 		StateRoot: t.StateRoot,
 	}
+}
+
+func (t *ExecutedMessage) Serialize() ([]byte, error) {
+	buf := new(bytes.Buffer)
+	if err := t.MarshalCBOR(buf); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func (t *ExecutedMessage) ToStorageBlock() (block.Block, error) {
+	data, err := t.Serialize()
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := abi.CidBuilder.Sum(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return block.NewBlockWithCid(data, c)
+}
+
+func (t *ExecutedMessage) Cid() cid.Cid {
+	sb, err := t.ToStorageBlock()
+	if err != nil {
+		panic(err)
+	}
+
+	return sb.Cid()
 }
 
 func ExtractExecutedMessages(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet) ([]v2.LilyModel, error) {

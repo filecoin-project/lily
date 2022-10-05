@@ -1,6 +1,7 @@
 package precommitevent
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"reflect"
@@ -10,6 +11,7 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	"github.com/filecoin-project/lotus/chain/types"
+	block "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 
@@ -94,6 +96,38 @@ func (p *PreCommitEvent) ChainEpochTime() v2.ChainEpochTime {
 		Height:    p.Height,
 		StateRoot: p.StateRoot,
 	}
+}
+
+func (t *PreCommitEvent) Serialize() ([]byte, error) {
+	buf := new(bytes.Buffer)
+	if err := t.MarshalCBOR(buf); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func (t *PreCommitEvent) ToStorageBlock() (block.Block, error) {
+	data, err := t.Serialize()
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := abi.CidBuilder.Sum(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return block.NewBlockWithCid(data, c)
+}
+
+func (t *PreCommitEvent) Cid() cid.Cid {
+	sb, err := t.ToStorageBlock()
+	if err != nil {
+		panic(err)
+	}
+
+	return sb.Cid()
 }
 
 func Extract(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, a actorstate.ActorInfo) ([]v2.LilyModel, error) {

@@ -2,6 +2,7 @@ package block
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
@@ -13,12 +14,12 @@ import (
 )
 
 type DrandBlockEntryTransform struct {
-	Matcher v2.ModelMeta
+	meta v2.ModelMeta
 }
 
 func NewDrandBlockEntryTransform() *DrandBlockEntryTransform {
 	info := block.BlockHeader{}
-	return &DrandBlockEntryTransform{Matcher: info.Meta()}
+	return &DrandBlockEntryTransform{meta: info.Meta()}
 }
 
 func (b *DrandBlockEntryTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
@@ -47,10 +48,14 @@ func (b *DrandBlockEntryTransform) Run(ctx context.Context, api tasks.DataSource
 }
 
 func (b *DrandBlockEntryTransform) ModelType() v2.ModelMeta {
-	return b.Matcher
+	return b.meta
 }
 
 func (b *DrandBlockEntryTransform) Name() string {
 	info := DrandBlockEntryTransform{}
 	return reflect.TypeOf(info).Name()
+}
+
+func (b *DrandBlockEntryTransform) Matcher() string {
+	return fmt.Sprintf("^%s$", b.meta.String())
 }
