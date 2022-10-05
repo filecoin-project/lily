@@ -44,6 +44,7 @@ import (
 	v22 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/miner/precommitevent"
 	"github.com/filecoin-project/lily/model/v2/actors/miner/sectorevent"
+	"github.com/filecoin-project/lily/model/v2/actors/raw"
 	"github.com/filecoin-project/lily/model/v2/block"
 	"github.com/filecoin-project/lily/model/v2/messages"
 	"github.com/filecoin-project/lily/network"
@@ -162,7 +163,8 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 	executedmessage := messages.ExecutedMessage{}
 	chainmessage := messages.BlockMessage{}
 	vmmessage := messages.VMMessage{}
-	im := v2.NewIndexManager(strg, taskAPI, []v22.ModelMeta{event.Meta(), commitEvent.Meta(), blocks.Meta(), executedmessage.Meta(), vmmessage.Meta(), chainmessage.Meta()})
+	actors := raw.ActorState{}
+	im := v2.NewIndexManager(strg, taskAPI, []v22.ModelMeta{event.Meta(), commitEvent.Meta(), blocks.Meta(), executedmessage.Meta(), vmmessage.Meta(), chainmessage.Meta(), actors.Meta()})
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
 	/*
 		im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window), integrated.WithCborExporter(lms))

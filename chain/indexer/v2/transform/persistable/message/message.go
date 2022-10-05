@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/ipfs/go-cid"
@@ -15,23 +16,23 @@ import (
 )
 
 type MessageTransform struct {
-	Matcher v2.ModelMeta
+	meta v2.ModelMeta
 }
 
 func NewMessageTransform() *MessageTransform {
 	info := messages.BlockMessage{}
-	return &MessageTransform{Matcher: info.Meta()}
+	return &MessageTransform{meta: info.Meta()}
 }
 
 func (v *MessageTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
-	log.Info("run MessageTransform")
+	log.Debug("run MessageTransform")
 	seenMsg := cid.NewSet()
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Infow("received data", "count", len(res.State().Data))
+			log.Debugw("received data", "count", len(res.State().Data))
 			sqlModels := make(messages2.Messages, 0, len(res.State().Data))
 			for _, modeldata := range res.State().Data {
 				m := modeldata.(*messages.BlockMessage)
@@ -58,10 +59,14 @@ func (v *MessageTransform) Run(ctx context.Context, api tasks.DataSource, in cha
 }
 
 func (v *MessageTransform) ModelType() v2.ModelMeta {
-	return v.Matcher
+	return v.meta
 }
 
 func (v *MessageTransform) Name() string {
 	info := MessageTransform{}
 	return reflect.TypeOf(info).Name()
+}
+
+func (v *MessageTransform) Matcher() string {
+	return fmt.Sprintf("^%s$", v.meta.String())
 }

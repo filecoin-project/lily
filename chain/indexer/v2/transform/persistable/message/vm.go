@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	logging "github.com/ipfs/go-log/v2"
@@ -18,22 +19,22 @@ import (
 var log = logging.Logger("transform/message")
 
 type VMMessageTransform struct {
-	Matcher v2.ModelMeta
+	meta v2.ModelMeta
 }
 
 func NewVMMessageTransform() *VMMessageTransform {
 	info := messages.VMMessage{}
-	return &VMMessageTransform{Matcher: info.Meta()}
+	return &VMMessageTransform{meta: info.Meta()}
 }
 
 func (v *VMMessageTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
-	log.Info("run VMMessageTransform")
+	log.Debug("run VMMessageTransform")
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Infow("received data", "count", len(res.State().Data))
+			log.Debugw("received data", "count", len(res.State().Data))
 			sqlModels := make(messages2.VMMessageList, len(res.State().Data))
 			for i, modeldata := range res.State().Data {
 				m := modeldata.(*messages.VMMessage)
@@ -75,10 +76,14 @@ func (v *VMMessageTransform) Run(ctx context.Context, api tasks.DataSource, in c
 }
 
 func (v *VMMessageTransform) ModelType() v2.ModelMeta {
-	return v.Matcher
+	return v.meta
 }
 
 func (v *VMMessageTransform) Name() string {
 	info := VMMessageTransform{}
 	return reflect.TypeOf(info).Name()
+}
+
+func (v *VMMessageTransform) Matcher() string {
+	return fmt.Sprintf("^%s$", v.meta.String())
 }

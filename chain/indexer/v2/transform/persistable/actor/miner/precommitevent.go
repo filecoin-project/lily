@@ -2,6 +2,7 @@ package miner
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
@@ -13,16 +14,16 @@ import (
 )
 
 type PrecommitEventTransformer struct {
-	Matcher v2.ModelMeta
+	meta v2.ModelMeta
 }
 
 func NewPrecommitEventTransformer() *PrecommitEventTransformer {
 	info := precommitevent.PreCommitEvent{}
-	return &PrecommitEventTransformer{Matcher: info.Meta()}
+	return &PrecommitEventTransformer{meta: info.Meta()}
 }
 
 func (s *PrecommitEventTransformer) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
-	log.Info("run PrecommitEventTransformer")
+	log.Debug("run PrecommitEventTransformer")
 	for res := range in {
 		select {
 		case <-ctx.Done():
@@ -52,10 +53,14 @@ func (s *PrecommitEventTransformer) Run(ctx context.Context, api tasks.DataSourc
 }
 
 func (s *PrecommitEventTransformer) ModelType() v2.ModelMeta {
-	return s.Matcher
+	return s.meta
 }
 
 func (s *PrecommitEventTransformer) Name() string {
 	info := PrecommitEventTransformer{}
 	return reflect.TypeOf(info).Name()
+}
+
+func (s *PrecommitEventTransformer) Matcher() string {
+	return fmt.Sprintf("^%s$", s.meta.String())
 }

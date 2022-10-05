@@ -168,8 +168,14 @@ func (t *SectorEvent) MarshalCBOR(w io.Writer) error {
 
 	// t.SectorKeyCID (cid.Cid) (struct)
 
-	if err := cbg.WriteCid(cw, t.SectorKeyCID); err != nil {
-		return xerrors.Errorf("failed to write cid field t.SectorKeyCID: %w", err)
+	if t.SectorKeyCID == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.SectorKeyCID); err != nil {
+			return xerrors.Errorf("failed to write cid field t.SectorKeyCID: %w", err)
+		}
 	}
 
 	return nil
@@ -486,12 +492,22 @@ func (t *SectorEvent) UnmarshalCBOR(r io.Reader) (err error) {
 
 	{
 
-		c, err := cbg.ReadCid(cr)
+		b, err := cr.ReadByte()
 		if err != nil {
-			return xerrors.Errorf("failed to read cid field t.SectorKeyCID: %w", err)
+			return err
 		}
+		if b != cbg.CborNull[0] {
+			if err := cr.UnreadByte(); err != nil {
+				return err
+			}
 
-		t.SectorKeyCID = c
+			c, err := cbg.ReadCid(cr)
+			if err != nil {
+				return xerrors.Errorf("failed to read cid field t.SectorKeyCID: %w", err)
+			}
+
+			t.SectorKeyCID = &c
+		}
 
 	}
 	return nil

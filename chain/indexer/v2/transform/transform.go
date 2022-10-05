@@ -2,7 +2,6 @@ package transform
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
@@ -36,13 +35,20 @@ type Handler interface {
 	Run(ctx context.Context, api tasks.DataSource, in chan IndexState, out chan Result) error
 	Name() string
 	ModelType() v2.ModelMeta
+	Matcher() string
 }
 
-func NewRouter(handlers ...Handler) (*Router, error) {
+func NewRouter(topics []v2.ModelMeta, handlers ...Handler) (*Router, error) {
 	b, err := bus.NewBus()
 	if err != nil {
 		return nil, err
 	}
+
+	// register topics with the bus
+	for _, t := range topics {
+		b.Bus.RegisterTopics(t.String())
+	}
+
 	handlerChans := make([]chan IndexState, len(handlers))
 	routerHandlers := make([]Handler, len(handlers))
 	registry := make(map[v2.ModelMeta][]Handler)
@@ -52,9 +58,7 @@ func NewRouter(handlers ...Handler) (*Router, error) {
 		// maintain list of handlers
 		routerHandlers[i] = handler
 		// initialize handler channel
-		handlerChans[i] = make(chan IndexState, 8) // TODO buffer channel
-		// register the handle topic with the bus
-		b.Bus.RegisterTopics(handler.ModelType().String())
+		handlerChans[i] = make(chan IndexState, 256)
 		// register handler for its required model, all models the hander can process are sent on its channel
 		hch := handlerChans[i]
 		b.Bus.RegisterHandler(handler.Name(), evntbus.Handler{
@@ -62,13 +66,13 @@ func NewRouter(handlers ...Handler) (*Router, error) {
 				hch <- e.Data.(IndexState)
 			},
 			// TODO fix this annoying shit, make your own damn bus, this one is falling a bit short..
-			Matcher: fmt.Sprintf("^%s$", handler.ModelType().String()),
+			Matcher: handler.Matcher(),
 		})
 	}
 	return &Router{
 		registry:        registry,
 		bus:             b,
-		resultCh:        make(chan Result, len(routerHandlers)), // TODO buffer channel
+		resultCh:        make(chan Result, 1024),
 		handlerChannels: handlerChans,
 		handlerGrp:      &errgroup.Group{},
 		handlers:        routerHandlers,
@@ -82,6 +86,7 @@ type Router struct {
 	handlerChannels []chan IndexState
 	handlerGrp      *errgroup.Group
 	handlers        []Handler
+	count           int64
 }
 
 func (r *Router) Start(ctx context.Context, api tasks.DataSource) {
@@ -108,11 +113,12 @@ func (r *Router) Stop() error {
 	log.Infow("handlers completed", "error", err)
 	// close the output channel signaling there are no more results to handle.
 	close(r.resultCh)
-	log.Info("router stopped")
+	log.Infow("router stopped", "count", r.count)
 	return err
 }
 
 func (r *Router) Route(ctx context.Context, data IndexState) error {
+	r.count++
 	log.Debugw("routing data", "type", data.Task().String())
 	return r.bus.Bus.Emit(ctx, data.Task().String(), data)
 }

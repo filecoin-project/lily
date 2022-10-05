@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/filecoin-project/go-state-types/exitcode"
@@ -16,22 +17,22 @@ import (
 )
 
 type ParsedMessageTransform struct {
-	Matcher v2.ModelMeta
+	meta v2.ModelMeta
 }
 
 func NewParsedMessageTransform() *ParsedMessageTransform {
 	info := messages.ExecutedMessage{}
-	return &ParsedMessageTransform{Matcher: info.Meta()}
+	return &ParsedMessageTransform{meta: info.Meta()}
 }
 
 func (p *ParsedMessageTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
-	log.Info("run ParsedMessageTransform")
+	log.Debug("run ParsedMessageTransform")
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Infow("received data", "count", len(res.State().Data))
+			log.Debugw("received data", "count", len(res.State().Data))
 			sqlModels := make(messages2.ParsedMessages, 0, len(res.State().Data))
 			for _, modeldata := range res.State().Data {
 				m := modeldata.(*messages.ExecutedMessage)
@@ -78,5 +79,9 @@ func (p *ParsedMessageTransform) Name() string {
 }
 
 func (p *ParsedMessageTransform) ModelType() v2.ModelMeta {
-	return p.Matcher
+	return p.meta
+}
+
+func (p *ParsedMessageTransform) Matcher() string {
+	return fmt.Sprintf("^%s$", p.meta.String())
 }

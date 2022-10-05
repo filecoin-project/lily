@@ -30,14 +30,15 @@ type ModelMeta struct {
 	Kind    ModelKind
 }
 
-const modelMetaSeparator = "@v"
+const modelMetaVersionSeparator = "@v"
+const modelMetaKindSeparator = ":"
 
 func (mm ModelMeta) String() string {
-	return fmt.Sprintf("%s%s%d", mm.Type, modelMetaSeparator, mm.Version)
+	return fmt.Sprintf("%s%s%s%s%d", mm.Kind, modelMetaKindSeparator, mm.Type, modelMetaVersionSeparator, mm.Version)
 }
 
 func DecodeModelMeta(str string) (ModelMeta, error) {
-	tokens := strings.Split(str, modelMetaSeparator)
+	tokens := strings.Split(str, modelMetaVersionSeparator)
 	if len(tokens) != 2 {
 		return ModelMeta{}, fmt.Errorf("invalid")
 	}
@@ -53,6 +54,7 @@ func DecodeModelMeta(str string) (ModelMeta, error) {
 }
 
 type LilyModel interface {
+	Cid() cid.Cid
 	cbor.Er
 	Meta() ModelMeta
 	ChainEpochTime() ChainEpochTime

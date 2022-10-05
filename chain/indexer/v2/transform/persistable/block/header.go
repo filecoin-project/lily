@@ -2,6 +2,7 @@ package block
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
@@ -13,12 +14,12 @@ import (
 )
 
 type BlockHeaderTransform struct {
-	Matcher v2.ModelMeta
+	meta v2.ModelMeta
 }
 
 func NewBlockHeaderTransform() *BlockHeaderTransform {
 	info := block.BlockHeader{}
-	return &BlockHeaderTransform{Matcher: info.Meta()}
+	return &BlockHeaderTransform{meta: info.Meta()}
 }
 
 func (b *BlockHeaderTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
@@ -51,10 +52,14 @@ func (b *BlockHeaderTransform) Run(ctx context.Context, api tasks.DataSource, in
 }
 
 func (b *BlockHeaderTransform) ModelType() v2.ModelMeta {
-	return b.Matcher
+	return b.meta
 }
 
 func (b *BlockHeaderTransform) Name() string {
 	info := BlockHeaderTransform{}
 	return reflect.TypeOf(info).Name()
+}
+
+func (b *BlockHeaderTransform) Matcher() string {
+	return fmt.Sprintf("^%s$", b.meta.String())
 }

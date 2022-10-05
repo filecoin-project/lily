@@ -9,9 +9,12 @@ import (
 
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load"
+	cborable2 "github.com/filecoin-project/lily/chain/indexer/v2/load/cborable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load/persistable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/cborable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/miner"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/raw"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/block"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/message"
 	"github.com/filecoin-project/lily/model"
@@ -46,6 +49,11 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 
 	transformer, consumer, err := m.startRouters(ctx,
 		[]transform.Handler{
+			cborable.NewCborTransform(),
+			raw.NewActorTransform(),
+
+			raw.NewActorStateTransform(),
+
 			miner.NewSectorInfoTransform(),
 			miner.NewPrecommitEventTransformer(),
 			miner.NewSectorEventTransformer(),
@@ -64,7 +72,10 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 			block.NewBlockParentsTransform(),
 			block.NewDrandBlockEntryTransform(),
 		},
-		[]load.Handler{&persistable.PersistableResultConsumer{Strg: m.strg}})
+		[]load.Handler{
+			&persistable.PersistableResultConsumer{Strg: m.strg},
+			&cborable2.CarResultConsumer{}},
+	)
 	if err != nil {
 		return false, err
 	}
@@ -108,7 +119,7 @@ type Loader interface {
 }
 
 func (m *Manager) startRouters(ctx context.Context, handlers []transform.Handler, consumers []load.Handler) (Transformer, Loader, error) {
-	tr, err := transform.NewRouter(handlers...)
+	tr, err := transform.NewRouter(m.tasks, handlers...)
 	if err != nil {
 		return nil, nil, err
 	}

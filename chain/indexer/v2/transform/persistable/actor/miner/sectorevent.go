@@ -2,6 +2,7 @@ package miner
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	logging "github.com/ipfs/go-log/v2"
@@ -17,22 +18,22 @@ import (
 var log = logging.Logger("transform/sectorevents")
 
 type SectorEventTransformer struct {
-	Matcher v2.ModelMeta
+	meta v2.ModelMeta
 }
 
 func NewSectorEventTransformer() *SectorEventTransformer {
 	info := sectorevent.SectorEvent{}
-	return &SectorEventTransformer{Matcher: info.Meta()}
+	return &SectorEventTransformer{meta: info.Meta()}
 }
 
 func (s *SectorEventTransformer) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
-	log.Info("run SectorEventTransformer")
+	log.Debug("run SectorEventTransformer")
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Infow("SectorEventTransformer received data", "count", len(res.State().Data))
+			log.Debugw("SectorEventTransformer received data", "count", len(res.State().Data))
 			sqlModels := make(minermodel.MinerSectorEventList, len(res.State().Data))
 			for i, modeldata := range res.State().Data {
 				se := modeldata.(*sectorevent.SectorEvent)
@@ -53,10 +54,14 @@ func (s *SectorEventTransformer) Run(ctx context.Context, api tasks.DataSource, 
 }
 
 func (s *SectorEventTransformer) ModelType() v2.ModelMeta {
-	return s.Matcher
+	return s.meta
 }
 
 func (s *SectorEventTransformer) Name() string {
 	info := SectorEventTransformer{}
 	return reflect.TypeOf(info).Name()
+}
+
+func (s *SectorEventTransformer) Matcher() string {
+	return fmt.Sprintf("^%s$", s.meta.String())
 }

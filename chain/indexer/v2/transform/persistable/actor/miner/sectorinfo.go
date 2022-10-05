@@ -2,6 +2,7 @@ package miner
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
@@ -13,16 +14,16 @@ import (
 )
 
 type SectorInfoTransform struct {
-	Matcher v2.ModelMeta
+	meta v2.ModelMeta
 }
 
 func NewSectorInfoTransform() *SectorInfoTransform {
 	info := sectorevent.SectorEvent{}
-	return &SectorInfoTransform{Matcher: info.Meta()}
+	return &SectorInfoTransform{meta: info.Meta()}
 }
 
 func (s *SectorInfoTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
-	log.Info("run SectorInfoTransformer")
+	log.Debug("run SectorInfoTransformer")
 	for res := range in {
 		select {
 		case <-ctx.Done():
@@ -37,7 +38,7 @@ func (s *SectorInfoTransform) Run(ctx context.Context, api tasks.DataSource, in 
 					continue
 				}
 				sectorKeyCID := ""
-				if si.SectorKeyCID.Defined() {
+				if si.SectorKeyCID != nil {
 					sectorKeyCID = si.SectorKeyCID.String()
 				}
 				sqlModels = append(sqlModels, &minermodel.MinerSectorInfoV7{
@@ -65,9 +66,13 @@ func (s *SectorInfoTransform) Run(ctx context.Context, api tasks.DataSource, in 
 }
 
 func (s *SectorInfoTransform) ModelType() v2.ModelMeta {
-	return s.Matcher
+	return s.meta
 }
 
 func (s *SectorInfoTransform) Name() string {
 	return reflect.TypeOf(SectorInfoTransform{}).Name()
+}
+
+func (s *SectorInfoTransform) Matcher() string {
+	return fmt.Sprintf("^%s$", s.meta.String())
 }

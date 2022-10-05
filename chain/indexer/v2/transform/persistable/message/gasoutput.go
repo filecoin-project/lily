@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
@@ -14,22 +15,22 @@ import (
 )
 
 type GasOutputTransform struct {
-	Matcher v2.ModelMeta
+	meta v2.ModelMeta
 }
 
 func NewGasOutputTransform() *GasOutputTransform {
 	info := messages.ExecutedMessage{}
-	return &GasOutputTransform{Matcher: info.Meta()}
+	return &GasOutputTransform{meta: info.Meta()}
 }
 
 func (g *GasOutputTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
-	log.Infof("run %s", g.Name())
+	log.Debugf("run %s", g.Name())
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Infow("received data", "count", len(res.State().Data))
+			log.Debugw("received data", "count", len(res.State().Data))
 			sqlModels := make(derivedmodel.GasOutputsList, 0, len(res.State().Data))
 			for _, modeldata := range res.State().Data {
 				m := modeldata.(*messages.ExecutedMessage)
@@ -76,5 +77,9 @@ func (g *GasOutputTransform) Name() string {
 }
 
 func (g *GasOutputTransform) ModelType() v2.ModelMeta {
-	return g.Matcher
+	return g.meta
+}
+
+func (g *GasOutputTransform) Matcher() string {
+	return fmt.Sprintf("^%s$", g.meta.String())
 }

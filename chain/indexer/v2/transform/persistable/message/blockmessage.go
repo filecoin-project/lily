@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
@@ -13,22 +14,22 @@ import (
 )
 
 type BlockMessageTransform struct {
-	Matcher v2.ModelMeta
+	meta v2.ModelMeta
 }
 
 func NewBlockMessageTransform() *BlockMessageTransform {
 	info := messages.BlockMessage{}
-	return &BlockMessageTransform{Matcher: info.Meta()}
+	return &BlockMessageTransform{meta: info.Meta()}
 }
 
 func (b *BlockMessageTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
-	log.Infof("run %s", b.Name())
+	log.Debugf("run %s", b.Name())
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Infow("received data", "count", len(res.State().Data))
+			log.Debugw("received data", "count", len(res.State().Data))
 			sqlModels := make(messages2.BlockMessages, 0, len(res.State().Data))
 			for _, modeldata := range res.State().Data {
 				m := modeldata.(*messages.BlockMessage)
@@ -53,5 +54,9 @@ func (b *BlockMessageTransform) Name() string {
 }
 
 func (b *BlockMessageTransform) ModelType() v2.ModelMeta {
-	return b.Matcher
+	return b.meta
+}
+
+func (b *BlockMessageTransform) Matcher() string {
+	return fmt.Sprintf("^%s$", b.meta.String())
 }

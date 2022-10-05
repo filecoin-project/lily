@@ -1,6 +1,7 @@
 package sectorevent
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"reflect"
@@ -10,6 +11,7 @@ import (
 	"github.com/filecoin-project/go-bitfield"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
+	block "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/sync/errgroup"
@@ -21,11 +23,37 @@ import (
 	"github.com/filecoin-project/lily/tasks/actorstate/miner/extraction"
 )
 
-// TODO: this extractor is overloaded. It should be broken up into two parts, one for Precommit events and one for Sector events
-// the resulting structures should contain the full precommit/sector on-chain info structure.
-// doing this will allow the sectors, precomit, and sector deals extractors to move to transformers than process these event types.
-
 var log = logging.Logger("sectorevents")
+
+// TODO bug:
+/*
+2022-10-04T18:36:33.874-0700    INFO    transform       transform/transform.go:116      router stopped  {"count": 454}
+2022-10-04T18:36:33.874-0700    INFO    load    load/consumer.go:79     stopping router
+2022-10-04T18:36:33.874-0700    INFO    load    load/consumer.go:83     closed handler channels
+2022-10-04T18:36:39.259-0700    INFO    load/car        cborable/car.go:171     modelMap        {"model": "tipset:ExecutedMessage@v1", "root": "bafy2bzacechuabt52362nn63dezti6senn5gf4nvp365rduslm3rsiir6vu2g"}
+2022-10-04T18:36:39.259-0700    INFO    load/car        cborable/car.go:171     modelMap        {"model": "tipset:BlockHeader@v1", "root": "bafy2bzacead3qpk5ucowqxmg7piufjh2ssplodtbpebluc7zxp3omnlwckhtu"}
+2022-10-04T18:36:39.259-0700    INFO    load/car        cborable/car.go:171     modelMap        {"model": "actor:ActorState@v1", "root": "bafy2bzacedjym4a5pv7a6q5x4whfiqrtu4cojmml4osntutnjt2zt5fakxda4"}
+2022-10-04T18:36:39.260-0700    INFO    load/car        cborable/car.go:171     modelMap        {"model": "actor:PreCommitEvent@v1", "root": "bafy2bzacedw2lu2kwszfzxbh2litvmb6fqjm2pqbvhvhufdj4czb36d2k75d6"}
+2022-10-04T18:36:39.262-0700    INFO    load/car        cborable/car.go:171     modelMap        {"model": "actor:SectorEvent@v1", "root": "bafy2bzacebh4lk3rbpftbckg4z5fsxkzv4xaphcoohhr5q2ixoiwybqtn3rku"}
+2022-10-04T18:36:39.266-0700    INFO    load/car        cborable/car.go:171     modelMap        {"model": "tipset:BlockMessage@v1", "root": "bafy2bzacedubvk4z4wrbayxzze3e6fozlpx5ffcdydphaktbnahphg7kvqgzu"}
+2022-10-04T18:36:39.266-0700    INFO    load/car        cborable/car.go:171     modelMap        {"model": "tipset:VMMessage@v1", "root": "bafy2bzaceczbtwawza2cl6vjlsbepm66skoysr53xnyvwsk4szc3r2scretwq"}
+2022-10-04T18:36:39.266-0700    INFO    load/car        cborable/car.go:182     finalized model root    {"root": "bafy2bzacecvnb2hstn7kzlsowqhsmbcmjnazuvg7xokrl3gawlfrvxqeptvuy"}
+2022-10-04T18:36:39.266-0700    INFO    load/car        cborable/car.go:62      finalized model map     {"root": "bafy2bzacecs3gmidulcxi3oekvk57thbsqvn3zoe5yt77lk5sdhvhednnaa6a"}
+
+2022-10-04T18:35:58.774-0700    INFO    transform       transform/transform.go:116      router stopped  {"count": 455}
+2022-10-04T18:35:58.774-0700    INFO    load    load/consumer.go:79     stopping router
+2022-10-04T18:35:58.774-0700    INFO    load    load/consumer.go:83     closed handler channels
+2022-10-04T18:36:03.801-0700    INFO    load/car        cborable/car.go:171     modelMap        {"model": "tipset:ExecutedMessage@v1", "root": "bafy2bzacechuabt52362nn63dezti6senn5gf4nvp365rduslm3rsiir6vu2g"}
+2022-10-04T18:36:03.801-0700    INFO    load/car        cborable/car.go:171     modelMap        {"model": "tipset:BlockHeader@v1", "root": "bafy2bzacead3qpk5ucowqxmg7piufjh2ssplodtbpebluc7zxp3omnlwckhtu"}
+2022-10-04T18:36:03.801-0700    INFO    load/car        cborable/car.go:171     modelMap        {"model": "actor:ActorState@v1", "root": "bafy2bzacedjym4a5pv7a6q5x4whfiqrtu4cojmml4osntutnjt2zt5fakxda4"}
+2022-10-04T18:36:03.802-0700    INFO    load/car        cborable/car.go:171     modelMap        {"model": "actor:PreCommitEvent@v1", "root": "bafy2bzacedw2lu2kwszfzxbh2litvmb6fqjm2pqbvhvhufdj4czb36d2k75d6"}
+2022-10-04T18:36:03.802-0700    INFO    load/car        cborable/car.go:171     modelMap        {"model": "actor:SectorEvent@v1", "root": "bafy2bzacecp4mjk6dyjvavhduk3lnc2e5xx2uyclofhgfexpeq5hnvfr73kjo"}
+2022-10-04T18:36:03.808-0700    INFO    load/car        cborable/car.go:171     modelMap        {"model": "tipset:BlockMessage@v1", "root": "bafy2bzacedubvk4z4wrbayxzze3e6fozlpx5ffcdydphaktbnahphg7kvqgzu"}
+2022-10-04T18:36:03.808-0700    INFO    load/car        cborable/car.go:171     modelMap        {"model": "tipset:VMMessage@v1", "root": "bafy2bzaceczbtwawza2cl6vjlsbepm66skoysr53xnyvwsk4szc3r2scretwq"}
+2022-10-04T18:36:03.808-0700    INFO    load/car        cborable/car.go:182     finalized model root    {"root": "bafy2bzaceas7ej4c3kcqptszxt6lzppdfpxsyglm5t5o2mukoeuvluzcnhzqy"}
+2022-10-04T18:36:03.808-0700    INFO    load/car        cborable/car.go:62      finalized model map     {"root": "bafy2bzaceactaymmzwrlyruaypr7kyvizg5iqr2xqhohtugwsk4yrxwq6ptdw"}
+
+*/
 
 func init() {
 	// relate this model to its corresponding extractor
@@ -99,7 +127,7 @@ type SectorEvent struct {
 	ExpectedStoragePledge abi.TokenAmount
 	ReplacedSectorAge     abi.ChainEpoch
 	ReplacedDayReward     abi.TokenAmount
-	SectorKeyCID          cid.Cid
+	SectorKeyCID          *cid.Cid
 }
 
 func (t *SectorEvent) Meta() v2.ModelMeta {
@@ -115,6 +143,38 @@ func (t *SectorEvent) ChainEpochTime() v2.ChainEpochTime {
 		Height:    t.Height,
 		StateRoot: t.StateRoot,
 	}
+}
+
+func (t *SectorEvent) Serialize() ([]byte, error) {
+	buf := new(bytes.Buffer)
+	if err := t.MarshalCBOR(buf); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func (t *SectorEvent) ToStorageBlock() (block.Block, error) {
+	data, err := t.Serialize()
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := abi.CidBuilder.Sum(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return block.NewBlockWithCid(data, c)
+}
+
+func (t *SectorEvent) Cid() cid.Cid {
+	sb, err := t.ToStorageBlock()
+	if err != nil {
+		panic(err)
+	}
+
+	return sb.Cid()
 }
 
 func Extract(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, a actorstate.ActorInfo) ([]v2.LilyModel, error) {
@@ -182,6 +242,16 @@ func Extract(ctx context.Context, api tasks.DataSource, current, executed *types
 
 // ExtractSectorEvents transforms sectorChanges, preCommitChanges, and sectorStateChanges to a MinerSectorEventList.
 func ExtractSectorEvents(extState extraction.State, sectorChanges *miner.SectorChanges, sectorStateChanges *SectorStateEvents) ([]v2.LilyModel, error) {
+	log.Infow("sector changes",
+		"miner", extState.Address().String(),
+		"added", len(sectorChanges.Added),
+		"extended", len(sectorChanges.Extended),
+		"snapped", len(sectorChanges.Snapped),
+		"fault", len(sectorStateChanges.Faulted),
+		"removed", len(sectorStateChanges.Removed),
+		"recovered", len(sectorStateChanges.Recovered),
+		"recovering", len(sectorStateChanges.Recovering),
+	)
 	sectorStateEvents, err := ExtractMinerSectorStateEvents(extState, sectorStateChanges)
 	if err != nil {
 		return nil, err
@@ -193,14 +263,15 @@ func ExtractSectorEvents(extState extraction.State, sectorChanges *miner.SectorC
 	out = append(out, sectorEvents...)
 	out = append(out, sectorStateEvents...)
 
+	log.Infow("total events", "address", extState.Address().String(), "count", len(out))
 	return out, nil
 }
 
-func getSectorKey(s miner.SectorOnChainInfo) cid.Cid {
+func getSectorKey(s miner.SectorOnChainInfo) *cid.Cid {
 	if s.SectorKeyCID != nil {
-		return *s.SectorKeyCID
+		return s.SectorKeyCID
 	}
-	return cid.Undef
+	return nil
 }
 
 // ExtractMinerSectorStateEvents transforms the removed, recovering, faulted, and recovered sectors from `events` to a
@@ -506,6 +577,16 @@ type SectorStates struct {
 	Recovering bitfield.BitField
 }
 
+// TODO I think there may be a bug in LoadSectorState that causes to misscount things, see comment at top of file. Needs review on parallelism
+// I think I have fixed it but the logs indicating the bug are (pay attention to fault count):
+/*
+2022-10-04T18:56:25.130-0700    INFO    sectorevents    sectorevent/sectorevent.go:245  sector changes  {"miner": "f019104", "added": 0, "extended": 0, "snapped": 0, "fault": 0, "removed": 0, "recovered": 0, "recovering": 0}
+2022-10-04T18:55:44.993-0700    INFO    sectorevents    sectorevent/sectorevent.go:245  sector changes  {"miner": "f019104", "added": 0, "extended": 0, "snapped": 0, "fault": 1, "removed": 0, "recovered": 0, "recovering": 0}
+2022-10-04T18:56:25.130-0700    INFO    sectorevents    sectorevent/sectorevent.go:266  total events    {"address": "f019104", "count": 0}
+2022-10-04T18:55:44.993-0700    INFO    sectorevents    sectorevent/sectorevent.go:266  total events    {"address": "f019104", "count": 1}
+
+*/
+
 // LoadSectorState loads all sectors from a miners partitions and returns a SectorStates structure containing individual
 // bitfields for all active, live, faulty and recovering sector.
 func LoadSectorState(state miner.State) (*SectorStates, error) {
@@ -516,10 +597,12 @@ func LoadSectorState(state miner.State) (*SectorStates, error) {
 	faultyC := make(chan bitfield.BitField)
 	recoveringC := make(chan bitfield.BitField)
 	grp := errgroup.Group{}
-	if err := state.ForEachDeadline(func(_ uint64, dl miner.Deadline) error {
+	if err := state.ForEachDeadline(func(_ uint64, d miner.Deadline) error {
 		grp.Go(func() error {
-			return dl.ForEachPartition(func(_ uint64, part miner.Partition) error {
+			dl := d
+			return dl.ForEachPartition(func(_ uint64, p miner.Partition) error {
 				grp.Go(func() error {
+					part := p
 					active, err := part.ActiveSectors()
 					if err != nil {
 						return err
