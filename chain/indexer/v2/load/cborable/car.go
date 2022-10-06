@@ -2,15 +2,18 @@ package cborable
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"reflect"
 	"sort"
+	"strings"
 
 	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/v8/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"github.com/ipld/go-car/v2"
 	carbs "github.com/ipld/go-car/v2/blockstore"
 	typegen "github.com/whyrusleeping/cbor-gen"
 
@@ -71,19 +74,180 @@ func (c *CarResultConsumer) Consume(ctx context.Context, in chan transform.Resul
 }
 
 type ModelKeyer struct {
-	M v2.LilyModel
+	M v2.ModelMeta
 }
 
 func (m ModelKeyer) Key() string {
-	return m.M.Meta().String()
+	return m.M.String()
 }
 
 type TipsetKeyer struct {
-	T *types.TipSet
+	T types.TipSetKey
 }
 
 func (m TipsetKeyer) Key() string {
-	return m.T.Key().String()
+	return m.T.String()
+}
+
+type CarModelStore struct {
+	tsModelMmap map[types.TipSetKey]*adt.Multimap
+	ro          *carbs.ReadOnly
+}
+
+func NewModelStoreFromCAR(ctx context.Context, path string) (*CarModelStore, error) {
+	// open car file as read only blockstore
+	r, err := car.OpenReader(path)
+	if err != nil {
+		return nil, err
+	}
+	stat, err := r.Inspect(true)
+	if err != nil {
+		return nil, err
+	}
+	log.Infow("stats", "info", stat)
+	if err := r.Close(); err != nil {
+		return nil, err
+	}
+	ro, err := carbs.OpenReadOnly(path)
+	if err != nil {
+		return nil, err
+	}
+	// file must have single root CID: the cid of the hamt.
+	root, err := ro.Roots()
+	if err != nil {
+		return nil, err
+	}
+	if len(root) != 1 {
+		return nil, fmt.Errorf("unrecognized car header root, expect 1, got %d", len(root))
+	}
+	// wrap the blockstore as an IPLD store
+	store := adt.WrapBlockStore(ctx, ro)
+	// load the root to get state map
+	stateMap, err := adt.AsMap(store, root[0], BitWidth)
+	if err != nil {
+		return nil, err
+	}
+	var modelRoot typegen.CborCid
+	tsModelMultiMap := make(map[types.TipSetKey]*adt.Multimap)
+	if err := stateMap.ForEach(&modelRoot, func(key string) error {
+		// TODO fix this, we should store the key as bytes
+		key = strings.Replace(key, "{", "", -1)
+		key = strings.Replace(key, "}", "", -1)
+		cids, err := ParseTipSetString(key)
+		if err != nil {
+			return err
+		}
+		if len(cids) == 0 {
+			log.Error("empty tipset")
+			panic("here")
+			return nil
+		}
+		modelMmap, err := adt.AsMultimap(store, cid.Cid(modelRoot), BitWidth, BitWidth)
+		if err != nil {
+			return err
+		}
+		k := types.NewTipSetKey(cids...)
+		tsModelMultiMap[k] = modelMmap
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return &CarModelStore{tsModelMultiMap, ro}, nil
+}
+
+func (ms *CarModelStore) ModelMultiMapForTipSet(key types.TipSetKey) (*adt.Multimap, error) {
+	models, found := ms.tsModelMmap[key]
+	if !found {
+		return nil, fmt.Errorf("no models for tipset %s", key)
+	}
+	return models, nil
+}
+
+func (ms *CarModelStore) ModelTasksForTipSet(key types.TipSetKey) ([]v2.ModelMeta, error) {
+	models, err := ms.ModelMultiMapForTipSet(key)
+	if err != nil {
+		return nil, err
+	}
+
+	var tasks []v2.ModelMeta
+	if err := models.ForAll(func(k string, arr *adt.Array) error {
+		meta, err := v2.DecodeModelMeta(k)
+		if err != nil {
+			return err
+		}
+		tasks = append(tasks, meta)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
+func (ms *CarModelStore) GetModels(key types.TipSetKey, meta v2.ModelMeta) ([]v2.LilyModel, error) {
+	models, err := ms.ModelMultiMapForTipSet(key)
+	if err != nil {
+		return nil, err
+	}
+	model, found, err := models.Get(ModelKeyer{meta})
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, fmt.Errorf("no models found")
+	}
+	modelType := v2.ModelReflections[meta]
+
+	// dear reader, I am sorry
+	// the below code unmarshals the model into p and then copies p to newObj
+	p := reflect.New(modelType.Type.Elem()).Interface().(v2.LilyModel)
+	var out = make([]v2.LilyModel, 0, model.Length())
+	if err := model.ForEach(p, func(i int64) error {
+		newObj := reflect.New(reflect.TypeOf(p).Elem())
+		oldVal := reflect.ValueOf(p).Elem()
+		newVal := newObj.Elem()
+		for i := 0; i < oldVal.NumField(); i++ {
+			newValField := newVal.Field(i)
+			if newValField.CanSet() {
+				newValField.Set(oldVal.Field(i))
+			}
+		}
+		out = append(out, newObj.Interface().(v2.LilyModel))
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (ms *CarModelStore) TipSets() []types.TipSetKey {
+	out := make([]types.TipSetKey, 0, len(ms.tsModelMmap))
+	for ts := range ms.tsModelMmap {
+		out = append(out, ts)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].String() < out[j].String()
+	})
+	return out
+}
+
+func (ms *CarModelStore) Close() error {
+	return ms.ro.Close()
+}
+
+func ParseTipSetString(ts string) ([]cid.Cid, error) {
+	strs := strings.Split(ts, ",")
+
+	var cids []cid.Cid
+	for _, s := range strs {
+		c, err := cid.Parse(strings.TrimSpace(s))
+		if err != nil {
+			return nil, err
+		}
+		cids = append(cids, c)
+	}
+
+	return cids, nil
 }
 
 const BitWidth = 8
@@ -160,23 +324,25 @@ func (c *modelStore) FinalizeModelMap(ctx context.Context, ts *types.TipSet) (ci
 		return c.cache[i].Cid().String() < c.cache[j].Cid().String()
 	})
 	for _, d := range c.cache {
-		if err := c.modelMap.Add(ModelKeyer{d}, d); err != nil {
+		if err := c.modelMap.Add(ModelKeyer{d.Meta()}, d); err != nil {
 			return cid.Undef, err
 		}
 	}
-	c.modelMap.ForAll(func(k string, arr *adt.Array) error {
+	if err := c.modelMap.ForAll(func(k string, arr *adt.Array) error {
 		r, err := arr.Root()
 		if err != nil {
 			return err
 		}
 		log.Infow("modelMap", "model", k, "root", r.String())
 		return nil
-	})
+	}); err != nil {
+		return cid.Undef, err
+	}
 	modelRoot, err := c.modelMap.Root()
 	if err != nil {
 		return cid.Undef, err
 	}
-	if err = c.stateMap.Put(TipsetKeyer{ts}, typegen.CborCid(modelRoot)); err != nil {
+	if err = c.stateMap.Put(TipsetKeyer{ts.Key()}, typegen.CborCid(modelRoot)); err != nil {
 		return cid.Undef, err
 	}
 

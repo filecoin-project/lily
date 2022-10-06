@@ -76,6 +76,7 @@ func init() {
 
 var _ v2.LilyModel = (*ActorState)(nil)
 
+// TODO consider tracking the change type which we get for free from actor info
 type ActorState struct {
 	Height    abi.ChainEpoch
 	StateRoot cid.Cid

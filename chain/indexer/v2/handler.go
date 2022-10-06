@@ -13,6 +13,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/v2/load/persistable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/cborable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/market"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/miner"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/raw"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/block"
@@ -50,8 +51,8 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 	transformer, consumer, err := m.startRouters(ctx,
 		[]transform.Handler{
 			cborable.NewCborTransform(),
-			raw.NewActorTransform(),
 
+			raw.NewActorTransform(),
 			raw.NewActorStateTransform(),
 
 			miner.NewSectorInfoTransform(),
@@ -59,6 +60,8 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 			miner.NewSectorEventTransformer(),
 			miner.NewSectorDealsTransformer(),
 			miner.NewPrecommitInfoTransformer(),
+
+			market.NewDealProposalTransformer(),
 
 			message.NewVMMessageTransform(),
 			message.NewMessageTransform(),

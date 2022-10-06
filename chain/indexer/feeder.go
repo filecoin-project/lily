@@ -5,131 +5,119 @@ import (
 	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/specs-actors/v8/actors/util/adt"
-	"github.com/ipfs/go-cid"
-	carbs "github.com/ipld/go-car/v2/blockstore"
-	typegen "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load/cborable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load/persistable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/market"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/miner"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/raw"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/block"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/message"
 	"github.com/filecoin-project/lily/model"
 	v2 "github.com/filecoin-project/lily/model/v2"
-	raw2 "github.com/filecoin-project/lily/model/v2/actors/raw"
-	"github.com/filecoin-project/lily/tasks"
+	ltasks "github.com/filecoin-project/lily/tasks"
 )
 
 const BitWidth = 8
 
 type Feeder struct {
-	Api  tasks.DataSource
+	Api  ltasks.DataSource
 	Strg model.Storage
 }
 
-/*
-	root, err := cid.Decode("bafy2bzacedinjodppy3tu5jjursdn4mrlr5e4cvzsdupc5axmkakiuojybkrq")
-	if err != nil {
-		return false, err
-	}
-	f := indexer.Feeder{Api: m.api, Strg: m.strg}
-	if err := f.Index(ctx, ts, root); err != nil {
-		panic(err)
-	}
-	return false, nil
-
-*/
-
-func (f *Feeder) Index(ctx context.Context, ts *types.TipSet, root cid.Cid) error {
+func (f *Feeder) Index(ctx context.Context, path string) error {
 	start := time.Now()
-	ro, err := carbs.OpenReadOnly("./" + ts.ParentState().String() + ".car")
+	ms, err := cborable.NewModelStoreFromCAR(ctx, path)
 	if err != nil {
 		return err
 	}
-	store := adt.WrapBlockStore(ctx, ro)
+	defer ms.Close()
 
-	stateMap, err := adt.AsMap(store, root, BitWidth)
-	if err != nil {
-		return err
-	}
-	var modelRoot typegen.CborCid
-	if found, err := stateMap.Get(cborable.TipsetKeyer{T: ts}, &modelRoot); err != nil {
-		return err
-	} else if !found {
-		panic("here")
-	}
-	modelMap, err := adt.AsMultimap(store, cid.Cid(modelRoot), BitWidth, BitWidth)
-	if err != nil {
-		return err
-	}
-	taskData := make(map[v2.ModelMeta]*adt.Array)
-	var tasks []v2.ModelMeta
-	if err := modelMap.ForAll(func(k string, arr *adt.Array) error {
-		meta, err := v2.DecodeModelMeta(k)
+	for _, ts := range ms.TipSets() {
+		tipset, err := f.Api.TipSet(ctx, ts)
 		if err != nil {
 			return err
 		}
-		taskData[meta] = arr
-		tasks = append(tasks, meta)
-		return nil
-	}); err != nil {
-		return err
-	}
+		parent, err := f.Api.TipSet(ctx, tipset.Parents())
+		if err != nil {
+			return err
+		}
 
-	transformer, consumer, err := f.startRouters(ctx, tasks,
-		[]transform.Handler{
-			raw.NewActorTransform(),
-			raw.NewActorStateTransform(),
-		}, []load.Handler{
-			&persistable.PersistableResultConsumer{Strg: f.Strg},
-		})
+		tasks, err := ms.ModelTasksForTipSet(ts)
+		if err != nil {
+			return err
+		}
 
-	go func() {
-		for meta, arr := range taskData {
-			// TODO we need a nice way to decode data loaded from the car before handing it to a transform
-			actorState := &raw2.ActorState{}
-			meta.Kind = v2.ModelActorKind
-			switch meta {
-			case actorState.Meta():
-				var thisState raw2.ActorState
-				var toRount = make([]v2.LilyModel, 0, 10)
-				if err := arr.ForEach(&thisState, func(i int64) error {
-					cp := thisState
-					toRount = append(toRount, &cp)
-					return nil
-				}); err != nil {
+		transformer, consumer, err := f.startRouters(ctx, tasks,
+			[]transform.Handler{
+				raw.NewActorTransform(),
+				raw.NewActorStateTransform(),
+
+				miner.NewSectorInfoTransform(),
+				miner.NewPrecommitEventTransformer(),
+				miner.NewSectorEventTransformer(),
+				miner.NewSectorDealsTransformer(),
+				miner.NewPrecommitInfoTransformer(),
+
+				market.NewDealProposalTransformer(),
+
+				message.NewVMMessageTransform(),
+				message.NewMessageTransform(),
+				message.NewParsedMessageTransform(),
+				message.NewBlockMessageTransform(),
+				message.NewGasOutputTransform(),
+				message.NewGasEconomyTransform(),
+				message.NewReceiptTransform(),
+
+				block.NewBlockHeaderTransform(),
+				block.NewBlockParentsTransform(),
+				block.NewDrandBlockEntryTransform(),
+			}, []load.Handler{
+				&persistable.PersistableResultConsumer{Strg: f.Strg},
+			})
+
+		// TODO handle the error case here, remove the panic in the goroutine
+		go func() {
+			for _, task := range tasks {
+				data, err := ms.GetModels(ts, task)
+				if err != nil {
+					log.Errorw("getting models", "error", err)
 					panic(err)
 				}
 				if err := transformer.Route(ctx, &resultImpl{
-					task:     meta,
-					current:  ts,
-					executed: nil,
+					task:     task,
+					current:  tipset,
+					executed: parent,
 					complete: true,
 					result: &extract.StateResult{
-						Task:      meta,
+						Task:      task,
 						Error:     nil,
-						Data:      toRount,
+						Data:      data,
 						StartedAt: time.Now(),
 						Duration:  0,
 					},
 				}); err != nil {
+					log.Errorw("routing models", "error", err)
 					panic(err)
 				}
 			}
+			if err := transformer.Stop(); err != nil {
+				log.Errorw("stopping transformer", "error", err)
+			}
+		}()
+
+		for res := range transformer.Results() {
+			if err := consumer.Route(ctx, res); err != nil {
+				return err
+			}
 		}
-		if err := transformer.Stop(); err != nil {
-			panic(err)
-		}
-	}()
-	for res := range transformer.Results() {
-		if err := consumer.Route(ctx, res); err != nil {
+		if err := consumer.Stop(); err != nil {
 			return err
 		}
-	}
-	if err := consumer.Stop(); err != nil {
-		return err
+
 	}
 	log.Infow("index complete", "duration", time.Since(start))
 	return nil

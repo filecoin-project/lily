@@ -3,6 +3,7 @@ package v2
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -38,7 +39,12 @@ func (mm ModelMeta) String() string {
 }
 
 func DecodeModelMeta(str string) (ModelMeta, error) {
-	tokens := strings.Split(str, modelMetaVersionSeparator)
+	tokens := strings.Split(str, modelMetaKindSeparator)
+	if len(tokens) != 2 {
+		return ModelMeta{}, fmt.Errorf("invalid")
+	}
+	kind := tokens[0]
+	tokens = strings.Split(tokens[1], modelMetaVersionSeparator)
 	if len(tokens) != 2 {
 		return ModelMeta{}, fmt.Errorf("invalid")
 	}
@@ -50,12 +56,13 @@ func DecodeModelMeta(str string) (ModelMeta, error) {
 	return ModelMeta{
 		Version: ModelVersion(mv),
 		Type:    ModelType(mt),
+		Kind:    ModelKind(kind),
 	}, nil
 }
 
 type LilyModel interface {
-	Cid() cid.Cid
 	cbor.Er
+	Cid() cid.Cid
 	Meta() ModelMeta
 	ChainEpochTime() ChainEpochTime
 }
@@ -70,11 +77,18 @@ type ChainEpochTime struct {
 var ActorExtractorRegistry map[ModelMeta]ActorExtractorFn
 var ActorTypeRegistry map[ModelMeta]*cid.Set
 var ExtractorRegistry map[ModelMeta]ExtractorFn
+var ModelReflections map[ModelMeta]ModelReflect
+
+type ModelReflect struct {
+	Meta ModelMeta
+	Type reflect.Type
+}
 
 func init() {
 	ActorExtractorRegistry = make(map[ModelMeta]ActorExtractorFn)
 	ActorTypeRegistry = make(map[ModelMeta]*cid.Set)
 	ExtractorRegistry = make(map[ModelMeta]ExtractorFn)
+	ModelReflections = make(map[ModelMeta]ModelReflect)
 }
 
 type ActorExtractorFn func(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, a actorstate.ActorInfo) ([]LilyModel, error)
@@ -82,6 +96,10 @@ type ActorExtractorFn func(ctx context.Context, api tasks.DataSource, current, e
 // RegisterActorExtractor associates a model with extractor that produces it.
 func RegisterActorExtractor(model LilyModel, efn ActorExtractorFn) {
 	ActorExtractorRegistry[model.Meta()] = efn
+	ModelReflections[model.Meta()] = ModelReflect{
+		Meta: model.Meta(),
+		Type: reflect.TypeOf(model),
+	}
 }
 
 func RegisterActorType(model LilyModel, actors *cid.Set) {
@@ -92,6 +110,10 @@ type ExtractorFn func(ctx context.Context, api tasks.DataSource, current, execut
 
 func RegisterExtractor(model LilyModel, efn ExtractorFn) {
 	ExtractorRegistry[model.Meta()] = efn
+	ModelReflections[model.Meta()] = ModelReflect{
+		Meta: model.Meta(),
+		Type: reflect.TypeOf(model),
+	}
 }
 
 func LookupExtractor(meta ModelMeta) (ExtractorFn, error) {
