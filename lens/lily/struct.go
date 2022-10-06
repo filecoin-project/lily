@@ -78,7 +78,13 @@ type LilyAPIStruct struct {
 
 		FindOldestState func(ctx context.Context, limit int64) ([]*StateReport, error)      `perm:"read"`
 		StateCompute    func(ctx context.Context, tsk types.TipSetKey) (interface{}, error) `perm:"read"`
+
+		IndexCarFile func(ctx context.Context, cfg *LilyIndexCarFileConfig) error `perm:"read"`
 	}
+}
+
+func (s *LilyAPIStruct) IndexCarFile(ctx context.Context, cfg *LilyIndexCarFileConfig) error {
+	return s.Internal.IndexCarFile(ctx, cfg)
 }
 
 func (s *LilyAPIStruct) StateCompute(ctx context.Context, tsk types.TipSetKey) (interface{}, error) {

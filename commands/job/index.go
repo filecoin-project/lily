@@ -33,6 +33,7 @@ The index command may be used to index a single tipset from the filecoin blockch
 	Subcommands: []*cli.Command{
 		IndexTipSetCmd,
 		IndexHeightCmd,
+		IndexCarCmd,
 	},
 	Before: func(cctx *cli.Context) error {
 		tasks := RunFlags.Tasks.Value()
@@ -44,6 +45,28 @@ The index command may be used to index a single tipset from the filecoin blockch
 			}
 		}
 		return nil
+	},
+}
+
+var IndexCarCmd = &cli.Command{
+	Name:  "car",
+	Usage: "Index the state of a car file produced by lily",
+	Action: func(cctx *cli.Context) error {
+		if !cctx.Args().Present() {
+			return fmt.Errorf("must specify car file path to index")
+		}
+		ctx := lotuscli.ReqContext(cctx)
+
+		api, closer, err := commands.GetAPI(ctx)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		return api.IndexCarFile(ctx, &lily.LilyIndexCarFileConfig{
+			JobConfig: RunFlags.ParseJobConfig("index-car"),
+			Path:      cctx.Args().First(),
+		})
 	},
 }
 

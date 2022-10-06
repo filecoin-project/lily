@@ -74,6 +74,8 @@ type LilyAPI interface {
 
 	FindOldestState(ctx context.Context, limit int64) ([]*StateReport, error)
 	StateCompute(ctx context.Context, tsk types.TipSetKey) (interface{}, error)
+
+	IndexCarFile(ctx context.Context, cfg *LilyIndexCarFileConfig) error
 }
 type LilyJobConfig struct {
 	// Name is the name of the job.
@@ -164,4 +166,9 @@ type LilyIndexNotifyConfig struct {
 	IndexConfig LilyIndexConfig
 
 	Queue string
+}
+
+type LilyIndexCarFileConfig struct {
+	JobConfig LilyJobConfig
+	Path      string
 }

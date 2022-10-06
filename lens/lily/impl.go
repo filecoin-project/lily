@@ -42,6 +42,7 @@ import (
 	"github.com/filecoin-project/lily/lens/lily/modules"
 	"github.com/filecoin-project/lily/lens/util"
 	v22 "github.com/filecoin-project/lily/model/v2"
+	"github.com/filecoin-project/lily/model/v2/actors/market"
 	"github.com/filecoin-project/lily/model/v2/actors/miner/precommitevent"
 	"github.com/filecoin-project/lily/model/v2/actors/miner/sectorevent"
 	"github.com/filecoin-project/lily/model/v2/actors/raw"
@@ -78,6 +79,31 @@ type LilyNodeAPI struct {
 
 func (m *LilyNodeAPI) Host() host.Host {
 	return m.RawHost
+}
+
+func (m *LilyNodeAPI) IndexCarFile(_ context.Context, cfg *LilyIndexCarFileConfig) error {
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx := context.Background()
+	md := storage.Metadata{
+		JobName: cfg.JobConfig.Name,
+	}
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
+	if err != nil {
+		return err
+	}
+
+	taskAPI, err := datasource.NewDataSource(m)
+	if err != nil {
+		return err
+	}
+
+	feeder := indexer.Feeder{
+		Api:  taskAPI,
+		Strg: strg,
+	}
+	return feeder.Index(ctx, cfg.Path)
 }
 
 func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error) {
@@ -164,7 +190,8 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 	chainmessage := messages.BlockMessage{}
 	vmmessage := messages.VMMessage{}
 	actors := raw.ActorState{}
-	im := v2.NewIndexManager(strg, taskAPI, []v22.ModelMeta{event.Meta(), commitEvent.Meta(), blocks.Meta(), executedmessage.Meta(), vmmessage.Meta(), chainmessage.Meta(), actors.Meta()})
+	proposal := market.DealProposal{}
+	im := v2.NewIndexManager(strg, taskAPI, []v22.ModelMeta{event.Meta(), commitEvent.Meta(), blocks.Meta(), executedmessage.Meta(), vmmessage.Meta(), chainmessage.Meta(), actors.Meta(), proposal.Meta()})
 	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
 	/*
 		im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window), integrated.WithCborExporter(lms))

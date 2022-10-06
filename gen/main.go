@@ -6,6 +6,7 @@ import (
 
 	"github.com/whyrusleeping/cbor-gen"
 
+	"github.com/filecoin-project/lily/model/v2/actors/market"
 	"github.com/filecoin-project/lily/model/v2/actors/miner/precommitevent"
 	"github.com/filecoin-project/lily/model/v2/actors/miner/sectorevent"
 	"github.com/filecoin-project/lily/model/v2/actors/raw"
@@ -48,6 +49,14 @@ func main() {
 	}
 	err = typegen.WriteTupleEncodersToFile("./model/v2/block/cbor_gen.go", "block",
 		block.BlockHeader{},
+	)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	err = typegen.WriteTupleEncodersToFile("./model/v2/actors/market/cbor_gen.go", "market",
+		market.DealProposal{},
+		market.DealLabel{},
 	)
 	if err != nil {
 		fmt.Println(err)
