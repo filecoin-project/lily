@@ -58,19 +58,22 @@ func (c *CarResultConsumer) Consume(ctx context.Context, in chan transform.Resul
 			}
 		}
 	}
-	stateRoot, err := modelStore.FinalizeModelMap(ctx, ts)
-	if err != nil {
-		return err
+	if len(modelStore.cache) > 0 {
+		stateRoot, err := modelStore.FinalizeModelMap(ctx, ts)
+		if err != nil {
+			return err
+		}
+		log.Infow("finalized model map", "root", stateRoot.String())
+		f, err := os.Create(fmt.Sprintf("./%d_%s.car", ts.Height(), ts.ParentState()))
+		if err != nil {
+			return err
+		}
+		if err := modelStore.AsCAR(ctx, f); err != nil {
+			return err
+		}
+		return f.Close()
 	}
-	log.Infow("finalized model map", "root", stateRoot.String())
-	f, err := os.Create("./" + ts.ParentState().String() + ".car")
-	if err != nil {
-		return err
-	}
-	if err := modelStore.AsCAR(ctx, f); err != nil {
-		return err
-	}
-	return f.Close()
+	return nil
 }
 
 type ModelKeyer struct {

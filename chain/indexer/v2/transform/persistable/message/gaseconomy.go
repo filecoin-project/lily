@@ -49,6 +49,7 @@ func (g *GasEconomyTransform) Run(ctx context.Context, api tasks.DataSource, in 
 				}
 			}
 
+			// TODO pull this out into an extractor to remove the need of running a lily node with API to compute gas base feed.
 			currentBaseFee, err := api.ComputeBaseFee(ctx, res.Current())
 			if err != nil {
 				return err
