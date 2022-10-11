@@ -52,12 +52,14 @@ func (ChainPowerExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, 
 	}
 
 	return &powermodel.ChainPower{
-		Height:                     int64(ec.CurrTs.Height()),
-		StateRoot:                  ec.CurrTs.ParentState().String(),
-		TotalRawBytesPower:         pow.RawBytePower.String(),
-		TotalQABytesPower:          pow.QualityAdjPower.String(),
-		TotalRawBytesCommitted:     commit.RawBytePower.String(),
-		TotalQABytesCommitted:      commit.QualityAdjPower.String(),
+		Height:             int64(ec.CurrTs.Height()),
+		StateRoot:          ec.CurrTs.ParentState().String(),
+		TotalRawBytesPower: pow.RawBytePower.String(),
+		TotalQABytesPower:  pow.QualityAdjPower.String(),
+
+		TotalRawBytesCommitted: commit.RawBytePower.String(),
+		TotalQABytesCommitted:  commit.QualityAdjPower.String(),
+
 		TotalPledgeCollateral:      locked.String(),
 		QASmoothedPositionEstimate: smoothed.PositionEstimate.String(),
 		QASmoothedVelocityEstimate: smoothed.VelocityEstimate.String(),

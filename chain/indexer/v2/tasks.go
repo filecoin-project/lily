@@ -7,7 +7,11 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/init_"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/market"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/miner"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/multisig"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/power"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/raw"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/reward"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/verifreg"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/block"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/message"
 	v2 "github.com/filecoin-project/lily/model/v2"
@@ -81,6 +85,31 @@ var TaskHandlers = map[string]TaskMeta{
 			miner.NewSectorInfoTransform(),
 		},
 	},
+	MinerInfo: {
+		Transformers: []transform.Handler{
+			miner.NewMinerInfoTransform(),
+		},
+	},
+	MinerLockedFund: {
+		Transformers: []transform.Handler{
+			miner.NewFundsTransform(),
+		},
+	},
+	MinerCurrentDeadlineInfo: {
+		Transformers: []transform.Handler{
+			miner.NewDeadlineInfoTransform(),
+		},
+	},
+	MinerFeeDebt: {
+		Transformers: []transform.Handler{
+			miner.NewFeeDebtTransform(),
+		},
+	},
+	MinerSectorPost: {
+		Transformers: []transform.Handler{
+			miner.NewPostSectorMessageTransform(),
+		},
+	},
 	MarketDealState: {
 		Transformers: []transform.Handler{
 			market.NewDealStateTransformer(),
@@ -139,6 +168,36 @@ var TaskHandlers = map[string]TaskMeta{
 	IdAddress: {
 		Transformers: []transform.Handler{
 			init_.NewIDAddressTransform(),
+		},
+	},
+	MultisigTransaction: {
+		Transformers: []transform.Handler{
+			multisig.NewTransactionTransform(),
+		},
+	},
+	ChainPower: {
+		Transformers: []transform.Handler{
+			power.NewChainPowerTransform(),
+		},
+	},
+	PowerActorClaim: {
+		Transformers: []transform.Handler{
+			power.NewClaimedPowerTransform(),
+		},
+	},
+	ChainReward: {
+		Transformers: []transform.Handler{
+			reward.NewChainRewardTransform(),
+		},
+	},
+	VerifiedRegistryVerifiedClient: {
+		Transformers: []transform.Handler{
+			verifreg.NewVerifiedClientTransform(),
+		},
+	},
+	VerifiedRegistryVerifier: {
+		Transformers: []transform.Handler{
+			verifreg.NewVerifierTransform(),
 		},
 	},
 }

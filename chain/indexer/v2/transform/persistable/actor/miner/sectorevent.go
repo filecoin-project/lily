@@ -11,7 +11,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	v2 "github.com/filecoin-project/lily/model/v2"
-	"github.com/filecoin-project/lily/model/v2/actors/miner/sectorevent"
+	"github.com/filecoin-project/lily/model/v2/actors/miner"
 	"github.com/filecoin-project/lily/tasks"
 )
 
@@ -22,7 +22,7 @@ type SectorEventTransformer struct {
 }
 
 func NewSectorEventTransformer() *SectorEventTransformer {
-	info := sectorevent.SectorEvent{}
+	info := miner.SectorEvent{}
 	return &SectorEventTransformer{meta: info.Meta()}
 }
 
@@ -36,7 +36,7 @@ func (s *SectorEventTransformer) Run(ctx context.Context, api tasks.DataSource, 
 			log.Debugw("SectorEventTransformer received data", "count", len(res.State().Data))
 			sqlModels := make(minermodel.MinerSectorEventList, len(res.State().Data))
 			for i, modeldata := range res.State().Data {
-				se := modeldata.(*sectorevent.SectorEvent)
+				se := modeldata.(*miner.SectorEvent)
 				sqlModels[i] = &minermodel.MinerSectorEvent{
 					Height:    int64(se.Height),
 					MinerID:   se.Miner.String(),

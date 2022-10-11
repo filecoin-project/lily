@@ -9,7 +9,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	v2 "github.com/filecoin-project/lily/model/v2"
-	"github.com/filecoin-project/lily/model/v2/actors/miner/precommitevent"
+	"github.com/filecoin-project/lily/model/v2/actors/miner"
 	"github.com/filecoin-project/lily/tasks"
 )
 
@@ -18,7 +18,7 @@ type PrecommitEventTransformer struct {
 }
 
 func NewPrecommitEventTransformer() *PrecommitEventTransformer {
-	info := precommitevent.PreCommitEvent{}
+	info := miner.PreCommitEvent{}
 	return &PrecommitEventTransformer{meta: info.Meta()}
 }
 
@@ -31,9 +31,9 @@ func (s *PrecommitEventTransformer) Run(ctx context.Context, api tasks.DataSourc
 		default:
 			sqlModels := make(minermodel.MinerSectorEventList, 0, len(res.State().Data))
 			for _, modeldata := range res.State().Data {
-				se := modeldata.(*precommitevent.PreCommitEvent)
+				se := modeldata.(*miner.PreCommitEvent)
 				// TODO add precommit removed event
-				if se.Event != precommitevent.PreCommitAdded {
+				if se.Event != miner.PreCommitAdded {
 					continue
 				}
 				sqlModels = append(sqlModels, &minermodel.MinerSectorEvent{
