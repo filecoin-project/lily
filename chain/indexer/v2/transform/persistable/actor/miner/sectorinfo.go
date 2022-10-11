@@ -9,7 +9,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	v2 "github.com/filecoin-project/lily/model/v2"
-	"github.com/filecoin-project/lily/model/v2/actors/miner/sectorevent"
+	"github.com/filecoin-project/lily/model/v2/actors/miner"
 	"github.com/filecoin-project/lily/tasks"
 )
 
@@ -18,7 +18,7 @@ type SectorInfoTransform struct {
 }
 
 func NewSectorInfoTransform() *SectorInfoTransform {
-	info := sectorevent.SectorEvent{}
+	info := miner.SectorEvent{}
 	return &SectorInfoTransform{meta: info.Meta()}
 }
 
@@ -31,10 +31,10 @@ func (s *SectorInfoTransform) Run(ctx context.Context, api tasks.DataSource, in 
 		default:
 			sqlModels := make(minermodel.MinerSectorInfoV7List, 0, len(res.State().Data))
 			for _, modeldata := range res.State().Data {
-				si := modeldata.(*sectorevent.SectorEvent)
-				if si.Event != sectorevent.SectorAdded &&
-					si.Event != sectorevent.SectorExtended &&
-					si.Event != sectorevent.SectorSnapped {
+				si := modeldata.(*miner.SectorEvent)
+				if si.Event != miner.SectorAdded &&
+					si.Event != miner.SectorExtended &&
+					si.Event != miner.SectorSnapped {
 					continue
 				}
 				sectorKeyCID := ""

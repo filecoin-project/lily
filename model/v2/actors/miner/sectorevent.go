@@ -1,4 +1,4 @@
-package sectorevent
+package miner
 
 import (
 	"bytes"
@@ -13,7 +13,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	block "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
-	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -22,8 +21,6 @@ import (
 	"github.com/filecoin-project/lily/tasks/actorstate"
 	"github.com/filecoin-project/lily/tasks/actorstate/miner/extraction"
 )
-
-var log = logging.Logger("sectorevents")
 
 // TODO bug:
 /*
@@ -57,7 +54,7 @@ var log = logging.Logger("sectorevents")
 
 func init() {
 	// relate this model to its corresponding extractor
-	v2.RegisterActorExtractor(&SectorEvent{}, Extract)
+	v2.RegisterActorExtractor(&SectorEvent{}, ExtractMinerSectorEventsModel)
 	// relate the actors this model can contain to their codes
 	supportedActors := cid.NewSet()
 	for _, c := range miner.AllCodes() {
@@ -106,7 +103,7 @@ func (e SectorEventType) String() string {
 	case SectorTerminated:
 		return "SECTOR_TERMINATED"
 	}
-	panic(fmt.Sprintf("unhanded type %d developer error", e))
+	panic(fmt.Sprintf("unhandled type %d developer error", e))
 }
 
 type SectorEvent struct {
@@ -177,7 +174,7 @@ func (t *SectorEvent) Cid() cid.Cid {
 	return sb.Cid()
 }
 
-func Extract(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, a actorstate.ActorInfo) ([]v2.LilyModel, error) {
+func ExtractMinerSectorEventsModel(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, a actorstate.ActorInfo) ([]v2.LilyModel, error) {
 	extState, err := extraction.LoadMinerStates(ctx, a, api)
 	if err != nil {
 		return nil, fmt.Errorf("creating miner state extraction context: %w", err)

@@ -9,7 +9,7 @@ import (
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
-	"github.com/filecoin-project/lily/model/actors/init"
+	initmodel "github.com/filecoin-project/lily/model/actors/init"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/init_"
 	"github.com/filecoin-project/lily/tasks"
@@ -46,10 +46,10 @@ func (i *IDAddressTransform) Run(ctx context.Context, api tasks.DataSource, in c
 			return ctx.Err()
 		default:
 			log.Debugw("received data", "count", len(res.State().Data))
-			sqlModels := make(init.IDAddressList, 0, len(res.State().Data))
+			sqlModels := make(initmodel.IDAddressList, 0, len(res.State().Data))
 			for _, modeldata := range res.State().Data {
 				m := modeldata.(*init_.AddressState)
-				sqlModels = append(sqlModels, &init.IDAddress{
+				sqlModels = append(sqlModels, &initmodel.IDAddress{
 					Height:    int64(m.Height),
 					ID:        m.ID.String(),
 					Address:   m.Address.String(),

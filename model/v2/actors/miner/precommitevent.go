@@ -1,4 +1,4 @@
-package precommitevent
+package miner
 
 import (
 	"bytes"
@@ -13,7 +13,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	block "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
-	logging "github.com/ipfs/go-log/v2"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	v2 "github.com/filecoin-project/lily/model/v2"
@@ -22,11 +21,9 @@ import (
 	"github.com/filecoin-project/lily/tasks/actorstate/miner/extraction"
 )
 
-var log = logging.Logger("precommitevent")
-
 func init() {
 	// relate this model to its corresponding extractor
-	v2.RegisterActorExtractor(&PreCommitEvent{}, Extract)
+	v2.RegisterActorExtractor(&PreCommitEvent{}, ExtractPreCommitEvents)
 	// relate the actors this model can contain to their codes
 	supportedActors := cid.NewSet()
 	for _, c := range miner.AllCodes() {
@@ -130,7 +127,7 @@ func (t *PreCommitEvent) Cid() cid.Cid {
 	return sb.Cid()
 }
 
-func Extract(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, a actorstate.ActorInfo) ([]v2.LilyModel, error) {
+func ExtractPreCommitEvents(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, a actorstate.ActorInfo) ([]v2.LilyModel, error) {
 	extState, err := extraction.LoadMinerStates(ctx, a, api)
 	if err != nil {
 		return nil, fmt.Errorf("creating miner state extraction context: %w", err)

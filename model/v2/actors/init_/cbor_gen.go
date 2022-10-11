@@ -50,9 +50,8 @@ func (t *AddressState) MarshalCBOR(w io.Writer) error {
 		return xerrors.Errorf("failed to write cid field t.StateRoot: %w", err)
 	}
 
-	// t.ID (abi.ActorID) (uint64)
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.ID)); err != nil {
+	// t.ID (address.Address) (struct)
+	if err := t.ID.MarshalCBOR(cw); err != nil {
 		return err
 	}
 
@@ -123,18 +122,13 @@ func (t *AddressState) UnmarshalCBOR(r io.Reader) (err error) {
 		t.StateRoot = c
 
 	}
-	// t.ID (abi.ActorID) (uint64)
+	// t.ID (address.Address) (struct)
 
 	{
 
-		maj, extra, err = cr.ReadHeader()
-		if err != nil {
-			return err
+		if err := t.ID.UnmarshalCBOR(cr); err != nil {
+			return xerrors.Errorf("unmarshaling t.ID: %w", err)
 		}
-		if maj != cbg.MajUnsignedInt {
-			return fmt.Errorf("wrong type for uint64 field")
-		}
-		t.ID = abi.ActorID(extra)
 
 	}
 	// t.Address (address.Address) (struct)
