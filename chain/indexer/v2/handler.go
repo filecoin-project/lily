@@ -9,17 +9,9 @@ import (
 
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load"
-	cborable2 "github.com/filecoin-project/lily/chain/indexer/v2/load/cborable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load/persistable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/cborable"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/market"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/miner"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/raw"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/block"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/message"
 	"github.com/filecoin-project/lily/model"
-	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/tasks"
 )
 
@@ -27,18 +19,22 @@ var log = logging.Logger("indexmanager")
 
 type Manager struct {
 	indexer *TipSetIndexer
-	tasks   []v2.ModelMeta
+	stuff   *ThingIDK
 	api     tasks.DataSource
 	strg    model.Storage
 }
 
-func NewIndexManager(strg model.Storage, api tasks.DataSource, tasks []v2.ModelMeta) *Manager {
+func NewIndexManager(strg model.Storage, api tasks.DataSource, tasks []string) (*Manager, error) {
+	stuff, err := GetTransformersForTasks(tasks...)
+	if err != nil {
+		return nil, err
+	}
 	return &Manager{
-		indexer: NewTipSetIndexer(api, tasks, 1024),
-		tasks:   tasks,
+		indexer: NewTipSetIndexer(api, stuff.Tasks, 1024),
+		stuff:   stuff,
 		api:     api,
 		strg:    strg,
-	}
+	}, nil
 }
 
 func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...indexer.Option) (bool, error) {
@@ -49,35 +45,8 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 	}
 
 	transformer, consumer, err := m.startRouters(ctx,
-		[]transform.Handler{
-			cborable.NewCborTransform(),
-
-			raw.NewActorTransform(),
-			raw.NewActorStateTransform(),
-
-			miner.NewSectorInfoTransform(),
-			miner.NewPrecommitEventTransformer(),
-			miner.NewSectorEventTransformer(),
-			miner.NewSectorDealsTransformer(),
-			miner.NewPrecommitInfoTransformer(),
-
-			market.NewDealProposalTransformer(),
-
-			message.NewVMMessageTransform(),
-			message.NewMessageTransform(),
-			message.NewParsedMessageTransform(),
-			message.NewBlockMessageTransform(),
-			message.NewGasOutputTransform(),
-			message.NewGasEconomyTransform(),
-			message.NewReceiptTransform(),
-
-			block.NewBlockHeaderTransform(),
-			block.NewBlockParentsTransform(),
-			block.NewDrandBlockEntryTransform(),
-		},
-		[]load.Handler{
-			&persistable.PersistableResultConsumer{Strg: m.strg},
-			&cborable2.CarResultConsumer{}},
+		m.stuff.Transformers,
+		[]load.Handler{&persistable.PersistableResultConsumer{Strg: m.strg}},
 	)
 	if err != nil {
 		return false, err
@@ -122,7 +91,7 @@ type Loader interface {
 }
 
 func (m *Manager) startRouters(ctx context.Context, handlers []transform.Handler, consumers []load.Handler) (Transformer, Loader, error) {
-	tr, err := transform.NewRouter(m.tasks, handlers...)
+	tr, err := transform.NewRouter(m.stuff.Tasks, handlers...)
 	if err != nil {
 		return nil, nil, err
 	}
