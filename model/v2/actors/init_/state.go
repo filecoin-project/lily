@@ -16,7 +16,6 @@ import (
 	"go.uber.org/zap"
 
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
-	"github.com/filecoin-project/lily/chain/actors/builtin/market"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lily/tasks/actorstate"
@@ -29,7 +28,7 @@ func init() {
 	v2.RegisterActorExtractor(&AddressState{}, Extract)
 	// relate the actors this model can contain to their codes
 	supportedActors := cid.NewSet()
-	for _, c := range market.AllCodes() {
+	for _, c := range init_.AllCodes() {
 		supportedActors.Add(c)
 	}
 	v2.RegisterActorType(&AddressState{}, supportedActors)

@@ -28,8 +28,8 @@ func (s *DeadlineInfoTransform) Run(ctx context.Context, in chan transform.Index
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(minermodel.MinerCurrentDeadlineInfoList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(minermodel.MinerCurrentDeadlineInfoList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				di := modeldata.(*miner.DeadlineInfo)
 				sqlModels = append(sqlModels, &minermodel.MinerCurrentDeadlineInfo{
 					Height:        int64(di.Height),

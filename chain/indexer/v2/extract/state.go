@@ -64,14 +64,15 @@ type StateResult struct {
 
 func (se *StateExtractor) Start(ctx context.Context, current, executed *types.TipSet) (chan *TipSetStateResult, chan *ActorStateResult, chan error) {
 	// todo maybe buffer these, or add a config for it
-	tipsetsCh := make(chan *TipSetStateResult)
-	actorsCh := make(chan *ActorStateResult)
+	tipsetsCh := make(chan *TipSetStateResult, len(se.tipsetTasks))
+	actorsCh := make(chan *ActorStateResult, len(se.actorTasks))
 	errorCh := make(chan error)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		if err := TipSetState(ctx, se.TipSetTaskWorkers, se.api, current, executed, se.tipsetTasks, tipsetsCh); err != nil {
+			log.Errorw("tipset state extraction", "error", err)
 			errorCh <- err
 		}
 	}()
@@ -80,6 +81,7 @@ func (se *StateExtractor) Start(ctx context.Context, current, executed *types.Ti
 	go func() {
 		defer wg.Done()
 		if err := ActorStates(ctx, se.ActorTaskWorkers, se.ActorExtractorWorkers, se.api, current, executed, se.actorTasks, actorsCh); err != nil {
+			log.Errorw("actor state extraction", "error", err)
 			errorCh <- err
 		}
 	}()

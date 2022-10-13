@@ -28,8 +28,8 @@ func (s *PrecommitEventTransformer) Run(ctx context.Context, in chan transform.I
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(minermodel.MinerSectorEventList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(minermodel.MinerSectorEventList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				se := modeldata.(*miner.PreCommitEvent)
 				// TODO add precommit removed event
 				if se.Event != miner.PreCommitAdded {

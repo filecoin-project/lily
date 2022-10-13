@@ -32,8 +32,8 @@ func (s *ChainPowerTransform) Run(ctx context.Context, in chan transform.IndexSt
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(powermodel.ChainPowerList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(powermodel.ChainPowerList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				cp := modeldata.(*power.ChainPower)
 				sqlModels = append(sqlModels, &powermodel.ChainPower{
 					Height:                     int64(cp.Height),

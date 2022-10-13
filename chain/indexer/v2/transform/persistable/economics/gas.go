@@ -35,9 +35,9 @@ func (g *GasEconomyTransform) Run(ctx context.Context, in chan transform.IndexSt
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("received data", "count", len(res.State().Data))
+			log.Debugw("received data", "count", len(res.Models()))
 			// add up total and unique gas
-			for _, modeldata := range res.State().Data {
+			for _, modeldata := range res.Models() {
 				m := modeldata.(*economics.ChainEconomics)
 
 				baseFeeRat := new(big.Rat).SetFrac(m.BaseFee.Int, new(big.Int).SetUint64(build.FilecoinPrecision))

@@ -28,8 +28,8 @@ func (s *VerifierTransform) Run(ctx context.Context, in chan transform.IndexStat
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(verifregmodel.VerifiedRegistryVerifiersList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(verifregmodel.VerifiedRegistryVerifiersList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				vv := modeldata.(*verifreg.Verifier)
 				sqlModels = append(sqlModels, &verifregmodel.VerifiedRegistryVerifier{
 					Height:    int64(vv.Height),

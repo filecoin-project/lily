@@ -32,8 +32,8 @@ func (s *MinerInfoTransform) Run(ctx context.Context, in chan transform.IndexSta
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(minermodel.MinerInfoList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(minermodel.MinerInfoList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				mi := modeldata.(*miner.MinerInfo)
 				var newWorker string
 				var newWorkerEpoch int64

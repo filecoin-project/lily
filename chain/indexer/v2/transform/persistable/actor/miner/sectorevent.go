@@ -32,9 +32,9 @@ func (s *SectorEventTransformer) Run(ctx context.Context, in chan transform.Inde
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("SectorEventTransformer received data", "count", len(res.State().Data))
-			sqlModels := make(minermodel.MinerSectorEventList, len(res.State().Data))
-			for i, modeldata := range res.State().Data {
+			log.Debugw("SectorEventTransformer received data", "count", len(res.Models()))
+			sqlModels := make(minermodel.MinerSectorEventList, len(res.Models()))
+			for i, modeldata := range res.Models() {
 				se := modeldata.(*miner.SectorEvent)
 				sqlModels[i] = &minermodel.MinerSectorEvent{
 					Height:    int64(se.Height),

@@ -28,8 +28,8 @@ func (s *PostSectorMessageTransform) Run(ctx context.Context, in chan transform.
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(minermodel.MinerSectorPostList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(minermodel.MinerSectorPostList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				sm := modeldata.(*miner.PostSectorMessage)
 				sqlModels = append(sqlModels, &minermodel.MinerSectorPost{
 					Height:         int64(sm.Height),

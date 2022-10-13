@@ -27,8 +27,8 @@ func (b *BlockParentsTransform) Run(ctx context.Context, in chan transform.Index
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(blocks.BlockParents, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(blocks.BlockParents, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				m := modeldata.(*block.BlockHeader)
 				for _, parent := range m.Parents {
 					sqlModels = append(sqlModels, &blocks.BlockParent{

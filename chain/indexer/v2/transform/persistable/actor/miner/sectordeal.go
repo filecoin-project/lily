@@ -28,9 +28,9 @@ func (s *SectorDealsTransformer) Run(ctx context.Context, in chan transform.Inde
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("SectorDealsTransformer received data", "count", len(res.State().Data))
-			sqlModels := make(minermodel.MinerSectorDealList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			log.Debugw("SectorDealsTransformer received data", "count", len(res.Models()))
+			sqlModels := make(minermodel.MinerSectorDealList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				se := modeldata.(*miner.SectorEvent)
 				if se.Event != miner.SectorAdded && se.Event != miner.SectorSnapped {
 					continue

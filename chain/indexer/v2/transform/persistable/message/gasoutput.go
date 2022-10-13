@@ -29,9 +29,9 @@ func (g *GasOutputTransform) Run(ctx context.Context, in chan transform.IndexSta
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("received data", "count", len(res.State().Data))
-			sqlModels := make(derivedmodel.GasOutputsList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			log.Debugw("received data", "count", len(res.Models()))
+			sqlModels := make(derivedmodel.GasOutputsList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				m := modeldata.(*messages.ExecutedMessage)
 
 				actorName := builtin.ActorNameByCode(m.ToActorCode)

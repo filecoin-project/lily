@@ -29,8 +29,8 @@ func (s *CirculatingSupplyTransform) Run(ctx context.Context, in chan transform.
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(model.PersistableList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(model.PersistableList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				m := modeldata.(*economics.ChainEconomics)
 				sqlModels = append(sqlModels, &chainmodel.ChainEconomics{
 					Height:              int64(m.Height),

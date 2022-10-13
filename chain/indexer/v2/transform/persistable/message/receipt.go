@@ -28,9 +28,9 @@ func (r *ReceiptTransform) Run(ctx context.Context, in chan transform.IndexState
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("received data", "count", len(res.State().Data))
-			sqlModels := make(messages2.Receipts, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			log.Debugw("received data", "count", len(res.Models()))
+			sqlModels := make(messages2.Receipts, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				m := modeldata.(*messages.ExecutedMessage)
 				sqlModels = append(sqlModels, &messages2.Receipt{
 					Height:    int64(m.Height),

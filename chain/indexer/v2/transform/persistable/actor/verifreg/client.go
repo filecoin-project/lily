@@ -32,8 +32,8 @@ func (s *VerifiedClientTransform) Run(ctx context.Context, in chan transform.Ind
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(verifregmodel.VerifiedRegistryVerifiedClientsList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(verifregmodel.VerifiedRegistryVerifiedClientsList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				vc := modeldata.(*verifreg.VerifiedClient)
 				sqlModels = append(sqlModels, &verifregmodel.VerifiedRegistryVerifiedClient{
 					Height:    int64(vc.Height),

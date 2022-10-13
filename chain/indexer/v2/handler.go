@@ -11,10 +11,8 @@ import (
 
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load"
-	"github.com/filecoin-project/lily/chain/indexer/v2/load/cborable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load/persistable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
-	cborable2 "github.com/filecoin-project/lily/chain/indexer/v2/transform/cborable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/system"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/tasks"
@@ -51,9 +49,10 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 	if err != nil {
 		return false, err
 	}
+	_ = parent
 	transformer, consumer, err := m.startRouters(ctx,
-		[]transform.Handler{cborable2.NewCborTransform(), system.NewProcessingReportTransform()},
-		[]load.Handler{cborable.NewCarResultConsumer(ts, parent), &persistable.PersistableResultConsumer{Strg: m.strg}},
+		append(m.stuff.Transformers, system.NewProcessingReportTransform()),
+		[]load.Handler{&persistable.PersistableResultConsumer{Strg: m.strg}},
 	)
 	if err != nil {
 		return false, err
@@ -77,7 +76,7 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 			}
 		}()
 		for res := range results {
-			if len(res.State().Data) > 0 {
+			if len(res.Models()) > 0 {
 				if err := transformer.Route(ctx, res); err != nil {
 					return err
 				}

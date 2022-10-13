@@ -44,9 +44,9 @@ func (i *IDAddressTransform) Run(ctx context.Context, in chan transform.IndexSta
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("received data", "count", len(res.State().Data))
-			sqlModels := make(initmodel.IDAddressList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			log.Debugw("received data", "count", len(res.Models()))
+			sqlModels := make(initmodel.IDAddressList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				m := modeldata.(*init_.AddressState)
 				sqlModels = append(sqlModels, &initmodel.IDAddress{
 					Height:    int64(m.Height),

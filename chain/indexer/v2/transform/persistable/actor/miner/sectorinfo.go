@@ -28,8 +28,8 @@ func (s *SectorInfoTransform) Run(ctx context.Context, in chan transform.IndexSt
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(minermodel.MinerSectorInfoV7List, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(minermodel.MinerSectorInfoV7List, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				si := modeldata.(*miner.SectorEvent)
 				if si.Event != miner.SectorAdded &&
 					si.Event != miner.SectorExtended &&
