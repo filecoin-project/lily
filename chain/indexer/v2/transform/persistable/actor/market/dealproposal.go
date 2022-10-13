@@ -49,8 +49,8 @@ func (d *DealProposalTransformer) Run(ctx context.Context, in chan transform.Ind
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(marketmodel.MarketDealProposals, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(marketmodel.MarketDealProposals, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				se := modeldata.(*market.DealProposal)
 				var base64Label string
 				if se.Label.IsString {

@@ -33,9 +33,9 @@ func (v *VMMessageTransform) Run(ctx context.Context, in chan transform.IndexSta
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("received data", "count", len(res.State().Data))
-			sqlModels := make(messages2.VMMessageList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			log.Debugw("received data", "count", len(res.Models()))
+			sqlModels := make(messages2.VMMessageList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				m := modeldata.(*messages.VMMessage)
 				if m.Implicit {
 					continue

@@ -29,8 +29,8 @@ func (s *ImplicitMessageTransform) Run(ctx context.Context, in chan transform.In
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(messages2.InternalMessageList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(messages2.InternalMessageList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				vm := modeldata.(*messages.VMMessage)
 				if !vm.Implicit {
 					continue

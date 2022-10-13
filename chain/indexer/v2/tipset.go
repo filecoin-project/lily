@@ -41,6 +41,10 @@ type TipSetResult struct {
 	extractionState interface{}
 }
 
+func (t *TipSetResult) ExtractionState() interface{} {
+	return t.extractionState
+}
+
 func (t *TipSetResult) Models() []v2.LilyModel {
 	return t.models
 }
@@ -59,10 +63,6 @@ func (t *TipSetResult) Executed() *types.TipSet {
 
 func (t *TipSetResult) Complete() bool {
 	return t.complete
-}
-
-func (t *TipSetResult) State() *extract.StateResult {
-	return t.result
 }
 
 func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *TipSetResult, error) {

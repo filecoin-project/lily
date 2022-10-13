@@ -13,6 +13,7 @@ import (
 
 type TipSetStateResult struct {
 	Task      v2.ModelMeta
+	TipSet    *types.TipSet
 	StartTime time.Time
 	Duration  time.Duration
 	Models    []v2.LilyModel
@@ -35,17 +36,21 @@ func TipSetState(ctx context.Context, workers int, api tasks.DataSource, current
 			default:
 				start := time.Now()
 				data, err := extractor(ctx, api, current, executed)
+				duration := time.Since(start)
 				log.Debugw("extracted model", "type", task.String(), "duration", time.Since(start))
 				results <- &TipSetStateResult{
 					Task:      task,
+					TipSet:    current,
 					StartTime: start,
-					Duration:  time.Since(time.Now()),
+					Duration:  duration,
 					Models:    data,
 					Error:     &TipSetExtractorError{Error: err},
 				}
+				log.Infow("completed extraction for tipset", "task", task.String(), "duration", duration, "count", len(data))
 			}
 		})
 	}
 	pool.StopWait()
+
 	return nil
 }

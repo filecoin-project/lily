@@ -34,9 +34,9 @@ func (a *ActorStateTransform) Run(ctx context.Context, in chan transform.IndexSt
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("received data", "count", len(res.State().Data))
-			sqlModels := make(common.ActorStateList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			log.Debugw("received data", "count", len(res.Models()))
+			sqlModels := make(common.ActorStateList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				m := modeldata.(*raw.ActorState)
 				istate, err := vm.DumpActorState(filcns.NewActorRegistry(), &types.Actor{
 					Code:    m.Code,

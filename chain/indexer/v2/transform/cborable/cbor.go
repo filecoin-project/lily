@@ -22,8 +22,8 @@ func (c *CborTransform) Run(ctx context.Context, in chan transform.IndexState, o
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			models := make([]v2.LilyModel, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			models := make([]v2.LilyModel, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				models = append(models, modeldata)
 			}
 			if len(models) > 0 {

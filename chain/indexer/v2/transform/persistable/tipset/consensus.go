@@ -33,8 +33,8 @@ func (s *ConsensusTransform) Run(ctx context.Context, in chan transform.IndexSta
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(chain.ChainConsensusList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(chain.ChainConsensusList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				ts := modeldata.(*tipset.TipSetState)
 				currentHeight := ts.Height
 				parentHeight := ts.ParentHeight

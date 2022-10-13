@@ -32,8 +32,8 @@ func (s *TransactionTransform) Run(ctx context.Context, in chan transform.IndexS
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(multisigmodel.MultisigTransactionList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(multisigmodel.MultisigTransactionList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				tx := modeldata.(*multisig.MultisigTransaction)
 				if tx.Event == multisig.Added || tx.Event == multisig.Modified {
 					approved := make([]string, len(tx.Approved))

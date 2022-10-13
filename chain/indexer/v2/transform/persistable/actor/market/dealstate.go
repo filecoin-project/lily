@@ -41,8 +41,8 @@ func (d *DealStateTransformer) Run(ctx context.Context, in chan transform.IndexS
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(marketmodel.MarketDealStates, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(marketmodel.MarketDealStates, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				ds := modeldata.(*market.DealState)
 				sqlModels = append(sqlModels, &marketmodel.MarketDealState{
 					Height:           int64(ds.Height),

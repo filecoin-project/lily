@@ -2,9 +2,11 @@ package system
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"time"
 
+	"github.com/filecoin-project/go-address"
 	logging "github.com/ipfs/go-log/v2"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
@@ -26,53 +28,58 @@ func NewProcessingReportTransform() *ProcessingReportTransform {
 
 func (s *ProcessingReportTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debugf("run %s", s.Name())
-	results := make(map[v2.ModelMeta][]*extract.StateResult)
-	sqlModels := make(visormodel.ProcessingReportList, 0, 16)
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			results[res.Task()] = append(results[res.Task()], res.State())
+			switch v := res.ExtractionState().(type) {
+			case *extract.ActorStateResult:
+				var errors []interface{}
+				var slowestActor address.Address
+				var longestDuration time.Duration
+				status := visormodel.ProcessingStatusOK
+				for _, p := range v.Results {
+					if p.Error != nil {
+						errors = append(errors, p.Error)
+						status = visormodel.ProcessingStatusError
+					}
+					if p.Duration > longestDuration {
+						longestDuration = p.Duration
+						slowestActor = p.Info.Address
+					}
+				}
+				report := &visormodel.ProcessingReport{
+					Height:            int64(v.TipSet.Height()),
+					StateRoot:         v.TipSet.ParentState().String(),
+					Reporter:          "TODO",
+					Task:              v.Task.String(),
+					StartedAt:         v.StartTime,
+					CompletedAt:       v.StartTime.Add(v.Duration),
+					Status:            status,
+					StatusInformation: fmt.Sprintf("slowest actor: %s duration: %s", slowestActor, longestDuration),
+				}
+				if len(errors) > 0 {
+					report.ErrorsDetected = errors
+				}
+				out <- &persistable.Result{Model: report}
+			case *extract.TipSetStateResult:
+				report := &visormodel.ProcessingReport{
+					Height:      int64(v.TipSet.Height()),
+					StateRoot:   v.TipSet.ParentState().String(),
+					Reporter:    "TODO",
+					Task:        v.Task.String(),
+					StartedAt:   v.StartTime,
+					CompletedAt: v.StartTime.Add(v.Duration),
+				}
+				report.Status = visormodel.ProcessingStatusOK
+				if v.Error != nil && v.Error.Error != nil {
+					report.Status = visormodel.ProcessingStatusError
+					report.ErrorsDetected = v.Error
+				}
+				out <- &persistable.Result{Model: report}
+			}
 		}
-	}
-	for task, states := range results {
-		status := visormodel.ProcessingStatusOK
-		firstStart := time.Unix(999999999999, 0)
-		longestDuration := time.Nanosecond
-		var errs []error
-		var height int64
-		var stateroot string
-		for _, state := range states {
-			if len(state.Data) > 0 {
-				height = int64(state.Data[0].ChainEpochTime().Height)
-				stateroot = state.Data[0].ChainEpochTime().StateRoot.String()
-			}
-			if state.StartedAt.Before(firstStart) {
-				firstStart = state.StartedAt
-			}
-			if state.Duration > longestDuration {
-				longestDuration = state.Duration
-			}
-			if state.Error != nil {
-				status = visormodel.ProcessingStatusError
-				errs = append(errs, state.Error)
-			}
-		}
-		sqlModels = append(sqlModels, &visormodel.ProcessingReport{
-			Height:            height,
-			StateRoot:         stateroot,
-			Reporter:          "TODO",
-			Task:              task.String(), // TODO need a revers look up from Meta to task name
-			StartedAt:         firstStart,
-			CompletedAt:       firstStart.Add(longestDuration),
-			Status:            status,
-			StatusInformation: "",
-			ErrorsDetected:    errs,
-		})
-	}
-	if len(sqlModels) > 0 {
-		out <- &persistable.Result{Model: sqlModels}
 	}
 	return nil
 }

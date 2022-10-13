@@ -27,8 +27,8 @@ func (b *BlockHeaderTransform) Run(ctx context.Context, in chan transform.IndexS
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(blocks.BlockHeaders, len(res.State().Data))
-			for i, modeldata := range res.State().Data {
+			sqlModels := make(blocks.BlockHeaders, len(res.Models()))
+			for i, modeldata := range res.Models() {
 				m := modeldata.(*block.BlockHeader)
 				sqlModels[i] = &blocks.BlockHeader{
 					Height:          int64(m.Height),

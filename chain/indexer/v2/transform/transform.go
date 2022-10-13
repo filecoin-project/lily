@@ -9,7 +9,6 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/bus"
-	v22 "github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	v2 "github.com/filecoin-project/lily/model/v2"
 )
 
@@ -27,7 +26,8 @@ type IndexState interface {
 	Current() *types.TipSet
 	Executed() *types.TipSet
 	Complete() bool
-	State() *v22.StateResult
+	Models() []v2.LilyModel
+	ExtractionState() interface{}
 }
 
 type Handler interface {

@@ -27,8 +27,8 @@ func (b *DrandBlockEntryTransform) Run(ctx context.Context, in chan transform.In
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(blocks.DrandBlockEntries, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(blocks.DrandBlockEntries, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				m := modeldata.(*block.BlockHeader)
 				for _, ent := range m.BeaconEntries {
 					sqlModels = append(sqlModels, &blocks.DrandBlockEntrie{

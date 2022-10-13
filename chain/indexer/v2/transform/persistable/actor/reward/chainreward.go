@@ -33,8 +33,8 @@ func (s *ChainRewardTransform) Run(ctx context.Context, in chan transform.IndexS
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(model.PersistableList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(model.PersistableList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				cr := modeldata.(*reward.ChainReward)
 				sqlModels = append(sqlModels, &rewardmodel.ChainReward{
 					Height:                            int64(cr.Height),

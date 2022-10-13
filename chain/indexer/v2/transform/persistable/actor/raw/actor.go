@@ -32,9 +32,9 @@ func (a *ActorTransform) Run(ctx context.Context, in chan transform.IndexState, 
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("received data", "count", len(res.State().Data))
-			sqlModels := make(common.ActorList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			log.Debugw("received data", "count", len(res.Models()))
+			sqlModels := make(common.ActorList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				m := modeldata.(*raw.ActorState)
 
 				sqlModels = append(sqlModels, &common.Actor{

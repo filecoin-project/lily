@@ -28,8 +28,8 @@ func (s *FundsTransform) Run(ctx context.Context, in chan transform.IndexState, 
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(minermodel.MinerLockedFundsList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(minermodel.MinerLockedFundsList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				lf := modeldata.(*miner.LockedFunds)
 				sqlModels = append(sqlModels, &minermodel.MinerLockedFund{
 					Height:            int64(lf.Height),

@@ -28,8 +28,8 @@ func (s *ClaimedPowerTransform) Run(ctx context.Context, in chan transform.Index
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(powermodel.PowerActorClaimList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(powermodel.PowerActorClaimList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				cp := modeldata.(*power.ClaimedPower)
 				if cp.Event == power.Added || cp.Event == power.Modified {
 					sqlModels = append(sqlModels, &powermodel.PowerActorClaim{

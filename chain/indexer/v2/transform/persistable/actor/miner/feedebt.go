@@ -28,8 +28,8 @@ func (s *FeeDebtTransform) Run(ctx context.Context, in chan transform.IndexState
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(minermodel.MinerFeeDebtList, 0, len(res.State().Data))
-			for _, modeldata := range res.State().Data {
+			sqlModels := make(minermodel.MinerFeeDebtList, 0, len(res.Models()))
+			for _, modeldata := range res.Models() {
 				fd := modeldata.(*miner.FeeDebt)
 				sqlModels = append(sqlModels, &minermodel.MinerFeeDebt{
 					Height:    int64(fd.Height),

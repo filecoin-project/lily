@@ -16,6 +16,7 @@ import (
 
 type ActorStateResult struct {
 	Task      v2.ModelMeta
+	TipSet    *types.TipSet
 	Results   ActorExtractorResultList
 	StartTime time.Time
 	Duration  time.Duration
@@ -127,6 +128,7 @@ func runActorExtractors(ctx context.Context, workers int, task v2.ModelMeta, api
 	// return result of extraction for candidates.
 	out := &ActorStateResult{
 		Task:      task,
+		TipSet:    current,
 		Results:   results,
 		StartTime: actorsStart,
 		Duration:  time.Since(actorsStart),
