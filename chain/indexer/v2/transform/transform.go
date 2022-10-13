@@ -109,7 +109,10 @@ func (r *Router) Stop() error {
 	log.Info("closed handler channels")
 	// wait for handlers to complete and drain their now closed channel
 	err := r.handlerGrp.Wait()
-	log.Infow("handlers completed", "error", err)
+	if err != nil {
+		log.Info("handlers failed to complete", "error", err)
+	}
+	log.Info("handlers completed successfully")
 	// close the output channel signaling there are no more results to handle.
 	close(r.resultCh)
 	log.Infow("router stopped", "count", r.count)

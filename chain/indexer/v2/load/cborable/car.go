@@ -24,6 +24,13 @@ var log = logging.Logger("load/car")
 
 const BitWidth = 8
 
+func NewCarResultConsumer(ts, pts *types.TipSet) *CarResultConsumer {
+	return &CarResultConsumer{
+		Current:  ts,
+		Executed: pts,
+	}
+}
+
 type CarResultConsumer struct {
 	Current  *types.TipSet
 	Executed *types.TipSet
