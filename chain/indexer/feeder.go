@@ -129,6 +129,11 @@ type resultImpl struct {
 	result   *extract.StateResult
 }
 
+func (r *resultImpl) Models() []v2.LilyModel {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (r *resultImpl) Task() v2.ModelMeta {
 	return r.task
 }

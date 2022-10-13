@@ -22,7 +22,6 @@ import (
 	poweractors "github.com/filecoin-project/lily/chain/actors/builtin/power"
 	rewardactors "github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	verifregactors "github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
-	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/tasks/messageexecutions/vm"
 
 	"github.com/filecoin-project/lily/tasks"
@@ -87,10 +86,6 @@ type ReportProcessor interface {
 	ProcessTipSet(ctx context.Context, current *types.TipSet) (visormodel.ProcessingReportList, error)
 }
 
-type CBORModelProcessor interface {
-	Extract(ctx context.Context, current, executed *types.TipSet) ([]v2.LilyModel, error)
-}
-
 var log = logging.Logger("lily/index/processor")
 
 const BuiltinTaskName = "builtin"
@@ -107,7 +102,6 @@ func New(api tasks.DataSource, name string, taskNames []string) (*StateProcessor
 		tipsetProcessors:  processors.TipsetProcessors,
 		tipsetsProcessors: processors.TipsetsProcessors,
 		actorProcessors:   processors.ActorProcessors,
-		CBORProcessors:    processors.CBORProcessors,
 		api:               api,
 		name:              name,
 	}, nil
@@ -118,7 +112,6 @@ type StateProcessor struct {
 	tipsetProcessors  map[string]TipSetProcessor
 	tipsetsProcessors map[string]TipSetsProcessor
 	actorProcessors   map[string]ActorProcessor
-	CBORProcessors    CBORModelProcessor
 
 	// api used by tasks
 	api tasks.DataSource
@@ -139,7 +132,6 @@ type Result struct {
 	Data        model.Persistable
 	StartedAt   time.Time
 	CompletedAt time.Time
-	CBORData    []v2.LilyModel
 }
 
 // State executes its configured processors in parallel, processing the state in `current` and `executed. The return channel
@@ -157,7 +149,6 @@ func (sp *StateProcessor) State(ctx context.Context, current, executed *types.Ti
 	taskNames = append(taskNames, sp.startTipSet(ctx, current, results)...)
 	taskNames = append(taskNames, sp.startTipSets(ctx, current, executed, results)...)
 	taskNames = append(taskNames, sp.startActor(ctx, current, executed, results)...)
-	sp.startCborProcessors(ctx, current, executed, results)
 
 	go func() {
 		sp.pwg.Wait()
@@ -260,35 +251,6 @@ func (sp *StateProcessor) startTipSet(ctx context.Context, current *types.TipSet
 		}()
 	}
 	return taskNames
-}
-
-func (sp *StateProcessor) startCborProcessors(ctx context.Context, current, executed *types.TipSet, results chan *Result) {
-	sp.pwg.Add(1)
-	defer sp.pwg.Done()
-	models, err := sp.CBORProcessors.Extract(ctx, current, executed)
-	if err != nil {
-		panic(err)
-	}
-	results <- &Result{
-		Task:  "TEST",
-		Error: nil,
-		Report: visormodel.ProcessingReportList{&visormodel.ProcessingReport{
-			Height:            int64(current.Height()),
-			StateRoot:         "",
-			Reporter:          "",
-			Task:              "TEST",
-			StartedAt:         time.Now(),
-			CompletedAt:       time.Now(),
-			Status:            visormodel.ProcessingStatusOK,
-			StatusInformation: "",
-			ErrorsDetected:    nil,
-		}},
-		Data:        nil,
-		StartedAt:   time.Now(),
-		CompletedAt: time.Now(),
-		CBORData:    models,
-	}
-	return
 }
 
 // startTipSets starts all TipSetsProcessor's in parallel, their results are emitted on the `results` channel.
@@ -429,7 +391,6 @@ type IndexerProcessors struct {
 	TipsetsProcessors map[string]TipSetsProcessor
 	ActorProcessors   map[string]ActorProcessor
 	ReportProcessors  map[string]ReportProcessor
-	CBORProcessors    CBORModelProcessor
 }
 
 func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProcessors, error) {

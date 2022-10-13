@@ -74,29 +74,11 @@ func (c *CarResultConsumer) Consume(ctx context.Context, in chan transform.Resul
 	}
 	log.Infow("staged models", "duration", time.Since(start), "size", len(mw.cache))
 
-	metaModelMapRoot, err := mw.Finalize(ctx)
+	stateRoot, err := mw.Finalize(ctx, c.Current, c.Executed)
 	if err != nil {
 		return err
 	}
 
-	stateContainer := &ModelStateContainer{
-		Current:  c.Current,
-		Executed: c.Executed,
-		Models:   metaModelMapRoot,
-	}
-
-	stateMap, err := adt.MakeEmptyMap(store, BitWidth)
-	if err != nil {
-		return err
-	}
-	if err = stateMap.Put(TipsetKeyer{c.Current.Key()}, stateContainer); err != nil {
-		return err
-	}
-	stateRoot, err := stateMap.Root()
-	if err != nil {
-		return err
-	}
-	log.Infow("model state root", "root", stateRoot.String())
 	f, err := os.Create(fmt.Sprintf("./%d_%s.car", c.Current.Height(), c.Current.ParentState()))
 	if err != nil {
 		return err

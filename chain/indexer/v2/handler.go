@@ -12,8 +12,10 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load/cborable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/load/persistable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	cborable2 "github.com/filecoin-project/lily/chain/indexer/v2/transform/cborable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/system"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/tasks"
 )
@@ -32,8 +34,12 @@ func NewIndexManager(strg model.Storage, api tasks.DataSource, tasks []string) (
 	if err != nil {
 		return nil, err
 	}
+	idxer, err := NewTipSetIndexer(api, stuff.Tasks, 1024)
+	if err != nil {
+		return nil, err
+	}
 	return &Manager{
-		indexer: NewTipSetIndexer(api, stuff.Tasks, 1024),
+		indexer: idxer,
 		stuff:   stuff,
 		api:     api,
 		strg:    strg,
@@ -46,8 +52,8 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 		return false, err
 	}
 	transformer, consumer, err := m.startRouters(ctx,
-		[]transform.Handler{cborable2.NewCborTransform()},
-		[]load.Handler{cborable.NewCarResultConsumer(ts, parent)},
+		[]transform.Handler{cborable2.NewCborTransform(), system.NewProcessingReportTransform()},
+		[]load.Handler{cborable.NewCarResultConsumer(ts, parent), &persistable.PersistableResultConsumer{Strg: m.strg}},
 	)
 	if err != nil {
 		return false, err

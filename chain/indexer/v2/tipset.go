@@ -2,9 +2,9 @@ package v2
 
 import (
 	"context"
+	"sync"
 
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/gammazero/workerpool"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	v2 "github.com/filecoin-project/lily/model/v2"
@@ -18,21 +18,31 @@ type TipSetIndexer struct {
 	workers   int
 }
 
-func NewTipSetIndexer(api tasks.DataSource, tasks []v2.ModelMeta, workers int) *TipSetIndexer {
+func NewTipSetIndexer(api tasks.DataSource, tasks []v2.ModelMeta, workers int) (*TipSetIndexer, error) {
+	processor, err := extract.NewStateExtractor(api, tasks, workers, workers, workers)
+	if err != nil {
+		return nil, err
+	}
 	return &TipSetIndexer{
 		api:       api,
-		processor: &extract.StateExtractor{},
+		processor: processor,
 		tasks:     tasks,
 		workers:   workers,
-	}
+	}, nil
 }
 
 type TipSetResult struct {
-	task     v2.ModelMeta
-	current  *types.TipSet
-	executed *types.TipSet
-	complete bool
-	result   *extract.StateResult
+	task            v2.ModelMeta
+	current         *types.TipSet
+	executed        *types.TipSet
+	complete        bool
+	result          *extract.StateResult
+	models          []v2.LilyModel
+	extractionState interface{}
+}
+
+func (t *TipSetResult) Models() []v2.LilyModel {
+	return t.models
 }
 
 func (t *TipSetResult) Task() v2.ModelMeta {
@@ -56,6 +66,8 @@ func (t *TipSetResult) State() *extract.StateResult {
 }
 
 func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *TipSetResult, error) {
+	outCh := make(chan *TipSetResult, len(ti.tasks))
+
 	pts, err := ti.api.TipSet(ctx, ts.Parents())
 	if err != nil {
 		return nil, err
@@ -66,45 +78,52 @@ func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Ti
 		completedTasks[task] = false
 	}
 
-	pool := workerpool.New(ti.workers)
-	stateResults := make(chan *extract.StateResult)
 	// start processing all the tasks
-	if err := ti.processor.Start(ctx, ts, pts, ti.api, pool, ti.tasks, stateResults); err != nil {
-		return nil, err
-	}
+	tsCh, actCh, errCh := ti.processor.Start(ctx, ts, pts)
 
-	// complete and incomplete results returned on channel
-	outCh := make(chan *TipSetResult, len(ti.tasks))
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
-		// close the outCh when there are no more results to process.
-		defer close(outCh)
-		for res := range stateResults {
-			select {
-			case <-ctx.Done():
-				for task, complete := range completedTasks {
-					if complete {
-						continue
-					}
-					outCh <- &TipSetResult{
-						task:     task,
-						current:  ts,
-						executed: pts,
-						complete: false,
-						result:   nil,
-					}
-				}
-				return
-			default:
-				completedTasks[res.Task] = true
-				outCh <- &TipSetResult{
-					task:     res.Task,
-					current:  ts,
-					executed: pts,
-					complete: true,
-					result:   res,
-				}
+		defer wg.Done()
+		for res := range tsCh {
+			outCh <- &TipSetResult{
+				task:            res.Task,
+				current:         ts,
+				executed:        pts,
+				complete:        true,
+				models:          res.Models,
+				extractionState: res,
 			}
 		}
 	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for res := range actCh {
+			outCh <- &TipSetResult{
+				task:            res.Task,
+				current:         ts,
+				executed:        pts,
+				complete:        true,
+				models:          res.Results.Models(),
+				extractionState: res,
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for res := range errCh {
+			log.Errorw("TODO FORREST HANDLE ERROR CHANNEL", "error", res.Error())
+		}
+	}()
+
+	go func() {
+		wg.Wait()
+		close(outCh)
+	}()
+
 	return outCh, nil
 }

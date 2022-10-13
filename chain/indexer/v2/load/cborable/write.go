@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-state-types/builtin/v8/util/adt"
+	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	typegen "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/sync/errgroup"
@@ -38,7 +39,7 @@ func (w *ModelWriter) StageModel(ctx context.Context, m v2.LilyModel) error {
 	return nil
 }
 
-func (w *ModelWriter) Finalize(ctx context.Context) (r cid.Cid, err error) {
+func (w *ModelWriter) Finalize(ctx context.Context, ts, pts *types.TipSet) (r cid.Cid, err error) {
 	defer func() {
 		log.Infow("finalized meta model map", "root", r.String())
 	}()
@@ -48,7 +49,30 @@ func (w *ModelWriter) Finalize(ctx context.Context) (r cid.Cid, err error) {
 	if err := w.persistCache(); err != nil {
 		return cid.Undef, err
 	}
-	return w.metaModelMap.Root()
+	metaModelRoot, err := w.metaModelMap.Root()
+	if err != nil {
+		return cid.Undef, err
+	}
+
+	stateContainer := &ModelStateContainer{
+		Current:  ts,
+		Executed: pts,
+		Models:   metaModelRoot,
+	}
+
+	stateMap, err := adt.MakeEmptyMap(w.store, BitWidth)
+	if err != nil {
+		return cid.Undef, err
+	}
+	if err = stateMap.Put(TipsetKeyer{ts.Key()}, stateContainer); err != nil {
+		return cid.Undef, err
+	}
+	stateRoot, err := stateMap.Root()
+	if err != nil {
+		return cid.Undef, err
+	}
+	log.Infow("model state root", "root", stateRoot.String())
+	return stateRoot, nil
 }
 
 func (w *ModelWriter) sortCache() error {
