@@ -14,7 +14,6 @@ import (
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/miner"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 type MinerInfoTransform struct {
@@ -26,7 +25,7 @@ func NewMinerInfoTransform() *MinerInfoTransform {
 	return &MinerInfoTransform{meta: i.Meta()}
 }
 
-func (s *MinerInfoTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+func (s *MinerInfoTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debugf("run %s", s.Name())
 	for res := range in {
 		select {

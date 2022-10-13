@@ -10,7 +10,6 @@ import (
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/miner"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 type SectorInfoTransform struct {
@@ -22,7 +21,7 @@ func NewSectorInfoTransform() *SectorInfoTransform {
 	return &SectorInfoTransform{meta: info.Meta()}
 }
 
-func (s *SectorInfoTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+func (s *SectorInfoTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debug("run SectorInfoTransformer")
 	for res := range in {
 		select {

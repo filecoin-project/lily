@@ -13,7 +13,6 @@ import (
 	"github.com/filecoin-project/lily/model/chain"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/tipset"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 var log = logging.Logger("transform/tipset")
@@ -27,7 +26,7 @@ func NewConsensusTransform() *ConsensusTransform {
 	return &ConsensusTransform{meta: info.Meta()}
 }
 
-func (s *ConsensusTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+func (s *ConsensusTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debugf("run %s", s.Name())
 	for res := range in {
 		select {

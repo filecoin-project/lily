@@ -10,7 +10,6 @@ import (
 	messages2 "github.com/filecoin-project/lily/model/messages"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/messages"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 type ReceiptTransform struct {
@@ -22,7 +21,7 @@ func NewReceiptTransform() *ReceiptTransform {
 	return &ReceiptTransform{meta: info.Meta()}
 }
 
-func (r *ReceiptTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+func (r *ReceiptTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debugf("run %s", r.Name())
 	for res := range in {
 		select {

@@ -12,7 +12,6 @@ import (
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/miner"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 var log = logging.Logger("transform/sectorevents")
@@ -26,7 +25,7 @@ func NewSectorEventTransformer() *SectorEventTransformer {
 	return &SectorEventTransformer{meta: info.Meta()}
 }
 
-func (s *SectorEventTransformer) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+func (s *SectorEventTransformer) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debug("run SectorEventTransformer")
 	for res := range in {
 		select {

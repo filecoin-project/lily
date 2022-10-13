@@ -11,7 +11,6 @@ import (
 	derivedmodel "github.com/filecoin-project/lily/model/derived"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/messages"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 type GasOutputTransform struct {
@@ -23,7 +22,7 @@ func NewGasOutputTransform() *GasOutputTransform {
 	return &GasOutputTransform{meta: info.Meta()}
 }
 
-func (g *GasOutputTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+func (g *GasOutputTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debugf("run %s", g.Name())
 	for res := range in {
 		select {

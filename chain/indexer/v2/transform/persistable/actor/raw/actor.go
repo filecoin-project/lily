@@ -12,7 +12,6 @@ import (
 	"github.com/filecoin-project/lily/model/actors/common"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/raw"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 var log = logging.Logger("transform/actor")
@@ -26,7 +25,7 @@ func NewActorTransform() *ActorTransform {
 	return &ActorTransform{meta: info.Meta()}
 }
 
-func (a *ActorTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+func (a *ActorTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debugf("run %s", a.Name())
 	for res := range in {
 		select {

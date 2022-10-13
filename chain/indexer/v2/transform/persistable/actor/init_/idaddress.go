@@ -12,7 +12,6 @@ import (
 	initmodel "github.com/filecoin-project/lily/model/actors/init"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/init_"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 var log = logging.Logger("transform/idaddress")
@@ -38,7 +37,7 @@ func (i *IDAddressTransform) Matcher() string {
 	return fmt.Sprintf("^%s$", i.meta.String())
 }
 
-func (i *IDAddressTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+func (i *IDAddressTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debugf("run %s", i.Name())
 	for res := range in {
 		select {

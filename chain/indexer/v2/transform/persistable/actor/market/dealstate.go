@@ -10,7 +10,6 @@ import (
 	marketmodel "github.com/filecoin-project/lily/model/actors/market"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/market"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 type DealStateTransformer struct {
@@ -35,7 +34,7 @@ func (d *DealStateTransformer) Matcher() string {
 	return fmt.Sprintf("^%s$", d.meta.String())
 }
 
-func (d *DealStateTransformer) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+func (d *DealStateTransformer) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debugf("run %s", d.Name())
 	for res := range in {
 		select {

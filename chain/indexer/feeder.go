@@ -20,13 +20,11 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/message"
 	"github.com/filecoin-project/lily/model"
 	v2 "github.com/filecoin-project/lily/model/v2"
-	ltasks "github.com/filecoin-project/lily/tasks"
 )
 
 const BitWidth = 8
 
 type Feeder struct {
-	Api  ltasks.DataSource
 	Strg model.Storage
 }
 
@@ -167,7 +165,7 @@ func (f *Feeder) startRouters(ctx context.Context, tasks []v2.ModelMeta, handler
 	if err != nil {
 		return nil, nil, err
 	}
-	tr.Start(ctx, f.Api)
+	tr.Start(ctx)
 
 	lr, err := load.NewRouter(consumers...)
 	if err != nil {
