@@ -2,10 +2,12 @@ package v2
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load"
@@ -44,11 +46,8 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 		return false, err
 	}
 	transformer, consumer, err := m.startRouters(ctx,
-		[]transform.Handler{&cborable2.CborTransform{}},
-		[]load.Handler{&cborable.CarResultConsumer{
-			Current:  ts,
-			Executed: parent,
-		}},
+		[]transform.Handler{cborable2.NewCborTransform()},
+		[]load.Handler{cborable.NewCarResultConsumer(ts, parent)},
 	)
 	if err != nil {
 		return false, err
@@ -60,27 +59,44 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 		return false, err
 	}
 
-	// TODO handle the error case here, remove the panic in the goroutine
-	// - a simple solution would be to collect all transformer results and then send them to the consumer.
-	//	 this will prevent partial persistence at the cost of more memory.
-	go func() {
+	grp := errgroup.Group{}
+	grp.Go(func() (err error) {
+		defer func() {
+			if err != nil {
+				err = fmt.Errorf("transform routine receieved error: %w", err)
+			}
+			stopErr := transformer.Stop()
+			if stopErr != nil {
+				err = fmt.Errorf("%s stopping transfrom: %w", err, stopErr)
+			}
+		}()
 		for res := range results {
 			if len(res.State().Data) > 0 {
 				if err := transformer.Route(ctx, res); err != nil {
-					panic(err)
+					return err
 				}
 			}
 		}
-		if err := transformer.Stop(); err != nil {
-			panic(err)
+		return
+	})
+	grp.Go(func() (err error) {
+		defer func() {
+			if err != nil {
+				err = fmt.Errorf("consumer routine receieved error: %w", err)
+			}
+			stopErr := consumer.Stop()
+			if stopErr != nil {
+				err = fmt.Errorf("%s stopping consumer: %w", err, stopErr)
+			}
+		}()
+		for res := range transformer.Results() {
+			if err := consumer.Route(ctx, res); err != nil {
+				return err
+			}
 		}
-	}()
-	for res := range transformer.Results() {
-		if err := consumer.Route(ctx, res); err != nil {
-			return false, err
-		}
-	}
-	if err := consumer.Stop(); err != nil {
+		return
+	})
+	if err := grp.Wait(); err != nil {
 		return false, err
 	}
 	log.Infow("index complete", "duration", time.Since(start))

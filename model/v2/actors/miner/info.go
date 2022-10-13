@@ -100,6 +100,7 @@ func (t *MinerInfo) ToStorageBlock() (block.Block, error) {
 func (t *MinerInfo) Cid() cid.Cid {
 	sb, err := t.ToStorageBlock()
 	if err != nil {
+		fmt.Printf("%+v", t)
 		panic(err)
 	}
 
@@ -132,10 +133,17 @@ func ExtractMinerInfo(ctx context.Context, api tasks.DataSource, current, execut
 		return nil, err
 	}
 
+	// check if there is a work key change
 	wkc := new(WorkerKeyChange)
 	if pendingWorkerKey := curMinerInfo.PendingWorkerKey; pendingWorkerKey != nil {
-		wkc.NewWorker = pendingWorkerKey.NewWorker
-		wkc.EffectiveAt = pendingWorkerKey.EffectiveAt
+		if !pendingWorkerKey.NewWorker.Empty() {
+			wkc.NewWorker = pendingWorkerKey.NewWorker
+			wkc.EffectiveAt = pendingWorkerKey.EffectiveAt
+		}
+	}
+	// if there wasn't a key change set to nil else cbor marshal will fail to marshal an empty address type.
+	if wkc.NewWorker.Empty() {
+		wkc = nil
 	}
 
 	out := []v2.LilyModel{
