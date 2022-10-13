@@ -50,7 +50,7 @@ var AllTableTasks = []string{
 	MinerBeneficiary,
 	MinerSectorDeal,
 	MinerSectorInfoV7,
-	MinerSectorInfoV1_6,
+	//MinerSectorInfoV1_6,
 	MinerSectorPost,
 	MinerPreCommitInfo,
 	MinerSectorEvent,
@@ -78,7 +78,7 @@ var AllTableTasks = []string{
 	GasOutputs,
 	ChainEconomics,
 	ChainConsensus,
-	MultisigApproval,
+	//MultisigApproval,
 	VerifiedRegistryVerifier,
 	VerifiedRegistryVerifiedClient,
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/whyrusleeping/cbor-gen"
 
+	"github.com/filecoin-project/lily/chain/indexer/v2/load/cborable"
 	"github.com/filecoin-project/lily/model/v2/actors/init_"
 	"github.com/filecoin-project/lily/model/v2/actors/market"
 	"github.com/filecoin-project/lily/model/v2/actors/miner"
@@ -15,7 +16,9 @@ import (
 	"github.com/filecoin-project/lily/model/v2/actors/reward"
 	"github.com/filecoin-project/lily/model/v2/actors/verifreg"
 	"github.com/filecoin-project/lily/model/v2/block"
+	"github.com/filecoin-project/lily/model/v2/economics"
 	"github.com/filecoin-project/lily/model/v2/messages"
+	"github.com/filecoin-project/lily/model/v2/tipset"
 )
 
 func main() {
@@ -113,4 +116,29 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	err = typegen.WriteTupleEncodersToFile("./model/v2/economics/cbor_gen.go", "economics",
+		economics.ChainEconomics{},
+	)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	err = typegen.WriteTupleEncodersToFile("./model/v2/tipset/cbor_gen.go", "tipset",
+		tipset.TipSetState{},
+	)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	err = typegen.WriteTupleEncodersToFile("./chain/indexer/v2/load/cborable/cbor_gen.go", "cborable",
+		cborable.ModelStateContainer{},
+	)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 }

@@ -239,7 +239,7 @@ func ExtractMinerSectorEventsModel(ctx context.Context, api tasks.DataSource, cu
 
 // ExtractSectorEvents transforms sectorChanges, preCommitChanges, and sectorStateChanges to a MinerSectorEventList.
 func ExtractSectorEvents(extState extraction.State, sectorChanges *miner.SectorChanges, sectorStateChanges *SectorStateEvents) ([]v2.LilyModel, error) {
-	log.Infow("sector changes",
+	log.Debugw("sector changes",
 		"miner", extState.Address().String(),
 		"added", len(sectorChanges.Added),
 		"extended", len(sectorChanges.Extended),
@@ -260,7 +260,7 @@ func ExtractSectorEvents(extState extraction.State, sectorChanges *miner.SectorC
 	out = append(out, sectorEvents...)
 	out = append(out, sectorStateEvents...)
 
-	log.Infow("total events", "address", extState.Address().String(), "count", len(out))
+	log.Debugw("total events", "address", extState.Address().String(), "count", len(out))
 	return out, nil
 }
 

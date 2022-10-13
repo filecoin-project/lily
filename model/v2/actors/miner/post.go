@@ -165,6 +165,7 @@ func ExtractPost(ctx context.Context, api tasks.DataSource, current, executed *t
 		for _, s := range sectors {
 			posts = append(posts, &PostSectorMessage{
 				Height:         ec.PrevTs.Height(),
+				StateRoot:      current.ParentState(),
 				Miner:          a.Address,
 				SectorNumber:   abi.SectorNumber(s),
 				PostMessageCID: msg.Cid(),

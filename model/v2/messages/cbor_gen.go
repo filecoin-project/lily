@@ -20,7 +20,7 @@ var _ = cid.Undef
 var _ = math.E
 var _ = sort.Sort
 
-var lengthBufVMMessage = []byte{141}
+var lengthBufVMMessage = []byte{142}
 
 func (t *VMMessage) MarshalCBOR(w io.Writer) error {
 	if t == nil {
@@ -53,8 +53,14 @@ func (t *VMMessage) MarshalCBOR(w io.Writer) error {
 
 	// t.SourceCID (cid.Cid) (struct)
 
-	if err := cbg.WriteCid(cw, t.SourceCID); err != nil {
-		return xerrors.Errorf("failed to write cid field t.SourceCID: %w", err)
+	if t.SourceCID == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.SourceCID); err != nil {
+			return xerrors.Errorf("failed to write cid field t.SourceCID: %w", err)
+		}
 	}
 
 	// t.ToActorCode (cid.Cid) (struct)
@@ -137,6 +143,11 @@ func (t *VMMessage) MarshalCBOR(w io.Writer) error {
 	if _, err := cw.Write(t.Return[:]); err != nil {
 		return err
 	}
+
+	// t.Implicit (bool) (bool)
+	if err := cbg.WriteBool(w, t.Implicit); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -159,7 +170,7 @@ func (t *VMMessage) UnmarshalCBOR(r io.Reader) (err error) {
 		return fmt.Errorf("cbor input should be of type array")
 	}
 
-	if extra != 13 {
+	if extra != 14 {
 		return fmt.Errorf("cbor input had wrong number of fields")
 	}
 
@@ -204,12 +215,22 @@ func (t *VMMessage) UnmarshalCBOR(r io.Reader) (err error) {
 
 	{
 
-		c, err := cbg.ReadCid(cr)
+		b, err := cr.ReadByte()
 		if err != nil {
-			return xerrors.Errorf("failed to read cid field t.SourceCID: %w", err)
+			return err
 		}
+		if b != cbg.CborNull[0] {
+			if err := cr.UnreadByte(); err != nil {
+				return err
+			}
 
-		t.SourceCID = c
+			c, err := cbg.ReadCid(cr)
+			if err != nil {
+				return xerrors.Errorf("failed to read cid field t.SourceCID: %w", err)
+			}
+
+			t.SourceCID = &c
+		}
 
 	}
 	// t.ToActorCode (cid.Cid) (struct)
@@ -368,6 +389,23 @@ func (t *VMMessage) UnmarshalCBOR(r io.Reader) (err error) {
 
 	if _, err := io.ReadFull(cr, t.Return[:]); err != nil {
 		return err
+	}
+	// t.Implicit (bool) (bool)
+
+	maj, extra, err = cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	if maj != cbg.MajOther {
+		return fmt.Errorf("booleans must be major type 7")
+	}
+	switch extra {
+	case 20:
+		t.Implicit = false
+	case 21:
+		t.Implicit = true
+	default:
+		return fmt.Errorf("booleans are either major type 7, value 20 or 21 (got %d)", extra)
 	}
 	return nil
 }

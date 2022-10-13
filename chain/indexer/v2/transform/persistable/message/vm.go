@@ -28,16 +28,19 @@ func NewVMMessageTransform() *VMMessageTransform {
 }
 
 func (v *VMMessageTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
-	log.Debug("run VMMessageTransform")
+	log.Debugf("run %s", v.Name())
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 			log.Debugw("received data", "count", len(res.State().Data))
-			sqlModels := make(messages2.VMMessageList, len(res.State().Data))
-			for i, modeldata := range res.State().Data {
+			sqlModels := make(messages2.VMMessageList, 0, len(res.State().Data))
+			for _, modeldata := range res.State().Data {
 				m := modeldata.(*messages.VMMessage)
+				if m.Implicit {
+					continue
+				}
 				var params string
 				var returns string
 				var err error
@@ -53,7 +56,7 @@ func (v *VMMessageTransform) Run(ctx context.Context, api tasks.DataSource, in c
 						}
 					}
 				}
-				sqlModels[i] = &messages2.VMMessage{
+				sqlModels = append(sqlModels, &messages2.VMMessage{
 					Height:    int64(m.Height),
 					StateRoot: m.StateRoot.String(),
 					Cid:       m.MessageCID.String(),
@@ -67,7 +70,7 @@ func (v *VMMessageTransform) Run(ctx context.Context, api tasks.DataSource, in c
 					GasUsed:   m.GasUsed,
 					Params:    params,
 					Returns:   returns,
-				}
+				})
 			}
 			out <- &persistable.Result{Model: sqlModels}
 		}

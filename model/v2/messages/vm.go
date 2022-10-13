@@ -22,7 +22,7 @@ import (
 	"github.com/filecoin-project/lily/tasks"
 )
 
-var log = logging.Logger("shitidk")
+var log = logging.Logger("vm")
 
 func init() {
 	v2.RegisterExtractor(&VMMessage{}, Extract)
@@ -33,7 +33,7 @@ var _ v2.LilyModel = (*VMMessage)(nil)
 type VMMessage struct {
 	Height      abi.ChainEpoch
 	StateRoot   cid.Cid
-	SourceCID   cid.Cid
+	SourceCID   *cid.Cid
 	ToActorCode cid.Cid
 	MessageCID  cid.Cid
 	From        address.Address
@@ -44,6 +44,7 @@ type VMMessage struct {
 	GasUsed     int64
 	Params      []byte
 	Return      []byte
+	Implicit    bool
 }
 
 func (t *VMMessage) Meta() v2.ModelMeta {
@@ -139,6 +140,34 @@ func Extract(ctx context.Context, api tasks.DataSource, current *types.TipSet, e
 		default:
 		}
 
+		if parentMsg.Implicit {
+			toCode, found := getActorCode(parentMsg.Message.To)
+			if !found && parentMsg.Ret.ExitCode == 0 {
+				// No destination actor code. Normally Lotus will create an account actor for unknown addresses but if the
+				// message fails then Lotus will not allow the actor to be created, and we are left with an address of an
+				// unknown type.
+				// If the message was executed it means we are out of step with Lotus behaviour somehow. This probably
+				// indicates that Lily actor type detection is out of date.
+				log.Errorw("extracting implicit message", "cid", parentMsg.Cid, "receipt", parentMsg.Ret)
+				return nil, fmt.Errorf("extracting implicit message %s failed to get to actor code for to address %s", parentMsg.Cid, parentMsg.Message.To)
+			}
+			out = append(out, &VMMessage{
+				Height:      parentMsg.Height,
+				StateRoot:   parentMsg.StateRoot,
+				ToActorCode: toCode,
+				MessageCID:  parentMsg.Cid,
+				From:        parentMsg.Message.From,
+				To:          parentMsg.Message.To,
+				Value:       parentMsg.Message.Value,
+				Method:      parentMsg.Message.Method,
+				ExitCode:    parentMsg.Ret.ExitCode,
+				GasUsed:     parentMsg.Ret.GasUsed,
+				Params:      parentMsg.Message.Params,
+				Return:      parentMsg.Ret.Return,
+				Implicit:    true,
+			})
+		}
+
 		// TODO this loop could be parallelized if it becomes a bottleneck.
 		// NB: the getActorCode method is the expensive call since it resolves addresses and may load the statetree.
 		for _, child := range util.GetChildMessagesOf(parentMsg) {
@@ -156,10 +185,11 @@ func Extract(ctx context.Context, api tasks.DataSource, current *types.TipSet, e
 				return nil, fmt.Errorf("extracting VM message from source messages %s failed to get to actor code for message: %s to address %s", parentMsg.Cid, childCid, child.Message.To)
 			}
 
+			sourceCpy := parentMsg.Cid
 			out = append(out, &VMMessage{
 				Height:      parentMsg.Height,
 				StateRoot:   parentMsg.StateRoot,
-				SourceCID:   parentMsg.Cid,
+				SourceCID:   &sourceCpy,
 				ToActorCode: toCode,
 				MessageCID:  childCid,
 				From:        child.Message.From,
@@ -170,6 +200,7 @@ func Extract(ctx context.Context, api tasks.DataSource, current *types.TipSet, e
 				GasUsed:     child.Receipt.GasUsed,
 				Params:      child.Message.Params,
 				Return:      child.Receipt.Return,
+				Implicit:    false,
 			})
 		}
 	}
