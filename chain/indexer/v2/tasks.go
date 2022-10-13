@@ -13,7 +13,9 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/reward"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/verifreg"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/block"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/economics"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/message"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/tipset"
 	v2 "github.com/filecoin-project/lily/model/v2"
 )
 
@@ -137,7 +139,7 @@ var TaskHandlers = map[string]TaskMeta{
 	},
 	MessageGasEconomy: {
 		Transformers: []transform.Handler{
-			message.NewGasEconomyTransform(),
+			economics.NewGasEconomyTransform(),
 		},
 	},
 	ParsedMessage: {
@@ -198,6 +200,26 @@ var TaskHandlers = map[string]TaskMeta{
 	VerifiedRegistryVerifier: {
 		Transformers: []transform.Handler{
 			verifreg.NewVerifierTransform(),
+		},
+	},
+	InternalMessage: {
+		Transformers: []transform.Handler{
+			message.NewImplicitMessageTransform(),
+		},
+	},
+	InternalParsedMessage: {
+		Transformers: []transform.Handler{
+			message.NewImplicitParsedMessageTransform(),
+		},
+	},
+	ChainEconomics: {
+		Transformers: []transform.Handler{
+			economics.NewCirculatingSupplyTransform(),
+		},
+	},
+	ChainConsensus: {
+		Transformers: []transform.Handler{
+			tipset.NewConsensusTransform(),
 		},
 	},
 }

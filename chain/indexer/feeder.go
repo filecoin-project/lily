@@ -2,6 +2,7 @@ package indexer
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
@@ -15,6 +16,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/miner"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/raw"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/block"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/economics"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/message"
 	"github.com/filecoin-project/lily/model"
 	v2 "github.com/filecoin-project/lily/model/v2"
@@ -29,24 +31,22 @@ type Feeder struct {
 }
 
 func (f *Feeder) Index(ctx context.Context, path string) error {
-	start := time.Now()
-	ms, err := cborable.NewModelStoreFromCAR(ctx, path)
+	fi, err := os.Open(path)
 	if err != nil {
 		return err
 	}
-	defer ms.Close()
+	defer fi.Close()
+	start := time.Now()
+	mr, err := cborable.NewModelReader(ctx, fi)
+	if err != nil {
+		return err
+	}
 
-	for _, ts := range ms.TipSets() {
-		tipset, err := f.Api.TipSet(ctx, ts)
-		if err != nil {
-			return err
-		}
-		parent, err := f.Api.TipSet(ctx, tipset.Parents())
-		if err != nil {
-			return err
-		}
+	for _, state := range mr.States() {
+		tipset := state.Current
+		parent := state.Executed
 
-		tasks, err := ms.ModelTasksForTipSet(ts)
+		tasks, err := mr.ModelMetasForTipSet(tipset.Key())
 		if err != nil {
 			return err
 		}
@@ -69,7 +69,7 @@ func (f *Feeder) Index(ctx context.Context, path string) error {
 				message.NewParsedMessageTransform(),
 				message.NewBlockMessageTransform(),
 				message.NewGasOutputTransform(),
-				message.NewGasEconomyTransform(),
+				economics.NewGasEconomyTransform(),
 				message.NewReceiptTransform(),
 
 				block.NewBlockHeaderTransform(),
@@ -82,7 +82,7 @@ func (f *Feeder) Index(ctx context.Context, path string) error {
 		// TODO handle the error case here, remove the panic in the goroutine
 		go func() {
 			for _, task := range tasks {
-				data, err := ms.GetModels(ts, task)
+				data, err := mr.GetModels(tipset.Key(), task)
 				if err != nil {
 					log.Errorw("getting models", "error", err)
 					panic(err)
