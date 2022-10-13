@@ -174,14 +174,6 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 	if err != nil {
 		return nil, err
 	}
-	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	/*
-		im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window), integrated.WithCborExporter(lms))
-		if err != nil {
-			return nil, err
-		}
-
-	*/
 
 	ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
 	if err != nil {

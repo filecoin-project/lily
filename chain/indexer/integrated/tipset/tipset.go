@@ -187,10 +187,9 @@ func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Re
 
 				// Persist the processing report and the data in a single transaction
 				outCh <- &Result{
-					Name:     res.Task,
-					Data:     res.Data,
-					Report:   res.Report,
-					CborData: res.CBORData,
+					Name:   res.Task,
+					Data:   res.Data,
+					Report: res.Report,
 				}
 			}
 		}

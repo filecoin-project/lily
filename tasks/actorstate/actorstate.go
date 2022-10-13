@@ -35,6 +35,9 @@ func (a ActorInfo) Attributes() []attribute.KeyValue {
 		attribute.String("head", a.Actor.Head.String()),
 		attribute.String("type", builtin.ActorNameByCode(a.Actor.Code)),
 		attribute.String("change", a.ChangeType.String()),
+		attribute.String("current", a.Current.Key().String()),
+		attribute.String("executed", a.Executed.Key().String()),
+		attribute.Int64("height", int64(a.Current.Height())),
 	}
 }
 
