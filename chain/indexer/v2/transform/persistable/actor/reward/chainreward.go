@@ -13,7 +13,6 @@ import (
 	rewardmodel "github.com/filecoin-project/lily/model/actors/reward"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/reward"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 var log = logging.Logger("transform/reward")
@@ -27,7 +26,7 @@ func NewChainRewardTransform() *ChainRewardTransform {
 	return &ChainRewardTransform{meta: info.Meta()}
 }
 
-func (s *ChainRewardTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+func (s *ChainRewardTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debugf("run %s", s.Name())
 	for res := range in {
 		select {

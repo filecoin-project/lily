@@ -12,7 +12,6 @@ import (
 	messages2 "github.com/filecoin-project/lily/model/messages"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/messages"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 type MessageTransform struct {
@@ -24,7 +23,7 @@ func NewMessageTransform() *MessageTransform {
 	return &MessageTransform{meta: info.Meta()}
 }
 
-func (v *MessageTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+func (v *MessageTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debug("run MessageTransform")
 	seenMsg := cid.NewSet()
 	for res := range in {

@@ -11,7 +11,6 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/v2/bus"
 	v22 "github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	v2 "github.com/filecoin-project/lily/model/v2"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 var log = logging.Logger("transform")
@@ -32,7 +31,7 @@ type IndexState interface {
 }
 
 type Handler interface {
-	Run(ctx context.Context, api tasks.DataSource, in chan IndexState, out chan Result) error
+	Run(ctx context.Context, in chan IndexState, out chan Result) error
 	Name() string
 	ModelType() v2.ModelMeta
 	Matcher() string
@@ -89,14 +88,14 @@ type Router struct {
 	count           int64
 }
 
-func (r *Router) Start(ctx context.Context, api tasks.DataSource) {
+func (r *Router) Start(ctx context.Context) {
 	log.Infow("starting router", "topics", r.bus.Bus.Topics())
 	for i, handler := range r.handlers {
 		log.Infow("start handler", "type", handler.Name())
 		i := i
 		handler := handler
 		r.handlerGrp.Go(func() error {
-			return handler.Run(ctx, api, r.handlerChannels[i], r.resultCh)
+			return handler.Run(ctx, r.handlerChannels[i], r.resultCh)
 		})
 	}
 }

@@ -103,7 +103,7 @@ func (m *Manager) startRouters(ctx context.Context, handlers []transform.Handler
 	if err != nil {
 		return nil, nil, err
 	}
-	tr.Start(ctx, m.api)
+	tr.Start(ctx)
 
 	lr, err := load.NewRouter(consumers...)
 	if err != nil {

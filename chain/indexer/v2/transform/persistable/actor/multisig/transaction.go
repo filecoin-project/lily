@@ -12,7 +12,6 @@ import (
 	multisigmodel "github.com/filecoin-project/lily/model/actors/multisig"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/multisig"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 var log = logging.Logger("transform/multisig")
@@ -26,7 +25,7 @@ func NewTransactionTransform() *TransactionTransform {
 	return &TransactionTransform{meta: info.Meta()}
 }
 
-func (s *TransactionTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+func (s *TransactionTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debugf("run %s", s.Name())
 	for res := range in {
 		select {

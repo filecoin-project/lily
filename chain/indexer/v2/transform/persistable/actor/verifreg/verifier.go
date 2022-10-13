@@ -10,7 +10,6 @@ import (
 	verifregmodel "github.com/filecoin-project/lily/model/actors/verifreg"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/verifreg"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 type VerifierTransform struct {
@@ -22,7 +21,7 @@ func NewVerifierTransform() *VerifierTransform {
 	return &VerifierTransform{meta: info.Meta()}
 }
 
-func (s *VerifierTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+func (s *VerifierTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debugf("run %s", s.Name())
 	for res := range in {
 		select {

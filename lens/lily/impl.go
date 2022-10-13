@@ -87,13 +87,7 @@ func (m *LilyNodeAPI) IndexCarFile(_ context.Context, cfg *LilyIndexCarFileConfi
 		return err
 	}
 
-	taskAPI, err := datasource.NewDataSource(m)
-	if err != nil {
-		return err
-	}
-
 	feeder := indexer.Feeder{
-		Api:  taskAPI,
 		Strg: strg,
 	}
 	return feeder.Index(ctx, cfg.Path)

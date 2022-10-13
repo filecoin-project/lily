@@ -10,7 +10,6 @@ import (
 	powermodel "github.com/filecoin-project/lily/model/actors/power"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/power"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 type ClaimedPowerTransform struct {
@@ -22,7 +21,7 @@ func NewClaimedPowerTransform() *ClaimedPowerTransform {
 	return &ClaimedPowerTransform{meta: info.Meta()}
 }
 
-func (s *ClaimedPowerTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+func (s *ClaimedPowerTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debugf("run %s", s.Name())
 	for res := range in {
 		select {

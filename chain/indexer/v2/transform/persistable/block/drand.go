@@ -10,7 +10,6 @@ import (
 	"github.com/filecoin-project/lily/model/blocks"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/block"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 type DrandBlockEntryTransform struct {
@@ -22,7 +21,7 @@ func NewDrandBlockEntryTransform() *DrandBlockEntryTransform {
 	return &DrandBlockEntryTransform{meta: info.Meta()}
 }
 
-func (b *DrandBlockEntryTransform) Run(ctx context.Context, api tasks.DataSource, in chan transform.IndexState, out chan transform.Result) error {
+func (b *DrandBlockEntryTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	for res := range in {
 		select {
 		case <-ctx.Done():
