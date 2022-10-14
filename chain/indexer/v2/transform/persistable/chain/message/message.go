@@ -7,23 +7,27 @@ import (
 
 	"github.com/ipfs/go-cid"
 
+	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/chain"
+	"github.com/filecoin-project/lily/model"
 	messages2 "github.com/filecoin-project/lily/model/messages"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/messages"
 )
 
 type MessageTransform struct {
-	meta v2.ModelMeta
+	meta     v2.ModelMeta
+	taskName string
 }
 
-func NewMessageTransform() *MessageTransform {
+func NewMessageTransform(taskName string) *MessageTransform {
 	info := messages.BlockMessage{}
-	return &MessageTransform{meta: info.Meta()}
+	return &MessageTransform{meta: info.Meta(), taskName: taskName}
 }
 
-func (v *MessageTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
+func (v *MessageTransform) Run(ctx context.Context, reporter string, in chan *extract.TipSetStateResult, out chan transform.Result) error {
 	log.Debug("run MessageTransform")
 	seenMsg := cid.NewSet()
 	for res := range in {
@@ -31,9 +35,11 @@ func (v *MessageTransform) Run(ctx context.Context, in chan transform.IndexState
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("received data", "count", len(res.Models()))
-			sqlModels := make(messages2.Messages, 0, len(res.Models()))
-			for _, modeldata := range res.Models() {
+			report := chain.ToProcessingReport(v.taskName, reporter, res)
+			data := model.PersistableList{report}
+			log.Debugw("received data", "count", len(res.Models))
+			sqlModels := make(messages2.Messages, 0, len(res.Models))
+			for _, modeldata := range res.Models {
 				m := modeldata.(*messages.BlockMessage)
 				if seenMsg.Visit(m.MessageCid) {
 					sqlModels = append(sqlModels, &messages2.Message{
@@ -51,7 +57,10 @@ func (v *MessageTransform) Run(ctx context.Context, in chan transform.IndexState
 					})
 				}
 			}
-			out <- &persistable.Result{Model: sqlModels}
+			if len(sqlModels) > 0 {
+				data = append(data, sqlModels)
+			}
+			out <- &persistable.Result{Model: data}
 		}
 	}
 	return nil

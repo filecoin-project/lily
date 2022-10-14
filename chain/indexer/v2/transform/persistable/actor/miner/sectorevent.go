@@ -4,39 +4,43 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"time"
 
 	logging "github.com/ipfs/go-log/v2"
 
+	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor"
+	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/miner"
 )
 
-var log = logging.Logger("transform/sectorevents")
+var log = logging.Logger("transform/miner")
 
 type SectorEventTransformer struct {
-	meta v2.ModelMeta
+	meta     v2.ModelMeta
+	taskName string
 }
 
-func NewSectorEventTransformer() *SectorEventTransformer {
+func NewSectorEventTransformer(taskName string) *SectorEventTransformer {
 	info := miner.SectorEvent{}
-	return &SectorEventTransformer{meta: info.Meta()}
+	return &SectorEventTransformer{meta: info.Meta(), taskName: taskName}
 }
 
-func (s *SectorEventTransformer) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
-	log.Debug("run SectorEventTransformer")
+func (s *SectorEventTransformer) Run(ctx context.Context, reporter string, in chan *extract.ActorStateResult, out chan transform.Result) error {
+	log.Debugf("run %s", s.Name())
 	for res := range in {
-		start := time.Now()
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("SectorEventTransformer received data", "count", len(res.Models()))
-			sqlModels := make(minermodel.MinerSectorEventList, len(res.Models()))
-			for i, modeldata := range res.Models() {
+			report := actor.ToProcessingReport(s.taskName, reporter, res)
+			data := model.PersistableList{report}
+			log.Debugw("SectorEventTransformer received data", "count", len(res.Results.Models()))
+			sqlModels := make(minermodel.MinerSectorEventList, len(res.Results.Models()))
+			for i, modeldata := range res.Results.Models() {
 				se := modeldata.(*miner.SectorEvent)
 				sqlModels[i] = &minermodel.MinerSectorEvent{
 					Height:    int64(se.Height),
@@ -47,13 +51,9 @@ func (s *SectorEventTransformer) Run(ctx context.Context, in chan transform.Inde
 				}
 			}
 			if len(sqlModels) > 0 {
-				out <- &persistable.Result{Model: sqlModels, Metadata: &persistable.Meta{
-					TipSet:    res.Current(),
-					Name:      s.Name(),
-					StartTime: start,
-					EndTime:   time.Now(),
-				}}
+				data = append(data, sqlModels)
 			}
+			out <- &persistable.Result{Model: data}
 		}
 	}
 	return nil

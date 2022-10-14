@@ -5,31 +5,38 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor"
+	"github.com/filecoin-project/lily/model"
 	powermodel "github.com/filecoin-project/lily/model/actors/power"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/power"
 )
 
 type ClaimedPowerTransform struct {
-	meta v2.ModelMeta
+	meta     v2.ModelMeta
+	taskName string
 }
 
-func NewClaimedPowerTransform() *ClaimedPowerTransform {
+func NewClaimedPowerTransform(taskName string) *ClaimedPowerTransform {
 	info := power.ClaimedPower{}
-	return &ClaimedPowerTransform{meta: info.Meta()}
+	return &ClaimedPowerTransform{meta: info.Meta(), taskName: taskName}
 }
 
-func (s *ClaimedPowerTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
+func (s *ClaimedPowerTransform) Run(ctx context.Context, reporter string, in chan *extract.ActorStateResult, out chan transform.Result) error {
 	log.Debugf("run %s", s.Name())
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(powermodel.PowerActorClaimList, 0, len(res.Models()))
-			for _, modeldata := range res.Models() {
+			report := actor.ToProcessingReport(s.taskName, reporter, res)
+			data := model.PersistableList{report}
+			log.Debugw("received data", "count", len(res.Results.Models()))
+			sqlModels := make(powermodel.PowerActorClaimList, 0, len(res.Results.Models()))
+			for _, modeldata := range res.Results.Models() {
 				cp := modeldata.(*power.ClaimedPower)
 				if cp.Event == power.Added || cp.Event == power.Modified {
 					sqlModels = append(sqlModels, &powermodel.PowerActorClaim{
@@ -42,8 +49,9 @@ func (s *ClaimedPowerTransform) Run(ctx context.Context, in chan transform.Index
 				}
 			}
 			if len(sqlModels) > 0 {
-				out <- &persistable.Result{Model: sqlModels}
+				data = append(data, sqlModels)
 			}
+			out <- &persistable.Result{Model: data}
 		}
 	}
 	return nil

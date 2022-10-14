@@ -5,31 +5,38 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor"
+	"github.com/filecoin-project/lily/model"
 	verifregmodel "github.com/filecoin-project/lily/model/actors/verifreg"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/verifreg"
 )
 
 type VerifierTransform struct {
-	meta v2.ModelMeta
+	meta     v2.ModelMeta
+	taskName string
 }
 
-func NewVerifierTransform() *VerifierTransform {
+func NewVerifierTransform(taskName string) *VerifierTransform {
 	info := verifreg.Verifier{}
-	return &VerifierTransform{meta: info.Meta()}
+	return &VerifierTransform{meta: info.Meta(), taskName: taskName}
 }
 
-func (s *VerifierTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
+func (s *VerifierTransform) Run(ctx context.Context, reporter string, in chan *extract.ActorStateResult, out chan transform.Result) error {
 	log.Debugf("run %s", s.Name())
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(verifregmodel.VerifiedRegistryVerifiersList, 0, len(res.Models()))
-			for _, modeldata := range res.Models() {
+			report := actor.ToProcessingReport(s.taskName, reporter, res)
+			data := model.PersistableList{report}
+			log.Debugw("received data", "count", len(res.Results.Models()))
+			sqlModels := make(verifregmodel.VerifiedRegistryVerifiersList, 0, len(res.Results.Models()))
+			for _, modeldata := range res.Results.Models() {
 				vv := modeldata.(*verifreg.Verifier)
 				sqlModels = append(sqlModels, &verifregmodel.VerifiedRegistryVerifier{
 					Height:    int64(vv.Height),
@@ -40,8 +47,9 @@ func (s *VerifierTransform) Run(ctx context.Context, in chan transform.IndexStat
 				})
 			}
 			if len(sqlModels) > 0 {
-				out <- &persistable.Result{Model: sqlModels}
+				data = append(data, sqlModels)
 			}
+			out <- &persistable.Result{Model: data}
 		}
 	}
 	return nil

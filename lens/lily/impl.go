@@ -174,7 +174,7 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 		return nil, err
 	}
 
-	im, err := v2.NewIndexManager(strg, taskAPI, cfg.JobConfig.Tasks)
+	im, err := v2.NewIndexManager(strg, taskAPI, cfg.JobConfig.Tasks, cfg.JobConfig.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +333,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		}
 	*/
 
-	idx, err := v2.NewIndexManager(strg, taskAPI, cfg.JobConfig.Tasks)
+	idx, err := v2.NewIndexManager(strg, taskAPI, cfg.JobConfig.Tasks, cfg.JobConfig.Name)
 	if err != nil {
 		return nil, err
 	}

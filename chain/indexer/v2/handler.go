@@ -11,10 +11,10 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/chain/indexer"
+	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load/persistable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/system"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/tasks"
 )
@@ -22,26 +22,36 @@ import (
 var log = logging.Logger("indexmanager")
 
 type Manager struct {
-	indexer    *TipSetIndexer
-	transforms *TaskTransforms
-	api        tasks.DataSource
-	strg       model.Storage
+	indexer      *TipSetIndexer
+	extractor    *extract.StateExtractor
+	tsTransforms *TipSetTaskTransforms
+	asTransforms *ActorTaskTransforms
+	api          tasks.DataSource
+	strg         model.Storage
+	reporter     string
 }
 
-func NewIndexManager(strg model.Storage, api tasks.DataSource, tasks []string) (*Manager, error) {
-	transforms, err := GetTransformersForTasks(tasks...)
+func NewIndexManager(strg model.Storage, api tasks.DataSource, tasks []string, reporter string) (*Manager, error) {
+	tsTransforms, asTransforms, modelTasks, err := GetTransformersForTasks(tasks...)
 	if err != nil {
 		return nil, err
 	}
-	idxer, err := NewTipSetIndexer(api, transforms.Tasks, 1024)
+	idxer, err := NewTipSetIndexer(api, modelTasks, 1024)
+	if err != nil {
+		return nil, err
+	}
+	extractor, err := extract.NewStateExtractor(api, modelTasks, 1024, 1024, 1024)
 	if err != nil {
 		return nil, err
 	}
 	return &Manager{
-		indexer:    idxer,
-		transforms: transforms,
-		api:        api,
-		strg:       strg,
+		indexer:      idxer,
+		extractor:    extractor,
+		tsTransforms: tsTransforms,
+		asTransforms: asTransforms,
+		api:          api,
+		strg:         strg,
+		reporter:     reporter,
 	}, nil
 }
 
@@ -57,9 +67,12 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 		}
 	}()
 
-	transformer, consumer, err := m.startRouters(ctx,
-		append(m.transforms.Transformers, system.NewProcessingReportTransform()),
-		[]load.Handler{&persistable.PersistableResultConsumer{Strg: m.strg, GetName: GetLegacyTaskNameForTransform()}},
+	tsTrns, actTrns, consumer, err := m.startAllRouters(ctx, m.reporter,
+		m.tsTransforms.Transformers,
+		m.asTransforms.Transformers,
+		[]load.Handler{
+			&persistable.PersistableResultConsumer{Strg: m.strg},
+		},
 	)
 	if err != nil {
 		return false, err
@@ -70,7 +83,7 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 		return false, err
 	}
 
-	results, err := m.indexer.TipSet(ctx, ts, parent)
+	tsResults, actResults, err := m.extractor.Start(ctx, ts, parent)
 	if err != nil {
 		return false, err
 	}
@@ -80,24 +93,45 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 	grp.Go(func() (err error) {
 		defer func() {
 			if err != nil {
-				err = fmt.Errorf("transform routine receieved error: %w", err)
+				err = fmt.Errorf("tipset transform routine receieved error: %w", err)
 			}
-			stopErr := transformer.Stop()
+			stopErr := tsTrns.Stop()
 			if stopErr != nil {
-				err = fmt.Errorf("%s stopping transfrom: %w", err, stopErr)
+				err = fmt.Errorf("%s stopping tipset transfrom: %w", err, stopErr)
 			}
 		}()
 
-		for res := range results {
+		for res := range tsResults {
 			// if any result failed to complete we did not index this tipset successfully.
-			if !res.Complete() {
-				log.Warnw("failed to complete task", "name", res.Task().String())
+			if res.Error != nil {
+				log.Warnw("failed to complete task", "name", res.Error)
 				success.Store(false)
 			}
-			if len(res.Models()) > 0 {
-				if err := transformer.Route(ctx, res); err != nil {
-					return err
-				}
+			if err := tsTrns.Route(ctx, res); err != nil {
+				return err
+			}
+		}
+		return
+	})
+	grp.Go(func() (err error) {
+		defer func() {
+			if err != nil {
+				err = fmt.Errorf("actor transform routine receieved error: %w", err)
+			}
+			stopErr := actTrns.Stop()
+			if stopErr != nil {
+				err = fmt.Errorf("%s stopping actor transfrom: %w", err, stopErr)
+			}
+		}()
+
+		for res := range actResults {
+			// if any result failed to complete we did not index this tipset successfully.
+			if len(res.Results.Errors()) > 0 {
+				log.Warnw("failed to complete task", "name", res.Results.Errors())
+				success.Store(false)
+			}
+			if err := actTrns.Route(ctx, res); err != nil {
+				return err
 			}
 		}
 		return
@@ -113,12 +147,25 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 			}
 		}()
 
-		for res := range transformer.Results() {
-			if err := consumer.Route(ctx, res); err != nil {
-				return err
+		subGrp := errgroup.Group{}
+
+		subGrp.Go(func() error {
+			for res := range tsTrns.Results() {
+				if err := consumer.Route(ctx, res); err != nil {
+					return err
+				}
 			}
-		}
-		return
+			return nil
+		})
+		subGrp.Go(func() error {
+			for res := range actTrns.Results() {
+				if err := consumer.Route(ctx, res); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		return subGrp.Wait()
 	})
 	if err := grp.Wait(); err != nil {
 		return false, err
@@ -127,8 +174,14 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 	return success.Load(), nil
 }
 
-type Transformer interface {
-	Route(ctx context.Context, data transform.IndexState) error
+type ActorTransformer interface {
+	Route(ctx context.Context, data *extract.ActorStateResult) error
+	Results() chan transform.Result
+	Stop() error
+}
+
+type TipSetTransformer interface {
+	Route(ctx context.Context, data *extract.TipSetStateResult) error
 	Results() chan transform.Result
 	Stop() error
 }
@@ -138,18 +191,24 @@ type Loader interface {
 	Stop() error
 }
 
-func (m *Manager) startRouters(ctx context.Context, handlers []transform.Handler, consumers []load.Handler) (Transformer, Loader, error) {
-	tr, err := transform.NewRouter(m.transforms.Tasks, handlers...)
+func (m *Manager) startAllRouters(ctx context.Context, reporter string, tsHandlers []transform.TipSetStateHandler, actHandlers []transform.ActorStateHandler, consumers []load.Handler) (TipSetTransformer, ActorTransformer, Loader, error) {
+	tsr, err := transform.NewTipSetStateRouter(reporter, tsHandlers...)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	tr.Start(ctx)
+	tsr.Start(ctx)
+
+	asr, err := transform.NewActorStateRouter(reporter, actHandlers...)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	asr.Start(ctx)
 
 	lr, err := load.NewRouter(consumers...)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	lr.Start(ctx)
 
-	return tr, lr, nil
+	return tsr, asr, lr, nil
 }

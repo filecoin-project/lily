@@ -10,8 +10,11 @@ import (
 	"github.com/filecoin-project/lotus/build"
 	logging "github.com/ipfs/go-log/v2"
 
+	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/chain"
+	"github.com/filecoin-project/lily/model"
 	messagemodel "github.com/filecoin-project/lily/model/messages"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/economics"
@@ -20,24 +23,28 @@ import (
 var log = logging.Logger("transform/economics")
 
 type GasEconomyTransform struct {
-	meta v2.ModelMeta
+	meta     v2.ModelMeta
+	taskName string
 }
 
-func NewGasEconomyTransform() *GasEconomyTransform {
+func NewGasEconomyTransform(taskName string) *GasEconomyTransform {
 	info := economics.ChainEconomics{}
-	return &GasEconomyTransform{meta: info.Meta()}
+	return &GasEconomyTransform{meta: info.Meta(), taskName: taskName}
 }
 
-func (g *GasEconomyTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
+func (g *GasEconomyTransform) Run(ctx context.Context, reporter string, in chan *extract.TipSetStateResult, out chan transform.Result) error {
 	log.Debugf("run %s", g.Name())
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("received data", "count", len(res.Models()))
+			report := chain.ToProcessingReport(g.taskName, reporter, res)
+			data := model.PersistableList{report}
+			log.Debugw("received data", "count", len(res.Models))
+			var sqlModel model.Persistable
 			// add up total and unique gas
-			for _, modeldata := range res.Models() {
+			for _, modeldata := range res.Models {
 				m := modeldata.(*economics.ChainEconomics)
 
 				baseFeeRat := new(big.Rat).SetFrac(m.BaseFee.Int, new(big.Int).SetUint64(build.FilecoinPrecision))
@@ -46,7 +53,7 @@ func (g *GasEconomyTransform) Run(ctx context.Context, in chan transform.IndexSt
 				baseFeeChange := new(big.Rat).SetFrac(m.BaseFee.Int, m.ParentBaseFee.Int)
 				baseFeeChangeF, _ := baseFeeChange.Float64()
 
-				sqlModel := &messagemodel.MessageGasEconomy{
+				sqlModel = &messagemodel.MessageGasEconomy{
 					Height:              int64(m.Height),
 					StateRoot:           m.StateRoot.String(),
 					GasLimitTotal:       m.TotalGasLimit,
@@ -57,7 +64,10 @@ func (g *GasEconomyTransform) Run(ctx context.Context, in chan transform.IndexSt
 					GasCapacityRatio:    float64(m.TotalUniqueGasLimit) / float64(m.NumBlocks*build.BlockGasTarget),
 					GasWasteRatio:       float64(m.TotalGasLimit-m.TotalUniqueGasLimit) / float64(m.NumBlocks*build.BlockGasTarget),
 				}
-				out <- &persistable.Result{Model: sqlModel}
+				if sqlModel != nil {
+					data = append(data, sqlModel)
+				}
+				out <- &persistable.Result{Model: data}
 			}
 		}
 	}
