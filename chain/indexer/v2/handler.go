@@ -13,8 +13,10 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load"
+	"github.com/filecoin-project/lily/chain/indexer/v2/load/cborable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/load/persistable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
+	cborable2 "github.com/filecoin-project/lily/chain/indexer/v2/transform/cborable"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/tasks"
 )
@@ -67,18 +69,19 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 		}
 	}()
 
-	tsTrns, actTrns, consumer, err := m.startAllRouters(ctx, m.reporter,
-		m.tsTransforms.Transformers,
-		m.asTransforms.Transformers,
-		[]load.Handler{
-			&persistable.PersistableResultConsumer{Strg: m.strg},
-		},
-	)
+	parent, err := m.api.TipSet(ctx, ts.Parents())
 	if err != nil {
 		return false, err
 	}
 
-	parent, err := m.api.TipSet(ctx, ts.Parents())
+	tsTrns, actTrns, consumer, err := m.startAllRouters(ctx, m.reporter,
+		append(m.tsTransforms.Transformers, cborable2.NewCborTipSetTransform()),
+		append(m.asTransforms.Transformers, cborable2.NewCborActorTransform()),
+		[]load.Handler{
+			&persistable.PersistableResultConsumer{Strg: m.strg},
+			cborable.NewCarResultConsumer(ts, parent),
+		},
+	)
 	if err != nil {
 		return false, err
 	}

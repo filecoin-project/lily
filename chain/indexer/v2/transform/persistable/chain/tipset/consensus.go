@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
@@ -74,23 +75,26 @@ func (s *ConsensusTransform) Run(ctx context.Context, reporter string, in chan *
 					})
 				}
 				for epoch := currentHeight; epoch > parentHeight; epoch-- {
-					if currentHeight == epoch {
-						rp = append(rp, &visormodel.ProcessingReport{
-							Height:    int64(epoch),
-							StateRoot: ts.ParentStateRoot.String(),
-						})
-					} else {
+					if currentHeight != epoch {
 						// null round no tipset
 						rp = append(rp, &visormodel.ProcessingReport{
 							Height:            int64(epoch),
 							StateRoot:         ts.ParentStateRoot.String(),
+							Reporter:          reporter,
+							Task:              "builtin",
+							StartedAt:         time.Now(),
+							CompletedAt:       time.Now(),
+							Status:            visormodel.ProcessingStatusInfo,
 							StatusInformation: visormodel.ProcessingStatusInformationNullRound,
+							ErrorsDetected:    nil,
 						})
 					}
 				}
 			}
 			if len(sqlModels) > 0 {
 				data = append(data, sqlModels)
+			}
+			if len(rp) > 0 {
 				data = append(data, rp)
 			}
 			out <- &persistable.Result{Model: data}
