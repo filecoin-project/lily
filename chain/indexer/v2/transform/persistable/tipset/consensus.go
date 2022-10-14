@@ -4,15 +4,18 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
+	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/chain"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/tipset"
+	visormodel "github.com/filecoin-project/lily/model/visor"
 )
 
 var log = logging.Logger("transform/tipset")
@@ -29,6 +32,7 @@ func NewConsensusTransform() *ConsensusTransform {
 func (s *ConsensusTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debugf("run %s", s.Name())
 	for res := range in {
+		start := time.Now()
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -65,8 +69,19 @@ func (s *ConsensusTransform) Run(ctx context.Context, in chan transform.IndexSta
 					})
 				}
 			}
+			report := &visormodel.ProcessingReport{
+				Height:            int64(res.Current().Height()),
+				StateRoot:         res.Current().ParentState().String(),
+				Reporter:          "TODO",
+				Task:              s.Name(),
+				StartedAt:         start,
+				CompletedAt:       time.Now(),
+				Status:            visormodel.ProcessingStatusOK,
+				StatusInformation: "",
+				ErrorsDetected:    nil,
+			}
 			if len(sqlModels) > 0 {
-				out <- &persistable.Result{Model: sqlModels}
+				out <- &persistable.Result{Model: model.PersistableList{sqlModels, report}}
 			}
 		}
 	}

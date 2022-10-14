@@ -132,10 +132,10 @@ func LookupActorExtractor(meta ModelMeta) (ActorExtractorFn, error) {
 	return efn, nil
 }
 
-func LookupActorTypeThing(meta ModelMeta) (*cid.Set, error) {
+func MustLookupActorTypeThing(meta ModelMeta) *cid.Set {
 	actors, found := ActorTypeRegistry[meta]
 	if !found {
-		return nil, fmt.Errorf("no actors for %s", meta)
+		panic(fmt.Sprintf("no actors for %s developer error", meta))
 	}
-	return actors, nil
+	return actors
 }

@@ -36,7 +36,6 @@ type TipSetResult struct {
 	current         *types.TipSet
 	executed        *types.TipSet
 	complete        bool
-	result          *extract.StateResult
 	models          []v2.LilyModel
 	extractionState interface{}
 }
@@ -65,32 +64,29 @@ func (t *TipSetResult) Complete() bool {
 	return t.complete
 }
 
-func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *TipSetResult, error) {
+func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet, pts *types.TipSet) (chan *TipSetResult, error) {
 	outCh := make(chan *TipSetResult, len(ti.tasks))
+	errCh := make(chan error, 1)
 
-	pts, err := ti.api.TipSet(ctx, ts.Parents())
+	tsCh, actCh, err := ti.processor.Start(ctx, ts, pts)
 	if err != nil {
 		return nil, err
 	}
-	// track complete and incomplete tasks for cancellation case
-	completedTasks := map[v2.ModelMeta]bool{}
-	for _, task := range ti.tasks {
-		completedTasks[task] = false
-	}
-
-	// start processing all the tasks
-	tsCh, actCh, errCh := ti.processor.Start(ctx, ts, pts)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for res := range tsCh {
+			completed := true
+			if res.Error != nil {
+				completed = false
+			}
 			outCh <- &TipSetResult{
 				task:            res.Task,
 				current:         ts,
 				executed:        pts,
-				complete:        true,
+				complete:        completed,
 				models:          res.Models,
 				extractionState: res,
 			}
@@ -101,28 +97,26 @@ func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Ti
 	go func() {
 		defer wg.Done()
 		for res := range actCh {
+			completed := true
+			actErrors := res.Results.Errors()
+			if len(actErrors) > 0 {
+				completed = false
+			}
 			outCh <- &TipSetResult{
 				task:            res.Task,
 				current:         ts,
 				executed:        pts,
-				complete:        true,
+				complete:        completed,
 				models:          res.Results.Models(),
 				extractionState: res,
 			}
 		}
 	}()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for res := range errCh {
-			log.Errorw("TODO FORREST HANDLE ERROR CHANNEL", "error", res.Error())
-		}
-	}()
-
 	go func() {
 		wg.Wait()
 		close(outCh)
+		close(errCh)
 	}()
 
 	return outCh, nil

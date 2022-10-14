@@ -39,17 +39,21 @@ func (l ActorExtractorResultList) Models() []v2.LilyModel {
 	}
 	return out
 }
+func (l ActorExtractorResultList) Errors() []error {
+	var out []error
+	for _, res := range l {
+		if res.Error != nil {
+			out = append(out, res.Error.Error)
+		}
+	}
+	return out
+}
 
 type ActorExtractorError struct {
 	Error error
 }
 
-func ActorStates(ctx context.Context, workers int, extractorWorkers int, api tasks.DataSource, current, executed *types.TipSet, actors map[v2.ModelMeta]v2.ActorExtractorFn, results chan *ActorStateResult) error {
-	changes, err := api.ActorStateChanges(ctx, current, executed)
-	if err != nil {
-		return err
-	}
-
+func ActorStates(ctx context.Context, workers int, extractorWorkers int, api tasks.DataSource, current, executed *types.TipSet, actors map[v2.ModelMeta]v2.ActorExtractorFn, changes tasks.ActorStateChangeDiff, results chan *ActorStateResult) {
 	codeToActors := make(map[cid.Cid][]actorstate.ActorInfo)
 	for addr, change := range changes {
 		codeToActors[change.Actor.Code] = append(codeToActors[change.Actor.Code], actorstate.ActorInfo{
@@ -67,10 +71,7 @@ func ActorStates(ctx context.Context, workers int, extractorWorkers int, api tas
 		extractor := extractor
 
 		// get list of supported actor codes for this task type
-		supportedActors, err := v2.LookupActorTypeThing(task)
-		if err != nil {
-			return err
-		}
+		supportedActors := v2.MustLookupActorTypeThing(task)
 		// from the set of changes actors filter for actor codes supported by this extractor
 		var actorsForExtractor []actorstate.ActorInfo
 		if err := supportedActors.ForEach(func(c cid.Cid) error {
@@ -81,7 +82,8 @@ func ActorStates(ctx context.Context, workers int, extractorWorkers int, api tas
 			actorsForExtractor = append(actorsForExtractor, a...)
 			return nil
 		}); err != nil {
-			return err
+			// since the above function doesn't error this is unreachable
+			panic("unreachable")
 		}
 
 		// execute extractor in parallel
@@ -92,8 +94,6 @@ func ActorStates(ctx context.Context, workers int, extractorWorkers int, api tas
 	}
 	// wait for all extractors to complete
 	pool.StopWait()
-
-	return nil
 }
 
 func runActorExtractors(ctx context.Context, workers int, task v2.ModelMeta, api tasks.DataSource, current, executed *types.TipSet, extractFn v2.ActorExtractorFn, candidates []actorstate.ActorInfo) *ActorStateResult {

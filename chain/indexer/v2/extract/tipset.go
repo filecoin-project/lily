@@ -24,7 +24,7 @@ type TipSetExtractorError struct {
 	Error error
 }
 
-func TipSetState(ctx context.Context, workers int, api tasks.DataSource, current, executed *types.TipSet, extractors map[v2.ModelMeta]v2.ExtractorFn, results chan *TipSetStateResult) error {
+func TipSetState(ctx context.Context, workers int, api tasks.DataSource, current, executed *types.TipSet, extractors map[v2.ModelMeta]v2.ExtractorFn, results chan *TipSetStateResult) {
 	pool := workerpool.New(workers)
 	for task, extractor := range extractors {
 		task := task
@@ -38,19 +38,20 @@ func TipSetState(ctx context.Context, workers int, api tasks.DataSource, current
 				data, err := extractor(ctx, api, current, executed)
 				duration := time.Since(start)
 				log.Debugw("extracted model", "type", task.String(), "duration", time.Since(start))
-				results <- &TipSetStateResult{
+				out := &TipSetStateResult{
 					Task:      task,
 					TipSet:    current,
 					StartTime: start,
 					Duration:  duration,
 					Models:    data,
-					Error:     &TipSetExtractorError{Error: err},
 				}
+				if err != nil {
+					out.Error = &TipSetExtractorError{Error: err}
+				}
+				results <- out
 				log.Infow("completed extraction for tipset", "task", task.String(), "duration", duration, "count", len(data))
 			}
 		})
 	}
 	pool.StopWait()
-
-	return nil
 }

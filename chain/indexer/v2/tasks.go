@@ -50,6 +50,17 @@ func GetTransformersForTasks(tasks ...string) (*ThingIDK, error) {
 	return out, nil
 }
 
+func GetLegacyTaskNameForTransform(name string) string {
+	for task, transformes := range TaskHandlers {
+		for _, handler := range transformes.Transformers {
+			if name == handler.Name() {
+				return task
+			}
+		}
+	}
+	panic("developer error")
+}
+
 var TaskHandlers = map[string]TaskMeta{
 	BlockHeader: {
 		Transformers: []transform.Handler{
