@@ -2,6 +2,7 @@ package persistable
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	logging "github.com/ipfs/go-log/v2"
@@ -40,7 +41,7 @@ func (p *PersistableResultConsumer) Consume(ctx context.Context, in chan transfo
 				log.Errorw("failed to reflect consumer data")
 			}
 			if err := p.Strg.PersistBatch(ctx, l); err != nil {
-				return err
+				return fmt.Errorf("persisting %T: %w", l, err)
 			}
 		}
 	}

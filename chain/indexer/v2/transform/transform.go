@@ -19,7 +19,6 @@ type Kind string
 type Result interface {
 	Kind() Kind
 	Data() interface{}
-	Meta() interface{}
 }
 
 type TipSetStateHandler interface {
