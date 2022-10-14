@@ -75,8 +75,8 @@ func (se *StateExtractor) Start(ctx context.Context, current, executed *types.Ti
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			TipSetState(ctx, se.TipSetTaskWorkers, se.api, current, executed, se.tipsetTasks, tipsetsCh)
 		}()
-		TipSetState(ctx, se.TipSetTaskWorkers, se.api, current, executed, se.tipsetTasks, tipsetsCh)
 	}
 
 	go func() {
