@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	logging "github.com/ipfs/go-log/v2"
 
@@ -28,6 +29,7 @@ func NewSectorEventTransformer() *SectorEventTransformer {
 func (s *SectorEventTransformer) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
 	log.Debug("run SectorEventTransformer")
 	for res := range in {
+		start := time.Now()
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -45,7 +47,12 @@ func (s *SectorEventTransformer) Run(ctx context.Context, in chan transform.Inde
 				}
 			}
 			if len(sqlModels) > 0 {
-				out <- &persistable.Result{Model: sqlModels}
+				out <- &persistable.Result{Model: sqlModels, Metadata: &persistable.Meta{
+					TipSet:    res.Current(),
+					Name:      s.Name(),
+					StartTime: start,
+					EndTime:   time.Now(),
+				}}
 			}
 		}
 	}

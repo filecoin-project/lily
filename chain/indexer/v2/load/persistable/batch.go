@@ -5,11 +5,14 @@ import (
 	"reflect"
 
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
 	"github.com/filecoin-project/lily/model"
+	visormodel "github.com/filecoin-project/lily/model/visor"
 )
 
 type PersistableResultConsumer struct {
-	Strg model.Storage
+	Strg    model.Storage
+	GetName func(string) string
 }
 
 func (p *PersistableResultConsumer) Type() transform.Kind {
@@ -27,13 +30,32 @@ func (p *PersistableResultConsumer) Consume(ctx context.Context, in chan transfo
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			if res.Data() == nil {
-				continue
+			var persist []model.Persistable
+			meta, ok := res.Meta().(*persistable.Meta)
+			if ok && meta != nil {
+				status := visormodel.ProcessingStatusOK
+				if meta.Errors != nil && len(meta.Errors) > 0 {
+					status = visormodel.ProcessingStatusError
+				}
+				report := &visormodel.ProcessingReport{
+					Height:            int64(meta.TipSet.Height()),
+					StateRoot:         meta.TipSet.ParentState().String(),
+					Reporter:          "TODO",
+					Task:              p.GetName(meta.Name),
+					StartedAt:         meta.StartTime,
+					CompletedAt:       meta.EndTime,
+					Status:            status,
+					StatusInformation: "",
+					ErrorsDetected:    meta.Errors,
+				}
+				persist = append(persist, report)
 			}
-			if l, ok := res.Data().(model.PersistableList); ok && len(l) == 0 {
-				continue
+			if res.Data() != nil {
+				if l, ok := res.Data().(model.Persistable); ok {
+					persist = append(persist, l)
+				}
 			}
-			if err := p.Strg.PersistBatch(ctx, res.Data().(model.Persistable)); err != nil {
+			if err := p.Strg.PersistBatch(ctx, model.PersistableList(persist)); err != nil {
 				return err
 			}
 		}

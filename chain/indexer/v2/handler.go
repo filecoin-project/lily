@@ -22,26 +22,26 @@ import (
 var log = logging.Logger("indexmanager")
 
 type Manager struct {
-	indexer *TipSetIndexer
-	stuff   *ThingIDK
-	api     tasks.DataSource
-	strg    model.Storage
+	indexer    *TipSetIndexer
+	transforms *TaskTransforms
+	api        tasks.DataSource
+	strg       model.Storage
 }
 
 func NewIndexManager(strg model.Storage, api tasks.DataSource, tasks []string) (*Manager, error) {
-	stuff, err := GetTransformersForTasks(tasks...)
+	transforms, err := GetTransformersForTasks(tasks...)
 	if err != nil {
 		return nil, err
 	}
-	idxer, err := NewTipSetIndexer(api, stuff.Tasks, 1024)
+	idxer, err := NewTipSetIndexer(api, transforms.Tasks, 1024)
 	if err != nil {
 		return nil, err
 	}
 	return &Manager{
-		indexer: idxer,
-		stuff:   stuff,
-		api:     api,
-		strg:    strg,
+		indexer:    idxer,
+		transforms: transforms,
+		api:        api,
+		strg:       strg,
 	}, nil
 }
 
@@ -58,8 +58,8 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 	}()
 
 	transformer, consumer, err := m.startRouters(ctx,
-		append(m.stuff.Transformers, system.NewProcessingReportTransform()),
-		[]load.Handler{&persistable.PersistableResultConsumer{Strg: m.strg}},
+		append(m.transforms.Transformers, system.NewProcessingReportTransform()),
+		[]load.Handler{&persistable.PersistableResultConsumer{Strg: m.strg, GetName: GetLegacyTaskNameForTransform()}},
 	)
 	if err != nil {
 		return false, err
@@ -139,7 +139,7 @@ type Loader interface {
 }
 
 func (m *Manager) startRouters(ctx context.Context, handlers []transform.Handler, consumers []load.Handler) (Transformer, Loader, error) {
-	tr, err := transform.NewRouter(m.stuff.Tasks, handlers...)
+	tr, err := transform.NewRouter(m.transforms.Tasks, handlers...)
 	if err != nil {
 		return nil, nil, err
 	}
