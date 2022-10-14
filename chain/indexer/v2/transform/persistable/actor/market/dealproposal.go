@@ -11,8 +11,11 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/text/runes"
 
+	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor"
+	"github.com/filecoin-project/lily/model"
 	marketmodel "github.com/filecoin-project/lily/model/actors/market"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/market"
@@ -21,12 +24,13 @@ import (
 var log = logging.Logger("transform/dealproposal")
 
 type DealProposalTransformer struct {
-	meta v2.ModelMeta
+	meta     v2.ModelMeta
+	taskName string
 }
 
-func NewDealProposalTransformer() *DealProposalTransformer {
+func NewDealProposalTransformer(taskName string) *DealProposalTransformer {
 	info := market.DealProposal{}
-	return &DealProposalTransformer{meta: info.Meta()}
+	return &DealProposalTransformer{meta: info.Meta(), taskName: taskName}
 }
 
 func (d *DealProposalTransformer) ModelType() v2.ModelMeta {
@@ -42,15 +46,17 @@ func (d *DealProposalTransformer) Matcher() string {
 	return fmt.Sprintf("^%s$", d.meta.String())
 }
 
-func (d *DealProposalTransformer) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
+func (d *DealProposalTransformer) Run(ctx context.Context, reporter string, in chan *extract.ActorStateResult, out chan transform.Result) error {
 	log.Debugf("run %s", d.Name())
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(marketmodel.MarketDealProposals, 0, len(res.Models()))
-			for _, modeldata := range res.Models() {
+			report := actor.ToProcessingReport(d.taskName, reporter, res)
+			data := model.PersistableList{report}
+			sqlModels := make(marketmodel.MarketDealProposals, 0, len(res.Results.Models()))
+			for _, modeldata := range res.Results.Models() {
 				se := modeldata.(*market.DealProposal)
 				var base64Label string
 				if se.Label.IsString {
@@ -81,8 +87,9 @@ func (d *DealProposalTransformer) Run(ctx context.Context, in chan transform.Ind
 				})
 			}
 			if len(sqlModels) > 0 {
-				out <- &persistable.Result{Model: sqlModels}
+				data = append(data, sqlModels)
 			}
+			out <- &persistable.Result{Model: data}
 		}
 	}
 	return nil

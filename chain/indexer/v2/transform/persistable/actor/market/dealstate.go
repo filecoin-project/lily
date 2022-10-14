@@ -5,20 +5,24 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor"
+	"github.com/filecoin-project/lily/model"
 	marketmodel "github.com/filecoin-project/lily/model/actors/market"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/market"
 )
 
 type DealStateTransformer struct {
-	meta v2.ModelMeta
+	meta     v2.ModelMeta
+	taskName string
 }
 
-func NewDealStateTransformer() *DealStateTransformer {
+func NewDealStateTransformer(taskName string) *DealStateTransformer {
 	info := market.DealState{}
-	return &DealStateTransformer{meta: info.Meta()}
+	return &DealStateTransformer{meta: info.Meta(), taskName: taskName}
 }
 
 func (d *DealStateTransformer) ModelType() v2.ModelMeta {
@@ -34,15 +38,18 @@ func (d *DealStateTransformer) Matcher() string {
 	return fmt.Sprintf("^%s$", d.meta.String())
 }
 
-func (d *DealStateTransformer) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
+func (d *DealStateTransformer) Run(ctx context.Context, reporter string, in chan *extract.ActorStateResult, out chan transform.Result) error {
 	log.Debugf("run %s", d.Name())
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(marketmodel.MarketDealStates, 0, len(res.Models()))
-			for _, modeldata := range res.Models() {
+			report := actor.ToProcessingReport(d.taskName, reporter, res)
+			data := model.PersistableList{report}
+			log.Debugw("received data", "count", len(res.Results.Models()))
+			sqlModels := make(marketmodel.MarketDealStates, 0, len(res.Results.Models()))
+			for _, modeldata := range res.Results.Models() {
 				ds := modeldata.(*market.DealState)
 				sqlModels = append(sqlModels, &marketmodel.MarketDealState{
 					Height:           int64(ds.Height),
@@ -54,8 +61,9 @@ func (d *DealStateTransformer) Run(ctx context.Context, in chan transform.IndexS
 				})
 			}
 			if len(sqlModels) > 0 {
-				out <- &persistable.Result{Model: sqlModels}
+				data = append(data, sqlModels)
 			}
+			out <- &persistable.Result{Model: data}
 		}
 	}
 	return nil

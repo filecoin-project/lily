@@ -7,33 +7,39 @@ import (
 
 	"github.com/filecoin-project/go-state-types/exitcode"
 
+	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/chain"
 	"github.com/filecoin-project/lily/lens/util"
+	"github.com/filecoin-project/lily/model"
 	messages2 "github.com/filecoin-project/lily/model/messages"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/messages"
 )
 
 type ParsedMessageTransform struct {
-	meta v2.ModelMeta
+	meta     v2.ModelMeta
+	taskName string
 }
 
-func NewParsedMessageTransform() *ParsedMessageTransform {
+func NewParsedMessageTransform(taskName string) *ParsedMessageTransform {
 	info := messages.ExecutedMessage{}
-	return &ParsedMessageTransform{meta: info.Meta()}
+	return &ParsedMessageTransform{meta: info.Meta(), taskName: taskName}
 }
 
-func (p *ParsedMessageTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
+func (p *ParsedMessageTransform) Run(ctx context.Context, reporter string, in chan *extract.TipSetStateResult, out chan transform.Result) error {
 	log.Debug("run ParsedMessageTransform")
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("received data", "count", len(res.Models()))
-			sqlModels := make(messages2.ParsedMessages, 0, len(res.Models()))
-			for _, modeldata := range res.Models() {
+			report := chain.ToProcessingReport(p.taskName, reporter, res)
+			data := model.PersistableList{report}
+			log.Debugw("received data", "count", len(res.Models))
+			sqlModels := make(messages2.ParsedMessages, 0, len(res.Models))
+			for _, modeldata := range res.Models {
 				m := modeldata.(*messages.ExecutedMessage)
 
 				if m.ExitCode == exitcode.ErrSerialization ||
@@ -65,8 +71,9 @@ func (p *ParsedMessageTransform) Run(ctx context.Context, in chan transform.Inde
 				})
 			}
 			if len(sqlModels) > 0 {
-				out <- &persistable.Result{Model: sqlModels}
+				data = append(data, sqlModels)
 			}
+			out <- &persistable.Result{Model: data}
 		}
 	}
 	return nil

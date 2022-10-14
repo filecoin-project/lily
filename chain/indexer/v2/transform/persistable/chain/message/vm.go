@@ -7,9 +7,12 @@ import (
 
 	logging "github.com/ipfs/go-log/v2"
 
+	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/chain"
 	"github.com/filecoin-project/lily/lens/util"
+	"github.com/filecoin-project/lily/model"
 	messages2 "github.com/filecoin-project/lily/model/messages"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/messages"
@@ -18,24 +21,27 @@ import (
 var log = logging.Logger("transform/message")
 
 type VMMessageTransform struct {
-	meta v2.ModelMeta
+	meta     v2.ModelMeta
+	taskName string
 }
 
-func NewVMMessageTransform() *VMMessageTransform {
+func NewVMMessageTransform(taskName string) *VMMessageTransform {
 	info := messages.VMMessage{}
-	return &VMMessageTransform{meta: info.Meta()}
+	return &VMMessageTransform{meta: info.Meta(), taskName: taskName}
 }
 
-func (v *VMMessageTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
+func (v *VMMessageTransform) Run(ctx context.Context, reporter string, in chan *extract.TipSetStateResult, out chan transform.Result) error {
 	log.Debugf("run %s", v.Name())
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("received data", "count", len(res.Models()))
-			sqlModels := make(messages2.VMMessageList, 0, len(res.Models()))
-			for _, modeldata := range res.Models() {
+			report := chain.ToProcessingReport(v.taskName, reporter, res)
+			data := model.PersistableList{report}
+			log.Debugw("received data", "count", len(res.Models))
+			sqlModels := make(messages2.VMMessageList, 0, len(res.Models))
+			for _, modeldata := range res.Models {
 				m := modeldata.(*messages.VMMessage)
 				if m.Implicit {
 					continue
@@ -71,7 +77,10 @@ func (v *VMMessageTransform) Run(ctx context.Context, in chan transform.IndexSta
 					Returns:   returns,
 				})
 			}
-			out <- &persistable.Result{Model: sqlModels}
+			if len(sqlModels) > 0 {
+				data = append(data, sqlModels)
+			}
+			out <- &persistable.Result{Model: data}
 		}
 	}
 	return nil

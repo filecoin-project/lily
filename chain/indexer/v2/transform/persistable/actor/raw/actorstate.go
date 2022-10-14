@@ -11,32 +11,38 @@ import (
 	"github.com/filecoin-project/lotus/chain/vm"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor"
+	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/actors/common"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/raw"
 )
 
 type ActorStateTransform struct {
-	meta v2.ModelMeta
+	meta     v2.ModelMeta
+	taskName string
 }
 
-func NewActorStateTransform() *ActorStateTransform {
+func NewActorStateTransform(taskName string) *ActorStateTransform {
 	info := raw.ActorState{}
-	return &ActorStateTransform{meta: info.Meta()}
+	return &ActorStateTransform{meta: info.Meta(), taskName: taskName}
 }
 
-func (a *ActorStateTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
+func (a *ActorStateTransform) Run(ctx context.Context, reporter string, in chan *extract.ActorStateResult, out chan transform.Result) error {
 	log.Debugf("run %s", a.Name())
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("received data", "count", len(res.Models()))
-			sqlModels := make(common.ActorStateList, 0, len(res.Models()))
-			for _, modeldata := range res.Models() {
+			report := actor.ToProcessingReport(a.taskName, reporter, res)
+			data := model.PersistableList{report}
+			log.Debugw("received data", "count", len(res.Results.Models()))
+			sqlModels := make(common.ActorStateList, 0, len(res.Results.Models()))
+			for _, modeldata := range res.Results.Models() {
 				m := modeldata.(*raw.ActorState)
 				istate, err := vm.DumpActorState(filcns.NewActorRegistry(), &types.Actor{
 					Code:    m.Code,
@@ -60,8 +66,9 @@ func (a *ActorStateTransform) Run(ctx context.Context, in chan transform.IndexSt
 				})
 			}
 			if len(sqlModels) > 0 {
-				out <- &persistable.Result{Model: sqlModels}
+				data = append(data, sqlModels)
 			}
+			out <- &persistable.Result{Model: data}
 		}
 	}
 	return nil

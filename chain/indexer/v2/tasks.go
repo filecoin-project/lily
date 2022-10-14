@@ -12,44 +12,66 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/raw"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/reward"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/verifreg"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/block"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/economics"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/message"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/tipset"
+	block2 "github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/chain/block"
+	economics2 "github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/chain/economics"
+	message2 "github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/chain/message"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/chain/tipset"
 	v2 "github.com/filecoin-project/lily/model/v2"
 )
 
-type TaskMeta struct {
-	Transformers []transform.Handler
-}
-
-type TaskTransforms struct {
+type TipSetTaskTransforms struct {
 	Tasks        []v2.ModelMeta
-	Transformers []transform.Handler
+	Transformers []transform.TipSetStateHandler
 }
 
-func GetTransformersForTasks(tasks ...string) (*TaskTransforms, error) {
-	tmp := make(map[transform.Handler]struct{})
+type ActorTaskTransforms struct {
+	Tasks        []v2.ModelMeta
+	Transformers []transform.ActorStateHandler
+}
+
+func GetTransformersForTasks(tasks ...string) (*TipSetTaskTransforms, *ActorTaskTransforms, []v2.ModelMeta, error) {
+	tst := make(map[transform.TipSetStateHandler]struct{})
+	ast := make(map[transform.ActorStateHandler]struct{})
 	for _, t := range tasks {
-		meta, ok := TaskHandlers[t]
-		if !ok {
-			return nil, fmt.Errorf("no transformer for task %s", t)
+		tsTransform, tsFound := TipSetHandlers[t]
+		acTransform, acFound := ActorHandlers[t]
+		if !tsFound && !acFound {
+			return nil, nil, nil, fmt.Errorf("no transformer for task %s", t)
 		}
-		for _, transformer := range meta.Transformers {
-			tmp[transformer] = struct{}{}
+		if tsFound {
+			for _, t := range tsTransform.Transformers {
+				tst[t] = struct{}{}
+			}
+		}
+		if acFound {
+			for _, a := range acTransform.Transformers {
+				ast[a] = struct{}{}
+			}
 		}
 	}
-	out := &TaskTransforms{
-		Tasks:        make([]v2.ModelMeta, 0, 10),
-		Transformers: make([]transform.Handler, 0, 10),
+	tasksOut := make([]v2.ModelMeta, 0, len(tasks))
+	tsOut := &TipSetTaskTransforms{
+		Tasks:        make([]v2.ModelMeta, 0, len(tst)),
+		Transformers: make([]transform.TipSetStateHandler, 0, len(tst)),
 	}
-	for t := range tmp {
-		out.Tasks = append(out.Tasks, t.ModelType())
-		out.Transformers = append(out.Transformers, t)
+	asOut := &ActorTaskTransforms{
+		Tasks:        make([]v2.ModelMeta, 0, len(ast)),
+		Transformers: make([]transform.ActorStateHandler, 0, len(ast)),
 	}
-	return out, nil
+	for t := range tst {
+		tasksOut = append(tasksOut, t.ModelType())
+		tsOut.Tasks = append(tsOut.Tasks, t.ModelType())
+		tsOut.Transformers = append(tsOut.Transformers, t)
+	}
+	for a := range ast {
+		tasksOut = append(tasksOut, a.ModelType())
+		asOut.Tasks = append(asOut.Tasks, a.ModelType())
+		asOut.Transformers = append(asOut.Transformers, a)
+	}
+	return tsOut, asOut, tasksOut, nil
 }
 
+/*
 func GetLegacyTaskNameForTransform() func(string) string {
 	return func(s string) string {
 		for task, transformes := range TaskHandlers {
@@ -63,176 +85,189 @@ func GetLegacyTaskNameForTransform() func(string) string {
 	}
 }
 
-var TaskHandlers = map[string]TaskMeta{
+*/
+
+type TipSetTransforms struct {
+	Transformers []transform.TipSetStateHandler
+}
+
+var TipSetHandlers = map[string]TipSetTransforms{
 	BlockHeader: {
-		Transformers: []transform.Handler{
-			block.NewBlockHeaderTransform(),
+		Transformers: []transform.TipSetStateHandler{
+			block2.NewBlockHeaderTransform(BlockHeader),
 		},
 	},
 	BlockParent: {
-		Transformers: []transform.Handler{
-			block.NewBlockParentsTransform(),
+		Transformers: []transform.TipSetStateHandler{
+			block2.NewBlockParentsTransform(BlockParent),
 		},
 	},
 	DrandBlockEntrie: {
-		Transformers: []transform.Handler{
-			block.NewDrandBlockEntryTransform(),
-		},
-	},
-	MinerSectorDeal: {
-		Transformers: []transform.Handler{
-			miner.NewSectorDealsTransformer(),
-		},
-	},
-	MinerSectorEvent: {
-		Transformers: []transform.Handler{
-			miner.NewSectorEventTransformer(),
-			miner.NewPrecommitEventTransformer(),
-		},
-	},
-	MinerPreCommitInfo: {
-		Transformers: []transform.Handler{
-			miner.NewPrecommitInfoTransformer(),
-		},
-	},
-	MinerSectorInfoV7: {
-		Transformers: []transform.Handler{
-			miner.NewSectorInfoTransform(),
-		},
-	},
-	MinerInfo: {
-		Transformers: []transform.Handler{
-			miner.NewMinerInfoTransform(),
-		},
-	},
-	MinerLockedFund: {
-		Transformers: []transform.Handler{
-			miner.NewFundsTransform(),
-		},
-	},
-	MinerCurrentDeadlineInfo: {
-		Transformers: []transform.Handler{
-			miner.NewDeadlineInfoTransform(),
-		},
-	},
-	MinerFeeDebt: {
-		Transformers: []transform.Handler{
-			miner.NewFeeDebtTransform(),
-		},
-	},
-	MinerSectorPost: {
-		Transformers: []transform.Handler{
-			miner.NewPostSectorMessageTransform(),
-		},
-	},
-	MarketDealState: {
-		Transformers: []transform.Handler{
-			market.NewDealStateTransformer(),
-		},
-	},
-	MarketDealProposal: {
-		Transformers: []transform.Handler{
-			market.NewDealProposalTransformer(),
+		Transformers: []transform.TipSetStateHandler{
+			block2.NewDrandBlockEntryTransform(DrandBlockEntrie),
 		},
 	},
 	Message: {
-		Transformers: []transform.Handler{
-			message.NewMessageTransform(),
+		Transformers: []transform.TipSetStateHandler{
+			message2.NewMessageTransform(Message),
 		},
 	},
 	BlockMessage: {
-		Transformers: []transform.Handler{
-			message.NewBlockMessageTransform(),
+		Transformers: []transform.TipSetStateHandler{
+			message2.NewBlockMessageTransform(BlockMessage),
 		},
 	},
 	Receipt: {
-		Transformers: []transform.Handler{
-			message.NewReceiptTransform(),
+		Transformers: []transform.TipSetStateHandler{
+			message2.NewReceiptTransform(Receipt),
 		},
 	},
 	MessageGasEconomy: {
-		Transformers: []transform.Handler{
-			economics.NewGasEconomyTransform(),
+		Transformers: []transform.TipSetStateHandler{
+			economics2.NewGasEconomyTransform(MessageGasEconomy),
 		},
 	},
 	ParsedMessage: {
-		Transformers: []transform.Handler{
-			message.NewParsedMessageTransform(),
+		Transformers: []transform.TipSetStateHandler{
+			message2.NewParsedMessageTransform(ParsedMessage),
 		},
 	},
 	GasOutputs: {
-		Transformers: []transform.Handler{
-			message.NewGasOutputTransform(),
+		Transformers: []transform.TipSetStateHandler{
+			message2.NewGasOutputTransform(GasOutputs),
 		},
 	},
 	VmMessage: {
-		Transformers: []transform.Handler{
-			message.NewVMMessageTransform(),
-		},
-	},
-	Actor: {
-		Transformers: []transform.Handler{
-			raw.NewActorTransform(),
-		},
-	},
-	ActorState: {
-		Transformers: []transform.Handler{
-			raw.NewActorStateTransform(),
-		},
-	},
-	IdAddress: {
-		Transformers: []transform.Handler{
-			init_.NewIDAddressTransform(),
-		},
-	},
-	MultisigTransaction: {
-		Transformers: []transform.Handler{
-			multisig.NewTransactionTransform(),
-		},
-	},
-	ChainPower: {
-		Transformers: []transform.Handler{
-			power.NewChainPowerTransform(),
-		},
-	},
-	PowerActorClaim: {
-		Transformers: []transform.Handler{
-			power.NewClaimedPowerTransform(),
-		},
-	},
-	ChainReward: {
-		Transformers: []transform.Handler{
-			reward.NewChainRewardTransform(),
-		},
-	},
-	VerifiedRegistryVerifiedClient: {
-		Transformers: []transform.Handler{
-			verifreg.NewVerifiedClientTransform(),
-		},
-	},
-	VerifiedRegistryVerifier: {
-		Transformers: []transform.Handler{
-			verifreg.NewVerifierTransform(),
+		Transformers: []transform.TipSetStateHandler{
+			message2.NewVMMessageTransform(VmMessage),
 		},
 	},
 	InternalMessage: {
-		Transformers: []transform.Handler{
-			message.NewImplicitMessageTransform(),
+		Transformers: []transform.TipSetStateHandler{
+			message2.NewImplicitMessageTransform(InternalMessage),
 		},
 	},
 	InternalParsedMessage: {
-		Transformers: []transform.Handler{
-			message.NewImplicitParsedMessageTransform(),
+		Transformers: []transform.TipSetStateHandler{
+			message2.NewImplicitParsedMessageTransform(InternalParsedMessage),
 		},
 	},
 	ChainEconomics: {
-		Transformers: []transform.Handler{
-			economics.NewCirculatingSupplyTransform(),
+		Transformers: []transform.TipSetStateHandler{
+			economics2.NewCirculatingSupplyTransform(ChainEconomics),
 		},
 	},
 	ChainConsensus: {
-		Transformers: []transform.Handler{
-			tipset.NewConsensusTransform(),
+		Transformers: []transform.TipSetStateHandler{
+			tipset.NewConsensusTransform(ChainConsensus),
+		},
+	},
+}
+
+type ActorStateTransforms struct {
+	Transformers []transform.ActorStateHandler
+}
+
+var ActorHandlers = map[string]ActorStateTransforms{
+	MinerSectorDeal: {
+		Transformers: []transform.ActorStateHandler{
+			miner.NewSectorDealsTransformer(MinerSectorDeal),
+		},
+	},
+	MinerSectorEvent: {
+		Transformers: []transform.ActorStateHandler{
+			miner.NewSectorEventTransformer(MinerSectorEvent),
+			miner.NewPrecommitEventTransformer(MinerSectorEvent),
+		},
+	},
+	MinerPreCommitInfo: {
+		Transformers: []transform.ActorStateHandler{
+			miner.NewPrecommitInfoTransformer(MinerPreCommitInfo),
+		},
+	},
+	MinerSectorInfoV7: {
+		Transformers: []transform.ActorStateHandler{
+			miner.NewSectorInfoTransform(MinerSectorInfoV7),
+		},
+	},
+	MinerInfo: {
+		Transformers: []transform.ActorStateHandler{
+			miner.NewMinerInfoTransform(MinerInfo),
+		},
+	},
+	MinerLockedFund: {
+		Transformers: []transform.ActorStateHandler{
+			miner.NewFundsTransform(MinerLockedFund),
+		},
+	},
+	MinerCurrentDeadlineInfo: {
+		Transformers: []transform.ActorStateHandler{
+			miner.NewDeadlineInfoTransform(MinerCurrentDeadlineInfo),
+		},
+	},
+	MinerFeeDebt: {
+		Transformers: []transform.ActorStateHandler{
+			miner.NewFeeDebtTransform(MinerFeeDebt),
+		},
+	},
+	MinerSectorPost: {
+		Transformers: []transform.ActorStateHandler{
+			miner.NewPostSectorMessageTransform(MinerSectorPost),
+		},
+	},
+	MarketDealState: {
+		Transformers: []transform.ActorStateHandler{
+			market.NewDealStateTransformer(MarketDealState),
+		},
+	},
+	MarketDealProposal: {
+		Transformers: []transform.ActorStateHandler{
+			market.NewDealProposalTransformer(MarketDealProposal),
+		},
+	},
+	Actor: {
+		Transformers: []transform.ActorStateHandler{
+			raw.NewActorTransform(Actor),
+		},
+	},
+	ActorState: {
+		Transformers: []transform.ActorStateHandler{
+			raw.NewActorStateTransform(ActorState),
+		},
+	},
+	IdAddress: {
+		Transformers: []transform.ActorStateHandler{
+			init_.NewIDAddressTransform(IdAddress),
+		},
+	},
+	MultisigTransaction: {
+		Transformers: []transform.ActorStateHandler{
+			multisig.NewTransactionTransform(MultisigTransaction),
+		},
+	},
+	ChainPower: {
+		Transformers: []transform.ActorStateHandler{
+			power.NewChainPowerTransform(ChainPower),
+		},
+	},
+	PowerActorClaim: {
+		Transformers: []transform.ActorStateHandler{
+			power.NewClaimedPowerTransform(PowerActorClaim),
+		},
+	},
+	ChainReward: {
+		Transformers: []transform.ActorStateHandler{
+			reward.NewChainRewardTransform(ChainReward),
+		},
+	},
+	VerifiedRegistryVerifiedClient: {
+		Transformers: []transform.ActorStateHandler{
+			verifreg.NewVerifiedClientTransform(VerifiedRegistryVerifiedClient),
+		},
+	},
+	VerifiedRegistryVerifier: {
+		Transformers: []transform.ActorStateHandler{
+			verifreg.NewVerifierTransform(VerifiedRegistryVerifier),
 		},
 	},
 }

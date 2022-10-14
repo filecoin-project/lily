@@ -7,8 +7,11 @@ import (
 
 	logging "github.com/ipfs/go-log/v2"
 
+	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor"
+	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/actors/common"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/raw"
@@ -17,24 +20,27 @@ import (
 var log = logging.Logger("transform/actor")
 
 type ActorTransform struct {
-	meta v2.ModelMeta
+	meta     v2.ModelMeta
+	taskName string
 }
 
-func NewActorTransform() *ActorTransform {
+func NewActorTransform(taskName string) *ActorTransform {
 	info := raw.ActorState{}
-	return &ActorTransform{meta: info.Meta()}
+	return &ActorTransform{meta: info.Meta(), taskName: taskName}
 }
 
-func (a *ActorTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
+func (a *ActorTransform) Run(ctx context.Context, reporter string, in chan *extract.ActorStateResult, out chan transform.Result) error {
 	log.Debugf("run %s", a.Name())
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			log.Debugw("received data", "count", len(res.Models()))
-			sqlModels := make(common.ActorList, 0, len(res.Models()))
-			for _, modeldata := range res.Models() {
+			report := actor.ToProcessingReport(a.taskName, reporter, res)
+			data := model.PersistableList{report}
+			log.Debugw("received data", "count", len(res.Results.Models()))
+			sqlModels := make(common.ActorList, 0, len(res.Results.Models()))
+			for _, modeldata := range res.Results.Models() {
 				m := modeldata.(*raw.ActorState)
 
 				sqlModels = append(sqlModels, &common.Actor{
@@ -48,8 +54,9 @@ func (a *ActorTransform) Run(ctx context.Context, in chan transform.IndexState, 
 				})
 			}
 			if len(sqlModels) > 0 {
-				out <- &persistable.Result{Model: sqlModels}
+				data = append(data, sqlModels)
 			}
+			out <- &persistable.Result{Model: data}
 		}
 	}
 	return nil

@@ -9,31 +9,38 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	maddr "github.com/multiformats/go-multiaddr"
 
+	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor"
+	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/actors/miner"
 )
 
 type MinerInfoTransform struct {
-	meta v2.ModelMeta
+	meta     v2.ModelMeta
+	taskName string
 }
 
-func NewMinerInfoTransform() *MinerInfoTransform {
+func NewMinerInfoTransform(taskName string) *MinerInfoTransform {
 	i := miner.MinerInfo{}
-	return &MinerInfoTransform{meta: i.Meta()}
+	return &MinerInfoTransform{meta: i.Meta(), taskName: taskName}
 }
 
-func (s *MinerInfoTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
+func (s *MinerInfoTransform) Run(ctx context.Context, reporter string, in chan *extract.ActorStateResult, out chan transform.Result) error {
 	log.Debugf("run %s", s.Name())
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(minermodel.MinerInfoList, 0, len(res.Models()))
-			for _, modeldata := range res.Models() {
+			report := actor.ToProcessingReport(s.taskName, reporter, res)
+			data := model.PersistableList{report}
+			log.Debugw("received data", "count", len(res.Results.Models()))
+			sqlModels := make(minermodel.MinerInfoList, 0, len(res.Results.Models()))
+			for _, modeldata := range res.Results.Models() {
 				mi := modeldata.(*miner.MinerInfo)
 				var newWorker string
 				var newWorkerEpoch int64
@@ -82,8 +89,9 @@ func (s *MinerInfoTransform) Run(ctx context.Context, in chan transform.IndexSta
 				})
 			}
 			if len(sqlModels) > 0 {
-				out <- &persistable.Result{Model: sqlModels}
+				data = append(data, sqlModels)
 			}
+			out <- &persistable.Result{Model: data}
 		}
 	}
 	return nil

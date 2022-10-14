@@ -5,30 +5,37 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable"
+	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/chain"
+	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/blocks"
 	v2 "github.com/filecoin-project/lily/model/v2"
 	"github.com/filecoin-project/lily/model/v2/block"
 )
 
 type BlockParentsTransform struct {
-	meta v2.ModelMeta
+	meta     v2.ModelMeta
+	taskName string
 }
 
-func NewBlockParentsTransform() *BlockParentsTransform {
+func NewBlockParentsTransform(taskName string) *BlockParentsTransform {
 	info := block.BlockHeader{}
-	return &BlockParentsTransform{meta: info.Meta()}
+	return &BlockParentsTransform{meta: info.Meta(), taskName: taskName}
 }
 
-func (b *BlockParentsTransform) Run(ctx context.Context, in chan transform.IndexState, out chan transform.Result) error {
+func (b *BlockParentsTransform) Run(ctx context.Context, reporter string, in chan *extract.TipSetStateResult, out chan transform.Result) error {
 	for res := range in {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			sqlModels := make(blocks.BlockParents, 0, len(res.Models()))
-			for _, modeldata := range res.Models() {
+			report := chain.ToProcessingReport(b.taskName, reporter, res)
+			data := model.PersistableList{report}
+			log.Debugw("received data", "count", len(res.Models))
+			sqlModels := make(blocks.BlockParents, 0, len(res.Models))
+			for _, modeldata := range res.Models {
 				m := modeldata.(*block.BlockHeader)
 				for _, parent := range m.Parents {
 					sqlModels = append(sqlModels, &blocks.BlockParent{
@@ -40,8 +47,9 @@ func (b *BlockParentsTransform) Run(ctx context.Context, in chan transform.Index
 				}
 			}
 			if len(sqlModels) > 0 {
-				out <- &persistable.Result{Model: sqlModels}
+				data = append(data, sqlModels)
 			}
+			out <- &persistable.Result{Model: data}
 		}
 	}
 	return nil
