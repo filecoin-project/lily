@@ -23,12 +23,12 @@ type TaskMeta struct {
 	Transformers []transform.Handler
 }
 
-type ThingIDK struct {
+type TaskTransforms struct {
 	Tasks        []v2.ModelMeta
 	Transformers []transform.Handler
 }
 
-func GetTransformersForTasks(tasks ...string) (*ThingIDK, error) {
+func GetTransformersForTasks(tasks ...string) (*TaskTransforms, error) {
 	tmp := make(map[transform.Handler]struct{})
 	for _, t := range tasks {
 		meta, ok := TaskHandlers[t]
@@ -39,7 +39,7 @@ func GetTransformersForTasks(tasks ...string) (*ThingIDK, error) {
 			tmp[transformer] = struct{}{}
 		}
 	}
-	out := &ThingIDK{
+	out := &TaskTransforms{
 		Tasks:        make([]v2.ModelMeta, 0, 10),
 		Transformers: make([]transform.Handler, 0, 10),
 	}
@@ -50,15 +50,17 @@ func GetTransformersForTasks(tasks ...string) (*ThingIDK, error) {
 	return out, nil
 }
 
-func GetLegacyTaskNameForTransform(name string) string {
-	for task, transformes := range TaskHandlers {
-		for _, handler := range transformes.Transformers {
-			if name == handler.Name() {
-				return task
+func GetLegacyTaskNameForTransform() func(string) string {
+	return func(s string) string {
+		for task, transformes := range TaskHandlers {
+			for _, handler := range transformes.Transformers {
+				if s == handler.Name() {
+					return task
+				}
 			}
 		}
+		panic("developer error")
 	}
-	panic("developer error")
 }
 
 var TaskHandlers = map[string]TaskMeta{
