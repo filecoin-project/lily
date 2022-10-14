@@ -2,8 +2,8 @@ package extract
 
 import (
 	"context"
+	"fmt"
 	"sync"
-	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
@@ -54,44 +54,36 @@ type StateExtractor struct {
 	ActorExtractorWorkers int
 }
 
-type StateResult struct {
-	Task      v2.ModelMeta
-	Error     error
-	Data      []v2.LilyModel
-	StartedAt time.Time
-	Duration  time.Duration
-}
-
-func (se *StateExtractor) Start(ctx context.Context, current, executed *types.TipSet) (chan *TipSetStateResult, chan *ActorStateResult, chan error) {
-	// todo maybe buffer these, or add a config for it
+func (se *StateExtractor) Start(ctx context.Context, current, executed *types.TipSet) (chan *TipSetStateResult, chan *ActorStateResult, error) {
 	tipsetsCh := make(chan *TipSetStateResult, len(se.tipsetTasks))
 	actorsCh := make(chan *ActorStateResult, len(se.actorTasks))
-	errorCh := make(chan error)
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := TipSetState(ctx, se.TipSetTaskWorkers, se.api, current, executed, se.tipsetTasks, tipsetsCh); err != nil {
-			log.Errorw("tipset state extraction", "error", err)
-			errorCh <- err
-		}
-	}()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := ActorStates(ctx, se.ActorTaskWorkers, se.ActorExtractorWorkers, se.api, current, executed, se.actorTasks, actorsCh); err != nil {
-			log.Errorw("actor state extraction", "error", err)
-			errorCh <- err
+	if len(se.actorTasks) > 0 {
+		changes, err := se.api.ActorStateChanges(ctx, current, executed)
+		if err != nil {
+			return nil, nil, fmt.Errorf("getting actor state changes: %w", err)
 		}
-	}()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			ActorStates(ctx, se.ActorTaskWorkers, se.ActorExtractorWorkers, se.api, current, executed, se.actorTasks, changes, actorsCh)
+		}()
+	}
+
+	if len(se.tipsetTasks) > 0 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+		}()
+		TipSetState(ctx, se.TipSetTaskWorkers, se.api, current, executed, se.tipsetTasks, tipsetsCh)
+	}
 
 	go func() {
 		wg.Wait()
 		close(tipsetsCh)
 		close(actorsCh)
-		close(errorCh)
 	}()
 
-	return tipsetsCh, actorsCh, errorCh
+	return tipsetsCh, actorsCh, nil
 }

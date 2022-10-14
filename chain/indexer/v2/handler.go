@@ -7,6 +7,7 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
+	"go.uber.org/atomic"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/chain/indexer"
@@ -44,12 +45,18 @@ func NewIndexManager(strg model.Storage, api tasks.DataSource, tasks []string) (
 	}, nil
 }
 
-func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...indexer.Option) (bool, error) {
-	parent, err := m.api.TipSet(ctx, ts.Parents())
-	if err != nil {
-		return false, err
-	}
-	_ = parent
+func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...indexer.Option) (ok bool, err error) {
+	start := time.Now()
+	// in case something shits the bed
+	defer func() {
+		if r := recover(); r != nil {
+			errMsg := fmt.Errorf("indexer recovered from panic %v", r)
+			log.Errorf("%s", errMsg)
+			ok = false
+			err = errMsg
+		}
+	}()
+
 	transformer, consumer, err := m.startRouters(ctx,
 		append(m.stuff.Transformers, system.NewProcessingReportTransform()),
 		[]load.Handler{&persistable.PersistableResultConsumer{Strg: m.strg}},
@@ -58,12 +65,17 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 		return false, err
 	}
 
-	start := time.Now()
-	results, err := m.indexer.TipSet(ctx, ts)
+	parent, err := m.api.TipSet(ctx, ts.Parents())
 	if err != nil {
 		return false, err
 	}
 
+	results, err := m.indexer.TipSet(ctx, ts, parent)
+	if err != nil {
+		return false, err
+	}
+
+	success := atomic.NewBool(true)
 	grp := errgroup.Group{}
 	grp.Go(func() (err error) {
 		defer func() {
@@ -75,7 +87,13 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 				err = fmt.Errorf("%s stopping transfrom: %w", err, stopErr)
 			}
 		}()
+
 		for res := range results {
+			// if any result failed to complete we did not index this tipset successfully.
+			if !res.Complete() {
+				log.Warnw("failed to complete task", "name", res.Task().String())
+				success.Store(false)
+			}
 			if len(res.Models()) > 0 {
 				if err := transformer.Route(ctx, res); err != nil {
 					return err
@@ -94,6 +112,7 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 				err = fmt.Errorf("%s stopping consumer: %w", err, stopErr)
 			}
 		}()
+
 		for res := range transformer.Results() {
 			if err := consumer.Route(ctx, res); err != nil {
 				return err
@@ -104,8 +123,8 @@ func (m *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 	if err := grp.Wait(); err != nil {
 		return false, err
 	}
-	log.Infow("index complete", "duration", time.Since(start))
-	return true, nil
+	log.Infow("stopping indexer", "duration", time.Since(start), "success", success.Load())
+	return success.Load(), nil
 }
 
 type Transformer interface {

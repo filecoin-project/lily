@@ -64,7 +64,6 @@ func NewRouter(topics []v2.ModelMeta, handlers ...Handler) (*Router, error) {
 			Handle: func(ctx context.Context, e evntbus.Event) {
 				hch <- e.Data.(IndexState)
 			},
-			// TODO fix this annoying shit, make your own damn bus, this one is falling a bit short..
 			Matcher: handler.Matcher(),
 		})
 	}

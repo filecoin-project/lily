@@ -1,26 +1,6 @@
 package indexer
 
-import (
-	"context"
-	"os"
-	"time"
-
-	"github.com/filecoin-project/lotus/chain/types"
-
-	"github.com/filecoin-project/lily/chain/indexer/v2/extract"
-	"github.com/filecoin-project/lily/chain/indexer/v2/load"
-	"github.com/filecoin-project/lily/chain/indexer/v2/load/cborable"
-	"github.com/filecoin-project/lily/chain/indexer/v2/load/persistable"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/market"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/miner"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/actor/raw"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/block"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/economics"
-	"github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/message"
-	"github.com/filecoin-project/lily/model"
-	v2 "github.com/filecoin-project/lily/model/v2"
-)
+/*
 
 const BitWidth = 8
 
@@ -90,7 +70,6 @@ func (f *Feeder) Index(ctx context.Context, path string) error {
 					current:  tipset,
 					executed: parent,
 					complete: true,
-					result: &extract.StateResult{
 						Task:      task,
 						Error:     nil,
 						Data:      data,
@@ -127,6 +106,11 @@ type resultImpl struct {
 	executed *types.TipSet
 	complete bool
 	result   *extract.StateResult
+}
+
+func (r *resultImpl) Error() error {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (r *resultImpl) ExtractionState() interface{} {
@@ -185,3 +169,6 @@ func (f *Feeder) startRouters(ctx context.Context, tasks []v2.ModelMeta, handler
 
 	return tr, lr, nil
 }
+
+
+*/
