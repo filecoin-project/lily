@@ -1,4 +1,4 @@
-package v2
+package tasks
 
 import (
 	"fmt"
@@ -27,6 +27,35 @@ type TipSetTaskTransforms struct {
 type ActorTaskTransforms struct {
 	Tasks        []v2.ModelMeta
 	Transformers []transform.ActorStateHandler
+}
+
+func GetTransformersForModelMeta(meta []v2.ModelMeta) ([]transform.TipSetStateHandler, []transform.ActorStateHandler, error) {
+	var ts []transform.TipSetStateHandler
+	var as []transform.ActorStateHandler
+	// I hate these &*$(%*$ task names _SO_ much
+	for _, m := range meta {
+		found := false
+		for _, trns := range TipSetHandlers {
+			for _, t := range trns.Transformers {
+				if t.ModelType().Equals(t.ModelType()) {
+					found = true
+					ts = append(ts, t)
+				}
+			}
+		}
+		for _, trns := range ActorHandlers {
+			for _, t := range trns.Transformers {
+				if t.ModelType().Equals(t.ModelType()) {
+					found = true
+					as = append(as, t)
+				}
+			}
+		}
+		if !found {
+			return nil, nil, fmt.Errorf("no transformer for meta %s", m.String())
+		}
+	}
+	return ts, as, nil
 }
 
 func GetTransformersForTasks(tasks ...string) (*TipSetTaskTransforms, *ActorTaskTransforms, []v2.ModelMeta, error) {
@@ -70,22 +99,6 @@ func GetTransformersForTasks(tasks ...string) (*TipSetTaskTransforms, *ActorTask
 	}
 	return tsOut, asOut, tasksOut, nil
 }
-
-/*
-func GetLegacyTaskNameForTransform() func(string) string {
-	return func(s string) string {
-		for task, transformes := range TaskHandlers {
-			for _, handler := range transformes.Transformers {
-				if s == handler.Name() {
-					return task
-				}
-			}
-		}
-		panic("developer error")
-	}
-}
-
-*/
 
 type TipSetTransforms struct {
 	Transformers []transform.TipSetStateHandler

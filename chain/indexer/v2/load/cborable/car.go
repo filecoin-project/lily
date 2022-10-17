@@ -2,8 +2,10 @@ package cborable
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"reflect"
 	"time"
@@ -74,7 +76,7 @@ func (c *CarResultConsumer) Consume(ctx context.Context, in chan transform.Resul
 	}
 	log.Infow("staged models", "duration", time.Since(start), "size", len(mw.cache))
 
-	stateRoot, err := mw.Finalize(ctx, c.Current, c.Executed)
+	stateRoot, info, err := mw.Finalize(ctx, c.Current, c.Executed)
 	if err != nil {
 		return err
 	}
@@ -85,6 +87,14 @@ func (c *CarResultConsumer) Consume(ctx context.Context, in chan transform.Resul
 	}
 	defer f.Close()
 	if err := WriteCAR(ctx, stateRoot, bs, f); err != nil {
+		return err
+	}
+	// now store the meta data
+	data, err := json.Marshal(info)
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(fmt.Sprintf("./%d_%s.json", c.Current.Height(), c.Current.ParentState()), data, 0644); err != nil {
 		return err
 	}
 	return nil

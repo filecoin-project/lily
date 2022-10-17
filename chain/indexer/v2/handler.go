@@ -17,6 +17,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/v2/load/persistable"
 	"github.com/filecoin-project/lily/chain/indexer/v2/transform"
 	cborable2 "github.com/filecoin-project/lily/chain/indexer/v2/transform/cborable"
+	persistable2 "github.com/filecoin-project/lily/chain/indexer/v2/transform/persistable/tasks"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/tasks"
 )
@@ -24,30 +25,25 @@ import (
 var log = logging.Logger("indexmanager")
 
 type Manager struct {
-	indexer      *TipSetIndexer
 	extractor    *extract.StateExtractor
-	tsTransforms *TipSetTaskTransforms
-	asTransforms *ActorTaskTransforms
+	tsTransforms *persistable2.TipSetTaskTransforms
+	asTransforms *persistable2.ActorTaskTransforms
 	api          tasks.DataSource
 	strg         model.Storage
 	reporter     string
 }
 
 func NewIndexManager(strg model.Storage, api tasks.DataSource, tasks []string, reporter string) (*Manager, error) {
-	tsTransforms, asTransforms, modelTasks, err := GetTransformersForTasks(tasks...)
+	tsTransforms, asTransforms, modelTasks, err := persistable2.GetTransformersForTasks(tasks...)
 	if err != nil {
 		return nil, err
 	}
-	idxer, err := NewTipSetIndexer(api, modelTasks, 1024)
-	if err != nil {
-		return nil, err
-	}
+
 	extractor, err := extract.NewStateExtractor(api, modelTasks, 1024, 1024, 1024)
 	if err != nil {
 		return nil, err
 	}
 	return &Manager{
-		indexer:      idxer,
 		extractor:    extractor,
 		tsTransforms: tsTransforms,
 		asTransforms: asTransforms,

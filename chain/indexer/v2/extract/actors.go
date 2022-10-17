@@ -17,7 +17,7 @@ import (
 type ActorStateResult struct {
 	Task      v2.ModelMeta
 	TipSet    *types.TipSet
-	Results   ActorExtractorResultList
+	Results   ActorResults
 	StartTime time.Time
 	Duration  time.Duration
 }
@@ -28,6 +28,11 @@ type ActorExtractorResult struct {
 	Duration  time.Duration
 	Models    []v2.LilyModel
 	Error     *ActorExtractorError
+}
+
+type ActorResults interface {
+	Models() []v2.LilyModel
+	Errors() []error
 }
 
 type ActorExtractorResultList []*ActorExtractorResult
@@ -97,7 +102,7 @@ func ActorStates(ctx context.Context, workers int, extractorWorkers int, api tas
 }
 
 func runActorExtractors(ctx context.Context, workers int, task v2.ModelMeta, api tasks.DataSource, current, executed *types.TipSet, extractFn v2.ActorExtractorFn, candidates []actorstate.ActorInfo) *ActorStateResult {
-	results := make([]*ActorExtractorResult, len(candidates))
+	results := make(ActorExtractorResultList, len(candidates))
 	actorsStart := time.Now()
 	pool := workerpool.New(workers)
 
@@ -133,6 +138,6 @@ func runActorExtractors(ctx context.Context, workers int, task v2.ModelMeta, api
 		StartTime: actorsStart,
 		Duration:  time.Since(actorsStart),
 	}
-	log.Infow("completed extraction for actors", "task", task.String(), "duration", out.Duration, "count", len(out.Results))
+	log.Infow("completed extraction for actors", "task", task.String(), "duration", out.Duration, "count", len(out.Results.Models()), "errors", len(out.Results.Errors()))
 	return out
 }

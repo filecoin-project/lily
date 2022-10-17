@@ -75,26 +75,23 @@ func (m *LilyNodeAPI) Host() host.Host {
 }
 
 func (m *LilyNodeAPI) IndexCarFile(_ context.Context, cfg *LilyIndexCarFileConfig) error {
-	panic("TODO")
-	/*
-		// the context's passed to these methods live for the duration of the clients request, so make a new one.
-		ctx := context.Background()
-		md := storage.Metadata{
-			JobName: cfg.JobConfig.Name,
-		}
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx := context.Background()
+	md := storage.Metadata{
+		JobName: cfg.JobConfig.Name,
+	}
 
-		// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-		strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
-		if err != nil {
-			return err
-		}
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
+	if err != nil {
+		return err
+	}
 
-		feeder := indexer.Feeder{
-			Strg: strg,
-		}
-		return feeder.Index(ctx, cfg.Path)
+	feeder := v2.Feeder{
+		Strg: strg,
+	}
+	return feeder.Index(ctx, cfg.Path)
 
-	*/
 }
 
 func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error) {

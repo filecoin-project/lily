@@ -25,6 +25,9 @@ func NewModelWriter(store adt.Store, bitwidth int) (*ModelWriter, error) {
 		store:        store,
 		cache:        make(map[v2.ModelMeta][]cacheValue),
 		metaModelMap: mmm,
+		info: &ModelWriterMeta{
+			ModelArrayRoots: make(map[string]cid.Cid),
+		},
 	}, nil
 }
 
@@ -32,6 +35,7 @@ type ModelWriter struct {
 	store        adt.Store
 	cache        map[v2.ModelMeta][]cacheValue
 	metaModelMap *MetaModelMap
+	info         *ModelWriterMeta
 }
 
 func (w *ModelWriter) StageModel(ctx context.Context, m v2.LilyModel) error {
@@ -39,19 +43,29 @@ func (w *ModelWriter) StageModel(ctx context.Context, m v2.LilyModel) error {
 	return nil
 }
 
-func (w *ModelWriter) Finalize(ctx context.Context, ts, pts *types.TipSet) (r cid.Cid, err error) {
+type ModelWriterMeta struct {
+	Root            cid.Cid            `json:"Root"`
+	ModelsMapRoot   cid.Cid            `json:"ModelsMap""`
+	ModelArrayRoots map[string]cid.Cid `json:"ModelArrayRoots""`
+	Current         types.TipSetKey    `json:"CurrentTipSet"`
+	CurrentHeight   int64              `json:"CurrentHeight"`
+	Executed        types.TipSetKey    `json:"ExecutedTipSet"`
+	ExecutedHeight  int64              `json:"ExecutedHeight"`
+}
+
+func (w *ModelWriter) Finalize(ctx context.Context, ts, pts *types.TipSet) (r cid.Cid, _ *ModelWriterMeta, err error) {
 	defer func() {
 		log.Infow("finalized meta model map", "root", r.String())
 	}()
 	if len(w.cache) == 0 {
-		return cid.Undef, fmt.Errorf("no models staged")
+		return cid.Undef, nil, fmt.Errorf("no models staged")
 	}
 	if err := w.persistCache(); err != nil {
-		return cid.Undef, err
+		return cid.Undef, nil, err
 	}
 	metaModelRoot, err := w.metaModelMap.Root()
 	if err != nil {
-		return cid.Undef, err
+		return cid.Undef, nil, err
 	}
 
 	stateContainer := &ModelStateContainer{
@@ -62,17 +76,23 @@ func (w *ModelWriter) Finalize(ctx context.Context, ts, pts *types.TipSet) (r ci
 
 	stateMap, err := adt.MakeEmptyMap(w.store, BitWidth)
 	if err != nil {
-		return cid.Undef, err
+		return cid.Undef, nil, err
 	}
 	if err = stateMap.Put(TipsetKeyer{ts.Key()}, stateContainer); err != nil {
-		return cid.Undef, err
+		return cid.Undef, nil, err
 	}
 	stateRoot, err := stateMap.Root()
 	if err != nil {
-		return cid.Undef, err
+		return cid.Undef, nil, err
 	}
 	log.Infow("model state root", "root", stateRoot.String())
-	return stateRoot, nil
+	w.info.CurrentHeight = int64(ts.Height())
+	w.info.ExecutedHeight = int64(pts.Height())
+	w.info.Executed = pts.Key()
+	w.info.Current = ts.Key()
+	w.info.Root = stateRoot
+	w.info.ModelsMapRoot = metaModelRoot
+	return stateRoot, w.info, nil
 }
 
 func (w *ModelWriter) sortCache() error {
@@ -123,6 +143,7 @@ func (w *ModelWriter) persistCache() error {
 				return err
 			}
 			log.Infow("put model array", "meta", meta.String(), "root", root.String(), "size", array.Length())
+			w.info.ModelArrayRoots[meta.String()] = root
 			return w.metaModelMap.Put(meta, root)
 		})
 	}

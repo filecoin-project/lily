@@ -38,6 +38,19 @@ func (mm ModelMeta) String() string {
 	return fmt.Sprintf("%s%s%s%s%d", mm.Kind, modelMetaKindSeparator, mm.Type, modelMetaVersionSeparator, mm.Version)
 }
 
+func (mm ModelMeta) Equals(other ModelMeta) bool {
+	if mm.Kind != other.Kind {
+		return false
+	}
+	if mm.Type != other.Type {
+		return false
+	}
+	if mm.Version != other.Version {
+		return false
+	}
+	return true
+}
+
 func DecodeModelMeta(str string) (ModelMeta, error) {
 	tokens := strings.Split(str, modelMetaKindSeparator)
 	if len(tokens) != 2 {
