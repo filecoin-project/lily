@@ -12,22 +12,28 @@ import (
 	"github.com/filecoin-project/go-state-types/cbor"
 	"github.com/ipfs/go-cid"
 
-	msig8 "github.com/filecoin-project/specs-actors/v4/actors/builtin/multisig"
+	msig9 "github.com/filecoin-project/go-state-types/builtin/v9/multisig"
 
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
-	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
-	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
-	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
-	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
-	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
-	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
-	builtin8 "github.com/filecoin-project/specs-actors/v8/actors/builtin"
 
-	"github.com/filecoin-project/lotus/chain/types"
+	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
+
+	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
+
+	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
+
+	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
+
+	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
+
+	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
+
+	builtintypes "github.com/filecoin-project/go-state-types/builtin"
 
 	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	lotusactors "github.com/filecoin-project/lotus/chain/actors"
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
@@ -40,6 +46,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 		case actors.Version8:
 			return load8(store, act.Head)
+
+		case actors.Version9:
+			return load9(store, act.Head)
 
 		}
 	}
@@ -95,19 +104,19 @@ type State interface {
 	decodeTransaction(val *cbg.Deferred) (Transaction, error)
 }
 
-type Transaction = msig8.Transaction
+type Transaction = msig9.Transaction
 
-var Methods = builtin8.MethodsMultisig
+var Methods = builtintypes.MethodsMultisig
 
 // these types are the same between v0 and v6
-type ProposalHashData = msig8.ProposalHashData
-type ProposeReturn = msig8.ProposeReturn
-type ProposeParams = msig8.ProposeParams
-type ApproveReturn = msig8.ApproveReturn
-type TxnIDParams = msig8.TxnIDParams
+type ProposalHashData = msig9.ProposalHashData
+type ProposeReturn = msig9.ProposeReturn
+type ProposeParams = msig9.ProposeParams
+type ApproveReturn = msig9.ApproveReturn
+type TxnIDParams = msig9.TxnIDParams
 
 func txnParams(id uint64, data *ProposalHashData) ([]byte, error) {
-	params := msig8.TxnIDParams{ID: msig8.TxnID(id)}
+	params := msig9.TxnIDParams{ID: msig9.TxnID(id)}
 	if data != nil {
 		if data.Requester.Protocol() != address.ID {
 			return nil, fmt.Errorf("proposer address must be an ID address, was %s", data.Requester)
@@ -139,6 +148,7 @@ func AllCodes() []cid.Cid {
 		(&state6{}).Code(),
 		(&state7{}).Code(),
 		(&state8{}).Code(),
+		(&state9{}).Code(),
 	}
 }
 
@@ -152,5 +162,6 @@ func VersionCodes() map[actors.Version]cid.Cid {
 		actors.Version6: (&state6{}).Code(),
 		actors.Version7: (&state7{}).Code(),
 		actors.Version8: (&state8{}).Code(),
+		actors.Version9: (&state9{}).Code(),
 	}
 }

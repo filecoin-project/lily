@@ -12,8 +12,6 @@ import (
 	"github.com/filecoin-project/go-state-types/cbor"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
-	market8 "github.com/filecoin-project/go-state-types/builtin/v8/market"
-
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
@@ -28,18 +26,18 @@ import (
 
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
 
-	builtintypes8 "github.com/filecoin-project/go-state-types/builtin"
+	builtintypes "github.com/filecoin-project/go-state-types/builtin"
+	markettypes "github.com/filecoin-project/go-state-types/builtin/v9/market"
 
+	"github.com/filecoin-project/lily/chain/actors"
 	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 	"github.com/filecoin-project/lotus/chain/types"
-
-	"github.com/filecoin-project/lily/chain/actors"
 )
 
 var (
-	Address = builtintypes8.StorageMarketActorAddr
-	Methods = builtintypes8.MethodsMarket
+	Address = builtintypes.StorageMarketActorAddr
+	Methods = builtintypes.MethodsMarket
 )
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
@@ -52,6 +50,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 		case actors.Version8:
 			return load8(store, act.Head)
+
+		case actors.Version9:
+			return load9(store, act.Head)
 
 		}
 	}
@@ -109,16 +110,17 @@ type DealStates interface {
 }
 
 type DealProposals interface {
-	ForEach(cb func(id abi.DealID, dp market8.DealProposal) error) error
-	Get(id abi.DealID) (*market8.DealProposal, bool, error)
+	ForEach(cb func(id abi.DealID, dp markettypes.DealProposal) error) error
+	Get(id abi.DealID) (*markettypes.DealProposal, bool, error)
 
 	array() adt.Array
-	decode(*cbg.Deferred) (*market8.DealProposal, error)
+	decode(*cbg.Deferred) (*markettypes.DealProposal, error)
 }
 
-type DealProposal = market8.DealProposal
+type DealProposal = markettypes.DealProposal
+type DealLabel = markettypes.DealLabel
 
-type DealState = market8.DealState
+type DealState = markettypes.DealState
 
 type DealStateChanges struct {
 	Added    []DealIDState
@@ -145,14 +147,14 @@ type DealProposalChanges struct {
 
 type ProposalIDState struct {
 	ID       abi.DealID
-	Proposal market8.DealProposal
+	Proposal markettypes.DealProposal
 }
 
-func labelFromGoString(s string) (market8.DealLabel, error) {
+func labelFromGoString(s string) (markettypes.DealLabel, error) {
 	if utf8.ValidString(s) {
-		return market8.NewLabelFromString(s)
+		return markettypes.NewLabelFromString(s)
 	} else {
-		return market8.NewLabelFromBytes([]byte(s))
+		return markettypes.NewLabelFromBytes([]byte(s))
 	}
 }
 
@@ -166,6 +168,7 @@ func AllCodes() []cid.Cid {
 		(&state6{}).Code(),
 		(&state7{}).Code(),
 		(&state8{}).Code(),
+		(&state9{}).Code(),
 	}
 }
 
@@ -179,5 +182,6 @@ func VersionCodes() map[actors.Version]cid.Cid {
 		actors.Version6: (&state6{}).Code(),
 		actors.Version7: (&state7{}).Code(),
 		actors.Version8: (&state8{}).Code(),
+		actors.Version9: (&state9{}).Code(),
 	}
 }

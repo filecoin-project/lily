@@ -44,7 +44,7 @@ var TaskLookup = map[string][]string{
 		MinerInfo,
 	},
 	ActorStatesInitTask: {
-		IdAddress,
+		IDAddress,
 	},
 	ActorStatesMarketTask: {
 		MarketDealProposal,
@@ -79,7 +79,7 @@ var TaskLookup = map[string][]string{
 	ImplicitMessageTask: {
 		InternalMessage,
 		InternalParsedMessage,
-		VmMessage,
+		VMMessage,
 	},
 	ChainConsensusTask: {
 		ChainConsensus,

@@ -24,14 +24,14 @@ const (
 	ParsedMessage                  = "parsed_message"
 	InternalMessage                = "internal_messages"
 	InternalParsedMessage          = "internal_parsed_messages"
-	VmMessage                      = "vm_messages"
+	VMMessage                      = "vm_messages"
 	MultisigTransaction            = "multisig_transaction"
 	ChainPower                     = "chain_power"
 	PowerActorClaim                = "power_actor_claim"
 	ChainReward                    = "chain_reward"
 	Actor                          = "actor"
 	ActorState                     = "actor_state"
-	IdAddress                      = "id_address"
+	IDAddress                      = "id_addresses"
 	GasOutputs                     = "derived_gas_outputs"
 	ChainEconomics                 = "chain_economics"
 	ChainConsensus                 = "chain_consensus"
@@ -63,14 +63,14 @@ var AllTableTasks = []string{
 	ParsedMessage,
 	InternalMessage,
 	InternalParsedMessage,
-	VmMessage,
+	VMMessage,
 	MultisigTransaction,
 	ChainPower,
 	PowerActorClaim,
 	ChainReward,
 	Actor,
 	ActorState,
-	IdAddress,
+	IDAddress,
 	GasOutputs,
 	ChainEconomics,
 	ChainConsensus,
@@ -102,14 +102,14 @@ var TableLookup = map[string]struct{}{
 	ParsedMessage:                  {},
 	InternalMessage:                {},
 	InternalParsedMessage:          {},
-	VmMessage:                      {},
+	VMMessage:                      {},
 	MultisigTransaction:            {},
 	ChainPower:                     {},
 	PowerActorClaim:                {},
 	ChainReward:                    {},
 	Actor:                          {},
 	ActorState:                     {},
-	IdAddress:                      {},
+	IDAddress:                      {},
 	GasOutputs:                     {},
 	ChainEconomics:                 {},
 	ChainConsensus:                 {},
@@ -141,14 +141,14 @@ var TableComment = map[string]string{
 	ParsedMessage:                  ``,
 	InternalMessage:                ``,
 	InternalParsedMessage:          ``,
-	VmMessage:                      ``,
+	VMMessage:                      ``,
 	MultisigTransaction:            ``,
 	ChainPower:                     ``,
 	PowerActorClaim:                ``,
 	ChainReward:                    ``,
 	Actor:                          `Actor on chain that were added or updated at an epoch. Associates the actor's state root CID (head) with the chain state root CID from which it decends. Includes account ID nonce and balance at each state.`,
 	ActorState:                     `ActorState that were changed at an epoch. Associates actors states as single-level trees with CIDs pointing to complete state tree with the root CID (head) for that actor’s state.`,
-	IdAddress:                      `IdAddress contains a mapping of ID addresses to robust addresses from the init actor’s state.`,
+	IDAddress:                      `IDAddress contains a mapping of ID addresses to robust addresses from the init actor’s state.`,
 	GasOutputs:                     ``,
 	ChainEconomics:                 ``,
 	ChainConsensus:                 ``,
@@ -202,7 +202,7 @@ var TableFieldComments = map[string]map[string]string{
 	ParsedMessage:         {},
 	InternalMessage:       {},
 	InternalParsedMessage: {},
-	VmMessage: {
+	VMMessage: {
 		"ActorCode": "ActorCode of To (receiver).",
 		"Cid":       "Cid of the message.",
 		"ExitCode":  "ExitCode of message execution.",
@@ -238,7 +238,7 @@ var TableFieldComments = map[string]map[string]string{
 		"Height": "Epoch when this actor was created or updated.",
 		"State":  "Top level of state data as json.",
 	},
-	IdAddress: {
+	IDAddress: {
 		"Address":   "Robust address",
 		"Height":    "Epoch when this address mapping was created or updated.",
 		"ID":        "ID address",

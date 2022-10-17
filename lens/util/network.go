@@ -11,7 +11,7 @@ import (
 )
 
 // DefaultNetwork is the filecoing network this version of lily has been built against
-var DefaultNetwork = NewNetwork(filcns.DefaultUpgradeSchedule(), build.NewestNetworkVersion)
+var DefaultNetwork = NewNetwork(filcns.DefaultUpgradeSchedule(), build.TestNetworkVersion)
 
 // Network holds properties of the filecoin network
 type Network struct {

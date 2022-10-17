@@ -15,7 +15,7 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
-	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 
 	"crypto/sha256"
@@ -563,11 +563,17 @@ func fromV8SectorOnChainInfo(v8 miner8.SectorOnChainInfo) SectorOnChainInfo {
 
 func fromV8SectorPreCommitOnChainInfo(v8 miner8.SectorPreCommitOnChainInfo) minertypes.SectorPreCommitOnChainInfo {
 	return minertypes.SectorPreCommitOnChainInfo{
-		Info:               (minertypes.SectorPreCommitInfo)(v8.Info),
-		PreCommitDeposit:   v8.PreCommitDeposit,
-		PreCommitEpoch:     v8.PreCommitEpoch,
-		DealWeight:         v8.DealWeight,
-		VerifiedDealWeight: v8.VerifiedDealWeight,
+		Info: minertypes.SectorPreCommitInfo{
+			SealProof:     v8.Info.SealProof,
+			SectorNumber:  v8.Info.SectorNumber,
+			SealedCID:     v8.Info.SealedCID,
+			SealRandEpoch: v8.Info.SealRandEpoch,
+			DealIDs:       v8.Info.DealIDs,
+			Expiration:    v8.Info.Expiration,
+			UnsealedCid:   nil,
+		},
+		PreCommitDeposit: v8.PreCommitDeposit,
+		PreCommitEpoch:   v8.PreCommitEpoch,
 	}
 }
 
