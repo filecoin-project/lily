@@ -1,6 +1,7 @@
 package actors
 
 import (
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/lotus/chain/actors"
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
@@ -27,6 +28,7 @@ const (
 	Version6 Version = 6
 	Version7 Version = 7
 	Version8 Version = 8
+	Version9 Version = 9
 )
 const (
 	AccountKey  = "account"
@@ -40,12 +42,13 @@ const (
 	RewardKey   = "reward"
 	SystemKey   = "system"
 	VerifregKey = "verifiedregistry"
+	DatacapKey  = "datacap"
 )
 
 // GetActorCodeID looks up a builtin actor's code CID by actor version and canonical actor name.
 func GetActorCodeID(av Version, name string) (cid.Cid, bool) {
 	// Actors V8 and above
-	if c, ok := actors.GetActorCodeID(actors.Version(av), name); ok {
+	if c, ok := actors.GetActorCodeID(actorstypes.Version(av), name); ok {
 		return c, true
 	}
 

@@ -3,35 +3,30 @@ package generator
 import (
 	"bytes"
 	"fmt"
+	"go/format"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"text/template"
+
+	lotusactors "github.com/filecoin-project/lotus/chain/actors"
+	"golang.org/x/xerrors"
 )
 
-var latestVersion = 8
-
-var versions = []int{0, 2, 3, 4, 5, 6, 7, latestVersion}
-
-var versionImports = map[int]string{
-	0:             "/",
-	2:             "/v2/",
-	3:             "/v3/",
-	4:             "/v4/",
-	5:             "/v5/",
-	6:             "/v6/",
-	7:             "/v7/",
-	latestVersion: "/v8/",
-}
-
 var actors = map[string][]int{
-	"init":     versions,
-	"market":   versions,
-	"miner":    versions,
-	"multisig": versions,
-	"power":    versions,
-	"reward":   versions,
-	"verifreg": versions,
+	//"account":  lotusactors.Versions,
+	//"cron":     lotusactors.Versions,
+	"init":     lotusactors.Versions,
+	"market":   lotusactors.Versions,
+	"miner":    lotusactors.Versions,
+	"multisig": lotusactors.Versions,
+	//"paych":    lotusactors.Versions,
+	"power": lotusactors.Versions,
+	//"system":   lotusactors.Versions,
+	"reward":   lotusactors.Versions,
+	"verifreg": lotusactors.Versions,
+	"datacap":  lotusactors.Versions[8:],
 }
 
 func Gen() error {
@@ -39,22 +34,21 @@ func Gen() error {
 		return err
 	}
 
-	if err := generatePolicy(); err != nil {
+	if err := generatePolicy("chain/actors/policy/policy.go"); err != nil {
 		return err
 	}
 
-	if err := generateBuiltin(); err != nil {
+	if err := generateBuiltin("chain/actors/builtin/builtin.go"); err != nil {
 		return err
 	}
 	return nil
 }
 
 func generateAdapters() error {
-	actorsDir := "chain/actors/builtin"
 	for act, versions := range actors {
-		actDir := filepath.Join(actorsDir, act)
+		actDir := filepath.Join("chain/actors/builtin", act)
 
-		if err := generateState(actDir); err != nil {
+		if err := generateState(actDir, versions); err != nil {
 			return err
 		}
 
@@ -65,24 +59,29 @@ func generateAdapters() error {
 		{
 			af, err := ioutil.ReadFile(filepath.Join(actDir, "actor.go.template"))
 			if err != nil {
-				return fmt.Errorf("loading actor template: %w", err)
+				return xerrors.Errorf("loading actor template: %w", err)
 			}
 
 			tpl := template.Must(template.New("").Funcs(template.FuncMap{
-				"import": func(v int) string { return versionImports[v] },
+				"import": func(v int) string { return getVersionImports()[v] },
 			}).Parse(string(af)))
 
 			var b bytes.Buffer
 
 			err = tpl.Execute(&b, map[string]interface{}{
 				"versions":      versions,
-				"latestVersion": latestVersion,
+				"latestVersion": lotusactors.LatestVersion,
 			})
 			if err != nil {
 				return err
 			}
 
-			if err := ioutil.WriteFile(filepath.Join(actDir, fmt.Sprintf("%s.go", act)), b.Bytes(), 0o666); err != nil {
+			fmted, err := format.Source(b.Bytes())
+			if err != nil {
+				return err
+			}
+
+			if err := ioutil.WriteFile(filepath.Join(actDir, fmt.Sprintf("%s.go", act)), fmted, 0666); err != nil {
 				return err
 			}
 		}
@@ -91,31 +90,31 @@ func generateAdapters() error {
 	return nil
 }
 
-func generateState(actDir string) error {
+func generateState(actDir string, versions []int) error {
 	af, err := ioutil.ReadFile(filepath.Join(actDir, "state.go.template"))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil // skip
 		}
 
-		return fmt.Errorf("loading state adapter template: %w", err)
+		return xerrors.Errorf("loading state adapter template: %w", err)
 	}
 
 	for _, version := range versions {
-		fmt.Println("parsing", actDir)
 		tpl := template.Must(template.New("").Funcs(template.FuncMap{}).Parse(string(af)))
 
 		var b bytes.Buffer
 
 		err := tpl.Execute(&b, map[string]interface{}{
-			"v":      version,
-			"import": versionImports[version],
+			"v":             version,
+			"import":        getVersionImports()[version],
+			"latestVersion": lotusactors.LatestVersion,
 		})
 		if err != nil {
 			return err
 		}
 
-		if err := ioutil.WriteFile(filepath.Join(actDir, fmt.Sprintf("v%d.go", version)), b.Bytes(), 0o666); err != nil {
+		if err := ioutil.WriteFile(filepath.Join(actDir, fmt.Sprintf("v%d.go", version)), b.Bytes(), 0666); err != nil {
 			return err
 		}
 	}
@@ -130,23 +129,24 @@ func generateMessages(actDir string) error {
 			return nil // skip
 		}
 
-		return fmt.Errorf("loading message adapter template: %w", err)
+		return xerrors.Errorf("loading message adapter template: %w", err)
 	}
 
-	for _, version := range versions {
+	for _, version := range lotusactors.Versions {
 		tpl := template.Must(template.New("").Funcs(template.FuncMap{}).Parse(string(af)))
 
 		var b bytes.Buffer
 
 		err := tpl.Execute(&b, map[string]interface{}{
-			"v":      version,
-			"import": versionImports[version],
+			"v":             version,
+			"import":        getVersionImports()[version],
+			"latestVersion": lotusactors.LatestVersion,
 		})
 		if err != nil {
 			return err
 		}
 
-		if err := ioutil.WriteFile(filepath.Join(actDir, fmt.Sprintf("message%d.go", version)), b.Bytes(), 0o666); err != nil {
+		if err := ioutil.WriteFile(filepath.Join(actDir, fmt.Sprintf("message%d.go", version)), b.Bytes(), 0666); err != nil {
 			return err
 		}
 	}
@@ -154,64 +154,77 @@ func generateMessages(actDir string) error {
 	return nil
 }
 
-func generatePolicy() error {
-	policyPath := "chain/actors/policy/policy.go"
+func generatePolicy(policyPath string) error {
+
 	pf, err := ioutil.ReadFile(policyPath + ".template")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil // skip
 		}
 
-		return fmt.Errorf("loading policy template file: %w", err)
+		return xerrors.Errorf("loading policy template file: %w", err)
 	}
 
 	tpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"import": func(v int) string { return versionImports[v] },
+		"import": func(v int) string { return getVersionImports()[v] },
 	}).Parse(string(pf)))
 	var b bytes.Buffer
 
 	err = tpl.Execute(&b, map[string]interface{}{
-		"versions":      versions,
-		"latestVersion": latestVersion,
+		"versions":      lotusactors.Versions,
+		"latestVersion": lotusactors.LatestVersion,
 	})
 	if err != nil {
 		return err
 	}
 
-	if err := ioutil.WriteFile(policyPath, b.Bytes(), 0o666); err != nil {
+	if err := ioutil.WriteFile(policyPath, b.Bytes(), 0666); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func generateBuiltin() error {
-	builtinPath := "chain/actors/builtin/builtin.go"
+func generateBuiltin(builtinPath string) error {
+
 	bf, err := ioutil.ReadFile(builtinPath + ".template")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil // skip
 		}
 
-		return fmt.Errorf("loading builtin template file: %w", err)
+		return xerrors.Errorf("loading builtin template file: %w", err)
 	}
 
 	tpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"import": func(v int) string { return versionImports[v] },
+		"import": func(v int) string { return getVersionImports()[v] },
 	}).Parse(string(bf)))
 	var b bytes.Buffer
 
 	err = tpl.Execute(&b, map[string]interface{}{
-		"versions":      versions,
-		"latestVersion": latestVersion,
+		"versions":      lotusactors.Versions,
+		"latestVersion": lotusactors.LatestVersion,
 	})
 	if err != nil {
 		return err
 	}
 
-	if err := ioutil.WriteFile(builtinPath, b.Bytes(), 0o666); err != nil {
+	if err := ioutil.WriteFile(builtinPath, b.Bytes(), 0666); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func getVersionImports() map[int]string {
+	versionImports := make(map[int]string, lotusactors.LatestVersion)
+	for _, v := range lotusactors.Versions {
+		if v == 0 {
+			versionImports[v] = "/"
+		} else {
+			versionImports[v] = "/v" + strconv.Itoa(v) + "/"
+		}
+	}
+
+	return versionImports
 }

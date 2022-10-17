@@ -6,8 +6,6 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	adt5 "github.com/filecoin-project/specs-actors/v5/actors/util/adt"
-
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/chain/actors"
@@ -19,7 +17,9 @@ import (
 	"crypto/sha256"
 
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
+
 	msig5 "github.com/filecoin-project/specs-actors/v5/actors/builtin/multisig"
+	adt5 "github.com/filecoin-project/specs-actors/v5/actors/util/adt"
 )
 
 var _ State = (*state5)(nil)
@@ -110,7 +110,7 @@ func (s *state5) decodeTransaction(val *cbg.Deferred) (Transaction, error) {
 	if err := tx.UnmarshalCBOR(bytes.NewReader(val.Raw)); err != nil {
 		return Transaction{}, err
 	}
-	return tx, nil
+	return Transaction(tx), nil
 }
 
 func (s *state5) ActorKey() string {

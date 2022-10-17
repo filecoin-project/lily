@@ -10,13 +10,20 @@ import (
 	"github.com/filecoin-project/go-state-types/cbor"
 
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
+
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
+
 	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
+
 	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
+
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
+
 	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
+
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
-	builtin8 "github.com/filecoin-project/specs-actors/v8/actors/builtin"
+
+	builtin9 "github.com/filecoin-project/go-state-types/builtin"
 
 	"github.com/filecoin-project/lotus/chain/types"
 
@@ -28,8 +35,8 @@ import (
 )
 
 var (
-	Address = builtin8.RewardActorAddr
-	Methods = builtin8.MethodsReward
+	Address = builtin9.RewardActorAddr
+	Methods = builtin9.MethodsReward
 )
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
@@ -42,6 +49,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 		case actors.Version8:
 			return load8(store, act.Head)
+
+		case actors.Version9:
+			return load9(store, act.Head)
 
 		}
 	}
@@ -109,6 +119,7 @@ func AllCodes() []cid.Cid {
 		(&state6{}).Code(),
 		(&state7{}).Code(),
 		(&state8{}).Code(),
+		(&state9{}).Code(),
 	}
 }
 
@@ -122,5 +133,6 @@ func VersionCodes() map[actors.Version]cid.Cid {
 		actors.Version6: (&state6{}).Code(),
 		actors.Version7: (&state7{}).Code(),
 		actors.Version8: (&state8{}).Code(),
+		actors.Version9: (&state9{}).Code(),
 	}
 }

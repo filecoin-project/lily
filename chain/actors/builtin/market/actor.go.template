@@ -12,25 +12,24 @@ import (
 	"github.com/filecoin-project/go-state-types/cbor"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
-	market{{.latestVersion}} "github.com/filecoin-project/go-state-types/builtin{{import .latestVersion}}market"
 {{range .versions}}
-    {{if (ge . 8)}}
-        builtintypes{{.}} "github.com/filecoin-project/go-state-types/builtin"
-	{{else}}
+    {{if (le . 7)}}
 	    builtin{{.}} "github.com/filecoin-project/specs-actors{{import .}}actors/builtin"
     {{end}}
 {{end}}
 
-	"github.com/filecoin-project/lotus/chain/actors/adt"
-	lotusactors "github.com/filecoin-project/lotus/chain/actors"
-	"github.com/filecoin-project/lotus/chain/types"
+    builtintypes "github.com/filecoin-project/go-state-types/builtin"
+	markettypes "github.com/filecoin-project/go-state-types/builtin/v9/market"
 
+	"github.com/filecoin-project/lotus/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors"
+	"github.com/filecoin-project/lotus/chain/types"
+	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 )
 
 var (
-	Address = builtintypes{{.latestVersion}}.StorageMarketActorAddr
-	Methods = builtintypes{{.latestVersion}}.MethodsMarket
+	Address = builtintypes.StorageMarketActorAddr
+	Methods = builtintypes.MethodsMarket
 )
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
@@ -86,17 +85,18 @@ type DealStates interface {
 }
 
 type DealProposals interface {
-	ForEach(cb func(id abi.DealID, dp market{{.latestVersion}}.DealProposal) error) error
-	Get(id abi.DealID) (*market{{.latestVersion}}.DealProposal, bool, error)
+	ForEach(cb func(id abi.DealID, dp markettypes.DealProposal) error) error
+	Get(id abi.DealID) (*markettypes.DealProposal, bool, error)
 
 	array() adt.Array
-	decode(*cbg.Deferred) (*market{{.latestVersion}}.DealProposal, error)
+	decode(*cbg.Deferred) (*markettypes.DealProposal, error)
 }
 
 
-type DealProposal = market{{.latestVersion}}.DealProposal
+type DealProposal = markettypes.DealProposal
+type DealLabel = markettypes.DealLabel
 
-type DealState = market{{.latestVersion}}.DealState
+type DealState = markettypes.DealState
 
 type DealStateChanges struct {
 	Added	 []DealIDState
@@ -123,14 +123,14 @@ type DealProposalChanges struct {
 
 type ProposalIDState struct {
 	ID		 abi.DealID
-	Proposal market{{.latestVersion}}.DealProposal
+	Proposal markettypes.DealProposal
 }
 
-func labelFromGoString(s string) (market{{.latestVersion}}.DealLabel, error) {
+func labelFromGoString(s string) (markettypes.DealLabel, error) {
 	if utf8.ValidString(s) {
-		return market{{.latestVersion}}.NewLabelFromString(s)
+		return markettypes.NewLabelFromString(s)
 	} else {
-		return market{{.latestVersion}}.NewLabelFromBytes([]byte(s))
+		return markettypes.NewLabelFromBytes([]byte(s))
 	}
 }
 

@@ -121,7 +121,14 @@ func (s *dealStates7) array() adt.Array {
 }
 
 func fromV7DealState(v7 market7.DealState) DealState {
-	return (DealState)(v7)
+
+	return DealState{
+		SectorStartEpoch: v7.SectorStartEpoch,
+		LastUpdatedEpoch: v7.LastUpdatedEpoch,
+		SlashEpoch:       v7.SlashEpoch,
+		VerifiedClaim:    0,
+	}
+
 }
 
 type dealProposals7 struct {
@@ -179,6 +186,7 @@ func (s *dealProposals7) array() adt.Array {
 func fromV7DealProposal(v7 market7.DealProposal) (DealProposal, error) {
 
 	label, err := labelFromGoString(v7.Label)
+
 	if err != nil {
 		return DealProposal{}, xerrors.Errorf("error setting deal label: %w", err)
 	}

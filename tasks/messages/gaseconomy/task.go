@@ -104,9 +104,9 @@ func (t *Task) ProcessTipSet(ctx context.Context, current *types.TipSet) (model.
 		GasLimitUniqueTotal: totalUniqGasLimit,
 		BaseFee:             baseFee,
 		BaseFeeChangeLog:    math.Log(baseFeeChangeF) / math.Log(1.125),
-		GasFillRatio:        float64(totalGasLimit) / float64(len(current.Blocks())*build.BlockGasTarget),
-		GasCapacityRatio:    float64(totalUniqGasLimit) / float64(len(current.Blocks())*build.BlockGasTarget),
-		GasWasteRatio:       float64(totalGasLimit-totalUniqGasLimit) / float64(len(current.Blocks())*build.BlockGasTarget),
+		GasFillRatio:        float64(totalGasLimit) / float64(int64(len(current.Blocks()))*build.BlockGasTarget),
+		GasCapacityRatio:    float64(totalUniqGasLimit) / float64(int64(len(current.Blocks()))*build.BlockGasTarget),
+		GasWasteRatio:       float64(totalGasLimit-totalUniqGasLimit) / float64(int64(len(current.Blocks()))*build.BlockGasTarget),
 	}
 
 	return messageGasEconomyResult, report, nil

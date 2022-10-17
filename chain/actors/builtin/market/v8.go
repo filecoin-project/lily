@@ -16,6 +16,7 @@ import (
 
 	market8 "github.com/filecoin-project/go-state-types/builtin/v8/market"
 	adt8 "github.com/filecoin-project/go-state-types/builtin/v8/util/adt"
+	markettypes "github.com/filecoin-project/go-state-types/builtin/v9/market"
 )
 
 var _ State = (*state8)(nil)
@@ -121,7 +122,14 @@ func (s *dealStates8) array() adt.Array {
 }
 
 func fromV8DealState(v8 market8.DealState) DealState {
-	return (DealState)(v8)
+
+	return DealState{
+		SectorStartEpoch: v8.SectorStartEpoch,
+		LastUpdatedEpoch: v8.LastUpdatedEpoch,
+		SlashEpoch:       v8.SlashEpoch,
+		VerifiedClaim:    0,
+	}
+
 }
 
 type dealProposals8 struct {
@@ -178,7 +186,11 @@ func (s *dealProposals8) array() adt.Array {
 
 func fromV8DealProposal(v8 market8.DealProposal) (DealProposal, error) {
 
-	label := v8.Label
+	label, err := fromV8Label(v8.Label)
+
+	if err != nil {
+		return DealProposal{}, xerrors.Errorf("error setting deal label: %w", err)
+	}
 
 	return DealProposal{
 		PieceCID:     v8.PieceCID,
@@ -221,4 +233,20 @@ func (s *state8) Code() cid.Cid {
 	}
 
 	return code
+}
+
+func fromV8Label(v8 market8.DealLabel) (DealLabel, error) {
+	if v8.IsString() {
+		str, err := v8.ToString()
+		if err != nil {
+			return markettypes.EmptyDealLabel, xerrors.Errorf("failed to convert string label to string: %w", err)
+		}
+		return markettypes.NewLabelFromString(str)
+	}
+
+	bs, err := v8.ToBytes()
+	if err != nil {
+		return markettypes.EmptyDealLabel, xerrors.Errorf("failed to convert bytes label to bytes: %w", err)
+	}
+	return markettypes.NewLabelFromBytes(bs)
 }
