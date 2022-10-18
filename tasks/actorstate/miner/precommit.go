@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
@@ -13,10 +13,11 @@ import (
 	"github.com/filecoin-project/lily/tasks/actorstate"
 )
 
-type PreCommitInfoExtractor struct{}
+// PreCommitInfoExtractorV8 extracts precommit infos for all miners v8 and previous.
+type PreCommitInfoExtractorV8 struct{}
 
-func (PreCommitInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
-	log.Debugw("extract", zap.String("extractor", "PoStExtractor"), zap.Inline(a))
+func (PreCommitInfoExtractorV8) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
+	log.Debugw("extract", zap.String("extractor", "PreCommitInfoV8Extractor"), zap.Inline(a))
 	ctx, span := otel.Tracer("").Start(ctx, "PreCommitInfo.Extract")
 	defer span.End()
 	if span.IsRecording() {
@@ -30,14 +31,14 @@ func (PreCommitInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInf
 
 	var preCommits []minertypes.SectorPreCommitOnChainInfo
 	if !ec.HasPreviousState() {
-		if err := ec.CurrState.ForEachPrecommittedSector(func(info minertypes.SectorPreCommitOnChainInfo) error {
+		if err := ec.CurrState.ForEachPrecommittedSectorV8(func(info minertypes.SectorPreCommitOnChainInfo) error {
 			preCommits = append(preCommits, info)
 			return nil
 		}); err != nil {
 			return nil, err
 		}
 	} else {
-		preCommitChanges, err := node.DiffPreCommits(ctx, a.Address, a.Current, a.Executed, ec.PrevState, ec.CurrState)
+		preCommitChanges, err := node.DiffPreCommitsV8(ctx, a.Address, a.Current, a.Executed, ec.PrevState, ec.CurrState)
 		if err != nil {
 			return nil, err
 		}

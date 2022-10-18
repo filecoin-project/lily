@@ -15,6 +15,7 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
+	minertypesv8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 
@@ -445,6 +446,36 @@ func (s *state3) DecodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (minertypes
 	return fromV3SectorPreCommitOnChainInfo(sp), nil
 }
 
+func (s *state3) DecodeSectorPreCommitOnChainInfoToV8(val *cbg.Deferred) (minertypesv8.SectorPreCommitOnChainInfo, error) {
+
+	var sp miner3.SectorPreCommitOnChainInfo
+	err := sp.UnmarshalCBOR(bytes.NewReader(val.Raw))
+	if err != nil {
+		return minertypesv8.SectorPreCommitOnChainInfo{}, err
+	}
+
+	return fromV3SectorPreCommitOnChainInfoToV8(sp), nil
+
+}
+
+func (s *state3) ForEachPrecommittedSectorV8(cb func(minertypesv8.SectorPreCommitOnChainInfo) error) error {
+
+	precommitted, err := adt3.AsMap(s.store, s.State.PreCommittedSectors, builtin3.DefaultHamtBitwidth)
+	if err != nil {
+		return err
+	}
+
+	var info miner3.SectorPreCommitOnChainInfo
+	if err := precommitted.ForEach(&info, func(_ string) error {
+		return cb(fromV3SectorPreCommitOnChainInfoToV8(info))
+	}); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
 func (s *state3) EraseAllUnproven() error {
 
 	dls, err := s.State.LoadDeadlines(s.store)
@@ -574,6 +605,16 @@ func fromV3SectorPreCommitOnChainInfo(v3 miner3.SectorPreCommitOnChainInfo) mine
 		},
 		PreCommitDeposit: v3.PreCommitDeposit,
 		PreCommitEpoch:   v3.PreCommitEpoch,
+	}
+}
+
+func fromV3SectorPreCommitOnChainInfoToV8(v3 miner3.SectorPreCommitOnChainInfo) minertypesv8.SectorPreCommitOnChainInfo {
+	return minertypesv8.SectorPreCommitOnChainInfo{
+		Info:               (minertypesv8.SectorPreCommitInfo)(v3.Info),
+		PreCommitDeposit:   v3.PreCommitDeposit,
+		PreCommitEpoch:     v3.PreCommitEpoch,
+		DealWeight:         v3.DealWeight,
+		VerifiedDealWeight: v3.VerifiedDealWeight,
 	}
 }
 
