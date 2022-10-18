@@ -46,13 +46,13 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (string, 
 	// if the actor method doesn't expect params don't parse them
 	// messages can contain unexpected params and remain valid, we need to ignore this case for parsing.
 	if m.Params == reflect.TypeOf(new(abi.EmptyValue)) {
-		return "", m.Name, nil
+		return "", m.Num, nil
 	}
 
 	p := reflect.New(m.Params.Elem()).Interface().(cbg.CBORUnmarshaler)
 	if err := p.UnmarshalCBOR(bytes.NewReader(params)); err != nil {
 		actorName := builtin.ActorNameByCode(actCode)
-		return "", m.Name, fmt.Errorf("parse message params cbor decode into %s %s:(%s.%d) return (hex): %s failed: %w", m.Name, actorName, actCode, method, hex.EncodeToString(params), err)
+		return "", m.Num, fmt.Errorf("parse message params cbor decode into %s %s:(%s.%d) return (hex): %s failed: %w", m.Num, actorName, actCode, method, hex.EncodeToString(params), err)
 	}
 
 	b, err := MarshalWithOverrides(p, map[reflect.Type]marshaller{
@@ -62,7 +62,7 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (string, 
 		return "", "", fmt.Errorf("parse message params method: %d actor code: %s params: %s failed: %w", method, actCode, hex.EncodeToString(params), err)
 	}
 
-	return string(b), m.Name, err
+	return string(b), m.Num, err
 }
 
 func ParseReturn(ret []byte, method abi.MethodNum, actCode cid.Cid) (string, string, error) {
@@ -73,13 +73,13 @@ func ParseReturn(ret []byte, method abi.MethodNum, actCode cid.Cid) (string, str
 
 	// if the actor method doesn't expect returns don't parse them
 	if m.Ret == reflect.TypeOf(new(abi.EmptyValue)) {
-		return "", m.Name, nil
+		return "", m.Num, nil
 	}
 
 	p := reflect.New(m.Ret.Elem()).Interface().(cbg.CBORUnmarshaler)
 	if err := p.UnmarshalCBOR(bytes.NewReader(ret)); err != nil {
 		actorName := builtin.ActorNameByCode(actCode)
-		return "", m.Name, fmt.Errorf("parse message return cbor decode into %s %s:(%s.%d) return (hex): %s failed: %w", m.Name, actorName, actCode, method, hex.EncodeToString(ret), err)
+		return "", m.Num, fmt.Errorf("parse message return cbor decode into %s %s:(%s.%d) return (hex): %s failed: %w", m.Num, actorName, actCode, method, hex.EncodeToString(ret), err)
 	}
 
 	b, err := MarshalWithOverrides(p, map[reflect.Type]marshaller{
@@ -89,7 +89,7 @@ func ParseReturn(ret []byte, method abi.MethodNum, actCode cid.Cid) (string, str
 		return "", "", fmt.Errorf("parse message return method: %d actor code: %s return (hex): %s failed: %w", method, actCode, hex.EncodeToString(ret), err)
 	}
 
-	return string(b), m.Name, err
+	return string(b), m.Num, err
 
 }
 
