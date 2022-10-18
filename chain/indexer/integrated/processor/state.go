@@ -422,8 +422,18 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				mineractors.AllCodes(), minertask.LockedFundsExtractor{},
 			))
 		case tasktype.MinerPreCommitInfo:
-			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				mineractors.AllCodes(), minertask.PreCommitInfoExtractor{},
+			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
+				map[cid.Cid][]actorstate.ActorStateExtractor{
+					mineractors.VersionCodes()[actors.Version0]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version2]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version3]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version4]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version5]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version6]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version7]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version8]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version9]: {minertask.PreCommitInfoExtractorV9{}},
+				},
 			))
 		case tasktype.MinerSectorDeal:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
@@ -482,7 +492,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			//
 			// Init
 			//
-		case tasktype.IdAddress:
+		case tasktype.IDAddress:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
 				initactors.AllCodes(),
 				inittask.InitExtractor{},
@@ -559,7 +569,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			out.TipsetsProcessors[t] = ipmtask.NewTask(api)
 		case tasktype.MultisigApproval:
 			out.TipsetsProcessors[t] = msapprovaltask.NewTask(api)
-		case tasktype.VmMessage:
+		case tasktype.VMMessage:
 			out.TipsetsProcessors[t] = vm.NewTask(api)
 
 			//
