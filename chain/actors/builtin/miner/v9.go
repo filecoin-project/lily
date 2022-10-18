@@ -15,6 +15,7 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
+	minertypesv8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 
@@ -441,6 +442,18 @@ func (s *state9) DecodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (minertypes
 	}
 
 	return fromV9SectorPreCommitOnChainInfo(sp), nil
+}
+
+func (s *state9) DecodeSectorPreCommitOnChainInfoToV8(val *cbg.Deferred) (minertypesv8.SectorPreCommitOnChainInfo, error) {
+
+	return minertypesv8.SectorPreCommitOnChainInfo{}, fmt.Errorf("unsupported in actors v9")
+
+}
+
+func (s *state9) ForEachPrecommittedSectorV8(cb func(minertypesv8.SectorPreCommitOnChainInfo) error) error {
+
+	return fmt.Errorf("unsupported for actors v9")
+
 }
 
 func (s *state9) EraseAllUnproven() error {

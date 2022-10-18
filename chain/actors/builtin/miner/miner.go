@@ -16,6 +16,7 @@ import (
 	"github.com/filecoin-project/go-state-types/dline"
 	"github.com/filecoin-project/go-state-types/proof"
 
+	miner8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	miner9 "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -169,6 +170,8 @@ type State interface {
 	PrecommitsMapBitWidth() int
 	PrecommitsMapHashFunction() func(input []byte) []byte
 	DecodeSectorPreCommitOnChainInfo(*cbg.Deferred) (miner9.SectorPreCommitOnChainInfo, error)
+	DecodeSectorPreCommitOnChainInfoToV8(*cbg.Deferred) (miner8.SectorPreCommitOnChainInfo, error)
+	ForEachPrecommittedSectorV8(func(miner8.SectorPreCommitOnChainInfo) error) error
 }
 
 type Deadline interface {
