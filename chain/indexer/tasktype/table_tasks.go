@@ -5,6 +5,7 @@ const (
 	BlockHeader                    = "block_header"
 	BlockParent                    = "block_parent"
 	DrandBlockEntrie               = "drand_block_entrie"
+	DataCapBalance                 = "data_cap_balance"
 	MinerBeneficiary               = "miner_beneficiary"
 	MinerSectorDeal                = "miner_sector_deal"
 	MinerSectorInfoV7              = "miner_sector_infos_v7"
@@ -45,6 +46,7 @@ var AllTableTasks = []string{
 	BlockHeader,
 	BlockParent,
 	DrandBlockEntrie,
+	DataCapBalance,
 	MinerBeneficiary,
 	MinerSectorDeal,
 	MinerSectorInfoV7,
@@ -85,6 +87,8 @@ var TableLookup = map[string]struct{}{
 	BlockHeader:                    {},
 	BlockParent:                    {},
 	DrandBlockEntrie:               {},
+	DataCapBalance:                 {},
+	MinerBeneficiary:               {},
 	MinerSectorDeal:                {},
 	MinerSectorInfoV7:              {},
 	MinerSectorInfoV1_6:            {},
@@ -124,6 +128,8 @@ var TableComment = map[string]string{
 	BlockHeader:                    ``,
 	BlockParent:                    ``,
 	DrandBlockEntrie:               `DrandBlockEntrie contains Drand randomness round numbers used in each block.`,
+	DataCapBalance:                 ``,
+	MinerBeneficiary:               ``,
 	MinerSectorDeal:                ``,
 	MinerSectorInfoV7:              `MinerSectorInfoV7 is the default model exported from the miner actor extractor. the table is returned iff the miner actor code is greater than or equal to v7. The table receives a new name since we cannot rename the miner_sector_info table, else we will break backfill.`,
 	MinerSectorInfoV1_6:            `MinerSectorInfoV1_6 is exported from the miner actor iff the actor code is less than v7. The table keeps its original name since that's a requirement to support lily backfills`,
@@ -166,7 +172,9 @@ var TableFieldComments = map[string]map[string]string{
 		"Block": "Block is the CID of the block.",
 		"Round": "Round is the round number of randomness used.",
 	},
-	MinerSectorDeal: {},
+	DataCapBalance:   {},
+	MinerBeneficiary: {},
+	MinerSectorDeal:  {},
 	MinerSectorInfoV7: {
 		"SectorKeyCID": "added in specs-actors v7, will be null for all sectors and only gets set on the first ReplicaUpdate",
 	},
