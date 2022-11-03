@@ -13,7 +13,7 @@ import (
 )
 
 func (t *DataSource) DiffSectors(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.SectorChanges, error) {
-	metrics.RecordInc(ctx, metrics.DataSourceSectorDiffCacheHit)
+	metrics.RecordInc(ctx, metrics.DataSourceSectorDiffRead)
 	ctx, span := otel.Tracer("").Start(ctx, "DataSource.DiffSectors")
 	defer span.End()
 
