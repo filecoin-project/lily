@@ -264,7 +264,7 @@ type SectorStates struct {
 // LoadSectorState loads all sectors from a miners partitions and returns a SectorStates structure containing individual
 // bitfields for all active, live, faulty and recovering sector.
 func LoadSectorState(ctx context.Context, state miner.State) (*SectorStates, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "LoadSectorState")
+	_, span := otel.Tracer("").Start(ctx, "LoadSectorState")
 	defer span.End()
 
 	sectorStates := &SectorStates{}
