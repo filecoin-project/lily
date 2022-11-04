@@ -263,8 +263,16 @@ type SectorStates struct {
 
 // LoadSectorState loads all sectors from a miners partitions and returns a SectorStates structure containing individual
 // bitfields for all active, live, faulty and recovering sector.
-func LoadSectorState(state miner.State) (*SectorStates, error) {
+func LoadSectorState(ctx context.Context, state miner.State) (*SectorStates, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "LoadSectorState")
+	defer span.End()
+
 	sectorStates := &SectorStates{}
+	activeSectors := []bitfield.BitField{}
+	liveSectors := []bitfield.BitField{}
+	faultySectors := []bitfield.BitField{}
+	recoveringSectors := []bitfield.BitField{}
+
 	// iterate the sector states
 	if err := state.ForEachDeadline(func(_ uint64, dl miner.Deadline) error {
 		return dl.ForEachPartition(func(_ uint64, part miner.Partition) error {
@@ -272,39 +280,45 @@ func LoadSectorState(state miner.State) (*SectorStates, error) {
 			if err != nil {
 				return err
 			}
-			if sectorStates.Active, err = bitfield.MergeBitFields(sectorStates.Active, active); err != nil {
-				return err
-			}
+			activeSectors = append(activeSectors, active)
 
 			live, err := part.LiveSectors()
 			if err != nil {
 				return err
 			}
-			if sectorStates.Live, err = bitfield.MergeBitFields(sectorStates.Live, live); err != nil {
-				return err
-			}
+			liveSectors = append(liveSectors, live)
 
 			faulty, err := part.FaultySectors()
 			if err != nil {
 				return err
 			}
-			if sectorStates.Faulty, err = bitfield.MergeBitFields(sectorStates.Faulty, faulty); err != nil {
-				return err
-			}
+			faultySectors = append(faultySectors, faulty)
 
 			recovering, err := part.RecoveringSectors()
 			if err != nil {
 				return err
 			}
-			if sectorStates.Recovering, err = bitfield.MergeBitFields(sectorStates.Recovering, recovering); err != nil {
-				return err
-			}
+			recoveringSectors = append(recoveringSectors, recovering)
 
 			return nil
 		})
 	}); err != nil {
 		return nil, err
 	}
+	var err error
+	if sectorStates.Active, err = bitfield.MultiMerge(activeSectors...); err != nil {
+		return nil, err
+	}
+	if sectorStates.Live, err = bitfield.MultiMerge(liveSectors...); err != nil {
+		return nil, err
+	}
+	if sectorStates.Faulty, err = bitfield.MultiMerge(faultySectors...); err != nil {
+		return nil, err
+	}
+	if sectorStates.Recovering, err = bitfield.MultiMerge(recoveringSectors...); err != nil {
+		return nil, err
+	}
+
 	return sectorStates, nil
 }
 
@@ -324,22 +338,24 @@ type SectorStateEvents struct {
 // Then compares current and parent SectorStates to produce a SectorStateEvents structure containing all sectors that are
 // removed, recovering, faulted, and recovered for the state transition from parent miner state to current miner state.
 func DiffMinerSectorStates(ctx context.Context, extState extraction.State) (*SectorStateEvents, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "DiffMinerSectorStates")
+	defer span.End()
 	var (
 		previous, current *SectorStates
 		err               error
 	)
 
 	// load previous and current miner sector states in parallel
-	grp, _ := errgroup.WithContext(ctx)
+	grp, grpCtx := errgroup.WithContext(ctx)
 	grp.Go(func() error {
-		previous, err = LoadSectorState(extState.ParentState())
+		previous, err = LoadSectorState(grpCtx, extState.ParentState())
 		if err != nil {
 			return fmt.Errorf("loading previous sector states %w", err)
 		}
 		return nil
 	})
 	grp.Go(func() error {
-		current, err = LoadSectorState(extState.CurrentState())
+		current, err = LoadSectorState(grpCtx, extState.CurrentState())
 		if err != nil {
 			return fmt.Errorf("loading current sector states %w", err)
 		}
