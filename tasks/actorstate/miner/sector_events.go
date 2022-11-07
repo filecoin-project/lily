@@ -267,7 +267,6 @@ func LoadSectorState(ctx context.Context, state miner.State) (*SectorStates, err
 	_, span := otel.Tracer("").Start(ctx, "LoadSectorState")
 	defer span.End()
 
-	sectorStates := &SectorStates{}
 	activeSectors := []bitfield.BitField{}
 	liveSectors := []bitfield.BitField{}
 	faultySectors := []bitfield.BitField{}
@@ -306,6 +305,7 @@ func LoadSectorState(ctx context.Context, state miner.State) (*SectorStates, err
 		return nil, err
 	}
 	var err error
+	sectorStates := &SectorStates{}
 	if sectorStates.Active, err = bitfield.MultiMerge(activeSectors...); err != nil {
 		return nil, err
 	}
