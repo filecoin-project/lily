@@ -193,7 +193,7 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 		_, innerSpan := otel.Tracer("").Start(ctx, "GetActorCode")
 		defer innerSpan.End()
 
-		act, err := nextStateTree.GetActor(a)
+		act, _ := nextStateTree.GetActor(a)
 		if act != nil {
 			return act.Code, true
 		}
@@ -204,7 +204,7 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 			return cid.Undef, false
 		}
 
-		act, err = nextStateTree.GetActor(ra)
+		act, _ = nextStateTree.GetActor(ra)
 		if act != nil {
 			return act.Code, true
 		}
