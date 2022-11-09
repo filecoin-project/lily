@@ -178,15 +178,6 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 		return nil, fmt.Errorf("load state tree: %w", err)
 	}
 
-	// Build a lookup of actor codes that exist after all messages in the current epoch have been executed
-	actorCodes := map[address.Address]cid.Cid{}
-	if err := nextStateTree.ForEach(func(a address.Address, act *types.Actor) error {
-		actorCodes[a] = act.Code
-		return nil
-	}); err != nil {
-		return nil, fmt.Errorf("iterate actors: %w", err)
-	}
-
 	nextInitActor, err := nextStateTree.GetActor(builtininit.Address)
 	if err != nil {
 		return nil, fmt.Errorf("getting init actor: %w", err)
@@ -201,10 +192,10 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 		// TODO accept a context, don't take the function context.
 		_, innerSpan := otel.Tracer("").Start(ctx, "GetActorCode")
 		defer innerSpan.End()
-		// Shortcut lookup before resolving
-		c, ok := actorCodes[a]
-		if ok {
-			return c, true
+
+		act, err := nextStateTree.GetActor(a)
+		if act != nil {
+			return act.Code, true
 		}
 
 		ra, found, err := nextInitActorState.ResolveAddress(a)
@@ -213,9 +204,9 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 			return cid.Undef, false
 		}
 
-		c, ok = actorCodes[ra]
-		if ok {
-			return c, true
+		act, err = nextStateTree.GetActor(ra)
+		if act != nil {
+			return act.Code, true
 		}
 
 		// Fall back to looking in current state tree. This actor may have been deleted.
@@ -225,7 +216,7 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *t
 			return cid.Undef, false
 		}
 
-		act, err := currentStateTree.GetActor(a)
+		act, err = currentStateTree.GetActor(a)
 		if err != nil {
 			log.Warnw("failed to find actor in state tree", "address", a.String(), "error", err.Error())
 			return cid.Undef, false
