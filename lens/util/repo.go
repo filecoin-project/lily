@@ -170,59 +170,67 @@ func ActorNameAndFamilyFromCode(c cid.Cid) (name string, family string, err erro
 	return
 }
 
-func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *types.TipSet) (func(a address.Address) (cid.Cid, bool), error) {
+func loadStateTreeAndInitActor(store adt.Store, ts *types.TipSet) (*state.StateTree, builtininit.State, error) {
+	stateTree, err := state.LoadStateTree(store, ts.ParentState())
+	if err != nil {
+		return nil, nil, fmt.Errorf("loading state tree: %w", err)
+	}
+
+	initActor, err := stateTree.GetActor(builtininit.Address)
+	if err != nil {
+		return nil, nil, fmt.Errorf("getting init actor: %w", err)
+	}
+
+	initActorState, err := builtininit.Load(store, initActor)
+	if err != nil {
+		return nil, nil, fmt.Errorf("loading init actor state: %w", err)
+	}
+	return stateTree, initActorState, nil
+}
+
+func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, child, parent *types.TipSet) (func(ctx context.Context, a address.Address) (cid.Cid, bool), error) {
 	ctx, span := otel.Tracer("").Start(ctx, "MakeGetActorCodeFunc")
 	defer span.End()
-	nextStateTree, err := state.LoadStateTree(store, next.ParentState())
+
+	childStateTree, childInitActorState, err := loadStateTreeAndInitActor(store, child)
 	if err != nil {
-		return nil, fmt.Errorf("load state tree: %w", err)
+		return nil, fmt.Errorf("loading child state: %w", err)
 	}
 
-	nextInitActor, err := nextStateTree.GetActor(builtininit.Address)
+	parentStateTree, parentInitActorState, err := loadStateTreeAndInitActor(store, parent)
 	if err != nil {
-		return nil, fmt.Errorf("getting init actor: %w", err)
+		return nil, fmt.Errorf("loading parent state: %w", err)
 	}
 
-	nextInitActorState, err := builtininit.Load(store, nextInitActor)
-	if err != nil {
-		return nil, fmt.Errorf("loading init actor state: %w", err)
-	}
-
-	return func(a address.Address) (cid.Cid, bool) {
-		// TODO accept a context, don't take the function context.
+	return func(ctx context.Context, a address.Address) (cid.Cid, bool) {
 		_, innerSpan := otel.Tracer("").Start(ctx, "GetActorCode")
 		defer innerSpan.End()
 
-		act, _ := nextStateTree.GetActor(a)
-		if act != nil {
+		if ra, found, err := childInitActorState.ResolveAddress(a); err == nil && found {
+			act, err := childStateTree.GetActor(ra)
+			if err != nil {
+				log.Errorf("resolved address %s to ID %s but failed to get actor from child init actor state: %s", a, ra, err)
+				// bail if the address was resolvable but the actor state didn't exist.
+				return cid.Undef, false
+			}
 			return act.Code, true
 		}
 
-		ra, found, err := nextInitActorState.ResolveAddress(a)
-		if err != nil || !found {
-			log.Warnw("failed to resolve actor address", "address", a.String())
-			return cid.Undef, false
-		}
-
-		act, _ = nextStateTree.GetActor(ra)
-		if act != nil {
+		// look in parent state, the address may have been deleted in the transition from parent -> child state.
+		log.Infof("failed to resolve %s in child init actor state (err: %s), falling back to parent", a, err)
+		if ra, found, err := parentInitActorState.ResolveAddress(a); err == nil && found {
+			act, err := parentStateTree.GetActor(ra)
+			if err != nil {
+				log.Errorf("resolved address %s to ID %s but failed to get actor from parent init actor state: %s", a, ra, err)
+				// bail if the address was resolvable but the actor state didn't exist.
+				return cid.Undef, false
+			}
 			return act.Code, true
 		}
 
-		// Fall back to looking in current state tree. This actor may have been deleted.
-		currentStateTree, err := state.LoadStateTree(store, current.ParentState())
-		if err != nil {
-			log.Warnf("failed to load state tree: %v", err)
-			return cid.Undef, false
-		}
+		log.Errorf("failed to resolve %s in child or parent init actor state (err: %s)", a, err)
 
-		act, err = currentStateTree.GetActor(a)
-		if err != nil {
-			log.Warnw("failed to find actor in state tree", "address", a.String(), "error", err.Error())
-			return cid.Undef, false
-		}
-
-		return act.Code, true
+		return cid.Undef, false
 	}, nil
 }
 
