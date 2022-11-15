@@ -3,15 +3,17 @@ package datacap
 import (
     "golang.org/x/xerrors"
 
+	"github.com/ipfs/go-cid"
     "github.com/filecoin-project/go-address"
     "github.com/filecoin-project/go-state-types/abi"
     actorstypes "github.com/filecoin-project/go-state-types/actors"
     builtin{{.latestVersion}} "github.com/filecoin-project/go-state-types/builtin"
     "github.com/filecoin-project/go-state-types/cbor"
 
-    "github.com/filecoin-project/lotus/chain/actors"
+    "github.com/filecoin-project/lily/chain/actors"
     "github.com/filecoin-project/lotus/chain/actors/adt"
     "github.com/filecoin-project/lotus/chain/types"
+	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 )
 
 var (
@@ -20,7 +22,7 @@ var (
 )
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
-	if name, av, ok := actors.GetActorMetaByCode(act.Code); ok {
+	if name, av, ok := lotusactors.GetActorMetaByCode(act.Code); ok {
        if name != actors.DatacapKey {
           return nil, xerrors.Errorf("actor code is not datacap: %s", name)
        }
@@ -50,8 +52,31 @@ func MakeState(store adt.Store, av actorstypes.Version, governor address.Address
 type State interface {
 	cbor.Marshaler
 
+	Code() cid.Cid
+	ActorKey() string
+	ActorVersion() actors.Version
+
 	ForEachClient(func(addr address.Address, dcap abi.StoragePower) error) error
 	VerifiedClientDataCap(address.Address) (bool, abi.StoragePower, error)
 	Governor() (address.Address, error)
 	GetState() interface{}
+
+	VerifiedClients() (adt.Map, error)
+	VerifiedClientsMapBitWidth() int
+	VerifiedClientsMapHashFunction() func(input []byte) []byte
+}
+
+func AllCodes() []cid.Cid {
+	return []cid.Cid{ {{range .versions}}
+        (&state{{.}}{}).Code(),
+    {{- end}}
+    }
+}
+
+func VersionCodes() map[actors.Version]cid.Cid {
+	return map[actors.Version]cid.Cid{
+        {{- range .versions}}
+            actors.Version{{.}}: (&state{{.}}{}).Code(),
+        {{- end}}
+	}
 }

@@ -15,6 +15,7 @@ import (
 
 	// actor accessors
 	actors "github.com/filecoin-project/lily/chain/actors"
+	datacapactors "github.com/filecoin-project/lily/chain/actors/builtin/datacap"
 	initactors "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	marketactors "github.com/filecoin-project/lily/chain/actors/builtin/market"
 	mineractors "github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -27,6 +28,7 @@ import (
 	"github.com/filecoin-project/lily/tasks"
 	// actor tasks
 	"github.com/filecoin-project/lily/tasks/actorstate"
+	datacaptask "github.com/filecoin-project/lily/tasks/actorstate/datacap"
 	inittask "github.com/filecoin-project/lily/tasks/actorstate/init_"
 	markettask "github.com/filecoin-project/lily/tasks/actorstate/market"
 	minertask "github.com/filecoin-project/lily/tasks/actorstate/miner"
@@ -402,6 +404,10 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 	}
 	for _, t := range indexerTasks {
 		switch t {
+		case tasktype.DataCapBalance:
+			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
+				datacapactors.AllCodes(), datacaptask.BalanceExtractor{},
+			))
 		//
 		// miners
 		//
@@ -536,9 +542,18 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				verifregtask.VerifierExtractor{},
 			))
 		case tasktype.VerifiedRegistryVerifiedClient:
-			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				verifregactors.AllCodes(),
-				verifregtask.ClientExtractor{},
+			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
+				map[cid.Cid][]actorstate.ActorStateExtractor{
+					verifregactors.VersionCodes()[actors.Version0]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actors.Version2]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actors.Version3]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actors.Version4]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actors.Version5]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actors.Version6]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actors.Version7]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actors.Version8]: {verifregtask.ClientExtractor{}},
+					// version 9 no longer track clients and has been migrated to the datacap actor
+				},
 			))
 
 			//
