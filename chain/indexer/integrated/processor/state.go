@@ -405,6 +405,12 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 		//
 		// miners
 		//
+		case tasktype.MinerBeneficiary:
+			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
+				map[cid.Cid][]actorstate.ActorStateExtractor{
+					mineractors.VersionCodes()[actors.Version9]: {minertask.BeneficiaryExtractor{}},
+				},
+			))
 		case tasktype.MinerCurrentDeadlineInfo:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
 				mineractors.AllCodes(), minertask.DeadlineInfoExtractor{},
