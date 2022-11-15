@@ -346,7 +346,7 @@ jobs:
 # used in `build-docker-images` workflow below
 branch_filters: &branch_filters
   branches:
-    only: /.*deploy.*/
+    only: /cd\/staging/
   tags:
     ignore: /.*/
 
