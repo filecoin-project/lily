@@ -64,22 +64,22 @@ func (s *state9) VerifiedClientDataCap(addr address.Address) (bool, abi.StorageP
 }
 
 func (s *state9) VerifiedClientsMapBitWidth() int {
-    return int(s.Token.HamtBitWidth)
+	return int(s.Token.HamtBitWidth)
 }
 
 func (s *state9) VerifiedClientsMapHashFunction() func(input []byte) []byte {
-    return func(input []byte) []byte {
-           		res := sha256.Sum256(input)
-           		return res[:]
-           	}
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
 }
 
 func (s *state9) ActorKey() string {
-    return actors.DatacapKey
+	return actors.DatacapKey
 }
 
 func (s *state9) ActorVersion() actors.Version {
-    return actors.Version9
+	return actors.Version9
 }
 
 func (s *state9) Code() cid.Cid {
