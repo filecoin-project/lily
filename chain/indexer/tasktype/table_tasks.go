@@ -5,6 +5,7 @@ const (
 	BlockHeader                    = "block_header"
 	BlockParent                    = "block_parent"
 	DrandBlockEntrie               = "drand_block_entrie"
+	MinerBeneficiary               = "miner_beneficiary"
 	MinerSectorDeal                = "miner_sector_deal"
 	MinerSectorInfoV7              = "miner_sector_infos_v7"
 	MinerSectorInfoV1_6            = "miner_sector_infos"
@@ -44,6 +45,7 @@ var AllTableTasks = []string{
 	BlockHeader,
 	BlockParent,
 	DrandBlockEntrie,
+	MinerBeneficiary,
 	MinerSectorDeal,
 	MinerSectorInfoV7,
 	MinerSectorInfoV1_6,
