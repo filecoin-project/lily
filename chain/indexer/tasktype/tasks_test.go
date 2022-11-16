@@ -30,7 +30,8 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 			taskAlias: tasktype.ActorStatesMinerTask,
 			tasks: []string{tasktype.MinerSectorDeal, tasktype.MinerSectorInfoV7, tasktype.MinerSectorInfoV1_6,
 				tasktype.MinerSectorPost, tasktype.MinerPreCommitInfo, tasktype.MinerSectorEvent,
-				tasktype.MinerCurrentDeadlineInfo, tasktype.MinerFeeDebt, tasktype.MinerLockedFund, tasktype.MinerInfo},
+				tasktype.MinerCurrentDeadlineInfo, tasktype.MinerFeeDebt, tasktype.MinerLockedFund, tasktype.MinerInfo,
+				tasktype.MinerBeneficiary},
 		},
 		{
 			taskAlias: tasktype.ActorStatesInitTask,
@@ -46,7 +47,7 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 		},
 		{
 			taskAlias: tasktype.ActorStatesVerifreg,
-			tasks:     []string{tasktype.VerifiedRegistryVerifier, tasktype.VerifiedRegistryVerifiedClient},
+			tasks:     []string{tasktype.VerifiedRegistryVerifier, tasktype.VerifiedRegistryVerifiedClient, tasktype.DataCapBalance},
 		},
 		{
 			taskAlias: tasktype.BlocksTask,
