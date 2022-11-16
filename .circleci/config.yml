@@ -303,7 +303,7 @@ jobs:
 # used in `build-docker-images` workflow below
 branch_filters: &branch_filters
   branches:
-    only: /cd\/staging/
+    only: /^cd\/staging$/
   tags:
     ignore: /.*/
 
