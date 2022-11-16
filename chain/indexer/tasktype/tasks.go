@@ -42,6 +42,7 @@ var TaskLookup = map[string][]string{
 		MinerFeeDebt,
 		MinerLockedFund,
 		MinerInfo,
+		MinerBeneficiary,
 	},
 	ActorStatesInitTask: {
 		IDAddress,
@@ -56,6 +57,7 @@ var TaskLookup = map[string][]string{
 	ActorStatesVerifreg: {
 		VerifiedRegistryVerifier,
 		VerifiedRegistryVerifiedClient,
+		DataCapBalance,
 	},
 	BlocksTask: {
 		BlockHeader,

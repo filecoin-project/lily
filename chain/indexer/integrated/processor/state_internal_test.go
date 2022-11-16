@@ -92,12 +92,7 @@ func TestNewProcessor(t *testing.T) {
 		map[cid.Cid][]actorstate.ActorStateExtractor{
 			miner.VersionCodes()[actors.Version7]: {minertask.V7SectorInfoExtractor{}},
 			miner.VersionCodes()[actors.Version8]: {minertask.V7SectorInfoExtractor{}},
-		},
-	)), proc.actorProcessors[tasktype.MinerSectorInfoV7])
-	require.Equal(t, actorstate.NewTask(nil, actorstate.NewCustomTypedActorExtractorMap(
-		map[cid.Cid][]actorstate.ActorStateExtractor{
-			miner.VersionCodes()[actors.Version7]: {minertask.V7SectorInfoExtractor{}},
-			miner.VersionCodes()[actors.Version8]: {minertask.V7SectorInfoExtractor{}},
+			miner.VersionCodes()[actors.Version9]: {minertask.V7SectorInfoExtractor{}},
 		},
 	)), proc.actorProcessors[tasktype.MinerSectorInfoV7])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(power.AllCodes(), powertask.ClaimedPowerExtractor{})), proc.actorProcessors[tasktype.PowerActorClaim])
