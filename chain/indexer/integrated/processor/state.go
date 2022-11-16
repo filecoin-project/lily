@@ -475,6 +475,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				map[cid.Cid][]actorstate.ActorStateExtractor{
 					mineractors.VersionCodes()[actors.Version7]: {minertask.V7SectorInfoExtractor{}},
 					mineractors.VersionCodes()[actors.Version8]: {minertask.V7SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actors.Version9]: {minertask.V7SectorInfoExtractor{}},
 				},
 			))
 

@@ -70,6 +70,13 @@ func (m *MockActorStateAPI) DiffPreCommits(ctx context.Context, addr address.Add
 	return tsmsgs.(*miner.PreCommitChanges), err
 }
 
+func (m *MockActorStateAPI) DiffPreCommitsV8(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.PreCommitChangesV8, error) {
+	args := m.Called(ctx, ts, pts, pre, cur)
+	tsmsgs := args.Get(0)
+	err := args.Error(1)
+	return tsmsgs.(*miner.PreCommitChangesV8), err
+}
+
 func (m *MockActorStateAPI) DiffSectors(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.SectorChanges, error) {
 	args := m.Called(ctx, addr, ts, pts, pre, cur)
 	changes := args.Get(0)

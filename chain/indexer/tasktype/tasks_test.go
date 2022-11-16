@@ -34,7 +34,7 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 		},
 		{
 			taskAlias: tasktype.ActorStatesInitTask,
-			tasks:     []string{tasktype.IdAddress},
+			tasks:     []string{tasktype.IDAddress},
 		},
 		{
 			taskAlias: tasktype.ActorStatesMarketTask,
@@ -66,7 +66,7 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 		},
 		{
 			taskAlias: tasktype.ImplicitMessageTask,
-			tasks:     []string{tasktype.InternalMessage, tasktype.InternalParsedMessage, tasktype.VmMessage},
+			tasks:     []string{tasktype.InternalMessage, tasktype.InternalParsedMessage, tasktype.VMMessage},
 		},
 		{
 			taskAlias: tasktype.ChainConsensusTask,

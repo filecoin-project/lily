@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/lily/chain/actors"
+	"github.com/filecoin-project/lily/chain/actors/builtin/datacap"
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -17,6 +18,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/integrated/processor"
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/tasks/actorstate"
+	datacaptask "github.com/filecoin-project/lily/tasks/actorstate/datacap"
 	inittask "github.com/filecoin-project/lily/tasks/actorstate/init_"
 	markettask "github.com/filecoin-project/lily/tasks/actorstate/market"
 	minertask "github.com/filecoin-project/lily/tasks/actorstate/miner"
@@ -65,8 +67,20 @@ func TestMakeProcessorsActors(t *testing.T) {
 				extractor: actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.LockedFundsExtractor{}),
 			},
 			{
-				taskName:  tasktype.MinerPreCommitInfo,
-				extractor: actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.PreCommitInfoExtractor{}),
+				taskName: tasktype.MinerPreCommitInfo,
+				extractor: actorstate.NewCustomTypedActorExtractorMap(
+					map[cid.Cid][]actorstate.ActorStateExtractor{
+						miner.VersionCodes()[actors.Version0]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actors.Version2]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actors.Version3]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actors.Version4]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actors.Version5]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actors.Version6]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actors.Version7]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actors.Version8]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actors.Version9]: {minertask.PreCommitInfoExtractorV9{}},
+					},
+				),
 			},
 			{
 				taskName:  tasktype.MinerSectorDeal,
@@ -99,6 +113,7 @@ func TestMakeProcessorsActors(t *testing.T) {
 					map[cid.Cid][]actorstate.ActorStateExtractor{
 						miner.VersionCodes()[actors.Version7]: {minertask.V7SectorInfoExtractor{}},
 						miner.VersionCodes()[actors.Version8]: {minertask.V7SectorInfoExtractor{}},
+						miner.VersionCodes()[actors.Version9]: {minertask.V7SectorInfoExtractor{}},
 					},
 				),
 			},
@@ -163,7 +178,7 @@ func TestMakeProcessorsActors(t *testing.T) {
 			extractor actorstate.ActorExtractorMap
 		}{
 			{
-				taskName:  tasktype.IdAddress,
+				taskName:  tasktype.IDAddress,
 				extractor: actorstate.NewTypedActorExtractorMap(init_.AllCodes(), inittask.InitExtractor{}),
 			},
 		}
@@ -231,8 +246,39 @@ func TestMakeProcessorsActors(t *testing.T) {
 				extractor: actorstate.NewTypedActorExtractorMap(verifreg.AllCodes(), verifregtask.VerifierExtractor{}),
 			},
 			{
-				taskName:  tasktype.VerifiedRegistryVerifiedClient,
-				extractor: actorstate.NewTypedActorExtractorMap(verifreg.AllCodes(), verifregtask.ClientExtractor{}),
+				taskName: tasktype.VerifiedRegistryVerifiedClient,
+				extractor: actorstate.NewCustomTypedActorExtractorMap(
+					map[cid.Cid][]actorstate.ActorStateExtractor{
+						verifreg.VersionCodes()[actors.Version0]: {verifregtask.ClientExtractor{}},
+						verifreg.VersionCodes()[actors.Version2]: {verifregtask.ClientExtractor{}},
+						verifreg.VersionCodes()[actors.Version3]: {verifregtask.ClientExtractor{}},
+						verifreg.VersionCodes()[actors.Version4]: {verifregtask.ClientExtractor{}},
+						verifreg.VersionCodes()[actors.Version5]: {verifregtask.ClientExtractor{}},
+						verifreg.VersionCodes()[actors.Version6]: {verifregtask.ClientExtractor{}},
+						verifreg.VersionCodes()[actors.Version7]: {verifregtask.ClientExtractor{}},
+						verifreg.VersionCodes()[actors.Version8]: {verifregtask.ClientExtractor{}},
+					},
+				),
+			},
+		}
+		for _, tc := range testCases {
+			t.Run(tc.taskName, func(t *testing.T) {
+				proc, err := processor.MakeProcessors(nil, []string{tc.taskName})
+				require.NoError(t, err)
+				require.Len(t, proc.ActorProcessors, 1)
+				require.Equal(t, actorstate.NewTask(nil, tc.extractor), proc.ActorProcessors[tc.taskName])
+			})
+		}
+	})
+
+	t.Run("datacap actor extractor", func(t *testing.T) {
+		testCases := []struct {
+			taskName  string
+			extractor actorstate.ActorExtractorMap
+		}{
+			{
+				taskName:  tasktype.DataCapBalance,
+				extractor: actorstate.NewTypedActorExtractorMap(datacap.AllCodes(), datacaptask.BalanceExtractor{}),
 			},
 		}
 		for _, tc := range testCases {
