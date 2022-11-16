@@ -170,7 +170,7 @@ func ActorNameAndFamilyFromCode(c cid.Cid) (name string, family string, err erro
 }
 
 func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, child, parent *types.TipSet) (func(ctx context.Context, a address.Address) (cid.Cid, bool), error) {
-	ctx, span := otel.Tracer("").Start(ctx, "MakeGetActorCodeFunc")
+	_, span := otel.Tracer("").Start(ctx, "MakeGetActorCodeFunc")
 	defer span.End()
 
 	childStateTree, err := state.LoadStateTree(store, child.ParentState())
