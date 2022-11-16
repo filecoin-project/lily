@@ -7,7 +7,7 @@ import (
 	"time"
 
 	logging "github.com/ipfs/go-log/v2"
-	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p/core/peer"
 
 	"github.com/filecoin-project/lily/model"
 	observed "github.com/filecoin-project/lily/model/surveyed"

@@ -35,7 +35,7 @@ require (
 	github.com/ipfs/go-metrics-prometheus v0.0.2
 	github.com/ipld/go-car v0.4.0
 	github.com/lib/pq v1.9.0
-	github.com/libp2p/go-libp2p-core v0.20.0
+	github.com/libp2p/go-libp2p-core v0.20.0 // indirect
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
 	github.com/minio/sha256-simd v1.0.0
 	github.com/mitchellh/go-homedir v1.1.0
@@ -68,6 +68,7 @@ require (
 	github.com/hibiken/asynq/x v0.0.0-20220413130846-5c723f597e01
 	github.com/ipfs/go-ipld-format v0.4.0
 	github.com/jedib0t/go-pretty/v6 v6.2.7
+	github.com/libp2p/go-libp2p v0.22.0
 	github.com/multiformats/go-varint v0.0.6
 	go.opentelemetry.io/otel/trace v1.7.0
 	go.uber.org/atomic v1.10.0
@@ -228,7 +229,6 @@ require (
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/libp2p/go-cidranger v1.1.0 // indirect
 	github.com/libp2p/go-flow-metrics v0.1.0 // indirect
-	github.com/libp2p/go-libp2p v0.22.0 // indirect
 	github.com/libp2p/go-libp2p-asn-util v0.2.0 // indirect
 	github.com/libp2p/go-libp2p-connmgr v0.4.0 // indirect
 	github.com/libp2p/go-libp2p-gostream v0.4.0 // indirect
