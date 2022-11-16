@@ -58,7 +58,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		return nil
 	})
 
-	var getActorCode func(a address.Address) (cid.Cid, bool)
+	var getActorCode func(ctx context.Context, a address.Address) (cid.Cid, bool)
 	grp.Go(func() error {
 		var err error
 		getActorCode, err = util.MakeGetActorCodeFunc(ctx, t.node.Store(), current, executed)
@@ -96,7 +96,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			// Cid() computes a CID, so only call it once
 			childCid := child.Message.Cid()
 
-			toCode, found := getActorCode(child.Message.To)
+			toCode, found := getActorCode(ctx, child.Message.To)
 			if !found && child.Receipt.ExitCode == 0 {
 				// No destination actor code. Normally Lotus will create an account actor for unknown addresses but if the
 				// message fails then Lotus will not allow the actor to be created, and we are left with an address of an
