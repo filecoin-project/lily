@@ -55,7 +55,8 @@ jobs:
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             sanitized_branch=`echo $CIRCLE_BRANCH | sed 's:/:-:g'`
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            make docker-mainnet-push LILY_IMAGE_TAG=${sanitized_branch}-${tag_suffix}
+            tag_date=$(date +%Y%m%d%H%M)
+            make docker-mainnet-push LILY_IMAGE_TAG=${sanitized_branch}-${tag_date}-${tag_suffix}
   publish-production-image-from-branch-for-calibnet:
     executor: dockerizer
     steps:
