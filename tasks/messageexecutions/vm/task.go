@@ -90,6 +90,11 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		default:
 		}
 
+		if parentMsg.Ret.ExitCode.IsError() {
+			log.Debugf("skip parsing vm messages for source message %s with exit code %s", parentMsg.Cid, parentMsg.Ret.ExitCode.String())
+			continue
+		}
+
 		// TODO this loop could be parallelized if it becomes a bottleneck.
 		// NB: the getActorCode method is the expensive call since it resolves addresses and may load the statetree.
 		for _, child := range util.GetChildMessagesOf(parentMsg) {
