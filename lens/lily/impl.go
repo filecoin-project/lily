@@ -514,13 +514,13 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, next *t
 
 	out := make([]*lens.MessageExecution, len(executions))
 	for idx, execution := range executions {
-		toCode, found := getActorCode(execution.Msg.To)
+		toCode, found := getActorCode(ctx, execution.Msg.To)
 		// if the message failed to execute due to lack of gas then the TO actor may never have been created.
 		if !found {
 			log.Warnw("failed to find TO actor", "height", next.Height().String(), "message", execution.Msg.Cid().String(), "actor", execution.Msg.To.String())
 		}
 		// if the message sender cannot be found this is an unexpected error
-		fromCode, found := getActorCode(execution.Msg.From)
+		fromCode, found := getActorCode(ctx, execution.Msg.From)
 		if !found {
 			return nil, fmt.Errorf("failed to find from actor %s height %d message %s", execution.Msg.From, execution.TipSet.Height(), execution.Msg.Cid())
 		}

@@ -25,7 +25,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
-	builtininit "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/lens"
 )
 
@@ -170,59 +169,38 @@ func ActorNameAndFamilyFromCode(c cid.Cid) (name string, family string, err erro
 	return
 }
 
-func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, next, current *types.TipSet) (func(a address.Address) (cid.Cid, bool), error) {
-	ctx, span := otel.Tracer("").Start(ctx, "MakeGetActorCodeFunc")
+func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, child, parent *types.TipSet) (func(ctx context.Context, a address.Address) (cid.Cid, bool), error) {
+	_, span := otel.Tracer("").Start(ctx, "MakeGetActorCodeFunc")
 	defer span.End()
-	nextStateTree, err := state.LoadStateTree(store, next.ParentState())
+
+	childStateTree, err := state.LoadStateTree(store, child.ParentState())
 	if err != nil {
-		return nil, fmt.Errorf("load state tree: %w", err)
+		return nil, fmt.Errorf("loading child state: %w", err)
 	}
 
-	nextInitActor, err := nextStateTree.GetActor(builtininit.Address)
+	parentStateTree, err := state.LoadStateTree(store, parent.ParentState())
 	if err != nil {
-		return nil, fmt.Errorf("getting init actor: %w", err)
+		return nil, fmt.Errorf("loading parent state: %w", err)
 	}
 
-	nextInitActorState, err := builtininit.Load(store, nextInitActor)
-	if err != nil {
-		return nil, fmt.Errorf("loading init actor state: %w", err)
-	}
-
-	return func(a address.Address) (cid.Cid, bool) {
-		// TODO accept a context, don't take the function context.
+	return func(ctx context.Context, a address.Address) (cid.Cid, bool) {
 		_, innerSpan := otel.Tracer("").Start(ctx, "GetActorCode")
 		defer innerSpan.End()
 
-		act, _ := nextStateTree.GetActor(a)
-		if act != nil {
+		act, err := childStateTree.GetActor(a)
+		if err == nil {
 			return act.Code, true
 		}
 
-		ra, found, err := nextInitActorState.ResolveAddress(a)
-		if err != nil || !found {
-			log.Warnw("failed to resolve actor address", "address", a.String())
-			return cid.Undef, false
-		}
-
-		act, _ = nextStateTree.GetActor(ra)
-		if act != nil {
+		// look in parent state, the address may have been deleted in the transition from parent -> child state.
+		log.Infof("failed to find actor %s in child init actor state (err: %s), falling back to parent", a, err)
+		act, err = parentStateTree.GetActor(a)
+		if err == nil {
 			return act.Code, true
 		}
 
-		// Fall back to looking in current state tree. This actor may have been deleted.
-		currentStateTree, err := state.LoadStateTree(store, current.ParentState())
-		if err != nil {
-			log.Warnf("failed to load state tree: %v", err)
-			return cid.Undef, false
-		}
-
-		act, err = currentStateTree.GetActor(a)
-		if err != nil {
-			log.Warnw("failed to find actor in state tree", "address", a.String(), "error", err.Error())
-			return cid.Undef, false
-		}
-
-		return act.Code, true
+		log.Errorf("failed to find actor %s in parent state: %s", a, err)
+		return cid.Undef, false
 	}, nil
 }
 
