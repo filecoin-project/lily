@@ -19,7 +19,7 @@ type MinerBeneficiary struct {
 
 	Quota      string `pg:"type:numeric,notnull"`
 	UsedQuota  string `pg:"type:numeric,notnull"`
-	Expiration int64  `pg:"notnull,use_zero"`
+	Expiration int64  `pg:",notnull,use_zero"`
 
 	NewBeneficiary        string
 	NewQuota              string `pg:"type:numeric"`
