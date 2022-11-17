@@ -70,7 +70,8 @@ jobs:
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             sanitized_branch=`echo $CIRCLE_BRANCH | sed 's:/:-:g'`
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            make docker-calibnet-push LILY_IMAGE_TAG=${sanitized_branch}-${tag_suffix}-calibnet
+            tag_date=$(date +%Y%m%d%H%M)
+            make docker-calibnet-push LILY_IMAGE_TAG=${sanitized_branch}-${tag_date}-${tag_suffix}-calibnet
   publish-production-image-from-branch-for-butterflynet:
     executor: dockerizer
     steps:
@@ -84,7 +85,8 @@ jobs:
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             sanitized_branch=`echo $CIRCLE_BRANCH | sed 's:/:-:g'`
             tag_suffix=$(echo "$CIRCLE_SHA1" | cut -c 1-8)
-            LILY_IMAGE_TAG=${sanitized_branch}-${tag_suffix}-butterflynet make docker-butterflynet-push
+            tag_date=$(date +%Y%m%d%H%M)
+            make docker-butterflynet-push LILY_IMAGE_TAG=${sanitized_branch}-${tag_date}-${tag_suffix}-butterflynet
   publish-production-image-from-semver-tag-for-mainnet:
     executor: dockerizer
     steps:
@@ -303,7 +305,7 @@ jobs:
 # used in `build-docker-images` workflow below
 branch_filters: &branch_filters
   branches:
-    only: /^cd\/staging$/
+    only: /^cd/staging$/
   tags:
     ignore: /.*/
 
@@ -331,13 +333,13 @@ workflows:
       - test-docker-calibnet-dev
   build-docker-images:
     jobs:
+      # only publish staging images for mainnet and calibnet
       - publish-production-image-from-branch-for-mainnet:
           filters:
             <<: *branch_filters
-      # only publish staging images for mainnet
-      #- publish-production-image-from-branch-for-calibnet:
-          #filters:
-            #<<: *branch_filters
+      - publish-production-image-from-branch-for-calibnet:
+          filters:
+            <<: *branch_filters
       #- publish-production-image-from-branch-for-butterflynet:
           #filters:
             #<<: *branch_filters
