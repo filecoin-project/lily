@@ -59,7 +59,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 	grp, _ := errgroup.WithContext(ctx)
 
-	var getActorCodeFn func(address address.Address) (cid.Cid, bool)
+	var getActorCodeFn func(ctx context.Context, address address.Address) (cid.Cid, bool)
 	grp.Go(func() error {
 		var err error
 		getActorCodeFn, err = util.MakeGetActorCodeFunc(ctx, p.node.Store(), current, executed)
@@ -108,7 +108,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			}
 
 			// Only interested in messages to multisig actors
-			msgToCode, found := getActorCodeFn(msg.VMMessage().To)
+			msgToCode, found := getActorCodeFn(ctx, msg.VMMessage().To)
 			if !found {
 				return nil, nil, fmt.Errorf("failed to find to actor %s height %d message %s", msg.VMMessage().To, current.Height(), msg.Cid())
 			}

@@ -52,7 +52,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 	grp, grpCtx := errgroup.WithContext(ctx)
 
-	var getActorCodeFn func(address address.Address) (cid.Cid, bool)
+	var getActorCodeFn func(ctx context.Context, address address.Address) (cid.Cid, bool)
 	grp.Go(func() error {
 		var err error
 		getActorCodeFn, err = util.MakeGetActorCodeFunc(grpCtx, t.node.Store(), current, executed)
@@ -113,7 +113,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			}
 			exeMsgSeen[m.Cid()] = true
 
-			toActorCode, found := getActorCodeFn(m.VMMessage().To)
+			toActorCode, found := getActorCodeFn(ctx, m.VMMessage().To)
 			if !found {
 				toActorCode = cid.Undef
 			}

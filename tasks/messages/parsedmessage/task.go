@@ -54,7 +54,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 	grp, _ := errgroup.WithContext(ctx)
 
-	var getActorCodeFn func(address address.Address) (cid.Cid, bool)
+	var getActorCodeFn func(ctx context.Context, address address.Address) (cid.Cid, bool)
 	grp.Go(func() error {
 		var err error
 		getActorCodeFn, err = util.MakeGetActorCodeFunc(ctx, t.node.Store(), current, executed)
@@ -105,7 +105,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			}
 			exeMsgSeen[m.Cid()] = true
 
-			toActorCode, found := getActorCodeFn(m.VMMessage().To)
+			toActorCode, found := getActorCodeFn(ctx, m.VMMessage().To)
 			if !found && r.ExitCode == 0 {
 				// No destination actor code. Normally Lotus will create an account actor for unknown addresses but if the
 				// message fails then Lotus will not allow the actor to be created and we are left with an address of an
