@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-bitfield"
+	builtin2 "github.com/filecoin-project/go-state-types/builtin"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -36,7 +37,7 @@ func init() {
 
 var log = logging.Logger("lily/lens")
 
-func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (string, string, error) {
+func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (_ string, _ string, err error) {
 	m, found := ActorRegistry.Methods[actCode][method]
 	if !found {
 		return "", "", fmt.Errorf("unknown method %d for actor %s", method, actCode)
@@ -47,6 +48,20 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (string, 
 	if m.Params == reflect.TypeOf(new(abi.EmptyValue)) {
 		return "", m.Name, nil
 	}
+
+	if builtin.ActorNameByCode(actCode) == "fil/9/account" && method == builtin2.UniversalReceiverHookMethodNum {
+		b, err := json.Marshal(m.Params)
+		if err != nil {
+			return "", "", err
+		}
+		return string(b), m.Name, nil
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("method %s ActorName %s ParseParams recovered from panic: %+v", m.Name, builtin.ActorNameByCode(actCode), r)
+		}
+	}()
 
 	p := reflect.New(m.Params.Elem()).Interface().(cbg.CBORUnmarshaler)
 	if err := p.UnmarshalCBOR(bytes.NewReader(params)); err != nil {
@@ -64,7 +79,7 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (string, 
 	return string(b), m.Name, err
 }
 
-func ParseReturn(ret []byte, method abi.MethodNum, actCode cid.Cid) (string, string, error) {
+func ParseReturn(ret []byte, method abi.MethodNum, actCode cid.Cid) (_ string, _ string, err error) {
 	m, found := ActorRegistry.Methods[actCode][method]
 	if !found {
 		return "", "", fmt.Errorf("unknown method %d for actor %s", method, actCode)
@@ -74,6 +89,12 @@ func ParseReturn(ret []byte, method abi.MethodNum, actCode cid.Cid) (string, str
 	if m.Ret == reflect.TypeOf(new(abi.EmptyValue)) {
 		return "", m.Name, nil
 	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("ParseReturn recovered from panic: %+v", r)
+		}
+	}()
 
 	p := reflect.New(m.Ret.Elem()).Interface().(cbg.CBORUnmarshaler)
 	if err := p.UnmarshalCBOR(bytes.NewReader(ret)); err != nil {
