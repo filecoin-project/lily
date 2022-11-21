@@ -27,7 +27,7 @@ type MinerPreCommitInfoV9 struct {
 	SealRandEpoch   int64    `pg:",use_zero"`
 	ExpirationEpoch int64    `pg:",use_zero"`
 	DealIDS         []uint64 `pg:",array"`
-	UnSealedCID     string   `pg:",notnull"`
+	UnsealedCID     string   `pg:",notnull"`
 }
 
 func (mpi *MinerPreCommitInfoV9) AsVersion(version model.Version) (interface{}, bool) {

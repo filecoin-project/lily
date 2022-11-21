@@ -65,7 +65,7 @@ func (PreCommitInfoExtractorV9) Extract(ctx context.Context, a actorstate.ActorI
 			SealRandEpoch:    int64(preCommit.Info.SealRandEpoch),
 			ExpirationEpoch:  int64(preCommit.Info.Expiration),
 			DealIDS:          deals,
-			UnSealedCID:      unSealedCID,
+			UnsealedCID:      unSealedCID,
 		}
 	}
 
