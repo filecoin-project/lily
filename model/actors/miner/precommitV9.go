@@ -26,7 +26,7 @@ type MinerPreCommitInfoV9 struct {
 	SealedCID       string   `pg:",notnull"`
 	SealRandEpoch   int64    `pg:",use_zero"`
 	ExpirationEpoch int64    `pg:",use_zero"`
-	DealIDs         []uint64 `pg:",array"`
+	DealIDS         []uint64 `pg:",array"`
 	UnSealedCID     string   `pg:",notnull"`
 }
 
