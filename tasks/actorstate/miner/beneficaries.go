@@ -33,6 +33,9 @@ func (BeneficiaryExtractor) Extract(ctx context.Context, a actorstate.ActorInfo,
 		if err != nil {
 			return nil, err
 		}
+		if curInfo.Beneficiary.Empty() {
+			return nil, nil
+		}
 		var (
 			newBeneficiary        string
 			newQuota              string
