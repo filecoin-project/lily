@@ -28,7 +28,43 @@ func (BeneficiaryExtractor) Extract(ctx context.Context, a actorstate.ActorInfo,
 	}
 
 	if !ec.HasPreviousState() {
-		// means this miner was created in this tipset or genesis special case
+		// means this miner was created in this tipset, persist current state.
+		curInfo, err := ec.CurrState.Info()
+		if err != nil {
+			return nil, err
+		}
+		var (
+			newBeneficiary        string
+			newQuota              string
+			newExpiration         int64
+			approvedByBeneficiary bool
+			approvedByNominee     bool
+		)
+		if curInfo.PendingBeneficiaryTerm != nil {
+			if !curInfo.PendingBeneficiaryTerm.NewBeneficiary.Empty() {
+				newBeneficiary = curInfo.PendingBeneficiaryTerm.NewBeneficiary.String()
+			}
+			if !curInfo.PendingBeneficiaryTerm.NewQuota.Nil() {
+				newQuota = curInfo.PendingBeneficiaryTerm.NewQuota.String()
+			}
+			newExpiration = int64(curInfo.PendingBeneficiaryTerm.NewExpiration)
+			approvedByBeneficiary = curInfo.PendingBeneficiaryTerm.ApprovedByBeneficiary
+			approvedByNominee = curInfo.PendingBeneficiaryTerm.ApprovedByNominee
+		}
+		return &minermodel.MinerBeneficiary{
+			Height:                int64(a.Current.Height()),
+			StateRoot:             a.Current.ParentState().String(),
+			MinerID:               a.Address.String(),
+			Beneficiary:           curInfo.Beneficiary.String(),
+			Quota:                 curInfo.BeneficiaryTerm.Quota.String(),
+			UsedQuota:             curInfo.BeneficiaryTerm.UsedQuota.String(),
+			Expiration:            int64(curInfo.BeneficiaryTerm.Expiration),
+			NewBeneficiary:        newBeneficiary,
+			NewQuota:              newQuota,
+			NewExpiration:         newExpiration,
+			ApprovedByBeneficiary: approvedByBeneficiary,
+			ApprovedByNominee:     approvedByNominee,
+		}, nil
 	} else if changed, err := ec.CurrState.MinerInfoChanged(ec.PrevState); err != nil {
 		return nil, err
 	} else if !changed {
