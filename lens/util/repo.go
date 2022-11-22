@@ -220,7 +220,7 @@ func MakeGetActorCodeFunc(ctx context.Context, store adt.Store, child, parent *t
 			return act.Code, true
 		}
 
-		log.Errorf("failed to find actor %s in parent state: %s", a, err)
+		log.Infof("failed to find actor %s in parent state: %s", a, err)
 		return cid.Undef, false
 	}, nil
 }
