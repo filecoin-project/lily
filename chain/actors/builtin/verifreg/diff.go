@@ -136,7 +136,7 @@ func (m *verifierDiffContainer) Add(key string, val *cbg.Deferred) error {
 	}
 	var sp abi.StoragePower
 	if err := sp.UnmarshalCBOR(bytes.NewReader(val.Raw)); err != nil {
-		return nil
+		return err
 	}
 	m.Results.Added = append(m.Results.Added, VerifierInfo{
 		Address: addr,
@@ -178,7 +178,7 @@ func (m *verifierDiffContainer) Remove(key string, val *cbg.Deferred) error {
 	}
 	var sp abi.StoragePower
 	if err := sp.UnmarshalCBOR(bytes.NewReader(val.Raw)); err != nil {
-		return nil
+		return err
 	}
 	m.Results.Removed = append(m.Results.Removed, VerifierInfo{
 		Address: addr,
