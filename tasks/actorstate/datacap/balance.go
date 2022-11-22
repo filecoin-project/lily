@@ -43,8 +43,8 @@ func (BalanceExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, nod
 				Height:    int64(ec.CurrTs.Height()),
 				StateRoot: ec.CurrTs.ParentState().String(),
 				Address:   a.Address.String(),
-				Event:     dcap.String(),
-				DataCap:   datacapmodel.Added,
+				Event:     datacapmodel.Added,
+				DataCap:   dcap.String(),
 			})
 			return nil
 		}); err != nil {

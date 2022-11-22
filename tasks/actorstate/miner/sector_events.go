@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
@@ -67,10 +68,34 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		grp.Go(func() error {
 			start := time.Now()
 			// collect changes made to miner precommit map (HAMT)
-			preCommitChanges, err = node.DiffPreCommits(grpCtx, a.Address, a.Current, a.Executed, extState.ParentState(), extState.CurrentState())
-			if err != nil {
-				return fmt.Errorf("diffing precommits %w", err)
+			if extState.CurrentState().ActorVersion() > actors.Version8 {
+				preCommitChanges, err = node.DiffPreCommits(grpCtx, a.Address, a.Current, a.Executed, extState.ParentState(), extState.CurrentState())
+				if err != nil {
+					return fmt.Errorf("diffing precommits %w", err)
+				}
+			} else {
+				var v8PreCommitChanges *miner.PreCommitChangesV8
+				v8PreCommitChanges, err = node.DiffPreCommitsV8(grpCtx, a.Address, a.Current, a.Executed, extState.ParentState(), extState.CurrentState())
+				if err != nil {
+					return fmt.Errorf("diffing precommits: %w", err)
+				}
+				for _, c := range v8PreCommitChanges.Added {
+					preCommitChanges.Added = append(preCommitChanges.Added, minertypes.SectorPreCommitOnChainInfo{
+						Info: minertypes.SectorPreCommitInfo{
+							SealProof:     c.Info.SealProof,
+							SectorNumber:  c.Info.SectorNumber,
+							SealedCID:     c.Info.SealedCID,
+							SealRandEpoch: c.Info.SealRandEpoch,
+							DealIDs:       nil,
+							Expiration:    c.Info.Expiration,
+							UnsealedCid:   nil,
+						},
+						PreCommitDeposit: c.PreCommitDeposit,
+						PreCommitEpoch:   c.PreCommitEpoch,
+					})
+				}
 			}
+
 			log.Debugw("diff precommits", "miner", a.Address, "duration", time.Since(start))
 			return nil
 		})

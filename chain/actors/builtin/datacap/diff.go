@@ -7,9 +7,11 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/multiformats/go-varint"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/adt/diff"
@@ -122,7 +124,14 @@ func (m *balanceDiffContainer) AsKey(key string) (abi.Keyer, error) {
 }
 
 func (m *balanceDiffContainer) Add(key string, val *cbg.Deferred) error {
-	addr, err := address.NewFromBytes([]byte(key))
+	id, n, err := varint.FromUvarint([]byte(key))
+	if n != len([]byte(key)) {
+		return xerrors.Errorf("could not get varint from address string")
+	}
+	if err != nil {
+		return err
+	}
+	addr, err := address.NewIDAddress(id)
 	if err != nil {
 		return err
 	}
@@ -138,7 +147,14 @@ func (m *balanceDiffContainer) Add(key string, val *cbg.Deferred) error {
 }
 
 func (m *balanceDiffContainer) Modify(key string, before, after *cbg.Deferred) error {
-	addr, err := address.NewFromBytes([]byte(key))
+	id, n, err := varint.FromUvarint([]byte(key))
+	if n != len([]byte(key)) {
+		return xerrors.Errorf("could not get varint from address string")
+	}
+	if err != nil {
+		return err
+	}
+	addr, err := address.NewIDAddress(id)
 	if err != nil {
 		return err
 	}
@@ -164,7 +180,14 @@ func (m *balanceDiffContainer) Modify(key string, before, after *cbg.Deferred) e
 }
 
 func (m *balanceDiffContainer) Remove(key string, val *cbg.Deferred) error {
-	addr, err := address.NewFromBytes([]byte(key))
+	id, n, err := varint.FromUvarint([]byte(key))
+	if n != len([]byte(key)) {
+		return xerrors.Errorf("could not get varint from address string")
+	}
+	if err != nil {
+		return err
+	}
+	addr, err := address.NewIDAddress(id)
 	if err != nil {
 		return err
 	}
