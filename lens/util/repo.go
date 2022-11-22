@@ -49,7 +49,7 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (_ string
 		return "", m.Name, nil
 	}
 
-	if builtin.ActorNameByCode(actCode) == "fil/9/account" && method == builtin2.UniversalReceiverHookMethodNum {
+	if method == builtin2.UniversalReceiverHookMethodNum {
 		b, err := json.Marshal(m.Params)
 		if err != nil {
 			return "", "", err
@@ -63,6 +63,8 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (_ string
 		}
 	}()
 
+	// this statement can panic if the message params do not implement CBORUnmarshaler, so we recover above.
+	// see https://github.com/filecoin-project/go-state-types/pull/119 for context
 	p := reflect.New(m.Params.Elem()).Interface().(cbg.CBORUnmarshaler)
 	if err := p.UnmarshalCBOR(bytes.NewReader(params)); err != nil {
 		actorName := builtin.ActorNameByCode(actCode)
@@ -96,6 +98,8 @@ func ParseReturn(ret []byte, method abi.MethodNum, actCode cid.Cid) (_ string, _
 		}
 	}()
 
+	// this statement can panic if the message params do not implement CBORUnmarshaler, so we recover above.
+	// see https://github.com/filecoin-project/go-state-types/pull/119 for context
 	p := reflect.New(m.Ret.Elem()).Interface().(cbg.CBORUnmarshaler)
 	if err := p.UnmarshalCBOR(bytes.NewReader(ret)); err != nil {
 		actorName := builtin.ActorNameByCode(actCode)
