@@ -116,7 +116,7 @@ func Extract(ctx context.Context, api tasks.DataSource, current *types.TipSet, e
 		return nil
 	})
 
-	var getActorCode func(a address.Address) (cid.Cid, bool)
+	var getActorCode func(ctx context.Context, a address.Address) (cid.Cid, bool)
 	grp.Go(func() error {
 		var err error
 		// TODO make this an api method
@@ -141,7 +141,7 @@ func Extract(ctx context.Context, api tasks.DataSource, current *types.TipSet, e
 		}
 
 		if parentMsg.Implicit {
-			toCode, found := getActorCode(parentMsg.Message.To)
+			toCode, found := getActorCode(ctx, parentMsg.Message.To)
 			if !found && parentMsg.Ret.ExitCode == 0 {
 				// No destination actor code. Normally Lotus will create an account actor for unknown addresses but if the
 				// message fails then Lotus will not allow the actor to be created, and we are left with an address of an
@@ -174,7 +174,7 @@ func Extract(ctx context.Context, api tasks.DataSource, current *types.TipSet, e
 			// Cid() computes a CID, so only call it once
 			childCid := child.Message.Cid()
 
-			toCode, found := getActorCode(child.Message.To)
+			toCode, found := getActorCode(ctx, child.Message.To)
 			if !found && child.Receipt.ExitCode == 0 {
 				// No destination actor code. Normally Lotus will create an account actor for unknown addresses but if the
 				// message fails then Lotus will not allow the actor to be created, and we are left with an address of an

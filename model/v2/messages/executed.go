@@ -115,7 +115,7 @@ func (t *ExecutedMessage) Cid() cid.Cid {
 func ExtractExecutedMessages(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet) ([]v2.LilyModel, error) {
 	grp, _ := errgroup.WithContext(ctx)
 
-	var getActorCodeFn func(address address.Address) (cid.Cid, bool)
+	var getActorCodeFn func(ctx context.Context, address address.Address) (cid.Cid, bool)
 	grp.Go(func() error {
 		var err error
 		getActorCodeFn, err = util.MakeGetActorCodeFunc(ctx, api.Store(), current, executed)
@@ -166,7 +166,7 @@ func ExtractExecutedMessages(ctx context.Context, api tasks.DataSource, current,
 		for itr.HasNext() {
 			msg, recIdx, rec := itr.Next()
 
-			toActorCode, found := getActorCodeFn(msg.VMMessage().To)
+			toActorCode, found := getActorCodeFn(ctx, msg.VMMessage().To)
 			if !found && rec.ExitCode == 0 {
 				// No destination actor code. Normally Lotus will create an account actor for unknown addresses but if the
 				// message fails then Lotus will not allow the actor to be created and we are left with an address of an
