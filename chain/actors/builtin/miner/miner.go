@@ -154,6 +154,7 @@ type State interface {
 	DeadlinesChanged(State) (bool, error)
 
 	Info() (MinerInfo, error)
+	InfoCid() cid.Cid
 	MinerInfoChanged(State) (bool, error)
 
 	DeadlineInfo(epoch abi.ChainEpoch) (*dline.Info, error)

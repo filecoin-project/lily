@@ -371,6 +371,10 @@ func (s *state0) MinerInfoChanged(other State) (bool, error) {
 	return !s.State.Info.Equals(other0.State.Info), nil
 }
 
+func (s *state0) InfoCid() cid.Cid {
+	return s.State.Info
+}
+
 func (s *state0) Info() (MinerInfo, error) {
 	info, err := s.State.GetInfo(s.store)
 	if err != nil {

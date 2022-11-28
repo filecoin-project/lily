@@ -35,7 +35,7 @@ require (
 	github.com/ipfs/go-metrics-prometheus v0.0.2
 	github.com/ipld/go-car v0.4.0
 	github.com/lib/pq v1.9.0
-	github.com/libp2p/go-libp2p-core v0.20.0 // indirect
+	github.com/libp2p/go-libp2p-core v0.20.0
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
 	github.com/minio/sha256-simd v1.0.0
 	github.com/mitchellh/go-homedir v1.1.0
@@ -64,6 +64,7 @@ require k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 
 require (
 	github.com/filecoin-project/go-amt-ipld/v4 v4.0.1-0.20220601173204-7b82b2c4bc9c
+	github.com/filecoin-project/specs-actors/v8 v8.0.1
 	github.com/hibiken/asynq v0.23.0
 	github.com/hibiken/asynq/x v0.0.0-20220413130846-5c723f597e01
 	github.com/ipfs/go-ipld-format v0.4.0
@@ -139,7 +140,6 @@ require (
 	github.com/filecoin-project/go-storedcounter v0.1.0 // indirect
 	github.com/filecoin-project/index-provider v0.8.1 // indirect
 	github.com/filecoin-project/pubsub v1.0.0 // indirect
-	github.com/filecoin-project/specs-actors/v8 v8.0.1 // indirect
 	github.com/filecoin-project/storetheindex v0.4.17 // indirect
 	github.com/flynn/noise v1.0.0 // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect

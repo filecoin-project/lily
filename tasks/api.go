@@ -39,7 +39,7 @@ func (c ChangeType) String() string {
 }
 
 type ActorStateChange struct {
-	Actor      types.Actor
+	Actor      *types.Actor
 	ChangeType ChangeType
 }
 

@@ -79,9 +79,6 @@ type MessageExecution struct {
 	Message *types.Message
 	Ret     *vm.ApplyRet
 
-	FromActorCode cid.Cid // code of the actor the message is from
-	ToActorCode   cid.Cid // code of the actor the message is to
-
 	Implicit bool
 }
 

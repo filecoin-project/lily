@@ -534,32 +534,15 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, next *t
 		}
 	}
 
-	getActorCode, err := util.MakeGetActorCodeFunc(ctx, m.ChainAPI.Chain.ActorStore(ctx), next, current)
-	if err != nil {
-		return nil, fmt.Errorf("failed to make actor code query function: %w", err)
-	}
-
 	out := make([]*lens.MessageExecution, len(executions))
 	for idx, execution := range executions {
-		toCode, found := getActorCode(ctx, execution.Msg.To)
-		// if the message failed to execute due to lack of gas then the TO actor may never have been created.
-		if !found {
-			log.Warnw("failed to find TO actor", "height", next.Height().String(), "message", execution.Msg.Cid().String(), "actor", execution.Msg.To.String())
-		}
-		// if the message sender cannot be found this is an unexpected error
-		fromCode, found := getActorCode(ctx, execution.Msg.From)
-		if !found {
-			return nil, fmt.Errorf("failed to find from actor %s height %d message %s", execution.Msg.From, execution.TipSet.Height(), execution.Msg.Cid())
-		}
 		out[idx] = &lens.MessageExecution{
-			Cid:           execution.Mcid,
-			StateRoot:     execution.TipSet.ParentState(),
-			Height:        execution.TipSet.Height(),
-			Message:       execution.Msg,
-			Ret:           execution.Ret,
-			Implicit:      execution.Implicit,
-			ToActorCode:   toCode,
-			FromActorCode: fromCode,
+			Cid:       execution.Mcid,
+			StateRoot: execution.TipSet.ParentState(),
+			Height:    execution.TipSet.Height(),
+			Message:   execution.Msg,
+			Ret:       execution.Ret,
+			Implicit:  execution.Implicit,
 		}
 	}
 	return out, nil

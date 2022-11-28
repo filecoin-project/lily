@@ -349,7 +349,7 @@ func GetActorStateChanges(ctx context.Context, store adt.Store, current, execute
 			return nil, err
 		}
 		out[addr] = tasks.ActorStateChange{
-			Actor:      act,
+			Actor:      &act,
 			ChangeType: tasks.ChangeTypeUnknown,
 		}
 	}
@@ -366,7 +366,7 @@ func GetGenesisActors(ctx context.Context, store adt.Store, genesis *types.TipSe
 	}
 	if err := tree.ForEach(func(addr address.Address, act *types.Actor) error {
 		out[addr] = tasks.ActorStateChange{
-			Actor:      *act,
+			Actor:      act,
 			ChangeType: tasks.ChangeTypeAdd,
 		}
 		return nil

@@ -64,7 +64,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 		// we don't yet record implicit messages in the other message task, record them here.
 		if m.Implicit {
-			method, params, err := util.MethodAndParamsForMessage(m.Message, m.ToActorCode)
+			method, params, err := util.MethodAndParamsForMessage(m.Message, m.)
 			if err != nil {
 				errorsDetected = append(errorsDetected, &messages.MessageError{
 					Cid:   m.Cid,
