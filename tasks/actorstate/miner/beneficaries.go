@@ -96,9 +96,10 @@ func (BeneficiaryExtractor) Extract(ctx context.Context, a actorstate.ActorInfo,
 
 	// model has changed, persist
 	bene := &minermodel.MinerBeneficiary{
-		Height:    int64(a.Current.Height()),
-		StateRoot: a.Current.ParentState().String(),
-		MinerID:   a.Address.String(),
+		Height:      int64(a.Current.Height()),
+		StateRoot:   a.Current.ParentState().String(),
+		MinerID:     a.Address.String(),
+		Beneficiary: newInfo.Beneficiary.String(),
 	}
 
 	// if there are pending changes persist them, and also ensure non-nil fields (quota, usedQuota, expiration) are populated with the latest values if if unchanged.
