@@ -5,6 +5,41 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.13.0"></a>
+## [v0.13.0] - 2022-11-28
+
+## DATABASE MIGRATION
+
+This release includes a migration which must be applied before deploying against an existing database.
+* [1.10](https://github.com/filecoin-project/lily/blob/v0.12.0/schemas/v1/10_miner_precommit_v9.go)
+* [1.11](https://github.com/filecoin-project/lily/blob/v0.13.0/schemas/v1/11_miner_beneficiary.go)
+* [1.12](https://github.com/filecoin-project/lily/blob/v0.13.0/schemas/v1/12_datacap_balance.go)
+
+### Feat
+* upgrade to lotus v1.18.0 with support for network version 17 ([#1080](https://github.com/filecoin-project/lily/pull/1080))
+  * implement precommitinfov9 task and schema
+    * task name `miner_pre_commit_info`
+    * requires migration [1.10](https://github.com/filecoin-project/lily/blob/v0.12.0/schemas/v1/10_miner_precommit_v9.go)
+    * parses and persists changes to miner PreCommit structure in nv17
+  * implement miner beneficiary task and schema
+    * task name `miner_beneficiary`
+    * requires migration [1.11](https://github.com/filecoin-project/lily/blob/v0.13.0/schemas/v1/11_miner_beneficiary.go)
+    * parses and persists miner beneficiary address added to miner info in nv17
+  * implement datacap balance task and schema
+    * task name `data_cap_balance`
+    * requires migration  [1.12](https://github.com/filecoin-project/lily/blob/v0.13.0/schemas/v1/12_datacap_balance.go)
+    * parses and persists datacap actor balances from singleton datacap actor in nv17
+
+### Fix
+* metrics & debugging link ([#1070](https://github.com/filecoin-project/lily/pull/1070))
+* use bitfield.MultiMerge to improve LoadSectorState performance ([#1086](https://github.com/filecoin-project/lily/pull/1086))
+* don't parse VM messages whose parent failed to apply ([#1091](https://github.com/filecoin-project/lily/pull/1091))
+* remove actor code mapping ([#1087](https://github.com/filecoin-project/lily/pull/1087))
+
+### Chore
+* fix metric name ([#1085](https://github.com/filecoin-project/lily/pull/1085))
+* create docker images for commits in `cd/staging` ([#1090](https://github.com/filecoin-project/lily/pull/1090))
+
 <a name="v0.12.0"></a>
 ## [v0.12.0] - 2022-09-07
 
