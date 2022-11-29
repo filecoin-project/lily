@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/exitcode"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -82,7 +81,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	var (
 		parsedMessageResults = make(messagemodel.ParsedMessages, 0)
 		errorsDetected       = make([]*messages.MessageError, 0)
-		exeMsgSeen           = make(map[cid.Cid]bool)
+		msgSeen              = cid.NewSet()
 	)
 
 	for _, msgrec := range blkMsgRec {
@@ -100,53 +99,54 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 		for itr.HasNext() {
 			m, _, r := itr.Next()
-			if exeMsgSeen[m.Cid()] {
+
+			// if we have already visited this message continue
+			if !msgSeen.Visit(m.Cid()) {
 				continue
 			}
-			exeMsgSeen[m.Cid()] = true
 
+			// if this message failed to apply successfully continue
+			if r.ExitCode.IsError() {
+				log.Infof("skip parsing message: %v, reason: receipt with exitcode: %s", m.Cid(), r.ExitCode)
+				continue
+			}
+
+			// since the message applied successfully (non-zero exitcode) its receiver must exist on chain.
 			toActorCode, found := getActorCodeFn(ctx, m.VMMessage().To)
-			if !found && r.ExitCode == 0 {
+			if !found {
 				// No destination actor code. Normally Lotus will create an account actor for unknown addresses but if the
 				// message fails then Lotus will not allow the actor to be created and we are left with an address of an
 				// unknown type.
 				// If the message was executed it means we are out of step with Lotus behaviour somehow. This probably
 				// indicates that Lily actor type detection is out of date.
-				log.Errorw("parsing message", "cid", m.Cid().String(), "receipt", r)
+				log.Errorw("parsing message", "cid", m.Cid().String(), "to", "receipt", r, m.VMMessage().To)
 				errorsDetected = append(errorsDetected, &messages.MessageError{
 					Cid:   m.Cid(),
 					Error: fmt.Errorf("failed to parse message params: missing to actor code").Error(),
 				})
-			} else {
-				method, params, err := util.MethodAndParamsForMessage(m.VMMessage(), toActorCode)
-				if err == nil {
-					pm := &messagemodel.ParsedMessage{
-						Height: int64(msgrec.Block.Height),
-						Cid:    m.Cid().String(),
-						From:   m.VMMessage().From.String(),
-						To:     m.VMMessage().To.String(),
-						Value:  m.VMMessage().Value.String(),
-						Method: method,
-						Params: params,
-					}
-					parsedMessageResults = append(parsedMessageResults, pm)
-				} else {
-					if r.ExitCode == exitcode.ErrSerialization ||
-						r.ExitCode == exitcode.ErrIllegalArgument ||
-						r.ExitCode == exitcode.SysErrInvalidMethod ||
-						// UsrErrUnsupportedMethod TODO: https://github.com/filecoin-project/go-state-types/pull/44
-						r.ExitCode == exitcode.ExitCode(22) {
-						// ignore the parse error since the params are probably malformed, as reported by the vm
-
-					} else {
-						log.Errorw("parsing message", "error", err, "cid", m.Cid().String(), "receipt", r)
-						errorsDetected = append(errorsDetected, &messages.MessageError{
-							Cid:   m.Cid(),
-							Error: fmt.Errorf("failed to parse message params: %w", err).Error(),
-						})
-					}
-				}
+				continue
 			}
+
+			// the message applied successfully and we found its actor code, failing to parse here indicates an error.
+			method, params, err := util.MethodAndParamsForMessage(m.VMMessage(), toActorCode)
+			if err != nil {
+				errStr := fmt.Sprintf("failed to parse message: %s, to: %s, receipt: %v, error: %s", m.Cid(), m.VMMessage().To, r, err)
+				log.Error(errStr)
+				errorsDetected = append(errorsDetected, &messages.MessageError{
+					Cid:   m.Cid(),
+					Error: errStr,
+				})
+			}
+			pm := &messagemodel.ParsedMessage{
+				Height: int64(msgrec.Block.Height),
+				Cid:    m.Cid().String(),
+				From:   m.VMMessage().From.String(),
+				To:     m.VMMessage().To.String(),
+				Value:  m.VMMessage().Value.String(),
+				Method: method,
+				Params: params,
+			}
+			parsedMessageResults = append(parsedMessageResults, pm)
 		}
 	}
 	if len(errorsDetected) != 0 {

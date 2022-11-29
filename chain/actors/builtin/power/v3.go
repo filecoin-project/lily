@@ -17,6 +17,7 @@ import (
 	"crypto/sha256"
 
 	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
+
 	power3 "github.com/filecoin-project/specs-actors/v3/actors/builtin/power"
 	adt3 "github.com/filecoin-project/specs-actors/v3/actors/util/adt"
 )
@@ -77,7 +78,7 @@ func (s *state3) MinerNominalPowerMeetsConsensusMinimum(a address.Address) (bool
 }
 
 func (s *state3) TotalPowerSmoothed() (builtin.FilterEstimate, error) {
-	return builtin.FromV3FilterEstimate(s.State.ThisEpochQAPowerSmoothed), nil
+	return builtin.FilterEstimate(s.State.ThisEpochQAPowerSmoothed), nil
 }
 
 func (s *state3) MinerCounts() (uint64, uint64, error) {

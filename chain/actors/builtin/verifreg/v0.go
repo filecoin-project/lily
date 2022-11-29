@@ -8,13 +8,16 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
 
-	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/filecoin-project/lily/chain/actors/adt"
 
 	sha256simd "github.com/minio/sha256-simd"
 
 	verifreg0 "github.com/filecoin-project/specs-actors/actors/builtin/verifreg"
 	adt0 "github.com/filecoin-project/specs-actors/actors/util/adt"
+
+	verifreg9 "github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
+
+	"github.com/filecoin-project/lily/chain/actors"
 )
 
 var _ State = (*state0)(nil)
@@ -33,28 +36,21 @@ type state0 struct {
 	store adt.Store
 }
 
-func (s *state0) RootKey() (address.Address, error) {
-	return s.State.RootKey, nil
+func (s *state0) ActorKey() string {
+	return actors.VerifregKey
 }
 
-func (s *state0) VerifiedClientDataCap(addr address.Address) (bool, abi.StoragePower, error) {
-	return getDataCap(s.store, actors.Version0, s.VerifiedClientsMap, addr)
+func (s *state0) ActorVersion() actors.Version {
+	return actors.Version0
 }
 
-func (s *state0) VerifierDataCap(addr address.Address) (bool, abi.StoragePower, error) {
-	return getDataCap(s.store, actors.Version0, s.VerifiersMap, addr)
-}
+func (s *state0) Code() cid.Cid {
+	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
+	if !ok {
+		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))
+	}
 
-func (s *state0) ForEachVerifier(cb func(addr address.Address, dcap abi.StoragePower) error) error {
-	return forEachCap(s.store, actors.Version0, s.VerifiersMap, cb)
-}
-
-func (s *state0) ForEachClient(cb func(addr address.Address, dcap abi.StoragePower) error) error {
-	return forEachCap(s.store, actors.Version0, s.VerifiedClientsMap, cb)
-}
-
-func (s *state0) VerifiedClientsMap() (adt.Map, error) {
-	return adt0.AsMap(s.store, s.VerifiedClients)
+	return code
 }
 
 func (s *state0) VerifiedClientsMapBitWidth() int {
@@ -69,6 +65,12 @@ func (s *state0) VerifiedClientsMapHashFunction() func(input []byte) []byte {
 		res := sha256simd.Sum256(input)
 		return res[:]
 	}
+
+}
+
+func (s *state0) VerifiedClientsMap() (adt.Map, error) {
+
+	return adt0.AsMap(s.store, s.VerifiedClients)
 
 }
 
@@ -91,19 +93,63 @@ func (s *state0) VerifiersMapHashFunction() func(input []byte) []byte {
 
 }
 
-func (s *state0) ActorKey() string {
-	return actors.VerifregKey
+func (s *state0) RootKey() (address.Address, error) {
+	return s.State.RootKey, nil
 }
 
-func (s *state0) ActorVersion() actors.Version {
-	return actors.Version0
+func (s *state0) VerifiedClientDataCap(addr address.Address) (bool, abi.StoragePower, error) {
+
+	return getDataCap(s.store, actors.Version0, s.VerifiedClientsMap, addr)
+
 }
 
-func (s *state0) Code() cid.Cid {
-	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
-	if !ok {
-		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))
-	}
+func (s *state0) VerifierDataCap(addr address.Address) (bool, abi.StoragePower, error) {
+	return getDataCap(s.store, actors.Version0, s.VerifiersMap, addr)
+}
 
-	return code
+func (s *state0) RemoveDataCapProposalID(verifier address.Address, client address.Address) (bool, uint64, error) {
+	return getRemoveDataCapProposalID(s.store, actors.Version0, s.removeDataCapProposalIDs, verifier, client)
+}
+
+func (s *state0) ForEachVerifier(cb func(addr address.Address, dcap abi.StoragePower) error) error {
+	return forEachCap(s.store, actors.Version0, s.VerifiersMap, cb)
+}
+
+func (s *state0) ForEachClient(cb func(addr address.Address, dcap abi.StoragePower) error) error {
+
+	return forEachCap(s.store, actors.Version0, s.VerifiedClientsMap, cb)
+
+}
+
+func (s *state0) removeDataCapProposalIDs() (adt.Map, error) {
+	return nil, nil
+
+}
+
+func (s *state0) GetState() interface{} {
+	return &s.State
+}
+
+func (s *state0) GetAllocation(clientIdAddr address.Address, allocationId verifreg9.AllocationId) (*verifreg9.Allocation, bool, error) {
+
+	return nil, false, fmt.Errorf("unsupported in actors v0")
+
+}
+
+func (s *state0) GetAllocations(clientIdAddr address.Address) (map[verifreg9.AllocationId]verifreg9.Allocation, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v0")
+
+}
+
+func (s *state0) GetClaim(providerIdAddr address.Address, claimId verifreg9.ClaimId) (*verifreg9.Claim, bool, error) {
+
+	return nil, false, fmt.Errorf("unsupported in actors v0")
+
+}
+
+func (s *state0) GetClaims(providerIdAddr address.Address) (map[verifreg9.ClaimId]verifreg9.Claim, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v0")
+
 }

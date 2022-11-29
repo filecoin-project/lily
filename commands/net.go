@@ -9,7 +9,7 @@ import (
 	"text/tabwriter"
 
 	lotuscli "github.com/filecoin-project/lotus/cli"
-	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/urfave/cli/v2"
 )
 

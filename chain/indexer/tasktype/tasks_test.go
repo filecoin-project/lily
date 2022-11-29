@@ -30,11 +30,12 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 			taskAlias: tasktype.ActorStatesMinerTask,
 			tasks: []string{tasktype.MinerSectorDeal, tasktype.MinerSectorInfoV7, tasktype.MinerSectorInfoV1_6,
 				tasktype.MinerSectorPost, tasktype.MinerPreCommitInfo, tasktype.MinerSectorEvent,
-				tasktype.MinerCurrentDeadlineInfo, tasktype.MinerFeeDebt, tasktype.MinerLockedFund, tasktype.MinerInfo},
+				tasktype.MinerCurrentDeadlineInfo, tasktype.MinerFeeDebt, tasktype.MinerLockedFund, tasktype.MinerInfo,
+				tasktype.MinerBeneficiary},
 		},
 		{
 			taskAlias: tasktype.ActorStatesInitTask,
-			tasks:     []string{tasktype.IdAddress},
+			tasks:     []string{tasktype.IDAddress},
 		},
 		{
 			taskAlias: tasktype.ActorStatesMarketTask,
@@ -46,7 +47,7 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 		},
 		{
 			taskAlias: tasktype.ActorStatesVerifreg,
-			tasks:     []string{tasktype.VerifiedRegistryVerifier, tasktype.VerifiedRegistryVerifiedClient},
+			tasks:     []string{tasktype.VerifiedRegistryVerifier, tasktype.VerifiedRegistryVerifiedClient, tasktype.DataCapBalance},
 		},
 		{
 			taskAlias: tasktype.BlocksTask,
@@ -66,7 +67,7 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 		},
 		{
 			taskAlias: tasktype.ImplicitMessageTask,
-			tasks:     []string{tasktype.InternalMessage, tasktype.InternalParsedMessage, tasktype.VmMessage},
+			tasks:     []string{tasktype.InternalMessage, tasktype.InternalParsedMessage, tasktype.VMMessage},
 		},
 		{
 			taskAlias: tasktype.ChainConsensusTask,
@@ -100,7 +101,7 @@ func TestMakeAllTaskAliasNames(t *testing.T) {
 }
 
 func TestMakeAllTaskNames(t *testing.T) {
-	const TotalTableTasks = 36
+	const TotalTableTasks = 38
 	actual, err := tasktype.MakeTaskNames(tasktype.AllTableTasks)
 	require.NoError(t, err)
 	// if this test fails it means a new task name was added, update the above test

@@ -15,12 +15,14 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
-	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
+	minertypesv8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 
 	"crypto/sha256"
 
 	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
+
 	miner4 "github.com/filecoin-project/specs-actors/v4/actors/builtin/miner"
 	adt4 "github.com/filecoin-project/specs-actors/v4/actors/util/adt"
 )
@@ -444,6 +446,36 @@ func (s *state4) DecodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (minertypes
 	return fromV4SectorPreCommitOnChainInfo(sp), nil
 }
 
+func (s *state4) DecodeSectorPreCommitOnChainInfoToV8(val *cbg.Deferred) (minertypesv8.SectorPreCommitOnChainInfo, error) {
+
+	var sp miner4.SectorPreCommitOnChainInfo
+	err := sp.UnmarshalCBOR(bytes.NewReader(val.Raw))
+	if err != nil {
+		return minertypesv8.SectorPreCommitOnChainInfo{}, err
+	}
+
+	return fromV4SectorPreCommitOnChainInfoToV8(sp), nil
+
+}
+
+func (s *state4) ForEachPrecommittedSectorV8(cb func(minertypesv8.SectorPreCommitOnChainInfo) error) error {
+
+	precommitted, err := adt4.AsMap(s.store, s.State.PreCommittedSectors, builtin4.DefaultHamtBitwidth)
+	if err != nil {
+		return err
+	}
+
+	var info miner4.SectorPreCommitOnChainInfo
+	if err := precommitted.ForEach(&info, func(_ string) error {
+		return cb(fromV4SectorPreCommitOnChainInfoToV8(info))
+	}); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
 func (s *state4) EraseAllUnproven() error {
 
 	dls, err := s.State.LoadDeadlines(s.store)
@@ -562,7 +594,23 @@ func fromV4SectorOnChainInfo(v4 miner4.SectorOnChainInfo) SectorOnChainInfo {
 
 func fromV4SectorPreCommitOnChainInfo(v4 miner4.SectorPreCommitOnChainInfo) minertypes.SectorPreCommitOnChainInfo {
 	return minertypes.SectorPreCommitOnChainInfo{
-		Info:               (minertypes.SectorPreCommitInfo)(v4.Info),
+		Info: minertypes.SectorPreCommitInfo{
+			SealProof:     v4.Info.SealProof,
+			SectorNumber:  v4.Info.SectorNumber,
+			SealedCID:     v4.Info.SealedCID,
+			SealRandEpoch: v4.Info.SealRandEpoch,
+			DealIDs:       v4.Info.DealIDs,
+			Expiration:    v4.Info.Expiration,
+			UnsealedCid:   nil,
+		},
+		PreCommitDeposit: v4.PreCommitDeposit,
+		PreCommitEpoch:   v4.PreCommitEpoch,
+	}
+}
+
+func fromV4SectorPreCommitOnChainInfoToV8(v4 miner4.SectorPreCommitOnChainInfo) minertypesv8.SectorPreCommitOnChainInfo {
+	return minertypesv8.SectorPreCommitOnChainInfo{
+		Info:               (minertypesv8.SectorPreCommitInfo)(v4.Info),
 		PreCommitDeposit:   v4.PreCommitDeposit,
 		PreCommitEpoch:     v4.PreCommitEpoch,
 		DealWeight:         v4.DealWeight,

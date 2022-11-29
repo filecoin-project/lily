@@ -80,7 +80,7 @@ func TestFind(t *testing.T) {
 	t.Run("gap at epoch 2 for miner and init task", func(t *testing.T) {
 		truncate(t, db)
 		gapHeight := int64(2)
-		gapTasks := []string{tasktype.MinerInfo, tasktype.IdAddress}
+		gapTasks := []string{tasktype.MinerInfo, tasktype.IDAddress}
 
 		pre := NewPREditor(t, db, t.Name())
 		pre.initialize(maxHeight, tasktype.AllTableTasks...)
@@ -100,7 +100,7 @@ func TestFind(t *testing.T) {
 		truncate(t, db)
 		pre := NewPREditor(t, db, t.Name())
 		pre.initialize(maxHeight, tasktype.AllTableTasks...)
-		pre.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(tasktype.MinerInfo, tasktype.IdAddress))
+		pre.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(tasktype.MinerInfo, tasktype.IDAddress))
 		pre.deleteEpochStatus(10, visor.ProcessingStatusOK, WithTasks(tasktype.BlockHeader, tasktype.Message, tasktype.MarketDealProposal))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
@@ -109,7 +109,7 @@ func TestFind(t *testing.T) {
 		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(2, tasktype.MinerInfo, tasktype.IdAddress)
+		expected := makeGapReportList(2, tasktype.MinerInfo, tasktype.IDAddress)
 		expected = append(expected, makeGapReportList(10, tasktype.BlockHeader, tasktype.Message, tasktype.MarketDealProposal)...)
 		assertGapReportsEqual(t, expected, actual)
 	})
@@ -137,7 +137,7 @@ func TestFind(t *testing.T) {
 		pre := NewPREditor(t, db, t.Name())
 		pre.initialize(maxHeight, tasktype.AllTableTasks...)
 
-		pre.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(tasktype.MinerInfo, tasktype.IdAddress))
+		pre.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(tasktype.MinerInfo, tasktype.IDAddress))
 		pre.updateEpochStatus(8, visor.ProcessingStatusError, WithTasks(tasktype.MinerInfo))
 		pre.updateEpochStatus(9, visor.ProcessingStatusError)
 
@@ -147,7 +147,7 @@ func TestFind(t *testing.T) {
 		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(2, tasktype.MinerInfo, tasktype.IdAddress)
+		expected := makeGapReportList(2, tasktype.MinerInfo, tasktype.IDAddress)
 		expected = append(expected, makeGapReportList(8, tasktype.MinerInfo)...)
 		expected = append(expected, makeGapReportList(9, tasktype.AllTableTasks...)...)
 		assertGapReportsEqual(t, expected, actual)
@@ -160,8 +160,8 @@ func TestFind(t *testing.T) {
 		pre2 := NewPREditor(t, db, "reporter2")
 		pre1.initialize(maxHeight, tasktype.AllTableTasks...)
 		pre2.initialize(maxHeight, tasktype.AllTableTasks...)
-		pre1.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(tasktype.MinerInfo, tasktype.IdAddress))
-		pre2.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(tasktype.MinerInfo, tasktype.IdAddress))
+		pre1.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(tasktype.MinerInfo, tasktype.IDAddress))
+		pre2.deleteEpochStatus(2, visor.ProcessingStatusOK, WithTasks(tasktype.MinerInfo, tasktype.IDAddress))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")
@@ -169,14 +169,14 @@ func TestFind(t *testing.T) {
 		actual, err := NewFinder(nil, strg, t.Name(), minHeight, maxHeight, tasktype.AllTableTasks).Find(ctx)
 		require.NoError(t, err)
 
-		expected := makeGapReportList(2, tasktype.MinerInfo, tasktype.IdAddress)
+		expected := makeGapReportList(2, tasktype.MinerInfo, tasktype.IDAddress)
 		assertGapReportsEqual(t, expected, actual)
 	})
 
 	t.Run("(sub task indexer, full reports table) gap at epoch 2 for messages and init task", func(t *testing.T) {
 		truncate(t, db)
 
-		gapTasks := []string{tasktype.Message, tasktype.IdAddress}
+		gapTasks := []string{tasktype.Message, tasktype.IDAddress}
 		monitoringTasks := append(gapTasks, []string{tasktype.BlockHeader, tasktype.ChainEconomics}...)
 
 		pre := NewPREditor(t, db, t.Name())
@@ -198,7 +198,7 @@ func TestFind(t *testing.T) {
 		truncate(t, db)
 
 		// tasks to create gaps for
-		gapTasks := []string{tasktype.Message, tasktype.IdAddress}
+		gapTasks := []string{tasktype.Message, tasktype.IDAddress}
 		monitoringTasks := append(gapTasks, []string{tasktype.BlockHeader, tasktype.ChainEconomics}...)
 
 		pre := NewPREditor(t, db, t.Name())
@@ -238,7 +238,7 @@ func TestFind(t *testing.T) {
 		pre1 := NewPREditor(t, db, "reporter1")
 		pre1.initialize(maxHeight, tasktype.AllTableTasks...)
 		pre2 := NewPREditor(t, db, "reporter2")
-		pre2.insertEpochStatus(2, visor.ProcessingStatusError, WithTasks(tasktype.IdAddress, tasktype.MinerInfo))
+		pre2.insertEpochStatus(2, visor.ProcessingStatusError, WithTasks(tasktype.IDAddress, tasktype.MinerInfo))
 
 		strg, err := storage.NewDatabaseFromDB(ctx, db, "public")
 		require.NoError(t, err, "NewDatabaseFromDB")

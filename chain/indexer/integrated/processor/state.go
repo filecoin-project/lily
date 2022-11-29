@@ -15,6 +15,7 @@ import (
 
 	// actor accessors
 	actors "github.com/filecoin-project/lily/chain/actors"
+	datacapactors "github.com/filecoin-project/lily/chain/actors/builtin/datacap"
 	initactors "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	marketactors "github.com/filecoin-project/lily/chain/actors/builtin/market"
 	mineractors "github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -27,6 +28,7 @@ import (
 	"github.com/filecoin-project/lily/tasks"
 	// actor tasks
 	"github.com/filecoin-project/lily/tasks/actorstate"
+	datacaptask "github.com/filecoin-project/lily/tasks/actorstate/datacap"
 	inittask "github.com/filecoin-project/lily/tasks/actorstate/init_"
 	markettask "github.com/filecoin-project/lily/tasks/actorstate/market"
 	minertask "github.com/filecoin-project/lily/tasks/actorstate/miner"
@@ -402,9 +404,19 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 	}
 	for _, t := range indexerTasks {
 		switch t {
+		case tasktype.DataCapBalance:
+			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
+				datacapactors.AllCodes(), datacaptask.BalanceExtractor{},
+			))
 		//
 		// miners
 		//
+		case tasktype.MinerBeneficiary:
+			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
+				map[cid.Cid][]actorstate.ActorStateExtractor{
+					mineractors.VersionCodes()[actors.Version9]: {minertask.BeneficiaryExtractor{}},
+				},
+			))
 		case tasktype.MinerCurrentDeadlineInfo:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
 				mineractors.AllCodes(), minertask.DeadlineInfoExtractor{},
@@ -422,8 +434,18 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				mineractors.AllCodes(), minertask.LockedFundsExtractor{},
 			))
 		case tasktype.MinerPreCommitInfo:
-			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				mineractors.AllCodes(), minertask.PreCommitInfoExtractor{},
+			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
+				map[cid.Cid][]actorstate.ActorStateExtractor{
+					mineractors.VersionCodes()[actors.Version0]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version2]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version3]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version4]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version5]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version6]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version7]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version8]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actors.Version9]: {minertask.PreCommitInfoExtractorV9{}},
+				},
 			))
 		case tasktype.MinerSectorDeal:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
@@ -453,6 +475,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				map[cid.Cid][]actorstate.ActorStateExtractor{
 					mineractors.VersionCodes()[actors.Version7]: {minertask.V7SectorInfoExtractor{}},
 					mineractors.VersionCodes()[actors.Version8]: {minertask.V7SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actors.Version9]: {minertask.V7SectorInfoExtractor{}},
 				},
 			))
 
@@ -482,7 +505,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			//
 			// Init
 			//
-		case tasktype.IdAddress:
+		case tasktype.IDAddress:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
 				initactors.AllCodes(),
 				inittask.InitExtractor{},
@@ -520,9 +543,18 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				verifregtask.VerifierExtractor{},
 			))
 		case tasktype.VerifiedRegistryVerifiedClient:
-			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				verifregactors.AllCodes(),
-				verifregtask.ClientExtractor{},
+			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
+				map[cid.Cid][]actorstate.ActorStateExtractor{
+					verifregactors.VersionCodes()[actors.Version0]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actors.Version2]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actors.Version3]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actors.Version4]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actors.Version5]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actors.Version6]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actors.Version7]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actors.Version8]: {verifregtask.ClientExtractor{}},
+					// version 9 no longer track clients and has been migrated to the datacap actor
+				},
 			))
 
 			//
@@ -559,7 +591,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			out.TipsetsProcessors[t] = ipmtask.NewTask(api)
 		case tasktype.MultisigApproval:
 			out.TipsetsProcessors[t] = msapprovaltask.NewTask(api)
-		case tasktype.VmMessage:
+		case tasktype.VMMessage:
 			out.TipsetsProcessors[t] = vm.NewTask(api)
 
 			//

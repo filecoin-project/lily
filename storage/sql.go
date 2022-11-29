@@ -16,6 +16,7 @@ import (
 
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/actors/common"
+	"github.com/filecoin-project/lily/model/actors/datacap"
 	init_ "github.com/filecoin-project/lily/model/actors/init"
 	"github.com/filecoin-project/lily/model/actors/market"
 	"github.com/filecoin-project/lily/model/actors/miner"
@@ -39,6 +40,9 @@ var Models = []interface{}{
 	(*blocks.BlockParent)(nil),
 	(*blocks.DrandBlockEntrie)(nil),
 
+	(*datacap.DataCapBalance)(nil),
+
+	(*miner.MinerBeneficiary)(nil),
 	(*miner.MinerSectorDeal)(nil),
 	(*miner.MinerSectorInfoV7)(nil),
 	(*miner.MinerSectorInfoV1_6)(nil),

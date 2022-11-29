@@ -5,6 +5,8 @@ const (
 	BlockHeader                    = "block_header"
 	BlockParent                    = "block_parent"
 	DrandBlockEntrie               = "drand_block_entrie"
+	DataCapBalance                 = "data_cap_balance"
+	MinerBeneficiary               = "miner_beneficiary"
 	MinerSectorDeal                = "miner_sector_deal"
 	MinerSectorInfoV7              = "miner_sector_infos_v7"
 	MinerSectorInfoV1_6            = "miner_sector_infos"
@@ -24,14 +26,14 @@ const (
 	ParsedMessage                  = "parsed_message"
 	InternalMessage                = "internal_messages"
 	InternalParsedMessage          = "internal_parsed_messages"
-	VmMessage                      = "vm_messages"
+	VMMessage                      = "vm_messages"
 	MultisigTransaction            = "multisig_transaction"
 	ChainPower                     = "chain_power"
 	PowerActorClaim                = "power_actor_claim"
 	ChainReward                    = "chain_reward"
 	Actor                          = "actor"
 	ActorState                     = "actor_state"
-	IdAddress                      = "id_address"
+	IDAddress                      = "id_addresses"
 	GasOutputs                     = "derived_gas_outputs"
 	ChainEconomics                 = "chain_economics"
 	ChainConsensus                 = "chain_consensus"
@@ -44,6 +46,8 @@ var AllTableTasks = []string{
 	BlockHeader,
 	BlockParent,
 	DrandBlockEntrie,
+	DataCapBalance,
+	MinerBeneficiary,
 	MinerSectorDeal,
 	MinerSectorInfoV7,
 	MinerSectorInfoV1_6,
@@ -63,14 +67,14 @@ var AllTableTasks = []string{
 	ParsedMessage,
 	InternalMessage,
 	InternalParsedMessage,
-	VmMessage,
+	VMMessage,
 	MultisigTransaction,
 	ChainPower,
 	PowerActorClaim,
 	ChainReward,
 	Actor,
 	ActorState,
-	IdAddress,
+	IDAddress,
 	GasOutputs,
 	ChainEconomics,
 	ChainConsensus,
@@ -83,6 +87,8 @@ var TableLookup = map[string]struct{}{
 	BlockHeader:                    {},
 	BlockParent:                    {},
 	DrandBlockEntrie:               {},
+	DataCapBalance:                 {},
+	MinerBeneficiary:               {},
 	MinerSectorDeal:                {},
 	MinerSectorInfoV7:              {},
 	MinerSectorInfoV1_6:            {},
@@ -102,14 +108,14 @@ var TableLookup = map[string]struct{}{
 	ParsedMessage:                  {},
 	InternalMessage:                {},
 	InternalParsedMessage:          {},
-	VmMessage:                      {},
+	VMMessage:                      {},
 	MultisigTransaction:            {},
 	ChainPower:                     {},
 	PowerActorClaim:                {},
 	ChainReward:                    {},
 	Actor:                          {},
 	ActorState:                     {},
-	IdAddress:                      {},
+	IDAddress:                      {},
 	GasOutputs:                     {},
 	ChainEconomics:                 {},
 	ChainConsensus:                 {},
@@ -122,6 +128,8 @@ var TableComment = map[string]string{
 	BlockHeader:                    ``,
 	BlockParent:                    ``,
 	DrandBlockEntrie:               `DrandBlockEntrie contains Drand randomness round numbers used in each block.`,
+	DataCapBalance:                 ``,
+	MinerBeneficiary:               ``,
 	MinerSectorDeal:                ``,
 	MinerSectorInfoV7:              `MinerSectorInfoV7 is the default model exported from the miner actor extractor. the table is returned iff the miner actor code is greater than or equal to v7. The table receives a new name since we cannot rename the miner_sector_info table, else we will break backfill.`,
 	MinerSectorInfoV1_6:            `MinerSectorInfoV1_6 is exported from the miner actor iff the actor code is less than v7. The table keeps its original name since that's a requirement to support lily backfills`,
@@ -141,14 +149,14 @@ var TableComment = map[string]string{
 	ParsedMessage:                  ``,
 	InternalMessage:                ``,
 	InternalParsedMessage:          ``,
-	VmMessage:                      ``,
+	VMMessage:                      ``,
 	MultisigTransaction:            ``,
 	ChainPower:                     ``,
 	PowerActorClaim:                ``,
 	ChainReward:                    ``,
 	Actor:                          `Actor on chain that were added or updated at an epoch. Associates the actor's state root CID (head) with the chain state root CID from which it decends. Includes account ID nonce and balance at each state.`,
 	ActorState:                     `ActorState that were changed at an epoch. Associates actors states as single-level trees with CIDs pointing to complete state tree with the root CID (head) for that actor’s state.`,
-	IdAddress:                      `IdAddress contains a mapping of ID addresses to robust addresses from the init actor’s state.`,
+	IDAddress:                      `IDAddress contains a mapping of ID addresses to robust addresses from the init actor’s state.`,
 	GasOutputs:                     ``,
 	ChainEconomics:                 ``,
 	ChainConsensus:                 ``,
@@ -164,7 +172,9 @@ var TableFieldComments = map[string]map[string]string{
 		"Block": "Block is the CID of the block.",
 		"Round": "Round is the round number of randomness used.",
 	},
-	MinerSectorDeal: {},
+	DataCapBalance:   {},
+	MinerBeneficiary: {},
+	MinerSectorDeal:  {},
 	MinerSectorInfoV7: {
 		"SectorKeyCID": "added in specs-actors v7, will be null for all sectors and only gets set on the first ReplicaUpdate",
 	},
@@ -202,7 +212,7 @@ var TableFieldComments = map[string]map[string]string{
 	ParsedMessage:         {},
 	InternalMessage:       {},
 	InternalParsedMessage: {},
-	VmMessage: {
+	VMMessage: {
 		"ActorCode": "ActorCode of To (receiver).",
 		"Cid":       "Cid of the message.",
 		"ExitCode":  "ExitCode of message execution.",
@@ -238,7 +248,7 @@ var TableFieldComments = map[string]map[string]string{
 		"Height": "Epoch when this actor was created or updated.",
 		"State":  "Top level of state data as json.",
 	},
-	IdAddress: {
+	IDAddress: {
 		"Address":   "Robust address",
 		"Height":    "Epoch when this address mapping was created or updated.",
 		"ID":        "ID address",

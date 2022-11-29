@@ -10,14 +10,18 @@ import (
 
 	"github.com/filecoin-project/go-state-types/cbor"
 {{range .versions}}
-	builtin{{.}} "github.com/filecoin-project/specs-actors{{import .}}actors/builtin"
-{{- end}}
-
-	"github.com/filecoin-project/lotus/chain/types"
+    {{if (le . 7)}}
+	    builtin{{.}} "github.com/filecoin-project/specs-actors{{import .}}actors/builtin"
+    {{end}}
+{{end}}
+    builtin{{.latestVersion}} "github.com/filecoin-project/go-state-types/builtin"
 
 	lotusactors "github.com/filecoin-project/lotus/chain/actors"
-	"github.com/filecoin-project/lily/chain/actors"
+	"github.com/filecoin-project/lotus/chain/types"
+    verifregtypes "github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
+
 	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors"
 )
 
 var (
@@ -60,12 +64,6 @@ type State interface {
 	ActorKey() string
 	ActorVersion() actors.Version
 
-	RootKey() (address.Address, error)
-	VerifiedClientDataCap(address.Address) (bool, abi.StoragePower, error)
-	VerifierDataCap(address.Address) (bool, abi.StoragePower, error)
-	ForEachVerifier(func(addr address.Address, dcap abi.StoragePower) error) error
-	ForEachClient(func(addr address.Address, dcap abi.StoragePower) error) error
-
 	VerifiersMap() (adt.Map, error)
 	VerifiersMapBitWidth() int
 	VerifiersMapHashFunction() func(input []byte) []byte
@@ -73,6 +71,18 @@ type State interface {
 	VerifiedClientsMap() (adt.Map, error)
 	VerifiedClientsMapBitWidth() int
 	VerifiedClientsMapHashFunction() func(input []byte) []byte
+
+	RootKey() (address.Address, error)
+	VerifiedClientDataCap(address.Address) (bool, abi.StoragePower, error)
+	VerifierDataCap(address.Address) (bool, abi.StoragePower, error)
+	RemoveDataCapProposalID(verifier address.Address, client address.Address) (bool, uint64, error)
+	ForEachVerifier(func(addr address.Address, dcap abi.StoragePower) error) error
+	ForEachClient(func(addr address.Address, dcap abi.StoragePower) error) error
+	GetAllocation(clientIdAddr address.Address, allocationId verifregtypes.AllocationId) (*verifregtypes.Allocation, bool, error)
+	GetAllocations(clientIdAddr address.Address) (map[verifregtypes.AllocationId]verifregtypes.Allocation, error)
+	GetClaim(providerIdAddr address.Address, claimId verifregtypes.ClaimId) (*verifregtypes.Claim, bool, error)
+	GetClaims(providerIdAddr address.Address) (map[verifregtypes.ClaimId]verifregtypes.Claim, error)
+	GetState() interface{}
 }
 
 type VerifierInfo struct {

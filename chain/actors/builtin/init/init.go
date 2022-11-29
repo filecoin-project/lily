@@ -28,14 +28,14 @@ import (
 
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
 
-	builtin8 "github.com/filecoin-project/specs-actors/v8/actors/builtin"
+	builtin9 "github.com/filecoin-project/go-state-types/builtin"
 
 	"github.com/filecoin-project/lily/chain/actors"
 )
 
 var (
-	Address = builtin8.InitActorAddr
-	Methods = builtin8.MethodsInit
+	Address = builtin9.InitActorAddr
+	Methods = builtin9.MethodsInit
 )
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
@@ -48,6 +48,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 		case actors.Version8:
 			return load8(store, act.Head)
+
+		case actors.Version9:
+			return load9(store, act.Head)
 
 		}
 	}
@@ -107,6 +110,9 @@ func MakeState(store adt.Store, av actors.Version, networkName string) (State, e
 	case actors.Version8:
 		return make8(store, networkName)
 
+	case actors.Version9:
+		return make9(store, networkName)
+
 	}
 	return nil, fmt.Errorf("unknown actor version %d", av)
 }
@@ -155,6 +161,7 @@ func AllCodes() []cid.Cid {
 		(&state6{}).Code(),
 		(&state7{}).Code(),
 		(&state8{}).Code(),
+		(&state9{}).Code(),
 	}
 }
 
@@ -168,5 +175,6 @@ func VersionCodes() map[actors.Version]cid.Cid {
 		actors.Version6: (&state6{}).Code(),
 		actors.Version7: (&state7{}).Code(),
 		actors.Version8: (&state8{}).Code(),
+		actors.Version9: (&state9{}).Code(),
 	}
 }

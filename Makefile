@@ -1,6 +1,6 @@
 SHELL=/usr/bin/env bash
 
-GO_BUILD_IMAGE?=golang:1.17.6
+GO_BUILD_IMAGE?=golang:1.18.7
 PG_IMAGE?=postgres:10
 REDIS_IMAGE?=redis:6
 LILY_IMAGE_NAME?=filecoin/lily
@@ -82,7 +82,7 @@ testfull: build
 	docker-compose up -d
 	sleep 2
 	LILY_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" ./lily migrate --latest
-	-TZ= PGSSLMODE=disable  LILY_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test ./... -v
+	-TZ= PGSSLMODE=disable  LILY_TEST_DB="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" go test ./...
 	docker-compose down
 
 # testshort runs tests that don't require external dependencies such as postgres or redis

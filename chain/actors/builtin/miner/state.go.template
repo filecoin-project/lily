@@ -18,7 +18,8 @@ import (
 	"github.com/filecoin-project/lily/chain/actors"
 
 	"github.com/filecoin-project/lotus/chain/actors/adt"
-	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v{{.latestVersion}}/miner"
+	minertypesv8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 
 {{if (le .v 1)}}
     sha256simd "github.com/minio/sha256-simd"
@@ -27,14 +28,11 @@ import (
 {{end}}
 
 {{if (le .v 7)}}
-    {{if (le .v 2)}}
-        miner{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin/miner"
-        adt{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/util/adt"
-    {{else}}
+    {{if (ge .v 3)}}
 	    builtin{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin"
+    {{end}}
         miner{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin/miner"
         adt{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/util/adt"
-    {{end}}
 {{else}}
 	miner{{.v}} "github.com/filecoin-project/go-state-types/builtin{{.import}}miner"
 	adt{{.v}} "github.com/filecoin-project/go-state-types/builtin{{.import}}util/adt"
@@ -425,6 +423,10 @@ func (s *state{{.v}}) Info() (MinerInfo, error) {
 		SectorSize:                 info.SectorSize,
 		WindowPoStPartitionSectors: info.WindowPoStPartitionSectors,
 		ConsensusFaultElapsed:      {{if (ge .v 2)}}info.ConsensusFaultElapsed{{else}}-1{{end}},
+		{{if (ge .v 9)}}
+		Beneficiary:                info.Beneficiary,
+		BeneficiaryTerm:            info.BeneficiaryTerm,
+		PendingBeneficiaryTerm:     info.PendingBeneficiaryTerm,{{end}}
 	}
 
 	return mi, nil
@@ -486,6 +488,44 @@ func (s *state{{.v}}) DecodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (miner
 	}
 
 	return fromV{{.v}}SectorPreCommitOnChainInfo(sp), nil
+}
+
+func (s *state{{.v}}) DecodeSectorPreCommitOnChainInfoToV8(val *cbg.Deferred) (minertypesv8.SectorPreCommitOnChainInfo, error) {
+	{{if (ge .v 9)}}
+		return minertypesv8.SectorPreCommitOnChainInfo{}, fmt.Errorf("unsupported in actors v9")
+    {{else}}
+	var sp miner{{.v}}.SectorPreCommitOnChainInfo
+	err := sp.UnmarshalCBOR(bytes.NewReader(val.Raw))
+	if err != nil {
+		return minertypesv8.SectorPreCommitOnChainInfo{}, err
+	}
+
+	return fromV{{.v}}SectorPreCommitOnChainInfoToV8(sp), nil
+	{{end}}
+}
+
+func (s *state{{.v}}) ForEachPrecommittedSectorV8(cb func(minertypesv8.SectorPreCommitOnChainInfo) error) error {
+{{if (ge .v 9)}}
+    return fmt.Errorf("unsupported for actors v9")
+{{else}}
+    {{if (ge .v 3) -}}
+        precommitted, err := adt{{.v}}.AsMap(s.store, s.State.PreCommittedSectors, builtin{{.v}}.DefaultHamtBitwidth)
+    {{- else -}}
+        precommitted, err := adt{{.v}}.AsMap(s.store, s.State.PreCommittedSectors)
+    {{- end}}
+	if err != nil {
+		return err
+	}
+
+	var info miner{{.v}}.SectorPreCommitOnChainInfo
+	if err := precommitted.ForEach(&info, func(_ string) error {
+		return cb(fromV{{.v}}SectorPreCommitOnChainInfoToV8(info))
+	}); err != nil {
+		return err
+	}
+
+	return nil
+{{end}}
 }
 
 func (s *state{{.v}}) EraseAllUnproven() error {
@@ -614,14 +654,32 @@ func fromV{{.v}}SectorOnChainInfo(v{{.v}} miner{{.v}}.SectorOnChainInfo) SectorO
 }
 
 func fromV{{.v}}SectorPreCommitOnChainInfo(v{{.v}} miner{{.v}}.SectorPreCommitOnChainInfo) minertypes.SectorPreCommitOnChainInfo {
-	return minertypes.SectorPreCommitOnChainInfo{
-		Info:               (minertypes.SectorPreCommitInfo)(v{{.v}}.Info),
+	{{if (le .v 8)}}return minertypes.SectorPreCommitOnChainInfo{
+		Info:               minertypes.SectorPreCommitInfo{
+			SealProof:     v{{.v}}.Info.SealProof,
+			SectorNumber:  v{{.v}}.Info.SectorNumber,
+			SealedCID:     v{{.v}}.Info.SealedCID,
+			SealRandEpoch: v{{.v}}.Info.SealRandEpoch,
+			DealIDs:       v{{.v}}.Info.DealIDs,
+			Expiration:    v{{.v}}.Info.Expiration,
+			UnsealedCid:   nil,
+		},
+		PreCommitDeposit:   v{{.v}}.PreCommitDeposit,
+		PreCommitEpoch:     v{{.v}}.PreCommitEpoch,
+	}{{else}}return v{{.v}}{{end}}
+}
+
+{{if (le .v 8)}}
+func fromV{{.v}}SectorPreCommitOnChainInfoToV8(v{{.v}} miner{{.v}}.SectorPreCommitOnChainInfo) minertypesv8.SectorPreCommitOnChainInfo {
+	return minertypesv8.SectorPreCommitOnChainInfo{
+		Info:               (minertypesv8.SectorPreCommitInfo)(v{{.v}}.Info),
 		PreCommitDeposit:   v{{.v}}.PreCommitDeposit,
 		PreCommitEpoch:     v{{.v}}.PreCommitEpoch,
 		DealWeight:         v{{.v}}.DealWeight,
 		VerifiedDealWeight: v{{.v}}.VerifiedDealWeight,
 	}
 }
+{{end}}
 
 func (s *state{{.v}}) GetState() interface{} {
 	return &s.State

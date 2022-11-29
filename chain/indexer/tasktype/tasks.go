@@ -42,9 +42,10 @@ var TaskLookup = map[string][]string{
 		MinerFeeDebt,
 		MinerLockedFund,
 		MinerInfo,
+		MinerBeneficiary,
 	},
 	ActorStatesInitTask: {
-		IdAddress,
+		IDAddress,
 	},
 	ActorStatesMarketTask: {
 		MarketDealProposal,
@@ -56,6 +57,7 @@ var TaskLookup = map[string][]string{
 	ActorStatesVerifreg: {
 		VerifiedRegistryVerifier,
 		VerifiedRegistryVerifiedClient,
+		DataCapBalance,
 	},
 	BlocksTask: {
 		BlockHeader,
@@ -79,7 +81,7 @@ var TaskLookup = map[string][]string{
 	ImplicitMessageTask: {
 		InternalMessage,
 		InternalParsedMessage,
-		VmMessage,
+		VMMessage,
 	},
 	ChainConsensusTask: {
 		ChainConsensus,
