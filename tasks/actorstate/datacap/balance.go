@@ -42,7 +42,7 @@ func (BalanceExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, nod
 			balances = append(balances, &datacapmodel.DataCapBalance{
 				Height:    int64(ec.CurrTs.Height()),
 				StateRoot: ec.CurrTs.ParentState().String(),
-				Address:   a.Address.String(),
+				Address:   addr.String(),
 				Event:     datacapmodel.Added,
 				DataCap:   dcap.String(),
 			})
