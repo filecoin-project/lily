@@ -179,14 +179,13 @@ func (c *Watcher) Done() <-chan struct{} {
 func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {
 	switch he.Type {
 	case HeadEventCurrent:
-		err := c.cache.SetCurrent(he.TipSet)
+		tail, err := c.cache.SetCurrent(he.TipSet)
 		if err != nil {
 			log.Errorw("tipset cache set current", "error", err.Error(), "reporter", c.name)
 		}
 
-		// If we have a zero confidence window then we need to notify every tipset we see
-		if c.confidence == 0 {
-			if err := c.indexTipSetAsync(ctx, he.TipSet); err != nil {
+		if tail != nil {
+			if err := c.indexTipSetAsync(ctx, tail); err != nil {
 				return fmt.Errorf("notify tipset: %w", err)
 			}
 		}
@@ -225,6 +224,10 @@ func (c *Watcher) index(ctx context.Context, he *HeadEvent) error {
 
 // indexTipSetAsync is called when a new tipset has been discovered
 func (c *Watcher) indexTipSetAsync(ctx context.Context, ts *types.TipSet) error {
+	if ts == nil {
+		return nil
+	}
+
 	if err := c.fatalError(); err != nil {
 		return err
 	}

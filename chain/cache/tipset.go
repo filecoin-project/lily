@@ -100,21 +100,31 @@ func (c *TipSetCache) Revert(ts *types.TipSet) error {
 	return nil
 }
 
-// SetCurrent replaces the current head
-func (c *TipSetCache) SetCurrent(ts *types.TipSet) error {
+// SetCurrent replaces or adds the current head. If the buffer is full, the tail
+// being evicted is also returned.
+func (c *TipSetCache) SetCurrent(ts *types.TipSet) (*types.TipSet, error) {
+	if ts == nil {
+		return nil, nil
+	}
+
+	if len(c.buffer) == 0 {
+		return ts, nil
+	}
+
 	for c.len > 0 && c.buffer[c.idxHead].Height() > ts.Height() {
 		c.buffer[c.idxHead] = nil
 		c.idxHead = normalModulo(c.idxHead-1, len(c.buffer))
 		c.len--
 	}
 
-	if c.len == 0 {
-		_, err := c.Add(ts)
-		return err
+	// Replace if the ts is same height
+	if c.buffer[c.idxHead] != nil && c.buffer[c.idxHead].Height() == ts.Height() {
+		c.buffer[c.idxHead] = ts
+		return nil, nil
 	}
 
-	c.buffer[c.idxHead] = ts
-	return nil
+	tail, err := c.Add(ts)
+	return tail, err
 }
 
 // Len returns the number of tipsets in the cache. This will never exceed the size of the cache.
