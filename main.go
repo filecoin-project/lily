@@ -162,6 +162,7 @@ func main() {
 			commands.InitCmd,
 			commands.LogCmd,
 			commands.MigrateCmd,
+			commands.ModelDocsCmd,
 			commands.NetCmd,
 			commands.StopCmd,
 			commands.SyncCmd,
