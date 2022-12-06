@@ -642,3 +642,7 @@ func (s *state6) Code() cid.Cid {
 
 	return code
 }
+
+func (s *state6) InfoCid() cid.Cid {
+	return s.State.Info
+}
