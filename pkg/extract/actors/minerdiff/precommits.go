@@ -14,8 +14,8 @@ import (
 var _ actors.ActorStateChange = (*PreCommitChangeList)(nil)
 
 type PreCommitChange struct {
-	PreCommit typegen.Deferred
-	Type      core.ChangeType
+	PreCommit typegen.Deferred `cborgen:"pre_commit"`
+	Change    core.ChangeType  `cborgen:"change"`
 }
 
 type PreCommitChangeList []*PreCommitChange
@@ -53,7 +53,7 @@ func DiffPreCommits(ctx context.Context, api tasks.DataSource, act *actors.Actor
 		if err := pm.ForEach(&v, func(key string) error {
 			out = append(out, &PreCommitChange{
 				PreCommit: v,
-				Type:      core.ChangeTypeAdd,
+				Change:    core.ChangeTypeAdd,
 			})
 			return nil
 		}); err != nil {
@@ -78,14 +78,14 @@ func DiffPreCommits(ctx context.Context, api tasks.DataSource, act *actors.Actor
 	for _, change := range preCommitChanges.Added {
 		out[idx] = &PreCommitChange{
 			PreCommit: *change,
-			Type:      core.ChangeTypeAdd,
+			Change:    core.ChangeTypeAdd,
 		}
 		idx++
 	}
 	for _, change := range preCommitChanges.Removed {
 		out[idx] = &PreCommitChange{
 			PreCommit: *change,
-			Type:      core.ChangeTypeRemove,
+			Change:    core.ChangeTypeRemove,
 		}
 		idx++
 	}
@@ -93,7 +93,7 @@ func DiffPreCommits(ctx context.Context, api tasks.DataSource, act *actors.Actor
 	for _, change := range preCommitChanges.Modified {
 		out[idx] = &PreCommitChange{
 			PreCommit: *change.Current,
-			Type:      core.ChangeTypeModify,
+			Change:    core.ChangeTypeModify,
 		}
 		idx++
 	}

@@ -16,13 +16,13 @@ var _ actors.ActorStateChange = (*SectorStatusChange)(nil)
 
 type SectorStatusChange struct {
 	// Removed sectors this epoch
-	Removed bitfield.BitField
+	Removed bitfield.BitField `cborgen:"removed"`
 	// Recovering sectors this epoch
-	Recovering bitfield.BitField
+	Recovering bitfield.BitField `cborgen:"recovering"`
 	// Faulted sectors this epoch
-	Faulted bitfield.BitField
+	Faulted bitfield.BitField `cborgen:"faulted"`
 	// Recovered sectors this epoch
-	Recovered bitfield.BitField
+	Recovered bitfield.BitField `cborgen:"recovered"`
 }
 
 const KindMinerSectorStatus = "miner_sector_status"

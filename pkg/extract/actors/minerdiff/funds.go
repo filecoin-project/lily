@@ -15,9 +15,10 @@ import (
 var _ actors.ActorStateChange = (*FundsChange)(nil)
 
 type FundsChange struct {
-	VestingFunds             abi.TokenAmount
-	InitialPledgeRequirement abi.TokenAmount
-	PreCommitDeposit         abi.TokenAmount
+	VestingFunds             abi.TokenAmount `cborgen:"vesting_funds"`
+	InitialPledgeRequirement abi.TokenAmount `cborgen:"initial_pledge_requirement"`
+	PreCommitDeposit         abi.TokenAmount `cborgen:"pre_commit_deposit"`
+	Change                   core.ChangeType `cborgen:"change"`
 }
 
 const KindMinerFunds = "miner_funds"
@@ -53,6 +54,7 @@ func FundsDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChang
 			VestingFunds:             currentFunds.VestingFunds,
 			InitialPledgeRequirement: currentFunds.InitialPledgeRequirement,
 			PreCommitDeposit:         currentFunds.PreCommitDeposits,
+			Change:                   core.ChangeTypeAdd,
 		}, nil
 	}
 
@@ -73,6 +75,7 @@ func FundsDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChang
 		VestingFunds:             currentFunds.VestingFunds,
 		InitialPledgeRequirement: currentFunds.InitialPledgeRequirement,
 		PreCommitDeposit:         currentFunds.PreCommitDeposits,
+		Change:                   core.ChangeTypeModify,
 	}, nil
 }
 

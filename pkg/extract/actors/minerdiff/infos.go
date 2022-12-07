@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-state-types/cbor"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	typegen "github.com/whyrusleeping/cbor-gen"
@@ -18,7 +19,9 @@ import (
 var _ actors.ActorStateChange = (*InfoChange)(nil)
 
 type InfoChange struct {
-	Info typegen.Deferred
+	cbor.Er
+	Info   typegen.Deferred `cborgen:"info"`
+	Change core.ChangeType  `cborgen:"change"`
 }
 
 const KindMinerInfo = "miner_info"
@@ -61,7 +64,8 @@ func InfoDiff(ctx context.Context, api DiffInfoAPI, act *actors.ActorChange) (*I
 	// was added, info is new
 	if act.Type == core.ChangeTypeAdd {
 		return &InfoChange{
-			Info: typegen.Deferred{Raw: infoBytes},
+			Info:   typegen.Deferred{Raw: infoBytes},
+			Change: core.ChangeTypeAdd,
 		}, nil
 	}
 
@@ -74,6 +78,7 @@ func InfoDiff(ctx context.Context, api DiffInfoAPI, act *actors.ActorChange) (*I
 		return nil, nil
 	}
 	return &InfoChange{
-		Info: typegen.Deferred{Raw: infoBytes},
+		Info:   typegen.Deferred{Raw: infoBytes},
+		Change: core.ChangeTypeModify,
 	}, nil
 }

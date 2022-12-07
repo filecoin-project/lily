@@ -11,9 +11,9 @@ type StateDiff struct {
 	InfoChange          *InfoChange
 	FundsChange         *FundsChange
 	DebtChange          *DebtChange
-	SectorStatusChanges *SectorStatusChange
 	PreCommitChanges    PreCommitChangeList
 	SectorChanges       SectorChangeList
+	SectorStatusChanges *SectorStatusChange
 }
 
 type ActorStateKind string

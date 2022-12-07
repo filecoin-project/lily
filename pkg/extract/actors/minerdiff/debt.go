@@ -13,7 +13,8 @@ import (
 var _ actors.ActorStateChange = (*DebtChange)(nil)
 
 type DebtChange struct {
-	FeeDebt abi.TokenAmount
+	FeeDebt abi.TokenAmount `cborgen:"fee_debt"`
+	Change  core.ChangeType `cborgen:"change"`
 }
 
 const KindMinerDebt = "miner_debt"
@@ -45,7 +46,7 @@ func DebtDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange
 	}
 	// added, all debt (assumed to be zero) is new
 	if act.Type == core.ChangeTypeAdd {
-		return &DebtChange{FeeDebt: currentDebt}, nil
+		return &DebtChange{FeeDebt: currentDebt, Change: core.ChangeTypeAdd}, nil
 	}
 	// actor state was modified, check if debt differ.
 
@@ -61,5 +62,5 @@ func DebtDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange
 	if executedDebt.Equals(currentDebt) {
 		return nil, nil
 	}
-	return &DebtChange{FeeDebt: currentDebt}, nil
+	return &DebtChange{FeeDebt: currentDebt, Change: core.ChangeTypeModify}, nil
 }

@@ -14,8 +14,8 @@ import (
 var _ actors.ActorStateChange = (*SectorChangeList)(nil)
 
 type SectorChange struct {
-	Sector typegen.Deferred
-	Type   core.ChangeType
+	Sector typegen.Deferred `cborgen:"sector"`
+	Change core.ChangeType  `cborgen:"change"`
 }
 
 type SectorChangeList []*SectorChange
@@ -54,7 +54,7 @@ func DiffSectors(ctx context.Context, api tasks.DataSource, act *actors.ActorCha
 		if err := sa.ForEach(&v, func(idx int64) error {
 			out[idx] = &SectorChange{
 				Sector: v,
-				Type:   core.ChangeTypeAdd,
+				Change: core.ChangeTypeAdd,
 			}
 			return nil
 		}); err != nil {
@@ -79,21 +79,21 @@ func DiffSectors(ctx context.Context, api tasks.DataSource, act *actors.ActorCha
 	for _, change := range sectorChanges.Added {
 		out[idx] = &SectorChange{
 			Sector: *change,
-			Type:   core.ChangeTypeAdd,
+			Change: core.ChangeTypeAdd,
 		}
 		idx++
 	}
 	for _, change := range sectorChanges.Removed {
 		out[idx] = &SectorChange{
 			Sector: *change,
-			Type:   core.ChangeTypeRemove,
+			Change: core.ChangeTypeRemove,
 		}
 		idx++
 	}
 	for _, change := range sectorChanges.Modified {
 		out[idx] = &SectorChange{
 			Sector: *change.Current,
-			Type:   core.ChangeTypeModify,
+			Change: core.ChangeTypeModify,
 		}
 		idx++
 	}

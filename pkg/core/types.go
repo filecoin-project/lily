@@ -1,7 +1,7 @@
 package core
 
 // ChangeType denotes type of state change
-type ChangeType int
+type ChangeType uint8
 
 const (
 	ChangeTypeUnknown ChangeType = iota
