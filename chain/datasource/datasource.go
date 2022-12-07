@@ -282,6 +282,10 @@ func (t *DataSource) ShouldBurnFn(ctx context.Context, ts *types.TipSet) (lens.S
 	return t.node.BurnFundsFn(ctx, ts)
 }
 
+func (t *DataSource) ChainReadObj(ctx context.Context, obj cid.Cid) ([]byte, error) {
+	return t.node.ChainReadObj(ctx, obj)
+}
+
 func ComputeGasOutputs(ctx context.Context, block *types.BlockHeader, message *types.Message, receipt *types.MessageReceipt, shouldBurnFn lens.ShouldBurnFn) (vm.GasOutputs, error) {
 	burn, err := shouldBurnFn(ctx, message, receipt.ExitCode)
 	if err != nil {

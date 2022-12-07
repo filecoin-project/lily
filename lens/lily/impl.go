@@ -41,6 +41,7 @@ import (
 	"github.com/filecoin-project/lily/lens/lily/modules"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/network"
+	"github.com/filecoin-project/lily/pkg/extract/procesor"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 )
@@ -133,37 +134,58 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 }
 
 func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interface{}, error) {
-	md := storage.Metadata{
-		JobName: cfg.JobConfig.Name,
-	}
+	/*
+		md := storage.Metadata{
+			JobName: cfg.JobConfig.Name,
+		}
+
+	*/
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
-	if err != nil {
-		return nil, err
-	}
+	/*
+		strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
+		if err != nil {
+			return nil, err
+		}
+
+	*/
 
 	taskAPI, err := datasource.NewDataSource(m)
 	if err != nil {
 		return nil, err
 	}
 
-	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
+	currentTs, err := m.ChainGetTipSet(ctx, cfg.TipSet)
 	if err != nil {
 		return nil, err
 	}
 
-	ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
+	executedTs, err := m.ChainGetTipSet(ctx, currentTs.Parents())
 	if err != nil {
 		return nil, err
 	}
 
-	success, err := im.TipSet(ctx, ts, indexer.WithTasks(cfg.JobConfig.Tasks))
+	_, err = procesor.ProcessActorStateChanges(ctx, taskAPI, currentTs, executedTs)
+	/*
 
-	return success, err
+		// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+		im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
+		if err != nil {
+			return nil, err
+		}
+
+		ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
+		if err != nil {
+			return nil, err
+		}
+
+		success, err := im.TipSet(ctx, ts, indexer.WithTasks(cfg.JobConfig.Tasks))
+
+	*/
+
+	return true, err
 }
 
 func (m *LilyNodeAPI) LilyIndexNotify(_ context.Context, cfg *LilyIndexNotifyConfig) (interface{}, error) {

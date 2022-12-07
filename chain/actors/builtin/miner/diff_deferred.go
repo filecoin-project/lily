@@ -31,6 +31,7 @@ func DiffPreCommitsDeferred(ctx context.Context, store adt.Store, parent, child 
 	if err != nil {
 		return nil, err
 	}
+	// TODO handle case where bitwidths or hash functions differ.
 	changes, err := diff.Hamt(ctx, parentMap, childMap, store, store, hamt.UseHashFunction(parent.PrecommitsMapHashFunction()), hamt.UseTreeBitWidth(parent.PrecommitsMapBitWidth()))
 	if err != nil {
 		return nil, err
@@ -65,6 +66,7 @@ func DiffSectorsDeferred(ctx context.Context, store adt.Store, parent, child Sta
 	if err != nil {
 		return nil, err
 	}
+	// TODO handle case where bitwidths differ.
 	changes, err := diff.Amt(ctx, parentArray, childArray, store, store, amt.UseTreeBitWidth(uint(parent.SectorsAmtBitwidth())))
 	if err != nil {
 		return nil, err

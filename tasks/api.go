@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -66,4 +67,6 @@ type DataSource interface {
 	MinerLoad(store adt.Store, act *types.Actor) (miner.State, error)
 
 	ShouldBurnFn(ctx context.Context, ts *types.TipSet) (lens.ShouldBurnFn, error)
+
+	ChainReadObj(ctx context.Context, obj cid.Cid) ([]byte, error)
 }
