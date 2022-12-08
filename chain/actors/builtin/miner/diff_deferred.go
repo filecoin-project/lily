@@ -22,6 +22,8 @@ type ChangeDiff struct {
 	Current  *typegen.Deferred
 }
 
+// TODO there may be value in storing the map and array key in the change.
+
 func DiffPreCommitsDeferred(ctx context.Context, store adt.Store, parent, child State) (*Changes, error) {
 	parentMap, err := parent.PrecommitsMap()
 	if err != nil {

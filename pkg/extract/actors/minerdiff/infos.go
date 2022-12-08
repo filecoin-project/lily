@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/cbor"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	typegen "github.com/whyrusleeping/cbor-gen"
@@ -19,7 +18,6 @@ import (
 var _ actors.ActorStateChange = (*InfoChange)(nil)
 
 type InfoChange struct {
-	cbor.Er
 	Info   typegen.Deferred `cborgen:"info"`
 	Change core.ChangeType  `cborgen:"change"`
 }

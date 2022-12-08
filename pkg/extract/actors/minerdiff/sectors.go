@@ -3,11 +3,14 @@ package minerdiff
 import (
 	"context"
 
+	"github.com/filecoin-project/lotus/chain/types"
 	typegen "github.com/whyrusleeping/cbor-gen"
 
+	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
+	"github.com/filecoin-project/lily/pkg/extract/actors/generic"
 	"github.com/filecoin-project/lily/tasks"
 )
 
@@ -33,70 +36,43 @@ func (Sectors) Diff(ctx context.Context, api tasks.DataSource, act *actors.Actor
 }
 
 func DiffSectors(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
-	// the actor was removed, nothing has changes in the current state.
-	if act.Type == core.ChangeTypeRemove {
-		return nil, nil
+	minerStateLoader := func(store adt.Store, act *types.Actor) (interface{}, error) {
+		return miner.Load(api.Store(), act)
 	}
-
-	currentMiner, err := miner.Load(api.Store(), act.Current)
-	if err != nil {
-		return nil, err
-	}
-
-	// the actor was added, everything is new in the current state.
-	if act.Type == core.ChangeTypeAdd {
-		sa, err := currentMiner.SectorsArray()
+	minerArrayLoader := func(m interface{}) (adt.Array, int, error) {
+		minerState := m.(miner.State)
+		sectorArray, err := minerState.SectorsArray()
 		if err != nil {
-			return nil, err
+			return nil, -1, err
 		}
-		out := make(SectorChangeList, int(sa.Length()))
-		var v typegen.Deferred
-		if err := sa.ForEach(&v, func(idx int64) error {
-			out[idx] = &SectorChange{
-				Sector: v,
-				Change: core.ChangeTypeAdd,
-			}
-			return nil
-		}); err != nil {
-			return nil, err
-		}
-		return out, nil
+		return sectorArray, minerState.SectorsAmtBitwidth(), nil
 	}
-
-	// the actor was modified, diff against executed state.
-	executedMiner, err := miner.Load(api.Store(), act.Executed)
+	arrayChange, err := generic.DiffActorArray(ctx, api, act, minerStateLoader, minerArrayLoader)
 	if err != nil {
 		return nil, err
 	}
-
-	sectorChanges, err := miner.DiffSectorsDeferred(ctx, api.Store(), executedMiner, currentMiner)
-	if err != nil {
-		return nil, err
-	}
-
 	idx := 0
-	out := make(SectorChangeList, len(sectorChanges.Added)+len(sectorChanges.Removed)+len(sectorChanges.Modified))
-	for _, change := range sectorChanges.Added {
+	out := make(SectorChangeList, arrayChange.Size())
+	for _, change := range arrayChange.Added {
 		out[idx] = &SectorChange{
-			Sector: *change,
+			Sector: change.Value,
 			Change: core.ChangeTypeAdd,
 		}
 		idx++
 	}
-	for _, change := range sectorChanges.Removed {
+	for _, change := range arrayChange.Removed {
 		out[idx] = &SectorChange{
-			Sector: *change,
+			Sector: change.Value,
 			Change: core.ChangeTypeRemove,
 		}
 		idx++
 	}
-	for _, change := range sectorChanges.Modified {
+	for _, change := range arrayChange.Modified {
 		out[idx] = &SectorChange{
-			Sector: *change.Current,
+			Sector: change.Current,
 			Change: core.ChangeTypeModify,
 		}
 		idx++
 	}
 	return out, nil
-
 }

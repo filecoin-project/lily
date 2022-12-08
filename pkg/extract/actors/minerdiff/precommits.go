@@ -3,11 +3,14 @@ package minerdiff
 import (
 	"context"
 
+	"github.com/filecoin-project/lotus/chain/types"
 	typegen "github.com/whyrusleeping/cbor-gen"
 
+	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
+	"github.com/filecoin-project/lily/pkg/extract/actors/generic"
 	"github.com/filecoin-project/lily/tasks"
 )
 
@@ -29,70 +32,48 @@ func (p PreCommitChangeList) Kind() actors.ActorStateKind {
 type PreCommit struct{}
 
 func (PreCommit) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
-	return DiffPreCommits(ctx, api, act)
+	return PreCommitDiff(ctx, api, act)
 }
 
-func DiffPreCommits(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
-	// the actor was removed, nothing has changes in the current state.
-	if act.Type == core.ChangeTypeRemove {
-		return nil, nil
+func PreCommitDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+	minerStateLoader := func(store adt.Store, act *types.Actor) (interface{}, error) {
+		return miner.Load(api.Store(), act)
 	}
-
-	currentMiner, err := miner.Load(api.Store(), act.Current)
-	if err != nil {
-		return nil, err
-	}
-	// the actor was added, everything is new in the current state.
-	if act.Type == core.ChangeTypeAdd {
-		var out PreCommitChangeList
-		pm, err := currentMiner.PrecommitsMap()
+	minerMapLoader := func(m interface{}) (adt.Map, *adt.MapOpts, error) {
+		minerState := m.(miner.State)
+		perCommitMap, err := minerState.PrecommitsMap()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		var v typegen.Deferred
-		if err := pm.ForEach(&v, func(key string) error {
-			out = append(out, &PreCommitChange{
-				PreCommit: v,
-				Change:    core.ChangeTypeAdd,
-			})
-			return nil
-		}); err != nil {
-			return nil, err
-		}
-		return out, nil
+		return perCommitMap, &adt.MapOpts{
+			Bitwidth: minerState.PrecommitsMapBitWidth(),
+			HashFunc: minerState.PrecommitsMapHashFunction(),
+		}, nil
 	}
-
-	// actor was modified load executed state.
-	executedMiner, err := miner.Load(api.Store(), act.Executed)
+	mapChange, err := generic.DiffActorMap(ctx, api, act, minerStateLoader, minerMapLoader)
 	if err != nil {
 		return nil, err
 	}
-
-	preCommitChanges, err := miner.DiffPreCommitsDeferred(ctx, api.Store(), executedMiner, currentMiner)
-	if err != nil {
-		return nil, err
-	}
-
+	out := make(PreCommitChangeList, mapChange.Size())
 	idx := 0
-	out := make(PreCommitChangeList, len(preCommitChanges.Added)+len(preCommitChanges.Removed)+len(preCommitChanges.Modified))
-	for _, change := range preCommitChanges.Added {
+	for _, change := range mapChange.Added {
 		out[idx] = &PreCommitChange{
-			PreCommit: *change,
+			PreCommit: change.Value,
 			Change:    core.ChangeTypeAdd,
 		}
 		idx++
 	}
-	for _, change := range preCommitChanges.Removed {
+	for _, change := range mapChange.Removed {
 		out[idx] = &PreCommitChange{
-			PreCommit: *change,
+			PreCommit: change.Value,
 			Change:    core.ChangeTypeRemove,
 		}
 		idx++
 	}
 	// NB: PreCommits cannot be modified, but check anyway.
-	for _, change := range preCommitChanges.Modified {
+	for _, change := range mapChange.Modified {
 		out[idx] = &PreCommitChange{
-			PreCommit: *change.Current,
+			PreCommit: change.Current,
 			Change:    core.ChangeTypeModify,
 		}
 		idx++
