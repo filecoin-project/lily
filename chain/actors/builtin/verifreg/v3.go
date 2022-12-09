@@ -155,3 +155,38 @@ func (s *state3) GetClaims(providerIdAddr address.Address) (map[verifreg9.ClaimI
 	return nil, fmt.Errorf("unsupported in actors v3")
 
 }
+
+func (s *state3) ClaimsMap() (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v3")
+
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state3) ClaimsMapBitWidth() int {
+
+	return builtin3.DefaultHamtBitwidth
+
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state3) ClaimsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state3) ClaimMapForProvider(providerIdAddr address.Address) (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v3")
+
+}
+
+func (s *state3) getInnerHamtCid(store adt.Store, key abi.Keyer, mapCid cid.Cid, bitwidth int) (cid.Cid, error) {
+
+	return cid.Undef, fmt.Errorf("unsupported in actors v3")
+
+}

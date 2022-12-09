@@ -12,44 +12,44 @@ import (
 	"github.com/filecoin-project/lily/tasks"
 )
 
-type VerifiersChange struct {
-	Verifier address.Address
-	DataCap  typegen.Deferred
-	Change   core.ChangeType
+type ClientsChange struct {
+	Client  address.Address
+	DataCap typegen.Deferred
+	Change  core.ChangeType
 }
 
-type VerifiersChangeList []*VerifiersChange
+type ClientsChangeList []*ClientsChange
 
-const KindVerifregVerifiers = "verifreg_verifiers"
+const KindVerifregClients = "verifreg_clients"
 
-func (v VerifiersChangeList) Kind() actors.ActorStateKind {
-	return KindVerifregVerifiers
+func (v ClientsChangeList) Kind() actors.ActorStateKind {
+	return KindVerifregClients
 }
 
-type Verifiers struct{}
+type Clients struct{}
 
-func (Verifiers) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
-	return DiffVerifiers(ctx, api, act)
+func (Clients) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+	return DiffClients(ctx, api, act)
 }
 
-func DiffVerifiers(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
-	mapChange, err := generic.DiffActorMap(ctx, api, act, VerifregStateLoader, VerifiregVerifiersMapLoader)
+func DiffClients(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+	mapChange, err := generic.DiffActorMap(ctx, api, act, VerifregStateLoader, VerifiregClientsMapLoader)
 	if err != nil {
 		return nil, err
 	}
 
 	idx := 0
-	out := make(VerifiersChangeList, mapChange.Size())
+	out := make(ClientsChangeList, mapChange.Size())
 	for _, change := range mapChange.Added {
 		// TODO maybe we don't want to marshal these bytes to the address and leave them as bytes in the change struct
 		addr, err := address.NewFromBytes([]byte(change.Key))
 		if err != nil {
 			return nil, err
 		}
-		out[idx] = &VerifiersChange{
-			Verifier: addr,
-			DataCap:  change.Value,
-			Change:   core.ChangeTypeAdd,
+		out[idx] = &ClientsChange{
+			Client:  addr,
+			DataCap: change.Value,
+			Change:  core.ChangeTypeAdd,
 		}
 		idx++
 	}
@@ -59,10 +59,10 @@ func DiffVerifiers(ctx context.Context, api tasks.DataSource, act *actors.ActorC
 		if err != nil {
 			return nil, err
 		}
-		out[idx] = &VerifiersChange{
-			Verifier: addr,
-			DataCap:  change.Value,
-			Change:   core.ChangeTypeRemove,
+		out[idx] = &ClientsChange{
+			Client:  addr,
+			DataCap: change.Value,
+			Change:  core.ChangeTypeRemove,
 		}
 		idx++
 	}
@@ -72,12 +72,13 @@ func DiffVerifiers(ctx context.Context, api tasks.DataSource, act *actors.ActorC
 		if err != nil {
 			return nil, err
 		}
-		out[idx] = &VerifiersChange{
-			Verifier: addr,
-			DataCap:  change.Current,
-			Change:   core.ChangeTypeModify,
+		out[idx] = &ClientsChange{
+			Client:  addr,
+			DataCap: change.Current,
+			Change:  core.ChangeTypeModify,
 		}
 		idx++
 	}
 	return out, nil
+
 }

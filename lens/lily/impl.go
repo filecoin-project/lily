@@ -171,6 +171,7 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 	}
 
 	changes, err := procesor.ProcessActorStateChanges(ctx, taskAPI, currentTs, executedTs)
+	return nil, nil
 	bs := blockstore.NewMemorySync()
 	store := adt2.WrapBlockStore(ctx, bs)
 	if _, err := cbor.ProcessActors(ctx, store, changes); err != nil {

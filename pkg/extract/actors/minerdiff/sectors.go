@@ -3,11 +3,8 @@ package minerdiff
 import (
 	"context"
 
-	"github.com/filecoin-project/lotus/chain/types"
 	typegen "github.com/whyrusleeping/cbor-gen"
 
-	"github.com/filecoin-project/lily/chain/actors/adt"
-	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
 	"github.com/filecoin-project/lily/pkg/extract/actors/generic"
@@ -17,6 +14,7 @@ import (
 var _ actors.ActorStateChange = (*SectorChangeList)(nil)
 
 type SectorChange struct {
+	// TODO include sectorID key
 	Sector typegen.Deferred `cborgen:"sector"`
 	Change core.ChangeType  `cborgen:"change"`
 }
@@ -36,18 +34,7 @@ func (Sectors) Diff(ctx context.Context, api tasks.DataSource, act *actors.Actor
 }
 
 func DiffSectors(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
-	minerStateLoader := func(store adt.Store, act *types.Actor) (interface{}, error) {
-		return miner.Load(api.Store(), act)
-	}
-	minerArrayLoader := func(m interface{}) (adt.Array, int, error) {
-		minerState := m.(miner.State)
-		sectorArray, err := minerState.SectorsArray()
-		if err != nil {
-			return nil, -1, err
-		}
-		return sectorArray, minerState.SectorsAmtBitwidth(), nil
-	}
-	arrayChange, err := generic.DiffActorArray(ctx, api, act, minerStateLoader, minerArrayLoader)
+	arrayChange, err := generic.DiffActorArray(ctx, api, act, MinerStateLoader, MinerSectorArrayLoader)
 	if err != nil {
 		return nil, err
 	}

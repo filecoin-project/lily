@@ -16,8 +16,6 @@ type StateDiff struct {
 	SectorStatusChanges *SectorStatusChange
 }
 
-type ActorStateKind string
-
 func State(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, diffFns ...actors.ActorDiffer) (*StateDiff, error) {
 	var stateDiff = new(StateDiff)
 	for _, f := range diffFns {

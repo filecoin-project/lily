@@ -72,6 +72,11 @@ type State interface {
 	VerifiedClientsMapBitWidth() int
 	VerifiedClientsMapHashFunction() func(input []byte) []byte
 
+	ClaimsMap() (adt.Map, error)
+	ClaimMapForProvider(providerIdAddr address.Address) (adt.Map, error)
+    ClaimsMapBitWidth() int
+    ClaimsMapHashFunction() func(input []byte) []byte
+
 	RootKey() (address.Address, error)
 	VerifiedClientDataCap(address.Address) (bool, abi.StoragePower, error)
 	VerifierDataCap(address.Address) (bool, abi.StoragePower, error)
