@@ -4,14 +4,18 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/lily/pkg/extract/actors/minerdiff"
+	"github.com/filecoin-project/lily/pkg/transform/cbor"
 	"github.com/filecoin-project/lily/pkg/transform/cbor/miner"
 )
 
 const minerDiffPath = "pkg/extract/actors/minerdiff/cbor_gen.go"
 const minerDiffPkg = "minerdiff"
 
-const minerTransformPath = "pkg/transform/miner/cbor_gen.go"
+const minerTransformPath = "pkg/transform/cbor/miner/cbor_gen.go"
 const minerTransformPkg = "miner"
+
+const actorTransformPath = "pkg/transform/cbor/cbor_gen.go"
+const actorTransformPkg = "cbor"
 
 func main() {
 	if err := cbg.WriteMapEncodersToFile(minerDiffPath, minerDiffPkg,
@@ -30,4 +34,11 @@ func main() {
 	); err != nil {
 		panic(err)
 	}
+
+	if err := cbg.WriteMapEncodersToFile(actorTransformPath, actorTransformPkg,
+		cbor.ActorIPLDContainer{},
+	); err != nil {
+		panic(err)
+	}
+
 }

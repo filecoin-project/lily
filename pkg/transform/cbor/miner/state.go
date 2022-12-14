@@ -3,7 +3,6 @@ package miner
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"sort"
 
 	"github.com/filecoin-project/go-address"
@@ -12,20 +11,88 @@ import (
 
 	"github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors/minerdiff"
-	"github.com/filecoin-project/lily/pkg/util"
 )
+
+var DB *gorm.DB
+
+func init() {
+	var err error
+	DB, err = gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
+	if err != nil {
+		panic(err)
+	}
+	if err := DB.AutoMigrate(&StateChangeModel{}); err != nil {
+		panic(err)
+	}
+}
+
+type StateChangeModel struct {
+	gorm.Model
+	Miner        string
+	Funds        string
+	Debt         string
+	SectorStatus string
+	Info         string
+	PreCommits   string
+	Sectors      string
+}
+
+func (sc *StateChange) ToStorage(db *gorm.DB) error {
+	var (
+		funds     = ""
+		debt      = ""
+		status    = ""
+		info      = ""
+		precommit = ""
+		sector    = ""
+	)
+	if sc.Funds != nil {
+		funds = sc.Funds.String()
+	}
+	if sc.Debt != nil {
+		debt = sc.Debt.String()
+	}
+	if sc.SectorStatus != nil {
+		status = sc.SectorStatus.String()
+	}
+	if sc.Info != nil {
+		info = sc.Info.String()
+	}
+	if sc.PreCommits != nil {
+		precommit = sc.PreCommits.String()
+	}
+	if sc.Sectors != nil {
+		sector = sc.Sectors.String()
+	}
+	tx := db.Create(&StateChangeModel{
+		Miner:        sc.Miner.String(),
+		Funds:        funds,
+		Debt:         debt,
+		SectorStatus: status,
+		Info:         info,
+		PreCommits:   precommit,
+		Sectors:      sector,
+	})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
 
 type StateChange struct {
 	// Miner is the address of the miner that changes.
 	Miner address.Address `cborgen:"miner"`
 	// Funds is the funds that changed for this miner or empty.
-	Funds *minerdiff.FundsChange `cborgen:"funds"`
+	Funds *cid.Cid `cborgen:"funds"`
 	// Debt is the debt that changed for this miner or empty.
-	Debt *minerdiff.DebtChange `cborgen:"debt"`
+	Debt *cid.Cid `cborgen:"debt"`
 	// SectorStatus is the sectors whose status changed for this miner or empty.
-	SectorStatus *minerdiff.SectorStatusChange `cborgen:"sector_status"`
+	SectorStatus *cid.Cid `cborgen:"sector_status"`
 	// Info is the cid of the miner change info that changed for this miner or empty.
 	Info *cid.Cid `cborgen:"info"`
 	// PreCommits is an AMT of the pre commits that changed for this miner or empty.
@@ -40,28 +107,48 @@ func HandleChanges(ctx context.Context, store adt.Store, actorHamt *adt.Map, min
 		if err != nil {
 			return err
 		}
+		if msc == nil {
+			continue
+		}
+		if err := msc.ToStorage(DB); err != nil {
+			return err
+		}
 		if err := actorHamt.Put(abi.AddrKey(addr), msc); err != nil {
 			return err
 		}
-		fmt.Printf("%+v\n", msc)
 	}
 	return nil
 }
 
 func ChangeHandler(ctx context.Context, store adt.Store, miner address.Address, change *minerdiff.StateDiff) (*StateChange, error) {
-	out := &StateChange{
-		Miner: miner,
-	}
+	hasChangedState := false
+	out := &StateChange{}
 	if change.FundsChange != nil {
-		out.Funds = change.FundsChange
+		hasChangedState = true
+		c, err := FundsHandler(ctx, store, change.FundsChange)
+		if err != nil {
+			return nil, err
+		}
+		out.Funds = &c
 	}
 	if change.DebtChange != nil {
-		out.Debt = change.DebtChange
+		hasChangedState = true
+		c, err := DebtHandler(ctx, store, change.DebtChange)
+		if err != nil {
+			return nil, err
+		}
+		out.Debt = &c
 	}
 	if change.SectorStatusChanges != nil {
-		out.SectorStatus = change.SectorStatusChanges
+		hasChangedState = true
+		c, err := SectorStatusHandler(ctx, store, change.SectorStatusChanges)
+		if err != nil {
+			return nil, err
+		}
+		out.SectorStatus = &c
 	}
 	if change.InfoChange != nil {
+		hasChangedState = true
 		c, err := InfoHandler(ctx, store, change.InfoChange)
 		if err != nil {
 			return nil, err
@@ -69,6 +156,7 @@ func ChangeHandler(ctx context.Context, store adt.Store, miner address.Address, 
 		out.Info = &c
 	}
 	if change.SectorChanges != nil && len(change.SectorChanges) > 0 {
+		hasChangedState = true
 		c, err := SectorHandler(ctx, store, change.SectorChanges)
 		if err != nil {
 			return nil, err
@@ -76,13 +164,30 @@ func ChangeHandler(ctx context.Context, store adt.Store, miner address.Address, 
 		out.Sectors = &c
 	}
 	if change.PreCommitChanges != nil && len(change.PreCommitChanges) > 0 {
+		hasChangedState = true
 		c, err := PreCommitHandler(ctx, store, change.PreCommitChanges)
 		if err != nil {
 			return nil, err
 		}
 		out.PreCommits = &c
 	}
-	return out, nil
+	if hasChangedState {
+		out.Miner = miner
+		return out, nil
+	}
+	return nil, nil
+}
+
+func FundsHandler(ctx context.Context, store adt.Store, funds *minerdiff.FundsChange) (cid.Cid, error) {
+	return store.Put(ctx, funds)
+}
+
+func DebtHandler(ctx context.Context, store adt.Store, debt *minerdiff.DebtChange) (cid.Cid, error) {
+	return store.Put(ctx, debt)
+}
+
+func SectorStatusHandler(ctx context.Context, store adt.Store, sectors *minerdiff.SectorStatusChange) (cid.Cid, error) {
+	return store.Put(ctx, sectors)
 }
 
 func PreCommitHandler(ctx context.Context, store adt.Store, list minerdiff.PreCommitChangeList) (cid.Cid, error) {
@@ -134,20 +239,13 @@ type Info struct {
 
 func InfoHandler(ctx context.Context, store adt.Store, info *minerdiff.InfoChange) (cid.Cid, error) {
 	// ensure the miner info CID is the same as the CID found on chain.
-	infoCid, err := util.CidOf(&info.Info)
+	mInfoCid, err := store.Put(ctx, info.Info)
 	if err != nil {
 		return cid.Undef, err
 	}
 	infoChange := &Info{
-		Info:   infoCid,
+		Info:   mInfoCid,
 		Change: info.Change,
-	}
-	mInfoCid, err := store.Put(ctx, infoCid)
-	if err != nil {
-		return cid.Undef, err
-	}
-	if !mInfoCid.Equals(infoCid) {
-		panic("here bad")
 	}
 	return store.Put(ctx, infoChange)
 }

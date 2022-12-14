@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/go-state-types/big"
 	"go.uber.org/zap"
 
 	"github.com/filecoin-project/lily/pkg/core"
@@ -38,9 +39,13 @@ func (Debt) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorCha
 }
 
 func DebtDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
-	// was removed, no change
+	// was removed, its debt is gone...
+	// TODO is this correct? Can a miner be removed from the state who has debt? Would it be better to persist its last known debt value? the modified case below will have persisted that.
 	if act.Type == core.ChangeTypeRemove {
-		return nil, nil
+		return &DebtChange{
+			FeeDebt: big.Zero(),
+			Change:  core.ChangeTypeRemove,
+		}, nil
 	}
 	currentMiner, err := api.MinerLoad(api.Store(), act.Current)
 	if err != nil {

@@ -3,9 +3,9 @@ package lily
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/exitcode"
@@ -27,7 +27,6 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p/core/host"
 	"go.uber.org/fx"
-	"go.uber.org/zap"
 
 	"github.com/filecoin-project/lily/chain/datasource"
 	"github.com/filecoin-project/lily/chain/gap"
@@ -43,7 +42,7 @@ import (
 	"github.com/filecoin-project/lily/lens/lily/modules"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/network"
-	"github.com/filecoin-project/lily/pkg/extract/procesor"
+	"github.com/filecoin-project/lily/pkg/transform/timescale"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 )
@@ -159,6 +158,8 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 		return nil, err
 	}
 
+	_ = taskAPI
+
 	currentTs, err := m.ChainGetTipSet(ctx, cfg.TipSet)
 	if err != nil {
 		return nil, err
@@ -169,32 +170,46 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 		return nil, err
 	}
 
-	start := time.Now()
-	changes, err := procesor.ProcessActorStateChanges(ctx, taskAPI, currentTs, executedTs)
+	/*
+		start := time.Now()
+		changes, err := procesor.ProcessActorStateChanges(ctx, taskAPI, currentTs, executedTs)
+		if err != nil {
+			return nil, err
+		}
+		log.Infow("Process Actor State Changes Complete", "duration", time.Since(start), zap.Inline(changes))
+
+		f, err := os.Create(fmt.Sprintf("./%d_%s.car", currentTs.Height(), executedTs.Height()))
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+		if err := cbor.ProcessState(ctx, changes, f); err != nil {
+			return false, err
+		}
+		f.Seek(0, io.SeekStart)
+
+	*/
+	f, err := os.Open(fmt.Sprintf("./%d_%s.car", currentTs.Height(), executedTs.Height()))
 	if err != nil {
 		return nil, err
 	}
-	log.Infow("Process Actor State Changes Complete", "duration", time.Since(start), zap.Inline(changes))
-
+	if err := timescale.Process(ctx, f); err != nil {
+		return nil, err
+	}
 	/*
-		bs := blockstore.NewMemorySync()
-		store := adt2.WrapBlockStore(ctx, bs)
-		if _, err := cbor.ProcessActors(ctx, store, changes); err != nil {
-			return false, err
+
+		// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+		im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
+		if err != nil {
+			return nil, err
 		}
 
-			// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-			im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
-			if err != nil {
-				return nil, err
-			}
+		ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
+		if err != nil {
+			return nil, err
+		}
 
-			ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
-			if err != nil {
-				return nil, err
-			}
-
-			success, err := im.TipSet(ctx, ts, indexer.WithTasks(cfg.JobConfig.Tasks))
+		success, err := im.TipSet(ctx, ts, indexer.WithTasks(cfg.JobConfig.Tasks))
 
 	*/
 

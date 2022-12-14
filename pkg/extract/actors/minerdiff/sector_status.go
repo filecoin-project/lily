@@ -10,6 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
+	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
 	"github.com/filecoin-project/lily/tasks"
 )
@@ -40,6 +41,10 @@ func (SectorStatus) Diff(ctx context.Context, api tasks.DataSource, act *actors.
 	defer func() {
 		log.Debugw("Diff", "kind", KindMinerSectorStatus, zap.Inline(act), "duration", time.Since(start))
 	}()
+	// miner must have current and executed state for its sectors to have status.
+	if act.Type == core.ChangeTypeAdd || act.Type == core.ChangeTypeRemove {
+		return nil, nil
+	}
 	child, err := api.MinerLoad(api.Store(), act.Current)
 	if err != nil {
 		return nil, err

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/go-state-types/big"
 	"go.uber.org/zap"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -44,7 +45,13 @@ func (Funds) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorCh
 func FundsDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
 	// was removed, no change
 	if act.Type == core.ChangeTypeRemove {
-		return nil, nil
+		// TODO is this correct? Can a miner be removed from the state who still has funds? Would it be better to persist its last known funds value? the modified case below will have persisted that.
+		return &FundsChange{
+			VestingFunds:             big.Zero(),
+			InitialPledgeRequirement: big.Zero(),
+			PreCommitDeposit:         big.Zero(),
+			Change:                   core.ChangeTypeRemove,
+		}, nil
 	}
 	currentMiner, err := api.MinerLoad(api.Store(), act.Current)
 	if err != nil {

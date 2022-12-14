@@ -9,7 +9,6 @@ import (
 	"sort"
 
 	core "github.com/filecoin-project/lily/pkg/core"
-	minerdiff "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff"
 	cid "github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	xerrors "golang.org/x/xerrors"
@@ -48,7 +47,7 @@ func (t *StateChange) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Funds (minerdiff.FundsChange) (struct)
+	// t.Funds (cid.Cid) (struct)
 	if len("funds") > cbg.MaxLength {
 		return xerrors.Errorf("Value in field \"funds\" was too long")
 	}
@@ -60,11 +59,17 @@ func (t *StateChange) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if err := t.Funds.MarshalCBOR(cw); err != nil {
-		return err
+	if t.Funds == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.Funds); err != nil {
+			return xerrors.Errorf("failed to write cid field t.Funds: %w", err)
+		}
 	}
 
-	// t.Debt (minerdiff.DebtChange) (struct)
+	// t.Debt (cid.Cid) (struct)
 	if len("debt") > cbg.MaxLength {
 		return xerrors.Errorf("Value in field \"debt\" was too long")
 	}
@@ -76,11 +81,17 @@ func (t *StateChange) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if err := t.Debt.MarshalCBOR(cw); err != nil {
-		return err
+	if t.Debt == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.Debt); err != nil {
+			return xerrors.Errorf("failed to write cid field t.Debt: %w", err)
+		}
 	}
 
-	// t.SectorStatus (minerdiff.SectorStatusChange) (struct)
+	// t.SectorStatus (cid.Cid) (struct)
 	if len("sector_status") > cbg.MaxLength {
 		return xerrors.Errorf("Value in field \"sector_status\" was too long")
 	}
@@ -92,8 +103,14 @@ func (t *StateChange) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if err := t.SectorStatus.MarshalCBOR(cw); err != nil {
-		return err
+	if t.SectorStatus == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.SectorStatus); err != nil {
+			return xerrors.Errorf("failed to write cid field t.SectorStatus: %w", err)
+		}
 	}
 
 	// t.Info (cid.Cid) (struct)
@@ -213,7 +230,7 @@ func (t *StateChange) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 			}
-			// t.Funds (minerdiff.FundsChange) (struct)
+			// t.Funds (cid.Cid) (struct)
 		case "funds":
 
 			{
@@ -226,14 +243,17 @@ func (t *StateChange) UnmarshalCBOR(r io.Reader) (err error) {
 					if err := cr.UnreadByte(); err != nil {
 						return err
 					}
-					t.Funds = new(minerdiff.FundsChange)
-					if err := t.Funds.UnmarshalCBOR(cr); err != nil {
-						return xerrors.Errorf("unmarshaling t.Funds pointer: %w", err)
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Funds: %w", err)
 					}
+
+					t.Funds = &c
 				}
 
 			}
-			// t.Debt (minerdiff.DebtChange) (struct)
+			// t.Debt (cid.Cid) (struct)
 		case "debt":
 
 			{
@@ -246,14 +266,17 @@ func (t *StateChange) UnmarshalCBOR(r io.Reader) (err error) {
 					if err := cr.UnreadByte(); err != nil {
 						return err
 					}
-					t.Debt = new(minerdiff.DebtChange)
-					if err := t.Debt.UnmarshalCBOR(cr); err != nil {
-						return xerrors.Errorf("unmarshaling t.Debt pointer: %w", err)
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Debt: %w", err)
 					}
+
+					t.Debt = &c
 				}
 
 			}
-			// t.SectorStatus (minerdiff.SectorStatusChange) (struct)
+			// t.SectorStatus (cid.Cid) (struct)
 		case "sector_status":
 
 			{
@@ -266,10 +289,13 @@ func (t *StateChange) UnmarshalCBOR(r io.Reader) (err error) {
 					if err := cr.UnreadByte(); err != nil {
 						return err
 					}
-					t.SectorStatus = new(minerdiff.SectorStatusChange)
-					if err := t.SectorStatus.UnmarshalCBOR(cr); err != nil {
-						return xerrors.Errorf("unmarshaling t.SectorStatus pointer: %w", err)
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.SectorStatus: %w", err)
 					}
+
+					t.SectorStatus = &c
 				}
 
 			}
