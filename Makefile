@@ -154,6 +154,9 @@ interopnet: build
 # alias to match other network-specific targets
 mainnet: build
 
+wallabynet: GOFLAGS+=-tags=wallabynet
+wallabynet: build
+
 
 # Dockerfiles
 
