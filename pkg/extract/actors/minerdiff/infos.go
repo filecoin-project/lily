@@ -2,11 +2,13 @@ package minerdiff
 
 import (
 	"context"
+	"time"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	typegen "github.com/whyrusleeping/cbor-gen"
+	"go.uber.org/zap"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -33,6 +35,10 @@ var _ actors.ActorDiffer = (*Info)(nil)
 type Info struct{}
 
 func (Info) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+	start := time.Now()
+	defer func() {
+		log.Debugw("Diff", "kind", KindMinerInfo, zap.Inline(act), "duration", time.Since(start))
+	}()
 	return InfoDiff(ctx, api, act)
 }
 

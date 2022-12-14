@@ -3,8 +3,10 @@ package minerdiff
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/filecoin-project/go-bitfield"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -34,6 +36,10 @@ func (s SectorStatusChange) Kind() actors.ActorStateKind {
 type SectorStatus struct{}
 
 func (SectorStatus) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+	start := time.Now()
+	defer func() {
+		log.Debugw("Diff", "kind", KindMinerSectorStatus, zap.Inline(act), "duration", time.Since(start))
+	}()
 	child, err := api.MinerLoad(api.Store(), act.Current)
 	if err != nil {
 		return nil, err

@@ -5,7 +5,10 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
+	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap/zapcore"
 
+	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/tasks"
 )
@@ -27,4 +30,23 @@ type ActorChange struct {
 	Type     core.ChangeType
 }
 
+func (a ActorChange) Attributes() []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.String("address", a.Address.String()),
+		attribute.String("type", builtin.ActorNameByCode(a.Current.Code)),
+		attribute.String("change", a.Type.String()),
+	}
+}
+
+func (a ActorChange) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	for _, a := range a.Attributes() {
+		enc.AddString(string(a.Key), a.Value.Emit())
+	}
+	return nil
+}
+
 type ActorChanges []*ActorChange
+
+type ActorStateDiff interface {
+	Kind() string
+}

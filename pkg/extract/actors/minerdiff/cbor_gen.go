@@ -192,23 +192,63 @@ func (t *PreCommitChange) MarshalCBOR(w io.Writer) error {
 
 	cw := cbg.NewCborWriter(w)
 
-	if _, err := cw.Write([]byte{162}); err != nil {
+	if _, err := cw.Write([]byte{164}); err != nil {
 		return err
 	}
 
-	// t.PreCommit (typegen.Deferred) (struct)
-	if len("pre_commit") > cbg.MaxLength {
-		return xerrors.Errorf("Value in field \"pre_commit\" was too long")
+	// t.SectorNumber ([]uint8) (slice)
+	if len("sector_number") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"sector_number\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("pre_commit"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("sector_number"))); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, string("pre_commit")); err != nil {
+	if _, err := io.WriteString(w, string("sector_number")); err != nil {
 		return err
 	}
 
-	if err := t.PreCommit.MarshalCBOR(cw); err != nil {
+	if len(t.SectorNumber) > cbg.ByteArrayMaxLen {
+		return xerrors.Errorf("Byte array in field t.SectorNumber was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.SectorNumber))); err != nil {
+		return err
+	}
+
+	if _, err := cw.Write(t.SectorNumber[:]); err != nil {
+		return err
+	}
+
+	// t.Current (typegen.Deferred) (struct)
+	if len("current_pre_commit") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"current_pre_commit\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("current_pre_commit"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("current_pre_commit")); err != nil {
+		return err
+	}
+
+	if err := t.Current.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.Previous (typegen.Deferred) (struct)
+	if len("previous_pre_commit") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"previous_pre_commit\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("previous_pre_commit"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("previous_pre_commit")); err != nil {
+		return err
+	}
+
+	if err := t.Previous.MarshalCBOR(cw); err != nil {
 		return err
 	}
 
@@ -268,12 +308,47 @@ func (t *PreCommitChange) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch name {
-		// t.PreCommit (typegen.Deferred) (struct)
-		case "pre_commit":
+		// t.SectorNumber ([]uint8) (slice)
+		case "sector_number":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > cbg.ByteArrayMaxLen {
+				return fmt.Errorf("t.SectorNumber: byte array too large (%d)", extra)
+			}
+			if maj != cbg.MajByteString {
+				return fmt.Errorf("expected byte array")
+			}
+
+			if extra > 0 {
+				t.SectorNumber = make([]uint8, extra)
+			}
+
+			if _, err := io.ReadFull(cr, t.SectorNumber[:]); err != nil {
+				return err
+			}
+			// t.Current (typegen.Deferred) (struct)
+		case "current_pre_commit":
 
 			{
 
-				if err := t.PreCommit.UnmarshalCBOR(cr); err != nil {
+				t.Current = new(cbg.Deferred)
+
+				if err := t.Current.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("failed to read deferred field: %w", err)
+				}
+			}
+			// t.Previous (typegen.Deferred) (struct)
+		case "previous_pre_commit":
+
+			{
+
+				t.Previous = new(cbg.Deferred)
+
+				if err := t.Previous.UnmarshalCBOR(cr); err != nil {
 					return xerrors.Errorf("failed to read deferred field: %w", err)
 				}
 			}
@@ -308,23 +383,55 @@ func (t *SectorChange) MarshalCBOR(w io.Writer) error {
 
 	cw := cbg.NewCborWriter(w)
 
-	if _, err := cw.Write([]byte{162}); err != nil {
+	if _, err := cw.Write([]byte{164}); err != nil {
 		return err
 	}
 
-	// t.Sector (typegen.Deferred) (struct)
-	if len("sector") > cbg.MaxLength {
-		return xerrors.Errorf("Value in field \"sector\" was too long")
+	// t.SectorNumber (uint64) (uint64)
+	if len("sector_number") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"sector_number\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("sector"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("sector_number"))); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, string("sector")); err != nil {
+	if _, err := io.WriteString(w, string("sector_number")); err != nil {
 		return err
 	}
 
-	if err := t.Sector.MarshalCBOR(cw); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.SectorNumber)); err != nil {
+		return err
+	}
+
+	// t.Current (typegen.Deferred) (struct)
+	if len("current_sector") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"current_sector\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("current_sector"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("current_sector")); err != nil {
+		return err
+	}
+
+	if err := t.Current.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.Previous (typegen.Deferred) (struct)
+	if len("previous_sector") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"previous_sector\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("previous_sector"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("previous_sector")); err != nil {
+		return err
+	}
+
+	if err := t.Previous.MarshalCBOR(cw); err != nil {
 		return err
 	}
 
@@ -384,12 +491,40 @@ func (t *SectorChange) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch name {
-		// t.Sector (typegen.Deferred) (struct)
-		case "sector":
+		// t.SectorNumber (uint64) (uint64)
+		case "sector_number":
 
 			{
 
-				if err := t.Sector.UnmarshalCBOR(cr); err != nil {
+				maj, extra, err = cr.ReadHeader()
+				if err != nil {
+					return err
+				}
+				if maj != cbg.MajUnsignedInt {
+					return fmt.Errorf("wrong type for uint64 field")
+				}
+				t.SectorNumber = uint64(extra)
+
+			}
+			// t.Current (typegen.Deferred) (struct)
+		case "current_sector":
+
+			{
+
+				t.Current = new(cbg.Deferred)
+
+				if err := t.Current.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("failed to read deferred field: %w", err)
+				}
+			}
+			// t.Previous (typegen.Deferred) (struct)
+		case "previous_sector":
+
+			{
+
+				t.Previous = new(cbg.Deferred)
+
+				if err := t.Previous.UnmarshalCBOR(cr); err != nil {
 					return xerrors.Errorf("failed to read deferred field: %w", err)
 				}
 			}

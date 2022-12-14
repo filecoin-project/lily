@@ -5,25 +5,38 @@ import (
 
 	typegen "github.com/whyrusleeping/cbor-gen"
 
-	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
 	"github.com/filecoin-project/lily/tasks"
 )
 
-type ActorStateArrayLoader = func(interface{}) (adt.Array, int, error)
-
-type ArrayChange struct {
-	Key    uint64
-	Value  typegen.Deferred
-	Change core.ChangeType
-}
-
-type ArrayChangeList = []*MapChange
-
-func DiffActorArray(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, actorStateLoader ActorStateLoader, actorArrayLoader ActorStateArrayLoader) (*core.ArrayDiff, error) {
+func DiffActorArray(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, actorStateLoader ActorStateLoader, actorArrayLoader ActorStateArrayLoader) (core.ArrayModifications, error) {
 	if act.Type == core.ChangeTypeRemove {
-		return nil, nil
+		executedActor, err := actorStateLoader(api.Store(), act.Executed)
+		if err != nil {
+			return nil, err
+		}
+
+		executedArray, _, err := actorArrayLoader(executedActor)
+		if err != nil {
+			return nil, err
+		}
+
+		var out core.ArrayModifications
+		var v typegen.Deferred
+		if err := executedArray.ForEach(&v, func(key int64) error {
+			value := v
+			out = append(out, &core.ArrayModification{
+				Key:      uint64(key),
+				Type:     core.ChangeTypeRemove,
+				Previous: &value,
+				Current:  nil,
+			})
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+		return out, nil
 	}
 
 	currentActor, err := actorStateLoader(api.Store(), act.Current)
@@ -36,17 +49,15 @@ func DiffActorArray(ctx context.Context, api tasks.DataSource, act *actors.Actor
 		return nil, err
 	}
 	if act.Type == core.ChangeTypeAdd {
-		out := &core.ArrayDiff{
-			Added:    make([]*core.ArrayChange, 0),
-			Modified: make([]*core.ArrayModification, 0),
-			Removed:  make([]*core.ArrayChange, 0),
-		}
+		var out core.ArrayModifications
 		var v typegen.Deferred
 		if err := currentArray.ForEach(&v, func(key int64) error {
-			out.Added = append(out.Added, &core.ArrayChange{
-				// TODO this type is inconsistent in specs-actors..
-				Key:   uint64(key),
-				Value: v,
+			value := v
+			out = append(out, &core.ArrayModification{
+				Key:      uint64(key),
+				Type:     core.ChangeTypeAdd,
+				Previous: nil,
+				Current:  &value,
 			})
 			return nil
 		}); err != nil {

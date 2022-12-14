@@ -2,9 +2,10 @@ package verifregdiff
 
 import (
 	"context"
+	"time"
 
-	"github.com/filecoin-project/go-address"
 	typegen "github.com/whyrusleeping/cbor-gen"
+	"go.uber.org/zap"
 
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
@@ -13,9 +14,10 @@ import (
 )
 
 type ClientsChange struct {
-	Client  address.Address
-	DataCap typegen.Deferred
-	Change  core.ChangeType
+	Client   []byte
+	Current  *typegen.Deferred
+	Previous *typegen.Deferred
+	Change   core.ChangeType
 }
 
 type ClientsChangeList []*ClientsChange
@@ -29,6 +31,10 @@ func (v ClientsChangeList) Kind() actors.ActorStateKind {
 type Clients struct{}
 
 func (Clients) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+	start := time.Now()
+	defer func() {
+		log.Debugw("Diff", "kind", KindVerifregClients, zap.Inline(act), "duration", time.Since(start))
+	}()
 	return DiffClients(ctx, api, act)
 }
 
@@ -38,46 +44,14 @@ func DiffClients(ctx context.Context, api tasks.DataSource, act *actors.ActorCha
 		return nil, err
 	}
 
-	idx := 0
-	out := make(ClientsChangeList, mapChange.Size())
-	for _, change := range mapChange.Added {
-		// TODO maybe we don't want to marshal these bytes to the address and leave them as bytes in the change struct
-		addr, err := address.NewFromBytes([]byte(change.Key))
-		if err != nil {
-			return nil, err
+	out := make(ClientsChangeList, len(mapChange))
+	for i, change := range mapChange {
+		out[i] = &ClientsChange{
+			Client:   change.Key,
+			Current:  change.Current,
+			Previous: change.Previous,
+			Change:   change.Type,
 		}
-		out[idx] = &ClientsChange{
-			Client:  addr,
-			DataCap: change.Value,
-			Change:  core.ChangeTypeAdd,
-		}
-		idx++
-	}
-	for _, change := range mapChange.Removed {
-		// TODO maybe we don't want to marshal these bytes to the address and leave them as bytes in the change struct
-		addr, err := address.NewFromBytes([]byte(change.Key))
-		if err != nil {
-			return nil, err
-		}
-		out[idx] = &ClientsChange{
-			Client:  addr,
-			DataCap: change.Value,
-			Change:  core.ChangeTypeRemove,
-		}
-		idx++
-	}
-	for _, change := range mapChange.Modified {
-		// TODO maybe we don't want to marshal these bytes to the address and leave them as bytes in the change struct
-		addr, err := address.NewFromBytes([]byte(change.Key))
-		if err != nil {
-			return nil, err
-		}
-		out[idx] = &ClientsChange{
-			Client:  addr,
-			DataCap: change.Current,
-			Change:  core.ChangeTypeModify,
-		}
-		idx++
 	}
 	return out, nil
 

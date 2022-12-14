@@ -2,8 +2,10 @@ package minerdiff
 
 import (
 	"context"
+	"time"
 
 	typegen "github.com/whyrusleeping/cbor-gen"
+	"go.uber.org/zap"
 
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
@@ -14,9 +16,10 @@ import (
 var _ actors.ActorStateChange = (*SectorChangeList)(nil)
 
 type SectorChange struct {
-	// TODO include sectorID key
-	Sector typegen.Deferred `cborgen:"sector"`
-	Change core.ChangeType  `cborgen:"change"`
+	SectorNumber uint64            `cborgen:"sector_number"`
+	Current      *typegen.Deferred `cborgen:"current_sector"`
+	Previous     *typegen.Deferred `cborgen:"previous_sector"`
+	Change       core.ChangeType   `cborgen:"change"`
 }
 
 type SectorChangeList []*SectorChange
@@ -30,6 +33,10 @@ func (s SectorChangeList) Kind() actors.ActorStateKind {
 type Sectors struct{}
 
 func (Sectors) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+	start := time.Now()
+	defer func() {
+		log.Debugw("Diff", "kind", KindMinerSector, zap.Inline(act), "duration", time.Since(start))
+	}()
 	return DiffSectors(ctx, api, act)
 }
 
@@ -38,28 +45,14 @@ func DiffSectors(ctx context.Context, api tasks.DataSource, act *actors.ActorCha
 	if err != nil {
 		return nil, err
 	}
-	idx := 0
-	out := make(SectorChangeList, arrayChange.Size())
-	for _, change := range arrayChange.Added {
-		out[idx] = &SectorChange{
-			Sector: change.Value,
-			Change: core.ChangeTypeAdd,
+	out := make(SectorChangeList, len(arrayChange))
+	for i, change := range arrayChange {
+		out[i] = &SectorChange{
+			SectorNumber: change.Key,
+			Current:      change.Current,
+			Previous:     change.Previous,
+			Change:       change.Type,
 		}
-		idx++
-	}
-	for _, change := range arrayChange.Removed {
-		out[idx] = &SectorChange{
-			Sector: change.Value,
-			Change: core.ChangeTypeRemove,
-		}
-		idx++
-	}
-	for _, change := range arrayChange.Modified {
-		out[idx] = &SectorChange{
-			Sector: change.Current,
-			Change: core.ChangeTypeModify,
-		}
-		idx++
 	}
 	return out, nil
 }

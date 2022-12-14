@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/exitcode"
 	network2 "github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/lotus/api"
-	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/consensus/filcns"
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/state"
@@ -21,13 +21,13 @@ import (
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/lotus/node/impl/net"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
-	adt2 "github.com/filecoin-project/specs-actors/v3/actors/util/adt"
 	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
 	ipld "github.com/ipfs/go-ipld-format"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p/core/host"
 	"go.uber.org/fx"
+	"go.uber.org/zap"
 
 	"github.com/filecoin-project/lily/chain/datasource"
 	"github.com/filecoin-project/lily/chain/gap"
@@ -44,7 +44,6 @@ import (
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/network"
 	"github.com/filecoin-project/lily/pkg/extract/procesor"
-	"github.com/filecoin-project/lily/pkg/transform/cbor"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 )
@@ -170,27 +169,32 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 		return nil, err
 	}
 
+	start := time.Now()
 	changes, err := procesor.ProcessActorStateChanges(ctx, taskAPI, currentTs, executedTs)
-	return nil, nil
-	bs := blockstore.NewMemorySync()
-	store := adt2.WrapBlockStore(ctx, bs)
-	if _, err := cbor.ProcessActors(ctx, store, changes); err != nil {
-		return false, err
+	if err != nil {
+		return nil, err
 	}
+	log.Infow("Process Actor State Changes Complete", "duration", time.Since(start), zap.Inline(changes))
+
 	/*
-
-		// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-		im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
-		if err != nil {
-			return nil, err
+		bs := blockstore.NewMemorySync()
+		store := adt2.WrapBlockStore(ctx, bs)
+		if _, err := cbor.ProcessActors(ctx, store, changes); err != nil {
+			return false, err
 		}
 
-		ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
-		if err != nil {
-			return nil, err
-		}
+			// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+			im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
+			if err != nil {
+				return nil, err
+			}
 
-		success, err := im.TipSet(ctx, ts, indexer.WithTasks(cfg.JobConfig.Tasks))
+			ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
+			if err != nil {
+				return nil, err
+			}
+
+			success, err := im.TipSet(ctx, ts, indexer.WithTasks(cfg.JobConfig.Tasks))
 
 	*/
 

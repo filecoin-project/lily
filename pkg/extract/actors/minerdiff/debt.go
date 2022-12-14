@@ -2,8 +2,10 @@ package minerdiff
 
 import (
 	"context"
+	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
+	"go.uber.org/zap"
 
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
@@ -28,6 +30,10 @@ var _ actors.ActorDiffer = (*Debt)(nil)
 type Debt struct{}
 
 func (Debt) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+	start := time.Now()
+	defer func() {
+		log.Debugw("Diff", "kind", KindMinerDebt, zap.Inline(act), "duration", time.Since(start))
+	}()
 	return DebtDiff(ctx, api, act)
 }
 
