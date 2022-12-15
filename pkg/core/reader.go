@@ -34,6 +34,7 @@ func StateReadDeferred(ctx context.Context, raw *typegen.Deferred, fn interface{
 			return fmt.Errorf("error: %s", results[0])
 		}
 	}
+	panic("here")
 	return nil
 
 }

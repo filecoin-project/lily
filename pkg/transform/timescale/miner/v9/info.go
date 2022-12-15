@@ -10,7 +10,6 @@ import (
 	maddr "github.com/multiformats/go-multiaddr"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
-	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	"github.com/filecoin-project/lily/pkg/core"
@@ -21,7 +20,7 @@ func HandleMinerInfo(ctx context.Context, store adt.Store, current, executed *ty
 	var out model.Persistable
 	var err error
 	if err := core.StateReadDeferred(ctx, info.Info, func(in *miner9.MinerInfo) error {
-		out, err = MinerInfoAsModel(ctx, current, executed, addr, in)
+		out, err = MinerInfoAsModel(ctx, current, executed, addr, *in)
 		if err != nil {
 			return err
 		}
@@ -32,11 +31,11 @@ func HandleMinerInfo(ctx context.Context, store adt.Store, current, executed *ty
 	return out, nil
 }
 
-func MinerInfoAsModel(ctx context.Context, current, executed *types.TipSet, addr address.Address, info *miner9.MinerInfo) (model.Persistable, error) {
-	return GenericMinerInfoAsModel(ctx, current, executed, addr, *info)
+func MinerInfoAsModel(ctx context.Context, current, executed *types.TipSet, addr address.Address, info miner9.MinerInfo) (model.Persistable, error) {
+	return GenericMinerInfoAsModel(ctx, current, executed, addr, info)
 }
 
-func GenericMinerInfoAsModel(ctx context.Context, current, executed *types.TipSet, addr address.Address, info miner.MinerInfo) (model.Persistable, error) {
+func GenericMinerInfoAsModel(ctx context.Context, current, executed *types.TipSet, addr address.Address, info miner9.MinerInfo) (model.Persistable, error) {
 	var newWorker string
 	var newWorkerEpoch int64
 	if pendingWorkerKey := info.PendingWorkerKey; pendingWorkerKey != nil {
