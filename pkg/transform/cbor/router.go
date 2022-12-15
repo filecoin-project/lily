@@ -2,7 +2,6 @@ package cbor
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
@@ -69,7 +68,6 @@ func ProcessActors(ctx context.Context, store adt.Store, changes *procesor.Actor
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("MINER HAMT NODE")
 	return &ActorIPLDContainer{
 		CurrentTipSet:  changes.Current,
 		ExecutedTipSet: changes.Executed,

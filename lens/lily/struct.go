@@ -27,10 +27,11 @@ type LilyAPIStruct struct {
 	Internal struct {
 		Store func() adt.Store `perm:"read"`
 
-		LilyIndex  func(ctx context.Context, config *LilyIndexConfig) (interface{}, error)     `perm:"read"`
-		LilyWatch  func(context.Context, *LilyWatchConfig) (*schedule.JobSubmitResult, error)  `perm:"read"`
-		LilyWalk   func(context.Context, *LilyWalkConfig) (*schedule.JobSubmitResult, error)   `perm:"read"`
-		LilySurvey func(context.Context, *LilySurveyConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
+		LilyIndex     func(ctx context.Context, config *LilyIndexConfig) (interface{}, error)     `perm:"read"`
+		LilyIndexIPLD func(ctx context.Context, config *LilyIndexIPLDConfig) (bool, error)        `perm:"read"`
+		LilyWatch     func(context.Context, *LilyWatchConfig) (*schedule.JobSubmitResult, error)  `perm:"read"`
+		LilyWalk      func(context.Context, *LilyWalkConfig) (*schedule.JobSubmitResult, error)   `perm:"read"`
+		LilySurvey    func(context.Context, *LilySurveyConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
 
 		LilyIndexNotify   func(ctx context.Context, config *LilyIndexNotifyConfig) (interface{}, error)                 `perm:"read"`
 		LilyWatchNotify   func(ctx context.Context, config *LilyWatchNotifyConfig) (*schedule.JobSubmitResult, error)   `perm:"read"`
@@ -79,6 +80,10 @@ type LilyAPIStruct struct {
 		FindOldestState func(ctx context.Context, limit int64) ([]*StateReport, error)      `perm:"read"`
 		StateCompute    func(ctx context.Context, tsk types.TipSetKey) (interface{}, error) `perm:"read"`
 	}
+}
+
+func (s *LilyAPIStruct) LilyIndexIPLD(ctx context.Context, cfg *LilyIndexIPLDConfig) (bool, error) {
+	return s.Internal.LilyIndexIPLD(ctx, cfg)
 }
 
 func (s *LilyAPIStruct) StateCompute(ctx context.Context, tsk types.TipSetKey) (interface{}, error) {

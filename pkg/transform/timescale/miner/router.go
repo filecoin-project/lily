@@ -73,20 +73,17 @@ func DecodeMinerStateDiff(ctx context.Context, store adt.Store, change cborminer
 	return out, nil
 }
 
-// TODO dubious on usage of pointers in the decode methods.
-
 func DecodeMinerInfoChanges(ctx context.Context, store adt.Store, info cid.Cid) (*minerdiff.InfoChange, error) {
 	var infoContainer cborminer.Info
 	if err := store.Get(ctx, info, &infoContainer); err != nil {
 		return nil, err
 	}
-	var minfo typegen.Deferred
-	if err := store.Get(ctx, infoContainer.Info, &minfo); err != nil {
+	minfo := new(typegen.Deferred)
+	if err := store.Get(ctx, infoContainer.Info, minfo); err != nil {
 		return nil, err
 	}
 	return &minerdiff.InfoChange{
-		// TODO this seems error prone, bad copy
-		Info:   &minfo,
+		Info:   minfo,
 		Change: infoContainer.Change,
 	}, nil
 }
@@ -123,6 +120,7 @@ func DecodeMinerSectorChanges(ctx context.Context, store adt.Store, sectors cid.
 	sectorChangeList := make(minerdiff.SectorChangeList, 0, sectorArr.Length())
 	sectorChange := new(minerdiff.SectorChange)
 	if err := sectorArr.ForEach(sectorChange, func(sectorNumber int64) error {
+		// make a copy
 		val := new(minerdiff.SectorChange)
 		*val = *sectorChange
 		sectorChangeList = append(sectorChangeList, val)
@@ -141,6 +139,7 @@ func DecodeMinerPreCommitChanges(ctx context.Context, store adt.Store, precommit
 	precommitChangeList := make(minerdiff.PreCommitChangeList, 0, precommitArr.Length())
 	precommitChange := new(minerdiff.PreCommitChange)
 	if err := precommitArr.ForEach(precommitChange, func(sectorNumber int64) error {
+		// make a copy
 		val := new(minerdiff.PreCommitChange)
 		*val = *precommitChange
 		precommitChangeList = append(precommitChangeList, val)

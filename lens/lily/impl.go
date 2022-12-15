@@ -42,7 +42,8 @@ import (
 	"github.com/filecoin-project/lily/lens/lily/modules"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/network"
-	"github.com/filecoin-project/lily/pkg/transform/timescale"
+	"github.com/filecoin-project/lily/pkg/extract/procesor"
+	"github.com/filecoin-project/lily/pkg/transform/cbor"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 )
@@ -134,11 +135,46 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 	return res, nil
 }
 
+func (m *LilyNodeAPI) LilyIndexIPLD(_ context.Context, cfg *LilyIndexIPLDConfig) (bool, error) {
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx := context.Background()
+
+	// TODO add buffering
+	f, err := os.OpenFile(cfg.Path, os.O_CREATE|os.O_TRUNC|os.O_EXCL|os.O_WRONLY, 0o644)
+	defer f.Close()
+	if err != nil {
+		return false, err
+	}
+
+	taskAPI, err := datasource.NewDataSource(m)
+	if err != nil {
+		return false, err
+	}
+
+	currentTs, err := m.ChainGetTipSet(ctx, cfg.TipSet)
+	if err != nil {
+		return false, err
+	}
+
+	executedTs, err := m.ChainGetTipSet(ctx, currentTs.Parents())
+	if err != nil {
+		return false, err
+	}
+
+	changes, err := procesor.ProcessActorStateChanges(ctx, taskAPI, currentTs, executedTs)
+	if err != nil {
+		return false, err
+	}
+	if err := cbor.ProcessState(ctx, changes, f); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interface{}, error) {
 	md := storage.Metadata{
 		JobName: cfg.JobConfig.Name,
 	}
-
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
 
@@ -153,62 +189,20 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 		return nil, err
 	}
 
-	_ = taskAPI
-
-	currentTs, err := m.ChainGetTipSet(ctx, cfg.TipSet)
+	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+	im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
 	if err != nil {
 		return nil, err
 	}
 
-	executedTs, err := m.ChainGetTipSet(ctx, currentTs.Parents())
+	ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
 	if err != nil {
 		return nil, err
 	}
 
-	/*
-		start := time.Now()
-		changes, err := procesor.ProcessActorStateChanges(ctx, taskAPI, currentTs, executedTs)
-		if err != nil {
-			return nil, err
-		}
-		log.Infow("Process Actor State Changes Complete", "duration", time.Since(start), zap.Inline(changes))
+	success, err := im.TipSet(ctx, ts, indexer.WithTasks(cfg.JobConfig.Tasks))
 
-		f, err := os.Create(fmt.Sprintf("./%d_%s.car", currentTs.Height(), executedTs.Height()))
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
-		if err := cbor.ProcessState(ctx, changes, f); err != nil {
-			return false, err
-		}
-		f.Seek(0, io.SeekStart)
-
-	*/
-	f, err := os.Open(fmt.Sprintf("./%d_%s.car", currentTs.Height(), executedTs.Height()))
-	if err != nil {
-		return nil, err
-	}
-	if err := timescale.Process(ctx, f, strg); err != nil {
-		return nil, err
-	}
-	/*
-
-		// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-		im, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
-		if err != nil {
-			return nil, err
-		}
-
-		ts, err := m.ChainGetTipSet(ctx, cfg.TipSet)
-		if err != nil {
-			return nil, err
-		}
-
-		success, err := im.TipSet(ctx, ts, indexer.WithTasks(cfg.JobConfig.Tasks))
-
-	*/
-
-	return true, err
+	return success, err
 }
 
 func (m *LilyNodeAPI) LilyIndexNotify(_ context.Context, cfg *LilyIndexNotifyConfig) (interface{}, error) {

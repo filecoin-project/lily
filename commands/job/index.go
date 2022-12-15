@@ -3,6 +3,7 @@ package job
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -52,6 +53,7 @@ var IndexTipSetCmd = &cli.Command{
 	Usage: "Index the state of a tipset from the filecoin blockchain by tipset key.",
 	Subcommands: []*cli.Command{
 		IndexNotifyCmd,
+		IndexIPLDCmd,
 	},
 	Flags: []cli.Flag{
 		&cli.StringFlag{
@@ -107,6 +109,7 @@ var IndexHeightCmd = &cli.Command{
 	},
 	Subcommands: []*cli.Command{
 		IndexNotifyCmd,
+		IndexIPLDCmd,
 	},
 	Before: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
@@ -147,6 +150,48 @@ var IndexHeightCmd = &cli.Command{
 		}
 
 		return nil
+	},
+}
+
+var IndexIPLDCmd = &cli.Command{
+	Name:  "ipld",
+	Usage: "Index the state of a tipset from the filecoin blockchain persisted as a car file.",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:  "filename",
+			Usage: "Name of the file to persist state to.",
+			Value: fmt.Sprintf("lily_state_%s.car", time.Now()),
+		},
+		&cli.IntFlag{
+			Name:  "write-buffer",
+			Usage: "specify write buffer size",
+			Value: 1 << 20,
+		},
+	},
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+
+		api, closer, err := commands.GetAPI(ctx)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		cfg := &lily.LilyIndexIPLDConfig{
+			JobConfig:       RunFlags.ParseJobConfig("index-ipld"),
+			TipSet:          indexFlags.tipsetKey,
+			Path:            cctx.String("filename"),
+			WriteBufferSize: cctx.Int("write-buffer"),
+		}
+
+		success, err := api.LilyIndexIPLD(ctx, cfg)
+		fmt.Println("success: ", success)
+		if err != nil {
+			return err
+		}
+
+		return nil
+
 	},
 }
 
