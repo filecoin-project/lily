@@ -135,23 +135,18 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 }
 
 func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interface{}, error) {
-	/*
-		md := storage.Metadata{
-			JobName: cfg.JobConfig.Name,
-		}
+	md := storage.Metadata{
+		JobName: cfg.JobConfig.Name,
+	}
 
-	*/
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
 
 	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	/*
-		strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
-		if err != nil {
-			return nil, err
-		}
-
-	*/
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
+	if err != nil {
+		return nil, err
+	}
 
 	taskAPI, err := datasource.NewDataSource(m)
 	if err != nil {
@@ -193,7 +188,7 @@ func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interf
 	if err != nil {
 		return nil, err
 	}
-	if err := timescale.Process(ctx, f); err != nil {
+	if err := timescale.Process(ctx, f, strg); err != nil {
 		return nil, err
 	}
 	/*
