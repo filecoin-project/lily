@@ -37,11 +37,11 @@ func HandleMinerSectorDeals(ctx context.Context, store adt.Store, current, execu
 				return nil, err
 			}
 		case core.ChangeTypeModify:
-			var previousSector *miner9.SectorOnChainInfo
+			previousSector := new(miner9.SectorOnChainInfo)
 			if err := previousSector.UnmarshalCBOR(bytes.NewReader(sector.Previous.Raw)); err != nil {
 				return nil, err
 			}
-			var currentSector *miner9.SectorOnChainInfo
+			currentSector := new(miner9.SectorOnChainInfo)
 			if err := currentSector.UnmarshalCBOR(bytes.NewReader(sector.Current.Raw)); err != nil {
 				return nil, err
 			}

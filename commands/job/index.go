@@ -34,6 +34,7 @@ The index command may be used to index a single tipset from the filecoin blockch
 	Subcommands: []*cli.Command{
 		IndexTipSetCmd,
 		IndexHeightCmd,
+		IndexFileCmd,
 	},
 	Before: func(cctx *cli.Context) error {
 		tasks := RunFlags.Tasks.Value()
@@ -45,6 +46,41 @@ The index command may be used to index a single tipset from the filecoin blockch
 			}
 		}
 		return nil
+	},
+}
+
+var IndexFileCmd = &cli.Command{
+	Name:  "file",
+	Usage: "Index the state of a car file produced by lily.",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:  "filename",
+			Usage: "Name of the file to persist state to.",
+			Value: fmt.Sprintf("lily_state_%.car", time.Now().Unix()),
+		},
+	},
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+
+		api, closer, err := commands.GetAPI(ctx)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		cfg := &lily.LilyIndexIPLDFileConfig{
+			JobConfig: RunFlags.ParseJobConfig("index-file"),
+			Path:      cctx.String("filename"),
+		}
+
+		success, err := api.LilyIndexIPLDFile(ctx, cfg)
+		fmt.Println("success: ", success)
+		if err != nil {
+			return err
+		}
+
+		return nil
+
 	},
 }
 
@@ -160,7 +196,7 @@ var IndexIPLDCmd = &cli.Command{
 		&cli.StringFlag{
 			Name:  "filename",
 			Usage: "Name of the file to persist state to.",
-			Value: fmt.Sprintf("lily_state_%s.car", time.Now()),
+			Value: fmt.Sprintf("lily_state_%d.car", time.Now().Unix()),
 		},
 		&cli.IntFlag{
 			Name:  "write-buffer",

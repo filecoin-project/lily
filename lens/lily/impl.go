@@ -44,6 +44,7 @@ import (
 	"github.com/filecoin-project/lily/network"
 	"github.com/filecoin-project/lily/pkg/extract/procesor"
 	"github.com/filecoin-project/lily/pkg/transform/cbor"
+	"github.com/filecoin-project/lily/pkg/transform/timescale"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 )
@@ -168,6 +169,33 @@ func (m *LilyNodeAPI) LilyIndexIPLD(_ context.Context, cfg *LilyIndexIPLDConfig)
 	if err := cbor.ProcessState(ctx, changes, f); err != nil {
 		return false, err
 	}
+	return true, nil
+}
+
+func (m *LilyNodeAPI) LilyIndexIPLDFile(_ context.Context, cfg *LilyIndexIPLDFileConfig) (bool, error) {
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx := context.Background()
+	md := storage.Metadata{
+		JobName: cfg.JobConfig.Name,
+	}
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
+	if err != nil {
+		return false, err
+	}
+
+	// TODO add buffering
+	f, err := os.OpenFile(cfg.Path, os.O_RDONLY, 0o644)
+	defer f.Close()
+	if err != nil {
+		return false, err
+	}
+
+	if err := timescale.Process(ctx, f, strg); err != nil {
+		return false, err
+	}
+
 	return true, nil
 }
 
