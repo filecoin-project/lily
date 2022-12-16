@@ -44,7 +44,7 @@ import (
 	"github.com/filecoin-project/lily/network"
 	"github.com/filecoin-project/lily/pkg/extract/procesor"
 	"github.com/filecoin-project/lily/pkg/transform/cbor"
-	"github.com/filecoin-project/lily/pkg/transform/timescale"
+	"github.com/filecoin-project/lily/pkg/transform/timescale/actors"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 )
@@ -162,7 +162,7 @@ func (m *LilyNodeAPI) LilyIndexIPLD(_ context.Context, cfg *LilyIndexIPLDConfig)
 		return false, err
 	}
 
-	changes, err := procesor.ProcessActorStateChanges(ctx, taskAPI, currentTs, executedTs)
+	changes, err := procesor.ProcessActorStateChanges(ctx, taskAPI, currentTs, executedTs, m.StateManager.GetNetworkVersion)
 	if err != nil {
 		return false, err
 	}
@@ -192,7 +192,7 @@ func (m *LilyNodeAPI) LilyIndexIPLDFile(_ context.Context, cfg *LilyIndexIPLDFil
 		return false, err
 	}
 
-	if err := timescale.Process(ctx, f, strg); err != nil {
+	if err := actors.Process(ctx, f, strg, m.StateManager.GetNetworkVersion); err != nil {
 		return false, err
 	}
 

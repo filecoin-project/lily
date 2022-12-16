@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -16,6 +18,7 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/chain/actors/builtin/power"
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
+	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
 	"github.com/filecoin-project/lily/pkg/extract/actors/minerdiff"
 	"github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff"
@@ -51,8 +54,8 @@ type ActorStateChanges struct {
 	Current       *types.TipSet
 	Executed      *types.TipSet
 	Actors        map[address.Address]statetree.ActorDiff
-	MinerActors   map[address.Address]*minerdiff.StateDiff
-	VerifregActor map[address.Address]*verifregdiff.StateDiff
+	MinerActors   map[address.Address]actors.ActorDiffResult
+	VerifregActor actors.ActorDiffResult
 }
 
 func (a ActorStateChanges) Attributes() []attribute.KeyValue {
@@ -61,7 +64,6 @@ func (a ActorStateChanges) Attributes() []attribute.KeyValue {
 		attribute.Int64("executed", int64(a.Executed.Height())),
 		attribute.Int("actor_change", len(a.Actors)),
 		attribute.Int("miner_changes", len(a.MinerActors)),
-		attribute.Int("verifreg_changes", len(a.VerifregActor)),
 	}
 }
 
@@ -73,21 +75,27 @@ func (a ActorStateChanges) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 }
 
 type StateDiffResult struct {
-	ActorDiff actors.ActorStateDiff
+	ActorDiff actors.ActorDiffResult
 	Address   address.Address
 }
 
-func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet) (*ActorStateChanges, error) {
+type NetworkVersionGetter = func(ctx context.Context, epoch abi.ChainEpoch) network.Version
+
+func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, nvg NetworkVersionGetter) (*ActorStateChanges, error) {
 	actorChanges, err := statetree.ActorChanges(ctx, api.Store(), current, executed)
 	if err != nil {
 		return nil, err
 	}
 	asc := &ActorStateChanges{
-		Current:       current,
-		Executed:      executed,
-		Actors:        actorChanges,
-		MinerActors:   make(map[address.Address]*minerdiff.StateDiff, len(actorChanges)), // there are at most actorChanges entries
-		VerifregActor: make(map[address.Address]*verifregdiff.StateDiff, len(actorChanges)),
+		Current:     current,
+		Executed:    executed,
+		Actors:      actorChanges,
+		MinerActors: make(map[address.Address]actors.ActorDiffResult, len(actorChanges)), // there are at most actorChanges entries
+	}
+
+	actorVersion, err := core.ActorVersionForTipSet(ctx, current, nvg)
+	if err != nil {
+		return nil, err
 	}
 
 	grp, grpCtx := errgroup.WithContext(ctx)
@@ -95,22 +103,22 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 	for addr, change := range actorChanges {
 		addr := addr
 		change := change
+		act := &actors.ActorChange{
+			Address:  addr,
+			Executed: change.Executed,
+			Current:  change.Current,
+			Type:     change.ChangeType,
+		}
 		grp.Go(func() error {
 			if MinerCodes.Has(change.Current.Code) {
 				start := time.Now()
-				minerChanges, err := minerdiff.State(grpCtx, api, &actors.ActorChange{
-					Address:  addr,
-					Executed: change.Executed,
-					Current:  change.Current,
-					Type:     change.ChangeType,
-				},
-					minerdiff.Debt{},
-					minerdiff.Funds{},
-					minerdiff.Info{},
-					minerdiff.PreCommit{},
-					minerdiff.Sectors{},
-					minerdiff.SectorStatus{},
-				)
+				// construct the state differ required by this actor version
+				actorDiff, err := minerdiff.StateDiffFor(actorVersion)
+				if err != nil {
+					return err
+				}
+				// diff the actors state and collect changes
+				minerChanges, err := actorDiff.State(grpCtx, api, act)
 				if err != nil {
 					return err
 				}
@@ -121,18 +129,15 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 				}
 			}
 			if VerifregCodes.Has(change.Current.Code) {
+				return nil
 				start := time.Now()
-				verifregChanges, err := verifregdiff.State(grpCtx, api, &actors.ActorChange{
-					Address:  addr,
-					Executed: change.Executed,
-					Current:  change.Current,
-					Type:     change.ChangeType,
-				},
-					// TODO the functions handed to these methods should be based on the epoch of the chain.
-					//verifregdiff.Clients{},
-					verifregdiff.Verifiers{},
-					verifregdiff.Claims{},
-				)
+				// construct the state differ required by this actor version
+				actorDiff, err := verifregdiff.StateDiffFor(actorVersion)
+				if err != nil {
+					return err
+				}
+				// diff the actors state and collect changes
+				verifregChanges, err := actorDiff.State(grpCtx, api, act)
 				if err != nil {
 					return err
 				}
@@ -152,11 +157,12 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 		close(results)
 	}()
 	for stateDiff := range results {
-		switch v := stateDiff.ActorDiff.(type) {
-		case *minerdiff.StateDiff:
-			asc.MinerActors[stateDiff.Address] = v
-		case *verifregdiff.StateDiff:
-			asc.VerifregActor[stateDiff.Address] = v
+		switch stateDiff.ActorDiff.Kind() {
+
+		case "miner":
+			asc.MinerActors[stateDiff.Address] = stateDiff.ActorDiff
+		case "verifreg":
+			asc.VerifregActor = stateDiff.ActorDiff
 		}
 	}
 	return asc, nil

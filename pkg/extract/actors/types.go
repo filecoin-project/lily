@@ -4,7 +4,9 @@ import (
 	"context"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/types"
+	typegen "github.com/whyrusleeping/cbor-gen"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap/zapcore"
 
@@ -13,7 +15,16 @@ import (
 	"github.com/filecoin-project/lily/tasks"
 )
 
-type ActorDiffer interface {
+type ActorDiffResult interface {
+	Kind() string
+	MarshalStateChange(ctx context.Context, bs blockstore.Blockstore) (typegen.CBORMarshaler, error)
+}
+
+type ActorDiff interface {
+	State(ctx context.Context, api tasks.DataSource, act *ActorChange) (ActorDiffResult, error)
+}
+
+type ActorStateDiff interface {
 	Diff(ctx context.Context, api tasks.DataSource, act *ActorChange) (ActorStateChange, error)
 }
 
@@ -46,7 +57,3 @@ func (a ActorChange) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 }
 
 type ActorChanges []*ActorChange
-
-type ActorStateDiff interface {
-	Kind() string
-}
