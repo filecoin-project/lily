@@ -2,7 +2,7 @@ package v1
 
 func init() {
 	patches.Register(
-		7,
+		13,
 		`
 ALTER TABLE {{ .SchemaName | default "public"}}.actor_states
 ADD COLUMN nonce BIGINT;
