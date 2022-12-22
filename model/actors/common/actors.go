@@ -79,6 +79,8 @@ type ActorState struct {
 	Code string `pg:",pk,notnull"`
 	// Top level of state data as json.
 	State string `pg:",type:jsonb,notnull"`
+	// The next Actor nonce that is expected to appear on chain.
+	Nonce uint64 `pg:",use_zero"`
 }
 
 func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
