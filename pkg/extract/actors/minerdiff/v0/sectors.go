@@ -47,7 +47,7 @@ func (s SectorChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
 }
 
 func (s *SectorChangeList) FromAdtMap(store adt.Store, root cid.Cid, bw int) error {
-	sectorMap, err := adt.AsMap(store, root, 5)
+	sectorMap, err := adt.AsMap(store, root, bw)
 	if err != nil {
 		return err
 	}

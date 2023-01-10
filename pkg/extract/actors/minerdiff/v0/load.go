@@ -10,6 +10,7 @@ import (
 var MinerStateLoader = func(store adt.Store, act *types.Actor) (interface{}, error) {
 	return miner.Load(store, act)
 }
+
 var MinerPreCommitMapLoader = func(m interface{}) (adt.Map, *adt.MapOpts, error) {
 	minerState := m.(miner.State)
 	perCommitMap, err := minerState.PrecommitsMap()

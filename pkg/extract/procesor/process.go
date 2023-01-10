@@ -14,12 +14,14 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/chain/actors/builtin/power"
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
+	"github.com/filecoin-project/lily/pkg/extract/actors/initdiff"
 	"github.com/filecoin-project/lily/pkg/extract/actors/minerdiff"
 	"github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff"
 	"github.com/filecoin-project/lily/pkg/extract/statetree"
@@ -29,6 +31,7 @@ import (
 var log = logging.Logger("lily/extract/processor")
 
 var (
+	InitCodes     = cid.NewSet()
 	MinerCodes    = cid.NewSet()
 	PowerCodes    = cid.NewSet()
 	MarketCodes   = cid.NewSet()
@@ -48,6 +51,9 @@ func init() {
 	for _, c := range verifreg.AllCodes() {
 		VerifregCodes.Add(c)
 	}
+	for _, c := range init.AllCodes() {
+		InitCodes.Add(c)
+	}
 }
 
 type ActorStateChanges struct {
@@ -56,6 +62,7 @@ type ActorStateChanges struct {
 	Actors        map[address.Address]statetree.ActorDiff
 	MinerActors   map[address.Address]actors.ActorDiffResult
 	VerifregActor actors.ActorDiffResult
+	InitActor     actors.ActorDiffResult
 }
 
 func (a ActorStateChanges) Attributes() []attribute.KeyValue {
@@ -129,7 +136,6 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 				}
 			}
 			if VerifregCodes.Has(change.Current.Code) {
-				return nil
 				start := time.Now()
 				// construct the state differ required by this actor version
 				actorDiff, err := verifregdiff.StateDiffFor(actorVersion)
@@ -147,6 +153,22 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 					Address:   addr,
 				}
 			}
+			if InitCodes.Has(change.Current.Code) {
+				start := time.Now()
+				actorDiff, err := initdiff.StateDiffFor(actorVersion)
+				if err != nil {
+					return err
+				}
+				initChanges, err := actorDiff.State(ctx, api, act)
+				if err != nil {
+					return err
+				}
+				log.Infow("Extracted Init", "addresses", addr, "duration", time.Since(start))
+				results <- &StateDiffResult{
+					ActorDiff: initChanges,
+					Address:   addr,
+				}
+			}
 			return nil
 		})
 	}
@@ -158,11 +180,14 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 	}()
 	for stateDiff := range results {
 		switch stateDiff.ActorDiff.Kind() {
-
 		case "miner":
 			asc.MinerActors[stateDiff.Address] = stateDiff.ActorDiff
 		case "verifreg":
 			asc.VerifregActor = stateDiff.ActorDiff
+		case "init":
+			asc.InitActor = stateDiff.ActorDiff
+		default:
+			panic(stateDiff.ActorDiff.Kind())
 		}
 	}
 	return asc, nil

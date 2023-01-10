@@ -4,7 +4,6 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v0"
-	"github.com/filecoin-project/lily/pkg/transform/cbor/miner/v9"
 )
 
 const minerDiffPath = "pkg/extract/actors/minerdiff/cbor_gen.go"
@@ -24,7 +23,7 @@ func main() {
 		v0.FundsChange{},
 		v0.DebtChange{},
 		v0.InfoChange{},
-		v9.StateChange{},
+		v0.StateChange{},
 	); err != nil {
 		panic(err)
 	}

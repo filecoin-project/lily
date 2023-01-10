@@ -48,7 +48,7 @@ func (p PreCommitChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) 
 }
 
 func (p *PreCommitChangeList) FromAdtMap(store adt.Store, root cid.Cid, bw int) error {
-	precommitMap, err := adt.AsMap(store, root, 5)
+	precommitMap, err := adt.AsMap(store, root, bw)
 	if err != nil {
 		return err
 	}
