@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
-	"github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v0"
+	v0 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v0"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/pkg/core"
@@ -47,7 +47,7 @@ func (Claims) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorC
 }
 
 func DiffClaims(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
-	mapChange, err := generic.DiffActorMap(ctx, api, act, v0.VerifregStateLoader, v0.VerifiiregClaimsMapLoader)
+	mapChange, err := generic.DiffActorMap(ctx, api, act, v0.VerifregStateLoader, VerifiiregClaimsMapLoader)
 	if err != nil {
 		return nil, err
 	}

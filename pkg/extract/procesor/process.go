@@ -23,6 +23,7 @@ import (
 	"github.com/filecoin-project/lily/pkg/extract/actors"
 	"github.com/filecoin-project/lily/pkg/extract/actors/initdiff"
 	"github.com/filecoin-project/lily/pkg/extract/actors/minerdiff"
+	"github.com/filecoin-project/lily/pkg/extract/actors/powerdiff"
 	"github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff"
 	"github.com/filecoin-project/lily/pkg/extract/statetree"
 	"github.com/filecoin-project/lily/tasks"
@@ -63,6 +64,7 @@ type ActorStateChanges struct {
 	MinerActors   map[address.Address]actors.ActorDiffResult
 	VerifregActor actors.ActorDiffResult
 	InitActor     actors.ActorDiffResult
+	PowerActor    actors.ActorDiffResult
 }
 
 func (a ActorStateChanges) Attributes() []attribute.KeyValue {
@@ -163,9 +165,25 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 				if err != nil {
 					return err
 				}
-				log.Infow("Extracted Init", "addresses", addr, "duration", time.Since(start))
+				log.Infow("Extracted Init", "address", addr, "duration", time.Since(start))
 				results <- &StateDiffResult{
 					ActorDiff: initChanges,
+					Address:   addr,
+				}
+			}
+			if PowerCodes.Has(change.Current.Code) {
+				start := time.Now()
+				actorDiff, err := powerdiff.StateDiffFor(actorVersion)
+				if err != nil {
+					return err
+				}
+				powerChanges, err := actorDiff.State(ctx, api, act)
+				if err != nil {
+					return err
+				}
+				log.Infow("Extracted Power", "address", addr, "duration", time.Since(start))
+				results <- &StateDiffResult{
+					ActorDiff: powerChanges,
 					Address:   addr,
 				}
 			}
@@ -186,6 +204,8 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 			asc.VerifregActor = stateDiff.ActorDiff
 		case "init":
 			asc.InitActor = stateDiff.ActorDiff
+		case "power":
+			asc.PowerActor = stateDiff.ActorDiff
 		default:
 			panic(stateDiff.ActorDiff.Kind())
 		}

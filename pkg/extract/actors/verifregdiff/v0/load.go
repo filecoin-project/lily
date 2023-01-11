@@ -35,15 +35,3 @@ var VerifiregClientsMapLoader = func(m interface{}) (adt.Map, *adt.MapOpts, erro
 		HashFunc: verifregState.VerifiedClientsMapHashFunction(),
 	}, nil
 }
-
-var VerifiiregClaimsMapLoader = func(m interface{}) (adt.Map, *adt.MapOpts, error) {
-	verifregState := m.(verifreg.State)
-	claimsMap, err := verifregState.ClaimsMap()
-	if err != nil {
-		return nil, nil, err
-	}
-	return claimsMap, &adt.MapOpts{
-		Bitwidth: verifregState.ClaimsMapBitWidth(),
-		HashFunc: verifregState.ClaimsMapHashFunction(),
-	}, nil
-}
