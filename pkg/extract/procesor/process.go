@@ -21,7 +21,9 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
+	"github.com/filecoin-project/lily/pkg/extract/actors/actordiff"
 	"github.com/filecoin-project/lily/pkg/extract/actors/initdiff"
+	"github.com/filecoin-project/lily/pkg/extract/actors/marketdiff"
 	"github.com/filecoin-project/lily/pkg/extract/actors/minerdiff"
 	"github.com/filecoin-project/lily/pkg/extract/actors/powerdiff"
 	"github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff"
@@ -60,18 +62,18 @@ func init() {
 type ActorStateChanges struct {
 	Current       *types.TipSet
 	Executed      *types.TipSet
-	Actors        map[address.Address]statetree.ActorDiff
+	ActorStates   map[address.Address]actors.ActorDiffResult
 	MinerActors   map[address.Address]actors.ActorDiffResult
 	VerifregActor actors.ActorDiffResult
 	InitActor     actors.ActorDiffResult
 	PowerActor    actors.ActorDiffResult
+	MarketActor   actors.ActorDiffResult
 }
 
 func (a ActorStateChanges) Attributes() []attribute.KeyValue {
 	return []attribute.KeyValue{
 		attribute.Int64("current", int64(a.Current.Height())),
 		attribute.Int64("executed", int64(a.Executed.Height())),
-		attribute.Int("actor_change", len(a.Actors)),
 		attribute.Int("miner_changes", len(a.MinerActors)),
 	}
 }
@@ -98,8 +100,8 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 	asc := &ActorStateChanges{
 		Current:     current,
 		Executed:    executed,
-		Actors:      actorChanges,
 		MinerActors: make(map[address.Address]actors.ActorDiffResult, len(actorChanges)), // there are at most actorChanges entries
+		ActorStates: make(map[address.Address]actors.ActorDiffResult, len(actorChanges)), // there are at most actorChanges entries
 	}
 
 	actorVersion, err := core.ActorVersionForTipSet(ctx, current, nvg)
@@ -119,6 +121,17 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 			Type:     change.ChangeType,
 		}
 		grp.Go(func() error {
+			actorDiff := &actordiff.StateDiff{
+				DiffMethods: []actors.ActorStateDiff{actordiff.Actor{}},
+			}
+			actorStateChanges, err := actorDiff.State(grpCtx, api, act)
+			if err != nil {
+				return err
+			}
+			results <- &StateDiffResult{
+				ActorDiff: actorStateChanges,
+				Address:   addr,
+			}
 			if MinerCodes.Has(change.Current.Code) {
 				start := time.Now()
 				// construct the state differ required by this actor version
@@ -161,7 +174,7 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 				if err != nil {
 					return err
 				}
-				initChanges, err := actorDiff.State(ctx, api, act)
+				initChanges, err := actorDiff.State(grpCtx, api, act)
 				if err != nil {
 					return err
 				}
@@ -177,13 +190,29 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 				if err != nil {
 					return err
 				}
-				powerChanges, err := actorDiff.State(ctx, api, act)
+				powerChanges, err := actorDiff.State(grpCtx, api, act)
 				if err != nil {
 					return err
 				}
 				log.Infow("Extracted Power", "address", addr, "duration", time.Since(start))
 				results <- &StateDiffResult{
 					ActorDiff: powerChanges,
+					Address:   addr,
+				}
+			}
+			if MarketCodes.Has(change.Current.Code) {
+				start := time.Now()
+				actorDiff, err := marketdiff.StateDiffFor(actorVersion)
+				if err != nil {
+					return err
+				}
+				marketChanges, err := actorDiff.State(grpCtx, api, act)
+				if err != nil {
+					return err
+				}
+				log.Infow("Extracted Market", "address", addr, "duration", time.Since(start))
+				results <- &StateDiffResult{
+					ActorDiff: marketChanges,
 					Address:   addr,
 				}
 			}
@@ -198,6 +227,8 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 	}()
 	for stateDiff := range results {
 		switch stateDiff.ActorDiff.Kind() {
+		case "actor":
+			asc.ActorStates[stateDiff.Address] = stateDiff.ActorDiff
 		case "miner":
 			asc.MinerActors[stateDiff.Address] = stateDiff.ActorDiff
 		case "verifreg":
@@ -206,6 +237,8 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 			asc.InitActor = stateDiff.ActorDiff
 		case "power":
 			asc.PowerActor = stateDiff.ActorDiff
+		case "market":
+			asc.MarketActor = stateDiff.ActorDiff
 		default:
 			panic(stateDiff.ActorDiff.Kind())
 		}
