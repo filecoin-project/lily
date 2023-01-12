@@ -5,7 +5,9 @@ import (
 
 	"github.com/filecoin-project/lily/pkg/extract/actors/actordiff"
 	initv0 "github.com/filecoin-project/lily/pkg/extract/actors/initdiff/v0"
-	minerv0 "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v0"
+	marketV0 "github.com/filecoin-project/lily/pkg/extract/actors/marketdiff/v0"
+	minerV0 "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v0"
+	powerV0 "github.com/filecoin-project/lily/pkg/extract/actors/powerdiff/v0"
 	verifV0 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v0"
 	verifV9 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v9"
 )
@@ -25,6 +27,12 @@ const verifDiffPkgV0 = "v0"
 const verifDiffPathV9 = "pkg/extract/actors/verifregdiff/v9/cbor_gen.go"
 const verifDiffPkgV9 = "v9"
 
+const marketDiffPath = "pkg/extract/actors/marketdiff/v0/cbor_gen.go"
+const marketDiffPkg = "v0"
+
+const powerDiffPath = "pkg/extract/actors/powerdiff/v0/cbor_gen.go"
+const powerDiffPkg = "v0"
+
 func main() {
 	if err := cbg.WriteMapEncodersToFile(actorDiffPath, actorDiffPkg,
 		actordiff.ActorChange{},
@@ -34,13 +42,13 @@ func main() {
 	}
 
 	if err := cbg.WriteMapEncodersToFile(minerDiffPath, minerDiffPkg,
-		minerv0.SectorStatusChange{},
-		minerv0.PreCommitChange{},
-		minerv0.SectorChange{},
-		minerv0.FundsChange{},
-		minerv0.DebtChange{},
-		minerv0.InfoChange{},
-		minerv0.StateChange{},
+		minerV0.SectorStatusChange{},
+		minerV0.PreCommitChange{},
+		minerV0.SectorChange{},
+		minerV0.FundsChange{},
+		minerV0.DebtChange{},
+		minerV0.InfoChange{},
+		minerV0.StateChange{},
 	); err != nil {
 		panic(err)
 	}
@@ -68,4 +76,18 @@ func main() {
 		panic(err)
 	}
 
+	if err := cbg.WriteMapEncodersToFile(marketDiffPath, marketDiffPkg,
+		marketV0.StateChange{},
+		marketV0.ProposalChange{},
+		marketV0.DealChange{},
+	); err != nil {
+		panic(err)
+	}
+
+	if err := cbg.WriteMapEncodersToFile(powerDiffPath, powerDiffPkg,
+		powerV0.StateChange{},
+		powerV0.ClaimsChange{},
+	); err != nil {
+		panic(err)
+	}
 }

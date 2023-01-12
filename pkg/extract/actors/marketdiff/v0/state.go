@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/filecoin-project/go-state-types/store"
 	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -17,18 +18,35 @@ type StateDiffResult struct {
 	DealProposalChanges ProposalChangeList
 }
 
-func (s *StateDiffResult) MarshalStateChange(ctx context.Context, bs blockstore.Blockstore) (cbg.CBORMarshaler, error) {
-	//TODO implement me
-	panic("implement me")
+func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, bs blockstore.Blockstore) (cbg.CBORMarshaler, error) {
+	out := &StateChange{}
+	adtStore := store.WrapBlockStore(ctx, bs)
+
+	if deals := sd.DealStateChanges; deals != nil {
+		root, err := deals.ToAdtMap(adtStore, 5)
+		if err != nil {
+			return nil, err
+		}
+		out.Deals = root
+	}
+
+	if proposals := sd.DealProposalChanges; proposals != nil {
+		root, err := proposals.ToAdtMap(adtStore, 5)
+		if err != nil {
+			return nil, err
+		}
+		out.Proposals = root
+	}
+	return out, nil
 }
 
-func (s *StateDiffResult) Kind() string {
+func (sd *StateDiffResult) Kind() string {
 	return "market"
 }
 
 type StateChange struct {
-	Deals     cid.Cid
-	Proposals cid.Cid
+	Deals     cid.Cid `cborgen:"deals"`
+	Proposals cid.Cid `cborgen:"proposals"`
 }
 
 type StateDiff struct {

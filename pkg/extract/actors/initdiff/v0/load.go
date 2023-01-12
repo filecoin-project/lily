@@ -7,8 +7,8 @@ import (
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 )
 
-var InitStateLoader = func(strore adt.Store, act *types.Actor) (interface{}, error) {
-	return init_.Load(strore, act)
+var InitStateLoader = func(store adt.Store, act *types.Actor) (interface{}, error) {
+	return init_.Load(store, act)
 }
 
 var InitAddressesMapLoader = func(m interface{}) (adt.Map, *adt.MapOpts, error) {

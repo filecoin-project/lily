@@ -4,9 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/filecoin-project/go-address"
+	"github.com/ipfs/go-cid"
 	typegen "github.com/whyrusleeping/cbor-gen"
 	"go.uber.org/zap"
 
+	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
 	"github.com/filecoin-project/lily/tasks"
@@ -21,12 +24,16 @@ type AllocationsChange struct {
 	Change   core.ChangeType   `cborgen:"change"`
 }
 
-type AllocationsChangeList []*AllocationsChange
+type AllocationsChangeMap map[address.Address][]*AllocationsChange
 
 const KindVerifregAllocations = "verifreg_allocations"
 
-func (c AllocationsChangeList) Kind() actors.ActorStateKind {
+func (c AllocationsChangeMap) Kind() actors.ActorStateKind {
 	return KindVerifregAllocations
+}
+
+func (c AllocationsChangeMap) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
+	panic("NYI")
 }
 
 type Allocations struct{}

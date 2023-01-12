@@ -6,6 +6,8 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	adt2 "github.com/filecoin-project/specs-actors/v3/actors/util/adt"
+	"github.com/ipfs/go-cid"
 	typegen "github.com/whyrusleeping/cbor-gen"
 	"go.uber.org/zap"
 
@@ -28,12 +30,39 @@ type ClaimsChange struct {
 	Change   core.ChangeType   `cborgen:"change"`
 }
 
-type ClaimsChangeList []*ClaimsChange
+type ClaimsChangeMap map[address.Address][]*ClaimsChange
 
 const KindVerifregClaims = "verifreg_claims"
 
-func (c ClaimsChangeList) Kind() actors.ActorStateKind {
+func (c ClaimsChangeMap) Kind() actors.ActorStateKind {
 	return KindVerifregClaims
+}
+
+// returns a HAMT[provider]HAMT[claimID]ClaimsChange
+func (c ClaimsChangeMap) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
+	topNode, err := adt2.MakeEmptyMap(store, bw)
+	if err != nil {
+		return cid.Undef, err
+	}
+	for provider, changes := range c {
+		innerNode, err := adt2.MakeEmptyMap(store, bw)
+		if err != nil {
+			return cid.Undef, err
+		}
+		for _, change := range changes {
+			if err := innerNode.Put(core.StringKey(change.ClaimID), change); err != nil {
+				return cid.Undef, err
+			}
+		}
+		innerRoot, err := innerNode.Root()
+		if err != nil {
+			return cid.Undef, err
+		}
+		if err := topNode.Put(abi.IdAddrKey(provider), typegen.CborCid(innerRoot)); err != nil {
+			return cid.Undef, err
+		}
+	}
+	return topNode.Root()
 }
 
 type Claims struct{}
@@ -52,27 +81,27 @@ func DiffClaims(ctx context.Context, api tasks.DataSource, act *actors.ActorChan
 		return nil, err
 	}
 	// map change is keyed on provider address with value adt.Map
-	out := make(ClaimsChangeList, 0, len(mapChange))
+	out := make(ClaimsChangeMap)
 	for _, change := range mapChange {
-		subMapChanges, err := diffSubMap(ctx, api, act, change.Key)
+		providerID, err := abi.ParseUIntKey(string(change.Key))
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, subMapChanges...)
+		providerAddress, err := address.NewIDAddress(providerID)
+		if err != nil {
+			return nil, err
+		}
+		subMapChanges, err := diffSubMap(ctx, api, act, providerAddress, change.Key)
+		if err != nil {
+			return nil, err
+		}
+		out[providerAddress] = subMapChanges
 	}
 	return out, nil
 }
 
-func diffSubMap(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, providerKey []byte) ([]*ClaimsChange, error) {
+func diffSubMap(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, providerAddress address.Address, providerKey []byte) ([]*ClaimsChange, error) {
 	mapChange, err := generic.DiffActorMap(ctx, api, act, v0.VerifregStateLoader, func(i interface{}) (adt.Map, *adt.MapOpts, error) {
-		providerID, err := abi.ParseUIntKey(string(providerKey))
-		if err != nil {
-			return nil, nil, err
-		}
-		providerAddress, err := address.NewIDAddress(providerID)
-		if err != nil {
-			return nil, nil, err
-		}
 		verifregState := i.(verifreg.State)
 		providerClaimMap, err := verifregState.ClaimMapForProvider(providerAddress)
 		if err != nil {

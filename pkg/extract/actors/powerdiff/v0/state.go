@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/filecoin-project/go-state-types/store"
 	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -16,17 +17,27 @@ type StateDiffResult struct {
 	ClaimsChanges ClaimsChangeList
 }
 
-func (s *StateDiffResult) MarshalStateChange(ctx context.Context, bs blockstore.Blockstore) (cbg.CBORMarshaler, error) {
-	//TODO implement me
-	panic("implement me")
+func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, bs blockstore.Blockstore) (cbg.CBORMarshaler, error) {
+	out := &StateChange{}
+	adtStore := store.WrapBlockStore(ctx, bs)
+
+	if claims := sd.ClaimsChanges; claims != nil {
+		root, err := claims.ToAdtMap(adtStore, 5)
+		if err != nil {
+			return nil, err
+		}
+		out.Claims = root
+	}
+
+	return out, nil
 }
 
-func (s *StateDiffResult) Kind() string {
+func (sd *StateDiffResult) Kind() string {
 	return "power"
 }
 
 type StateChange struct {
-	Claims cid.Cid
+	Claims cid.Cid `cborgen:"claims"`
 }
 
 type StateDiff struct {

@@ -43,8 +43,14 @@ func (t *StateChange) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if err := cbg.WriteCid(cw, t.Verifiers); err != nil {
-		return xerrors.Errorf("failed to write cid field t.Verifiers: %w", err)
+	if t.Verifiers == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.Verifiers); err != nil {
+			return xerrors.Errorf("failed to write cid field t.Verifiers: %w", err)
+		}
 	}
 
 	// t.Claims (cid.Cid) (struct)
@@ -59,8 +65,14 @@ func (t *StateChange) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if err := cbg.WriteCid(cw, t.Claims); err != nil {
-		return xerrors.Errorf("failed to write cid field t.Claims: %w", err)
+	if t.Claims == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.Claims); err != nil {
+			return xerrors.Errorf("failed to write cid field t.Claims: %w", err)
+		}
 	}
 
 	// t.Allocations (cid.Cid) (struct)
@@ -75,8 +87,14 @@ func (t *StateChange) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if err := cbg.WriteCid(cw, t.Allocations); err != nil {
-		return xerrors.Errorf("failed to write cid field t.Allocations: %w", err)
+	if t.Allocations == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.Allocations); err != nil {
+			return xerrors.Errorf("failed to write cid field t.Allocations: %w", err)
+		}
 	}
 
 	return nil
@@ -125,12 +143,22 @@ func (t *StateChange) UnmarshalCBOR(r io.Reader) (err error) {
 
 			{
 
-				c, err := cbg.ReadCid(cr)
+				b, err := cr.ReadByte()
 				if err != nil {
-					return xerrors.Errorf("failed to read cid field t.Verifiers: %w", err)
+					return err
 				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
 
-				t.Verifiers = c
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Verifiers: %w", err)
+					}
+
+					t.Verifiers = &c
+				}
 
 			}
 			// t.Claims (cid.Cid) (struct)
@@ -138,12 +166,22 @@ func (t *StateChange) UnmarshalCBOR(r io.Reader) (err error) {
 
 			{
 
-				c, err := cbg.ReadCid(cr)
+				b, err := cr.ReadByte()
 				if err != nil {
-					return xerrors.Errorf("failed to read cid field t.Claims: %w", err)
+					return err
 				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
 
-				t.Claims = c
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Claims: %w", err)
+					}
+
+					t.Claims = &c
+				}
 
 			}
 			// t.Allocations (cid.Cid) (struct)
@@ -151,12 +189,22 @@ func (t *StateChange) UnmarshalCBOR(r io.Reader) (err error) {
 
 			{
 
-				c, err := cbg.ReadCid(cr)
+				b, err := cr.ReadByte()
 				if err != nil {
-					return xerrors.Errorf("failed to read cid field t.Allocations: %w", err)
+					return err
 				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
 
-				t.Allocations = c
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Allocations: %w", err)
+					}
+
+					t.Allocations = &c
+				}
 
 			}
 

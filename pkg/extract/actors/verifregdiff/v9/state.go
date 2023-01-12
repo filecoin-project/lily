@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/filecoin-project/go-state-types/store"
 	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -19,23 +20,48 @@ var log = logging.Logger("extract/actors/verifreg")
 
 type StateDiffResult struct {
 	VerifierChanges    v8.VerifiersChangeList
-	ClaimChanges       ClaimsChangeList
-	AllocationsChanges AllocationsChangeList
+	ClaimChanges       ClaimsChangeMap
+	AllocationsChanges AllocationsChangeMap
 }
 
-func (s *StateDiffResult) Kind() string {
+func (sd *StateDiffResult) Kind() string {
 	return "verifreg"
 }
 
-func (s *StateDiffResult) MarshalStateChange(ctx context.Context, bs blockstore.Blockstore) (cbg.CBORMarshaler, error) {
-	//TODO implement me
-	panic("implement me")
+func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, bs blockstore.Blockstore) (cbg.CBORMarshaler, error) {
+	out := &StateChange{}
+	adtStore := store.WrapBlockStore(ctx, bs)
+
+	if verifiers := sd.VerifierChanges; verifiers != nil {
+		root, err := verifiers.ToAdtMap(adtStore, 5)
+		if err != nil {
+			return nil, err
+		}
+		out.Verifiers = &root
+	}
+
+	if claims := sd.ClaimChanges; claims != nil {
+		root, err := claims.ToAdtMap(adtStore, 5)
+		if err != nil {
+			return nil, err
+		}
+		out.Claims = &root
+	}
+
+	if allocations := sd.AllocationsChanges; allocations != nil {
+		root, err := allocations.ToAdtMap(adtStore, 5)
+		if err != nil {
+			return nil, err
+		}
+		out.Allocations = &root
+	}
+	return out, nil
 }
 
 type StateChange struct {
-	Verifiers   cid.Cid `cborgen:"verifiers"`
-	Claims      cid.Cid `cborgen:"claims"`
-	Allocations cid.Cid `cborgen:"allocations"`
+	Verifiers   *cid.Cid `cborgen:"verifiers"`
+	Claims      *cid.Cid `cborgen:"claims"`
+	Allocations *cid.Cid `cborgen:"allocations"`
 }
 
 type StateDiff struct {
@@ -57,9 +83,9 @@ func (s *StateDiff) State(ctx context.Context, api tasks.DataSource, act *actors
 		case v0.KindVerifregVerifiers:
 			stateDiff.VerifierChanges = stateChange.(VerifiersChangeList)
 		case KindVerifregClaims:
-			stateDiff.ClaimChanges = stateChange.(ClaimsChangeList)
+			stateDiff.ClaimChanges = stateChange.(ClaimsChangeMap)
 		case KindVerifregAllocations:
-			stateDiff.AllocationsChanges = stateChange.(AllocationsChangeList)
+			stateDiff.AllocationsChanges = stateChange.(AllocationsChangeMap)
 		}
 	}
 	log.Infow("Extracted Verified Registry State Diff", "address", act.Address, "duration", time.Since(start))

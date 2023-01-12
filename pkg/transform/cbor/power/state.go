@@ -1,4 +1,4 @@
-package verifreg
+package power
 
 import (
 	"context"
@@ -10,9 +10,9 @@ import (
 	"github.com/filecoin-project/lily/pkg/extract/actors"
 )
 
-func HandleChanges(ctx context.Context, bs blockstore.Blockstore, verifreg actors.ActorDiffResult) (cid.Cid, error) {
+func HandleChange(ctx context.Context, bs blockstore.Blockstore, power actors.ActorDiffResult) (cid.Cid, error) {
 	store := adt2.WrapBlockStore(ctx, bs)
-	vsc, err := verifreg.MarshalStateChange(ctx, bs)
+	vsc, err := power.MarshalStateChange(ctx, bs)
 	if err != nil {
 		return cid.Undef, err
 	}

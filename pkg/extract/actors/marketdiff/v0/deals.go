@@ -4,8 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/ipfs/go-cid"
 	typegen "github.com/whyrusleeping/cbor-gen"
 	"go.uber.org/zap"
+
+	"github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
@@ -14,10 +18,14 @@ import (
 )
 
 type DealChange struct {
-	DealID   uint64
-	Current  *typegen.Deferred
-	Previous *typegen.Deferred
-	Change   core.ChangeType
+	DealID   uint64            `cborgen:"dealID"`
+	Current  *typegen.Deferred `cborgen:"current"`
+	Previous *typegen.Deferred `cborgen:"previous"`
+	Change   core.ChangeType   `cborgen:"change"`
+}
+
+func (t *DealChange) Key() string {
+	return abi.UIntKey(t.DealID).Key()
 }
 
 type DealChangeList []*DealChange
@@ -26,6 +34,19 @@ const KindMarketDeal = "market_deal"
 
 func (p DealChangeList) Kind() actors.ActorStateKind {
 	return KindMarketDeal
+}
+
+func (p DealChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
+	node, err := adt.MakeEmptyMap(store, bw)
+	if err != nil {
+		return cid.Undef, err
+	}
+	for _, l := range p {
+		if err := node.Put(l, l); err != nil {
+			return cid.Undef, err
+		}
+	}
+	return node.Root()
 }
 
 type Deals struct{}
@@ -39,7 +60,7 @@ func (Deals) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorCh
 }
 
 func DiffDeals(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
-	arrayChanges, err := generic.DiffActorArray(ctx, api, act, nil, nil)
+	arrayChanges, err := generic.DiffActorArray(ctx, api, act, MarketStateLoader, MarketDealsArrayLoader)
 	if err != nil {
 		return nil, err
 	}

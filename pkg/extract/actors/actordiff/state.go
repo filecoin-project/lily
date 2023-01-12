@@ -63,6 +63,6 @@ func (s *StateDiff) State(ctx context.Context, api tasks.DataSource, act *actors
 			stateDiff.ActorStateChanges = stateChange.(*ActorChange)
 		}
 	}
-	log.Infow("Extracted Init State Diff", "address", act.Address, "duration", time.Since(start))
+	log.Infow("Extracted Raw Actor State Diff", "address", act.Address, "duration", time.Since(start))
 	return stateDiff, nil
 }

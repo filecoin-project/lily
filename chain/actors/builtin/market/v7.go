@@ -116,7 +116,7 @@ func (s *dealStates7) decode(val *cbg.Deferred) (*DealState, error) {
 	return &ds, nil
 }
 
-func (s *dealStates7) array() adt.Array {
+func (s *dealStates7) AsArray() adt.Array {
 	return s.Array
 }
 
@@ -179,7 +179,7 @@ func (s *dealProposals7) decode(val *cbg.Deferred) (*DealProposal, error) {
 	return &dp, nil
 }
 
-func (s *dealProposals7) array() adt.Array {
+func (s *dealProposals7) AsArray() adt.Array {
 	return s.Array
 }
 

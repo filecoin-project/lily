@@ -15,7 +15,9 @@ import (
 	"github.com/filecoin-project/lily/pkg/extract/procesor"
 	"github.com/filecoin-project/lily/pkg/transform/cbor/actor"
 	"github.com/filecoin-project/lily/pkg/transform/cbor/init_"
+	"github.com/filecoin-project/lily/pkg/transform/cbor/market"
 	"github.com/filecoin-project/lily/pkg/transform/cbor/miner"
+	"github.com/filecoin-project/lily/pkg/transform/cbor/power"
 	"github.com/filecoin-project/lily/pkg/transform/cbor/verifreg"
 )
 
@@ -27,6 +29,8 @@ type ActorIPLDContainer struct {
 	VerifregActor  *cid.Cid // VerifregStateChange or empty
 	ActorStates    cid.Cid  // HAMT[Address]ActorStateChange
 	InitActor      cid.Cid  // HAMT[Address]AddressChanges.
+	MarketActor    cid.Cid  // MarketStateChange or empty
+	PowerActor     cid.Cid  // PowerStateChange or empty
 }
 
 func ProcessState(ctx context.Context, changes *procesor.ActorStateChanges, w io.Writer) error {
@@ -68,11 +72,13 @@ func ProcessActors(ctx context.Context, bs blockstore.Blockstore, changes *proce
 		CurrentTipSet:  changes.Current,
 		ExecutedTipSet: changes.Executed,
 	}
-	minerRoot, err := miner.HandleChanges(ctx, bs, changes.MinerActors)
-	if err != nil {
-		return nil, err
+	if changes.MinerActors != nil {
+		minerRoot, err := miner.HandleChanges(ctx, bs, changes.MinerActors)
+		if err != nil {
+			return nil, err
+		}
+		out.MinerActors = minerRoot
 	}
-	out.MinerActors = minerRoot
 
 	if changes.VerifregActor != nil {
 		verifregRoot, err := verifreg.HandleChanges(ctx, bs, changes.VerifregActor)
@@ -96,6 +102,22 @@ func ProcessActors(ctx context.Context, bs blockstore.Blockstore, changes *proce
 			return nil, err
 		}
 		out.InitActor = initRoot
+	}
+
+	if changes.MarketActor != nil {
+		marketRoot, err := market.HandleChange(ctx, bs, changes.MarketActor)
+		if err != nil {
+			return nil, err
+		}
+		out.MarketActor = marketRoot
+	}
+
+	if changes.PowerActor != nil {
+		powerRoot, err := power.HandleChange(ctx, bs, changes.PowerActor)
+		if err != nil {
+			return nil, err
+		}
+		out.PowerActor = powerRoot
 	}
 	return out, nil
 }
