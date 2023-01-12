@@ -20,13 +20,6 @@ import (
 	"gopkg.in/cheggaaa/pb.v1"
 
 	"github.com/filecoin-project/lily/chain/actors"
-	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
-	"github.com/filecoin-project/lily/chain/actors/builtin/market"
-	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
-	"github.com/filecoin-project/lily/chain/actors/builtin/multisig"
-	"github.com/filecoin-project/lily/chain/actors/builtin/power"
-	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
-	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lily/lens/util"
 )
@@ -53,26 +46,18 @@ var ChainActorCodesCmd = &cli.Command{
 	Name:  "actor-codes",
 	Usage: "Print actor codes and names",
 	Action: func(cctx *cli.Context) error {
-		if err := printSortedActorVersions(init_.VersionCodes()); err != nil {
-			return err
-		}
-		if err := printSortedActorVersions(power.VersionCodes()); err != nil {
-			return err
-		}
-		if err := printSortedActorVersions(miner.VersionCodes()); err != nil {
-			return err
-		}
-		if err := printSortedActorVersions(market.VersionCodes()); err != nil {
-			return err
-		}
-		if err := printSortedActorVersions(verifreg.VersionCodes()); err != nil {
-			return err
-		}
-		if err := printSortedActorVersions(multisig.VersionCodes()); err != nil {
-			return err
-		}
-		if err := printSortedActorVersions(reward.VersionCodes()); err != nil {
-			return err
+		for _, a := range []string{actors.AccountKey, actors.CronKey, actors.DatacapKey, actors.MarketKey, actors.MarketKey, actors.MultisigKey, actors.PaychKey, actors.PowerKey, actors.RewardKey, actors.SystemKey, actors.VerifregKey} {
+			av := make(map[actors.Version]cid.Cid)
+			for _, v := range []int{0, 2, 3, 4, 5, 6, 7, 8, 9} {
+				code, ok := actors.GetActorCodeID(actors.Version(v), a)
+				if !ok {
+					continue
+				}
+				av[actors.Version(v)] = code
+			}
+			if err := printSortedActorVersions(av); err != nil {
+				return err
+			}
 		}
 		return nil
 	},
@@ -732,6 +717,6 @@ func printSortedActorVersions(av map[actors.Version]cid.Cid) error {
 		t.AppendRow(table.Row{v, name, family, av[actors.Version(v)]})
 		t.AppendSeparator()
 	}
-	fmt.Println(t.Render())
+	fmt.Println(t.RenderMarkdown())
 	return nil
 }
