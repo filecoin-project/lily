@@ -1,11 +1,15 @@
 package actordiff
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"time"
 
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
+	block "github.com/ipfs/go-block-format"
+	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/zap"
 
@@ -17,10 +21,38 @@ import (
 var log = logging.Logger("extract/actors/actor")
 
 type ActorChange struct {
-	Actor    *types.Actor
-	Current  []byte
-	Previous []byte
-	Change   core.ChangeType
+	Actor    *types.Actor    `cborgen:"actor"`
+	Current  []byte          `cborgen:"current_state"`
+	Previous []byte          `cborgen:"previous_state"`
+	Change   core.ChangeType `cborgen:"change"`
+}
+
+func (a *ActorChange) Serialize() ([]byte, error) {
+	buf := new(bytes.Buffer)
+	if err := a.MarshalCBOR(buf); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (a *ActorChange) ToStorageBlock() (block.Block, error) {
+	data, err := a.Serialize()
+	if err != nil {
+		return nil, err
+	}
+	c, err := abi.CidBuilder.WithCodec(cid.Raw).Sum(data)
+	if err != nil {
+		return nil, err
+	}
+	return block.NewBlockWithCid(data, c)
+}
+
+func DecodeActorChange(b []byte) (*ActorChange, error) {
+	var ac ActorChange
+	if err := ac.UnmarshalCBOR(bytes.NewReader(b)); err != nil {
+		return nil, err
+	}
+	return &ac, nil
 }
 
 const KindActorChange = "actor_change"

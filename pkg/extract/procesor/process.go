@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/filecoin-project/lily/chain/actors/builtin/init"
+	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/chain/actors/builtin/power"
@@ -54,7 +54,7 @@ func init() {
 	for _, c := range verifreg.AllCodes() {
 		VerifregCodes.Add(c)
 	}
-	for _, c := range init.AllCodes() {
+	for _, c := range init_.AllCodes() {
 		InitCodes.Add(c)
 	}
 }

@@ -21,11 +21,11 @@ import (
 
 // TODO add cbor gen tags
 type ClaimsChange struct {
-	Provider []byte
-	ClaimID  []byte
-	Current  *typegen.Deferred
-	Previous *typegen.Deferred
-	Change   core.ChangeType
+	Provider []byte            `cborgen:"provider"`
+	ClaimID  []byte            `cborgen:"claimID"`
+	Current  *typegen.Deferred `cborgen:"current"`
+	Previous *typegen.Deferred `cborgen:"previous"`
+	Change   core.ChangeType   `cborgen:"change"`
 }
 
 type ClaimsChangeList []*ClaimsChange

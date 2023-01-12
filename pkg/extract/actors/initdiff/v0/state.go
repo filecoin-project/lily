@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/filecoin-project/go-state-types/store"
 	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -21,12 +22,21 @@ func (s *StateDiffResult) Kind() string {
 }
 
 func (s *StateDiffResult) MarshalStateChange(ctx context.Context, bs blockstore.Blockstore) (cbg.CBORMarshaler, error) {
-	//TODO implement me
-	panic("implement me")
+	out := &StateChange{}
+	adtStore := store.WrapBlockStore(ctx, bs)
+
+	if addresses := s.AddressesChanges; addresses != nil {
+		root, err := addresses.ToAdtMap(adtStore, 5)
+		if err != nil {
+			return nil, err
+		}
+		out.Addresses = root
+	}
+	return out, nil
 }
 
 type StateChange struct {
-	Addresses cid.Cid
+	Addresses cid.Cid `cborgen:"addresses"`
 }
 
 type StateDiff struct {

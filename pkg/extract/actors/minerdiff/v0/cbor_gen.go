@@ -8,11 +8,10 @@ import (
 	"math"
 	"sort"
 
+	core "github.com/filecoin-project/lily/pkg/core"
 	cid "github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	xerrors "golang.org/x/xerrors"
-
-	core "github.com/filecoin-project/lily/pkg/core"
 )
 
 var _ = xerrors.Errorf

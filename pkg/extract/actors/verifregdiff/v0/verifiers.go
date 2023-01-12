@@ -4,8 +4,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/ipfs/go-cid"
 	typegen "github.com/whyrusleeping/cbor-gen"
 	"go.uber.org/zap"
+
+	"github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
@@ -15,10 +18,14 @@ import (
 
 // TODO add cbor gen tags
 type VerifiersChange struct {
-	Verifier []byte
-	Current  *typegen.Deferred
-	Previous *typegen.Deferred
-	Change   core.ChangeType
+	Verifier []byte            `cborgen:"verifier"`
+	Current  *typegen.Deferred `cborgen:"current"`
+	Previous *typegen.Deferred `cborgen:"previous"`
+	Change   core.ChangeType   `cborgen:"change"`
+}
+
+func (t *VerifiersChange) Key() string {
+	return core.StringKey(t.Verifier).Key()
 }
 
 type VerifiersChangeList []*VerifiersChange
@@ -27,6 +34,19 @@ const KindVerifregVerifiers = "verifreg_verifiers"
 
 func (v VerifiersChangeList) Kind() actors.ActorStateKind {
 	return KindVerifregVerifiers
+}
+
+func (v VerifiersChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
+	node, err := adt.MakeEmptyMap(store, bw)
+	if err != nil {
+		return cid.Undef, err
+	}
+	for _, l := range v {
+		if err := node.Put(l, l); err != nil {
+			return cid.Undef, err
+		}
+	}
+	return node.Root()
 }
 
 type Verifiers struct{}

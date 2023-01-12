@@ -17,8 +17,22 @@ type StateDiffResult struct {
 }
 
 func (s *StateDiffResult) MarshalStateChange(ctx context.Context, bs blockstore.Blockstore) (cbg.CBORMarshaler, error) {
-	//TODO implement me
-	panic("implement me")
+	out := &StateChange{}
+
+	if actorChanges := s.ActorStateChanges; actorChanges != nil {
+		blk, err := actorChanges.ToStorageBlock()
+		if err != nil {
+			return nil, err
+		}
+		if err := bs.Put(ctx, blk); err != nil {
+			return nil, err
+		}
+		c := blk.Cid()
+		out.ActorState = c
+	} else {
+		return nil, nil
+	}
+	return out, nil
 }
 
 func (s *StateDiffResult) Kind() string {
@@ -26,7 +40,7 @@ func (s *StateDiffResult) Kind() string {
 }
 
 type StateChange struct {
-	ActorStates cid.Cid // Hamt[address]StateChange
+	ActorState cid.Cid `cborgen:"actors"`
 }
 
 type StateDiff struct {
