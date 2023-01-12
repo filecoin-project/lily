@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/exitcode"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -108,59 +107,20 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				// unknown type.
 				// If the message was executed it means we are out of step with Lotus behaviour somehow. This probably
 				// indicates that Lily actor type detection is out of date.
-				log.Errorw("parsing VM message", "source_cid", parentMsg.Cid, "source_receipt", parentMsg.Ret, "child_cid", childCid, "child_receipt", child.Receipt)
+				errMsg := fmt.Sprintf("parsing VM message. source_cid %s, source_receipt %+v child_cid %s child_receipt %+v", parentMsg.Cid, parentMsg.Ret, childCid, child.Receipt)
+				log.Error(errMsg)
 				errorsDetected = append(errorsDetected, &messages.MessageError{
 					Cid:   parentMsg.Cid,
-					Error: fmt.Errorf("failed to get to actor code for message: %s to address %s", childCid, child.Message.To).Error(),
+					Error: fmt.Errorf("failed to get to actor code for message: %s to address %s: %s", childCid, child.Message.To, errMsg).Error(),
 				})
 				continue
 			}
 
-			// if the to actor code was not found we cannot parse params or return, record the message and continue
-			if !found ||
-				// if the exit code indicates an issue with params or method we cannot parse the message params
-				child.Receipt.ExitCode == exitcode.ErrSerialization ||
-				child.Receipt.ExitCode == exitcode.ErrIllegalArgument ||
-				child.Receipt.ExitCode == exitcode.SysErrInvalidMethod ||
-				// UsrErrUnsupportedMethod TODO: https://github.com/filecoin-project/go-state-types/pull/44
-				child.Receipt.ExitCode == exitcode.ExitCode(22) {
-
-				// append results and continue
-				vmMessageResults = append(vmMessageResults, &messagemodel.VMMessage{
-					Height:    int64(parentMsg.Height),
-					StateRoot: parentMsg.StateRoot.String(),
-					Source:    parentMsg.Cid.String(),
-					Cid:       childCid.String(),
-					From:      child.Message.From.String(),
-					To:        child.Message.To.String(),
-					Value:     child.Message.Value.String(),
-					GasUsed:   child.Receipt.GasUsed,
-					ExitCode:  int64(child.Receipt.ExitCode), // exit code is guaranteed to be non-zero which will indicate why actor was not found (i.e. message that created the actor failed to apply)
-					ActorCode: toCode.String(),               // since the actor code wasn't found this will be the string of an undefined CID.
-					Method:    uint64(child.Message.Method),
-					Params:    "",
-					Returns:   "",
-				})
-				continue
+			toActorCode := "<Unknown>"
+			if !toCode.Equals(cid.Undef) {
+				toActorCode = toCode.String()
 			}
 
-			// the to actor code was found and its exit code indicates the params should be parsable. We can safely
-			// attempt to parse message params and return, but exit code may still be non-zero here.
-
-			params, _, err := util.ParseParams(child.Message.Params, child.Message.Method, toCode)
-			if err != nil {
-				// a failure here indicates an error in message param parsing, or in exitcode checks above.
-				errorsDetected = append(errorsDetected, &messages.MessageError{
-					Cid: parentMsg.Cid,
-					// hex encode the params for reproduction in a unit test.
-					Error: fmt.Errorf("failed parse child message params cid: %s to code: %s method: %d params (hex encoded): %s : %w",
-						childCid, toCode, child.Message.Method, hex.EncodeToString(child.Message.Params), err).Error(),
-				})
-				// don't append message to result as it may contain invalud data.
-				continue
-			}
-
-			// params successfully parsed.
 			vmMsg := &messagemodel.VMMessage{
 				Height:    int64(parentMsg.Height),
 				StateRoot: parentMsg.StateRoot.String(),
@@ -171,16 +131,30 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				Value:     child.Message.Value.String(),
 				GasUsed:   child.Receipt.GasUsed,
 				ExitCode:  int64(child.Receipt.ExitCode),
-				ActorCode: toCode.String(),
+				ActorCode: toActorCode,
 				Method:    uint64(child.Message.Method),
-				Params:    params,
+				// Params will be filled below if exit code is non-zero
 				// Return will be filled below if exit code is non-zero
 			}
 
-			// only parse return of successful messages since unsuccessful messages don't return a parseable value.
+			// only parse params and return of successful messages since unsuccessful messages don't return a parseable value.
 			// As an example: a message may return ErrForbidden, it will have valid params, but will not contain a
 			// parsable return value in its receipt.
 			if child.Receipt.ExitCode.IsSuccess() {
+				params, _, err := util.ParseParams(child.Message.Params, child.Message.Method, toCode)
+				if err != nil {
+					// a failure here indicates an error in message param parsing, or in exitcode checks above.
+					errorsDetected = append(errorsDetected, &messages.MessageError{
+						Cid: parentMsg.Cid,
+						// hex encode the params for reproduction in a unit test.
+						Error: fmt.Errorf("failed parse child message params cid: %s to code: %s method: %d params (hex encoded): %s : %w",
+							childCid, toCode, child.Message.Method, hex.EncodeToString(child.Message.Params), err).Error(),
+					})
+				} else {
+					// add the message params
+					vmMsg.Params = params
+				}
+
 				ret, _, err := util.ParseReturn(child.Receipt.Return, child.Message.Method, toCode)
 				if err != nil {
 					errorsDetected = append(errorsDetected, &messages.MessageError{
@@ -189,12 +163,12 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 						Error: fmt.Errorf("failed parse child message return cid: %s to code: %s method: %d return (hex encoded): %s : %w",
 							childCid, toCode, child.Message.Method, hex.EncodeToString(child.Receipt.Return), err).Error(),
 					})
-					// don't append message to result as it may contain invalid data.
-					continue
+				} else {
+					// add the message return.
+					vmMsg.Returns = ret
 				}
-				// add the message return.
-				vmMsg.Returns = ret
 			}
+
 			// append message to results
 			vmMessageResults = append(vmMessageResults, vmMsg)
 		}
