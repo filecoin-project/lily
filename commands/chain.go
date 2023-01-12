@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
+	builtin9 "github.com/filecoin-project/go-state-types/builtin"
 	"github.com/filecoin-project/lotus/api"
 	lotusbuild "github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -46,7 +48,7 @@ var ChainActorCodesCmd = &cli.Command{
 	Name:  "actor-codes",
 	Usage: "Print actor codes and names",
 	Action: func(cctx *cli.Context) error {
-		for _, a := range []string{actors.AccountKey, actors.CronKey, actors.DatacapKey, actors.MarketKey, actors.MarketKey, actors.MultisigKey, actors.PaychKey, actors.PowerKey, actors.RewardKey, actors.SystemKey, actors.VerifregKey} {
+		for _, a := range []string{actors.AccountKey, actors.CronKey, actors.DatacapKey, actors.InitKey, actors.MarketKey, actors.MultisigKey, actors.PaychKey, actors.PowerKey, actors.RewardKey, actors.SystemKey, actors.VerifregKey} {
 			av := make(map[actors.Version]cid.Cid)
 			for _, v := range []int{0, 2, 3, 4, 5, 6, 7, 8, 9} {
 				code, ok := actors.GetActorCodeID(actors.Version(v), a)
@@ -55,9 +57,17 @@ var ChainActorCodesCmd = &cli.Command{
 				}
 				av[actors.Version(v)] = code
 			}
+			fmt.Printf("# %s\n", a)
+			fmt.Print("## Metadata\n")
 			if err := printSortedActorVersions(av); err != nil {
 				return err
 			}
+			fmt.Println()
+			fmt.Print("## Methods\n")
+			if err := printActorMethods(a); err != nil {
+				return err
+			}
+			fmt.Println()
 		}
 		return nil
 	},
@@ -716,6 +726,92 @@ func printSortedActorVersions(av map[actors.Version]cid.Cid) error {
 		}
 		t.AppendRow(table.Row{v, name, family, av[actors.Version(v)]})
 		t.AppendSeparator()
+	}
+	fmt.Println(t.RenderMarkdown())
+	return nil
+}
+
+func printActorMethods(actorKey string) error {
+	t := table.NewWriter()
+	t.AppendHeader(table.Row{"Method Name", "Method Number"})
+	var (
+		methodName   string
+		methodNumber any
+	)
+	switch actorKey {
+	case actors.AccountKey:
+		for i := 0; i < reflect.TypeOf(builtin9.MethodsAccount).NumField(); i++ {
+			methodName = reflect.TypeOf(builtin9.MethodsAccount).Field(i).Name
+			methodNumber = reflect.ValueOf(builtin9.MethodsAccount).Field(i).Interface()
+			t.AppendRow(table.Row{methodName, methodNumber})
+			t.AppendSeparator()
+		}
+	case actors.CronKey:
+		for i := 0; i < reflect.TypeOf(builtin9.MethodsCron).NumField(); i++ {
+			methodName = reflect.TypeOf(builtin9.MethodsCron).Field(i).Name
+			methodNumber = reflect.ValueOf(builtin9.MethodsCron).Field(i).Interface()
+			t.AppendRow(table.Row{methodName, methodNumber})
+			t.AppendSeparator()
+		}
+	case actors.DatacapKey:
+		for i := 0; i < reflect.TypeOf(builtin9.MethodsDatacap).NumField(); i++ {
+			methodName = reflect.TypeOf(builtin9.MethodsDatacap).Field(i).Name
+			methodNumber = reflect.ValueOf(builtin9.MethodsDatacap).Field(i).Interface()
+			t.AppendRow(table.Row{methodName, methodNumber})
+			t.AppendSeparator()
+		}
+	case actors.MarketKey:
+		for i := 0; i < reflect.TypeOf(builtin9.MethodsMarket).NumField(); i++ {
+			methodName = reflect.TypeOf(builtin9.MethodsMarket).Field(i).Name
+			methodNumber = reflect.ValueOf(builtin9.MethodsMarket).Field(i).Interface()
+			t.AppendRow(table.Row{methodName, methodNumber})
+			t.AppendSeparator()
+		}
+	case actors.InitKey:
+		for i := 0; i < reflect.TypeOf(builtin9.MethodsInit).NumField(); i++ {
+			methodName = reflect.TypeOf(builtin9.MethodsInit).Field(i).Name
+			methodNumber = reflect.ValueOf(builtin9.MethodsInit).Field(i).Interface()
+			t.AppendRow(table.Row{methodName, methodNumber})
+			t.AppendSeparator()
+		}
+	case actors.MultisigKey:
+		for i := 0; i < reflect.TypeOf(builtin9.MethodsMultisig).NumField(); i++ {
+			methodName = reflect.TypeOf(builtin9.MethodsMultisig).Field(i).Name
+			methodNumber = reflect.ValueOf(builtin9.MethodsMultisig).Field(i).Interface()
+			t.AppendRow(table.Row{methodName, methodNumber})
+			t.AppendSeparator()
+		}
+	case actors.PaychKey:
+		for i := 0; i < reflect.TypeOf(builtin9.MethodsPaych).NumField(); i++ {
+			methodName = reflect.TypeOf(builtin9.MethodsPaych).Field(i).Name
+			methodNumber = reflect.ValueOf(builtin9.MethodsPaych).Field(i).Interface()
+			t.AppendRow(table.Row{methodName, methodNumber})
+			t.AppendSeparator()
+		}
+	case actors.PowerKey:
+		for i := 0; i < reflect.TypeOf(builtin9.MethodsPower).NumField(); i++ {
+			methodName = reflect.TypeOf(builtin9.MethodsPower).Field(i).Name
+			methodNumber = reflect.ValueOf(builtin9.MethodsPower).Field(i).Interface()
+			t.AppendRow(table.Row{methodName, methodNumber})
+			t.AppendSeparator()
+		}
+	case actors.RewardKey:
+		for i := 0; i < reflect.TypeOf(builtin9.MethodsReward).NumField(); i++ {
+			methodName = reflect.TypeOf(builtin9.MethodsReward).Field(i).Name
+			methodNumber = reflect.ValueOf(builtin9.MethodsReward).Field(i).Interface()
+			t.AppendRow(table.Row{methodName, methodNumber})
+			t.AppendSeparator()
+		}
+	case actors.SystemKey:
+	case actors.VerifregKey:
+		for i := 0; i < reflect.TypeOf(builtin9.MethodsVerifiedRegistry).NumField(); i++ {
+			methodName = reflect.TypeOf(builtin9.MethodsVerifiedRegistry).Field(i).Name
+			methodNumber = reflect.ValueOf(builtin9.MethodsVerifiedRegistry).Field(i).Interface()
+			t.AppendRow(table.Row{methodName, methodNumber})
+			t.AppendSeparator()
+		}
+	default:
+		return fmt.Errorf("unsupported actor key: %s", actorKey)
 	}
 	fmt.Println(t.RenderMarkdown())
 	return nil
