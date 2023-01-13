@@ -7,20 +7,28 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
-	miner0 "github.com/filecoin-project/specs-actors/actors/builtin/miner"
 
-	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	"github.com/filecoin-project/lily/pkg/core"
-	"github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v0"
+
+	minerdiff "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v0"
+
+	miner "github.com/filecoin-project/specs-actors/actors/builtin/miner"
 )
 
-func HandleMinerSectorEvents(ctx context.Context, store adt.Store, current, executed *types.TipSet, addr address.Address, precommits v0.PreCommitChangeList, sectors v0.SectorChangeList, sectorstatus *v0.SectorStatusChange) (model.Persistable, error) {
-	out := minermodel.MinerSectorEventList{}
-	height := int64(current.Height())
-	minerAddr := addr.String()
-	stateRoot := current.ParentState().String()
+type SectorEvent struct{}
+
+func (s SectorEvent) Extract(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error) {
+	var (
+		precommits   = change.PreCommitChanges
+		sectors      = change.SectorChanges
+		sectorstatus = change.SectorStatusChanges
+		height       = int64(current.Height())
+		minerAddr    = addr.String()
+		stateRoot    = current.ParentState().String()
+		out          = minermodel.MinerSectorEventList{}
+	)
 	for _, precommit := range precommits {
 		// only care about new precommits
 		if precommit.Change != core.ChangeTypeAdd {
@@ -42,13 +50,12 @@ func HandleMinerSectorEvents(ctx context.Context, store adt.Store, current, exec
 		switch sector.Change {
 		case core.ChangeTypeAdd:
 			event := minermodel.SectorAdded
-			if err := core.StateReadDeferred(ctx, sector.Current, func(s *miner0.SectorOnChainInfo) error {
-				if len(s.DealIDs) == 0 {
-					event = minermodel.CommitCapacityAdded
-				}
-				return nil
-			}); err != nil {
+			s := new(miner.SectorOnChainInfo)
+			if err := s.UnmarshalCBOR(bytes.NewReader(sector.Current.Raw)); err != nil {
 				return nil, err
+			}
+			if len(s.DealIDs) == 0 {
+				event = minermodel.CommitCapacityAdded
 			}
 			out = append(out, &minermodel.MinerSectorEvent{
 				Height:    height,
@@ -58,11 +65,11 @@ func HandleMinerSectorEvents(ctx context.Context, store adt.Store, current, exec
 				Event:     event,
 			})
 		case core.ChangeTypeModify:
-			previousSector := new(miner0.SectorOnChainInfo)
+			previousSector := new(miner.SectorOnChainInfo)
 			if err := previousSector.UnmarshalCBOR(bytes.NewReader(sector.Previous.Raw)); err != nil {
 				return nil, err
 			}
-			currentSector := new(miner0.SectorOnChainInfo)
+			currentSector := new(miner.SectorOnChainInfo)
 			if err := currentSector.UnmarshalCBOR(bytes.NewReader(sector.Current.Raw)); err != nil {
 				return nil, err
 			}
@@ -75,19 +82,6 @@ func HandleMinerSectorEvents(ctx context.Context, store adt.Store, current, exec
 					Event:     minermodel.SectorExtended,
 				})
 			}
-			// snapping didn't exist at this epoch
-			/*
-				if previousSector.SectorKeyCID == nil && currentSector.SectorKeyCID != nil {
-					out = append(out, &minermodel.MinerSectorEvent{
-						Height:    height,
-						MinerID:   minerAddr,
-						SectorID:  sector.SectorNumber,
-						StateRoot: stateRoot,
-						Event:     minermodel.SectorSnapped,
-					})
-				}
-
-			*/
 		}
 	}
 	if sectorstatus == nil {

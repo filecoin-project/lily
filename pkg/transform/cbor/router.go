@@ -8,7 +8,10 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	adt2 "github.com/filecoin-project/specs-actors/v3/actors/util/adt"
 	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
 	"github.com/ipld/go-car/util"
+	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap/zapcore"
 
 	v1car "github.com/ipld/go-car"
 
@@ -21,6 +24,8 @@ import (
 	"github.com/filecoin-project/lily/pkg/transform/cbor/verifreg"
 )
 
+var log = logging.Logger("lily/transform/cbor")
+
 type ActorIPLDContainer struct {
 	// TODO this needs to be versioned
 	CurrentTipSet  *types.TipSet
@@ -31,6 +36,19 @@ type ActorIPLDContainer struct {
 	InitActor      cid.Cid  // HAMT[Address]AddressChanges.
 	MarketActor    cid.Cid  // MarketStateChange or empty
 	PowerActor     cid.Cid  // PowerStateChange or empty
+}
+
+func (a *ActorIPLDContainer) MarshalLogObject(enc zapcore.ObjectEncoder) []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.String("current", a.CurrentTipSet.String()),
+		attribute.String("executed", a.ExecutedTipSet.String()),
+		attribute.String("miners", a.MinerActors.String()),
+		attribute.String("verifreg", a.VerifregActor.String()),
+		attribute.String("actors", a.ActorStates.String()),
+		attribute.String("init", a.InitActor.String()),
+		attribute.String("market", a.MarketActor.String()),
+		attribute.String("power", a.PowerActor.String()),
+	}
 }
 
 func ProcessState(ctx context.Context, changes *procesor.ActorStateChanges, w io.Writer) error {
@@ -45,6 +63,7 @@ func ProcessState(ctx context.Context, changes *procesor.ActorStateChanges, w io
 	if err != nil {
 		return err
 	}
+	log.Infow("Wrote Delta", "root", actorStatesRoot.String(), actorStates)
 	if err := v1car.WriteHeader(&v1car.CarHeader{
 		Roots:   []cid.Cid{actorStatesRoot},
 		Version: 1,

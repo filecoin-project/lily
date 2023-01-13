@@ -8,17 +8,11 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
-	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
-	"github.com/filecoin-project/lily/chain/actors/builtin/market"
-	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
-	"github.com/filecoin-project/lily/chain/actors/builtin/power"
-	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
 	"github.com/filecoin-project/lily/pkg/extract/actors/actordiff"
@@ -32,32 +26,6 @@ import (
 )
 
 var log = logging.Logger("lily/extract/processor")
-
-var (
-	InitCodes     = cid.NewSet()
-	MinerCodes    = cid.NewSet()
-	PowerCodes    = cid.NewSet()
-	MarketCodes   = cid.NewSet()
-	VerifregCodes = cid.NewSet()
-)
-
-func init() {
-	for _, c := range miner.AllCodes() {
-		MinerCodes.Add(c)
-	}
-	for _, c := range power.AllCodes() {
-		PowerCodes.Add(c)
-	}
-	for _, c := range market.AllCodes() {
-		MarketCodes.Add(c)
-	}
-	for _, c := range verifreg.AllCodes() {
-		VerifregCodes.Add(c)
-	}
-	for _, c := range init_.AllCodes() {
-		InitCodes.Add(c)
-	}
-}
 
 type ActorStateChanges struct {
 	Current       *types.TipSet
@@ -132,7 +100,7 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 				ActorDiff: actorStateChanges,
 				Address:   addr,
 			}
-			if MinerCodes.Has(change.Current.Code) {
+			if core.MinerCodes.Has(change.Current.Code) {
 				start := time.Now()
 				// construct the state differ required by this actor version
 				actorDiff, err := minerdiff.StateDiffFor(actorVersion)
@@ -150,7 +118,7 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 					Address:   addr,
 				}
 			}
-			if VerifregCodes.Has(change.Current.Code) {
+			if core.VerifregCodes.Has(change.Current.Code) {
 				start := time.Now()
 				// construct the state differ required by this actor version
 				actorDiff, err := verifregdiff.StateDiffFor(actorVersion)
@@ -168,7 +136,7 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 					Address:   addr,
 				}
 			}
-			if InitCodes.Has(change.Current.Code) {
+			if core.InitCodes.Has(change.Current.Code) {
 				start := time.Now()
 				actorDiff, err := initdiff.StateDiffFor(actorVersion)
 				if err != nil {
@@ -184,7 +152,7 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 					Address:   addr,
 				}
 			}
-			if PowerCodes.Has(change.Current.Code) {
+			if core.PowerCodes.Has(change.Current.Code) {
 				start := time.Now()
 				actorDiff, err := powerdiff.StateDiffFor(actorVersion)
 				if err != nil {
@@ -200,7 +168,7 @@ func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current
 					Address:   addr,
 				}
 			}
-			if MarketCodes.Has(change.Current.Code) {
+			if core.MarketCodes.Has(change.Current.Code) {
 				start := time.Now()
 				actorDiff, err := marketdiff.StateDiffFor(actorVersion)
 				if err != nil {

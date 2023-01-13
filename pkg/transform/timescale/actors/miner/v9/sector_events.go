@@ -6,18 +6,20 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
-	miner9 "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/filecoin-project/lotus/chain/types"
 
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	"github.com/filecoin-project/lily/pkg/core"
-	v9 "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v9"
+
+	minerdiff "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v9"
+
+	miner "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 )
 
 type SectorEvent struct{}
 
-func (s SectorEvent) Extract(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *v9.StateDiffResult) (model.Persistable, error) {
+func (s SectorEvent) Extract(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error) {
 	var (
 		precommits   = change.PreCommitChanges
 		sectors      = change.SectorChanges
@@ -48,13 +50,12 @@ func (s SectorEvent) Extract(ctx context.Context, current, executed *types.TipSe
 		switch sector.Change {
 		case core.ChangeTypeAdd:
 			event := minermodel.SectorAdded
-			if err := core.StateReadDeferred(ctx, sector.Current, func(s *miner9.SectorOnChainInfo) error {
-				if len(s.DealIDs) == 0 {
-					event = minermodel.CommitCapacityAdded
-				}
-				return nil
-			}); err != nil {
+			s := new(miner.SectorOnChainInfo)
+			if err := s.UnmarshalCBOR(bytes.NewReader(sector.Current.Raw)); err != nil {
 				return nil, err
+			}
+			if len(s.DealIDs) == 0 {
+				event = minermodel.CommitCapacityAdded
 			}
 			out = append(out, &minermodel.MinerSectorEvent{
 				Height:    height,
@@ -64,11 +65,11 @@ func (s SectorEvent) Extract(ctx context.Context, current, executed *types.TipSe
 				Event:     event,
 			})
 		case core.ChangeTypeModify:
-			previousSector := new(miner9.SectorOnChainInfo)
+			previousSector := new(miner.SectorOnChainInfo)
 			if err := previousSector.UnmarshalCBOR(bytes.NewReader(sector.Previous.Raw)); err != nil {
 				return nil, err
 			}
-			currentSector := new(miner9.SectorOnChainInfo)
+			currentSector := new(miner.SectorOnChainInfo)
 			if err := currentSector.UnmarshalCBOR(bytes.NewReader(sector.Current.Raw)); err != nil {
 				return nil, err
 			}

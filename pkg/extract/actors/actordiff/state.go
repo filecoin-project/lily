@@ -17,6 +17,7 @@ type StateDiffResult struct {
 }
 
 func (s *StateDiffResult) MarshalStateChange(ctx context.Context, bs blockstore.Blockstore) (cbg.CBORMarshaler, error) {
+	return s.ActorStateChanges, nil
 	out := &StateChange{}
 
 	if actorChanges := s.ActorStateChanges; actorChanges != nil {

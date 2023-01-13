@@ -1,87 +1,90 @@
 package v0
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
-	miner0 "github.com/filecoin-project/specs-actors/actors/builtin/miner"
-	"github.com/libp2p/go-libp2p/core/peer"
-	maddr "github.com/multiformats/go-multiaddr"
 
 	"github.com/filecoin-project/lily/model"
-	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	"github.com/filecoin-project/lily/pkg/core"
-	v0 "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v0"
+	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/util"
+
+	minerdiff "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v0"
+
+	miner "github.com/filecoin-project/specs-actors/actors/builtin/miner"
 )
 
-func HandleMinerInfo(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *v0.StateDiffResult) (model.Persistable, error) {
-	info := change.InfoChange
-	var out model.Persistable
-	var err error
-	if err := core.StateReadDeferred(ctx, info.Info, func(in *miner0.MinerInfo) error {
-		out, err = MinerInfoAsModel(ctx, current, executed, addr, *in)
-		if err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
+type Info struct{}
+
+func (i Info) Extract(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error) {
+	// if there is no info nothing changed.
+	if change.InfoChange == nil {
+		return nil, nil
+	}
+	// if the info was removed there is nothing to record
+	if change.InfoChange.Change == core.ChangeTypeRemove {
+		return nil, nil
+	}
+	// unmarshal the miners info to its type
+	minerInfo := new(miner.MinerInfo)
+	if err := minerInfo.UnmarshalCBOR(bytes.NewReader(change.InfoChange.Info.Raw)); err != nil {
+		return nil, err
+	}
+	// wrap the versioned miner info type in an interface for reusable extraction
+	out, err := util.ExtractMinerInfo(ctx, current, executed, addr, &InfoWrapper{info: minerInfo})
+	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func MinerInfoAsModel(ctx context.Context, current, executed *types.TipSet, addr address.Address, info miner0.MinerInfo) (model.Persistable, error) {
-	return GenericMinerInfoAsModel(ctx, current, executed, addr, info)
+// InfoWrapper satisfies the interface required by ExtractMinerInfo.
+type InfoWrapper struct {
+	info *miner.MinerInfo
 }
 
-func GenericMinerInfoAsModel(ctx context.Context, current, executed *types.TipSet, addr address.Address, info miner0.MinerInfo) (model.Persistable, error) {
-	var newWorker string
-	var newWorkerEpoch int64
-	if pendingWorkerKey := info.PendingWorkerKey; pendingWorkerKey != nil {
-		if pendingWorkerKey.NewWorker != address.Undef {
-			newWorker = pendingWorkerKey.NewWorker.String()
-		}
-		newWorkerEpoch = int64(pendingWorkerKey.EffectiveAt)
-	}
+type WorkerKeyChangeWrapper struct {
+	keys *miner.WorkerKeyChange
+}
 
-	var newCtrlAddresses []string
-	for _, addr := range info.ControlAddresses {
-		newCtrlAddresses = append(newCtrlAddresses, addr.String())
-	}
+func (v *WorkerKeyChangeWrapper) NewWorker() address.Address {
+	return v.keys.NewWorker
+}
 
-	// best effort to decode, we have no control over what miners put in this field, its just bytes.
-	var newMultiAddrs []string
-	for _, addr := range info.Multiaddrs {
-		newMaddr, err := maddr.NewMultiaddrBytes(addr)
-		if err == nil {
-			newMultiAddrs = append(newMultiAddrs, newMaddr.String())
-		} else {
-			//log.Debugw("failed to decode miner multiaddr", "miner", a.Address, "multiaddress", addr, "error", err)
-		}
-	}
-	mi := &minermodel.MinerInfo{
-		Height:                  int64(current.Height()),
-		MinerID:                 addr.String(),
-		StateRoot:               current.ParentState().String(),
-		OwnerID:                 info.Owner.String(),
-		WorkerID:                info.Worker.String(),
-		NewWorker:               newWorker,
-		WorkerChangeEpoch:       newWorkerEpoch,
-		ConsensusFaultedElapsed: -1,
-		ControlAddresses:        newCtrlAddresses,
-		MultiAddresses:          newMultiAddrs,
-		SectorSize:              uint64(info.SectorSize),
-	}
+func (v *WorkerKeyChangeWrapper) EffectiveAt() abi.ChainEpoch {
+	return v.keys.EffectiveAt
+}
 
-	if info.PeerId != nil {
-		newPeerID, err := peer.IDFromBytes(info.PeerId)
-		if err != nil {
-			//log.Warnw("failed to decode miner peerID", "miner", a.Address, "head", a.Actor.Head.String(), "error", err)
-		} else {
-			mi.PeerID = newPeerID.String()
-		}
+func (v *InfoWrapper) PendingWorkerKey() (util.WorkerKeyChanges, bool) {
+	if v.info.PendingWorkerKey == nil {
+		return nil, false
 	}
+	return &WorkerKeyChangeWrapper{keys: v.info.PendingWorkerKey}, true
+}
 
-	return mi, nil
+func (v *InfoWrapper) ControlAddresses() []address.Address {
+	return v.info.ControlAddresses
+}
+
+func (v *InfoWrapper) Multiaddrs() []abi.Multiaddrs {
+	return v.info.Multiaddrs
+}
+
+func (v *InfoWrapper) Owner() address.Address {
+	return v.info.Owner
+}
+
+func (v *InfoWrapper) Worker() address.Address {
+	return v.info.Worker
+}
+
+func (v *InfoWrapper) SectorSize() abi.SectorSize {
+	return v.info.SectorSize
+}
+
+func (v *InfoWrapper) PeerId() abi.PeerID {
+	return v.info.PeerId
 }

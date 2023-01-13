@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 	"github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/go-state-types/store"
 	"github.com/filecoin-project/lotus/blockstore"
@@ -16,10 +18,11 @@ import (
 
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/pkg/core"
+	"github.com/filecoin-project/lily/pkg/extract/actors/actordiff"
 	"github.com/filecoin-project/lily/pkg/transform/cbor"
-	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/v0"
-	v2 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/v2"
-	v9 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/v9"
+	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner"
+	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/raw"
+	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/reward"
 )
 
 type NetworkVersionGetter = func(ctx context.Context, epoch abi.ChainEpoch) network.Version
@@ -47,25 +50,72 @@ func Process(ctx context.Context, r io.Reader, strg model.Storage, nvg NetworkVe
 	if err != nil {
 		return err
 	}
-	mapHandler := MakeMinerProcessor(av)
-	minerModels, err := mapHandler(ctx, bs, current, executed, actorIPLDContainer.MinerActors)
+
+	var models model.PersistableList
+	actorModels, err := ProcessActorStates(ctx, bs, current, executed, av, actorIPLDContainer.ActorStates)
 	if err != nil {
 		return err
 	}
+	models = append(models, actorModels)
 
-	return strg.PersistBatch(ctx, minerModels...)
+	minerModels, err := ProcessMiners(ctx, bs, current, executed, av, actorIPLDContainer.MinerActors)
+	if err != nil {
+		return err
+	}
+	models = append(models, minerModels)
+
+	return strg.PersistBatch(ctx, models...)
 }
 
-type MinerHandler = func(ctx context.Context, bs blockstore.Blockstore, current, executed *types.TipSet, minerMapRoot cid.Cid) (model.PersistableList, error)
-
-func MakeMinerProcessor(av actorstypes.Version) MinerHandler {
-	switch av {
-	case actorstypes.Version0:
-		return v0.MinerHandler
-	case actorstypes.Version2:
-		return v2.MinerHandler
-	case actorstypes.Version9:
-		return v9.MinerHandler
+func ProcessMiners(ctx context.Context, bs blockstore.Blockstore, current, executed *types.TipSet, av actorstypes.Version, root cid.Cid) (model.Persistable, error) {
+	minerHandler, err := miner.MakeMinerProcessor(av)
+	if err != nil {
+		return nil, err
 	}
-	panic("developer error")
+	return minerHandler(ctx, bs, current, executed, root)
+}
+
+func ProcessActorStates(ctx context.Context, bs blockstore.Blockstore, current, executed *types.TipSet, av actorstypes.Version, actorMapRoot cid.Cid) (model.Persistable, error) {
+	var out = model.PersistableList{}
+	adtStore := store.WrapBlockStore(ctx, bs)
+	actorMap, err := adt.AsMap(adtStore, actorMapRoot, 5)
+	if err != nil {
+		return nil, err
+	}
+	actorState := new(actordiff.ActorChange)
+	if err := actorMap.ForEach(actorState, func(key string) error {
+		addr, err := address.NewFromBytes([]byte(key))
+		if err != nil {
+			return err
+		}
+
+		m, err := raw.RawActorHandler(ctx, current, executed, addr, actorState)
+		if err != nil {
+			return err
+		}
+		if m != nil {
+			out = append(out, m)
+		}
+
+		if core.RewardCodes.Has(actorState.Actor.Code) {
+			m, err := reward.HandleReward(ctx, current, executed, addr, actorState, av)
+			if err != nil {
+				return err
+			}
+			out = append(out, m)
+		}
+
+		if core.MinerCodes.Has(actorState.Actor.Code) {
+			m, err := miner.HandleMiner(ctx, current, executed, addr, actorState, av)
+			if err != nil {
+				return err
+			}
+			out = append(out, m)
+		}
+		return nil
+
+	}); err != nil {
+		return nil, err
+	}
+	return out, nil
 }

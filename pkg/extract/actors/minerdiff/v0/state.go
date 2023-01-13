@@ -98,7 +98,7 @@ type StateChange struct {
 	Sectors cid.Cid `cborgen:"sectors"`
 }
 
-func (sc *StateChange) StateChangeAsStateDiffResult(ctx context.Context, bs blockstore.Blockstore) (*StateDiffResult, error) {
+func DecodeStateDiffResultFromStateChange(ctx context.Context, bs blockstore.Blockstore, sc *StateChange) (*StateDiffResult, error) {
 	out := &StateDiffResult{}
 	adtStore := store.WrapBlockStore(ctx, bs)
 
