@@ -27,19 +27,19 @@ func (t *ActorIPLDContainer) MarshalCBOR(w io.Writer) error {
 
 	cw := cbg.NewCborWriter(w)
 
-	if _, err := cw.Write([]byte{163}); err != nil {
+	if _, err := cw.Write([]byte{168}); err != nil {
 		return err
 	}
 
 	// t.CurrentTipSet (types.TipSet) (struct)
-	if len("CurrentTipSet") > cbg.MaxLength {
-		return xerrors.Errorf("Value in field \"CurrentTipSet\" was too long")
+	if len("current") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"current\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("CurrentTipSet"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("current"))); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, string("CurrentTipSet")); err != nil {
+	if _, err := io.WriteString(w, string("current")); err != nil {
 		return err
 	}
 
@@ -48,14 +48,14 @@ func (t *ActorIPLDContainer) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.ExecutedTipSet (types.TipSet) (struct)
-	if len("ExecutedTipSet") > cbg.MaxLength {
-		return xerrors.Errorf("Value in field \"ExecutedTipSet\" was too long")
+	if len("executed") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"executed\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("ExecutedTipSet"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("executed"))); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, string("ExecutedTipSet")); err != nil {
+	if _, err := io.WriteString(w, string("executed")); err != nil {
 		return err
 	}
 
@@ -64,19 +64,111 @@ func (t *ActorIPLDContainer) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.MinerActors (cid.Cid) (struct)
-	if len("MinerActors") > cbg.MaxLength {
-		return xerrors.Errorf("Value in field \"MinerActors\" was too long")
+	if len("miners") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"miners\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("MinerActors"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("miners"))); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, string("MinerActors")); err != nil {
+	if _, err := io.WriteString(w, string("miners")); err != nil {
 		return err
 	}
 
 	if err := cbg.WriteCid(cw, t.MinerActors); err != nil {
 		return xerrors.Errorf("failed to write cid field t.MinerActors: %w", err)
+	}
+
+	// t.VerifregActor (cid.Cid) (struct)
+	if len("verifreg") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"verifreg\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("verifreg"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("verifreg")); err != nil {
+		return err
+	}
+
+	if t.VerifregActor == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.VerifregActor); err != nil {
+			return xerrors.Errorf("failed to write cid field t.VerifregActor: %w", err)
+		}
+	}
+
+	// t.ActorStates (cid.Cid) (struct)
+	if len("actors") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"actors\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("actors"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("actors")); err != nil {
+		return err
+	}
+
+	if err := cbg.WriteCid(cw, t.ActorStates); err != nil {
+		return xerrors.Errorf("failed to write cid field t.ActorStates: %w", err)
+	}
+
+	// t.InitActor (cid.Cid) (struct)
+	if len("init") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"init\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("init"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("init")); err != nil {
+		return err
+	}
+
+	if t.InitActor == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.InitActor); err != nil {
+			return xerrors.Errorf("failed to write cid field t.InitActor: %w", err)
+		}
+	}
+
+	// t.MarketActor (cid.Cid) (struct)
+	if len("market") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"market\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("market"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("market")); err != nil {
+		return err
+	}
+
+	if err := cbg.WriteCid(cw, t.MarketActor); err != nil {
+		return xerrors.Errorf("failed to write cid field t.MarketActor: %w", err)
+	}
+
+	// t.PowerActor (cid.Cid) (struct)
+	if len("power") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"power\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("power"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("power")); err != nil {
+		return err
+	}
+
+	if err := cbg.WriteCid(cw, t.PowerActor); err != nil {
+		return xerrors.Errorf("failed to write cid field t.PowerActor: %w", err)
 	}
 
 	return nil
@@ -121,7 +213,7 @@ func (t *ActorIPLDContainer) UnmarshalCBOR(r io.Reader) (err error) {
 
 		switch name {
 		// t.CurrentTipSet (types.TipSet) (struct)
-		case "CurrentTipSet":
+		case "current":
 
 			{
 
@@ -141,7 +233,7 @@ func (t *ActorIPLDContainer) UnmarshalCBOR(r io.Reader) (err error) {
 
 			}
 			// t.ExecutedTipSet (types.TipSet) (struct)
-		case "ExecutedTipSet":
+		case "executed":
 
 			{
 
@@ -161,7 +253,7 @@ func (t *ActorIPLDContainer) UnmarshalCBOR(r io.Reader) (err error) {
 
 			}
 			// t.MinerActors (cid.Cid) (struct)
-		case "MinerActors":
+		case "miners":
 
 			{
 
@@ -171,6 +263,91 @@ func (t *ActorIPLDContainer) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 				t.MinerActors = c
+
+			}
+			// t.VerifregActor (cid.Cid) (struct)
+		case "verifreg":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.VerifregActor: %w", err)
+					}
+
+					t.VerifregActor = &c
+				}
+
+			}
+			// t.ActorStates (cid.Cid) (struct)
+		case "actors":
+
+			{
+
+				c, err := cbg.ReadCid(cr)
+				if err != nil {
+					return xerrors.Errorf("failed to read cid field t.ActorStates: %w", err)
+				}
+
+				t.ActorStates = c
+
+			}
+			// t.InitActor (cid.Cid) (struct)
+		case "init":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.InitActor: %w", err)
+					}
+
+					t.InitActor = &c
+				}
+
+			}
+			// t.MarketActor (cid.Cid) (struct)
+		case "market":
+
+			{
+
+				c, err := cbg.ReadCid(cr)
+				if err != nil {
+					return xerrors.Errorf("failed to read cid field t.MarketActor: %w", err)
+				}
+
+				t.MarketActor = c
+
+			}
+			// t.PowerActor (cid.Cid) (struct)
+		case "power":
+
+			{
+
+				c, err := cbg.ReadCid(cr)
+				if err != nil {
+					return xerrors.Errorf("failed to read cid field t.PowerActor: %w", err)
+				}
+
+				t.PowerActor = c
 
 			}
 

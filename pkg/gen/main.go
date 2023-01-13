@@ -10,6 +10,7 @@ import (
 	powerV0 "github.com/filecoin-project/lily/pkg/extract/actors/powerdiff/v0"
 	verifV0 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v0"
 	verifV9 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v9"
+	"github.com/filecoin-project/lily/pkg/transform/cbor"
 )
 
 const actorDiffPath = "pkg/extract/actors/actordiff/cbor_gen.go"
@@ -32,6 +33,9 @@ const marketDiffPkg = "v0"
 
 const powerDiffPath = "pkg/extract/actors/powerdiff/v0/cbor_gen.go"
 const powerDiffPkg = "v0"
+
+const IPLDActorContainerPath = "pkg/transform/cbor/cbor_gen.go"
+const IPLDActorContainerPkg = "cbor"
 
 func main() {
 	if err := cbg.WriteMapEncodersToFile(actorDiffPath, actorDiffPkg,
@@ -87,6 +91,12 @@ func main() {
 	if err := cbg.WriteMapEncodersToFile(powerDiffPath, powerDiffPkg,
 		powerV0.StateChange{},
 		powerV0.ClaimsChange{},
+	); err != nil {
+		panic(err)
+	}
+
+	if err := cbg.WriteMapEncodersToFile(IPLDActorContainerPath, IPLDActorContainerPkg,
+		cbor.ActorIPLDContainer{},
 	); err != nil {
 		panic(err)
 	}

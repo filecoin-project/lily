@@ -14,7 +14,9 @@ import (
 	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
 	v1car "github.com/ipld/go-car"
+	"go.uber.org/zap"
 
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/pkg/core"
@@ -24,6 +26,8 @@ import (
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/raw"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/reward"
 )
+
+var log = logging.Logger("/lily/transform/timescale")
 
 type NetworkVersionGetter = func(ctx context.Context, epoch abi.ChainEpoch) network.Version
 
@@ -39,10 +43,12 @@ func Process(ctx context.Context, r io.Reader, strg model.Storage, nvg NetworkVe
 
 	adtStore := store.WrapBlockStore(ctx, bs)
 
-	var actorIPLDContainer cbor.ActorIPLDContainer
-	if err := adtStore.Get(ctx, header.Roots[0], &actorIPLDContainer); err != nil {
+	actorIPLDContainer := new(cbor.ActorIPLDContainer)
+	if err := adtStore.Get(ctx, header.Roots[0], actorIPLDContainer); err != nil {
 		return err
 	}
+
+	log.Infow("Open Delta", "root", header.Roots[0], zap.Inline(actorIPLDContainer))
 
 	current := actorIPLDContainer.CurrentTipSet
 	executed := actorIPLDContainer.ExecutedTipSet

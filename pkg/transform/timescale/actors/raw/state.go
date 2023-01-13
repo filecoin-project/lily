@@ -6,7 +6,9 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/chain/vm"
 
+	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model"
 	commonmodel "github.com/filecoin-project/lily/model/actors/common"
 	"github.com/filecoin-project/lily/pkg/core"
@@ -19,7 +21,12 @@ func RawActorHandler(ctx context.Context, current, executed *types.TipSet, addr 
 		return nil, nil
 	}
 
-	state, err := json.Marshal(change.Current)
+	stateDump, err := vm.DumpActorState(util.ActorRegistry, change.Actor, change.Current)
+	if err != nil {
+		return nil, err
+	}
+
+	state, err := json.Marshal(stateDump)
 	if err != nil {
 		return nil, err
 	}
