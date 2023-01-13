@@ -11,7 +11,7 @@ import (
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
-	builtin9 "github.com/filecoin-project/go-state-types/builtin"
+	"github.com/filecoin-project/go-state-types/builtin"
 	"github.com/filecoin-project/lotus/api"
 	lotusbuild "github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -735,84 +735,50 @@ func printActorMethods(actorKey string) error {
 	t := table.NewWriter()
 	t.AppendHeader(table.Row{"Method Name", "Method Number"})
 	var (
-		methodName   string
-		methodNumber any
+		methodName           string
+		methodNumber         any
+		correspondingMethods interface{}
 	)
+
 	switch actorKey {
 	case actors.AccountKey:
-		for i := 0; i < reflect.TypeOf(builtin9.MethodsAccount).NumField(); i++ {
-			methodName = reflect.TypeOf(builtin9.MethodsAccount).Field(i).Name
-			methodNumber = reflect.ValueOf(builtin9.MethodsAccount).Field(i).Interface()
-			t.AppendRow(table.Row{methodName, methodNumber})
-			t.AppendSeparator()
-		}
+		correspondingMethods = builtin.MethodsAccount
 	case actors.CronKey:
-		for i := 0; i < reflect.TypeOf(builtin9.MethodsCron).NumField(); i++ {
-			methodName = reflect.TypeOf(builtin9.MethodsCron).Field(i).Name
-			methodNumber = reflect.ValueOf(builtin9.MethodsCron).Field(i).Interface()
-			t.AppendRow(table.Row{methodName, methodNumber})
-			t.AppendSeparator()
-		}
+		correspondingMethods = builtin.MethodsCron
 	case actors.DatacapKey:
-		for i := 0; i < reflect.TypeOf(builtin9.MethodsDatacap).NumField(); i++ {
-			methodName = reflect.TypeOf(builtin9.MethodsDatacap).Field(i).Name
-			methodNumber = reflect.ValueOf(builtin9.MethodsDatacap).Field(i).Interface()
-			t.AppendRow(table.Row{methodName, methodNumber})
-			t.AppendSeparator()
-		}
+		correspondingMethods = builtin.MethodsDatacap
 	case actors.MarketKey:
-		for i := 0; i < reflect.TypeOf(builtin9.MethodsMarket).NumField(); i++ {
-			methodName = reflect.TypeOf(builtin9.MethodsMarket).Field(i).Name
-			methodNumber = reflect.ValueOf(builtin9.MethodsMarket).Field(i).Interface()
-			t.AppendRow(table.Row{methodName, methodNumber})
-			t.AppendSeparator()
-		}
+		correspondingMethods = builtin.MethodsMarket
 	case actors.InitKey:
-		for i := 0; i < reflect.TypeOf(builtin9.MethodsInit).NumField(); i++ {
-			methodName = reflect.TypeOf(builtin9.MethodsInit).Field(i).Name
-			methodNumber = reflect.ValueOf(builtin9.MethodsInit).Field(i).Interface()
-			t.AppendRow(table.Row{methodName, methodNumber})
-			t.AppendSeparator()
-		}
+		correspondingMethods = builtin.MethodsInit
 	case actors.MultisigKey:
-		for i := 0; i < reflect.TypeOf(builtin9.MethodsMultisig).NumField(); i++ {
-			methodName = reflect.TypeOf(builtin9.MethodsMultisig).Field(i).Name
-			methodNumber = reflect.ValueOf(builtin9.MethodsMultisig).Field(i).Interface()
-			t.AppendRow(table.Row{methodName, methodNumber})
-			t.AppendSeparator()
-		}
+		correspondingMethods = builtin.MethodsMultisig
 	case actors.PaychKey:
-		for i := 0; i < reflect.TypeOf(builtin9.MethodsPaych).NumField(); i++ {
-			methodName = reflect.TypeOf(builtin9.MethodsPaych).Field(i).Name
-			methodNumber = reflect.ValueOf(builtin9.MethodsPaych).Field(i).Interface()
-			t.AppendRow(table.Row{methodName, methodNumber})
-			t.AppendSeparator()
-		}
+		correspondingMethods = builtin.MethodsPaych
 	case actors.PowerKey:
-		for i := 0; i < reflect.TypeOf(builtin9.MethodsPower).NumField(); i++ {
-			methodName = reflect.TypeOf(builtin9.MethodsPower).Field(i).Name
-			methodNumber = reflect.ValueOf(builtin9.MethodsPower).Field(i).Interface()
-			t.AppendRow(table.Row{methodName, methodNumber})
-			t.AppendSeparator()
-		}
+		correspondingMethods = builtin.MethodsPower
 	case actors.RewardKey:
-		for i := 0; i < reflect.TypeOf(builtin9.MethodsReward).NumField(); i++ {
-			methodName = reflect.TypeOf(builtin9.MethodsReward).Field(i).Name
-			methodNumber = reflect.ValueOf(builtin9.MethodsReward).Field(i).Interface()
-			t.AppendRow(table.Row{methodName, methodNumber})
-			t.AppendSeparator()
-		}
+		correspondingMethods = builtin.MethodsReward
 	case actors.SystemKey:
+		correspondingMethods = nil
 	case actors.VerifregKey:
-		for i := 0; i < reflect.TypeOf(builtin9.MethodsVerifiedRegistry).NumField(); i++ {
-			methodName = reflect.TypeOf(builtin9.MethodsVerifiedRegistry).Field(i).Name
-			methodNumber = reflect.ValueOf(builtin9.MethodsVerifiedRegistry).Field(i).Interface()
-			t.AppendRow(table.Row{methodName, methodNumber})
-			t.AppendSeparator()
-		}
+		correspondingMethods = builtin.MethodsVerifiedRegistry
 	default:
-		return fmt.Errorf("unsupported actor key: %s", actorKey)
+		return fmt.Errorf("unknown actor key: %s", actorKey)
 	}
+
+	// Check if correspondingMethods is nil
+	if correspondingMethods == nil {
+		return nil
+	}
+
+	for i := 0; i < reflect.TypeOf(correspondingMethods).NumField(); i++ {
+		methodName = reflect.TypeOf(correspondingMethods).Field(i).Name
+		methodNumber = reflect.ValueOf(correspondingMethods).Field(i).Interface()
+		t.AppendRow(table.Row{methodName, methodNumber})
+		t.AppendSeparator()
+	}
+
 	fmt.Println(t.RenderMarkdown())
 	return nil
 }
