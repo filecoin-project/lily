@@ -2,7 +2,6 @@ package processor
 
 import (
 	"context"
-	"io"
 	"time"
 
 	"github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
@@ -13,12 +12,14 @@ import (
 )
 
 type VmMessage struct {
-	Source   cid.Cid              `cborgen:"source"`
-	Message  *types.Message       `cborgen:"message"`
-	Receipt  types.MessageReceipt `cborgen:"receipt"`
-	GasTrace []*VmMessageGasTrace `cborgen:"gas"`
-	Error    string               `cborgen:"error"`
-	Index    int                  `cborgen:"index"`
+	Source  cid.Cid              `cborgen:"source"`
+	Message *types.Message       `cborgen:"message"`
+	Receipt types.MessageReceipt `cborgen:"receipt"`
+	// TODO these traces can become very long (over 200,000 entires) meaning its a bad idea to encode this as an array in cbor (it will break)
+	// if there is value in gathering this information then we'll want to put it in an AMT.
+	//GasTrace []*VmMessageGasTrace `cborgen:"gas"`
+	Error string `cborgen:"error"`
+	Index int64  `cborgen:"index"`
 }
 
 type VmMessageGasTrace struct {
@@ -34,18 +35,8 @@ type VmMessageGasTrace struct {
 
 type Loc struct {
 	File     string `cborgen:"file"`
-	Line     int    `cborgen:"line"`
+	Line     int64  `cborgen:"line"`
 	Function string `cborgen:"function"`
-}
-
-func (v *VmMessage) UnmarshalCBOR(r io.Reader) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (v *VmMessage) MarshalCBOR(w io.Writer) error {
-	//TODO implement me
-	panic("implement me")
 }
 
 type VmMessageList []*VmMessage
@@ -88,38 +79,42 @@ func ProcessVmMessages(ctx context.Context, source *lens.MessageExecutionV2) (Vm
 	trace := GetChildMessagesOf(source)
 	out := make([]*VmMessage, len(trace))
 	for traceIdx, vmmsg := range trace {
-		vmGas := make([]*VmMessageGasTrace, len(vmmsg.GasCharge))
+		// see TODO on VmMessage struct
+		/*
+			vmGas := make([]*VmMessageGasTrace, len(vmmsg.GasCharge))
 
-		for gasIdx, g := range vmmsg.GasCharge {
-			loc := make([]Loc, len(g.Location))
+			for gasIdx, g := range vmmsg.GasCharge {
+				loc := make([]Loc, len(g.Location))
 
-			for locIdx, l := range g.Location {
-				loc[locIdx] = Loc{
-					File:     l.File,
-					Line:     l.Line,
-					Function: l.Function,
+				for locIdx, l := range g.Location {
+					loc[locIdx] = Loc{
+						File:     l.File,
+						Line:     int64(l.Line),
+						Function: l.Function,
+					}
+				}
+
+				vmGas[gasIdx] = &VmMessageGasTrace{
+					Name:              g.Name,
+					Location:          loc,
+					TotalGas:          g.TotalGas,
+					ComputeGas:        g.ComputeGas,
+					StorageGas:        g.StorageGas,
+					TotalVirtualGas:   g.TotalVirtualGas,
+					VirtualComputeGas: g.VirtualComputeGas,
+					VirtualStorageGas: g.VirtualStorageGas,
 				}
 			}
 
-			vmGas[gasIdx] = &VmMessageGasTrace{
-				Name:              g.Name,
-				Location:          loc,
-				TotalGas:          g.TotalGas,
-				ComputeGas:        g.ComputeGas,
-				StorageGas:        g.StorageGas,
-				TotalVirtualGas:   g.TotalVirtualGas,
-				VirtualComputeGas: g.VirtualComputeGas,
-				VirtualStorageGas: g.VirtualStorageGas,
-			}
-		}
+		*/
 
 		out[traceIdx] = &VmMessage{
-			Source:   source.Cid,
-			Message:  vmmsg.Message,
-			Receipt:  *vmmsg.Receipt,
-			GasTrace: vmGas,
-			Error:    vmmsg.Error,
-			Index:    vmmsg.Index,
+			Source:  source.Cid,
+			Message: vmmsg.Message,
+			Receipt: *vmmsg.Receipt,
+			//GasTrace: vmGas,
+			Error: vmmsg.Error,
+			Index: int64(vmmsg.Index),
 		}
 	}
 	return out, nil

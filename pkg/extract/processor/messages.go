@@ -52,7 +52,7 @@ type ChainMessageReceipt struct {
 	Receipt    types.MessageReceipt `cborgen:"receipt"`
 	GasOutputs *MessageGasOutputs   `cborgen:"gas"`
 	ActorError *ActorError          `cborgen:"errors"`
-	Index      int                  `cborgen:"index"`
+	Index      int64                `cborgen:"index"`
 }
 
 type ImplicitMessageReceipt struct {
@@ -118,12 +118,12 @@ func Messages(ctx context.Context, api tasks.DataSource, current, executed *type
 			if secpMsg, ok := secpMsgs[msg.Cid()]; ok {
 				secpMsg.Receipt = &ChainMessageReceipt{
 					Receipt: *rec,
-					Index:   recIdx,
+					Index:   int64(recIdx),
 				}
 			} else if blsMsg, ok := blsMsgs[msg.Cid()]; ok {
 				blsMsg.Receipt = &ChainMessageReceipt{
 					Receipt: *rec,
-					Index:   recIdx,
+					Index:   int64(recIdx),
 				}
 			} else {
 				panic("developer error")

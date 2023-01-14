@@ -27,6 +27,7 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p/core/host"
 	"go.uber.org/fx"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/chain/datasource"
 	"github.com/filecoin-project/lily/chain/gap"
@@ -162,14 +163,29 @@ func (m *LilyNodeAPI) LilyIndexIPLD(_ context.Context, cfg *LilyIndexIPLDConfig)
 		return false, err
 	}
 
+	grp, grpCtx := errgroup.WithContext(ctx)
 	// TODO parallelize the below
-	messageChanges, err := processor.Messages(ctx, taskAPI, currentTs, executedTs)
-	if err != nil {
-		return false, err
-	}
+	var (
+		messageChanges *processor.MessageStateChanges
+		actorChanges   *processor.ActorStateChanges
+	)
+	grp.Go(func() error {
+		messageChanges, err = processor.Messages(grpCtx, taskAPI, currentTs, executedTs)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	grp.Go(func() error {
+		actorChanges, err = processor.Actors(grpCtx, taskAPI, currentTs, executedTs, m.StateManager.GetNetworkVersion)
+		if err != nil {
+			return err
+		}
 
-	actorChanges, err := processor.Actors(ctx, taskAPI, currentTs, executedTs, m.StateManager.GetNetworkVersion)
-	if err != nil {
+		return nil
+	})
+
+	if err := grp.Wait(); err != nil {
 		return false, err
 	}
 

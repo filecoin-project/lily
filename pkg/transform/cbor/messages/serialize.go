@@ -2,7 +2,6 @@ package messages
 
 import (
 	"context"
-	"io"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	adtstore "github.com/filecoin-project/go-state-types/store"
@@ -25,11 +24,6 @@ type FullBlockIPLDContainer struct {
 	BlockHeader  *types.BlockHeader `cborgen:"block_header"`
 	SecpMessages cid.Cid            `cborgen:"secp_messages"`
 	BlsMessages  cid.Cid            `cborgen:"bls_messages"`
-}
-
-func (f *FullBlockIPLDContainer) MarshalCBOR(w io.Writer) error {
-	//TODO implement me
-	panic("implement me")
 }
 
 func ProcessMessages(ctx context.Context, store adtstore.Store, changes *processor.MessageStateChanges) (*MessageIPLDContainer, error) {
@@ -82,11 +76,6 @@ type ChainMessageIPLDContainer struct {
 	VmMessagesAmt cid.Cid                        `cborgen:"vm_messages"`
 }
 
-func (c *ChainMessageIPLDContainer) MarshalCBOR(w io.Writer) error {
-	//TODO implement me
-	panic("implement me")
-}
-
 func ProcessChainMessages(ctx context.Context, store adtstore.Store, messages []*processor.ChainMessage) (cid.Cid, error) {
 	messageHamt, err := adt2.MakeEmptyMap(store, 5)
 	if err != nil {
@@ -115,11 +104,6 @@ type SignedChainMessageIPLDContainer struct {
 	VmMessagesAmt cid.Cid                        `cborgen:"vm_messages"`
 }
 
-func (s *SignedChainMessageIPLDContainer) MarshalCBOR(w io.Writer) error {
-	//TODO implement me
-	panic("implement me")
-}
-
 func ProcessSignedChainMessages(ctx context.Context, store adtstore.Store, messages []*processor.SignedChainMessage) (cid.Cid, error) {
 	messageHamt, err := adt2.MakeEmptyMap(store, 5)
 	if err != nil {
@@ -146,11 +130,6 @@ type ImplicitMessageIPLDContainer struct {
 	Message       *types.Message                    `cborgen:"message"`
 	Receipt       *processor.ImplicitMessageReceipt `cborgen:"receipt"`
 	VmMessagesAmt cid.Cid                           `cborgen:"vm_messages"`
-}
-
-func (i *ImplicitMessageIPLDContainer) MarshalCBOR(w io.Writer) error {
-	//TODO implement me
-	panic("implement me")
 }
 
 // ProcessImplicitMessages returns the root of a hamt node containing the set of implicit messages
