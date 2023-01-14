@@ -21,7 +21,7 @@ import (
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors/actordiff"
-	"github.com/filecoin-project/lily/pkg/transform/cbor"
+	cboractors "github.com/filecoin-project/lily/pkg/transform/cbor/actors"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/raw"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/reward"
@@ -43,7 +43,7 @@ func Process(ctx context.Context, r io.Reader, strg model.Storage, nvg NetworkVe
 
 	adtStore := store.WrapBlockStore(ctx, bs)
 
-	actorIPLDContainer := new(cbor.ActorIPLDContainer)
+	actorIPLDContainer := new(cboractors.ActorIPLDContainer)
 	if err := adtStore.Get(ctx, header.Roots[0], actorIPLDContainer); err != nil {
 		return err
 	}

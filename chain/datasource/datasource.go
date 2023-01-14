@@ -238,6 +238,10 @@ func (t *DataSource) CirculatingSupply(ctx context.Context, ts *types.TipSet) (a
 	return t.node.CirculatingSupply(ctx, ts.Key())
 }
 
+func (t *DataSource) MessageExecutionsV2(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecutionV2, error) {
+	return t.node.GetMessageExecutionsForTipSetV2(ctx, ts, pts)
+}
+
 func (t *DataSource) MessageExecutions(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {
 	metrics.RecordInc(ctx, metrics.DataSourceMessageExecutionRead)
 	ctx, span := otel.Tracer("").Start(ctx, "DataSource.MessageExecutions")

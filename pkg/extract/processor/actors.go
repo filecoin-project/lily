@@ -1,4 +1,4 @@
-package procesor
+package processor
 
 import (
 	"context"
@@ -60,7 +60,7 @@ type StateDiffResult struct {
 
 type NetworkVersionGetter = func(ctx context.Context, epoch abi.ChainEpoch) network.Version
 
-func ProcessActorStateChanges(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, nvg NetworkVersionGetter) (*ActorStateChanges, error) {
+func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, nvg NetworkVersionGetter) (*ActorStateChanges, error) {
 	actorChanges, err := statetree.ActorChanges(ctx, api.Store(), current, executed)
 	if err != nil {
 		return nil, err

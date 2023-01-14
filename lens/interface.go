@@ -23,6 +23,7 @@ type API interface {
 	VMAPI
 
 	GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*MessageExecution, error)
+	GetMessageExecutionsForTipSetV2(ctx context.Context, ts, pts *types.TipSet) ([]*MessageExecutionV2, error)
 }
 type StoreAPI interface {
 	// TODO this should be the lotus store not the specs-actors store.
@@ -81,6 +82,17 @@ type MessageExecution struct {
 
 	FromActorCode cid.Cid // code of the actor the message is from
 	ToActorCode   cid.Cid // code of the actor the message is to
+
+	Implicit bool
+}
+
+type MessageExecutionV2 struct {
+	Cid       cid.Cid
+	StateRoot cid.Cid
+	Height    abi.ChainEpoch
+
+	Message *types.Message
+	Ret     *vm.ApplyRet
 
 	Implicit bool
 }

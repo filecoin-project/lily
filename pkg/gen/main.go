@@ -10,7 +10,9 @@ import (
 	powerV0 "github.com/filecoin-project/lily/pkg/extract/actors/powerdiff/v0"
 	verifV0 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v0"
 	verifV9 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v9"
-	"github.com/filecoin-project/lily/pkg/transform/cbor"
+	"github.com/filecoin-project/lily/pkg/extract/processor"
+	"github.com/filecoin-project/lily/pkg/transform/cbor/actors"
+	"github.com/filecoin-project/lily/pkg/transform/cbor/messages"
 )
 
 const actorDiffPath = "pkg/extract/actors/actordiff/cbor_gen.go"
@@ -34,8 +36,14 @@ const marketDiffPkg = "v0"
 const powerDiffPath = "pkg/extract/actors/powerdiff/v0/cbor_gen.go"
 const powerDiffPkg = "v0"
 
-const IPLDActorContainerPath = "pkg/transform/cbor/cbor_gen.go"
-const IPLDActorContainerPkg = "cbor"
+const IPLDActorContainerPath = "pkg/transform/cbor/actors/cbor_gen.go"
+const IPLDActorContainerPkg = "actors"
+
+const MessageStatePath = "pkg/extract/processor/cbor_gen.go"
+const MessageStatePkg = "processor"
+
+const MessageContainerPath = "pkg/transform/cbor/messages/cbor_gen.go"
+const MessageContainerPkg = "messages"
 
 func main() {
 	if err := cbg.WriteMapEncodersToFile(actorDiffPath, actorDiffPkg,
@@ -96,7 +104,29 @@ func main() {
 	}
 
 	if err := cbg.WriteMapEncodersToFile(IPLDActorContainerPath, IPLDActorContainerPkg,
-		cbor.ActorIPLDContainer{},
+		actors.ActorIPLDContainer{},
+	); err != nil {
+		panic(err)
+	}
+
+	if err := cbg.WriteMapEncodersToFile(MessageStatePath, MessageStatePkg,
+		processor.ChainMessageReceipt{},
+		processor.ImplicitMessageReceipt{},
+		processor.MessageGasOutputs{},
+		processor.ActorError{},
+		processor.VmMessage{},
+		processor.VmMessageGasTrace{},
+		processor.Loc{},
+	); err != nil {
+		panic(err)
+	}
+
+	if err := cbg.WriteMapEncodersToFile(MessageContainerPath, MessageContainerPkg,
+		messages.MessageIPLDContainer{},
+		messages.FullBlockIPLDContainer{},
+		messages.ChainMessageIPLDContainer{},
+		messages.SignedChainMessageIPLDContainer{},
+		messages.ImplicitMessageIPLDContainer{},
 	); err != nil {
 		panic(err)
 	}

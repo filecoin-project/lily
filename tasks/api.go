@@ -53,6 +53,7 @@ type DataSource interface {
 	MinerPower(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.MinerPower, error)
 	ActorStateChanges(ctx context.Context, ts, pts *types.TipSet) (ActorStateChangeDiff, error)
 	MessageExecutions(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error)
+	MessageExecutionsV2(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecutionV2, error)
 	Store() adt.Store
 
 	ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi.TokenAmount, error)
