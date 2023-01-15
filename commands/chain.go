@@ -48,7 +48,7 @@ var ChainActorCodesCmd = &cli.Command{
 	Name:  "actor-codes",
 	Usage: "Print actor codes and names",
 	Action: func(cctx *cli.Context) error {
-		for _, a := range []string{actors.AccountKey, actors.CronKey, actors.DatacapKey, actors.InitKey, actors.MarketKey, actors.MultisigKey, actors.PaychKey, actors.PowerKey, actors.RewardKey, actors.SystemKey, actors.VerifregKey} {
+		for _, a := range []string{actors.AccountKey, actors.CronKey, actors.DatacapKey, actors.InitKey, actors.MarketKey, actors.MinerKey, actors.MultisigKey, actors.PaychKey, actors.PowerKey, actors.RewardKey, actors.SystemKey, actors.VerifregKey} {
 			av := make(map[actors.Version]cid.Cid)
 			for _, v := range []int{0, 2, 3, 4, 5, 6, 7, 8, 9} {
 				code, ok := actors.GetActorCodeID(actors.Version(v), a)
@@ -749,6 +749,8 @@ func printActorMethods(actorKey string) error {
 		correspondingMethods = builtin.MethodsDatacap
 	case actors.MarketKey:
 		correspondingMethods = builtin.MethodsMarket
+	case actors.MinerKey:
+		correspondingMethods = builtin.MethodsMiner
 	case actors.InitKey:
 		correspondingMethods = builtin.MethodsInit
 	case actors.MultisigKey:
