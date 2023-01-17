@@ -24,7 +24,7 @@ import (
 
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
 
-	builtin9 "github.com/filecoin-project/go-state-types/builtin"
+	builtin10 "github.com/filecoin-project/go-state-types/builtin"
 
 	verifregtypes "github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
 	lotusactors "github.com/filecoin-project/lotus/chain/actors"
@@ -35,8 +35,8 @@ import (
 )
 
 var (
-	Address = builtin9.VerifiedRegistryActorAddr
-	Methods = builtin9.MethodsVerifiedRegistry
+	Address = builtin10.VerifiedRegistryActorAddr
+	Methods = builtin10.MethodsVerifiedRegistry
 )
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
@@ -52,6 +52,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 		case actors.Version9:
 			return load9(store, act.Head)
+
+		case actors.Version10:
+			return load10(store, act.Head)
 
 		}
 	}
@@ -139,19 +142,26 @@ func AllCodes() []cid.Cid {
 		(&state7{}).Code(),
 		(&state8{}).Code(),
 		(&state9{}).Code(),
+		(&state10{}).Code(),
 	}
 }
 
 func VersionCodes() map[actors.Version]cid.Cid {
 	return map[actors.Version]cid.Cid{
-		actors.Version0: (&state0{}).Code(),
-		actors.Version2: (&state2{}).Code(),
-		actors.Version3: (&state3{}).Code(),
-		actors.Version4: (&state4{}).Code(),
-		actors.Version5: (&state5{}).Code(),
-		actors.Version6: (&state6{}).Code(),
-		actors.Version7: (&state7{}).Code(),
-		actors.Version8: (&state8{}).Code(),
-		actors.Version9: (&state9{}).Code(),
+		actors.Version0:  (&state0{}).Code(),
+		actors.Version2:  (&state2{}).Code(),
+		actors.Version3:  (&state3{}).Code(),
+		actors.Version4:  (&state4{}).Code(),
+		actors.Version5:  (&state5{}).Code(),
+		actors.Version6:  (&state6{}).Code(),
+		actors.Version7:  (&state7{}).Code(),
+		actors.Version8:  (&state8{}).Code(),
+		actors.Version9:  (&state9{}).Code(),
+		actors.Version10: (&state10{}).Code(),
 	}
 }
+
+type Allocation = verifregtypes.Allocation
+type AllocationId = verifregtypes.AllocationId
+type Claim = verifregtypes.Claim
+type ClaimId = verifregtypes.ClaimId

@@ -151,6 +151,9 @@ butterflynet: build
 interopnet: GOFLAGS+=-tags=interopnet
 interopnet: build
 
+hyperspacenet: GOFLAGS+=-tags=hyperspacenet
+hyperspacenet: build
+
 # alias to match other network-specific targets
 mainnet: build
 

@@ -49,7 +49,7 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (_ string
 		return "", m.Name, nil
 	}
 
-	if method == builtin2.UniversalReceiverHookMethodNum {
+	if method == builtin2.MustGenerateFRCMethodNum("Receive") {
 		b, err := json.Marshal(m.Params)
 		if err != nil {
 			return "", "", err
