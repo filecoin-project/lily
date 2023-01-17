@@ -442,19 +442,22 @@ func (s *TxStorage) PersistModel(ctx context.Context, m interface{}) error {
 //
 // Example given the below model:
 //
-// type SomeModel struct {
-// 	Height    int64  `pg:",pk,notnull,use_zero"`
-// 	MinerID   string `pg:",pk,notnull"`
-// 	StateRoot string `pg:",pk,notnull"`
-// 	OwnerID  string `pg:",notnull"`
-// 	WorkerID string `pg:",notnull"`
-// }
+//	type SomeModel struct {
+//		Height    int64  `pg:",pk,notnull,use_zero"`
+//		MinerID   string `pg:",pk,notnull"`
+//		StateRoot string `pg:",pk,notnull"`
+//		OwnerID  string `pg:",notnull"`
+//		WorkerID string `pg:",notnull"`
+//	}
 //
 // The strings returned are:
 // conflict string:
+//
 //	"(cid, height, state_root) DO UPDATE"
+//
 // update string:
-// 	"owner_id" = EXCLUDED.owner_id, "worker_id" = EXCLUDED.worker_id
+//
+//	"owner_id" = EXCLUDED.owner_id, "worker_id" = EXCLUDED.worker_id
 func GenerateUpsertStrings(model interface{}) (string, string) {
 	var cf []string
 	var ucf []string

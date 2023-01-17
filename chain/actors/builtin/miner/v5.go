@@ -15,8 +15,8 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v10/miner"
 	minertypesv8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
-	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 
 	"crypto/sha256"
