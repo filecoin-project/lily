@@ -414,7 +414,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 		case tasktype.MinerBeneficiary:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
 				map[cid.Cid][]actorstate.ActorStateExtractor{
-					mineractors.VersionCodes()[actors.Version9]: {minertask.BeneficiaryExtractor{}},
+					mineractors.VersionCodes()[actors.Version9]:  {minertask.BeneficiaryExtractor{}},
+					mineractors.VersionCodes()[actors.Version10]: {minertask.BeneficiaryExtractor{}},
 				},
 			))
 		case tasktype.MinerCurrentDeadlineInfo:
@@ -444,7 +445,10 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 					mineractors.VersionCodes()[actors.Version6]: {minertask.PreCommitInfoExtractorV8{}},
 					mineractors.VersionCodes()[actors.Version7]: {minertask.PreCommitInfoExtractorV8{}},
 					mineractors.VersionCodes()[actors.Version8]: {minertask.PreCommitInfoExtractorV8{}},
-					mineractors.VersionCodes()[actors.Version9]: {minertask.PreCommitInfoExtractorV9{}},
+
+					// updated extractor for onchain types
+					mineractors.VersionCodes()[actors.Version9]:  {minertask.PreCommitInfoExtractorV9{}},
+					mineractors.VersionCodes()[actors.Version10]: {minertask.PreCommitInfoExtractorV9{}},
 				},
 			))
 		case tasktype.MinerSectorDeal:
@@ -473,9 +477,10 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 		case tasktype.MinerSectorInfoV7:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
 				map[cid.Cid][]actorstate.ActorStateExtractor{
-					mineractors.VersionCodes()[actors.Version7]: {minertask.V7SectorInfoExtractor{}},
-					mineractors.VersionCodes()[actors.Version8]: {minertask.V7SectorInfoExtractor{}},
-					mineractors.VersionCodes()[actors.Version9]: {minertask.V7SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actors.Version7]:  {minertask.V7SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actors.Version8]:  {minertask.V7SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actors.Version9]:  {minertask.V7SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actors.Version10]: {minertask.V7SectorInfoExtractor{}},
 				},
 			))
 

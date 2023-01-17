@@ -15,7 +15,6 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
-	minertypes "github.com/filecoin-project/go-state-types/builtin/v10/miner"
 	minertypesv8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 
@@ -201,7 +200,7 @@ func (s *state7) GetSectorExpiration(num abi.SectorNumber) (*SectorExpiration, e
 	return &out, nil
 }
 
-func (s *state7) GetPrecommittedSector(num abi.SectorNumber) (*minertypes.SectorPreCommitOnChainInfo, error) {
+func (s *state7) GetPrecommittedSector(num abi.SectorNumber) (*SectorPreCommitOnChainInfo, error) {
 	info, ok, err := s.State.GetPrecommittedSector(s.store, num)
 	if !ok || err != nil {
 		return nil, err
@@ -212,7 +211,7 @@ func (s *state7) GetPrecommittedSector(num abi.SectorNumber) (*minertypes.Sector
 	return &ret, nil
 }
 
-func (s *state7) ForEachPrecommittedSector(cb func(minertypes.SectorPreCommitOnChainInfo) error) error {
+func (s *state7) ForEachPrecommittedSector(cb func(SectorPreCommitOnChainInfo) error) error {
 	precommitted, err := adt7.AsMap(s.store, s.State.PreCommittedSectors, builtin7.DefaultHamtBitwidth)
 	if err != nil {
 		return err
@@ -435,11 +434,11 @@ func (s *state7) PrecommitsMapHashFunction() func(input []byte) []byte {
 
 }
 
-func (s *state7) DecodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (minertypes.SectorPreCommitOnChainInfo, error) {
+func (s *state7) DecodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (SectorPreCommitOnChainInfo, error) {
 	var sp miner7.SectorPreCommitOnChainInfo
 	err := sp.UnmarshalCBOR(bytes.NewReader(val.Raw))
 	if err != nil {
-		return minertypes.SectorPreCommitOnChainInfo{}, err
+		return SectorPreCommitOnChainInfo{}, err
 	}
 
 	return fromV7SectorPreCommitOnChainInfo(sp), nil
@@ -593,9 +592,9 @@ func fromV7SectorOnChainInfo(v7 miner7.SectorOnChainInfo) SectorOnChainInfo {
 	return info
 }
 
-func fromV7SectorPreCommitOnChainInfo(v7 miner7.SectorPreCommitOnChainInfo) minertypes.SectorPreCommitOnChainInfo {
-	return minertypes.SectorPreCommitOnChainInfo{
-		Info: minertypes.SectorPreCommitInfo{
+func fromV7SectorPreCommitOnChainInfo(v7 miner7.SectorPreCommitOnChainInfo) SectorPreCommitOnChainInfo {
+	ret := SectorPreCommitOnChainInfo{
+		Info: SectorPreCommitInfo{
 			SealProof:     v7.Info.SealProof,
 			SectorNumber:  v7.Info.SectorNumber,
 			SealedCID:     v7.Info.SealedCID,
@@ -607,6 +606,8 @@ func fromV7SectorPreCommitOnChainInfo(v7 miner7.SectorPreCommitOnChainInfo) mine
 		PreCommitDeposit: v7.PreCommitDeposit,
 		PreCommitEpoch:   v7.PreCommitEpoch,
 	}
+
+	return ret
 }
 
 func fromV7SectorPreCommitOnChainInfoToV8(v7 miner7.SectorPreCommitOnChainInfo) minertypesv8.SectorPreCommitOnChainInfo {
