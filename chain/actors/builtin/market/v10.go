@@ -14,6 +14,8 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 
+	verifregtypes "github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
+
 	market10 "github.com/filecoin-project/go-state-types/builtin/v10/market"
 	adt10 "github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 	markettypes "github.com/filecoin-project/go-state-types/builtin/v9/market"
@@ -122,9 +124,16 @@ func (s *dealStates10) array() adt.Array {
 }
 
 func fromV10DealState(v10 market10.DealState) DealState {
+	ret := DealState{
+		SectorStartEpoch: v10.SectorStartEpoch,
+		LastUpdatedEpoch: v10.LastUpdatedEpoch,
+		SlashEpoch:       v10.SlashEpoch,
+		VerifiedClaim:    0,
+	}
 
-	return (DealState)(v10)
+	ret.VerifiedClaim = verifregtypes.AllocationId(v10.VerifiedClaim)
 
+	return ret
 }
 
 type dealProposals10 struct {

@@ -7,7 +7,6 @@ import (
 	"github.com/filecoin-project/go-amt-ipld/v4"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/go-state-types/abi"
-	miner10 "github.com/filecoin-project/go-state-types/builtin/v10/miner"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -90,8 +89,8 @@ func MakeSectorChanges() *SectorChanges {
 
 func MakePreCommitChanges() *PreCommitChanges {
 	return &PreCommitChanges{
-		Added:   []miner10.SectorPreCommitOnChainInfo{},
-		Removed: []miner10.SectorPreCommitOnChainInfo{},
+		Added:   []SectorPreCommitOnChainInfo{},
+		Removed: []SectorPreCommitOnChainInfo{},
 	}
 }
 

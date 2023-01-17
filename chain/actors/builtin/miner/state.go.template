@@ -18,7 +18,6 @@ import (
 	"github.com/filecoin-project/lily/chain/actors"
 
 	"github.com/filecoin-project/lotus/chain/actors/adt"
-	minertypes "github.com/filecoin-project/go-state-types/builtin/v{{.latestVersion}}/miner"
 	minertypesv8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 
 {{if (le .v 1)}}
@@ -225,7 +224,7 @@ func (s *state{{.v}}) GetSectorExpiration(num abi.SectorNumber) (*SectorExpirati
 	return &out, nil
 }
 
-func (s *state{{.v}}) GetPrecommittedSector(num abi.SectorNumber) (*minertypes.SectorPreCommitOnChainInfo, error) {
+func (s *state{{.v}}) GetPrecommittedSector(num abi.SectorNumber) (*SectorPreCommitOnChainInfo, error) {
 	info, ok, err := s.State.GetPrecommittedSector(s.store, num)
 	if !ok || err != nil {
 		return nil, err
@@ -236,7 +235,7 @@ func (s *state{{.v}}) GetPrecommittedSector(num abi.SectorNumber) (*minertypes.S
 	return &ret, nil
 }
 
-func (s *state{{.v}}) ForEachPrecommittedSector(cb func(minertypes.SectorPreCommitOnChainInfo) error) error {
+func (s *state{{.v}}) ForEachPrecommittedSector(cb func(SectorPreCommitOnChainInfo) error) error {
 {{if (ge .v 3) -}}
 	precommitted, err := adt{{.v}}.AsMap(s.store, s.State.PreCommittedSectors, builtin{{.v}}.DefaultHamtBitwidth)
 {{- else -}}
@@ -404,33 +403,33 @@ func (s *state{{.v}}) Info() (MinerInfo, error) {
 		return MinerInfo{}, err
 	}
 
-{{if (le .v 2)}}
-	wpp, err := info.SealProofType.RegisteredWindowPoStProof()
-	if err != nil {
-		return MinerInfo{}, err
-	}
-{{end}}
+	{{if (le .v 2)}}
+		wpp, err := info.SealProofType.RegisteredWindowPoStProof()
+		if err != nil {
+			return MinerInfo{}, err
+		}
+	{{end}}
 	mi := MinerInfo{
-		Owner:            info.Owner,
-		Worker:           info.Worker,
-		ControlAddresses: info.ControlAddresses,
+	Owner:            info.Owner,
+	Worker:           info.Worker,
+	ControlAddresses: info.ControlAddresses,
 
-		PendingWorkerKey:  (*WorkerKeyChange)(info.PendingWorkerKey),
+	PendingWorkerKey:  (*WorkerKeyChange)(info.PendingWorkerKey),
 
-		PeerId:                     info.PeerId,
-		Multiaddrs:                 info.Multiaddrs,
-		WindowPoStProofType:        {{if (ge .v 3)}}info.WindowPoStProofType{{else}}wpp{{end}},
-		SectorSize:                 info.SectorSize,
-		WindowPoStPartitionSectors: info.WindowPoStPartitionSectors,
-		ConsensusFaultElapsed:      {{if (ge .v 2)}}info.ConsensusFaultElapsed{{else}}-1{{end}},
-		{{if (ge .v 9)}}
+	PeerId:                     info.PeerId,
+	Multiaddrs:                 info.Multiaddrs,
+	WindowPoStProofType:        {{if (ge .v 3)}}info.WindowPoStProofType{{else}}wpp{{end}},
+	SectorSize:                 info.SectorSize,
+	WindowPoStPartitionSectors: info.WindowPoStPartitionSectors,
+	ConsensusFaultElapsed:      {{if (ge .v 2)}}info.ConsensusFaultElapsed{{else}}-1{{end}},
+	{{if (ge .v 9)}}
 		Beneficiary:                info.Beneficiary,
-		BeneficiaryTerm:            info.BeneficiaryTerm,
-		PendingBeneficiaryTerm:     info.PendingBeneficiaryTerm,{{end}}
+		BeneficiaryTerm:        BeneficiaryTerm(info.BeneficiaryTerm),
+		PendingBeneficiaryTerm: (*PendingBeneficiaryChange)(info.PendingBeneficiaryTerm),
+	{{end}}
 	}
 
-	return mi, nil
-}
+	return mi, nil}
 
 func (s *state{{.v}}) DeadlineInfo(epoch abi.ChainEpoch) (*dline.Info, error) {
 	return s.State.{{if (ge .v 4)}}Recorded{{end}}DeadlineInfo(epoch), nil
@@ -480,11 +479,11 @@ func (s *state{{.v}}) PrecommitsMapHashFunction() func(input []byte) []byte {
     {{end}}
 }
 
-func (s *state{{.v}}) DecodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (minertypes.SectorPreCommitOnChainInfo, error) {
+func (s *state{{.v}}) DecodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (SectorPreCommitOnChainInfo, error) {
 	var sp miner{{.v}}.SectorPreCommitOnChainInfo
 	err := sp.UnmarshalCBOR(bytes.NewReader(val.Raw))
 	if err != nil {
-		return minertypes.SectorPreCommitOnChainInfo{}, err
+		return SectorPreCommitOnChainInfo{}, err
 	}
 
 	return fromV{{.v}}SectorPreCommitOnChainInfo(sp), nil
@@ -653,9 +652,9 @@ func fromV{{.v}}SectorOnChainInfo(v{{.v}} miner{{.v}}.SectorOnChainInfo) SectorO
 	return info
 }
 
-func fromV{{.v}}SectorPreCommitOnChainInfo(v{{.v}} miner{{.v}}.SectorPreCommitOnChainInfo) minertypes.SectorPreCommitOnChainInfo {
-	{{if (le .v 8)}}return minertypes.SectorPreCommitOnChainInfo{
-		Info:               minertypes.SectorPreCommitInfo{
+func fromV{{.v}}SectorPreCommitOnChainInfo(v{{.v}} miner{{.v}}.SectorPreCommitOnChainInfo) SectorPreCommitOnChainInfo {
+	ret := SectorPreCommitOnChainInfo{
+		Info:               SectorPreCommitInfo{
 			SealProof:     v{{.v}}.Info.SealProof,
 			SectorNumber:  v{{.v}}.Info.SectorNumber,
 			SealedCID:     v{{.v}}.Info.SealedCID,
@@ -666,7 +665,12 @@ func fromV{{.v}}SectorPreCommitOnChainInfo(v{{.v}} miner{{.v}}.SectorPreCommitOn
 		},
 		PreCommitDeposit:   v{{.v}}.PreCommitDeposit,
 		PreCommitEpoch:     v{{.v}}.PreCommitEpoch,
-	}{{else}}return v{{.v}}{{end}}
+	}
+{{if (ge .v 9)}}
+	ret.Info.UnsealedCid = v{{.v}}.Info.UnsealedCid
+{{end}}
+
+return ret
 }
 
 {{if (le .v 8)}}
