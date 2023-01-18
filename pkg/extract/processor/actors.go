@@ -30,7 +30,7 @@ var log = logging.Logger("lily/extract/processor")
 type ActorStateChanges struct {
 	Current       *types.TipSet
 	Executed      *types.TipSet
-	ActorStates   map[address.Address]actors.ActorDiffResult
+	RawActors     map[address.Address]actors.ActorDiffResult
 	MinerActors   map[address.Address]actors.ActorDiffResult
 	VerifregActor actors.ActorDiffResult
 	InitActor     actors.ActorDiffResult
@@ -69,7 +69,7 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 		Current:     current,
 		Executed:    executed,
 		MinerActors: make(map[address.Address]actors.ActorDiffResult, len(actorChanges)), // there are at most actorChanges entries
-		ActorStates: make(map[address.Address]actors.ActorDiffResult, len(actorChanges)), // there are at most actorChanges entries
+		RawActors:   make(map[address.Address]actors.ActorDiffResult, len(actorChanges)), // there are at most actorChanges entries
 	}
 
 	actorVersion, err := core.ActorVersionForTipSet(ctx, current, nvg)
@@ -196,7 +196,7 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 	for stateDiff := range results {
 		switch stateDiff.ActorDiff.Kind() {
 		case "actor":
-			asc.ActorStates[stateDiff.Address] = stateDiff.ActorDiff
+			asc.RawActors[stateDiff.Address] = stateDiff.ActorDiff
 		case "miner":
 			asc.MinerActors[stateDiff.Address] = stateDiff.ActorDiff
 		case "verifreg":

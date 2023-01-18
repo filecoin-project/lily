@@ -12,34 +12,27 @@ import (
 	"github.com/filecoin-project/lily/pkg/extract/processor"
 )
 
-type MessageIPLDContainer struct {
-	CurrentTipSet    *types.TipSet   `cborgen:"current"`
-	ExecutedTipSet   *types.TipSet   `cborgen:"executed"`
-	BaseFee          abi.TokenAmount `cborgen:"base_fee"`
-	FullBlocks       cid.Cid         `cborgen:"full_blocks"`       // HAMT[blkCid]FullBlockIPLDContainer
-	ImplicitMessages cid.Cid         `cborgen:"implicit_messages"` // HAMT[implicitCID]ImplicitMessageIPLDContainer
-}
-
 type FullBlockIPLDContainer struct {
 	BlockHeader  *types.BlockHeader `cborgen:"block_header"`
 	SecpMessages cid.Cid            `cborgen:"secp_messages"`
 	BlsMessages  cid.Cid            `cborgen:"bls_messages"`
 }
 
-func ProcessMessages(ctx context.Context, store adtstore.Store, changes *processor.MessageStateChanges) (*MessageIPLDContainer, error) {
+func MakeFullBlockHAMT(ctx context.Context, store adtstore.Store, fullBlks map[cid.Cid]*processor.FullBlock) (cid.Cid, error) {
 	fullBlkHamt, err := adt2.MakeEmptyMap(store, 5)
 	if err != nil {
-		return nil, err
+		return cid.Undef, err
 	}
-	for blkCid, fb := range changes.FullBlocks {
-		blsMsgHamt, err := ProcessChainMessages(ctx, store, fb.BlsMessages)
+
+	for blkCid, fb := range fullBlks {
+		blsMsgHamt, err := MakeChainMessagesHAMT(ctx, store, fb.BlsMessages)
 		if err != nil {
-			return nil, err
+			return cid.Undef, err
 		}
 
-		secpMsgHamt, err := ProcessSignedChainMessages(ctx, store, fb.SecpMessages)
+		secpMsgHamt, err := MakeSignedChainMessagesHAMT(ctx, store, fb.SecpMessages)
 		if err != nil {
-			return nil, err
+			return cid.Undef, err
 		}
 
 		if err := fullBlkHamt.Put(abi.CidKey(blkCid), &FullBlockIPLDContainer{
@@ -47,27 +40,11 @@ func ProcessMessages(ctx context.Context, store adtstore.Store, changes *process
 			SecpMessages: secpMsgHamt,
 			BlsMessages:  blsMsgHamt,
 		}); err != nil {
-			return nil, err
+			return cid.Undef, err
 		}
 	}
 
-	implicitMsgHamt, err := ProcessImplicitMessages(ctx, store, changes.ImplicitMessages)
-	if err != nil {
-		return nil, err
-	}
-
-	fullBlkRoot, err := fullBlkHamt.Root()
-	if err != nil {
-		return nil, err
-	}
-
-	return &MessageIPLDContainer{
-		CurrentTipSet:    changes.Current,
-		ExecutedTipSet:   changes.Executed,
-		BaseFee:          changes.BaseFee,
-		FullBlocks:       fullBlkRoot,
-		ImplicitMessages: implicitMsgHamt,
-	}, nil
+	return fullBlkHamt.Root()
 }
 
 type ChainMessageIPLDContainer struct {
@@ -76,7 +53,7 @@ type ChainMessageIPLDContainer struct {
 	VmMessagesAmt cid.Cid                        `cborgen:"vm_messages"`
 }
 
-func ProcessChainMessages(ctx context.Context, store adtstore.Store, messages []*processor.ChainMessage) (cid.Cid, error) {
+func MakeChainMessagesHAMT(ctx context.Context, store adtstore.Store, messages []*processor.ChainMessage) (cid.Cid, error) {
 	messageHamt, err := adt2.MakeEmptyMap(store, 5)
 	if err != nil {
 		return cid.Undef, err
@@ -104,7 +81,7 @@ type SignedChainMessageIPLDContainer struct {
 	VmMessagesAmt cid.Cid                        `cborgen:"vm_messages"`
 }
 
-func ProcessSignedChainMessages(ctx context.Context, store adtstore.Store, messages []*processor.SignedChainMessage) (cid.Cid, error) {
+func MakeSignedChainMessagesHAMT(ctx context.Context, store adtstore.Store, messages []*processor.SignedChainMessage) (cid.Cid, error) {
 	messageHamt, err := adt2.MakeEmptyMap(store, 5)
 	if err != nil {
 		return cid.Undef, err
@@ -132,8 +109,8 @@ type ImplicitMessageIPLDContainer struct {
 	VmMessagesAmt cid.Cid                           `cborgen:"vm_messages"`
 }
 
-// ProcessImplicitMessages returns the root of a hamt node containing the set of implicit messages
-func ProcessImplicitMessages(ctx context.Context, store adtstore.Store, messages []*processor.ImplicitMessage) (cid.Cid, error) {
+// MakeImplicitMessagesAMT returns the root of a hamt node containing the set of implicit messages
+func MakeImplicitMessagesAMT(ctx context.Context, store adtstore.Store, messages []*processor.ImplicitMessage) (cid.Cid, error) {
 	messageHamt, err := adt2.MakeEmptyMap(store, 5)
 	if err != nil {
 		return cid.Undef, err

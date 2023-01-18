@@ -4,8 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/filecoin-project/go-state-types/store"
-	"github.com/filecoin-project/lotus/blockstore"
+	adtstore "github.com/filecoin-project/go-state-types/store"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -28,12 +27,11 @@ func (sd *StateDiffResult) Kind() string {
 	return "verifreg"
 }
 
-func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, bs blockstore.Blockstore) (cbg.CBORMarshaler, error) {
+func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, store adtstore.Store) (cbg.CBORMarshaler, error) {
 	out := &StateChange{}
-	adtStore := store.WrapBlockStore(ctx, bs)
 
 	if verifiers := sd.VerifierChanges; verifiers != nil {
-		root, err := verifiers.ToAdtMap(adtStore, 5)
+		root, err := verifiers.ToAdtMap(store, 5)
 		if err != nil {
 			return nil, err
 		}
@@ -41,7 +39,7 @@ func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, bs blockstore
 	}
 
 	if claims := sd.ClaimChanges; claims != nil {
-		root, err := claims.ToAdtMap(adtStore, 5)
+		root, err := claims.ToAdtMap(store, 5)
 		if err != nil {
 			return nil, err
 		}
@@ -49,7 +47,7 @@ func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, bs blockstore
 	}
 
 	if allocations := sd.AllocationsChanges; allocations != nil {
-		root, err := allocations.ToAdtMap(adtStore, 5)
+		root, err := allocations.ToAdtMap(store, 5)
 		if err != nil {
 			return nil, err
 		}

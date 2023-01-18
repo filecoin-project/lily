@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-state-types/store"
-	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/ipfs/go-cid"
 	typegen "github.com/whyrusleeping/cbor-gen"
 
@@ -23,28 +22,27 @@ func (s *StateDiffResult) Kind() string {
 }
 
 type StateChange struct {
-	Verifiers cid.Cid `cborgen:"verifiers"`
-	Clients   cid.Cid `cborgen:"clients"`
+	Verifiers *cid.Cid `cborgen:"verifiers"`
+	Clients   *cid.Cid `cborgen:"clients"`
 }
 
-func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, bs blockstore.Blockstore) (typegen.CBORMarshaler, error) {
+func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, s store.Store) (typegen.CBORMarshaler, error) {
 	out := &StateChange{}
-	adtStore := store.WrapBlockStore(ctx, bs)
 
 	if clients := sd.ClientChanges; clients != nil {
-		root, err := clients.ToAdtMap(adtStore, 5)
+		root, err := clients.ToAdtMap(s, 5)
 		if err != nil {
 			return nil, err
 		}
-		out.Clients = root
+		out.Clients = &root
 	}
 
 	if verifiers := sd.VerifierChanges; verifiers != nil {
-		root, err := verifiers.ToAdtMap(adtStore, 5)
+		root, err := verifiers.ToAdtMap(s, 5)
 		if err != nil {
 			return nil, err
 		}
-		out.Verifiers = root
+		out.Verifiers = &root
 	}
 	return out, nil
 }

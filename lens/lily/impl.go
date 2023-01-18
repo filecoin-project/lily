@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/go-state-types/exitcode"
 	network2 "github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/consensus/filcns"
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/state"
@@ -189,7 +190,12 @@ func (m *LilyNodeAPI) LilyIndexIPLD(_ context.Context, cfg *LilyIndexIPLDConfig)
 		return false, err
 	}
 
-	if err := cbor.Process(ctx, messageChanges, actorChanges, f); err != nil {
+	bs := blockstore.NewMemorySync()
+	root, err := cbor.PersistToStore(ctx, bs, currentTs, executedTs, messageChanges, actorChanges)
+	if err != nil {
+		return false, err
+	}
+	if err := cbor.WriteCar(ctx, root, 1, bs, f); err != nil {
 		return false, err
 	}
 	return true, nil

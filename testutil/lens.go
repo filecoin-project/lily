@@ -25,6 +25,11 @@ type APIWrapper struct {
 	ctx context.Context
 }
 
+func (aw *APIWrapper) GetMessageExecutionsForTipSetV2(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecutionV2, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (aw *APIWrapper) BurnFundsFn(ctx context.Context, ts *types.TipSet) (lens.ShouldBurnFn, error) {
 	//TODO implement me
 	panic("implement me")

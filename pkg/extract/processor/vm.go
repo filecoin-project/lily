@@ -15,11 +15,8 @@ type VmMessage struct {
 	Source  cid.Cid              `cborgen:"source"`
 	Message *types.Message       `cborgen:"message"`
 	Receipt types.MessageReceipt `cborgen:"receipt"`
-	// TODO these traces can become very long (over 200,000 entires) meaning its a bad idea to encode this as an array in cbor (it will break)
-	// if there is value in gathering this information then we'll want to put it in an AMT.
-	//GasTrace []*VmMessageGasTrace `cborgen:"gas"`
-	Error string `cborgen:"error"`
-	Index int64  `cborgen:"index"`
+	Error   string               `cborgen:"error"`
+	Index   int64                `cborgen:"index"`
 }
 
 type VmMessageGasTrace struct {

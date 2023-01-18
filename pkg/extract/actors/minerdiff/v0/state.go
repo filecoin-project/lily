@@ -56,10 +56,6 @@ func (s *StateDiff) State(ctx context.Context, api tasks.DataSource, act *actors
 			stateDiff.SectorChanges = stateChange.(SectorChangeList)
 		case KindMinerPreCommit:
 			stateDiff.PreCommitChanges = stateChange.(PreCommitChangeList)
-		case KindMinerFunds:
-			stateDiff.FundsChange = stateChange.(*FundsChange)
-		case KindMinerDebt:
-			stateDiff.DebtChange = stateChange.(*DebtChange)
 		case KindMinerSectorStatus:
 			stateDiff.SectorStatusChanges = stateChange.(*SectorStatusChange)
 		default:
@@ -72,8 +68,6 @@ func (s *StateDiff) State(ctx context.Context, api tasks.DataSource, act *actors
 
 type StateDiffResult struct {
 	InfoChange          *InfoChange
-	FundsChange         *FundsChange
-	DebtChange          *DebtChange
 	PreCommitChanges    PreCommitChangeList
 	SectorChanges       SectorChangeList
 	SectorStatusChanges *SectorStatusChange
@@ -84,10 +78,6 @@ func (s *StateDiffResult) Kind() string {
 }
 
 type StateChange struct {
-	// Funds is the funds that changed for this miner or empty.
-	Funds *cid.Cid `cborgen:"funds"`
-	// Debt is the debt that changed for this miner or empty.
-	Debt *cid.Cid `cborgen:"debt"`
 	// SectorStatus is the sectors whose status changed for this miner or empty.
 	SectorStatus *cid.Cid `cborgen:"sector_status"`
 	// Info is the cid of the miner change info that changed for this miner or empty.
@@ -177,38 +167,6 @@ func DecodeStateDiffResultFromStateChange(ctx context.Context, bs blockstore.Blo
 	}
 
 	//
-	// Funds
-	{
-		if sc.Funds != nil {
-			blk, err := bs.Get(ctx, *sc.Funds)
-			if err != nil {
-				return nil, err
-			}
-			funds, err := DecodeFunds(blk.RawData())
-			if err != nil {
-				return nil, err
-			}
-			out.FundsChange = funds
-		}
-	}
-
-	//
-	// Debt
-	{
-		if sc.Debt != nil {
-			blk, err := bs.Get(ctx, *sc.Debt)
-			if err != nil {
-				return nil, err
-			}
-			debt, err := DecodeDebt(blk.RawData())
-			if err != nil {
-				return nil, err
-			}
-			out.DebtChange = debt
-		}
-	}
-
-	//
 	// SectorStatus
 	{
 
@@ -258,30 +216,6 @@ func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, bs blockstore
 		}
 		c := blk.Cid()
 		out.Info = &c
-	}
-
-	if funds := sd.FundsChange; funds != nil {
-		blk, err := funds.ToStorageBlock()
-		if err != nil {
-			return nil, err
-		}
-		if err := bs.Put(ctx, blk); err != nil {
-			return nil, err
-		}
-		c := blk.Cid()
-		out.Funds = &c
-	}
-
-	if debt := sd.DebtChange; debt != nil {
-		blk, err := debt.ToStorageBlock()
-		if err != nil {
-			return nil, err
-		}
-		if err := bs.Put(ctx, blk); err != nil {
-			return nil, err
-		}
-		c := blk.Cid()
-		out.Debt = &c
 	}
 
 	if sectorstatus := sd.SectorStatusChanges; sectorstatus != nil {

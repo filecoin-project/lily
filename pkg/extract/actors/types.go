@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/lotus/blockstore"
+	"github.com/filecoin-project/go-state-types/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	typegen "github.com/whyrusleeping/cbor-gen"
 	"go.opentelemetry.io/otel/attribute"
@@ -17,7 +17,7 @@ import (
 
 type ActorDiffResult interface {
 	Kind() string
-	MarshalStateChange(ctx context.Context, bs blockstore.Blockstore) (typegen.CBORMarshaler, error)
+	MarshalStateChange(ctx context.Context, s store.Store) (typegen.CBORMarshaler, error)
 }
 
 type ActorDiff interface {
