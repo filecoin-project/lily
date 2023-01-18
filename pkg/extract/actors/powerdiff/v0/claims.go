@@ -25,10 +25,6 @@ type ClaimsChange struct {
 	Change   core.ChangeType   `cborgen:"change"`
 }
 
-func (t *ClaimsChange) Key() string {
-	return core.StringKey(t.Miner).Key()
-}
-
 type ClaimsChangeList []*ClaimsChange
 
 const KindPowerClaims = "power_claims"
@@ -43,7 +39,7 @@ func (p ClaimsChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
 		return cid.Undef, err
 	}
 	for _, l := range p {
-		if err := node.Put(l, l); err != nil {
+		if err := node.Put(core.StringKey(l.Miner), l); err != nil {
 			return cid.Undef, err
 		}
 	}

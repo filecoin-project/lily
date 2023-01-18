@@ -61,7 +61,7 @@ func MinerHandler(ctx context.Context, bs blockstore.Blockstore, current, execut
 			return err
 		}
 		// decode the miner state change from the IPLD structure to a type we can inspect.
-		minerStateDiff, err := minerdiff.DecodeStateDiffResultFromStateChange(ctx, bs, minerState)
+		minerStateDiff, err := minerState.ToStateDiffResult(ctx, adtStore)
 		if err != nil {
 			return err
 		}

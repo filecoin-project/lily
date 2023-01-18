@@ -34,6 +34,12 @@ func (t *PreCommitChange) Key() string {
 
 type PreCommitChangeList []*PreCommitChange
 
+const KindMinerPreCommit = "miner_precommit"
+
+func (p PreCommitChangeList) Kind() actors.ActorStateKind {
+	return KindMinerPreCommit
+}
+
 func (p PreCommitChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
 	node, err := adt.MakeEmptyMap(store, bw)
 	if err != nil {
@@ -45,33 +51,6 @@ func (p PreCommitChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) 
 		}
 	}
 	return node.Root()
-}
-
-func (p *PreCommitChangeList) FromAdtMap(store adt.Store, root cid.Cid, bw int) error {
-	precommitMap, err := adt.AsMap(store, root, bw)
-	if err != nil {
-		return err
-	}
-
-	precommits := new(PreCommitChangeList)
-	precommitChange := new(PreCommitChange)
-	if err := precommitMap.ForEach(precommitChange, func(sectorNumber string) error {
-		val := new(PreCommitChange)
-		*val = *precommitChange
-		*precommits = append(*precommits, val)
-		return nil
-	}); err != nil {
-		return err
-	}
-	*p = *precommits
-	return nil
-
-}
-
-const KindMinerPreCommit = "miner_precommit"
-
-func (p PreCommitChangeList) Kind() actors.ActorStateKind {
-	return KindMinerPreCommit
 }
 
 type PreCommit struct{}

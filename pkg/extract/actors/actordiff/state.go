@@ -4,45 +4,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/filecoin-project/lotus/blockstore"
+	"github.com/filecoin-project/go-state-types/store"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/lily/pkg/extract/actors"
 	"github.com/filecoin-project/lily/tasks"
 )
-
-type StateDiffResult struct {
-	ActorStateChanges *ActorChange
-}
-
-func (s *StateDiffResult) MarshalStateChange(ctx context.Context, bs blockstore.Blockstore) (cbg.CBORMarshaler, error) {
-	return s.ActorStateChanges, nil
-	out := &StateChange{}
-
-	if actorChanges := s.ActorStateChanges; actorChanges != nil {
-		blk, err := actorChanges.ToStorageBlock()
-		if err != nil {
-			return nil, err
-		}
-		if err := bs.Put(ctx, blk); err != nil {
-			return nil, err
-		}
-		c := blk.Cid()
-		out.ActorState = c
-	} else {
-		return nil, nil
-	}
-	return out, nil
-}
-
-func (s *StateDiffResult) Kind() string {
-	return "actor"
-}
-
-type StateChange struct {
-	ActorState cid.Cid `cborgen:"actors"`
-}
 
 type StateDiff struct {
 	DiffMethods []actors.ActorStateDiff
@@ -66,4 +34,20 @@ func (s *StateDiff) State(ctx context.Context, api tasks.DataSource, act *actors
 	}
 	log.Infow("Extracted Raw Actor State Diff", "address", act.Address, "duration", time.Since(start))
 	return stateDiff, nil
+}
+
+type StateDiffResult struct {
+	ActorStateChanges *ActorChange
+}
+
+func (sdr *StateDiffResult) Kind() string {
+	return "actor"
+}
+
+func (sdr *StateDiffResult) MarshalStateChange(ctx context.Context, s store.Store) (cbg.CBORMarshaler, error) {
+	return sdr.ActorStateChanges, nil
+}
+
+type StateChange struct {
+	ActorState cid.Cid `cborgen:"actors"`
 }

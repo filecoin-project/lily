@@ -28,10 +28,6 @@ type AddressChange struct {
 	Change   core.ChangeType   `cborgen:"change"`
 }
 
-func (t *AddressChange) Key() string {
-	return core.StringKey(t.Address).Key()
-}
-
 type AddressChangeList []*AddressChange
 
 const KindInitAddresses = "init_addresses"
@@ -45,8 +41,8 @@ func (a AddressChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
 	if err != nil {
 		return cid.Undef, err
 	}
-	for _, a := range a {
-		if err := node.Put(a, a); err != nil {
+	for _, l := range a {
+		if err := node.Put(core.StringKey(l.Address), l); err != nil {
 			return cid.Undef, err
 		}
 	}

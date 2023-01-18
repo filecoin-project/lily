@@ -85,7 +85,7 @@ func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, exec
 	}
 
 	// TODO pass the adtStore not the blockstore.
-	actorStateContainer, err := cboractors.ProcessActorsStates(ctx, bs, actors)
+	actorStateContainer, err := cboractors.ProcessActorsStates(ctx, store, actors)
 	if err != nil {
 		return cid.Undef, err
 	}

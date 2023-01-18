@@ -104,7 +104,7 @@ func main() {
 	}
 
 	if err := cbg.WriteMapEncodersToFile(IPLDActorContainerPath, IPLDActorContainerPkg,
-		actors.ActorIPLDContainer{},
+		actors.ActorStateChangesIPLD{},
 	); err != nil {
 		panic(err)
 	}
@@ -122,7 +122,6 @@ func main() {
 	}
 
 	if err := cbg.WriteMapEncodersToFile(MessageContainerPath, MessageContainerPkg,
-		messages.MessageIPLDContainer{},
 		messages.FullBlockIPLDContainer{},
 		messages.ChainMessageIPLDContainer{},
 		messages.SignedChainMessageIPLDContainer{},

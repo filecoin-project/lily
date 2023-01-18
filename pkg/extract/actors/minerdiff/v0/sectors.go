@@ -18,17 +18,11 @@ import (
 
 var _ actors.ActorStateChange = (*SectorChangeList)(nil)
 
-var _ abi.Keyer = (*SectorChange)(nil)
-
 type SectorChange struct {
 	SectorNumber uint64            `cborgen:"sector_number"`
 	Current      *typegen.Deferred `cborgen:"current_sector"`
 	Previous     *typegen.Deferred `cborgen:"previous_sector"`
 	Change       core.ChangeType   `cborgen:"change"`
-}
-
-func (t *SectorChange) Key() string {
-	return abi.UIntKey(t.SectorNumber).Key()
 }
 
 type SectorChangeList []*SectorChange
@@ -39,31 +33,11 @@ func (s SectorChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
 		return cid.Undef, err
 	}
 	for _, l := range s {
-		if err := node.Put(l, l); err != nil {
+		if err := node.Put(abi.UIntKey(l.SectorNumber), l); err != nil {
 			return cid.Undef, err
 		}
 	}
 	return node.Root()
-}
-
-func (s *SectorChangeList) FromAdtMap(store adt.Store, root cid.Cid, bw int) error {
-	sectorMap, err := adt.AsMap(store, root, bw)
-	if err != nil {
-		return err
-	}
-
-	sectors := new(SectorChangeList)
-	sectorChange := new(SectorChange)
-	if err := sectorMap.ForEach(sectorChange, func(sectorNumber string) error {
-		val := new(SectorChange)
-		*val = *sectorChange
-		*sectors = append(*sectors, val)
-		return nil
-	}); err != nil {
-		return err
-	}
-	*s = *sectors
-	return nil
 }
 
 const KindMinerSector = "miner_sector"

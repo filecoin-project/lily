@@ -24,10 +24,6 @@ type DealChange struct {
 	Change   core.ChangeType   `cborgen:"change"`
 }
 
-func (t *DealChange) Key() string {
-	return abi.UIntKey(t.DealID).Key()
-}
-
 type DealChangeList []*DealChange
 
 const KindMarketDeal = "market_deal"
@@ -42,7 +38,7 @@ func (p DealChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
 		return cid.Undef, err
 	}
 	for _, l := range p {
-		if err := node.Put(l, l); err != nil {
+		if err := node.Put(abi.UIntKey(l.DealID), l); err != nil {
 			return cid.Undef, err
 		}
 	}

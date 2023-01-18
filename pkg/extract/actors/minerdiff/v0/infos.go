@@ -1,14 +1,11 @@
 package v0
 
 import (
-	"bytes"
 	"context"
 	"time"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
-	block "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	typegen "github.com/whyrusleeping/cbor-gen"
 	"go.uber.org/zap"
@@ -25,39 +22,6 @@ var _ actors.ActorStateChange = (*InfoChange)(nil)
 type InfoChange struct {
 	Info   *typegen.Deferred `cborgen:"info"`
 	Change core.ChangeType   `cborgen:"change"`
-}
-
-func (i *InfoChange) Serialize() ([]byte, error) {
-	buf := new(bytes.Buffer)
-	if err := i.MarshalCBOR(buf); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-
-}
-
-func (i *InfoChange) ToStorageBlock() (block.Block, error) {
-	data, err := i.Serialize()
-	if err != nil {
-		return nil, err
-	}
-
-	c, err := abi.CidBuilder.WithCodec(cid.Raw).Sum(data)
-	if err != nil {
-		return nil, err
-	}
-
-	return block.NewBlockWithCid(data, c)
-}
-
-func DecodeInfo(b []byte) (*InfoChange, error) {
-	var info InfoChange
-	if err := info.UnmarshalCBOR(bytes.NewReader(b)); err != nil {
-		return nil, err
-	}
-
-	return &info, nil
 }
 
 const KindMinerInfo = "miner_info"

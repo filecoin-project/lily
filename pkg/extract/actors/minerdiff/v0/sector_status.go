@@ -1,15 +1,11 @@
 package v0
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"time"
 
 	"github.com/filecoin-project/go-bitfield"
-	"github.com/filecoin-project/go-state-types/abi"
-	block "github.com/ipfs/go-block-format"
-	"github.com/ipfs/go-cid"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
@@ -30,38 +26,6 @@ type SectorStatusChange struct {
 	Faulted bitfield.BitField `cborgen:"faulted"`
 	// Recovered sectors this epoch
 	Recovered bitfield.BitField `cborgen:"recovered"`
-}
-
-func (s *SectorStatusChange) Serialize() ([]byte, error) {
-	buf := new(bytes.Buffer)
-	if err := s.MarshalCBOR(buf); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-func (s *SectorStatusChange) ToStorageBlock() (block.Block, error) {
-	data, err := s.Serialize()
-	if err != nil {
-		return nil, err
-	}
-
-	c, err := abi.CidBuilder.WithCodec(cid.Raw).Sum(data)
-	if err != nil {
-		return nil, err
-	}
-
-	return block.NewBlockWithCid(data, c)
-}
-
-func DecodeSectorStatus(b []byte) (*SectorStatusChange, error) {
-	var ss SectorStatusChange
-	if err := ss.UnmarshalCBOR(bytes.NewReader(b)); err != nil {
-		return nil, err
-	}
-
-	return &ss, nil
 }
 
 const KindMinerSectorStatus = "miner_sector_status"
@@ -170,10 +134,10 @@ type SectorStates struct {
 // LoadSectorState loads all sectors from a miners partitions and returns a SectorStates structure containing individual
 // bitfields for all active, live, faulty and recovering sector.
 func LoadSectorState(ctx context.Context, state miner.State) (*SectorStates, error) {
-	activeSectors := []bitfield.BitField{}
-	liveSectors := []bitfield.BitField{}
-	faultySectors := []bitfield.BitField{}
-	recoveringSectors := []bitfield.BitField{}
+	var activeSectors []bitfield.BitField
+	var liveSectors []bitfield.BitField
+	var faultySectors []bitfield.BitField
+	var recoveringSectors []bitfield.BitField
 
 	// iterate the sector states
 	if err := state.ForEachDeadline(func(_ uint64, dl miner.Deadline) error {
