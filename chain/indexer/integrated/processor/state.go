@@ -416,6 +416,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				map[cid.Cid][]actorstate.ActorStateExtractor{
 					mineractors.VersionCodes()[actors.Version9]:  {minertask.BeneficiaryExtractor{}},
 					mineractors.VersionCodes()[actors.Version10]: {minertask.BeneficiaryExtractor{}},
+					mineractors.VersionCodes()[actors.Version11]: {minertask.BeneficiaryExtractor{}},
 				},
 			))
 		case tasktype.MinerCurrentDeadlineInfo:
@@ -449,6 +450,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 					// updated extractor for onchain types
 					mineractors.VersionCodes()[actors.Version9]:  {minertask.PreCommitInfoExtractorV9{}},
 					mineractors.VersionCodes()[actors.Version10]: {minertask.PreCommitInfoExtractorV9{}},
+					mineractors.VersionCodes()[actors.Version11]: {minertask.PreCommitInfoExtractorV9{}},
 				},
 			))
 		case tasktype.MinerSectorDeal:
@@ -481,6 +483,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 					mineractors.VersionCodes()[actors.Version8]:  {minertask.V7SectorInfoExtractor{}},
 					mineractors.VersionCodes()[actors.Version9]:  {minertask.V7SectorInfoExtractor{}},
 					mineractors.VersionCodes()[actors.Version10]: {minertask.V7SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actors.Version11]: {minertask.V7SectorInfoExtractor{}},
 				},
 			))
 
@@ -557,7 +560,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 					verifregactors.VersionCodes()[actors.Version5]: {verifregtask.ClientExtractor{}},
 					verifregactors.VersionCodes()[actors.Version6]: {verifregtask.ClientExtractor{}},
 					verifregactors.VersionCodes()[actors.Version7]: {verifregtask.ClientExtractor{}},
-					verifregactors.VersionCodes()[actors.Version8]: {verifregtask.ClientExtractor{}},
+					// hyperspace bug
+					//verifregactors.VersionCodes()[actors.Version8]: {verifregtask.ClientExtractor{}},
 					// version 9 no longer track clients and has been migrated to the datacap actor
 				},
 			))

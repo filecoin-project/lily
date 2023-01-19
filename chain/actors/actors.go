@@ -26,6 +26,7 @@ const (
 	Version8  Version = 8
 	Version9  Version = 9
 	Version10 Version = 10
+	Version11 Version = 11
 )
 const (
 	AccountKey  = "account"
