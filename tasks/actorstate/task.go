@@ -253,8 +253,9 @@ func NewCustomTypedActorExtractorMap(extractors map[cid.Cid][]ActorStateExtracto
 		codes:      cid.NewSet(),
 		extractors: extractors,
 	}
-	for c := range extractors {
+	for c, e := range extractors {
 		t.codes.Add(c)
+		log.Infow("CustomeTypedActorExtractor", "code", c.String(), "extractor", e)
 	}
 	return t
 }

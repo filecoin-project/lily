@@ -136,6 +136,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 					Cid:   m.Cid(),
 					Error: errStr,
 				})
+				continue
 			}
 			pm := &messagemodel.ParsedMessage{
 				Height: int64(msgrec.Block.Height),

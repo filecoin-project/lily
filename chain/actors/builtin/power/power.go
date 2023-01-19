@@ -32,14 +32,14 @@ import (
 
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
 
-	builtin10 "github.com/filecoin-project/go-state-types/builtin"
+	builtin11 "github.com/filecoin-project/go-state-types/builtin"
 
 	"github.com/filecoin-project/lily/chain/actors"
 )
 
 var (
-	Address = builtin10.StoragePowerActorAddr
-	Methods = builtin10.MethodsPower
+	Address = builtin11.StoragePowerActorAddr
+	Methods = builtin11.MethodsPower
 )
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
@@ -58,6 +58,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 		case actors.Version10:
 			return load10(store, act.Head)
+
+		case actors.Version11:
+			return load11(store, act.Head)
 
 		}
 	}
@@ -145,6 +148,7 @@ func AllCodes() []cid.Cid {
 		(&state8{}).Code(),
 		(&state9{}).Code(),
 		(&state10{}).Code(),
+		(&state11{}).Code(),
 	}
 }
 
@@ -160,5 +164,6 @@ func VersionCodes() map[actors.Version]cid.Cid {
 		actors.Version8:  (&state8{}).Code(),
 		actors.Version9:  (&state9{}).Code(),
 		actors.Version10: (&state10{}).Code(),
+		actors.Version11: (&state11{}).Code(),
 	}
 }

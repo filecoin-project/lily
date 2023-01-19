@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-bitfield"
-	builtin2 "github.com/filecoin-project/go-state-types/builtin"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -49,13 +48,20 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (_ string
 		return "", m.Name, nil
 	}
 
-	if method == builtin2.MustGenerateFRCMethodNum("Receive") {
-		b, err := json.Marshal(m.Params)
-		if err != nil {
-			return "", "", err
+	// NB: "parameters of EVM messages are byte arrays" - Raul
+	// you'll need to look at the first 4 bytes of the
+	// t4/f4 is a delegated address type: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0048.md
+	// https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0055.md
+	/*
+		if method == builtin2.MustGenerateFRCMethodNum("Receive") {
+			b, err := json.Marshal(m.Params)
+			if err != nil {
+				return "", "", err
+			}
+			return string(b), m.Name, nil
 		}
-		return string(b), m.Name, nil
-	}
+
+	*/
 
 	defer func() {
 		if r := recover(); r != nil {
