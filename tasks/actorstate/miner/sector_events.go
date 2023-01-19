@@ -288,7 +288,12 @@ type SectorStates struct {
 
 // LoadSectorState loads all sectors from a miners partitions and returns a SectorStates structure containing individual
 // bitfields for all active, live, faulty and recovering sector.
-func LoadSectorState(ctx context.Context, state miner.State) (*SectorStates, error) {
+func LoadSectorState(ctx context.Context, state miner.State) (sectorStates *SectorStates, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("LoadSectorState panic: %s", r)
+		}
+	}()
 	_, span := otel.Tracer("").Start(ctx, "LoadSectorState")
 	defer span.End()
 
@@ -329,8 +334,6 @@ func LoadSectorState(ctx context.Context, state miner.State) (*SectorStates, err
 	}); err != nil {
 		return nil, err
 	}
-	var err error
-	sectorStates := &SectorStates{}
 	if sectorStates.Active, err = bitfield.MultiMerge(activeSectors...); err != nil {
 		return nil, err
 	}
@@ -375,14 +378,14 @@ func DiffMinerSectorStates(ctx context.Context, extState extraction.State) (*Sec
 	grp.Go(func() error {
 		previous, err = LoadSectorState(grpCtx, extState.ParentState())
 		if err != nil {
-			return fmt.Errorf("loading previous sector states %w", err)
+			return fmt.Errorf("loading previous sector states for miner %s.(%s) with change type %s at height %d: %w", extState.Address(), extState.Actor().Code, extState.ChangeType(), extState.CurrentTipSet().Height(), err)
 		}
 		return nil
 	})
 	grp.Go(func() error {
 		current, err = LoadSectorState(grpCtx, extState.CurrentState())
 		if err != nil {
-			return fmt.Errorf("loading current sector states %w", err)
+			return fmt.Errorf("loading current sector states for miner %s.(%s) with change type %s at height %d: %w", extState.Address(), extState.Actor().Code, extState.ChangeType(), extState.CurrentTipSet().Height(), err)
 		}
 		return nil
 	})
