@@ -670,9 +670,244 @@ func (t *InfoChange) UnmarshalCBOR(r io.Reader) (err error) {
 	return nil
 }
 func (t *StateChange) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+
+	if _, err := cw.Write([]byte{164}); err != nil {
+		return err
+	}
+
+	// t.SectorStatus (cid.Cid) (struct)
+	if len("sector_status") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"sector_status\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("sector_status"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("sector_status")); err != nil {
+		return err
+	}
+
+	if t.SectorStatus == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.SectorStatus); err != nil {
+			return xerrors.Errorf("failed to write cid field t.SectorStatus: %w", err)
+		}
+	}
+
+	// t.Info (cid.Cid) (struct)
+	if len("info") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"info\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("info"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("info")); err != nil {
+		return err
+	}
+
+	if t.Info == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.Info); err != nil {
+			return xerrors.Errorf("failed to write cid field t.Info: %w", err)
+		}
+	}
+
+	// t.PreCommits (cid.Cid) (struct)
+	if len("pre_commits") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"pre_commits\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("pre_commits"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("pre_commits")); err != nil {
+		return err
+	}
+
+	if t.PreCommits == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.PreCommits); err != nil {
+			return xerrors.Errorf("failed to write cid field t.PreCommits: %w", err)
+		}
+	}
+
+	// t.Sectors (cid.Cid) (struct)
+	if len("sectors") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"sectors\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("sectors"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("sectors")); err != nil {
+		return err
+	}
+
+	if t.Sectors == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.Sectors); err != nil {
+			return xerrors.Errorf("failed to write cid field t.Sectors: %w", err)
+		}
+	}
+
 	return nil
 }
 
 func (t *StateChange) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = StateChange{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("StateChange: map struct too large (%d)", extra)
+	}
+
+	var name string
+	n := extra
+
+	for i := uint64(0); i < n; i++ {
+
+		{
+			sval, err := cbg.ReadString(cr)
+			if err != nil {
+				return err
+			}
+
+			name = string(sval)
+		}
+
+		switch name {
+		// t.SectorStatus (cid.Cid) (struct)
+		case "sector_status":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.SectorStatus: %w", err)
+					}
+
+					t.SectorStatus = &c
+				}
+
+			}
+			// t.Info (cid.Cid) (struct)
+		case "info":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Info: %w", err)
+					}
+
+					t.Info = &c
+				}
+
+			}
+			// t.PreCommits (cid.Cid) (struct)
+		case "pre_commits":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.PreCommits: %w", err)
+					}
+
+					t.PreCommits = &c
+				}
+
+			}
+			// t.Sectors (cid.Cid) (struct)
+		case "sectors":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Sectors: %w", err)
+					}
+
+					t.Sectors = &c
+				}
+
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			cbg.ScanForLinks(r, func(cid.Cid) {})
+		}
+	}
+
 	return nil
 }

@@ -11,6 +11,7 @@ import (
 	verifV0 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v0"
 	verifV9 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v9"
 	"github.com/filecoin-project/lily/pkg/extract/processor"
+	"github.com/filecoin-project/lily/pkg/transform/cbor"
 	"github.com/filecoin-project/lily/pkg/transform/cbor/actors"
 	"github.com/filecoin-project/lily/pkg/transform/cbor/messages"
 )
@@ -44,6 +45,9 @@ const MessageStatePkg = "processor"
 
 const MessageContainerPath = "pkg/transform/cbor/messages/cbor_gen.go"
 const MessageContainerPkg = "messages"
+
+const RootStatePath = "pkg/transform/cbor/cbor_gen.go"
+const RootStatePkg = "cbor"
 
 func main() {
 	if err := cbg.WriteMapEncodersToFile(actorDiffPath, actorDiffPkg,
@@ -124,6 +128,13 @@ func main() {
 		messages.ChainMessageIPLDContainer{},
 		messages.SignedChainMessageIPLDContainer{},
 		messages.ImplicitMessageIPLDContainer{},
+	); err != nil {
+		panic(err)
+	}
+
+	if err := cbg.WriteMapEncodersToFile(RootStatePath, RootStatePkg,
+		cbor.RootStateIPLD{},
+		cbor.StateExtractionIPLD{},
 	); err != nil {
 		panic(err)
 	}

@@ -24,12 +24,12 @@ import (
 var log = logging.Logger("lily/transform/cbor")
 
 type RootStateIPLD struct {
-	StateVersion uint64
+	StateVersion uint64 `cborgen:"stateversion"`
 
-	NetworkName    string
-	NetworkVersion uint64
+	NetworkName    string `cborgen:"networkname"`
+	NetworkVersion uint64 `cborgen:"networkversion"`
 
-	State cid.Cid // StateExtractionIPLD
+	State cid.Cid `cborgen:"state"` // StateExtractionIPLD
 }
 
 func (r *RootStateIPLD) Attributes() []attribute.KeyValue {
@@ -49,14 +49,14 @@ func (r *RootStateIPLD) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 }
 
 type StateExtractionIPLD struct {
-	Current types.TipSet
-	Parent  types.TipSet
+	Current types.TipSet `cborgen:"current"`
+	Parent  types.TipSet `cborgen:"parent"`
 
-	BaseFee abi.TokenAmount
+	BaseFee abi.TokenAmount `cborgen:"basefee"`
 
-	FullBlocks       cid.Cid
-	ImplicitMessages cid.Cid
-	Actors           cid.Cid
+	FullBlocks       cid.Cid `cborgen:"fullblocks"`
+	ImplicitMessages cid.Cid `cborgen:"implicitmessages"`
+	Actors           cid.Cid `cborgen:"actors"`
 }
 
 func (s *StateExtractionIPLD) Attributes() []attribute.KeyValue {

@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 	adtstore "github.com/filecoin-project/go-state-types/store"
 	"github.com/filecoin-project/lotus/chain/types"
-	adt2 "github.com/filecoin-project/specs-actors/v3/actors/util/adt"
 	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/lily/pkg/extract/processor"
@@ -19,7 +19,7 @@ type FullBlockIPLDContainer struct {
 }
 
 func MakeFullBlockHAMT(ctx context.Context, store adtstore.Store, fullBlks map[cid.Cid]*processor.FullBlock) (cid.Cid, error) {
-	fullBlkHamt, err := adt2.MakeEmptyMap(store, 5)
+	fullBlkHamt, err := adt.MakeEmptyMap(store, 5)
 	if err != nil {
 		return cid.Undef, err
 	}
@@ -48,9 +48,9 @@ func MakeFullBlockHAMT(ctx context.Context, store adtstore.Store, fullBlks map[c
 }
 
 func DecodeFullBlockHAMT(ctx context.Context, store adtstore.Store, root cid.Cid) (map[cid.Cid]*processor.FullBlock, error) {
-	fullBlkHamt, err := adt2.AsMap(store, root, 5)
+	fullBlkHamt, err := adt.AsMap(store, root, 5)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	out := make(map[cid.Cid]*processor.FullBlock)
 	fbc := new(FullBlockIPLDContainer)
@@ -85,7 +85,7 @@ type ChainMessageIPLDContainer struct {
 }
 
 func MakeChainMessagesHAMT(ctx context.Context, store adtstore.Store, messages []*processor.ChainMessage) (cid.Cid, error) {
-	messageHamt, err := adt2.MakeEmptyMap(store, 5)
+	messageHamt, err := adt.MakeEmptyMap(store, 5)
 	if err != nil {
 		return cid.Undef, err
 	}
@@ -107,7 +107,7 @@ func MakeChainMessagesHAMT(ctx context.Context, store adtstore.Store, messages [
 }
 
 func DecodeChainMessagesHAMT(ctx context.Context, store adtstore.Store, root cid.Cid) ([]*processor.ChainMessage, error) {
-	messagesHamt, err := adt2.AsMap(store, root, 5)
+	messagesHamt, err := adt.AsMap(store, root, 5)
 	if err != nil {
 		return nil, err
 	}
@@ -115,14 +115,17 @@ func DecodeChainMessagesHAMT(ctx context.Context, store adtstore.Store, root cid
 	var out []*processor.ChainMessage
 	mc := new(ChainMessageIPLDContainer)
 	if err := messagesHamt.ForEach(mc, func(key string) error {
-		val := new(processor.ChainMessage)
-		*val.Receipt = *mc.Receipt
-		*val.Message = *mc.Message
-		val.VmMessages, err = processor.VmMessageListFromAdtArray(store, mc.VmMessagesAmt, 5)
+		msgs := *mc.Message
+		rcpts := *mc.Receipt
+		vmMessages, err := processor.VmMessageListFromAdtArray(store, mc.VmMessagesAmt, 5)
 		if err != nil {
 			return err
 		}
-		out = append(out, val)
+		out = append(out, &processor.ChainMessage{
+			Message:    &msgs,
+			Receipt:    &rcpts,
+			VmMessages: vmMessages,
+		})
 		return nil
 	}); err != nil {
 		return nil, err
@@ -137,7 +140,7 @@ type SignedChainMessageIPLDContainer struct {
 }
 
 func MakeSignedChainMessagesHAMT(ctx context.Context, store adtstore.Store, messages []*processor.SignedChainMessage) (cid.Cid, error) {
-	messageHamt, err := adt2.MakeEmptyMap(store, 5)
+	messageHamt, err := adt.MakeEmptyMap(store, 5)
 	if err != nil {
 		return cid.Undef, err
 	}
@@ -159,7 +162,7 @@ func MakeSignedChainMessagesHAMT(ctx context.Context, store adtstore.Store, mess
 }
 
 func DecodeSignedChainMessagesHAMT(ctx context.Context, store adtstore.Store, root cid.Cid) ([]*processor.SignedChainMessage, error) {
-	messagesHamt, err := adt2.AsMap(store, root, 5)
+	messagesHamt, err := adt.AsMap(store, root, 5)
 	if err != nil {
 		return nil, err
 	}
@@ -167,14 +170,17 @@ func DecodeSignedChainMessagesHAMT(ctx context.Context, store adtstore.Store, ro
 	var out []*processor.SignedChainMessage
 	mc := new(SignedChainMessageIPLDContainer)
 	if err := messagesHamt.ForEach(mc, func(key string) error {
-		val := new(processor.SignedChainMessage)
-		*val.Receipt = *mc.Receipt
-		*val.Message = *mc.Message
-		val.VmMessages, err = processor.VmMessageListFromAdtArray(store, mc.VmMessagesAmt, 5)
+		msg := *mc.Message
+		recet := *mc.Receipt
+		vmMessages, err := processor.VmMessageListFromAdtArray(store, mc.VmMessagesAmt, 5)
 		if err != nil {
 			return err
 		}
-		out = append(out, val)
+		out = append(out, &processor.SignedChainMessage{
+			Message:    &msg,
+			Receipt:    &recet,
+			VmMessages: vmMessages,
+		})
 		return nil
 	}); err != nil {
 		return nil, err
@@ -190,7 +196,7 @@ type ImplicitMessageIPLDContainer struct {
 
 // MakeImplicitMessagesHAMT returns the root of a hamt node containing the set of implicit messages
 func MakeImplicitMessagesHAMT(ctx context.Context, store adtstore.Store, messages []*processor.ImplicitMessage) (cid.Cid, error) {
-	messageHamt, err := adt2.MakeEmptyMap(store, 5)
+	messageHamt, err := adt.MakeEmptyMap(store, 5)
 	if err != nil {
 		return cid.Undef, err
 	}
@@ -212,7 +218,7 @@ func MakeImplicitMessagesHAMT(ctx context.Context, store adtstore.Store, message
 }
 
 func DecodeImplicitMessagesHAMT(ctx context.Context, store adtstore.Store, root cid.Cid) ([]*processor.ImplicitMessage, error) {
-	messagesHamt, err := adt2.AsMap(store, root, 5)
+	messagesHamt, err := adt.AsMap(store, root, 5)
 	if err != nil {
 		return nil, err
 	}
@@ -220,14 +226,17 @@ func DecodeImplicitMessagesHAMT(ctx context.Context, store adtstore.Store, root 
 	var out []*processor.ImplicitMessage
 	msg := new(ImplicitMessageIPLDContainer)
 	if err := messagesHamt.ForEach(msg, func(key string) error {
-		val := new(processor.ImplicitMessage)
-		*val.Message = *msg.Message
-		*val.Receipt = *msg.Receipt
-		val.VmMessages, err = processor.VmMessageListFromAdtArray(store, msg.VmMessagesAmt, 5)
+		m := *msg.Message
+		rect := *msg.Receipt
+		vmMessages, err := processor.VmMessageListFromAdtArray(store, msg.VmMessagesAmt, 5)
 		if err != nil {
 			return err
 		}
-		out = append(out, val)
+		out = append(out, &processor.ImplicitMessage{
+			Message:    &m,
+			Receipt:    &rect,
+			VmMessages: vmMessages,
+		})
 		return nil
 	}); err != nil {
 		return nil, err

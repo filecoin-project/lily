@@ -3,10 +3,13 @@
 package actors
 
 import (
+	"fmt"
+	"io"
 	"math"
 	"sort"
 
 	cid "github.com/ipfs/go-cid"
+	cbg "github.com/whyrusleeping/cbor-gen"
 	xerrors "golang.org/x/xerrors"
 )
 
@@ -14,3 +17,381 @@ var _ = xerrors.Errorf
 var _ = cid.Undef
 var _ = math.E
 var _ = sort.Sort
+
+func (t *ActorStateChangesIPLD) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+
+	if _, err := cw.Write([]byte{167}); err != nil {
+		return err
+	}
+
+	// t.DataCapActor (cid.Cid) (struct)
+	if len("DataCapActor") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"DataCapActor\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("DataCapActor"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("DataCapActor")); err != nil {
+		return err
+	}
+
+	if t.DataCapActor == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.DataCapActor); err != nil {
+			return xerrors.Errorf("failed to write cid field t.DataCapActor: %w", err)
+		}
+	}
+
+	// t.InitActor (cid.Cid) (struct)
+	if len("InitActor") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"InitActor\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("InitActor"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("InitActor")); err != nil {
+		return err
+	}
+
+	if t.InitActor == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.InitActor); err != nil {
+			return xerrors.Errorf("failed to write cid field t.InitActor: %w", err)
+		}
+	}
+
+	// t.MarketActor (cid.Cid) (struct)
+	if len("MarketActor") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"MarketActor\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("MarketActor"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("MarketActor")); err != nil {
+		return err
+	}
+
+	if t.MarketActor == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.MarketActor); err != nil {
+			return xerrors.Errorf("failed to write cid field t.MarketActor: %w", err)
+		}
+	}
+
+	// t.MinerActors (cid.Cid) (struct)
+	if len("MinerActors") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"MinerActors\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("MinerActors"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("MinerActors")); err != nil {
+		return err
+	}
+
+	if t.MinerActors == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.MinerActors); err != nil {
+			return xerrors.Errorf("failed to write cid field t.MinerActors: %w", err)
+		}
+	}
+
+	// t.PowerActor (cid.Cid) (struct)
+	if len("PowerActor") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"PowerActor\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("PowerActor"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("PowerActor")); err != nil {
+		return err
+	}
+
+	if t.PowerActor == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.PowerActor); err != nil {
+			return xerrors.Errorf("failed to write cid field t.PowerActor: %w", err)
+		}
+	}
+
+	// t.RawActors (cid.Cid) (struct)
+	if len("RawActors") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"RawActors\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("RawActors"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("RawActors")); err != nil {
+		return err
+	}
+
+	if t.RawActors == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.RawActors); err != nil {
+			return xerrors.Errorf("failed to write cid field t.RawActors: %w", err)
+		}
+	}
+
+	// t.VerifregActor (cid.Cid) (struct)
+	if len("VerifregActor") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"VerifregActor\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("VerifregActor"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("VerifregActor")); err != nil {
+		return err
+	}
+
+	if t.VerifregActor == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.VerifregActor); err != nil {
+			return xerrors.Errorf("failed to write cid field t.VerifregActor: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (t *ActorStateChangesIPLD) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = ActorStateChangesIPLD{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("ActorStateChangesIPLD: map struct too large (%d)", extra)
+	}
+
+	var name string
+	n := extra
+
+	for i := uint64(0); i < n; i++ {
+
+		{
+			sval, err := cbg.ReadString(cr)
+			if err != nil {
+				return err
+			}
+
+			name = string(sval)
+		}
+
+		switch name {
+		// t.DataCapActor (cid.Cid) (struct)
+		case "DataCapActor":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.DataCapActor: %w", err)
+					}
+
+					t.DataCapActor = &c
+				}
+
+			}
+			// t.InitActor (cid.Cid) (struct)
+		case "InitActor":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.InitActor: %w", err)
+					}
+
+					t.InitActor = &c
+				}
+
+			}
+			// t.MarketActor (cid.Cid) (struct)
+		case "MarketActor":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.MarketActor: %w", err)
+					}
+
+					t.MarketActor = &c
+				}
+
+			}
+			// t.MinerActors (cid.Cid) (struct)
+		case "MinerActors":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.MinerActors: %w", err)
+					}
+
+					t.MinerActors = &c
+				}
+
+			}
+			// t.PowerActor (cid.Cid) (struct)
+		case "PowerActor":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.PowerActor: %w", err)
+					}
+
+					t.PowerActor = &c
+				}
+
+			}
+			// t.RawActors (cid.Cid) (struct)
+		case "RawActors":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.RawActors: %w", err)
+					}
+
+					t.RawActors = &c
+				}
+
+			}
+			// t.VerifregActor (cid.Cid) (struct)
+		case "VerifregActor":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.VerifregActor: %w", err)
+					}
+
+					t.VerifregActor = &c
+				}
+
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			cbg.ScanForLinks(r, func(cid.Cid) {})
+		}
+	}
+
+	return nil
+}

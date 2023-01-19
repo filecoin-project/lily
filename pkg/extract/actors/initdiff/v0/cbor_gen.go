@@ -211,10 +211,109 @@ func (t *AddressChange) UnmarshalCBOR(r io.Reader) (err error) {
 	return nil
 }
 func (t *StateChange) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+
+	if _, err := cw.Write([]byte{161}); err != nil {
+		return err
+	}
+
+	// t.Addresses (cid.Cid) (struct)
+	if len("addresses") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"addresses\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("addresses"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("addresses")); err != nil {
+		return err
+	}
+
+	if t.Addresses == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.Addresses); err != nil {
+			return xerrors.Errorf("failed to write cid field t.Addresses: %w", err)
+		}
+	}
+
 	return nil
 }
 
 func (t *StateChange) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = StateChange{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("StateChange: map struct too large (%d)", extra)
+	}
+
+	var name string
+	n := extra
+
+	for i := uint64(0); i < n; i++ {
+
+		{
+			sval, err := cbg.ReadString(cr)
+			if err != nil {
+				return err
+			}
+
+			name = string(sval)
+		}
+
+		switch name {
+		// t.Addresses (cid.Cid) (struct)
+		case "addresses":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Addresses: %w", err)
+					}
+
+					t.Addresses = &c
+				}
+
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			cbg.ScanForLinks(r, func(cid.Cid) {})
+		}
+	}
 
 	return nil
 }
