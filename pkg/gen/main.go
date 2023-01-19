@@ -57,8 +57,6 @@ func main() {
 		minerV0.SectorStatusChange{},
 		minerV0.PreCommitChange{},
 		minerV0.SectorChange{},
-		minerV0.FundsChange{},
-		minerV0.DebtChange{},
 		minerV0.InfoChange{},
 		minerV0.StateChange{},
 	); err != nil {

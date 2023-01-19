@@ -72,7 +72,7 @@ func StateDiffFor(av actortypes.Version) (actors.ActorDiff, error) {
 			DiffMethods: []actors.ActorStateDiff{
 				v9.Verifiers{},
 				v9.Claims{},
-				// TODO
+				// TODO implement this
 				//v9.Allocations{},
 			}}, nil
 	case actortypes.Version10:

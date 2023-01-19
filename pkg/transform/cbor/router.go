@@ -13,6 +13,8 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	v1car "github.com/ipld/go-car"
 	"github.com/ipld/go-car/util"
+	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/filecoin-project/lily/pkg/extract/processor"
 	cboractors "github.com/filecoin-project/lily/pkg/transform/cbor/actors"
@@ -24,7 +26,26 @@ var log = logging.Logger("lily/transform/cbor")
 type RootStateIPLD struct {
 	StateVersion uint64
 
-	State cid.Cid
+	NetworkName    string
+	NetworkVersion uint64
+
+	State cid.Cid // StateExtractionIPLD
+}
+
+func (r *RootStateIPLD) Attributes() []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.Int64("state_version", int64(r.StateVersion)),
+		attribute.String("state_root", r.State.String()),
+		attribute.String("network_name", r.NetworkName),
+		attribute.Int64("network_version", int64(r.NetworkVersion)),
+	}
+}
+
+func (r *RootStateIPLD) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	for _, a := range r.Attributes() {
+		enc.AddString(string(a.Key), a.Value.Emit())
+	}
+	return nil
 }
 
 type StateExtractionIPLD struct {
@@ -36,6 +57,24 @@ type StateExtractionIPLD struct {
 	FullBlocks       cid.Cid
 	ImplicitMessages cid.Cid
 	Actors           cid.Cid
+}
+
+func (s *StateExtractionIPLD) Attributes() []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.String("current_tipset", s.Current.Key().String()),
+		attribute.String("parent_tipset", s.Parent.Key().String()),
+		attribute.String("base_fee", s.BaseFee.String()),
+		attribute.String("full_block_root", s.FullBlocks.String()),
+		attribute.String("implicit_message_root", s.ImplicitMessages.String()),
+		attribute.String("actors_root", s.Actors.String()),
+	}
+}
+
+func (s *StateExtractionIPLD) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	for _, a := range s.Attributes() {
+		enc.AddString(string(a.Key), a.Value.Emit())
+	}
+	return nil
 }
 
 func WriteCar(ctx context.Context, root cid.Cid, carVersion uint64, bs blockstore.Blockstore, w io.Writer) error {
@@ -74,7 +113,7 @@ func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, exec
 		return cid.Undef, fmt.Errorf("actor and message executed tipset does not match")
 	}
 
-	implicitMsgsAMT, err := messages2.MakeImplicitMessagesAMT(ctx, store, messages.ImplicitMessages)
+	implicitMsgsAMT, err := messages2.MakeImplicitMessagesHAMT(ctx, store, messages.ImplicitMessages)
 	if err != nil {
 		return cid.Undef, err
 	}
@@ -84,7 +123,6 @@ func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, exec
 		return cid.Undef, err
 	}
 
-	// TODO pass the adtStore not the blockstore.
 	actorStateContainer, err := cboractors.ProcessActorsStates(ctx, store, actors)
 	if err != nil {
 		return cid.Undef, err

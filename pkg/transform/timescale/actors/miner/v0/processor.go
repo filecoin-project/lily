@@ -5,7 +5,6 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	store "github.com/filecoin-project/go-state-types/store"
-	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 
@@ -43,12 +42,11 @@ func MinerStateHandler(ctx context.Context, current, executed *types.TipSet, add
 	return ExtractMinerStateChanges(ctx, current, executed, addr, change)
 }
 
-func MinerHandler(ctx context.Context, bs blockstore.Blockstore, current, executed *types.TipSet, minerMapRoot cid.Cid) (model.PersistableList, error) {
+func MinerHandler(ctx context.Context, s store.Store, current, executed *types.TipSet, minerMapRoot cid.Cid) (model.PersistableList, error) {
 	out := model.PersistableList{}
-	adtStore := store.WrapBlockStore(ctx, bs)
 
 	// a map of all miners whose state has changes
-	minerMap, err := adt.AsMap(adtStore, minerMapRoot, 5)
+	minerMap, err := adt.AsMap(s, minerMapRoot, 5)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +59,7 @@ func MinerHandler(ctx context.Context, bs blockstore.Blockstore, current, execut
 			return err
 		}
 		// decode the miner state change from the IPLD structure to a type we can inspect.
-		minerStateDiff, err := minerState.ToStateDiffResult(ctx, adtStore)
+		minerStateDiff, err := minerState.ToStateDiffResult(ctx, s)
 		if err != nil {
 			return err
 		}

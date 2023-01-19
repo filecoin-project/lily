@@ -21,7 +21,9 @@ import (
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors/actordiff"
-	cboractors "github.com/filecoin-project/lily/pkg/transform/cbor/actors"
+	"github.com/filecoin-project/lily/pkg/transform/cbor"
+	"github.com/filecoin-project/lily/pkg/transform/cbor/actors"
+	"github.com/filecoin-project/lily/pkg/transform/cbor/messages"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/raw"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/reward"
@@ -43,42 +45,83 @@ func Process(ctx context.Context, r io.Reader, strg model.Storage, nvg NetworkVe
 
 	adtStore := store.WrapBlockStore(ctx, bs)
 
-	actorIPLDContainer := new(cboractors.ActorIPLDContainer)
-	if err := adtStore.Get(ctx, header.Roots[0], actorIPLDContainer); err != nil {
+	rootIPLDContainer := new(cbor.RootStateIPLD)
+	if err := adtStore.Get(ctx, header.Roots[0], rootIPLDContainer); err != nil {
 		return err
 	}
+	log.Infow("open root", "car_root", header.Roots[0], zap.Inline(rootIPLDContainer))
 
-	log.Infow("Open Delta", "root", header.Roots[0], zap.Inline(actorIPLDContainer))
+	stateExtractionIPLDContainer := new(cbor.StateExtractionIPLD)
+	if err := adtStore.Get(ctx, rootIPLDContainer.State, stateExtractionIPLDContainer); err != nil {
+		return err
+	}
+	log.Infow("open state extraction", zap.Inline(stateExtractionIPLDContainer))
+	current := &stateExtractionIPLDContainer.Current
+	parent := &stateExtractionIPLDContainer.Parent
 
-	current := actorIPLDContainer.CurrentTipSet
-	executed := actorIPLDContainer.ExecutedTipSet
 	av, err := core.ActorVersionForTipSet(ctx, current, nvg)
 	if err != nil {
 		return err
 	}
 
-	var models model.PersistableList
-	actorModels, err := ProcessActorStates(ctx, bs, current, executed, av, actorIPLDContainer.ActorStates)
+	_, err = HandleFullBlocks(ctx, adtStore, current, parent, stateExtractionIPLDContainer.FullBlocks)
 	if err != nil {
 		return err
 	}
-	models = append(models, actorModels)
 
-	minerModels, err := ProcessMiners(ctx, bs, current, executed, av, actorIPLDContainer.MinerActors)
+	_, err = HandleImplicitMessages(ctx, adtStore, current, parent, stateExtractionIPLDContainer.ImplicitMessages)
 	if err != nil {
 		return err
 	}
-	models = append(models, minerModels)
 
-	return strg.PersistBatch(ctx, models...)
+	_, err = HandleActorStateChanges(ctx, adtStore, current, parent, av, stateExtractionIPLDContainer.Actors)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func ProcessMiners(ctx context.Context, bs blockstore.Blockstore, current, executed *types.TipSet, av actorstypes.Version, root cid.Cid) (model.Persistable, error) {
+func ProcessMiners(ctx context.Context, s store.Store, current, executed *types.TipSet, av actorstypes.Version, root cid.Cid) (model.Persistable, error) {
 	minerHandler, err := miner.MakeMinerProcessor(av)
 	if err != nil {
 		return nil, err
 	}
-	return minerHandler(ctx, bs, current, executed, root)
+	return minerHandler(ctx, s, current, executed, root)
+}
+
+func HandleActorStateChanges(ctx context.Context, s store.Store, current, parent *types.TipSet, av actorstypes.Version, root cid.Cid) (interface{}, error) {
+	actorIPLDContainer := new(actors.ActorStateChangesIPLD)
+	if err := s.Get(ctx, root, actorIPLDContainer); err != nil {
+		return nil, err
+	}
+	log.Infow("open actor state changes", zap.Inline(actorIPLDContainer))
+	if actorIPLDContainer.MinerActors != nil {
+		minerModels, err := ProcessMiners(ctx, s, current, parent, av, *actorIPLDContainer.MinerActors)
+		if err != nil {
+			return nil, err
+		}
+		_ = minerModels
+	}
+	return nil, nil
+}
+
+func HandleFullBlocks(ctx context.Context, s store.Store, current, parent *types.TipSet, root cid.Cid) (interface{}, error) {
+	fullBlockMap, err := messages.DecodeFullBlockHAMT(ctx, s, root)
+	if err != nil {
+		return nil, err
+	}
+	_ = fullBlockMap
+	return nil, nil
+}
+
+func HandleImplicitMessages(ctx context.Context, s store.Store, current, parent *types.TipSet, root cid.Cid) (interface{}, error) {
+	implicitMessages, err := messages.DecodeImplicitMessagesHAMT(ctx, s, root)
+	if err != nil {
+		return nil, err
+	}
+	_ = implicitMessages
+	return nil, nil
 }
 
 func ProcessActorStates(ctx context.Context, bs blockstore.Blockstore, current, executed *types.TipSet, av actorstypes.Version, actorMapRoot cid.Cid) (model.Persistable, error) {

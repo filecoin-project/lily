@@ -26,9 +26,29 @@ type ActorStateChangesIPLD struct {
 }
 
 func (a *ActorStateChangesIPLD) Attributes() []attribute.KeyValue {
-	return []attribute.KeyValue{
-		// TODO
+	var out []attribute.KeyValue
+	if a.DataCapActor != nil {
+		out = append(out, attribute.String("data_cap_root", a.DataCapActor.String()))
 	}
+	if a.InitActor != nil {
+		out = append(out, attribute.String("init_root", a.InitActor.String()))
+	}
+	if a.MarketActor != nil {
+		out = append(out, attribute.String("market_root", a.MarketActor.String()))
+	}
+	if a.MinerActors != nil {
+		out = append(out, attribute.String("miner_root", a.MinerActors.String()))
+	}
+	if a.PowerActor != nil {
+		out = append(out, attribute.String("power_root", a.PowerActor.String()))
+	}
+	if a.RawActors != nil {
+		out = append(out, attribute.String("raw_root", a.RawActors.String()))
+	}
+	if a.VerifregActor != nil {
+		out = append(out, attribute.String("verifreg_root", a.VerifregActor.String()))
+	}
+	return out
 }
 
 func (a *ActorStateChangesIPLD) MarshalLogObject(enc zapcore.ObjectEncoder) error {

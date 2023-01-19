@@ -6,7 +6,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	actortypes "github.com/filecoin-project/go-state-types/actors"
-	"github.com/filecoin-project/lotus/blockstore"
+	"github.com/filecoin-project/go-state-types/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 
@@ -50,7 +50,7 @@ func HandleMiner(ctx context.Context, current, executed *types.TipSet, addr addr
 	}
 }
 
-type MinerHandler = func(ctx context.Context, bs blockstore.Blockstore, current, executed *types.TipSet, minerMapRoot cid.Cid) (model.PersistableList, error)
+type MinerHandler = func(ctx context.Context, s store.Store, current, executed *types.TipSet, minerMapRoot cid.Cid) (model.PersistableList, error)
 
 func MakeMinerProcessor(av actortypes.Version) (MinerHandler, error) {
 	switch av {
