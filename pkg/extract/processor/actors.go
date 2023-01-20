@@ -15,11 +15,11 @@ import (
 
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
-	"github.com/filecoin-project/lily/pkg/extract/actors/actordiff"
 	"github.com/filecoin-project/lily/pkg/extract/actors/initdiff"
 	"github.com/filecoin-project/lily/pkg/extract/actors/marketdiff"
 	"github.com/filecoin-project/lily/pkg/extract/actors/minerdiff"
 	"github.com/filecoin-project/lily/pkg/extract/actors/powerdiff"
+	"github.com/filecoin-project/lily/pkg/extract/actors/rawdiff"
 	"github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff"
 	"github.com/filecoin-project/lily/pkg/extract/statetree"
 	"github.com/filecoin-project/lily/tasks"
@@ -89,8 +89,8 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 			Type:     change.ChangeType,
 		}
 		grp.Go(func() error {
-			actorDiff := &actordiff.StateDiff{
-				DiffMethods: []actors.ActorStateDiff{actordiff.Actor{}},
+			actorDiff := &rawdiff.StateDiff{
+				DiffMethods: []actors.ActorStateDiff{rawdiff.Actor{}},
 			}
 			actorStateChanges, err := actorDiff.State(grpCtx, api, act)
 			if err != nil {

@@ -12,10 +12,10 @@ import (
 	"github.com/filecoin-project/lily/model"
 	commonmodel "github.com/filecoin-project/lily/model/actors/common"
 	"github.com/filecoin-project/lily/pkg/core"
-	"github.com/filecoin-project/lily/pkg/extract/actors/actordiff"
+	"github.com/filecoin-project/lily/pkg/extract/actors/rawdiff"
 )
 
-func RawActorHandler(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *actordiff.ActorChange) (model.Persistable, error) {
+func RawActorHandler(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *rawdiff.ActorChange) (model.Persistable, error) {
 	// noop when actor is removed
 	if change.Change == core.ChangeTypeRemove {
 		return nil, nil

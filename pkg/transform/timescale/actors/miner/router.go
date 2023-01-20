@@ -11,7 +11,7 @@ import (
 	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/lily/model"
-	"github.com/filecoin-project/lily/pkg/extract/actors/actordiff"
+	"github.com/filecoin-project/lily/pkg/extract/actors/rawdiff"
 	v0 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/v0"
 	v2 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/v2"
 	v3 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/v3"
@@ -23,7 +23,7 @@ import (
 	v9 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/v9"
 )
 
-func HandleMiner(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *actordiff.ActorChange, version actortypes.Version) (model.Persistable, error) {
+func HandleMiner(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *rawdiff.ActorChange, version actortypes.Version) (model.Persistable, error) {
 	switch version {
 	case actortypes.Version0:
 		return v0.MinerStateHandler(ctx, current, executed, addr, change)

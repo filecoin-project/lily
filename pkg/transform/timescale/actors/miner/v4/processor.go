@@ -11,7 +11,7 @@ import (
 	"github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 
 	"github.com/filecoin-project/lily/model"
-	"github.com/filecoin-project/lily/pkg/extract/actors/actordiff"
+	"github.com/filecoin-project/lily/pkg/extract/actors/rawdiff"
 
 	minerdiff "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v4"
 )
@@ -38,7 +38,7 @@ func (se *StateExtract) Process(ctx context.Context, current, executed *types.Ti
 	return out, nil
 }
 
-func MinerStateHandler(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *actordiff.ActorChange) (model.Persistable, error) {
+func MinerStateHandler(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *rawdiff.ActorChange) (model.Persistable, error) {
 	return ExtractMinerStateChanges(ctx, current, executed, addr, change)
 }
 

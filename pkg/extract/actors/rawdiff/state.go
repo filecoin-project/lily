@@ -1,4 +1,4 @@
-package actordiff
+package rawdiff
 
 import (
 	"context"

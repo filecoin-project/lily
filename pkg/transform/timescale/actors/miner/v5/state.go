@@ -10,12 +10,12 @@ import (
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	"github.com/filecoin-project/lily/pkg/core"
-	"github.com/filecoin-project/lily/pkg/extract/actors/actordiff"
+	"github.com/filecoin-project/lily/pkg/extract/actors/rawdiff"
 
 	miner "github.com/filecoin-project/specs-actors/v5/actors/builtin/miner"
 )
 
-func ExtractMinerStateChanges(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *actordiff.ActorChange) (model.Persistable, error) {
+func ExtractMinerStateChanges(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *rawdiff.ActorChange) (model.Persistable, error) {
 	if change.Change == core.ChangeTypeRemove {
 		return nil, nil
 	}

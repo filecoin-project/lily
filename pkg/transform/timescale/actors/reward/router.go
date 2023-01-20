@@ -9,7 +9,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 
 	"github.com/filecoin-project/lily/model"
-	"github.com/filecoin-project/lily/pkg/extract/actors/actordiff"
+	"github.com/filecoin-project/lily/pkg/extract/actors/rawdiff"
 	v0 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/reward/v0"
 	v2 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/reward/v2"
 	v3 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/reward/v3"
@@ -21,7 +21,7 @@ import (
 	v9 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/reward/v9"
 )
 
-func HandleReward(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *actordiff.ActorChange, version actortypes.Version) (model.Persistable, error) {
+func HandleReward(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *rawdiff.ActorChange, version actortypes.Version) (model.Persistable, error) {
 	switch version {
 	case actortypes.Version0:
 		return v0.RewardHandler(ctx, current, executed, addr, change)

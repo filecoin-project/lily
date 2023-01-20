@@ -3,11 +3,11 @@ package main
 import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 
-	"github.com/filecoin-project/lily/pkg/extract/actors/actordiff"
 	initv0 "github.com/filecoin-project/lily/pkg/extract/actors/initdiff/v0"
 	marketV0 "github.com/filecoin-project/lily/pkg/extract/actors/marketdiff/v0"
 	minerV0 "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v0"
 	powerV0 "github.com/filecoin-project/lily/pkg/extract/actors/powerdiff/v0"
+	"github.com/filecoin-project/lily/pkg/extract/actors/rawdiff"
 	verifV0 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v0"
 	verifV9 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v9"
 	"github.com/filecoin-project/lily/pkg/extract/processor"
@@ -51,8 +51,8 @@ const RootStatePkg = "cbor"
 
 func main() {
 	if err := cbg.WriteMapEncodersToFile(actorDiffPath, actorDiffPkg,
-		actordiff.ActorChange{},
-		actordiff.StateChange{},
+		rawdiff.ActorChange{},
+		rawdiff.StateChange{},
 	); err != nil {
 		panic(err)
 	}

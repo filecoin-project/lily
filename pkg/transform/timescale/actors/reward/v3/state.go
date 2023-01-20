@@ -11,10 +11,10 @@ import (
 	"github.com/filecoin-project/lily/model"
 	rewardmodel "github.com/filecoin-project/lily/model/actors/reward"
 	"github.com/filecoin-project/lily/pkg/core"
-	"github.com/filecoin-project/lily/pkg/extract/actors/actordiff"
+	"github.com/filecoin-project/lily/pkg/extract/actors/rawdiff"
 )
 
-func RewardHandler(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *actordiff.ActorChange) (model.Persistable, error) {
+func RewardHandler(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *rawdiff.ActorChange) (model.Persistable, error) {
 	if change.Change == core.ChangeTypeRemove {
 		panic("reward is a singleton actor and cannot be removed")
 	}

@@ -12,61 +12,62 @@ import (
 	"github.com/filecoin-project/lily/tasks"
 )
 
-type RootState struct {
-	// StateVersion contains the version of the State data structure.
-	// If changes are made to its structure, this version will increment.
-	StateVersion uint64
+/*
+	type RootState struct {
+		// StateVersion contains the version of the State data structure.
+		// If changes are made to its structure, this version will increment.
+		StateVersion uint64
 
-	// State contains a single StateExtraction.
-	State cid.Cid
-}
+		// State contains a single StateExtraction.
+		State cid.Cid
+	}
 
-type StateExtraction struct {
-	// Current and Parent are the TipSets whose state is diffed to produce Actors.
-	// BaseFee is calculated from Parent.
-	// FullBlocks contains the blocks and messages from Parent and receipts from Current.
-	// ImplicitMessages contains implicit messages applied in Parent. These messages and their respective receipts to no appear on chain as the name suggests.
-	// Actors contains actors whos state changed between Parent and Current.
+	type StateExtraction struct {
+		// Current and Parent are the TipSets whose state is diffed to produce Actors.
+		// BaseFee is calculated from Parent.
+		// FullBlocks contains the blocks and messages from Parent and receipts from Current.
+		// ImplicitMessages contains implicit messages applied in Parent. These messages and their respective receipts to no appear on chain as the name suggests.
+		// Actors contains actors whos state changed between Parent and Current.
 
-	// Current contains the tipset whose state root is the result of Parent's execution.
-	Current *types.TipSet
-	// Parent contains the parent tipset of Current. Execution of Parent's state produces Current's state root.
-	Parent *types.TipSet
-	// BaseFee contains the basefee during Parent's execution.
-	BaseFee abi.TokenAmount
-	// FullBlocks contains a map of a BlockHeader CID to a FullBlock. Together these BlockHeaders form the Parent TipSet.
-	FullBlocks map[cid.Cid]*FullBlock
-	// ImplicitMessages contains a list of all implicit messages executed at Parent.
-	ImplicitMessages []*ImplicitMessage
-	// Actors contains the actors whose state changed while executing Parent. Their current state is contained in Current's state root.
-	Actors ActorStateChanges
-}
+		// Current contains the tipset whose state root is the result of Parent's execution.
+		Current *types.TipSet
+		// Parent contains the parent tipset of Current. Execution of Parent's state produces Current's state root.
+		Parent *types.TipSet
+		// BaseFee contains the basefee during Parent's execution.
+		BaseFee abi.TokenAmount
+		// FullBlocks contains a map of a BlockHeader CID to a FullBlock. Together these BlockHeaders form the Parent TipSet.
+		FullBlocks map[cid.Cid]*FullBlock
+		// ImplicitMessages contains a list of all implicit messages executed at Parent.
+		ImplicitMessages []*ImplicitMessage
+		// Actors contains the actors whose state changed while executing Parent. Their current state is contained in Current's state root.
+		Actors ActorStateChanges
+	}
 
-type StateExtractionIPLD struct {
-	// Current and Parent are the TipSets whose state is diffed to produce Actors.
-	// BaseFee is calculated from Parent.
-	// FullBlocks contains the blocks and messages from Parent and the messages respective receipts from Current.
-	// ImplicitMessages contains implicit messages applied in Parent. These messages and their respective receipts to no appear on chain as the name suggests.
-	// Actors contains actors whos state changed between Parent and Current.
+	type StateExtractionIPLD struct {
+		// Current and Parent are the TipSets whose state is diffed to produce Actors.
+		// BaseFee is calculated from Parent.
+		// FullBlocks contains the blocks and messages from Parent and the messages respective receipts from Current.
+		// ImplicitMessages contains implicit messages applied in Parent. These messages and their respective receipts to no appear on chain as the name suggests.
+		// Actors contains actors whos state changed between Parent and Current.
 
-	// Current contains the tipset whose state root is the result of Parent's execution.
-	Current *types.TipSet
-	// Parent contains the parent tipset of Current. Execution of Parent's state produces Current's state root.
-	Parent *types.TipSet
+		// Current contains the tipset whose state root is the result of Parent's execution.
+		Current *types.TipSet
+		// Parent contains the parent tipset of Current. Execution of Parent's state produces Current's state root.
+		Parent *types.TipSet
 
-	// BaseFee contains the basefee during Parent's execution.
-	BaseFee abi.TokenAmount
+		// BaseFee contains the basefee during Parent's execution.
+		BaseFee abi.TokenAmount
 
-	// FullBlocks contains a map of a BlockHeader CID to a FullBlock. Together these BlockHeaders form the Parent TipSet.
-	FullBlocks cid.Cid // HAMT[BlockHeaderCID]FullBlock
+		// FullBlocks contains a map of a BlockHeader CID to a FullBlock. Together these BlockHeaders form the Parent TipSet.
+		FullBlocks cid.Cid // HAMT[BlockHeaderCID]FullBlock
 
-	// ImplicitMessages contains a map of all implicit messages executed at Parent.
-	ImplicitMessages cid.Cid // HAMT[MessageCID]ImplicitMessage
+		// ImplicitMessages contains a map of all implicit messages executed at Parent.
+		ImplicitMessages cid.Cid // HAMT[MessageCID]ImplicitMessage
 
-	// Actors contains the actors whose state changed while executing Parent. Their current state is contained in Current's state root.
-	Actors cid.Cid // ActorStateChanges
-}
-
+		// Actors contains the actors whose state changed while executing Parent. Their current state is contained in Current's state root.
+		Actors cid.Cid // ActorStateChanges
+	}
+*/
 type MessageStateChanges struct {
 	Current          *types.TipSet
 	Executed         *types.TipSet
