@@ -55,5 +55,3 @@ func (a ActorChange) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	}
 	return nil
 }
-
-type ActorChanges []*ActorChange

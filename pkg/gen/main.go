@@ -10,7 +10,7 @@ import (
 	"github.com/filecoin-project/lily/pkg/extract/actors/rawdiff"
 	verifV0 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v0"
 	verifV9 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v9"
-	"github.com/filecoin-project/lily/pkg/extract/processor"
+	"github.com/filecoin-project/lily/pkg/extract/chain"
 	"github.com/filecoin-project/lily/pkg/transform/cbor"
 	"github.com/filecoin-project/lily/pkg/transform/cbor/actors"
 	"github.com/filecoin-project/lily/pkg/transform/cbor/messages"
@@ -112,13 +112,13 @@ func main() {
 	}
 
 	if err := cbg.WriteMapEncodersToFile(MessageStatePath, MessageStatePkg,
-		processor.ChainMessageReceipt{},
-		processor.ImplicitMessageReceipt{},
-		processor.MessageGasOutputs{},
-		processor.ActorError{},
-		processor.VmMessage{},
-		processor.VmMessageGasTrace{},
-		processor.Loc{},
+		chain.ChainMessageReceipt{},
+		chain.ImplicitMessageReceipt{},
+		chain.MessageGasOutputs{},
+		chain.ActorError{},
+		chain.VmMessage{},
+		chain.VmMessageGasTrace{},
+		chain.Loc{},
 	); err != nil {
 		panic(err)
 	}

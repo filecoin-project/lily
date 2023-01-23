@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/filecoin-project/lily/pkg/extract/processor"
+	"github.com/filecoin-project/lily/pkg/extract"
 	cboractors "github.com/filecoin-project/lily/pkg/transform/cbor/actors"
 	messages2 "github.com/filecoin-project/lily/pkg/transform/cbor/messages"
 )
@@ -77,10 +77,10 @@ func (s *StateExtractionIPLD) MarshalLogObject(enc zapcore.ObjectEncoder) error 
 	return nil
 }
 
-func WriteCar(ctx context.Context, root cid.Cid, carVersion uint64, bs blockstore.Blockstore, w io.Writer) error {
+func WriteCarV1(ctx context.Context, root cid.Cid, bs blockstore.Blockstore, w io.Writer) error {
 	if err := v1car.WriteHeader(&v1car.CarHeader{
 		Roots:   []cid.Cid{root},
-		Version: carVersion,
+		Version: 1,
 	}, w); err != nil {
 		return err
 	}
@@ -102,28 +102,28 @@ func WriteCar(ctx context.Context, root cid.Cid, carVersion uint64, bs blockstor
 	return nil
 }
 
-func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, executed *types.TipSet, messages *processor.MessageStateChanges, actors *processor.ActorStateChanges) (cid.Cid, error) {
+func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, executed *types.TipSet, chainState *extract.ChainState) (cid.Cid, error) {
 	store := adtStore.WrapBlockStore(ctx, bs)
 
 	// sanity check
-	if !messages.Current.Equals(actors.Current) {
+	if !chainState.Message.Current.Equals(chainState.Actors.Current) {
 		return cid.Undef, fmt.Errorf("actor and message current tipset does not match")
 	}
-	if !messages.Executed.Equals(actors.Executed) {
+	if !chainState.Message.Executed.Equals(chainState.Actors.Executed) {
 		return cid.Undef, fmt.Errorf("actor and message executed tipset does not match")
 	}
 
-	implicitMsgsAMT, err := messages2.MakeImplicitMessagesHAMT(ctx, store, messages.ImplicitMessages)
+	implicitMsgsAMT, err := messages2.MakeImplicitMessagesHAMT(ctx, store, chainState.Message.ImplicitMessages)
 	if err != nil {
 		return cid.Undef, err
 	}
 
-	fullBlkHAMT, err := messages2.MakeFullBlockHAMT(ctx, store, messages.FullBlocks)
+	fullBlkHAMT, err := messages2.MakeFullBlockHAMT(ctx, store, chainState.Message.FullBlocks)
 	if err != nil {
 		return cid.Undef, err
 	}
 
-	actorStateContainer, err := cboractors.ProcessActorsStates(ctx, store, actors)
+	actorStateContainer, err := cboractors.ProcessActorsStates(ctx, store, chainState.Actors)
 	if err != nil {
 		return cid.Undef, err
 	}
@@ -136,7 +136,7 @@ func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, exec
 	extractedState := &StateExtractionIPLD{
 		Current:          *current,
 		Parent:           *executed,
-		BaseFee:          messages.BaseFee,
+		BaseFee:          chainState.Message.BaseFee,
 		FullBlocks:       fullBlkHAMT,
 		ImplicitMessages: implicitMsgsAMT,
 		Actors:           actorStatesRoot,
@@ -148,8 +148,10 @@ func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, exec
 	}
 
 	rootState := &RootStateIPLD{
-		StateVersion: 0,
-		State:        extractedStateRoot,
+		NetworkVersion: chainState.NetworkVersion,
+		NetworkName:    chainState.NetworkName,
+		StateVersion:   0,
+		State:          extractedStateRoot,
 	}
 
 	root, err := store.Put(ctx, rootState)

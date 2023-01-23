@@ -96,6 +96,37 @@ func (s *state9) VerifiersMapHashFunction() func(input []byte) []byte {
 
 }
 
+func (s *state9) AllocationsMap() (adt.Map, error) {
+
+	return adt9.AsMap(s.store, s.Allocations, builtin9.DefaultHamtBitwidth)
+
+}
+
+func (s *state9) AllocationsMapBitWidth() int {
+
+	return builtin9.DefaultHamtBitwidth
+
+}
+
+func (s *state9) AllocationsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state9) AllocationMapForClient(clientIdAddr address.Address) (adt.Map, error) {
+
+	innerHamtCid, err := s.getInnerHamtCid(s.store, abi.IdAddrKey(clientIdAddr), s.Allocations, builtin9.DefaultHamtBitwidth)
+	if err != nil {
+		return nil, err
+	}
+	return adt9.AsMap(s.store, innerHamtCid, builtin9.DefaultHamtBitwidth)
+
+}
+
 func (s *state9) RootKey() (address.Address, error) {
 	return s.State.RootKey, nil
 }

@@ -1,4 +1,4 @@
-package processor
+package extract
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	actortypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
@@ -13,6 +14,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
 	"github.com/filecoin-project/lily/pkg/extract/actors/initdiff"
@@ -60,7 +62,26 @@ type StateDiffResult struct {
 
 type NetworkVersionGetter = func(ctx context.Context, epoch abi.ChainEpoch) network.Version
 
-func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, nvg NetworkVersionGetter) (*ActorStateChanges, error) {
+func DiffActor(ctx context.Context, api tasks.DataSource, version actortypes.Version, act *actors.ActorChange, diffLoader func(av actortypes.Version) (actors.ActorDiff, error)) (*StateDiffResult, error) {
+	// construct the state differ required by this actor version
+	diff, err := diffLoader(version)
+	if err != nil {
+		return nil, err
+	}
+	start := time.Now()
+	// diff the actors state and collect changes
+	diffRes, err := diff.State(ctx, api, act)
+	if err != nil {
+		return nil, err
+	}
+	log.Infow("diffed actor state", "address", act.Address.String(), "name", builtin.ActorNameByCode(act.Current.Code), "duration", time.Since(start))
+	return &StateDiffResult{
+		ActorDiff: diffRes,
+		Address:   act.Address,
+	}, nil
+}
+
+func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, actorVersion actortypes.Version) (*ActorStateChanges, error) {
 	actorChanges, err := statetree.ActorChanges(ctx, api.Store(), current, executed)
 	if err != nil {
 		return nil, err
@@ -70,11 +91,6 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 		Executed:    executed,
 		MinerActors: make(map[address.Address]actors.ActorDiffResult, len(actorChanges)), // there are at most actorChanges entries
 		RawActors:   make(map[address.Address]actors.ActorDiffResult, len(actorChanges)), // there are at most actorChanges entries
-	}
-
-	actorVersion, err := core.ActorVersionForTipSet(ctx, current, nvg)
-	if err != nil {
-		return nil, err
 	}
 
 	grp, grpCtx := errgroup.WithContext(ctx)
@@ -88,6 +104,7 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 			Current:  change.Current,
 			Type:     change.ChangeType,
 		}
+
 		grp.Go(func() error {
 			actorDiff := &rawdiff.StateDiff{
 				DiffMethods: []actors.ActorStateDiff{rawdiff.Actor{}},
@@ -98,91 +115,42 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 			}
 			results <- &StateDiffResult{
 				ActorDiff: actorStateChanges,
-				Address:   addr,
+				Address:   act.Address,
 			}
 			if core.MinerCodes.Has(change.Current.Code) {
-				start := time.Now()
-				// construct the state differ required by this actor version
-				actorDiff, err := minerdiff.StateDiffFor(actorVersion)
+				res, err := DiffActor(ctx, api, actorVersion, act, minerdiff.StateDiffFor)
 				if err != nil {
 					return err
 				}
-				// diff the actors state and collect changes
-				minerChanges, err := actorDiff.State(grpCtx, api, act)
-				if err != nil {
-					return err
-				}
-				log.Infow("Extract Miner", "address", addr, "duration", time.Since(start))
-				results <- &StateDiffResult{
-					ActorDiff: minerChanges,
-					Address:   addr,
-				}
+				results <- res
 			}
 			if core.VerifregCodes.Has(change.Current.Code) {
-				start := time.Now()
-				// construct the state differ required by this actor version
-				actorDiff, err := verifregdiff.StateDiffFor(actorVersion)
+				res, err := DiffActor(ctx, api, actorVersion, act, verifregdiff.StateDiffFor)
 				if err != nil {
 					return err
 				}
-				// diff the actors state and collect changes
-				verifregChanges, err := actorDiff.State(grpCtx, api, act)
-				if err != nil {
-					return err
-				}
-				log.Infow("Extract VerifiedRegistry", "address", addr, "duration", time.Since(start))
-				results <- &StateDiffResult{
-					ActorDiff: verifregChanges,
-					Address:   addr,
-				}
+				results <- res
 			}
 			if core.InitCodes.Has(change.Current.Code) {
-				start := time.Now()
-				actorDiff, err := initdiff.StateDiffFor(actorVersion)
+				res, err := DiffActor(ctx, api, actorVersion, act, initdiff.StateDiffFor)
 				if err != nil {
 					return err
 				}
-				initChanges, err := actorDiff.State(grpCtx, api, act)
-				if err != nil {
-					return err
-				}
-				log.Infow("Extracted Init", "address", addr, "duration", time.Since(start))
-				results <- &StateDiffResult{
-					ActorDiff: initChanges,
-					Address:   addr,
-				}
+				results <- res
 			}
 			if core.PowerCodes.Has(change.Current.Code) {
-				start := time.Now()
-				actorDiff, err := powerdiff.StateDiffFor(actorVersion)
+				res, err := DiffActor(ctx, api, actorVersion, act, powerdiff.StateDiffFor)
 				if err != nil {
 					return err
 				}
-				powerChanges, err := actorDiff.State(grpCtx, api, act)
-				if err != nil {
-					return err
-				}
-				log.Infow("Extracted Power", "address", addr, "duration", time.Since(start))
-				results <- &StateDiffResult{
-					ActorDiff: powerChanges,
-					Address:   addr,
-				}
+				results <- res
 			}
 			if core.MarketCodes.Has(change.Current.Code) {
-				start := time.Now()
-				actorDiff, err := marketdiff.StateDiffFor(actorVersion)
+				res, err := DiffActor(ctx, api, actorVersion, act, marketdiff.StateDiffFor)
 				if err != nil {
 					return err
 				}
-				marketChanges, err := actorDiff.State(grpCtx, api, act)
-				if err != nil {
-					return err
-				}
-				log.Infow("Extracted Market", "address", addr, "duration", time.Since(start))
-				results <- &StateDiffResult{
-					ActorDiff: marketChanges,
-					Address:   addr,
-				}
+				results <- res
 			}
 			return nil
 		})

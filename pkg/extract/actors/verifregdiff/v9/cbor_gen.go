@@ -228,7 +228,7 @@ func (t *ClaimsChange) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Provider ([]uint8) (slice)
+	// t.Client ([]uint8) (slice)
 	if len("provider") > cbg.MaxLength {
 		return xerrors.Errorf("Value in field \"provider\" was too long")
 	}
@@ -241,7 +241,7 @@ func (t *ClaimsChange) MarshalCBOR(w io.Writer) error {
 	}
 
 	if len(t.Provider) > cbg.ByteArrayMaxLen {
-		return xerrors.Errorf("Byte array in field t.Provider was too long")
+		return xerrors.Errorf("Byte array in field t.Client was too long")
 	}
 
 	if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Provider))); err != nil {
@@ -364,7 +364,7 @@ func (t *ClaimsChange) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch name {
-		// t.Provider ([]uint8) (slice)
+		// t.Client ([]uint8) (slice)
 		case "provider":
 
 			maj, extra, err = cr.ReadHeader()
@@ -373,7 +373,7 @@ func (t *ClaimsChange) UnmarshalCBOR(r io.Reader) (err error) {
 			}
 
 			if extra > cbg.ByteArrayMaxLen {
-				return fmt.Errorf("t.Provider: byte array too large (%d)", extra)
+				return fmt.Errorf("t.Client: byte array too large (%d)", extra)
 			}
 			if maj != cbg.MajByteString {
 				return fmt.Errorf("expected byte array")
@@ -465,7 +465,7 @@ func (t *AllocationsChange) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Provider ([]uint8) (slice)
+	// t.Client ([]uint8) (slice)
 	if len("provider") > cbg.MaxLength {
 		return xerrors.Errorf("Value in field \"provider\" was too long")
 	}
@@ -477,15 +477,15 @@ func (t *AllocationsChange) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if len(t.Provider) > cbg.ByteArrayMaxLen {
-		return xerrors.Errorf("Byte array in field t.Provider was too long")
+	if len(t.Client) > cbg.ByteArrayMaxLen {
+		return xerrors.Errorf("Byte array in field t.Client was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Provider))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Client))); err != nil {
 		return err
 	}
 
-	if _, err := cw.Write(t.Provider[:]); err != nil {
+	if _, err := cw.Write(t.Client[:]); err != nil {
 		return err
 	}
 
@@ -601,7 +601,7 @@ func (t *AllocationsChange) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch name {
-		// t.Provider ([]uint8) (slice)
+		// t.Client ([]uint8) (slice)
 		case "provider":
 
 			maj, extra, err = cr.ReadHeader()
@@ -610,17 +610,17 @@ func (t *AllocationsChange) UnmarshalCBOR(r io.Reader) (err error) {
 			}
 
 			if extra > cbg.ByteArrayMaxLen {
-				return fmt.Errorf("t.Provider: byte array too large (%d)", extra)
+				return fmt.Errorf("t.Client: byte array too large (%d)", extra)
 			}
 			if maj != cbg.MajByteString {
 				return fmt.Errorf("expected byte array")
 			}
 
 			if extra > 0 {
-				t.Provider = make([]uint8, extra)
+				t.Client = make([]uint8, extra)
 			}
 
-			if _, err := io.ReadFull(cr, t.Provider[:]); err != nil {
+			if _, err := io.ReadFull(cr, t.Client[:]); err != nil {
 				return err
 			}
 			// t.ClaimID ([]uint8) (slice)

@@ -22,33 +22,18 @@ type StateDiff struct {
 }
 
 func (s *StateDiff) State(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorDiffResult, error) {
-	grp, grpCtx := errgroup.WithContext(ctx)
-	results := make(chan actors.ActorStateChange, len(s.DiffMethods))
-
-	for _, f := range s.DiffMethods {
-		f := f
-		grp.Go(func() error {
-			stateChange, err := f.Diff(grpCtx, api, act)
-			if err != nil {
-				return err
-			}
-
-			// TODO maybe this method should also return a bool to indicate if anything actually changed, instead of two null values.
-			if stateChange != nil {
-				results <- stateChange
-			}
-			return nil
-		})
+	grp, grpctx := errgroup.WithContext(ctx)
+	results, err := actors.ExecuteStateDiff(grpctx, grp, api, act, s.DiffMethods...)
+	if err != nil {
+		return nil, err
 	}
 
-	go func() {
-		if err := grp.Wait(); err != nil {
-			log.Error(err)
-		}
-		close(results)
-	}()
 	var stateDiff = new(StateDiffResult)
-	for stateChange := range results {
+	for _, stateChange := range results {
+		// some results may be nil, skip those
+		if stateChange == nil {
+			continue
+		}
 		switch stateChange.Kind() {
 		case KindMinerInfo:
 			stateDiff.InfoChange = stateChange.(*InfoChange)

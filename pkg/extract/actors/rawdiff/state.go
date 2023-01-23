@@ -2,11 +2,11 @@ package rawdiff
 
 import (
 	"context"
-	"time"
 
 	"github.com/filecoin-project/go-state-types/store"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/pkg/extract/actors"
 	"github.com/filecoin-project/lily/tasks"
@@ -17,13 +17,13 @@ type StateDiff struct {
 }
 
 func (s *StateDiff) State(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorDiffResult, error) {
-	start := time.Now()
+	grp, grpctx := errgroup.WithContext(ctx)
+	results, err := actors.ExecuteStateDiff(grpctx, grp, api, act, s.DiffMethods...)
+	if err != nil {
+		return nil, err
+	}
 	var stateDiff = new(StateDiffResult)
-	for _, f := range s.DiffMethods {
-		stateChange, err := f.Diff(ctx, api, act)
-		if err != nil {
-			return nil, err
-		}
+	for _, stateChange := range results {
 		if stateChange == nil {
 			continue
 		}
@@ -32,7 +32,6 @@ func (s *StateDiff) State(ctx context.Context, api tasks.DataSource, act *actors
 			stateDiff.ActorStateChanges = stateChange.(*ActorChange)
 		}
 	}
-	log.Infow("Extracted Raw Actor State Diff", "address", act.Address, "duration", time.Since(start))
 	return stateDiff, nil
 }
 
@@ -50,4 +49,30 @@ func (sdr *StateDiffResult) MarshalStateChange(ctx context.Context, s store.Stor
 
 type StateChange struct {
 	ActorState cid.Cid `cborgen:"actors"`
+}
+
+func GenericStateDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, diffFns []actors.ActorStateDiff) ([]actors.ActorStateChange, error) {
+	grp, grpCtx := errgroup.WithContext(ctx)
+	out := make([]actors.ActorStateChange, 0, len(diffFns))
+	results := make(chan actors.ActorStateChange, len(diffFns))
+	for _, diff := range diffFns {
+		diff := diff
+		grp.Go(func() error {
+			res, err := diff.Diff(grpCtx, api, act)
+			if err != nil {
+				return err
+			}
+			results <- res
+			return nil
+		})
+	}
+	if err := grp.Wait(); err != nil {
+		close(results)
+		return nil, err
+	}
+	close(results)
+	for res := range results {
+		out = append(out, res)
+	}
+	return out, nil
 }

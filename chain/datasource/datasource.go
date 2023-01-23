@@ -138,6 +138,22 @@ type DataSource struct {
 	diffPreCommitGroup singleflight.Group
 }
 
+func (t *DataSource) NetworkName(ctx context.Context) (string, error) {
+	name, err := t.node.StateNetworkName(ctx)
+	if err != nil {
+		return "", err
+	}
+	return string(name), nil
+}
+
+func (t *DataSource) NetworkVersion(ctx context.Context, tsk types.TipSetKey) (uint, error) {
+	v, err := t.node.StateNetworkVersion(ctx, tsk)
+	if err != nil {
+		return 0, err
+	}
+	return uint(v), nil
+}
+
 func (t *DataSource) ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi.TokenAmount, error) {
 	return t.node.ComputeBaseFee(ctx, ts)
 }

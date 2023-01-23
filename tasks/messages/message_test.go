@@ -174,7 +174,7 @@ func TestParseMessageParams(t *testing.T) {
 				},
 			}),
 			wantMethod: "PublishStorageDeals",
-			wantEncoded: `{"Deals":[{"Proposal":{"PieceCID":{"/":"baga6ea4seaqgqzxo27ongakwwef5x3cihl6fgritvgeq5akvjqij6lpgofsogiq"},"PieceSize":1310720,"VerifiedDeal":false,"Client":"f1nslxql4pck5pq7hddlzym3orxlx35wkepzjkm3i","Provider":"f08178",` +
+			wantEncoded: `{"Deals":[{"Proposal":{"PieceCID":{"/":"baga6ea4seaqgqzxo27ongakwwef5x3cihl6fgritvgeq5akvjqij6lpgofsogiq"},"PieceSize":1310720,"VerifiedDeal":false,"Client":"f1nslxql4pck5pq7hddlzym3orxlx35wkepzjkm3i","Client":"f08178",` +
 				`"Label":"\\ufffdepcids\\ufffd\\ufffd*X'\\u0000\\u0001U\\ufffd\\ufffd\\u0002 \\u0011;\\u0012\\ufffd\\ufffd0\\ufffd3\\ufffdMA\\ufffd\\ufffd}b\\ufffd\\rf\\ufffdmX\\u001b\u003e\\ufffd\\ufffdm\\ufffd۬\\ufffd\\ufffd\\ufffd",` +
 				`"StartEpoch":475750,"EndEpoch":750173,"StoragePricePerEpoch":{"Int":61035},"ProviderCollateral":{"Int":0},"ClientCollateral":{"Int":0}},"ClientSignature":{"Type":1,"Data":"9a8sdvutVlu0fizD0JmqZjKJaQLj3W3ZtJ2yTReIry8kZ8cDa33V3Pe0sdZzSjz9mRdM/KPm1jL/PZhqpDeYNwE="}}]}`,
 			wantErr:   false,

@@ -6,13 +6,14 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
-	adt2 "github.com/filecoin-project/specs-actors/v3/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	typegen "github.com/whyrusleeping/cbor-gen"
 	"go.uber.org/zap"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	v0 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v0"
+
+	adt2 "github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/pkg/core"
@@ -76,7 +77,7 @@ func (Claims) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorC
 }
 
 func DiffClaims(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
-	mapChange, err := generic.DiffActorMap(ctx, api, act, v0.VerifregStateLoader, VerifiiregClaimsMapLoader)
+	mapChange, err := generic.DiffActorMap(ctx, api, act, v0.VerifregStateLoader, VerifregClaimsMapLoader)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +92,7 @@ func DiffClaims(ctx context.Context, api tasks.DataSource, act *actors.ActorChan
 		if err != nil {
 			return nil, err
 		}
-		subMapChanges, err := diffSubMap(ctx, api, act, providerAddress, change.Key)
+		subMapChanges, err := diffProviderMap(ctx, api, act, providerAddress, change.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -100,7 +101,7 @@ func DiffClaims(ctx context.Context, api tasks.DataSource, act *actors.ActorChan
 	return out, nil
 }
 
-func diffSubMap(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, providerAddress address.Address, providerKey []byte) ([]*ClaimsChange, error) {
+func diffProviderMap(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, providerAddress address.Address, providerKey []byte) ([]*ClaimsChange, error) {
 	mapChange, err := generic.DiffActorMap(ctx, api, act, v0.VerifregStateLoader, func(i interface{}) (adt.Map, *adt.MapOpts, error) {
 		verifregState := i.(verifreg.State)
 		providerClaimMap, err := verifregState.ClaimMapForProvider(providerAddress)

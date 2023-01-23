@@ -70,4 +70,7 @@ type DataSource interface {
 	ShouldBurnFn(ctx context.Context, ts *types.TipSet) (lens.ShouldBurnFn, error)
 
 	ChainReadObj(ctx context.Context, obj cid.Cid) ([]byte, error)
+
+	NetworkName(ctx context.Context) (string, error)
+	NetworkVersion(ctx context.Context, tsk types.TipSetKey) (uint, error)
 }

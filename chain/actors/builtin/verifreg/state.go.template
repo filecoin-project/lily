@@ -130,6 +130,48 @@ func (s *state{{.v}}) VerifiersMapHashFunction() func(input []byte) []byte {
     {{end}}
 }
 
+func (s *state{{.v}}) AllocationsMap() (adt.Map, error) {
+{{if (le .v 8)}}
+    return nil, fmt.Errorf("unsupported in actors v{{.v}}")
+{{else}}
+    return adt{{.v}}.AsMap(s.store, s.Allocations{{if (ge .v 3)}}, builtin{{.v}}.DefaultHamtBitwidth{{end}})
+{{end}}
+}
+
+func (s *state{{.v}}) AllocationsMapBitWidth() int {
+{{if (ge .v 3)}}
+    return builtin{{.v}}.DefaultHamtBitwidth
+{{else}}
+    return 5
+{{end}}
+}
+
+func (s *state{{.v}}) AllocationsMapHashFunction() func(input []byte) []byte {
+{{if (le .v 1)}}
+    return func(input []byte) []byte {
+    res := sha256simd.Sum256(input)
+    return res[:]
+    }
+{{else}}
+    return func(input []byte) []byte {
+    res := sha256.Sum256(input)
+    return res[:]
+    }
+{{end}}
+}
+
+func (s *state{{.v}}) AllocationMapForClient(clientIdAddr address.Address) (adt.Map, error) {
+{{if (le .v 8)}}
+    return nil, fmt.Errorf("unsupported in actors v{{.v}}")
+{{else}}
+    innerHamtCid, err := s.getInnerHamtCid(s.store, abi.IdAddrKey(clientIdAddr), s.Allocations, builtin{{.v}}.DefaultHamtBitwidth)
+    if err != nil {
+    return nil, err
+    }
+    return adt{{.v}}.AsMap(s.store, innerHamtCid, builtin{{.v}}.DefaultHamtBitwidth)
+{{end}}
+}
+
 func (s *state{{.v}}) RootKey() (address.Address, error) {
 	return s.State.RootKey, nil
 }

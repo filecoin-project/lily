@@ -7,10 +7,10 @@ import (
 
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/messages"
-	"github.com/filecoin-project/lily/pkg/extract/processor"
+	"github.com/filecoin-project/lily/pkg/extract/chain"
 )
 
-func ExtractMessages(ctx context.Context, fullBlocks map[cid.Cid]*processor.FullBlock) (model.Persistable, error) {
+func ExtractMessages(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBlock) (model.Persistable, error) {
 	out := messages.Messages{}
 	for _, fb := range fullBlocks {
 		for _, msg := range fb.SecpMessages {
@@ -47,7 +47,7 @@ func ExtractMessages(ctx context.Context, fullBlocks map[cid.Cid]*processor.Full
 	return out, nil
 }
 
-func ExtractVmMessages(ctx context.Context, fullBlocks map[cid.Cid]*processor.FullBlock) (model.Persistable, error) {
+func ExtractVmMessages(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBlock) (model.Persistable, error) {
 	out := messages.VMMessageList{}
 	for _, fb := range fullBlocks {
 		for _, msg := range fb.SecpMessages {

@@ -28,7 +28,6 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p/core/host"
 	"go.uber.org/fx"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/chain/datasource"
 	"github.com/filecoin-project/lily/chain/gap"
@@ -44,7 +43,7 @@ import (
 	"github.com/filecoin-project/lily/lens/lily/modules"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/network"
-	"github.com/filecoin-project/lily/pkg/extract/processor"
+	"github.com/filecoin-project/lily/pkg/extract"
 	"github.com/filecoin-project/lily/pkg/transform/cbor"
 	"github.com/filecoin-project/lily/pkg/transform/timescale"
 	"github.com/filecoin-project/lily/schedule"
@@ -142,7 +141,7 @@ func (m *LilyNodeAPI) LilyIndexIPLD(_ context.Context, cfg *LilyIndexIPLDConfig)
 	// the context's passed to these methods live for the duration of the clients request, so make a new one.
 	ctx := context.Background()
 
-	// TODO add buffering
+	// TODO add file buffering
 	f, err := os.OpenFile(cfg.Path, os.O_CREATE|os.O_TRUNC|os.O_EXCL|os.O_WRONLY, 0o644)
 	defer f.Close()
 	if err != nil {
@@ -164,38 +163,17 @@ func (m *LilyNodeAPI) LilyIndexIPLD(_ context.Context, cfg *LilyIndexIPLDConfig)
 		return false, err
 	}
 
-	grp, grpCtx := errgroup.WithContext(ctx)
-	// TODO parallelize the below
-	var (
-		messageChanges *processor.MessageStateChanges
-		actorChanges   *processor.ActorStateChanges
-	)
-	grp.Go(func() error {
-		messageChanges, err = processor.Messages(grpCtx, taskAPI, currentTs, executedTs)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	grp.Go(func() error {
-		actorChanges, err = processor.Actors(grpCtx, taskAPI, currentTs, executedTs, m.StateManager.GetNetworkVersion)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-	if err := grp.Wait(); err != nil {
+	chainState, err := extract.State(ctx, taskAPI, currentTs, executedTs)
+	if err != nil {
 		return false, err
 	}
 
 	bs := blockstore.NewMemorySync()
-	root, err := cbor.PersistToStore(ctx, bs, currentTs, executedTs, messageChanges, actorChanges)
+	root, err := cbor.PersistToStore(ctx, bs, currentTs, executedTs, chainState)
 	if err != nil {
 		return false, err
 	}
-	if err := cbor.WriteCar(ctx, root, 1, bs, f); err != nil {
+	if err := cbor.WriteCarV1(ctx, root, bs, f); err != nil {
 		return false, err
 	}
 	return true, nil

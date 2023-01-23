@@ -7,10 +7,10 @@ import (
 
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/blocks"
-	"github.com/filecoin-project/lily/pkg/extract/processor"
+	"github.com/filecoin-project/lily/pkg/extract/chain"
 )
 
-func ExtractBlockHeaders(ctx context.Context, fullBlocks map[cid.Cid]*processor.FullBlock) (model.Persistable, error) {
+func ExtractBlockHeaders(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBlock) (model.Persistable, error) {
 	out := blocks.BlockHeaders{}
 	for _, fb := range fullBlocks {
 		out = append(out, &blocks.BlockHeader{
@@ -28,7 +28,7 @@ func ExtractBlockHeaders(ctx context.Context, fullBlocks map[cid.Cid]*processor.
 	return out, nil
 }
 
-func ExtractBlockParents(ctx context.Context, fullBlocks map[cid.Cid]*processor.FullBlock) (model.Persistable, error) {
+func ExtractBlockParents(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBlock) (model.Persistable, error) {
 	out := blocks.BlockParents{}
 	for _, fb := range fullBlocks {
 		for _, p := range fb.Block.Parents {

@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/filecoin-project/lily/pkg/extract"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
-	"github.com/filecoin-project/lily/pkg/extract/processor"
 )
 
 type ActorStateChangesIPLD struct {
@@ -58,7 +58,7 @@ func (a *ActorStateChangesIPLD) MarshalLogObject(enc zapcore.ObjectEncoder) erro
 	return nil
 }
 
-func ProcessActorsStates(ctx context.Context, s store.Store, changes *processor.ActorStateChanges) (*ActorStateChangesIPLD, error) {
+func ProcessActorsStates(ctx context.Context, s store.Store, changes *extract.ActorStateChanges) (*ActorStateChangesIPLD, error) {
 	out := &ActorStateChangesIPLD{}
 
 	// TODO DataCap

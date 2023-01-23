@@ -1,4 +1,4 @@
-package processor
+package chain
 
 import (
 	"context"
@@ -68,13 +68,6 @@ import (
 		Actors cid.Cid // ActorStateChanges
 	}
 */
-type MessageStateChanges struct {
-	Current          *types.TipSet
-	Executed         *types.TipSet
-	BaseFee          abi.TokenAmount
-	FullBlocks       map[cid.Cid]*FullBlock
-	ImplicitMessages []*ImplicitMessage
-}
 
 type FullBlock struct {
 	Block        *types.BlockHeader
@@ -135,11 +128,11 @@ type ActorError struct {
 	Error   string            `cborgen:"error"`
 }
 
-func Messages(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet) (*MessageStateChanges, error) {
+func Messages(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet) (map[cid.Cid]*FullBlock, []*ImplicitMessage, error) {
 	// fist get all messages included in the executed tipset, not all of these messages will have receipts since some were not executed.
 	blkMsgs, err := api.TipSetBlockMessages(ctx, executed)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	// build two maps containing all signed (secpMsgs) and unsigned (blsMsgs) messages.
 	secpBlkMsgs := make(map[cid.Cid][]*SignedChainMessage)
@@ -162,12 +155,12 @@ func Messages(ctx context.Context, api tasks.DataSource, current, executed *type
 
 	exeBlkMsgs, err := api.TipSetMessageReceipts(ctx, current, executed)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for _, ebm := range exeBlkMsgs {
 		itr, err := ebm.Iterator()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		for itr.HasNext() {
 			msg, recIdx, rec := itr.Next()
@@ -189,14 +182,14 @@ func Messages(ctx context.Context, api tasks.DataSource, current, executed *type
 
 	msgExe, err := api.MessageExecutionsV2(ctx, current, executed)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var im []*ImplicitMessage
 	for _, emsg := range msgExe {
 		vmMsgs, err := ProcessVmMessages(ctx, emsg)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if emsg.Implicit {
 			im = append(im, &ImplicitMessage{
@@ -223,26 +216,15 @@ func Messages(ctx context.Context, api tasks.DataSource, current, executed *type
 		}
 	}
 
-	baseFee, err := api.ComputeBaseFee(ctx, executed)
-	if err != nil {
-		return nil, err
-	}
-
-	out := &MessageStateChanges{
-		Current:          current,
-		Executed:         executed,
-		BaseFee:          baseFee,
-		FullBlocks:       make(map[cid.Cid]*FullBlock),
-		ImplicitMessages: im,
-	}
+	fullBlocks := make(map[cid.Cid]*FullBlock)
 	for _, blk := range blkMsgs {
-		out.FullBlocks[blk.Block.Cid()] = &FullBlock{
+		fullBlocks[blk.Block.Cid()] = &FullBlock{
 			Block:        blk.Block,
 			SecpMessages: secpBlkMsgs[blk.Block.Cid()],
 			BlsMessages:  blsBlkMsgs[blk.Block.Cid()],
 		}
 	}
-	return out, nil
+	return fullBlocks, im, nil
 }
 
 func GetMessageGasOutputs(msg *lens.MessageExecutionV2) *MessageGasOutputs {

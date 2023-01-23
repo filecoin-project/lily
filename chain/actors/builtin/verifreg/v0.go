@@ -93,6 +93,33 @@ func (s *state0) VerifiersMapHashFunction() func(input []byte) []byte {
 
 }
 
+func (s *state0) AllocationsMap() (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v0")
+
+}
+
+func (s *state0) AllocationsMapBitWidth() int {
+
+	return 5
+
+}
+
+func (s *state0) AllocationsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256simd.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state0) AllocationMapForClient(clientIdAddr address.Address) (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v0")
+
+}
+
 func (s *state0) RootKey() (address.Address, error) {
 	return s.State.RootKey, nil
 }

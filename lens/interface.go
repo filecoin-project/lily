@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/filecoin-project/go-state-types/exitcode"
+	"github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/lotus/node/modules/dtypes"
 
 	"github.com/filecoin-project/go-address"
@@ -64,6 +65,7 @@ type StateAPI interface {
 	StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error)
 	CirculatingSupply(context.Context, types.TipSetKey) (api.CirculatingSupply, error)
 	StateNetworkName(context.Context) (dtypes.NetworkName, error)
+	StateNetworkVersion(ctx context.Context, key types.TipSetKey) (network.Version, error)
 }
 
 type ShouldBurnFn func(ctx context.Context, msg *types.Message, errcode exitcode.ExitCode) (bool, error)

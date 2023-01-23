@@ -94,6 +94,33 @@ func (s *state8) VerifiersMapHashFunction() func(input []byte) []byte {
 
 }
 
+func (s *state8) AllocationsMap() (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v8")
+
+}
+
+func (s *state8) AllocationsMapBitWidth() int {
+
+	return builtin8.DefaultHamtBitwidth
+
+}
+
+func (s *state8) AllocationsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state8) AllocationMapForClient(clientIdAddr address.Address) (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v8")
+
+}
+
 func (s *state8) RootKey() (address.Address, error) {
 	return s.State.RootKey, nil
 }
