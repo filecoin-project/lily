@@ -10,10 +10,11 @@ import (
 	"github.com/filecoin-project/go-state-types/cbor"
 	"github.com/ipfs/go-cid"
 
-	"github.com/filecoin-project/lily/chain/actors"
 	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 	"github.com/filecoin-project/lotus/chain/types"
+
+	"github.com/filecoin-project/lily/chain/actors"
 )
 
 var (
@@ -65,6 +66,11 @@ type State interface {
 	VerifiedClients() (adt.Map, error)
 	VerifiedClientsMapBitWidth() int
 	VerifiedClientsMapHashFunction() func(input []byte) []byte
+
+	AllowanceMap() (adt.Map, error)
+	AllowanceMapBitWidth() int
+	AllowanceMapHashFunction() func(input []byte) []byte
+	AllowanceMapForOwner(owner address.Address) (adt.Map, error)
 }
 
 func AllCodes() []cid.Cid {

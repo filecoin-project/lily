@@ -3,6 +3,7 @@ package main
 import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 
+	datacapV9 "github.com/filecoin-project/lily/pkg/extract/actors/datacapdiff/v9"
 	initv0 "github.com/filecoin-project/lily/pkg/extract/actors/initdiff/v0"
 	marketV0 "github.com/filecoin-project/lily/pkg/extract/actors/marketdiff/v0"
 	minerV0 "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v0"
@@ -16,8 +17,11 @@ import (
 	"github.com/filecoin-project/lily/pkg/transform/cbor/messages"
 )
 
-const actorDiffPath = "pkg/extract/actors/actordiff/cbor_gen.go"
-const actorDiffPkg = "actordiff"
+const actorDiffPath = "pkg/extract/actors/rawdiff/cbor_gen.go"
+const actorDiffPkg = "rawdiff"
+
+const datacapDiffPath = "pkg/extract/actors/datacapdiff/v9/cbor_gen.go"
+const datacapDiffPkg = "v9"
 
 const minerDiffPath = "pkg/extract/actors/minerdiff/v0/cbor_gen.go"
 const minerDiffPkg = "v0"
@@ -50,6 +54,12 @@ const RootStatePath = "pkg/transform/cbor/cbor_gen.go"
 const RootStatePkg = "cbor"
 
 func main() {
+	if err := cbg.WriteMapEncodersToFile(datacapDiffPath, datacapDiffPkg,
+		datacapV9.AllowanceChange{},
+		datacapV9.BalanceChange{},
+	); err != nil {
+		panic(err)
+	}
 	if err := cbg.WriteMapEncodersToFile(actorDiffPath, actorDiffPkg,
 		rawdiff.ActorChange{},
 		rawdiff.StateChange{},

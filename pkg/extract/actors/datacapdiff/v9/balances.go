@@ -4,10 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	typegen "github.com/whyrusleeping/cbor-gen"
 	"go.uber.org/zap"
 
+	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
 	"github.com/filecoin-project/lily/pkg/extract/actors/generic"
@@ -17,10 +19,10 @@ import (
 var log = logging.Logger("lily/extract/actors/balance/v9")
 
 type BalanceChange struct {
-	Client   []byte
-	Current  *typegen.Deferred
-	Previous *typegen.Deferred
-	Change   core.ChangeType
+	Client   []byte            `cborgen:"client"`
+	Current  *typegen.Deferred `cborgen:"current"`
+	Previous *typegen.Deferred `cborgen:"previous"`
+	Change   core.ChangeType   `cborgen:"change"`
 }
 
 type BalanceChangeList []*BalanceChange
@@ -29,6 +31,10 @@ const KindDataCapBalance = "datacap_balance"
 
 func (b BalanceChangeList) Kind() actors.ActorStateKind {
 	return KindDataCapBalance
+}
+
+func (b BalanceChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
+
 }
 
 type Balance struct{}

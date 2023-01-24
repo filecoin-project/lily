@@ -22,3 +22,16 @@ var DatacapBalancesMapLoader = func(m interface{}) (adt.Map, *adt.MapOpts, error
 		HashFunc: datacapState.VerifiedClientsMapHashFunction(),
 	}, nil
 }
+
+var DatacapAllowancesMapLoader = func(m interface{}) (adt.Map, *adt.MapOpts, error) {
+	datacapState := m.(datacap.State)
+	allowanceMap, err := datacapState.AllowanceMap()
+	if err != nil {
+		return nil, nil, err
+	}
+	return allowanceMap, &adt.MapOpts{
+		Bitwidth: datacapState.AllowanceMapBitWidth(),
+		HashFunc: datacapState.VerifiedClientsMapHashFunction(),
+	}, nil
+
+}
