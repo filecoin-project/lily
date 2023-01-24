@@ -301,6 +301,7 @@ func LoadSectorState(ctx context.Context, state miner.State) (sectorStates *Sect
 	liveSectors := []bitfield.BitField{}
 	faultySectors := []bitfield.BitField{}
 	recoveringSectors := []bitfield.BitField{}
+	sectorStates = &SectorStates{}
 
 	// iterate the sector states
 	if err := state.ForEachDeadline(func(_ uint64, dl miner.Deadline) error {
