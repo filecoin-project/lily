@@ -447,3 +447,155 @@ func (t *BalanceChange) UnmarshalCBOR(r io.Reader) (err error) {
 
 	return nil
 }
+func (t *StateChange) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+
+	if _, err := cw.Write([]byte{162}); err != nil {
+		return err
+	}
+
+	// t.Balances (cid.Cid) (struct)
+	if len("balances") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"balances\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("balances"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("balances")); err != nil {
+		return err
+	}
+
+	if t.Balances == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.Balances); err != nil {
+			return xerrors.Errorf("failed to write cid field t.Balances: %w", err)
+		}
+	}
+
+	// t.Allowances (cid.Cid) (struct)
+	if len("allowances") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"allowances\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("allowances"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("allowances")); err != nil {
+		return err
+	}
+
+	if t.Allowances == nil {
+		if _, err := cw.Write(cbg.CborNull); err != nil {
+			return err
+		}
+	} else {
+		if err := cbg.WriteCid(cw, *t.Allowances); err != nil {
+			return xerrors.Errorf("failed to write cid field t.Allowances: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (t *StateChange) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = StateChange{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("StateChange: map struct too large (%d)", extra)
+	}
+
+	var name string
+	n := extra
+
+	for i := uint64(0); i < n; i++ {
+
+		{
+			sval, err := cbg.ReadString(cr)
+			if err != nil {
+				return err
+			}
+
+			name = string(sval)
+		}
+
+		switch name {
+		// t.Balances (cid.Cid) (struct)
+		case "balances":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Balances: %w", err)
+					}
+
+					t.Balances = &c
+				}
+
+			}
+			// t.Allowances (cid.Cid) (struct)
+		case "allowances":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Allowances: %w", err)
+					}
+
+					t.Allowances = &c
+				}
+
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			cbg.ScanForLinks(r, func(cid.Cid) {})
+		}
+	}
+
+	return nil
+}

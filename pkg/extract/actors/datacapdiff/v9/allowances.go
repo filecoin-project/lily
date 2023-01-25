@@ -41,13 +41,13 @@ func (a AllowanceChangeMap) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
 	if err != nil {
 		return cid.Undef, err
 	}
-	for client, changes := range a {
+	for owner, changes := range a {
 		innerNode, err := adt2.MakeEmptyMap(store, bw)
 		if err != nil {
 			return cid.Undef, err
 		}
 		for _, change := range changes {
-			if err := innerNode.Put(core.StringKey(change.Owner), change); err != nil {
+			if err := innerNode.Put(core.StringKey(change.Operator), change); err != nil {
 				return cid.Undef, err
 			}
 		}
@@ -55,7 +55,7 @@ func (a AllowanceChangeMap) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
 		if err != nil {
 			return cid.Undef, err
 		}
-		if err := topNode.Put(abi.IdAddrKey(client), typegen.CborCid(innerRoot)); err != nil {
+		if err := topNode.Put(abi.IdAddrKey(owner), typegen.CborCid(innerRoot)); err != nil {
 			return cid.Undef, err
 		}
 	}

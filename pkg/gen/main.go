@@ -44,8 +44,8 @@ const powerDiffPkg = "v0"
 const IPLDActorContainerPath = "pkg/transform/cbor/actors/cbor_gen.go"
 const IPLDActorContainerPkg = "actors"
 
-const MessageStatePath = "pkg/extract/processor/cbor_gen.go"
-const MessageStatePkg = "processor"
+const MessageStatePath = "pkg/extract/chain/cbor_gen.go"
+const MessageStatePkg = "chain"
 
 const MessageContainerPath = "pkg/transform/cbor/messages/cbor_gen.go"
 const MessageContainerPkg = "messages"
@@ -57,6 +57,7 @@ func main() {
 	if err := cbg.WriteMapEncodersToFile(datacapDiffPath, datacapDiffPkg,
 		datacapV9.AllowanceChange{},
 		datacapV9.BalanceChange{},
+		datacapV9.StateChange{},
 	); err != nil {
 		panic(err)
 	}

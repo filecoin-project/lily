@@ -9,7 +9,8 @@ import (
 	typegen "github.com/whyrusleeping/cbor-gen"
 	"go.uber.org/zap"
 
-	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
+
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
 	"github.com/filecoin-project/lily/pkg/extract/actors/generic"
@@ -34,7 +35,16 @@ func (b BalanceChangeList) Kind() actors.ActorStateKind {
 }
 
 func (b BalanceChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
-
+	node, err := adt.MakeEmptyMap(store, bw)
+	if err != nil {
+		return cid.Undef, err
+	}
+	for _, l := range b {
+		if err := node.Put(core.StringKey(l.Client), l); err != nil {
+			return cid.Undef, err
+		}
+	}
+	return node.Root()
 }
 
 type Balance struct{}

@@ -31,14 +31,14 @@ func (t *ActorStateChangesIPLD) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.DataCapActor (cid.Cid) (struct)
-	if len("DataCapActor") > cbg.MaxLength {
-		return xerrors.Errorf("Value in field \"DataCapActor\" was too long")
+	if len("datacap") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"datacap\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("DataCapActor"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("datacap"))); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, string("DataCapActor")); err != nil {
+	if _, err := io.WriteString(w, string("datacap")); err != nil {
 		return err
 	}
 
@@ -53,14 +53,14 @@ func (t *ActorStateChangesIPLD) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.InitActor (cid.Cid) (struct)
-	if len("InitActor") > cbg.MaxLength {
-		return xerrors.Errorf("Value in field \"InitActor\" was too long")
+	if len("init") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"init\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("InitActor"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("init"))); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, string("InitActor")); err != nil {
+	if _, err := io.WriteString(w, string("init")); err != nil {
 		return err
 	}
 
@@ -75,14 +75,14 @@ func (t *ActorStateChangesIPLD) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.MarketActor (cid.Cid) (struct)
-	if len("MarketActor") > cbg.MaxLength {
-		return xerrors.Errorf("Value in field \"MarketActor\" was too long")
+	if len("market") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"market\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("MarketActor"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("market"))); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, string("MarketActor")); err != nil {
+	if _, err := io.WriteString(w, string("market")); err != nil {
 		return err
 	}
 
@@ -97,14 +97,14 @@ func (t *ActorStateChangesIPLD) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.MinerActors (cid.Cid) (struct)
-	if len("MinerActors") > cbg.MaxLength {
-		return xerrors.Errorf("Value in field \"MinerActors\" was too long")
+	if len("miner") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"miner\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("MinerActors"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("miner"))); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, string("MinerActors")); err != nil {
+	if _, err := io.WriteString(w, string("miner")); err != nil {
 		return err
 	}
 
@@ -119,14 +119,14 @@ func (t *ActorStateChangesIPLD) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.PowerActor (cid.Cid) (struct)
-	if len("PowerActor") > cbg.MaxLength {
-		return xerrors.Errorf("Value in field \"PowerActor\" was too long")
+	if len("power") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"power\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("PowerActor"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("power"))); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, string("PowerActor")); err != nil {
+	if _, err := io.WriteString(w, string("power")); err != nil {
 		return err
 	}
 
@@ -141,14 +141,14 @@ func (t *ActorStateChangesIPLD) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.RawActors (cid.Cid) (struct)
-	if len("RawActors") > cbg.MaxLength {
-		return xerrors.Errorf("Value in field \"RawActors\" was too long")
+	if len("raw") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"raw\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("RawActors"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("raw"))); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, string("RawActors")); err != nil {
+	if _, err := io.WriteString(w, string("raw")); err != nil {
 		return err
 	}
 
@@ -163,14 +163,14 @@ func (t *ActorStateChangesIPLD) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.VerifregActor (cid.Cid) (struct)
-	if len("VerifregActor") > cbg.MaxLength {
-		return xerrors.Errorf("Value in field \"VerifregActor\" was too long")
+	if len("verifreg") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"verifreg\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("VerifregActor"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("verifreg"))); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, string("VerifregActor")); err != nil {
+	if _, err := io.WriteString(w, string("verifreg")); err != nil {
 		return err
 	}
 
@@ -226,7 +226,7 @@ func (t *ActorStateChangesIPLD) UnmarshalCBOR(r io.Reader) (err error) {
 
 		switch name {
 		// t.DataCapActor (cid.Cid) (struct)
-		case "DataCapActor":
+		case "datacap":
 
 			{
 
@@ -249,7 +249,7 @@ func (t *ActorStateChangesIPLD) UnmarshalCBOR(r io.Reader) (err error) {
 
 			}
 			// t.InitActor (cid.Cid) (struct)
-		case "InitActor":
+		case "init":
 
 			{
 
@@ -272,7 +272,7 @@ func (t *ActorStateChangesIPLD) UnmarshalCBOR(r io.Reader) (err error) {
 
 			}
 			// t.MarketActor (cid.Cid) (struct)
-		case "MarketActor":
+		case "market":
 
 			{
 
@@ -295,7 +295,7 @@ func (t *ActorStateChangesIPLD) UnmarshalCBOR(r io.Reader) (err error) {
 
 			}
 			// t.MinerActors (cid.Cid) (struct)
-		case "MinerActors":
+		case "miner":
 
 			{
 
@@ -318,7 +318,7 @@ func (t *ActorStateChangesIPLD) UnmarshalCBOR(r io.Reader) (err error) {
 
 			}
 			// t.PowerActor (cid.Cid) (struct)
-		case "PowerActor":
+		case "power":
 
 			{
 
@@ -341,7 +341,7 @@ func (t *ActorStateChangesIPLD) UnmarshalCBOR(r io.Reader) (err error) {
 
 			}
 			// t.RawActors (cid.Cid) (struct)
-		case "RawActors":
+		case "raw":
 
 			{
 
@@ -364,7 +364,7 @@ func (t *ActorStateChangesIPLD) UnmarshalCBOR(r io.Reader) (err error) {
 
 			}
 			// t.VerifregActor (cid.Cid) (struct)
-		case "VerifregActor":
+		case "verifreg":
 
 			{
 

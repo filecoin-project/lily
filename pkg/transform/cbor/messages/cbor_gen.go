@@ -8,12 +8,11 @@ import (
 	"math"
 	"sort"
 
+	chain "github.com/filecoin-project/lily/pkg/extract/chain"
 	types "github.com/filecoin-project/lotus/chain/types"
 	cid "github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	xerrors "golang.org/x/xerrors"
-
-	processor "github.com/filecoin-project/lily/pkg/extract/chain"
 )
 
 var _ = xerrors.Errorf
@@ -205,7 +204,7 @@ func (t *ChainMessageIPLDContainer) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Receipt (processor.ChainMessageReceipt) (struct)
+	// t.Receipt (chain.ChainMessageReceipt) (struct)
 	if len("receipt") > cbg.MaxLength {
 		return xerrors.Errorf("Value in field \"receipt\" was too long")
 	}
@@ -298,7 +297,7 @@ func (t *ChainMessageIPLDContainer) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 			}
-			// t.Receipt (processor.ChainMessageReceipt) (struct)
+			// t.Receipt (chain.ChainMessageReceipt) (struct)
 		case "receipt":
 
 			{
@@ -311,7 +310,7 @@ func (t *ChainMessageIPLDContainer) UnmarshalCBOR(r io.Reader) (err error) {
 					if err := cr.UnreadByte(); err != nil {
 						return err
 					}
-					t.Receipt = new(processor.ChainMessageReceipt)
+					t.Receipt = new(chain.ChainMessageReceipt)
 					if err := t.Receipt.UnmarshalCBOR(cr); err != nil {
 						return xerrors.Errorf("unmarshaling t.Receipt pointer: %w", err)
 					}
@@ -368,7 +367,7 @@ func (t *SignedChainMessageIPLDContainer) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Receipt (processor.ChainMessageReceipt) (struct)
+	// t.Receipt (chain.ChainMessageReceipt) (struct)
 	if len("receipt") > cbg.MaxLength {
 		return xerrors.Errorf("Value in field \"receipt\" was too long")
 	}
@@ -461,7 +460,7 @@ func (t *SignedChainMessageIPLDContainer) UnmarshalCBOR(r io.Reader) (err error)
 				}
 
 			}
-			// t.Receipt (processor.ChainMessageReceipt) (struct)
+			// t.Receipt (chain.ChainMessageReceipt) (struct)
 		case "receipt":
 
 			{
@@ -474,7 +473,7 @@ func (t *SignedChainMessageIPLDContainer) UnmarshalCBOR(r io.Reader) (err error)
 					if err := cr.UnreadByte(); err != nil {
 						return err
 					}
-					t.Receipt = new(processor.ChainMessageReceipt)
+					t.Receipt = new(chain.ChainMessageReceipt)
 					if err := t.Receipt.UnmarshalCBOR(cr); err != nil {
 						return xerrors.Errorf("unmarshaling t.Receipt pointer: %w", err)
 					}
@@ -531,7 +530,7 @@ func (t *ImplicitMessageIPLDContainer) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Receipt (processor.ImplicitMessageReceipt) (struct)
+	// t.Receipt (chain.ImplicitMessageReceipt) (struct)
 	if len("receipt") > cbg.MaxLength {
 		return xerrors.Errorf("Value in field \"receipt\" was too long")
 	}
@@ -624,7 +623,7 @@ func (t *ImplicitMessageIPLDContainer) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 			}
-			// t.Receipt (processor.ImplicitMessageReceipt) (struct)
+			// t.Receipt (chain.ImplicitMessageReceipt) (struct)
 		case "receipt":
 
 			{
@@ -637,7 +636,7 @@ func (t *ImplicitMessageIPLDContainer) UnmarshalCBOR(r io.Reader) (err error) {
 					if err := cr.UnreadByte(); err != nil {
 						return err
 					}
-					t.Receipt = new(processor.ImplicitMessageReceipt)
+					t.Receipt = new(chain.ImplicitMessageReceipt)
 					if err := t.Receipt.UnmarshalCBOR(cr); err != nil {
 						return xerrors.Errorf("unmarshaling t.Receipt pointer: %w", err)
 					}

@@ -48,7 +48,7 @@ func (t *ChainMessageReceipt) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.GasOutputs (processor.MessageGasOutputs) (struct)
+	// t.GasOutputs (chain.MessageGasOutputs) (struct)
 	if len("gas") > cbg.MaxLength {
 		return xerrors.Errorf("Value in field \"gas\" was too long")
 	}
@@ -64,7 +64,7 @@ func (t *ChainMessageReceipt) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.ActorError (processor.ActorError) (struct)
+	// t.ActorError (chain.ActorError) (struct)
 	if len("errors") > cbg.MaxLength {
 		return xerrors.Errorf("Value in field \"errors\" was too long")
 	}
@@ -152,7 +152,7 @@ func (t *ChainMessageReceipt) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 			}
-			// t.GasOutputs (processor.MessageGasOutputs) (struct)
+			// t.GasOutputs (chain.MessageGasOutputs) (struct)
 		case "gas":
 
 			{
@@ -172,7 +172,7 @@ func (t *ChainMessageReceipt) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 			}
-			// t.ActorError (processor.ActorError) (struct)
+			// t.ActorError (chain.ActorError) (struct)
 		case "errors":
 
 			{
@@ -255,7 +255,7 @@ func (t *ImplicitMessageReceipt) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.GasOutputs (processor.MessageGasOutputs) (struct)
+	// t.GasOutputs (chain.MessageGasOutputs) (struct)
 	if len("gas") > cbg.MaxLength {
 		return xerrors.Errorf("Value in field \"gas\" was too long")
 	}
@@ -271,7 +271,7 @@ func (t *ImplicitMessageReceipt) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.ActorError (processor.ActorError) (struct)
+	// t.ActorError (chain.ActorError) (struct)
 	if len("errors") > cbg.MaxLength {
 		return xerrors.Errorf("Value in field \"errors\" was too long")
 	}
@@ -337,7 +337,7 @@ func (t *ImplicitMessageReceipt) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 			}
-			// t.GasOutputs (processor.MessageGasOutputs) (struct)
+			// t.GasOutputs (chain.MessageGasOutputs) (struct)
 		case "gas":
 
 			{
@@ -357,7 +357,7 @@ func (t *ImplicitMessageReceipt) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 			}
-			// t.ActorError (processor.ActorError) (struct)
+			// t.ActorError (chain.ActorError) (struct)
 		case "errors":
 
 			{
@@ -1119,7 +1119,7 @@ func (t *VmMessageGasTrace) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Location ([]processor.Loc) (slice)
+	// t.Location ([]chain.Loc) (slice)
 	if len("location") > cbg.MaxLength {
 		return xerrors.Errorf("Value in field \"location\" was too long")
 	}
@@ -1327,7 +1327,7 @@ func (t *VmMessageGasTrace) UnmarshalCBOR(r io.Reader) (err error) {
 
 				t.Name = string(sval)
 			}
-			// t.Location ([]processor.Loc) (slice)
+			// t.Location ([]chain.Loc) (slice)
 		case "location":
 
 			maj, extra, err = cr.ReadHeader()

@@ -154,16 +154,14 @@ func HandleActorStateChanges(ctx context.Context, s store.Store, current, parent
 		}
 		out = append(out, rawModels)
 	}
-	/*
-		if actorIPLDContainer.VerifregActor != nil {
-			verifregModels, err := ProcessVerifregActor(ctx, s, current, parent, av, *actorIPLDContainer.VerifregActor)
-			if err != nil {
-				return nil, err
-			}
-			out = append(out, verifregModels)
+	if actorIPLDContainer.VerifregActor != nil {
+		verifregModels, err := ProcessVerifregActor(ctx, s, current, parent, av, *actorIPLDContainer.VerifregActor)
+		if err != nil {
+			return nil, err
 		}
+		out = append(out, verifregModels)
+	}
 
-	*/
 	return out, nil
 }
 

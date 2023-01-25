@@ -16,13 +16,13 @@ import (
 )
 
 type ActorStateChangesIPLD struct {
-	DataCapActor  *cid.Cid // DataCap
-	InitActor     *cid.Cid // Init
-	MarketActor   *cid.Cid // Market
-	MinerActors   *cid.Cid // HAMT[address]Miner
-	PowerActor    *cid.Cid // Power
-	RawActors     *cid.Cid // HAMT[address]Raw
-	VerifregActor *cid.Cid // Veriferg
+	DataCapActor  *cid.Cid `cborgen:"datacap"`  // DataCap
+	InitActor     *cid.Cid `cborgen:"init"`     // Init
+	MarketActor   *cid.Cid `cborgen:"market"`   // Market
+	MinerActors   *cid.Cid `cborgen:"miner"`    // HAMT[address]Miner
+	PowerActor    *cid.Cid `cborgen:"power"`    // Power
+	RawActors     *cid.Cid `cborgen:"raw"`      // HAMT[address]Raw
+	VerifregActor *cid.Cid `cborgen:"verifreg"` // Veriferg
 }
 
 func (a *ActorStateChangesIPLD) Attributes() []attribute.KeyValue {
@@ -61,7 +61,13 @@ func (a *ActorStateChangesIPLD) MarshalLogObject(enc zapcore.ObjectEncoder) erro
 func ProcessActorsStates(ctx context.Context, s store.Store, changes *extract.ActorStateChanges) (*ActorStateChangesIPLD, error) {
 	out := &ActorStateChangesIPLD{}
 
-	// TODO DataCap
+	if changes.DatacapActor != nil {
+		dcapRoot, err := PutActorDiffResult(ctx, s, changes.DatacapActor)
+		if err != nil {
+			return nil, err
+		}
+		out.DataCapActor = &dcapRoot
+	}
 
 	if changes.InitActor != nil {
 		initRoot, err := PutActorDiffResult(ctx, s, changes.InitActor)
