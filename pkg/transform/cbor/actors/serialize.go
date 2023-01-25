@@ -114,7 +114,6 @@ func ProcessActorsStates(ctx context.Context, s store.Store, changes *extract.Ac
 		if err != nil {
 			return nil, err
 		}
-
 		out.VerifregActor = &verifregRoot
 	}
 

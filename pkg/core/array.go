@@ -4,11 +4,14 @@ import (
 	"context"
 
 	"github.com/filecoin-project/go-amt-ipld/v4"
+	logging "github.com/ipfs/go-log/v2"
 	typegen "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 )
+
+var log = logging.Logger("lily/core")
 
 type ArrayModification struct {
 	Key      uint64
@@ -26,6 +29,7 @@ func DiffArray(ctx context.Context, store adt.Store, child, parent adt.Array, ch
 			Modified: []*ArrayModification{},
 			Removed:  []*ArrayModification{},
 		}
+		log.Warn("diffing array using slow comparison")
 		if err := diff.CompareArray(child, parent, diffContainer); err != nil {
 			return nil, err
 		}

@@ -27,6 +27,7 @@ func DiffMap(ctx context.Context, store adt.Store, child, parent adt.Map, childO
 			Modified: []*MapModification{},
 			Removed:  []*MapModification{},
 		}
+		log.Warn("diffing array using slow comparison")
 		if err := diff.CompareMap(child, parent, diffContainer); err != nil {
 			return nil, err
 		}

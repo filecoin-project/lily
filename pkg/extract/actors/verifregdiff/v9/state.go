@@ -113,6 +113,5 @@ func (sc *StateChange) ToStateDiffResult(ctx context.Context, s store.Store) (*S
 		}
 	}
 
-	panic("TODO")
 	return out, nil
 }

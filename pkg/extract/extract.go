@@ -2,6 +2,7 @@ package extract
 
 import (
 	"context"
+	"time"
 
 	actortypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/network"
@@ -43,13 +44,17 @@ func State(ctx context.Context, api tasks.DataSource, current, executed *types.T
 
 	grp, grpCtx := errgroup.WithContext(ctx)
 	grp.Go(func() error {
+		start := time.Now()
 		// all blocks, messages, implicit messages, from executed and receipts from current
 		blockmessages, err = FullBlockMessages(grpCtx, api, current, executed)
+		log.Infow("extracted fullblock", "duration", time.Since(start))
 		return err
 	})
 	grp.Go(func() error {
+		start := time.Now()
 		// all actor changes between current and parent, actor state exists in current.
 		actorChanges, err = Actors(grpCtx, api, current, executed, actorVersion)
+		log.Infow("extracted actors", "duration", time.Since(start))
 		return err
 	})
 

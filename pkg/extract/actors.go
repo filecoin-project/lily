@@ -2,6 +2,8 @@ package extract
 
 import (
 	"context"
+	"sort"
+	"sync"
 	"time"
 
 	"github.com/filecoin-project/go-address"
@@ -9,10 +11,10 @@ import (
 	actortypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/gammazero/workerpool"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/pkg/core"
@@ -60,11 +62,12 @@ func (a ActorStateChanges) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 type StateDiffResult struct {
 	ActorDiff actors.ActorDiffResult
 	Address   address.Address
+	Error     error
 }
 
 type NetworkVersionGetter = func(ctx context.Context, epoch abi.ChainEpoch) network.Version
 
-func DiffActor(ctx context.Context, api tasks.DataSource, version actortypes.Version, act *actors.ActorChange, diffLoader func(av actortypes.Version) (actors.ActorDiff, error)) (*StateDiffResult, error) {
+func DiffActor(ctx context.Context, api tasks.DataSource, version actortypes.Version, act *actors.ActorChange, diffLoader func(av actortypes.Version) (actors.ActorDiff, error)) (actors.ActorDiffResult, error) {
 	// construct the state differ required by this actor version
 	diff, err := diffLoader(version)
 	if err != nil {
@@ -72,74 +75,34 @@ func DiffActor(ctx context.Context, api tasks.DataSource, version actortypes.Ver
 	}
 	start := time.Now()
 	// diff the actors state and collect changes
-	log.Infow("diff actor state", "address", act.Address.String(), "name", builtin.ActorNameByCode(act.Current.Code), "type", act.Type.String())
+	log.Debugw("diff actor state", "address", act.Address.String(), "name", builtin.ActorNameByCode(act.Current.Code), "type", act.Type.String())
 	diffRes, err := diff.State(ctx, api, act)
 	if err != nil {
 		return nil, err
 	}
-	log.Infow("diffed actor state", "address", act.Address.String(), "name", builtin.ActorNameByCode(act.Current.Code), "type", act.Type.String(), "duration", time.Since(start))
-	return &StateDiffResult{
-		ActorDiff: diffRes,
-		Address:   act.Address,
-	}, nil
+	log.Debugw("diffed actor state", "address", act.Address.String(), "name", builtin.ActorNameByCode(act.Current.Code), "type", act.Type.String(), "duration", time.Since(start))
+	return diffRes, nil
 }
 
-func doActorDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, version actortypes.Version, results chan *StateDiffResult) (*ActorStateChanges, error) {
-	actorDiff := &rawdiff.StateDiff{
-		DiffMethods: []actors.ActorStateDiff{rawdiff.Actor{}},
-	}
-	actorStateChanges, err := actorDiff.State(ctx, api, act)
-	if err != nil {
-		return nil, err
-	}
-	results <- &StateDiffResult{
-		ActorDiff: actorStateChanges,
-		Address:   act.Address,
-	}
-	if core.DataCapCodes.Has(act.Current.Code) {
-		res, err := DiffActor(ctx, api, version, act, datacapdiff.StateDiffFor)
-		if err != nil {
-			return nil, err
-		}
-		results <- res
-	}
-	if core.MinerCodes.Has(change.Current.Code) {
-		res, err := DiffActor(ctx, api, actorVersion, act, minerdiff.StateDiffFor)
-		if err != nil {
-			return err
-		}
-		results <- res
-	}
-	if core.VerifregCodes.Has(change.Current.Code) {
-		res, err := DiffActor(ctx, api, actorVersion, act, verifregdiff.StateDiffFor)
-		if err != nil {
-			return err
-		}
-		results <- res
-	}
-	if core.InitCodes.Has(change.Current.Code) {
-		res, err := DiffActor(ctx, api, actorVersion, act, initdiff.StateDiffFor)
-		if err != nil {
-			return err
-		}
-		results <- res
-	}
-	if core.PowerCodes.Has(change.Current.Code) {
-		res, err := DiffActor(ctx, api, actorVersion, act, powerdiff.StateDiffFor)
-		if err != nil {
-			return err
-		}
-		results <- res
-	}
-	if core.MarketCodes.Has(change.Current.Code) {
-		res, err := DiffActor(ctx, api, actorVersion, act, marketdiff.StateDiffFor)
-		if err != nil {
-			return err
-		}
-		results <- res
-	}
-	return nil
+func sortedActorChangeKeys(actors map[address.Address]statetree.ActorDiff) []address.Address {
+	keys := make([]address.Address, 0, len(actors))
 
+	for k := range actors {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		iKey, err := address.IDFromAddress(keys[i])
+		if err != nil {
+			panic(err)
+		}
+		jKey, err := address.IDFromAddress(keys[j])
+		if err != nil {
+			panic(err)
+		}
+		return iKey < jKey
+	})
+
+	return keys
 }
 
 func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, actorVersion actortypes.Version) (*ActorStateChanges, error) {
@@ -154,86 +117,36 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 		RawActors:   make(map[address.Address]actors.ActorDiffResult, len(actorChanges)), // there are at most actorChanges entries
 	}
 
-	grp, grpCtx := errgroup.WithContext(ctx)
-	grp.SetLimit(8)
+	pool := workerpool.New(8)
 	results := make(chan *StateDiffResult, len(actorChanges))
-	grp.Go(func() error {
-		for addr, change := range actorChanges {
-			addr := addr
-			change := change
-			act := &actors.ActorChange{
-				Address:  addr,
-				Executed: change.Executed,
-				Current:  change.Current,
-				Type:     change.ChangeType,
-			}
+	wg := sync.WaitGroup{}
+	// sort actors on actor id in ascending order, causes market actor to be differed early, which is the slowest actor to diff.
+	sortedKeys := sortedActorChangeKeys(actorChanges)
+	for _, addr := range sortedKeys {
+		addr := addr
+		change := actorChanges[addr]
+		act := &actors.ActorChange{
+			Address:  addr,
+			Executed: change.Executed,
+			Current:  change.Current,
+			Type:     change.ChangeType,
+		}
+		wg.Add(1)
+		pool.Submit(func() {
+			doActorDiff(ctx, api, act, actorVersion, results)
+			wg.Done()
+		})
 
-			grp.Go(func() error {
-				actorDiff := &rawdiff.StateDiff{
-					DiffMethods: []actors.ActorStateDiff{rawdiff.Actor{}},
-				}
-				actorStateChanges, err := actorDiff.State(grpCtx, api, act)
-				if err != nil {
-					return err
-				}
-				results <- &StateDiffResult{
-					ActorDiff: actorStateChanges,
-					Address:   act.Address,
-				}
-				if core.DataCapCodes.Has(change.Current.Code) {
-					res, err := DiffActor(ctx, api, actorVersion, act, datacapdiff.StateDiffFor)
-					if err != nil {
-						return err
-					}
-					results <- res
-				}
-				if core.MinerCodes.Has(change.Current.Code) {
-					res, err := DiffActor(ctx, api, actorVersion, act, minerdiff.StateDiffFor)
-					if err != nil {
-						return err
-					}
-					results <- res
-				}
-				if core.VerifregCodes.Has(change.Current.Code) {
-					res, err := DiffActor(ctx, api, actorVersion, act, verifregdiff.StateDiffFor)
-					if err != nil {
-						return err
-					}
-					results <- res
-				}
-				if core.InitCodes.Has(change.Current.Code) {
-					res, err := DiffActor(ctx, api, actorVersion, act, initdiff.StateDiffFor)
-					if err != nil {
-						return err
-					}
-					results <- res
-				}
-				if core.PowerCodes.Has(change.Current.Code) {
-					res, err := DiffActor(ctx, api, actorVersion, act, powerdiff.StateDiffFor)
-					if err != nil {
-						return err
-					}
-					results <- res
-				}
-				if core.MarketCodes.Has(change.Current.Code) {
-					res, err := DiffActor(ctx, api, actorVersion, act, marketdiff.StateDiffFor)
-					if err != nil {
-						return err
-					}
-					results <- res
-				}
-				return nil
-			})
-		}
-		return nil
-	})
+	}
 	go func() {
-		if err := grp.Wait(); err != nil {
-			log.Error(err)
-		}
+		wg.Wait()
 		close(results)
 	}()
 	for stateDiff := range results {
+		if stateDiff.Error != nil {
+			pool.Stop()
+			return nil, err
+		}
 		switch stateDiff.ActorDiff.Kind() {
 		case "actor":
 			asc.RawActors[stateDiff.Address] = stateDiff.ActorDiff
@@ -256,20 +169,43 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 	return asc, nil
 }
 
-type DiffWorker struct {
-	workers int
-}
-
-func (w *DiffWorker) Start(ctx context.Context) error {
-	for i := 0; i < w.workers; i++ {
-		go func() {
-			w.work(ctx, nil, nil)
-		}()
+func doActorDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, version actortypes.Version, results chan *StateDiffResult) {
+	actorDiff := &rawdiff.StateDiff{
+		DiffMethods: []actors.ActorStateDiff{rawdiff.Actor{}},
 	}
-}
+	actorStateChanges, err := actorDiff.State(ctx, api, act)
+	results <- &StateDiffResult{
+		ActorDiff: actorStateChanges,
+		Address:   act.Address,
+		Error:     err,
+	}
+	var actorDiffer func(av actortypes.Version) (actors.ActorDiff, error)
+	if core.DataCapCodes.Has(act.Current.Code) {
+		actorDiffer = datacapdiff.StateDiffFor
+	}
+	if core.MinerCodes.Has(act.Current.Code) {
+		actorDiffer = minerdiff.StateDiffFor
+	}
+	if core.VerifregCodes.Has(act.Current.Code) {
+		actorDiffer = verifregdiff.StateDiffFor
+	}
+	if core.InitCodes.Has(act.Current.Code) {
+		actorDiffer = initdiff.StateDiffFor
+	}
+	if core.PowerCodes.Has(act.Current.Code) {
+		actorDiffer = powerdiff.StateDiffFor
+	}
+	if core.MarketCodes.Has(act.Current.Code) {
+		actorDiffer = marketdiff.StateDiffFor
+	}
+	if actorDiffer == nil {
+		return
+	}
 
-func (w *DiffWorker) work(ctx context.Context, in, out chan interface{}) {
-	todo := <-in
-	time.Sleep(10)
-	out <- struct{}{}
+	res, err := DiffActor(ctx, api, version, act, actorDiffer)
+	results <- &StateDiffResult{
+		ActorDiff: res,
+		Address:   act.Address,
+		Error:     err,
+	}
 }
