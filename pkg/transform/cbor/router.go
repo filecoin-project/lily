@@ -66,7 +66,13 @@ type StateExtractionIPLD struct {
 	Current types.TipSet `cborgen:"current"`
 	Parent  types.TipSet `cborgen:"parent"`
 
-	BaseFee abi.TokenAmount `cborgen:"basefee"`
+	BaseFee             abi.TokenAmount `cborgen:"basefee"`
+	FilVested           abi.TokenAmount `cborgen:"filvested"`
+	FilMined            abi.TokenAmount `cborgen:"filmined"`
+	FilBurnt            abi.TokenAmount `cborgen:"filburnt"`
+	FilLocked           abi.TokenAmount `cborgen:"fillocked"`
+	FilCirculating      abi.TokenAmount `cborgen:"filcirculating"`
+	FilReserveDisbursed abi.TokenAmount `cborgen:"filreserveddisbursed"`
 
 	FullBlocks       cid.Cid `cborgen:"fullblocks"`
 	ImplicitMessages cid.Cid `cborgen:"implicitmessages"`
@@ -159,12 +165,18 @@ func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, exec
 	}
 
 	extractedState := &StateExtractionIPLD{
-		Current:          *current,
-		Parent:           *executed,
-		BaseFee:          chainState.Message.BaseFee,
-		FullBlocks:       fullBlkHAMT,
-		ImplicitMessages: implicitMsgsAMT,
-		Actors:           actorStatesRoot,
+		Current:             *current,
+		Parent:              *executed,
+		BaseFee:             chainState.Message.BaseFee,
+		FilVested:           chainState.Message.CirculatingSupply.FilVested,
+		FilMined:            chainState.Message.CirculatingSupply.FilMined,
+		FilBurnt:            chainState.Message.CirculatingSupply.FilBurnt,
+		FilLocked:           chainState.Message.CirculatingSupply.FilLocked,
+		FilCirculating:      chainState.Message.CirculatingSupply.FilCirculating,
+		FilReserveDisbursed: chainState.Message.CirculatingSupply.FilReserveDisbursed,
+		FullBlocks:          fullBlkHAMT,
+		ImplicitMessages:    implicitMsgsAMT,
+		Actors:              actorStatesRoot,
 	}
 
 	extractedStateRoot, err := store.Put(ctx, extractedState)

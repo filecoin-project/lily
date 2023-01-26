@@ -3,11 +3,11 @@ package main
 import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 
-	datacapV9 "github.com/filecoin-project/lily/pkg/extract/actors/datacapdiff/v9"
-	initv0 "github.com/filecoin-project/lily/pkg/extract/actors/initdiff/v0"
-	marketV0 "github.com/filecoin-project/lily/pkg/extract/actors/marketdiff/v0"
-	minerV0 "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v0"
-	powerV0 "github.com/filecoin-project/lily/pkg/extract/actors/powerdiff/v0"
+	datacapV9 "github.com/filecoin-project/lily/pkg/extract/actors/datacapdiff/v1"
+	initv0 "github.com/filecoin-project/lily/pkg/extract/actors/initdiff/v1"
+	marketV0 "github.com/filecoin-project/lily/pkg/extract/actors/marketdiff/v1"
+	minerV0 "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v1"
+	powerV0 "github.com/filecoin-project/lily/pkg/extract/actors/powerdiff/v1"
 	"github.com/filecoin-project/lily/pkg/extract/actors/rawdiff"
 	verifV0 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v1"
 	verifV9 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v2"
@@ -20,26 +20,26 @@ import (
 const actorDiffPath = "pkg/extract/actors/rawdiff/cbor_gen.go"
 const actorDiffPkg = "rawdiff"
 
-const datacapDiffPath = "pkg/extract/actors/datacapdiff/v9/cbor_gen.go"
-const datacapDiffPkg = "v9"
+const datacapDiffPath = "pkg/extract/actors/datacapdiff/v1/cbor_gen.go"
+const datacapDiffPkg = "v1"
 
-const minerDiffPath = "pkg/extract/actors/minerdiff/v0/cbor_gen.go"
-const minerDiffPkg = "v0"
+const minerDiffPath = "pkg/extract/actors/minerdiff/v1/cbor_gen.go"
+const minerDiffPkg = "v1"
 
-const initDiffPath = "pkg/extract/actors/initdiff/v0/cbor_gen.go"
-const initDiffPkg = "v0"
+const initDiffPath = "pkg/extract/actors/initdiff/v1/cbor_gen.go"
+const initDiffPkg = "v1"
 
-const verifDiffPathV0 = "pkg/extract/actors/verifregdiff/v0/cbor_gen.go"
-const verifDiffPkgV0 = "v0"
+const verifDiffPathV0 = "pkg/extract/actors/verifregdiff/v1/cbor_gen.go"
+const verifDiffPkgV0 = "v1"
 
-const verifDiffPathV9 = "pkg/extract/actors/verifregdiff/v9/cbor_gen.go"
-const verifDiffPkgV9 = "v9"
+const verifDiffPathV9 = "pkg/extract/actors/verifregdiff/v2/cbor_gen.go"
+const verifDiffPkgV9 = "v2"
 
-const marketDiffPath = "pkg/extract/actors/marketdiff/v0/cbor_gen.go"
-const marketDiffPkg = "v0"
+const marketDiffPath = "pkg/extract/actors/marketdiff/v1/cbor_gen.go"
+const marketDiffPkg = "v1"
 
-const powerDiffPath = "pkg/extract/actors/powerdiff/v0/cbor_gen.go"
-const powerDiffPkg = "v0"
+const powerDiffPath = "pkg/extract/actors/powerdiff/v1/cbor_gen.go"
+const powerDiffPkg = "v1"
 
 const IPLDActorContainerPath = "pkg/transform/cbor/actors/cbor_gen.go"
 const IPLDActorContainerPkg = "actors"

@@ -7,6 +7,7 @@ import (
 
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/blocks"
+	messagemodel "github.com/filecoin-project/lily/model/messages"
 	"github.com/filecoin-project/lily/pkg/extract/chain"
 )
 
@@ -36,6 +37,27 @@ func ExtractBlockParents(ctx context.Context, fullBlocks map[cid.Cid]*chain.Full
 				Height: int64(fb.Block.Height),
 				Block:  fb.Block.Cid().String(),
 				Parent: p.String(),
+			})
+		}
+	}
+	return out, nil
+}
+
+func ExtractBlockMessages(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBlock) (model.Persistable, error) {
+	out := messagemodel.BlockMessages{}
+	for _, fb := range fullBlocks {
+		for _, msg := range fb.BlsMessages {
+			out = append(out, &messagemodel.BlockMessage{
+				Height:  int64(fb.Block.Height),
+				Block:   fb.Block.Cid().String(),
+				Message: msg.Message.Cid().String(),
+			})
+		}
+		for _, msg := range fb.SecpMessages {
+			out = append(out, &messagemodel.BlockMessage{
+				Height:  int64(fb.Block.Height),
+				Block:   fb.Block.Cid().String(),
+				Message: msg.Message.Cid().String(),
 			})
 		}
 	}

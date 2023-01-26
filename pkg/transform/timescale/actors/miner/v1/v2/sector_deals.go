@@ -12,7 +12,7 @@ import (
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/util"
 
-	minerdiff "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v2"
+	minerdiff "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v1"
 
 	miner "github.com/filecoin-project/specs-actors/v2/actors/builtin/miner"
 )

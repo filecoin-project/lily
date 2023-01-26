@@ -10,7 +10,7 @@ import (
 	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/lily/model"
-	powerdiff "github.com/filecoin-project/lily/pkg/extract/actors/powerdiff/v0"
+	powerdiff "github.com/filecoin-project/lily/pkg/extract/actors/powerdiff/v1"
 	v1_0 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/power/v1/v0"
 	v1_2 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/power/v1/v2"
 	v1_3 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/power/v1/v3"

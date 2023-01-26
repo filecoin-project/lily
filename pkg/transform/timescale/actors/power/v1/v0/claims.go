@@ -11,7 +11,7 @@ import (
 	"github.com/filecoin-project/lily/model"
 	powermodel "github.com/filecoin-project/lily/model/actors/power"
 	"github.com/filecoin-project/lily/pkg/core"
-	powerdiff "github.com/filecoin-project/lily/pkg/extract/actors/powerdiff/v0"
+	powerdiff "github.com/filecoin-project/lily/pkg/extract/actors/powerdiff/v1"
 )
 
 type Claims struct{}

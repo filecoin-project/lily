@@ -11,7 +11,7 @@ import (
 	"github.com/filecoin-project/lily/model"
 	initmodel "github.com/filecoin-project/lily/model/actors/init"
 	"github.com/filecoin-project/lily/pkg/core"
-	initdiff "github.com/filecoin-project/lily/pkg/extract/actors/initdiff/v0"
+	initdiff "github.com/filecoin-project/lily/pkg/extract/actors/initdiff/v1"
 )
 
 type Addresses struct{}

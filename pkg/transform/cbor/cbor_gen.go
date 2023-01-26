@@ -213,7 +213,7 @@ func (t *StateExtractionIPLD) MarshalCBOR(w io.Writer) error {
 
 	cw := cbg.NewCborWriter(w)
 
-	if _, err := cw.Write([]byte{166}); err != nil {
+	if _, err := cw.Write([]byte{172}); err != nil {
 		return err
 	}
 
@@ -262,6 +262,102 @@ func (t *StateExtractionIPLD) MarshalCBOR(w io.Writer) error {
 	}
 
 	if err := t.BaseFee.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.FilVested (big.Int) (struct)
+	if len("filvested") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"filvested\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("filvested"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("filvested")); err != nil {
+		return err
+	}
+
+	if err := t.FilVested.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.FilMined (big.Int) (struct)
+	if len("filmined") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"filmined\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("filmined"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("filmined")); err != nil {
+		return err
+	}
+
+	if err := t.FilMined.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.FilBurnt (big.Int) (struct)
+	if len("filburnt") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"filburnt\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("filburnt"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("filburnt")); err != nil {
+		return err
+	}
+
+	if err := t.FilBurnt.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.FilLocked (big.Int) (struct)
+	if len("fillocked") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"fillocked\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("fillocked"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("fillocked")); err != nil {
+		return err
+	}
+
+	if err := t.FilLocked.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.FilCirculating (big.Int) (struct)
+	if len("filcirculating") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"filcirculating\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("filcirculating"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("filcirculating")); err != nil {
+		return err
+	}
+
+	if err := t.FilCirculating.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.FilReserveDisbursed (big.Int) (struct)
+	if len("filreserveddisbursed") > cbg.MaxLength {
+		return xerrors.Errorf("Value in field \"filreserveddisbursed\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("filreserveddisbursed"))); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, string("filreserveddisbursed")); err != nil {
+		return err
+	}
+
+	if err := t.FilReserveDisbursed.MarshalCBOR(cw); err != nil {
 		return err
 	}
 
@@ -381,6 +477,66 @@ func (t *StateExtractionIPLD) UnmarshalCBOR(r io.Reader) (err error) {
 
 				if err := t.BaseFee.UnmarshalCBOR(cr); err != nil {
 					return xerrors.Errorf("unmarshaling t.BaseFee: %w", err)
+				}
+
+			}
+			// t.FilVested (big.Int) (struct)
+		case "filvested":
+
+			{
+
+				if err := t.FilVested.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.FilVested: %w", err)
+				}
+
+			}
+			// t.FilMined (big.Int) (struct)
+		case "filmined":
+
+			{
+
+				if err := t.FilMined.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.FilMined: %w", err)
+				}
+
+			}
+			// t.FilBurnt (big.Int) (struct)
+		case "filburnt":
+
+			{
+
+				if err := t.FilBurnt.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.FilBurnt: %w", err)
+				}
+
+			}
+			// t.FilLocked (big.Int) (struct)
+		case "fillocked":
+
+			{
+
+				if err := t.FilLocked.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.FilLocked: %w", err)
+				}
+
+			}
+			// t.FilCirculating (big.Int) (struct)
+		case "filcirculating":
+
+			{
+
+				if err := t.FilCirculating.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.FilCirculating: %w", err)
+				}
+
+			}
+			// t.FilReserveDisbursed (big.Int) (struct)
+		case "filreserveddisbursed":
+
+			{
+
+				if err := t.FilReserveDisbursed.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.FilReserveDisbursed: %w", err)
 				}
 
 			}

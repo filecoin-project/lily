@@ -12,7 +12,7 @@ import (
 	"github.com/filecoin-project/lily/model"
 	marketmodel "github.com/filecoin-project/lily/model/actors/market"
 	"github.com/filecoin-project/lily/pkg/core"
-	marketdiff "github.com/filecoin-project/lily/pkg/extract/actors/marketdiff/v8"
+	marketdiff "github.com/filecoin-project/lily/pkg/extract/actors/marketdiff/v1"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/market/util"
 )
 

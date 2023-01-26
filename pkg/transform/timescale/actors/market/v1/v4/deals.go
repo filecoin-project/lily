@@ -10,7 +10,7 @@ import (
 	"github.com/filecoin-project/lily/model"
 	marketmodel "github.com/filecoin-project/lily/model/actors/market"
 	"github.com/filecoin-project/lily/pkg/core"
-	marketdiff "github.com/filecoin-project/lily/pkg/extract/actors/marketdiff/v4"
+	marketdiff "github.com/filecoin-project/lily/pkg/extract/actors/marketdiff/v1"
 )
 
 type Deals struct{}
