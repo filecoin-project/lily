@@ -1,4 +1,4 @@
-package v2
+package v1
 
 import (
 	"context"
@@ -6,16 +6,12 @@ import (
 	"github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 	"github.com/filecoin-project/go-state-types/store"
 	"github.com/ipfs/go-cid"
-	logging "github.com/ipfs/go-log/v2"
-	cbg "github.com/whyrusleeping/cbor-gen"
+	typegen "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/pkg/extract/actors"
-	v0 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v1"
 	"github.com/filecoin-project/lily/tasks"
 )
-
-var log = logging.Logger("extract/actors/verifreg")
 
 type StateDiff struct {
 	DiffMethods []actors.ActorStateDiff
@@ -34,65 +30,54 @@ func (s *StateDiff) State(ctx context.Context, api tasks.DataSource, act *actors
 			continue
 		}
 		switch stateChange.Kind() {
-		case v0.KindVerifregVerifiers:
+		case KindVerifregClients:
+			stateDiff.ClientChanges = stateChange.(ClientsChangeList)
+		case KindVerifregVerifiers:
 			stateDiff.VerifierChanges = stateChange.(VerifiersChangeList)
-		case KindVerifregClaims:
-			stateDiff.ClaimChanges = stateChange.(ClaimsChangeMap)
-		case KindVerifregAllocations:
-			stateDiff.AllocationsChanges = stateChange.(AllocationsChangeMap)
 		}
 	}
 	return stateDiff, nil
 }
 
 type StateDiffResult struct {
-	VerifierChanges    VerifiersChangeList
-	ClaimChanges       ClaimsChangeMap
-	AllocationsChanges AllocationsChangeMap
+	VerifierChanges VerifiersChangeList
+	ClientChanges   ClientsChangeList
 }
 
-func (sd *StateDiffResult) Kind() string {
+func (s *StateDiffResult) Kind() string {
 	return "verifreg"
 }
 
-func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, store store.Store) (cbg.CBORMarshaler, error) {
+func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, s store.Store) (typegen.CBORMarshaler, error) {
 	out := &StateChange{}
 
+	if clients := sd.ClientChanges; clients != nil {
+		root, err := clients.ToAdtMap(s, 5)
+		if err != nil {
+			return nil, err
+		}
+		out.Clients = &root
+	}
+
 	if verifiers := sd.VerifierChanges; verifiers != nil {
-		root, err := verifiers.ToAdtMap(store, 5)
+		root, err := verifiers.ToAdtMap(s, 5)
 		if err != nil {
 			return nil, err
 		}
 		out.Verifiers = &root
 	}
-
-	if claims := sd.ClaimChanges; claims != nil {
-		root, err := claims.ToAdtMap(store, 5)
-		if err != nil {
-			return nil, err
-		}
-		out.Claims = &root
-	}
-
-	if allocations := sd.AllocationsChanges; allocations != nil {
-		root, err := allocations.ToAdtMap(store, 5)
-		if err != nil {
-			return nil, err
-		}
-		out.Allocations = &root
-	}
 	return out, nil
 }
 
 type StateChange struct {
-	Verifiers   *cid.Cid `cborgen:"verifiers"`
-	Claims      *cid.Cid `cborgen:"claims"`
-	Allocations *cid.Cid `cborgen:"allocations"`
+	Verifiers *cid.Cid `cborgen:"verifiers"`
+	Clients   *cid.Cid `cborgen:"clients"`
 }
 
 func (sc *StateChange) ToStateDiffResult(ctx context.Context, s store.Store) (*StateDiffResult, error) {
 	out := &StateDiffResult{
 		VerifierChanges: VerifiersChangeList{},
+		ClientChanges:   ClientsChangeList{},
 	}
 
 	if sc.Verifiers != nil {
@@ -112,5 +97,21 @@ func (sc *StateChange) ToStateDiffResult(ctx context.Context, s store.Store) (*S
 		}
 	}
 
+	if sc.Clients != nil {
+		clientsMap, err := adt.AsMap(s, *sc.Clients, 5)
+		if err != nil {
+			return nil, err
+		}
+
+		clientChange := new(ClientsChange)
+		if err := clientsMap.ForEach(clientChange, func(key string) error {
+			val := new(ClientsChange)
+			*val = *clientChange
+			out.ClientChanges = append(out.ClientChanges, val)
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+	}
 	return out, nil
 }

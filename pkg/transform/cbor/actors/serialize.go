@@ -15,6 +15,7 @@ import (
 	"github.com/filecoin-project/lily/pkg/extract/actors"
 )
 
+// TODO version the content at these CIDs
 type ActorStateChangesIPLD struct {
 	DataCapActor  *cid.Cid `cborgen:"datacap"`  // DataCap
 	InitActor     *cid.Cid `cborgen:"init"`     // Init

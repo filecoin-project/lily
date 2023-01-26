@@ -27,6 +27,7 @@ import (
 	init_ "github.com/filecoin-project/lily/pkg/transform/timescale/actors/init"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/market"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner"
+	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/power"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/raw"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/reward"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/verifreg"
@@ -95,14 +96,6 @@ func ProcessInitAddresses(ctx context.Context, s store.Store, current, executed 
 	return init_.InitHandler(ctx, s, current, executed, root)
 }
 
-func ProcessVerifregActor(ctx context.Context, s store.Store, current, executed *types.TipSet, av actorstypes.Version, root cid.Cid) (model.Persistable, error) {
-	verifregHandler, err := verifreg.MakeVerifregProcessor(av)
-	if err != nil {
-		return nil, err
-	}
-	return verifregHandler(ctx, s, current, executed, root)
-}
-
 func HandleActorStateChanges(ctx context.Context, s store.Store, current, parent *types.TipSet, av actorstypes.Version, root cid.Cid) (model.Persistable, error) {
 	actorIPLDContainer := new(actors.ActorStateChangesIPLD)
 	if err := s.Get(ctx, root, actorIPLDContainer); err != nil {
@@ -111,11 +104,7 @@ func HandleActorStateChanges(ctx context.Context, s store.Store, current, parent
 	log.Infow("open actor state changes", zap.Inline(actorIPLDContainer))
 	out := model.PersistableList{}
 	if actorIPLDContainer.MarketActor != nil {
-		transformers, err := market.LookupMarketStateTransformer(av)
-		if err != nil {
-			return nil, err
-		}
-		marketModels, err := market.TransformMarketState(ctx, s, current, parent, *actorIPLDContainer.MarketActor, transformers...)
+		marketModels, err := market.TransformMarketState(ctx, s, av, current, parent, *actorIPLDContainer.MarketActor)
 		if err != nil {
 			return nil, err
 		}
@@ -123,11 +112,7 @@ func HandleActorStateChanges(ctx context.Context, s store.Store, current, parent
 	}
 
 	if actorIPLDContainer.MinerActors != nil {
-		transformers, err := miner.LookupMinerStateTransformer(av)
-		if err != nil {
-			return nil, err
-		}
-		minerModels, err := miner.TransformMinerStates(ctx, s, current, parent, *actorIPLDContainer.MinerActors, transformers...)
+		minerModels, err := miner.TransformMinerState(ctx, s, av, current, parent, *actorIPLDContainer.MinerActors)
 		if err != nil {
 			return nil, err
 		}
@@ -151,11 +136,19 @@ func HandleActorStateChanges(ctx context.Context, s store.Store, current, parent
 	}
 
 	if actorIPLDContainer.VerifregActor != nil {
-		verifregModels, err := ProcessVerifregActor(ctx, s, current, parent, av, *actorIPLDContainer.VerifregActor)
+		verifregModels, err := verifreg.TransformVerifregState(ctx, s, av, current, parent, *actorIPLDContainer.MarketActor)
 		if err != nil {
 			return nil, err
 		}
 		out = append(out, verifregModels)
+	}
+
+	if actorIPLDContainer.PowerActor != nil {
+		powerModels, err := power.TransformPowerState(ctx, s, av, current, parent, *actorIPLDContainer.PowerActor)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, powerModels)
 	}
 
 	return out, nil
@@ -231,6 +224,14 @@ func ProcessActorStates(ctx context.Context, s store.Store, current, executed *t
 
 		if core.MinerCodes.Has(actorState.Actor.Code) {
 			m, err := miner.HandleMiner(ctx, current, executed, addr, actorState, av)
+			if err != nil {
+				return err
+			}
+			out = append(out, m)
+		}
+
+		if core.PowerCodes.Has(actorState.Actor.Code) {
+			m, err := power.HandlePower(ctx, current, executed, addr, actorState, av)
 			if err != nil {
 				return err
 			}
