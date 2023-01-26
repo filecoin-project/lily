@@ -15,10 +15,14 @@ import (
 	"github.com/ipld/go-car/util"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap/zapcore"
+	"gorm.io/gorm/schema"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
 	"github.com/filecoin-project/lily/pkg/extract"
 	cboractors "github.com/filecoin-project/lily/pkg/transform/cbor/actors"
-	messages2 "github.com/filecoin-project/lily/pkg/transform/cbor/messages"
+	cbormessages "github.com/filecoin-project/lily/pkg/transform/cbor/messages"
 )
 
 var log = logging.Logger("lily/transform/cbor")
@@ -30,6 +34,16 @@ type RootStateIPLD struct {
 	NetworkVersion uint64 `cborgen:"networkversion"`
 
 	State cid.Cid `cborgen:"state"` // StateExtractionIPLD
+}
+
+type RootStateModel struct {
+	gorm.Model
+	Height          uint64
+	Cid             string
+	StateVersion    uint64
+	NetworkName     string
+	NetworkVersion  uint64
+	StateExtraction string
 }
 
 func (r *RootStateIPLD) Attributes() []attribute.KeyValue {
@@ -57,6 +71,17 @@ type StateExtractionIPLD struct {
 	FullBlocks       cid.Cid `cborgen:"fullblocks"`
 	ImplicitMessages cid.Cid `cborgen:"implicitmessages"`
 	Actors           cid.Cid `cborgen:"actors"`
+}
+
+type StateExtractionModel struct {
+	gorm.Model
+	Height           uint64
+	CurrentTipSet    string
+	ParentTipSet     string
+	BaseFee          string
+	FullBlocks       string
+	ImplicitMessages string
+	Actors           string
 }
 
 func (s *StateExtractionIPLD) Attributes() []attribute.KeyValue {
@@ -113,12 +138,12 @@ func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, exec
 		return cid.Undef, fmt.Errorf("actor and message executed tipset does not match")
 	}
 
-	implicitMsgsAMT, err := messages2.MakeImplicitMessagesHAMT(ctx, store, chainState.Message.ImplicitMessages)
+	implicitMsgsAMT, err := cbormessages.MakeImplicitMessagesHAMT(ctx, store, chainState.Message.ImplicitMessages)
 	if err != nil {
 		return cid.Undef, err
 	}
 
-	fullBlkHAMT, err := messages2.MakeFullBlockHAMT(ctx, store, chainState.Message.FullBlocks)
+	fullBlkHAMT, err := cbormessages.MakeFullBlockHAMT(ctx, store, chainState.Message.FullBlocks)
 	if err != nil {
 		return cid.Undef, err
 	}
@@ -156,6 +181,52 @@ func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, exec
 
 	root, err := store.Put(ctx, rootState)
 	if err != nil {
+		return cid.Undef, err
+	}
+	dsn := "host=localhost user=postgres password=password dbname=postgres port=5432 sslmode=disable"
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			TablePrefix:   "lily_cbor",
+			SingularTable: false,
+		},
+	})
+	if err != nil {
+		return cid.Undef, err
+	}
+	if err := db.AutoMigrate(&RootStateModel{}, &StateExtractionModel{}, &cboractors.ActorStateModel{}); err != nil {
+		return cid.Undef, err
+	}
+	rootModel := RootStateModel{
+		Height:          uint64(current.Height()),
+		Cid:             root.String(),
+		StateVersion:    rootState.StateVersion,
+		NetworkName:     rootState.NetworkName,
+		NetworkVersion:  rootState.NetworkVersion,
+		StateExtraction: rootState.State.String(),
+	}
+	stateModel := StateExtractionModel{
+		Height:           uint64(current.Height()),
+		CurrentTipSet:    current.String(),
+		ParentTipSet:     executed.String(),
+		BaseFee:          chainState.Message.BaseFee.String(),
+		FullBlocks:       fullBlkHAMT.String(),
+		ImplicitMessages: implicitMsgsAMT.String(),
+		Actors:           actorStatesRoot.String(),
+	}
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&rootModel).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&stateModel).Error; err != nil {
+			return err
+		}
+		as := actorStateContainer.AsModel()
+		as.Height = uint64(current.Height())
+		if err := tx.Create(as).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return cid.Undef, err
 	}
 	return root, nil

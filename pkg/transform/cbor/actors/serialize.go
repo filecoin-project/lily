@@ -10,6 +10,7 @@ import (
 	"github.com/ipfs/go-cid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap/zapcore"
+	"gorm.io/gorm"
 
 	"github.com/filecoin-project/lily/pkg/extract"
 	"github.com/filecoin-project/lily/pkg/extract/actors"
@@ -24,6 +25,44 @@ type ActorStateChangesIPLD struct {
 	PowerActor    *cid.Cid `cborgen:"power"`    // Power
 	RawActors     *cid.Cid `cborgen:"raw"`      // HAMT[address]Raw
 	VerifregActor *cid.Cid `cborgen:"verifreg"` // Veriferg
+}
+
+func (a *ActorStateChangesIPLD) AsModel() *ActorStateModel {
+	out := &ActorStateModel{}
+	if a.DataCapActor != nil {
+		out.DataCapActor = a.DataCapActor.String()
+	}
+	if a.InitActor != nil {
+		out.InitActor = a.InitActor.String()
+	}
+	if a.MarketActor != nil {
+		out.MarketActor = a.MarketActor.String()
+	}
+	if a.MinerActors != nil {
+		out.MinerActors = a.MinerActors.String()
+	}
+	if a.PowerActor != nil {
+		out.PowerActor = a.PowerActor.String()
+	}
+	if a.RawActors != nil {
+		out.RawActors = a.RawActors.String()
+	}
+	if a.VerifregActor != nil {
+		out.VerifregActor = a.VerifregActor.String()
+	}
+	return out
+}
+
+type ActorStateModel struct {
+	gorm.Model
+	Height        uint64
+	DataCapActor  string
+	InitActor     string
+	MarketActor   string
+	MinerActors   string
+	PowerActor    string
+	RawActors     string
+	VerifregActor string
 }
 
 func (a *ActorStateChangesIPLD) Attributes() []attribute.KeyValue {
