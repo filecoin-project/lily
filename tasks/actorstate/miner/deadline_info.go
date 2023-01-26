@@ -16,7 +16,7 @@ type DeadlineInfoExtractor struct{}
 
 func (DeadlineInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
 	log.Debugw("extract", zap.String("extractor", "DeadlineInfoExtractor"), zap.Inline(a))
-	ctx, span := otel.Tracer("").Start(ctx, "DeadlineInfoExtractor.Extract")
+	ctx, span := otel.Tracer("").Start(ctx, "DeadlineInfoExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

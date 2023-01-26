@@ -16,7 +16,7 @@ import (
 
 type Verifiers struct{}
 
-func (Verifiers) Extract(ctx context.Context, current, executed *types.TipSet, changes *verifregdiff.StateDiffResult) (model.Persistable, error) {
+func (Verifiers) Transform(ctx context.Context, current, executed *types.TipSet, changes *verifregdiff.StateDiffResult) (model.Persistable, error) {
 	out := make(verifregmodel.VerifiedRegistryVerifiersList, len(changes.VerifierChanges))
 	for i, change := range changes.VerifierChanges {
 		addr, err := address.NewFromBytes(change.Verifier)

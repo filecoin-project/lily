@@ -18,7 +18,7 @@ import (
 
 type PreCommit struct{}
 
-func (PreCommit) Extract(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error) {
+func (PreCommit) Transform(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error) {
 	var precommits []*miner.SectorPreCommitOnChainInfo
 	for _, change := range change.PreCommitChanges {
 		// only care about precommits added

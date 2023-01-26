@@ -19,7 +19,7 @@ import (
 
 type Info struct{}
 
-func (i Info) Extract(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error) {
+func (i Info) Transform(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error) {
 	// if there is no info nothing changed.
 	if change.InfoChange == nil {
 		return nil, nil

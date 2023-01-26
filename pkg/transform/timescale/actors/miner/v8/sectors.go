@@ -19,7 +19,7 @@ import (
 type Sector struct {
 }
 
-func (s Sector) Extract(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error) {
+func (s Sector) Transform(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error) {
 	var sectors []*miner.SectorOnChainInfo
 	changes := change.SectorChanges
 	for _, sector := range changes {

@@ -22,7 +22,7 @@ type InfoExtractor struct{}
 
 func (InfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
 	log.Debugw("extract", zap.String("extractor", "InfoExtractor"), zap.Inline(a))
-	ctx, span := otel.Tracer("").Start(ctx, "InfoExtractor.Extract")
+	ctx, span := otel.Tracer("").Start(ctx, "InfoExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

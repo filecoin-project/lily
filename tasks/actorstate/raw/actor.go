@@ -19,9 +19,9 @@ var log = logging.Logger("lily/tasks/rawactor")
 type RawActorExtractor struct{}
 
 func (RawActorExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
-	log.Debugw("Extract", zap.String("extractor", "RawActorExtractor"), zap.Inline(a))
+	log.Debugw("Transform", zap.String("extractor", "RawActorExtractor"), zap.Inline(a))
 
-	_, span := otel.Tracer("").Start(ctx, "RawActorExtractor.Extract")
+	_, span := otel.Tracer("").Start(ctx, "RawActorExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

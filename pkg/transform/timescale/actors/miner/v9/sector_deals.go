@@ -19,7 +19,7 @@ import (
 
 type SectorDeal struct{}
 
-func (s SectorDeal) Extract(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error) {
+func (s SectorDeal) Transform(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error) {
 	sectors := change.SectorChanges
 	out := minermodel.MinerSectorDealList{}
 	height := int64(current.Height())

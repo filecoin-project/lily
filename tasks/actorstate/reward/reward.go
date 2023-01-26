@@ -21,7 +21,7 @@ type RewardExtractor struct{}
 
 func (RewardExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
 	log.Debugw("extract", zap.String("extractor", "RewardExtractor"), zap.Inline(a))
-	_, span := otel.Tracer("").Start(ctx, "RewardExtractor.Extract")
+	_, span := otel.Tracer("").Start(ctx, "RewardExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

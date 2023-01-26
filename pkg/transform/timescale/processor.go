@@ -91,24 +91,8 @@ func Process(ctx context.Context, r io.Reader, strg model.Storage, nvg NetworkVe
 	return strg.PersistBatch(ctx, toStorage)
 }
 
-func ProcessMiners(ctx context.Context, s store.Store, current, executed *types.TipSet, av actorstypes.Version, root cid.Cid) (model.Persistable, error) {
-	minerHandler, err := miner.MakeMinerProcessor(av)
-	if err != nil {
-		return nil, err
-	}
-	return minerHandler(ctx, s, current, executed, root)
-}
-
 func ProcessInitAddresses(ctx context.Context, s store.Store, current, executed *types.TipSet, av actorstypes.Version, root cid.Cid) (model.Persistable, error) {
 	return init_.InitHandler(ctx, s, current, executed, root)
-}
-
-func ProcessMarketActor(ctx context.Context, s store.Store, current, executed *types.TipSet, av actorstypes.Version, root cid.Cid) (model.Persistable, error) {
-	marketHandler, err := market.MakeMarketProcessor(av)
-	if err != nil {
-		return nil, err
-	}
-	return marketHandler(ctx, s, current, executed, root)
 }
 
 func ProcessVerifregActor(ctx context.Context, s store.Store, current, executed *types.TipSet, av actorstypes.Version, root cid.Cid) (model.Persistable, error) {
@@ -127,19 +111,29 @@ func HandleActorStateChanges(ctx context.Context, s store.Store, current, parent
 	log.Infow("open actor state changes", zap.Inline(actorIPLDContainer))
 	out := model.PersistableList{}
 	if actorIPLDContainer.MarketActor != nil {
-		marketModels, err := ProcessMarketActor(ctx, s, current, parent, av, *actorIPLDContainer.MarketActor)
+		transformers, err := market.LookupMarketStateTransformer(av)
+		if err != nil {
+			return nil, err
+		}
+		marketModels, err := market.TransformMarketState(ctx, s, current, parent, *actorIPLDContainer.MarketActor, transformers...)
 		if err != nil {
 			return nil, err
 		}
 		out = append(out, marketModels)
 	}
+
 	if actorIPLDContainer.MinerActors != nil {
-		minerModels, err := ProcessMiners(ctx, s, current, parent, av, *actorIPLDContainer.MinerActors)
+		transformers, err := miner.LookupMinerStateTransformer(av)
+		if err != nil {
+			return nil, err
+		}
+		minerModels, err := miner.TransformMinerStates(ctx, s, current, parent, *actorIPLDContainer.MinerActors, transformers...)
 		if err != nil {
 			return nil, err
 		}
 		out = append(out, minerModels)
 	}
+
 	if actorIPLDContainer.InitActor != nil {
 		initModels, err := ProcessInitAddresses(ctx, s, current, parent, av, *actorIPLDContainer.InitActor)
 		if err != nil {
@@ -147,6 +141,7 @@ func HandleActorStateChanges(ctx context.Context, s store.Store, current, parent
 		}
 		out = append(out, initModels)
 	}
+
 	if actorIPLDContainer.RawActors != nil {
 		rawModels, err := ProcessActorStates(ctx, s, current, parent, av, *actorIPLDContainer.RawActors)
 		if err != nil {
@@ -154,6 +149,7 @@ func HandleActorStateChanges(ctx context.Context, s store.Store, current, parent
 		}
 		out = append(out, rawModels)
 	}
+
 	if actorIPLDContainer.VerifregActor != nil {
 		verifregModels, err := ProcessVerifregActor(ctx, s, current, parent, av, *actorIPLDContainer.VerifregActor)
 		if err != nil {

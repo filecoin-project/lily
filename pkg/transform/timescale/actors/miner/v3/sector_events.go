@@ -19,7 +19,7 @@ import (
 
 type SectorEvent struct{}
 
-func (s SectorEvent) Extract(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error) {
+func (s SectorEvent) Transform(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error) {
 	var (
 		precommits   = change.PreCommitChanges
 		sectors      = change.SectorChanges

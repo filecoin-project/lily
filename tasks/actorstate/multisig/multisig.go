@@ -23,7 +23,7 @@ type MultiSigActorExtractor struct{}
 
 func (MultiSigActorExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
 	log.Debugw("extract", zap.String("extractor", "MultiSigActorExtractor"), zap.Inline(a))
-	ctx, span := otel.Tracer("").Start(ctx, "MultiSigExtractor.Extract")
+	ctx, span := otel.Tracer("").Start(ctx, "MultiSigExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

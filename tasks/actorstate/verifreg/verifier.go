@@ -22,7 +22,7 @@ type VerifierExtractor struct{}
 
 func (VerifierExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
 	log.Debugw("extract", zap.String("extractor", "VerifierExtractor"), zap.Inline(a))
-	ctx, span := otel.Tracer("").Start(ctx, "VerifierExtractor.Extract")
+	ctx, span := otel.Tracer("").Start(ctx, "VerifierExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

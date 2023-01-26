@@ -20,7 +20,7 @@ type DealStateExtractor struct{}
 
 func (DealStateExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
 	log.Debugw("extract", zap.String("extractor", "DealStateExtractor"), zap.Inline(a))
-	ctx, span := otel.Tracer("").Start(ctx, "DealStateExtractor.Extract")
+	ctx, span := otel.Tracer("").Start(ctx, "DealStateExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

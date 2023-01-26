@@ -16,7 +16,7 @@ import (
 
 type Clients struct{}
 
-func (Clients) Extract(ctx context.Context, current, executed *types.TipSet, changes *verifregdiff.StateDiffResult) (model.Persistable, error) {
+func (Clients) Transform(ctx context.Context, current, executed *types.TipSet, changes *verifregdiff.StateDiffResult) (model.Persistable, error) {
 	out := make(verifregmodel.VerifiedRegistryVerifiedClientsList, len(changes.ClientChanges))
 	for i, change := range changes.ClientChanges {
 		addr, err := address.NewFromBytes(change.Client)

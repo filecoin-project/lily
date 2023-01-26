@@ -17,7 +17,7 @@ import (
 
 type Proposals struct{}
 
-func (Proposals) Extract(ctx context.Context, current, executed *types.TipSet, change *marketdiff.StateDiffResult) (model.Persistable, error) {
+func (Proposals) Transform(ctx context.Context, current, executed *types.TipSet, change *marketdiff.StateDiffResult) (model.Persistable, error) {
 	var marketProposals []*proposal
 	for _, change := range change.DealProposalChanges {
 		// we only car about new and modified deal proposals
