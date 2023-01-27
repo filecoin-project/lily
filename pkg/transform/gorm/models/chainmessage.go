@@ -16,6 +16,7 @@ type Message struct {
 	GasPremium types.DbToken
 	Method     uint64
 	Params     []byte
+	Signature  string `gorm:"jsonb"`
 }
 
 type ParsedMessageParams struct {
