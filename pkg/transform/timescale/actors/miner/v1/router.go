@@ -13,6 +13,7 @@ import (
 
 	"github.com/filecoin-project/lily/model"
 	minerdiff "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v1"
+	minertypes "github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/v1/types"
 	v1_0 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/v1/v0"
 	v1_2 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/v1/v2"
 	v1_3 "github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/v1/v3"
@@ -25,50 +26,52 @@ import (
 )
 
 func TransformMinerStates(ctx context.Context, s store.Store, version actortypes.Version, current, executed *types.TipSet, root cid.Cid) (model.Persistable, error) {
-	out := model.PersistableList{}
-
 	// a map of all miners whose state has changes
 	minerMap, err := adt.AsMap(s, root, 5)
 	if err != nil {
 		return nil, err
 	}
-	// iterate over each miner with a state change
-	transformers, err := LookupMinerStateTransformer(version)
-	if err != nil {
-		return nil, err
-	}
+
+	// load map entires into a list to process below
+	var miners []*minertypes.MinerStateChange
 	minerState := new(minerdiff.StateChange)
 	if err := minerMap.ForEach(minerState, func(key string) error {
-
 		// the map is keyed by the miner address, the value of the map contains the miners state change
 		addr, err := address.NewFromBytes([]byte(key))
 		if err != nil {
 			return err
 		}
-
 		// decode the miner state change from the IPLD structure to a type we can inspect.
 		minerStateDiff, err := minerState.ToStateDiffResult(ctx, s)
 		if err != nil {
 			return err
 		}
-
-		for _, t := range transformers {
-			m, err := t.Transform(ctx, current, executed, addr, minerStateDiff)
-			if err != nil {
-				return err
-			}
-			out = append(out, m)
-		}
-
+		miners = append(miners, &minertypes.MinerStateChange{
+			Address:     addr,
+			StateChange: minerStateDiff,
+		})
 		return nil
 	}); err != nil {
 		return nil, err
+	}
+
+	// get a list of transformers capable of handling this actor version
+	transformers, err := LookupMinerStateTransformer(version)
+	if err != nil {
+		return nil, err
+	}
+
+	// run each transformer keeping its model
+	out := model.PersistableList{}
+	for _, t := range transformers {
+		m := t.Transform(ctx, current, executed, miners)
+		out = append(out, m)
 	}
 	return out, nil
 }
 
 type Transformer interface {
-	Transform(ctx context.Context, current, parent *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error)
+	Transform(ctx context.Context, current, parent *types.TipSet, miners []*minertypes.MinerStateChange) model.Persistable
 }
 
 func LookupMinerStateTransformer(av actortypes.Version) ([]Transformer, error) {

@@ -8,16 +8,18 @@ import (
 	"github.com/filecoin-project/go-state-types/builtin/v8/power"
 	"github.com/filecoin-project/lotus/chain/types"
 
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/model"
 	powermodel "github.com/filecoin-project/lily/model/actors/power"
 	"github.com/filecoin-project/lily/pkg/core"
 	powerdiff "github.com/filecoin-project/lily/pkg/extract/actors/powerdiff/v1"
+	"github.com/filecoin-project/lily/pkg/transform/timescale/data"
 )
 
 type Claims struct{}
 
-func (Claims) Transform(ctx context.Context, current, executed *types.TipSet, changes *powerdiff.StateDiffResult) (model.Persistable, error) {
-	out := make(powermodel.PowerActorClaimList, 0, len(changes.ClaimsChanges))
+func (Claims) Transform(ctx context.Context, current, executed *types.TipSet, changes *powerdiff.StateDiffResult) model.Persistable {
+	report := data.StartProcessingReport(tasktype.PowerActorClaim, current)
 	for _, change := range changes.ClaimsChanges {
 		// only care about new and modified power entries
 		if change.Change == core.ChangeTypeRemove {
@@ -25,13 +27,15 @@ func (Claims) Transform(ctx context.Context, current, executed *types.TipSet, ch
 		}
 		miner, err := address.NewFromBytes(change.Miner)
 		if err != nil {
-			return nil, err
+			report.AddError(err)
+			continue
 		}
 		claim := new(power.Claim)
 		if err := claim.UnmarshalCBOR(bytes.NewReader(change.Current.Raw)); err != nil {
-			return nil, err
+			report.AddError(err)
+			continue
 		}
-		out = append(out, &powermodel.PowerActorClaim{
+		report.AddModels(&powermodel.PowerActorClaim{
 			Height:          int64(current.Height()),
 			MinerID:         miner.String(),
 			StateRoot:       current.ParentState().String(),
@@ -39,5 +43,5 @@ func (Claims) Transform(ctx context.Context, current, executed *types.TipSet, ch
 			QualityAdjPower: claim.QualityAdjPower.String(),
 		})
 	}
-	return out, nil
+	return report.Finish()
 }

@@ -5,16 +5,18 @@ import (
 
 	"github.com/ipfs/go-cid"
 
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/messages"
 	"github.com/filecoin-project/lily/pkg/extract/chain"
+	"github.com/filecoin-project/lily/pkg/transform/timescale/data"
 )
 
-func ExtractMessages(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBlock) (model.Persistable, error) {
-	out := messages.Messages{}
+func ExtractMessages(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBlock) model.Persistable {
+	report := data.StartProcessingReport(tasktype.Message, mustMakeTipsetFromFullBlocks(fullBlocks))
 	for _, fb := range fullBlocks {
 		for _, msg := range fb.SecpMessages {
-			out = append(out, &messages.Message{
+			report.AddModels(&messages.Message{
 				Height:     int64(fb.Block.Height),
 				Cid:        msg.Message.Cid().String(),
 				From:       msg.Message.Message.From.String(),
@@ -29,7 +31,7 @@ func ExtractMessages(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBloc
 			})
 		}
 		for _, msg := range fb.BlsMessages {
-			out = append(out, &messages.Message{
+			report.AddModels(&messages.Message{
 				Height:     int64(fb.Block.Height),
 				Cid:        msg.Message.Cid().String(),
 				From:       msg.Message.From.String(),
@@ -44,15 +46,15 @@ func ExtractMessages(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBloc
 			})
 		}
 	}
-	return out, nil
+	return report.Finish()
 }
 
-func ExtractVmMessages(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBlock) (model.Persistable, error) {
-	out := messages.VMMessageList{}
+func ExtractVmMessages(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBlock) model.Persistable {
+	report := data.StartProcessingReport(tasktype.VMMessage, mustMakeTipsetFromFullBlocks(fullBlocks))
 	for _, fb := range fullBlocks {
 		for _, msg := range fb.SecpMessages {
 			for _, vm := range msg.VmMessages {
-				out = append(out, &messages.VMMessage{
+				report.AddModels(&messages.VMMessage{
 					Height:    int64(fb.Block.Height),
 					StateRoot: fb.Block.ParentStateRoot.String(),
 					Cid:       vm.Message.Cid().String(),
@@ -61,17 +63,17 @@ func ExtractVmMessages(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBl
 					To:        vm.Message.To.String(),
 					Value:     vm.Message.Value.String(),
 					Method:    uint64(vm.Message.Method),
-					ActorCode: "TODO",
+					ActorCode: "Deprecate",
 					ExitCode:  int64(vm.Receipt.ExitCode),
 					GasUsed:   vm.Receipt.GasUsed,
-					Params:    "", //vm.Message.Params
-					Returns:   "", //vm.Receipt.Return
+					Params:    "TODO make bytes", //vm.Message.Params
+					Returns:   "TODO make bytes", //vm.Receipt.Return
 				})
 			}
 		}
 		for _, msg := range fb.BlsMessages {
 			for _, vm := range msg.VmMessages {
-				out = append(out, &messages.VMMessage{
+				report.AddModels(&messages.VMMessage{
 					Height:    int64(fb.Block.Height),
 					StateRoot: fb.Block.ParentStateRoot.String(),
 					Cid:       vm.Message.Cid().String(),
@@ -80,14 +82,14 @@ func ExtractVmMessages(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBl
 					To:        vm.Message.To.String(),
 					Value:     vm.Message.Value.String(),
 					Method:    uint64(vm.Message.Method),
-					ActorCode: "TODO",
+					ActorCode: "Deprecate",
 					ExitCode:  int64(vm.Receipt.ExitCode),
 					GasUsed:   vm.Receipt.GasUsed,
-					Params:    "", //vm.Message.Params
-					Returns:   "", //vm.Receipt.Return
+					Params:    "TODO make bytes", //vm.Message.Params
+					Returns:   "TODO make bytes", //vm.Receipt.Return
 				})
 			}
 		}
 	}
-	return out, nil
+	return report.Finish()
 }

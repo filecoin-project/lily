@@ -7,15 +7,18 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/v5/actors/builtin/market"
 
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/model"
 	marketmodel "github.com/filecoin-project/lily/model/actors/market"
 	"github.com/filecoin-project/lily/pkg/core"
 	marketdiff "github.com/filecoin-project/lily/pkg/extract/actors/marketdiff/v1"
+	"github.com/filecoin-project/lily/pkg/transform/timescale/data"
 )
 
 type Deals struct{}
 
-func (Deals) Transform(ctx context.Context, current, executed *types.TipSet, changes *marketdiff.StateDiffResult) (model.Persistable, error) {
+func (Deals) Transform(ctx context.Context, current, executed *types.TipSet, changes *marketdiff.StateDiffResult) model.Persistable {
+	report := data.StartProcessingReport(tasktype.MarketDealState, current)
 	var marketDeals []*deals
 	for _, change := range changes.DealStateChanges {
 		// only care about new and modified deal states
@@ -24,14 +27,15 @@ func (Deals) Transform(ctx context.Context, current, executed *types.TipSet, cha
 		}
 		dealState := new(market.DealState)
 		if err := dealState.UnmarshalCBOR(bytes.NewReader(change.Current.Raw)); err != nil {
-			return nil, err
+			report.AddError(err)
+			continue
 		}
 		marketDeals = append(marketDeals, &deals{
 			DealID: change.DealID,
 			State:  dealState,
 		})
 	}
-	return MarketDealStateChangesAsModel(ctx, current, marketDeals)
+	return report.AddModels(MarketDealStateChangesAsModel(ctx, current, marketDeals)).Finish()
 }
 
 type deals struct {
@@ -39,7 +43,7 @@ type deals struct {
 	State  *market.DealState
 }
 
-func MarketDealStateChangesAsModel(ctx context.Context, current *types.TipSet, dealStates []*deals) (model.Persistable, error) {
+func MarketDealStateChangesAsModel(ctx context.Context, current *types.TipSet, dealStates []*deals) model.Persistable {
 	dealStateModel := make(marketmodel.MarketDealStates, len(dealStates))
 	for i, deal := range dealStates {
 		dealStateModel[i] = &marketmodel.MarketDealState{
@@ -51,5 +55,5 @@ func MarketDealStateChangesAsModel(ctx context.Context, current *types.TipSet, d
 			SlashEpoch:       int64(deal.State.SlashEpoch),
 		}
 	}
-	return dealStateModel, nil
+	return dealStateModel
 }

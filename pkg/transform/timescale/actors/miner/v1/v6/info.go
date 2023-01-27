@@ -8,37 +8,43 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
 
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/pkg/core"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/util"
-
-	minerdiff "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v1"
+	minertypes "github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/v1/types"
+	"github.com/filecoin-project/lily/pkg/transform/timescale/data"
 
 	miner "github.com/filecoin-project/specs-actors/v6/actors/builtin/miner"
 )
 
 type Info struct{}
 
-func (i Info) Transform(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error) {
-	// if there is no info nothing changed.
-	if change.InfoChange == nil {
-		return nil, nil
+func (i Info) Transform(ctx context.Context, current, parent *types.TipSet, miners []*minertypes.MinerStateChange) model.Persistable {
+	report := data.StartProcessingReport(tasktype.MinerInfo, current)
+	for _, m := range miners {
+		// if there is no info nothing changed.
+		if m.StateChange.InfoChange == nil {
+			continue
+		}
+		// if the info was removed there is nothing to record
+		if m.StateChange.InfoChange.Change == core.ChangeTypeRemove {
+			continue
+		}
+		// unmarshal the miners info to its type
+		minerInfo := new(miner.MinerInfo)
+		if err := minerInfo.UnmarshalCBOR(bytes.NewReader(m.StateChange.InfoChange.Info.Raw)); err != nil {
+			report.AddError(err)
+			continue
+		}
+		// wrap the versioned miner info type in an interface for reusable extraction
+		infoModel, err := util.ExtractMinerInfo(ctx, current, parent, m.Address, &InfoWrapper{info: minerInfo})
+		if err != nil {
+			report.AddError(err)
+		}
+		report.AddModels(infoModel)
 	}
-	// if the info was removed there is nothing to record
-	if change.InfoChange.Change == core.ChangeTypeRemove {
-		return nil, nil
-	}
-	// unmarshal the miners info to its type
-	minerInfo := new(miner.MinerInfo)
-	if err := minerInfo.UnmarshalCBOR(bytes.NewReader(change.InfoChange.Info.Raw)); err != nil {
-		return nil, err
-	}
-	// wrap the versioned miner info type in an interface for reusable extraction
-	out, err := util.ExtractMinerInfo(ctx, current, executed, addr, &InfoWrapper{info: minerInfo})
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+	return report.Finish()
 }
 
 // InfoWrapper satisfies the interface required by ExtractMinerInfo.

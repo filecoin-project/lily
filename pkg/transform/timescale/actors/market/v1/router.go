@@ -23,7 +23,7 @@ import (
 )
 
 type Transformer interface {
-	Transform(ctx context.Context, current, parent *types.TipSet, change *marketdiff.StateDiffResult) (model.Persistable, error)
+	Transform(ctx context.Context, current, parent *types.TipSet, change *marketdiff.StateDiffResult) model.Persistable
 }
 
 func TransformMarketState(ctx context.Context, s store.Store, version actortypes.Version, current, executed *types.TipSet, root cid.Cid) (model.Persistable, error) {
@@ -41,10 +41,7 @@ func TransformMarketState(ctx context.Context, s store.Store, version actortypes
 	}
 	out := model.PersistableList{}
 	for _, t := range transformers {
-		m, err := t.Transform(ctx, current, executed, marketStateDiff)
-		if err != nil {
-			return nil, err
-		}
+		m := t.Transform(ctx, current, executed, marketStateDiff)
 		out = append(out, m)
 	}
 	return out, nil

@@ -9,16 +9,19 @@ import (
 	"github.com/filecoin-project/go-state-types/builtin/v9/market"
 	"github.com/filecoin-project/lotus/chain/types"
 
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/model"
 	marketmodel "github.com/filecoin-project/lily/model/actors/market"
 	"github.com/filecoin-project/lily/pkg/core"
 	marketdiff "github.com/filecoin-project/lily/pkg/extract/actors/marketdiff/v1"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/market/util"
+	"github.com/filecoin-project/lily/pkg/transform/timescale/data"
 )
 
 type Proposals struct{}
 
-func (Proposals) Transform(ctx context.Context, current, executed *types.TipSet, change *marketdiff.StateDiffResult) (model.Persistable, error) {
+func (Proposals) Transform(ctx context.Context, current, executed *types.TipSet, change *marketdiff.StateDiffResult) model.Persistable {
+	report := data.StartProcessingReport(tasktype.MarketDealProposal, current)
 	var marketProposals []*proposal
 	for _, change := range change.DealProposalChanges {
 		// we only car about new and modified deal proposals
@@ -27,14 +30,19 @@ func (Proposals) Transform(ctx context.Context, current, executed *types.TipSet,
 		}
 		dealProp := new(market.DealProposal)
 		if err := dealProp.UnmarshalCBOR(bytes.NewReader(change.Current.Raw)); err != nil {
-			return nil, err
+			report.AddError(err)
+			continue
 		}
 		marketProposals = append(marketProposals, &proposal{
 			DealID: change.DealID,
 			State:  dealProp,
 		})
 	}
-	return MarketDealProposalChangesAsModel(ctx, current, marketProposals)
+	m, err := MarketDealProposalChangesAsModel(ctx, current, marketProposals)
+	if err != nil {
+		return report.AddError(err).Finish()
+	}
+	return report.AddModels(m).Finish()
 }
 
 type proposal struct {

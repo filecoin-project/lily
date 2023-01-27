@@ -23,7 +23,7 @@ import (
 )
 
 type Transformer interface {
-	Transform(ctx context.Context, current, parent *types.TipSet, change *powerdiff.StateDiffResult) (model.Persistable, error)
+	Transform(ctx context.Context, current, parent *types.TipSet, change *powerdiff.StateDiffResult) model.Persistable
 }
 
 func TransformPowerState(ctx context.Context, s store.Store, version actortypes.Version, current, executed *types.TipSet, root cid.Cid) (model.Persistable, error) {
@@ -41,10 +41,7 @@ func TransformPowerState(ctx context.Context, s store.Store, version actortypes.
 	}
 	out := model.PersistableList{}
 	for _, t := range tramsformers {
-		m, err := t.Transform(ctx, current, executed, powerStateDiff)
-		if err != nil {
-			return nil, err
-		}
+		m := t.Transform(ctx, current, executed, powerStateDiff)
 		out = append(out, m)
 	}
 	return out, nil

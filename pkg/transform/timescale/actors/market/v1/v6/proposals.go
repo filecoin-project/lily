@@ -8,16 +8,19 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/v6/actors/builtin/market"
 
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/model"
 	marketmodel "github.com/filecoin-project/lily/model/actors/market"
 	"github.com/filecoin-project/lily/pkg/core"
 	marketdiff "github.com/filecoin-project/lily/pkg/extract/actors/marketdiff/v1"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/market/util"
+	"github.com/filecoin-project/lily/pkg/transform/timescale/data"
 )
 
 type Proposals struct{}
 
-func (Proposals) Transform(ctx context.Context, current, executed *types.TipSet, change *marketdiff.StateDiffResult) (model.Persistable, error) {
+func (Proposals) Transform(ctx context.Context, current, executed *types.TipSet, change *marketdiff.StateDiffResult) model.Persistable {
+	report := data.StartProcessingReport(tasktype.MarketDealProposal, current)
 	var marketProposals []*proposal
 	for _, change := range change.DealProposalChanges {
 		// we only car about new and modified deal proposals
@@ -26,14 +29,15 @@ func (Proposals) Transform(ctx context.Context, current, executed *types.TipSet,
 		}
 		dealProp := new(market.DealProposal)
 		if err := dealProp.UnmarshalCBOR(bytes.NewReader(change.Current.Raw)); err != nil {
-			return nil, err
+			report.AddError(err)
+			continue
 		}
 		marketProposals = append(marketProposals, &proposal{
 			DealID: change.DealID,
 			State:  dealProp,
 		})
 	}
-	return MarketDealProposalChangesAsModel(ctx, current, marketProposals)
+	return report.AddModels(MarketDealProposalChangesAsModel(ctx, current, marketProposals)).Finish()
 }
 
 type proposal struct {
@@ -41,7 +45,7 @@ type proposal struct {
 	State  *market.DealProposal
 }
 
-func MarketDealProposalChangesAsModel(ctx context.Context, current *types.TipSet, dealProps []*proposal) (model.Persistable, error) {
+func MarketDealProposalChangesAsModel(ctx context.Context, current *types.TipSet, dealProps []*proposal) model.Persistable {
 	dealPropsModel := make(marketmodel.MarketDealProposals, len(dealProps))
 	for i, prop := range dealProps {
 		label := base64.StdEncoding.EncodeToString([]byte(util.SanitizeLabel(prop.State.Label)))
@@ -64,5 +68,5 @@ func MarketDealProposalChangesAsModel(ctx context.Context, current *types.TipSet
 			IsString:             false,
 		}
 	}
-	return dealPropsModel, nil
+	return dealPropsModel
 }

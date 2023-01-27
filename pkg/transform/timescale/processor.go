@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
-	"github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 	"github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/go-state-types/store"
 	"github.com/filecoin-project/lotus/blockstore"
@@ -20,7 +18,6 @@ import (
 
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/pkg/core"
-	"github.com/filecoin-project/lily/pkg/extract/actors/rawdiff"
 	"github.com/filecoin-project/lily/pkg/transform/cbor"
 	"github.com/filecoin-project/lily/pkg/transform/cbor/actors"
 	"github.com/filecoin-project/lily/pkg/transform/cbor/messages"
@@ -29,7 +26,6 @@ import (
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/power"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/raw"
-	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/reward"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/actors/verifreg"
 	"github.com/filecoin-project/lily/pkg/transform/timescale/fullblock"
 )
@@ -92,64 +88,49 @@ func Process(ctx context.Context, r io.Reader, strg model.Storage, nvg NetworkVe
 	return strg.PersistBatch(ctx, toStorage)
 }
 
-func ProcessInitAddresses(ctx context.Context, s store.Store, current, executed *types.TipSet, av actorstypes.Version, root cid.Cid) (model.Persistable, error) {
-	return init_.InitHandler(ctx, s, current, executed, root)
-}
-
 func HandleActorStateChanges(ctx context.Context, s store.Store, current, parent *types.TipSet, av actorstypes.Version, root cid.Cid) (model.Persistable, error) {
 	actorIPLDContainer := new(actors.ActorStateChangesIPLD)
 	if err := s.Get(ctx, root, actorIPLDContainer); err != nil {
 		return nil, err
 	}
 	log.Infow("open actor state changes", zap.Inline(actorIPLDContainer))
+
 	out := model.PersistableList{}
-	if actorIPLDContainer.MarketActor != nil {
-		marketModels, err := market.TransformMarketState(ctx, s, av, current, parent, *actorIPLDContainer.MarketActor)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, marketModels)
+	marketModels, err := market.TransformMarketState(ctx, s, av, current, parent, actorIPLDContainer.MarketActor)
+	if err != nil {
+		return nil, err
 	}
+	out = append(out, marketModels)
 
-	if actorIPLDContainer.MinerActors != nil {
-		minerModels, err := miner.TransformMinerState(ctx, s, av, current, parent, *actorIPLDContainer.MinerActors)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, minerModels)
+	minerModels, err := miner.TransformMinerState(ctx, s, av, current, parent, actorIPLDContainer.MinerActors)
+	if err != nil {
+		return nil, err
 	}
+	out = append(out, minerModels)
 
-	if actorIPLDContainer.InitActor != nil {
-		initModels, err := ProcessInitAddresses(ctx, s, current, parent, av, *actorIPLDContainer.InitActor)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, initModels)
+	powerModels, err := power.TransformPowerState(ctx, s, av, current, parent, actorIPLDContainer.PowerActor)
+	if err != nil {
+		return nil, err
 	}
+	out = append(out, powerModels)
 
-	if actorIPLDContainer.RawActors != nil {
-		rawModels, err := ProcessActorStates(ctx, s, current, parent, av, *actorIPLDContainer.RawActors)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, rawModels)
+	initModels, err := init_.TransformInitState(ctx, s, current, parent, actorIPLDContainer.InitActor)
+	if err != nil {
+		return nil, err
 	}
+	out = append(out, initModels)
 
-	if actorIPLDContainer.VerifregActor != nil {
-		verifregModels, err := verifreg.TransformVerifregState(ctx, s, av, current, parent, *actorIPLDContainer.MarketActor)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, verifregModels)
+	verifregModels, err := verifreg.TransformVerifregState(ctx, s, av, current, parent, actorIPLDContainer.VerifregActor)
+	if err != nil {
+		return nil, err
 	}
+	out = append(out, verifregModels)
 
-	if actorIPLDContainer.PowerActor != nil {
-		powerModels, err := power.TransformPowerState(ctx, s, av, current, parent, *actorIPLDContainer.PowerActor)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, powerModels)
+	rawModels, err := raw.TransformActorStates(ctx, s, current, parent, actorIPLDContainer.RawActors)
+	if err != nil {
+		return nil, err
 	}
+	out = append(out, rawModels)
 
 	return out, nil
 }
@@ -160,26 +141,11 @@ func HandleFullBlocks(ctx context.Context, s store.Store, current, parent *types
 	if err != nil {
 		return nil, err
 	}
-	bh, err := fullblock.ExtractBlockHeaders(ctx, fullBlockMap)
-	if err != nil {
-		return nil, err
-	}
-	out = append(out, bh)
-	bp, err := fullblock.ExtractBlockParents(ctx, fullBlockMap)
-	if err != nil {
-		return nil, err
-	}
-	out = append(out, bp)
-	msgs, err := fullblock.ExtractMessages(ctx, fullBlockMap)
-	if err != nil {
-		return nil, err
-	}
-	out = append(out, msgs)
-	vm, err := fullblock.ExtractVmMessages(ctx, fullBlockMap)
-	if err != nil {
-		return nil, err
-	}
-	out = append(out, vm)
+	out = append(out, fullblock.ExtractBlockHeaders(ctx, fullBlockMap))
+	out = append(out, fullblock.ExtractBlockParents(ctx, fullBlockMap))
+	out = append(out, fullblock.ExtractBlockMessages(ctx, fullBlockMap))
+	out = append(out, fullblock.ExtractMessages(ctx, fullBlockMap))
+	out = append(out, fullblock.ExtractVmMessages(ctx, fullBlockMap))
 
 	return out, nil
 }
@@ -191,56 +157,4 @@ func HandleImplicitMessages(ctx context.Context, s store.Store, current, parent 
 	}
 	_ = implicitMessages
 	return nil, nil
-}
-
-func ProcessActorStates(ctx context.Context, s store.Store, current, executed *types.TipSet, av actorstypes.Version, actorMapRoot cid.Cid) (model.Persistable, error) {
-	var out = model.PersistableList{}
-	actorMap, err := adt.AsMap(s, actorMapRoot, 5)
-	if err != nil {
-		return nil, err
-	}
-	actorState := new(rawdiff.ActorChange)
-	if err := actorMap.ForEach(actorState, func(key string) error {
-		addr, err := address.NewFromBytes([]byte(key))
-		if err != nil {
-			return err
-		}
-
-		m, err := raw.RawActorHandler(ctx, current, executed, addr, actorState)
-		if err != nil {
-			return err
-		}
-		if m != nil {
-			out = append(out, m)
-		}
-
-		if core.RewardCodes.Has(actorState.Actor.Code) {
-			m, err := reward.HandleReward(ctx, current, executed, addr, actorState, av)
-			if err != nil {
-				return err
-			}
-			out = append(out, m)
-		}
-
-		if core.MinerCodes.Has(actorState.Actor.Code) {
-			m, err := miner.HandleMiner(ctx, current, executed, addr, actorState, av)
-			if err != nil {
-				return err
-			}
-			out = append(out, m)
-		}
-
-		if core.PowerCodes.Has(actorState.Actor.Code) {
-			m, err := power.HandlePower(ctx, current, executed, addr, actorState, av)
-			if err != nil {
-				return err
-			}
-			out = append(out, m)
-		}
-		return nil
-
-	}); err != nil {
-		return nil, err
-	}
-	return out, nil
 }

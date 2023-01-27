@@ -7,34 +7,39 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
 
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	"github.com/filecoin-project/lily/pkg/core"
-
-	minerdiff "github.com/filecoin-project/lily/pkg/extract/actors/minerdiff/v1"
+	minertypes "github.com/filecoin-project/lily/pkg/transform/timescale/actors/miner/v1/types"
+	"github.com/filecoin-project/lily/pkg/transform/timescale/data"
 
 	miner "github.com/filecoin-project/specs-actors/v3/actors/builtin/miner"
 )
 
 type PreCommit struct{}
 
-func (PreCommit) Transform(ctx context.Context, current, executed *types.TipSet, addr address.Address, change *minerdiff.StateDiffResult) (model.Persistable, error) {
-	var precommits []*miner.SectorPreCommitOnChainInfo
-	for _, change := range change.PreCommitChanges {
-		// only care about precommits added
-		if change.Change != core.ChangeTypeAdd {
-			continue
+func (PreCommit) Transform(ctx context.Context, current, executed *types.TipSet, miners []*minertypes.MinerStateChange) model.Persistable {
+	report := data.StartProcessingReport(tasktype.MinerPreCommitInfo, current)
+	for _, m := range miners {
+		var precommits []*miner.SectorPreCommitOnChainInfo
+		for _, change := range m.StateChange.PreCommitChanges {
+			// only care about precommits added
+			if change.Change != core.ChangeTypeAdd {
+				continue
+			}
+			precommit := new(miner.SectorPreCommitOnChainInfo)
+			if err := precommit.UnmarshalCBOR(bytes.NewReader(change.Current.Raw)); err != nil {
+				report.AddError(err)
+			}
+			precommits = append(precommits, precommit)
 		}
-		precommit := new(miner.SectorPreCommitOnChainInfo)
-		if err := precommit.UnmarshalCBOR(bytes.NewReader(change.Current.Raw)); err != nil {
-			return nil, err
-		}
-		precommits = append(precommits, precommit)
+		report.AddModels(MinerPreCommitChangesAsModel(ctx, current, m.Address, precommits))
 	}
-	return MinerPreCommitChangesAsModel(ctx, current, addr, precommits)
+	return report.Finish()
 }
 
-func MinerPreCommitChangesAsModel(ctx context.Context, current *types.TipSet, addr address.Address, precommits []*miner.SectorPreCommitOnChainInfo) (model.Persistable, error) {
+func MinerPreCommitChangesAsModel(ctx context.Context, current *types.TipSet, addr address.Address, precommits []*miner.SectorPreCommitOnChainInfo) model.Persistable {
 	preCommitModel := make(minermodel.MinerPreCommitInfoList, len(precommits))
 	for i, preCommit := range precommits {
 		deals := make([]uint64, len(preCommit.Info.DealIDs))
@@ -60,6 +65,5 @@ func MinerPreCommitChangesAsModel(ctx context.Context, current *types.TipSet, ad
 		}
 	}
 
-	return preCommitModel, nil
-
+	return preCommitModel
 }
