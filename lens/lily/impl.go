@@ -28,6 +28,9 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p/core/host"
 	"go.uber.org/fx"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 
 	"github.com/filecoin-project/lily/chain/datasource"
 	"github.com/filecoin-project/lily/chain/gap"
@@ -45,6 +48,7 @@ import (
 	"github.com/filecoin-project/lily/network"
 	"github.com/filecoin-project/lily/pkg/extract"
 	"github.com/filecoin-project/lily/pkg/transform/cbor"
+	"github.com/filecoin-project/lily/pkg/transform/gorm/lambda"
 	"github.com/filecoin-project/lily/pkg/transform/timescale"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
@@ -150,6 +154,20 @@ func (m *LilyNodeAPI) LilyIndexIPLD(_ context.Context, cfg *LilyIndexIPLDConfig)
 
 	taskAPI, err := datasource.NewDataSource(m)
 	if err != nil {
+		return false, err
+	}
+
+	// connect to the database, were gonna write stuff to this.
+	db, err := gorm.Open(postgres.Open("host=localhost user=postgres password=password dbname=postgres port=5432 sslmode=disable"), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			TablePrefix: "z_", // all tables created will be prefixed with `z_` because I am lazy and want them all in the same spot at the bottom of my table list
+			// TODO figure out how to make a new schema with gorm...
+		},
+	})
+	if err != nil {
+		return false, err
+	}
+	if err := lambda.ParseParams(ctx, taskAPI, db); err != nil {
 		return false, err
 	}
 

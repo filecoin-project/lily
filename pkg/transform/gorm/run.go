@@ -1,20 +1,16 @@
-package main
+package gorm
 
 import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/filecoin-project/go-state-types/store"
 	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/ipfs/go-cid"
+	cid "github.com/ipfs/go-cid"
 	v1car "github.com/ipld/go-car"
-	"github.com/urfave/cli/v2"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
 
 	"github.com/filecoin-project/lily/pkg/extract/chain"
 	"github.com/filecoin-project/lily/pkg/transform/cbor"
@@ -22,56 +18,6 @@ import (
 	"github.com/filecoin-project/lily/pkg/transform/gorm/models"
 	dbtypes "github.com/filecoin-project/lily/pkg/transform/gorm/types"
 )
-
-func main() {
-	app := &cli.App{
-		Name: "transform",
-		Commands: []*cli.Command{
-			TransformCmd,
-		},
-	}
-	app.Setup()
-	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintln(os.Stdout, err.Error())
-		os.Exit(1)
-	}
-}
-
-var TransformCmd = &cli.Command{
-	Name: "delta",
-	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:  "filename",
-			Usage: "Name of the file to transform",
-		},
-		&cli.StringFlag{
-			Name:  "db",
-			Value: "host=localhost user=postgres password=password dbname=postgres port=5432 sslmode=disable",
-		},
-	},
-	Action: func(cctx *cli.Context) error {
-		// Open the delta file (car file), this contains the filecoin state
-		f, err := os.OpenFile(cctx.String("filename"), os.O_RDONLY, 0o644)
-		defer f.Close()
-		if err != nil {
-			return err
-		}
-
-		// connect to the database, were gonna write stuff to this.
-		db, err := gorm.Open(postgres.Open(cctx.String("db")), &gorm.Config{
-			NamingStrategy: schema.NamingStrategy{
-				TablePrefix: "z_", // all tables created will be prefixed with `z_` because I am lazy and want them all in the same spot at the bottom of my table list
-				// TODO figure out how to make a new schema with gorm...
-			},
-		})
-		if err != nil {
-			return err
-		}
-
-		// extract the delta state to the database and exit.
-		return Run(cctx.Context, f, db)
-	},
-}
 
 func Run(ctx context.Context, r io.Reader, db *gorm.DB) error {
 	// create a blockstore and load the contents of the car file (reader is a pointer to the car file) into it.
@@ -119,7 +65,7 @@ func HandleFullBlocks(ctx context.Context, db *gorm.DB, s store.Store, current, 
 		return err
 	}
 	// migrate the database, this creates new tables or updates existing ones with new fields
-	if err := db.AutoMigrate(&models.BlockHeaderModel{}, &models.Message{}, models.MessageReceipt{}, models.VmMessage{}, models.ParsedMessageParams{}); err != nil {
+	if err := db.AutoMigrate(&models.BlockHeaderModel{}, &models.Message{}, models.MessageReceipt{}, models.VmMessage{}); err != nil {
 		return err
 	}
 	// make some blockheaders and plop em in the database
@@ -215,10 +161,6 @@ func MakeReceipts(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBlock) 
 			if smsg.Receipt.GasOutputs == nil {
 				continue
 			}
-			actorError := ""
-			if smsg.Receipt.ActorError != nil {
-				actorError = smsg.Receipt.ActorError.Error
-			}
 			out = append(out, &models.MessageReceipt{
 				MessageCid: dbtypes.DbCID{CID: smsg.Message.Cid()},
 				Receipt: models.Receipt{
@@ -234,16 +176,11 @@ func MakeReceipts(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBlock) 
 				Refund:             dbtypes.DbToken{Token: smsg.Receipt.GasOutputs.Refund},
 				GasRefund:          smsg.Receipt.GasOutputs.GasRefund,
 				GasBurned:          smsg.Receipt.GasOutputs.GasBurned,
-				Error:              actorError,
 			})
 		}
 		for _, msg := range fb.BlsMessages {
 			if msg.Receipt.GasOutputs == nil {
 				continue
-			}
-			actorError := ""
-			if msg.Receipt.ActorError != nil {
-				actorError = msg.Receipt.ActorError.Error
 			}
 			out = append(out, &models.MessageReceipt{
 				MessageCid: dbtypes.DbCID{CID: msg.Message.Cid()},
@@ -260,7 +197,6 @@ func MakeReceipts(ctx context.Context, fullBlocks map[cid.Cid]*chain.FullBlock) 
 				Refund:             dbtypes.DbToken{Token: msg.Receipt.GasOutputs.Refund},
 				GasRefund:          msg.Receipt.GasOutputs.GasRefund,
 				GasBurned:          msg.Receipt.GasOutputs.GasBurned,
-				Error:              actorError,
 			})
 		}
 	}
