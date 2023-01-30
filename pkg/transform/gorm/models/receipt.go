@@ -23,5 +23,5 @@ type Receipt struct {
 	ExitCode   int64
 	GasUsed    int64
 	Return     []byte
-	EventsRoot string
+	EventsRoot types.DbCid
 }
