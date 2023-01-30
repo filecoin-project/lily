@@ -41,6 +41,7 @@ const (
 	SystemKey   = "system"
 	VerifregKey = "verifiedregistry"
 	DatacapKey  = "datacap"
+	EvmKey      = "evm"
 )
 
 // GetActorCodeID looks up a builtin actor's code CID by actor version and canonical actor name.
