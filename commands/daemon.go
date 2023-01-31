@@ -262,7 +262,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 			node.Override(new(dtypes.Bootstrapper), isBootstrapper),
 			node.Override(new(dtypes.ShutdownChan), shutdown),
 			node.Base(),
-			node.Override(node.UserAgentKey, lp2p.UserAgentOption("lily-"+version.String())), // Add a version?
+			node.Override(node.UserAgentKey, lp2p.UserAgentOption("lily-"+version.String())),
 			node.Repo(r),
 
 			node.Override(new(dtypes.UniversalBlockstore), modules.NewCachingUniversalBlockstore),
