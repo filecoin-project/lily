@@ -75,7 +75,7 @@ func NewTestNode(ctx context.Context, t testing.TB, cfg *TestNodeConfig) (lily.L
 		node.Override(new(dtypes.Bootstrapper), false),
 		node.Override(new(dtypes.ShutdownChan), shutdown),
 		node.Base(),
-		node.Override(node.UserAgentKey, lp2p.UserAgentOption),
+		node.Override(node.UserAgentKey, lp2p.UserAgentOption("lily")), // Add a version?
 		node.Repo(r),
 
 		node.Override(new(dtypes.UniversalBlockstore), modules.NewCachingUniversalBlockstore),
