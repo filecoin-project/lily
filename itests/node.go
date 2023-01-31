@@ -12,7 +12,6 @@ import (
 	"github.com/filecoin-project/lotus/node"
 	lotusmodules "github.com/filecoin-project/lotus/node/modules"
 	"github.com/filecoin-project/lotus/node/modules/dtypes"
-	lp2p "github.com/filecoin-project/lotus/node/modules/lp2p"
 	"github.com/filecoin-project/lotus/node/repo"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
@@ -75,7 +74,6 @@ func NewTestNode(ctx context.Context, t testing.TB, cfg *TestNodeConfig) (lily.L
 		node.Override(new(dtypes.Bootstrapper), false),
 		node.Override(new(dtypes.ShutdownChan), shutdown),
 		node.Base(),
-		node.Override(node.UserAgentKey, lp2p.UserAgentOption("lily")), // Add a version?
 		node.Repo(r),
 
 		node.Override(new(dtypes.UniversalBlockstore), modules.NewCachingUniversalBlockstore),
