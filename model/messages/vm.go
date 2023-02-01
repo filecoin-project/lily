@@ -39,11 +39,6 @@ type VMMessage struct {
 	Params string `pg:",type:jsonb"`
 	// Return value of message.
 	Returns string `pg:",type:jsonb"`
-	// Root of AMT.
-	// Absent when no events have been emitted.
-	// See https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0049.md#chain-commitment
-	// If EthRPC is enabled, then the AMT is saved into the blockstore.
-	EventsRoot string
 }
 
 func (v *VMMessage) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {

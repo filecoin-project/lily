@@ -135,7 +135,6 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				Method:    uint64(child.Message.Method),
 				// Params will be filled below if exit code is non-zero
 				// Return will be filled below if exit code is non-zero
-				EventsRoot: child.Receipt.EventsRoot.String(),
 			}
 
 			// only parse params and return of successful messages since unsuccessful messages don't return a parseable value.
