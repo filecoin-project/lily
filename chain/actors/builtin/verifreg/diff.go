@@ -98,7 +98,7 @@ func diffVerifierMap(ctx context.Context, store adt.Store, pre, cur State, preM,
 				return nil, err
 			}
 		case hamt.Remove:
-			if err := diffContainer.Add(change.Key, change.Before); err != nil {
+			if err := diffContainer.Remove(change.Key, change.Before); err != nil {
 				return nil, err
 			}
 		}
