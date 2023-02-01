@@ -18,6 +18,11 @@ type Receipt struct {
 	Idx      int   `pg:",use_zero"`
 	ExitCode int64 `pg:",use_zero"`
 	GasUsed  int64 `pg:",use_zero"`
+	// Root of AMT.
+	// Absent when no events have been emitted.
+	// See https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0049.md#chain-commitment
+	// If EthRPC is enabled, then the AMT is saved into the blockstore.
+	EventsRoot string
 }
 
 func (r *Receipt) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {

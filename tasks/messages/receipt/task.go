@@ -81,10 +81,11 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				Height:    int64(current.Height()),
 				StateRoot: current.ParentState().String(),
 
-				Message:  msg.Cid().String(),
-				Idx:      index,
-				ExitCode: int64(rec.ExitCode),
-				GasUsed:  rec.GasUsed,
+				Message:    msg.Cid().String(),
+				Idx:        index,
+				ExitCode:   int64(rec.ExitCode),
+				GasUsed:    rec.GasUsed,
+				EventsRoot: rec.EventsRoot.String(),
 			}
 			receiptResults = append(receiptResults, rcpt)
 		}
