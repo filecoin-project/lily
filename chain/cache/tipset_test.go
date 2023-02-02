@@ -442,7 +442,7 @@ func TestTipSetCacheSetCurrent(t *testing.T) {
 		ts17 := mustMakeTs(nil, 17, dummyCid)
 		_, err = c.Add(ts17)
 		require.NoError(t, err)
-		assert.Equal(t, t, 3, c.Len())
+		assert.Equal(t, 3, c.Len())
 
 		ts18 := mustMakeTs(nil, 18, dummyCid)
 		err = c.SetCurrent(ts18)
