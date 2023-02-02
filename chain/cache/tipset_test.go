@@ -415,6 +415,36 @@ func TestTipSetCacheSetCurrent(t *testing.T) {
 		require.NoError(t, err)
 		assert.Same(t, ts12, head)
 	})
+
+	t.Run("higher height", func(t *testing.T) {
+		c := NewTipSetCache(3)
+
+		ts14 := mustMakeTs(nil, 14, dummyCid)
+		_, err := c.Add(ts14)
+		require.NoError(t, err)
+		assert.Equal(t, 1, c.Len())
+
+		ts15 := mustMakeTs(nil, 15, dummyCid)
+		_, err = c.Add(ts15)
+		require.NoError(t, err)
+		assert.Equal(t, 2, c.Len())
+
+		ts16 := mustMakeTs(nil, 16, dummyCid)
+		_, err = c.Add(ts16)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, c.Len())
+
+		ts17 := mustMakeTs(nil, 17, dummyCid)
+		err = c.SetCurrent(ts17)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, c.Len())
+
+		head, err := c.Head()
+		require.NoError(t, err)
+		assert.Same(t, ts17, head)
+		assert.Same(t, ts16, c.buffer[normalModulo(c.idxHead-1, c.Len())])
+		assert.Same(t, ts15, c.buffer[normalModulo(c.idxHead-2, c.Len())])
+	})
 }
 
 func TestTipSetCacheAddOnlyReturnsOldTailWhenFull(t *testing.T) {

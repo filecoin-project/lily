@@ -112,7 +112,7 @@ func (c *TipSetCache) SetCurrent(ts *types.TipSet) error {
 		_, err := c.Add(ts)
 		return err
 	}
-
+	c.idxHead = normalModulo(c.idxHead+1, len(c.buffer))
 	c.buffer[c.idxHead] = ts
 	return nil
 }
