@@ -133,6 +133,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				ExitCode:  int64(child.Receipt.ExitCode),
 				ActorCode: toActorCode,
 				Method:    uint64(child.Message.Method),
+				Index:     child.Index,
 				// Params will be filled below if exit code is non-zero
 				// Return will be filled below if exit code is non-zero
 			}

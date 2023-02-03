@@ -149,7 +149,23 @@ type MessageParamsReturn struct {
 	Return     string
 }
 
-func walkExecutionTrace(et *types.ExecutionTrace, trace *[]*MessageTrace) {
+type MessageTrace struct {
+	Message   *types.Message
+	Receipt   *types.MessageReceipt
+	Error     string
+	Duration  time.Duration
+	GasCharge []*types.GasTrace
+	Index     uint64
+}
+
+func GetChildMessagesOf(m *lens.MessageExecution) []*MessageTrace {
+	var out []*MessageTrace
+	index := uint64(0)
+	walkExecutionTrace(&m.Ret.ExecutionTrace, &out, &index)
+	return out
+}
+
+func walkExecutionTrace(et *types.ExecutionTrace, trace *[]*MessageTrace, index *uint64) {
 	for _, sub := range et.Subcalls {
 		*trace = append(*trace, &MessageTrace{
 			Message:   sub.Msg,
@@ -157,23 +173,11 @@ func walkExecutionTrace(et *types.ExecutionTrace, trace *[]*MessageTrace) {
 			Error:     sub.Error,
 			Duration:  sub.Duration,
 			GasCharge: sub.GasCharges,
+			Index:     *index,
 		})
-		walkExecutionTrace(&sub, trace) //nolint:scopelint,gosec
+		*index++
+		walkExecutionTrace(&sub, trace, index) //nolint:scopelint,gosec
 	}
-}
-
-type MessageTrace struct {
-	Message   *types.Message
-	Receipt   *types.MessageReceipt
-	Error     string
-	Duration  time.Duration
-	GasCharge []*types.GasTrace
-}
-
-func GetChildMessagesOf(m *lens.MessageExecution) []*MessageTrace {
-	var out []*MessageTrace
-	walkExecutionTrace(&m.Ret.ExecutionTrace, &out)
-	return out
 }
 
 func ActorNameAndFamilyFromCode(c cid.Cid) (name string, family string, err error) {
