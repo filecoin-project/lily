@@ -415,48 +415,6 @@ func TestTipSetCacheSetCurrent(t *testing.T) {
 		require.NoError(t, err)
 		assert.Same(t, ts12, head)
 	})
-
-	t.Run("higher height removes lowest height", func(t *testing.T) {
-		c := NewTipSetCache(3)
-
-		ts14 := mustMakeTs(nil, 14, dummyCid)
-		_, err := c.Add(ts14)
-		require.NoError(t, err)
-		assert.Equal(t, 1, c.Len())
-
-		ts15 := mustMakeTs(nil, 15, dummyCid)
-		_, err = c.Add(ts15)
-		require.NoError(t, err)
-		assert.Equal(t, 2, c.Len())
-
-		ts16 := mustMakeTs(nil, 16, dummyCid)
-		err = c.SetCurrent(ts16)
-		require.NoError(t, err)
-		assert.Equal(t, 2, c.Len())
-
-		head, err := c.Head()
-		require.NoError(t, err)
-		assert.Same(t, ts16, head)
-		assert.Same(t, ts15, c.buffer[normalModulo(c.idxHead-1, c.Len())])
-
-		ts17 := mustMakeTs(nil, 17, dummyCid)
-		_, err = c.Add(ts17)
-		require.NoError(t, err)
-		assert.Equal(t, 3, c.Len())
-
-		ts18 := mustMakeTs(nil, 18, dummyCid)
-		err = c.SetCurrent(ts18)
-		require.NoError(t, err)
-
-		head, err = c.Head()
-		assert.Same(t, ts18, head)
-		assert.Same(t, ts17, c.buffer[normalModulo(c.idxHead-1, c.Len())])
-		assert.Same(t, ts16, c.buffer[normalModulo(c.idxHead-2, c.Len())])
-
-		tail, err := c.Tail()
-		require.NoError(t, err)
-		assert.Same(t, ts16, tail)
-	})
 }
 
 func TestTipSetCacheAddOnlyReturnsOldTailWhenFull(t *testing.T) {
@@ -507,6 +465,10 @@ func TestTipSetCacheWarming(t *testing.T) {
 		err := c.Warm(context.Background(), head, tw.GetTipSet)
 		assert.NoError(t, err)
 
+		expectHead, err := c.Head()
+		assert.NoError(t, err)
+		assert.Equal(t, expectHead, head)
+
 		newHead := mustMakeTs(head.Cids(), 15, dummyCid)
 		expectC4, err := c.Add(newHead)
 		assert.NoError(t, err)
@@ -539,6 +501,10 @@ func TestTipSetCacheWarming(t *testing.T) {
 
 		err := c.Warm(context.Background(), head, tw.GetTipSet)
 		assert.NoError(t, err)
+
+		expectHead, err := c.Head()
+		assert.NoError(t, err)
+		assert.Equal(t, expectHead, head)
 
 		expectNil, err := c.Add(mustMakeTs(head.Cids(), 15, dummyCid))
 		assert.NoError(t, err)

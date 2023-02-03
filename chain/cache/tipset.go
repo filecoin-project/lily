@@ -112,7 +112,6 @@ func (c *TipSetCache) SetCurrent(ts *types.TipSet) error {
 		_, err := c.Add(ts)
 		return err
 	}
-	c.idxHead = normalModulo(c.idxHead+1, len(c.buffer))
 	c.buffer[c.idxHead] = ts
 	return nil
 }
@@ -179,6 +178,10 @@ func (c *TipSetCache) Warm(ctx context.Context, head *types.TipSet, getTipSetFn 
 		if expectNil != nil {
 			return fmt.Errorf("unexpected tipset returned while warming tipset cache: %s", expectNil)
 		}
+	}
+	err := c.SetCurrent(head)
+	if err != nil {
+		return err
 	}
 	return nil
 }
