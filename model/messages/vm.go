@@ -37,8 +37,10 @@ type VMMessage struct {
 	GasUsed int64 `pg:",notnull,use_zero"`
 	// Params contained in message.
 	Params string `pg:",type:jsonb"`
-	// Return value of message.
+	// Returns value of message receipt.
 	Returns string `pg:",type:jsonb"`
+	// Index indicating the order of the messages execution.
+	Index uint64 `pg:",notnull,use_zero"`
 }
 
 func (v *VMMessage) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
