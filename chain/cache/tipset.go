@@ -112,6 +112,7 @@ func (c *TipSetCache) SetCurrent(ts *types.TipSet) error {
 		_, err := c.Add(ts)
 		return err
 	}
+	
 	c.buffer[c.idxHead] = ts
 	return nil
 }
