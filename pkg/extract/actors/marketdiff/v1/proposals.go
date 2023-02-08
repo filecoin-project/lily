@@ -54,6 +54,10 @@ func (p ProposalChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
 
 type Proposals struct{}
 
+func (p Proposals) Type() string {
+	return KindMarketProposal
+}
+
 func (Proposals) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {

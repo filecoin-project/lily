@@ -48,6 +48,10 @@ func (p ClaimsChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
 
 type Claims struct{}
 
+func (c Claims) Type() string {
+	return KindPowerClaims
+}
+
 func (Claims) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {

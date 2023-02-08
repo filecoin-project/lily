@@ -36,6 +36,10 @@ func (s SectorStatusChange) Kind() actors.ActorStateKind {
 
 type SectorStatus struct{}
 
+func (s SectorStatus) Type() string {
+	return KindMinerSectorStatus
+}
+
 func (SectorStatus) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {

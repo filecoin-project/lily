@@ -51,6 +51,10 @@ func (a AddressChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
 
 type Addresses struct{}
 
+func (a Addresses) Type() string {
+	return KindInitAddresses
+}
+
 func (Addresses) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {

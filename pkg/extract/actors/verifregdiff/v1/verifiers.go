@@ -51,6 +51,10 @@ func (v VerifiersChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) 
 
 type Verifiers struct{}
 
+func (v Verifiers) Type() string {
+	return KindVerifregVerifiers
+}
+
 func (Verifiers) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {

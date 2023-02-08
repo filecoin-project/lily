@@ -9,42 +9,26 @@ import (
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	typegen "github.com/whyrusleeping/cbor-gen"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/pkg/extract/actors"
-	"github.com/filecoin-project/lily/tasks"
 )
 
 var log = logging.Logger("extract/actors/miner")
 
-type StateDiff struct {
-	DiffMethods []actors.ActorStateDiff
-}
-
-func (s *StateDiff) State(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorDiffResult, error) {
-	grp, grpctx := errgroup.WithContext(ctx)
-	results, err := actors.ExecuteStateDiff(grpctx, grp, api, act, s.DiffMethods...)
-	if err != nil {
-		return nil, err
-	}
-
+func ActorStateChangeHandler(changes []actors.ActorStateChange) (actors.ActorDiffResult, error) {
 	var stateDiff = new(StateDiffResult)
-	for _, stateChange := range results {
-		// some results may be nil, skip those
-		if stateChange == nil {
-			continue
-		}
-		switch stateChange.Kind() {
-		case KindMinerInfo:
-			stateDiff.InfoChange = stateChange.(*InfoChange)
-		case KindMinerSector:
-			stateDiff.SectorChanges = stateChange.(SectorChangeList)
-		case KindMinerPreCommit:
-			stateDiff.PreCommitChanges = stateChange.(PreCommitChangeList)
-		case KindMinerSectorStatus:
-			stateDiff.SectorStatusChanges = stateChange.(*SectorStatusChange)
+	for _, stateChange := range changes {
+		switch v := stateChange.(type) {
+		case *InfoChange:
+			stateDiff.InfoChange = v
+		case SectorChangeList:
+			stateDiff.SectorChanges = v
+		case PreCommitChangeList:
+			stateDiff.PreCommitChanges = v
+		case *SectorStatusChange:
+			stateDiff.SectorStatusChanges = v
 		default:
-			return nil, fmt.Errorf("unknown state change %s", stateChange.Kind())
+			return nil, fmt.Errorf("unknown state change %T", v)
 		}
 	}
 
@@ -56,10 +40,6 @@ type StateDiffResult struct {
 	PreCommitChanges    PreCommitChangeList
 	SectorChanges       SectorChangeList
 	SectorStatusChanges *SectorStatusChange
-}
-
-func (s *StateDiffResult) Kind() string {
-	return "miner"
 }
 
 func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, s store.Store) (typegen.CBORMarshaler, error) {

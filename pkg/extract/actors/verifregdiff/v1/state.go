@@ -2,38 +2,26 @@ package v1
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 	"github.com/filecoin-project/go-state-types/store"
 	"github.com/ipfs/go-cid"
 	typegen "github.com/whyrusleeping/cbor-gen"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/pkg/extract/actors"
-	"github.com/filecoin-project/lily/tasks"
 )
 
-type StateDiff struct {
-	DiffMethods []actors.ActorStateDiff
-}
-
-func (s *StateDiff) State(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorDiffResult, error) {
-	grp, grpctx := errgroup.WithContext(ctx)
-	results, err := actors.ExecuteStateDiff(grpctx, grp, api, act, s.DiffMethods...)
-	if err != nil {
-		return nil, err
-	}
-
+func ActorStateChangeHandler(changes []actors.ActorStateChange) (actors.ActorDiffResult, error) {
 	var stateDiff = new(StateDiffResult)
-	for _, stateChange := range results {
-		if stateChange == nil {
-			continue
-		}
-		switch stateChange.Kind() {
-		case KindVerifregClients:
-			stateDiff.ClientChanges = stateChange.(ClientsChangeList)
-		case KindVerifregVerifiers:
-			stateDiff.VerifierChanges = stateChange.(VerifiersChangeList)
+	for _, stateChange := range changes {
+		switch v := stateChange.(type) {
+		case ClientsChangeList:
+			stateDiff.ClientChanges = v
+		case VerifiersChangeList:
+			stateDiff.VerifierChanges = v
+		default:
+			return nil, fmt.Errorf("unknown state change kind: %T", v)
 		}
 	}
 	return stateDiff, nil
@@ -42,10 +30,6 @@ func (s *StateDiff) State(ctx context.Context, api tasks.DataSource, act *actors
 type StateDiffResult struct {
 	VerifierChanges VerifiersChangeList
 	ClientChanges   ClientsChangeList
-}
-
-func (s *StateDiffResult) Kind() string {
-	return "verifreg"
 }
 
 func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, s store.Store) (typegen.CBORMarshaler, error) {

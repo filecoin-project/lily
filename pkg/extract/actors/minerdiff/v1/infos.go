@@ -30,9 +30,13 @@ func (i *InfoChange) Kind() actors.ActorStateKind {
 	return KindMinerInfo
 }
 
-var _ actors.ActorStateDiff = (*Info)(nil)
+var _ actors.ActorDiffMethods = (*Info)(nil)
 
 type Info struct{}
+
+func (i Info) Type() string {
+	return KindMinerInfo
+}
 
 func (Info) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
 	start := time.Now()

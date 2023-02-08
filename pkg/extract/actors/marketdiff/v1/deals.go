@@ -47,6 +47,10 @@ func (p DealChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) {
 
 type Deals struct{}
 
+func (d Deals) Type() string {
+	return KindMarketDeal
+}
+
 func (Deals) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {

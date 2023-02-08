@@ -55,6 +55,10 @@ func (p PreCommitChangeList) ToAdtMap(store adt.Store, bw int) (cid.Cid, error) 
 
 type PreCommit struct{}
 
+func (c PreCommit) Type() string {
+	return KindMinerPreCommit
+}
+
 func (PreCommit) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {

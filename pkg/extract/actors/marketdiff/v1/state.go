@@ -2,40 +2,27 @@ package v1
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 	"github.com/filecoin-project/go-state-types/store"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/pkg/extract/actors"
-	"github.com/filecoin-project/lily/tasks"
 )
 
-type StateDiff struct {
-	DiffMethods []actors.ActorStateDiff
-}
-
-func (s *StateDiff) State(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorDiffResult, error) {
-	grp, grpCtx := errgroup.WithContext(ctx)
-	results, err := actors.ExecuteStateDiff(grpCtx, grp, api, act, s.DiffMethods...)
-	if err != nil {
-		return nil, err
-	}
+func ActorStateChangeHandler(changes []actors.ActorStateChange) (actors.ActorDiffResult, error) {
 	var stateDiff = new(StateDiffResult)
-	for _, stateChange := range results {
-		if stateChange == nil {
-			continue
-		}
-		switch stateChange.Kind() {
-		case KindMarketDeal:
-			stateDiff.DealStateChanges = stateChange.(DealChangeList)
-		case KindMarketProposal:
-			stateDiff.DealProposalChanges = stateChange.(ProposalChangeList)
+	for _, stateChange := range changes {
+		switch v := stateChange.(type) {
+		case DealChangeList:
+			stateDiff.DealStateChanges = v
+		case ProposalChangeList:
+			stateDiff.DealProposalChanges = v
 		default:
-			panic(stateChange.Kind())
+			return nil, fmt.Errorf("unknown state change kind: %T", v)
 		}
 	}
 	return stateDiff, nil
@@ -44,10 +31,6 @@ func (s *StateDiff) State(ctx context.Context, api tasks.DataSource, act *actors
 type StateDiffResult struct {
 	DealStateChanges    DealChangeList
 	DealProposalChanges ProposalChangeList
-}
-
-func (sd *StateDiffResult) Kind() string {
-	return "market"
 }
 
 func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, s store.Store) (cbg.CBORMarshaler, error) {

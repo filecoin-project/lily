@@ -10,20 +10,18 @@ import (
 	v2 "github.com/filecoin-project/lily/pkg/extract/actors/verifregdiff/v2"
 )
 
-func StateDiffFor(av actortypes.Version) (actors.ActorDiff, error) {
+func StateDiffFor(av actortypes.Version) ([]actors.ActorDiffMethods, actors.ActorHandlerFn, error) {
 	if av < actortypes.Version9 {
-		return &v1.StateDiff{
-			DiffMethods: []actors.ActorStateDiff{
-				v1.Clients{},
-				v1.Verifiers{},
-			}}, nil
+		return []actors.ActorDiffMethods{
+			v1.Clients{},
+			v1.Verifiers{},
+		}, v1.ActorStateChangeHandler, nil
 	} else if av == actortypes.Version9 {
-		return &v2.StateDiff{
-			DiffMethods: []actors.ActorStateDiff{
-				v2.Verifiers{},
-				v2.Claims{},
-				v2.Allocations{},
-			}}, nil
+		return []actors.ActorDiffMethods{
+			v2.Verifiers{},
+			v2.Claims{},
+			v2.Allocations{},
+		}, v2.ActorStateChangeHandler, nil
 	}
-	return nil, fmt.Errorf("unsupported actor version %d", av)
+	return nil, nil, fmt.Errorf("unsupported actor version %d", av)
 }

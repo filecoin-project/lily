@@ -2,37 +2,24 @@ package v1
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 	"github.com/filecoin-project/go-state-types/store"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/pkg/extract/actors"
-	"github.com/filecoin-project/lily/tasks"
 )
 
-type StateDiff struct {
-	DiffMethods []actors.ActorStateDiff
-}
-
-func (s *StateDiff) State(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorDiffResult, error) {
-	grp, grpCtx := errgroup.WithContext(ctx)
-	results, err := actors.ExecuteStateDiff(grpCtx, grp, api, act, s.DiffMethods...)
-	if err != nil {
-		return nil, err
-	}
+func ActorStateChangeHandler(changes []actors.ActorStateChange) (actors.ActorDiffResult, error) {
 	var stateDiff = new(StateDiffResult)
-	for _, stateChange := range results {
-		if stateChange == nil {
-			continue
-		}
-		switch stateChange.Kind() {
-		case KindPowerClaims:
-			stateDiff.ClaimsChanges = stateChange.(ClaimsChangeList)
+	for _, stateChange := range changes {
+		switch v := stateChange.(type) {
+		case ClaimsChangeList:
+			stateDiff.ClaimsChanges = v
 		default:
-			panic(stateChange.Kind())
+			return nil, fmt.Errorf("unknown state change kind: %T", v)
 		}
 	}
 	return stateDiff, nil
@@ -52,10 +39,6 @@ func (sd *StateDiffResult) MarshalStateChange(ctx context.Context, s store.Store
 		out.Claims = &root
 	}
 	return out, nil
-}
-
-func (sd *StateDiffResult) Kind() string {
-	return "power"
 }
 
 type StateChange struct {
