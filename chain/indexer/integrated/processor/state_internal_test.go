@@ -22,6 +22,7 @@ import (
 	"github.com/filecoin-project/lily/tasks/messages/blockmessage"
 	"github.com/filecoin-project/lily/tasks/messages/gaseconomy"
 	"github.com/filecoin-project/lily/tasks/messages/message"
+	"github.com/filecoin-project/lily/tasks/messages/messageparam"
 
 	"github.com/filecoin-project/lily/tasks/actorstate"
 	inittask "github.com/filecoin-project/lily/tasks/actorstate/init_"
@@ -51,7 +52,7 @@ func TestNewProcessor(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, t.Name(), proc.name)
 	require.Len(t, proc.actorProcessors, 23)
-	require.Len(t, proc.tipsetProcessors, 8)
+	require.Len(t, proc.tipsetProcessors, 9)
 	require.Len(t, proc.tipsetsProcessors, 8)
 	require.Len(t, proc.builtinProcessors, 1)
 
@@ -72,6 +73,7 @@ func TestNewProcessor(t *testing.T) {
 	require.Equal(t, chaineconomics.NewTask(nil), proc.tipsetProcessors[tasktype.ChainEconomics])
 	require.Equal(t, consensus.NewTask(nil), proc.tipsetProcessors[tasktype.ChainConsensus])
 	require.Equal(t, gaseconomy.NewTask(nil), proc.tipsetProcessors[tasktype.MessageGasEconomy])
+	require.Equal(t, messageparam.NewTask(nil), proc.tipsetProcessors[tasktype.MessageParam])
 
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.DeadlineInfoExtractor{})), proc.actorProcessors[tasktype.MinerCurrentDeadlineInfo])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.FeeDebtExtractor{})), proc.actorProcessors[tasktype.MinerFeeDebt])

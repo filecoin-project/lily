@@ -23,10 +23,11 @@ import (
 	poweractors "github.com/filecoin-project/lily/chain/actors/builtin/power"
 	rewardactors "github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	verifregactors "github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
+	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lily/tasks/messageexecutions/vm"
 	"github.com/filecoin-project/lily/tasks/messages/actorevent"
+	"github.com/filecoin-project/lily/tasks/messages/messageparam"
 
-	"github.com/filecoin-project/lily/tasks"
 	// actor tasks
 	"github.com/filecoin-project/lily/tasks/actorstate"
 	datacaptask "github.com/filecoin-project/lily/tasks/actorstate/datacap"
@@ -587,6 +588,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			out.TipsetProcessors[t] = bmtask.NewTask(api)
 		case tasktype.MessageGasEconomy:
 			out.TipsetProcessors[t] = gasecontask.NewTask(api)
+		case tasktype.MessageParam:
+			out.TipsetProcessors[t] = messageparam.NewTask(api)
 
 		case tasktype.GasOutputs:
 			out.TipsetsProcessors[t] = gasouttask.NewTask(api)
