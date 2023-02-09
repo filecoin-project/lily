@@ -4,8 +4,12 @@ import (
 	"context"
 	"time"
 
+	logging "github.com/ipfs/go-log/v2"
+
 	"github.com/filecoin-project/lily/tasks"
 )
+
+var log = logging.Logger("lily/extract/actors")
 
 type DifferReport struct {
 	DiffType  string
@@ -41,6 +45,8 @@ type ReportHandlerFn = func(reports []DifferReport) error
 type ActorHandlerFn = func(changes []ActorStateChange) (ActorDiffResult, error)
 
 func (s *StateDiffer) ActorDiff(ctx context.Context, api tasks.DataSource, act *ActorChange) (ActorDiffResult, error) {
+	log.Info("ActorDiff", "actor", act.Address)
+	defer log.Infow("DiffedActor", "actor", act.Address)
 	reports := executeStateDiff(ctx, api, act, s.Methods...)
 
 	if s.ReportHandler != nil {

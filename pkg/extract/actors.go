@@ -94,6 +94,19 @@ func sortedActorChangeKeys(actors map[address.Address]statetree.ActorDiff) []add
 	return keys
 }
 
+func doWork(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, version actortypes.Version, results chan *StateDiffResult) {
+	log.Infow("starting worker", "actor", act.Address)
+	defer log.Infow("stopping worker", "actor", act.Address)
+	select {
+	case <-ctx.Done():
+		log.Infow("canceling worker", "error", ctx.Err(), "actor", act.Address)
+		return
+	default:
+		doRawActorDiff(ctx, api, act, version, results)
+		//doActorDiff(ctx, api, act, version, results)
+	}
+}
+
 func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, actorVersion actortypes.Version, workers int) (*ActorStateChanges, error) {
 	actorChanges, err := statetree.ActorChanges(ctx, api.Store(), current, executed)
 	if err != nil {
@@ -110,6 +123,7 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 	results := make(chan *StateDiffResult)
 	wg := sync.WaitGroup{}
 	workerCtx, cancel := context.WithCancel(ctx)
+	activeWorkers := 0
 	defer cancel()
 	// sort actors on actor id in ascending order, causes market actor to be differed early, which is the slowest actor to diff.
 	for _, addr := range sortedActorChangeKeys(actorChanges) {
@@ -122,32 +136,33 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 			Type:     change.ChangeType,
 		}
 		wg.Add(1)
+		activeWorkers++
 		pool.Submit(func() {
-			select {
-			case <-workerCtx.Done():
-				return
-			default:
-
-			}
 			defer wg.Done()
-			doRawActorDiff(workerCtx, api, act, actorVersion, results)
-			doActorDiff(workerCtx, api, act, actorVersion, results)
+			doWork(workerCtx, api, act, actorVersion, results)
+			activeWorkers--
 		})
 
 	}
 	go func() {
+		log.Info("waiting for workers to complete")
 		wg.Wait()
+		log.Info("worker completed, closing worker channel")
 		close(results)
 	}()
 
 	for stateDiff := range results {
 		if err := stateDiff.Error; err != nil {
-			// drain any pensing results
-			for res := range results {
-				log.Infow("drain result", "actor", res.Address)
-			}
+			log.Infow("activeworkers", "count", activeWorkers)
+			log.Info("canceling workers")
+			cancel()
+			log.Info("canceled workers")
 			// stop the pool
-			pool.Stop()
+			log.Info("stopping worker pool")
+			pool.StopWait()
+			log.Info("stopped worker pool")
+			log.Infow("activeworkers", "count", activeWorkers)
+			<-results
 			return nil, err
 		}
 		switch v := stateDiff.ActorDiff.(type) {
@@ -178,12 +193,11 @@ func doRawActorDiff(ctx context.Context, api tasks.DataSource, act *actors.Actor
 		select {
 		case <-ctx.Done():
 			return
-		default:
-			results <- &StateDiffResult{
-				ActorDiff: nil,
-				Address:   act.Address,
-				Error:     err,
-			}
+		case results <- &StateDiffResult{
+			ActorDiff: nil,
+			Address:   act.Address,
+			Error:     err,
+		}:
 		}
 		return
 	}
@@ -202,12 +216,11 @@ func doRawActorDiff(ctx context.Context, api tasks.DataSource, act *actors.Actor
 	select {
 	case <-ctx.Done():
 		return
-	default:
-		results <- &StateDiffResult{
-			ActorDiff: res,
-			Address:   act.Address,
-			Error:     err,
-		}
+	case results <- &StateDiffResult{
+		ActorDiff: res,
+		Address:   act.Address,
+		Error:     err,
+	}:
 	}
 	return
 }
