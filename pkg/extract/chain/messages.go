@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/go-state-types/exitcode"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/tasks"
@@ -129,11 +130,41 @@ type ActorError struct {
 }
 
 func Messages(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet) (map[cid.Cid]*FullBlock, []*ImplicitMessage, error) {
-	// fist get all messages included in the executed tipset, not all of these messages will have receipts since some were not executed.
-	blkMsgs, err := api.TipSetBlockMessages(ctx, executed)
-	if err != nil {
+	var (
+		blkMsgs    []*lens.BlockMessages
+		exeBlkMsgs []*lens.BlockMessageReceipts
+		msgExe     []*lens.MessageExecutionV2
+		err        error
+	)
+	grp, grpCtx := errgroup.WithContext(ctx)
+
+	grp.Go(func() error {
+		blkMsgs, err = api.TipSetBlockMessages(grpCtx, executed)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	grp.Go(func() error {
+		exeBlkMsgs, err = api.TipSetMessageReceipts(grpCtx, current, executed)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	grp.Go(func() error {
+		msgExe, err = api.MessageExecutionsV2(grpCtx, current, executed)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err := grp.Wait(); err != nil {
 		return nil, nil, err
 	}
+
 	// build two maps containing all signed (secpMsgs) and unsigned (blsMsgs) messages.
 	secpBlkMsgs := make(map[cid.Cid][]*SignedChainMessage)
 	blsBlkMsgs := make(map[cid.Cid][]*ChainMessage)
@@ -153,10 +184,6 @@ func Messages(ctx context.Context, api tasks.DataSource, current, executed *type
 		}
 	}
 
-	exeBlkMsgs, err := api.TipSetMessageReceipts(ctx, current, executed)
-	if err != nil {
-		return nil, nil, err
-	}
 	for _, ebm := range exeBlkMsgs {
 		itr, err := ebm.Iterator()
 		if err != nil {
@@ -178,11 +205,6 @@ func Messages(ctx context.Context, api tasks.DataSource, current, executed *type
 				panic("developer error")
 			}
 		}
-	}
-
-	msgExe, err := api.MessageExecutionsV2(ctx, current, executed)
-	if err != nil {
-		return nil, nil, err
 	}
 
 	var im []*ImplicitMessage
