@@ -73,6 +73,7 @@ var TaskLookup = map[string][]string{
 		BlockMessage,
 		ActorEvent,
 		MessageParam,
+		ReceiptReturn,
 	},
 	ChainEconomicsTask: {
 		ChainEconomics,
