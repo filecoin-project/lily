@@ -14,11 +14,11 @@ import (
 func ActorStateChangeHandler(changes []actors.ActorStateChange) (actors.ActorDiffResult, error) {
 	var stateDiff = new(StateDiffResult)
 	for _, change := range changes {
-		switch change.Kind() {
-		case KindActorChange:
-			stateDiff.ActorStateChanges = change.(*ActorChange)
+		switch v := change.(type) {
+		case *ActorChange:
+			stateDiff.ActorStateChanges = v
 		default:
-			return nil, fmt.Errorf("unhandledd change kind: %s", change.Kind())
+			return nil, fmt.Errorf("unhandled change type: %T", v)
 		}
 	}
 	return stateDiff, nil

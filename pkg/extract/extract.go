@@ -47,15 +47,23 @@ func State(ctx context.Context, api tasks.DataSource, current, executed *types.T
 		start := time.Now()
 		// all blocks, messages, implicit messages, from executed and receipts from current
 		blockmessages, err = FullBlockMessages(grpCtx, api, current, executed)
-		log.Infow("extracted fullblock", "duration", time.Since(start))
-		return err
+		if err != nil {
+			log.Errorw("failed to extract full block messages", "error", err)
+			return err
+		}
+		log.Infow("extracted full block messages", "duration", time.Since(start))
+		return nil
 	})
 	grp.Go(func() error {
 		start := time.Now()
 		// all actor changes between current and parent, actor state exists in current.
-		actorChanges, err = Actors(grpCtx, api, current, executed, actorVersion)
-		log.Infow("extracted actors", "duration", time.Since(start))
-		return err
+		actorChanges, err = Actors(grpCtx, api, current, executed, actorVersion, 8)
+		if err != nil {
+			log.Errorw("failed to extract actor states", "error", err)
+			return err
+		}
+		log.Infow("extracted actor states", "duration", time.Since(start))
+		return nil
 	})
 
 	if err := grp.Wait(); err != nil {

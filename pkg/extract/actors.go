@@ -94,7 +94,7 @@ func sortedActorChangeKeys(actors map[address.Address]statetree.ActorDiff) []add
 	return keys
 }
 
-func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, actorVersion actortypes.Version) (*ActorStateChanges, error) {
+func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.TipSet, actorVersion actortypes.Version, workers int) (*ActorStateChanges, error) {
 	actorChanges, err := statetree.ActorChanges(ctx, api.Store(), current, executed)
 	if err != nil {
 		return nil, err
@@ -106,12 +106,13 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 		RawActors:   make(map[address.Address]actors.ActorDiffResult, len(actorChanges)), // there are at most actorChanges entries
 	}
 
-	pool := workerpool.New(8)
-	results := make(chan *StateDiffResult, len(actorChanges))
+	pool := workerpool.New(workers)
+	results := make(chan *StateDiffResult)
 	wg := sync.WaitGroup{}
+	workerCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	// sort actors on actor id in ascending order, causes market actor to be differed early, which is the slowest actor to diff.
-	sortedKeys := sortedActorChangeKeys(actorChanges)
-	for _, addr := range sortedKeys {
+	for _, addr := range sortedActorChangeKeys(actorChanges) {
 		addr := addr
 		change := actorChanges[addr]
 		act := &actors.ActorChange{
@@ -122,13 +123,15 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 		}
 		wg.Add(1)
 		pool.Submit(func() {
-			if err := doRawActorDiff(ctx, api, act, actorVersion, results); err != nil {
-				log.Fatal(err)
+			select {
+			case <-workerCtx.Done():
+				return
+			default:
+
 			}
-			if err := doActorDiff(ctx, api, act, actorVersion, results); err != nil {
-				log.Fatal(err)
-			}
-			wg.Done()
+			defer wg.Done()
+			doRawActorDiff(workerCtx, api, act, actorVersion, results)
+			doActorDiff(workerCtx, api, act, actorVersion, results)
 		})
 
 	}
@@ -136,9 +139,14 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 		wg.Wait()
 		close(results)
 	}()
+
 	for stateDiff := range results {
-		if stateDiff.Error != nil {
-			// TODO bug need to call wg.Done() for remaining open wg functions
+		if err := stateDiff.Error; err != nil {
+			// drain any pensing results
+			for res := range results {
+				log.Infow("drain result", "actor", res.Address)
+			}
+			// stop the pool
 			pool.Stop()
 			return nil, err
 		}
@@ -164,28 +172,47 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 	return asc, nil
 }
 
-func doRawActorDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, version actortypes.Version, results chan *StateDiffResult) error {
+func doRawActorDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, version actortypes.Version, results chan *StateDiffResult) {
 	methods, handler, err := rawdiff.StateDiffFor(version)
+	if err != nil {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			results <- &StateDiffResult{
+				ActorDiff: nil,
+				Address:   act.Address,
+				Error:     err,
+			}
+		}
+		return
+	}
+
 	actorDiff := &actors.StateDiffer{
-		Methods: methods,
+		Methods:      methods,
+		ActorHandler: handler,
 		ReportHandler: func(reports []actors.DifferReport) error {
 			for _, report := range reports {
 				log.Infow("reporting", "type", report.DiffType, "duration", report.Duration)
 			}
 			return nil
 		},
-		ActorHandler: handler,
 	}
 	res, err := actorDiff.ActorDiff(ctx, api, act)
-	results <- &StateDiffResult{
-		ActorDiff: res,
-		Address:   act.Address,
-		Error:     err,
+	select {
+	case <-ctx.Done():
+		return
+	default:
+		results <- &StateDiffResult{
+			ActorDiff: res,
+			Address:   act.Address,
+			Error:     err,
+		}
 	}
-	return nil
+	return
 }
 
-func doActorDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, version actortypes.Version, results chan *StateDiffResult) error {
+func doActorDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, version actortypes.Version, results chan *StateDiffResult) {
 	var (
 		methods []actors.ActorDiffMethods
 		handler actors.ActorHandlerFn
@@ -193,60 +220,52 @@ func doActorDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorCha
 	)
 	if core.DataCapCodes.Has(act.Current.Code) {
 		methods, handler, err = datacapdiff.StateDiffFor(version)
-		if err != nil {
-			return err
-		}
-	}
-	if core.MinerCodes.Has(act.Current.Code) {
+	} else if core.MinerCodes.Has(act.Current.Code) {
 		methods, handler, err = minerdiff.StateDiffFor(version)
-		if err != nil {
-			return err
-		}
-	}
-	if core.InitCodes.Has(act.Current.Code) {
+	} else if core.InitCodes.Has(act.Current.Code) {
 		methods, handler, err = initdiff.StateDiffFor(version)
-		if err != nil {
-			return err
-		}
-	}
-	if core.PowerCodes.Has(act.Current.Code) {
+	} else if core.PowerCodes.Has(act.Current.Code) {
 		methods, handler, err = powerdiff.StateDiffFor(version)
-		if err != nil {
-			return err
-		}
-	}
-	if core.MarketCodes.Has(act.Current.Code) {
+	} else if core.MarketCodes.Has(act.Current.Code) {
 		methods, handler, err = marketdiff.StateDiffFor(version)
-		if err != nil {
-			return err
-		}
-	}
-	if core.VerifregCodes.Has(act.Current.Code) {
+	} else if core.VerifregCodes.Has(act.Current.Code) {
 		methods, handler, err = verifregdiff.StateDiffFor(version)
-		if err != nil {
-			return err
-		}
+	} else {
+		return
 	}
 
-	if methods == nil {
-		return nil
+	if err != nil {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			results <- &StateDiffResult{
+				ActorDiff: nil,
+				Address:   act.Address,
+				Error:     err,
+			}
+		}
 	}
 
 	actorDiff := &actors.StateDiffer{
-		Methods: methods,
+		Methods:      methods,
+		ActorHandler: handler,
 		ReportHandler: func(reports []actors.DifferReport) error {
 			for _, report := range reports {
 				log.Infow("reporting", "type", report.DiffType, "duration", report.Duration)
 			}
 			return nil
 		},
-		ActorHandler: handler,
 	}
 	res, err := actorDiff.ActorDiff(ctx, api, act)
-	results <- &StateDiffResult{
-		ActorDiff: res,
-		Address:   act.Address,
-		Error:     err,
+	select {
+	case <-ctx.Done():
+		return
+	default:
+		results <- &StateDiffResult{
+			ActorDiff: res,
+			Address:   act.Address,
+			Error:     err,
+		}
 	}
-	return nil
 }
