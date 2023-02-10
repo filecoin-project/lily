@@ -19,22 +19,6 @@ type DifferReport struct {
 	Result    ActorStateChange
 }
 
-func executeStateDiff(ctx context.Context, api tasks.DataSource, act *ActorChange, fns ...ActorDiffMethods) []DifferReport {
-	out := make([]DifferReport, len(fns))
-	for i, fn := range fns {
-		start := time.Now()
-		res, err := fn.Diff(ctx, api, act)
-		out[i] = DifferReport{
-			DiffType:  fn.Type(),
-			StartTime: start,
-			Duration:  time.Since(start),
-			Error:     err,
-			Result:    res,
-		}
-	}
-	return out
-}
-
 type StateDiffer struct {
 	Methods       []ActorDiffMethods
 	ReportHandler ReportHandlerFn
@@ -45,18 +29,27 @@ type ReportHandlerFn = func(reports []DifferReport) error
 type ActorHandlerFn = func(changes []ActorStateChange) (ActorDiffResult, error)
 
 func (s *StateDiffer) ActorDiff(ctx context.Context, api tasks.DataSource, act *ActorChange) (ActorDiffResult, error) {
-	log.Info("ActorDiff", "actor", act.Address)
-	defer log.Infow("DiffedActor", "actor", act.Address)
-	reports := executeStateDiff(ctx, api, act, s.Methods...)
+	out := make([]DifferReport, len(s.Methods))
+	for i, fn := range s.Methods {
+		start := time.Now()
+		res, err := fn.Diff(ctx, api, act)
+		out[i] = DifferReport{
+			DiffType:  fn.Type(),
+			StartTime: start,
+			Duration:  time.Since(start),
+			Error:     err,
+			Result:    res,
+		}
+	}
 
 	if s.ReportHandler != nil {
-		if err := s.ReportHandler(reports); err != nil {
+		if err := s.ReportHandler(out); err != nil {
 			return nil, err
 		}
 	}
 
 	var results []ActorStateChange
-	for _, report := range reports {
+	for _, report := range out {
 		results = append(results, report.Result)
 	}
 	return s.ActorHandler(results)
