@@ -12,7 +12,7 @@ import (
 	"github.com/filecoin-project/lily/pkg/extract/actors"
 )
 
-func ActorStateChangeHandler(changes []actors.ActorStateChange) (actors.ActorDiffResult, error) {
+func ActorStateChangeHandler(changes []actors.ActorStateChange) (actors.DiffResult, error) {
 	var stateDiff = new(StateDiffResult)
 	for _, stateChange := range changes {
 		switch v := stateChange.(type) {

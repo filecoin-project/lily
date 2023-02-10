@@ -52,7 +52,7 @@ func (s Sectors) Type() string {
 	return KindMinerSector
 }
 
-func (Sectors) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func (Sectors) Diff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {
 		log.Debugw("Diff", "kind", KindMinerSector, zap.Inline(act), "duration", time.Since(start))
@@ -60,7 +60,7 @@ func (Sectors) Diff(ctx context.Context, api tasks.DataSource, act *actors.Actor
 	return DiffSectors(ctx, api, act)
 }
 
-func DiffSectors(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func DiffSectors(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	arrayChange, err := generic.DiffActorArray(ctx, api, act, MinerStateLoader, MinerSectorArrayLoader)
 	if err != nil {
 		return nil, err

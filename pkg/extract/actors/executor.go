@@ -26,9 +26,9 @@ type StateDiffer struct {
 }
 
 type ReportHandlerFn = func(reports []DifferReport) error
-type ActorHandlerFn = func(changes []ActorStateChange) (ActorDiffResult, error)
+type ActorHandlerFn = func(changes []ActorStateChange) (DiffResult, error)
 
-func (s *StateDiffer) ActorDiff(ctx context.Context, api tasks.DataSource, act *ActorChange) (ActorDiffResult, error) {
+func (s *StateDiffer) ActorDiff(ctx context.Context, api tasks.DataSource, act *Change) (DiffResult, error) {
 	out := make([]DifferReport, len(s.Methods))
 	for i, fn := range s.Methods {
 		start := time.Now()

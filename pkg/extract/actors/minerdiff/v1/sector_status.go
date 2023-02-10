@@ -40,7 +40,7 @@ func (s SectorStatus) Type() string {
 	return KindMinerSectorStatus
 }
 
-func (SectorStatus) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func (SectorStatus) Diff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {
 		log.Debugw("Diff", "kind", KindMinerSectorStatus, zap.Inline(act), "duration", time.Since(start))

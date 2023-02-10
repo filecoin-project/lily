@@ -70,7 +70,7 @@ func (a Allocations) Type() string {
 	return KindVerifregAllocations
 }
 
-func (Allocations) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func (Allocations) Diff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {
 		log.Debugw("Diff", "kind", KindVerifregAllocations, zap.Inline(act), "duration", time.Since(start))
@@ -78,7 +78,7 @@ func (Allocations) Diff(ctx context.Context, api tasks.DataSource, act *actors.A
 	return DiffAllocations(ctx, api, act)
 }
 
-func DiffAllocations(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func DiffAllocations(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	mapChange, err := generic.DiffActorMap(ctx, api, act, v0.VerifregStateLoader, VerifregAllocationMapLoader)
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func DiffAllocations(ctx context.Context, api tasks.DataSource, act *actors.Acto
 	return out, nil
 }
 
-func diffClientMap(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, clientAddress address.Address, clientKey []byte) ([]*AllocationsChange, error) {
+func diffClientMap(ctx context.Context, api tasks.DataSource, act *actors.Change, clientAddress address.Address, clientKey []byte) ([]*AllocationsChange, error) {
 	mapChange, err := generic.DiffActorMap(ctx, api, act, v0.VerifregStateLoader, func(i interface{}) (adt.Map, *adt.MapOpts, error) {
 		verifregState := i.(verifreg.State)
 		clientAllocationMap, err := verifregState.AllocationMapForClient(clientAddress)

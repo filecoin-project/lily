@@ -72,7 +72,7 @@ func (c Claims) Type() string {
 	return KindVerifregClaims
 }
 
-func (Claims) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func (Claims) Diff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {
 		log.Debugw("Diff", "kind", KindVerifregClaims, zap.Inline(act), "duration", time.Since(start))
@@ -80,7 +80,7 @@ func (Claims) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorC
 	return DiffClaims(ctx, api, act)
 }
 
-func DiffClaims(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func DiffClaims(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	mapChange, err := generic.DiffActorMap(ctx, api, act, v0.VerifregStateLoader, VerifregClaimsMapLoader)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func DiffClaims(ctx context.Context, api tasks.DataSource, act *actors.ActorChan
 	return out, nil
 }
 
-func diffProviderMap(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, providerAddress address.Address, providerKey []byte) ([]*ClaimsChange, error) {
+func diffProviderMap(ctx context.Context, api tasks.DataSource, act *actors.Change, providerAddress address.Address, providerKey []byte) ([]*ClaimsChange, error) {
 	mapChange, err := generic.DiffActorMap(ctx, api, act, v0.VerifregStateLoader, func(i interface{}) (adt.Map, *adt.MapOpts, error) {
 		verifregState := i.(verifreg.State)
 		providerClaimMap, err := verifregState.ClaimMapForProvider(providerAddress)

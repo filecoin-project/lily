@@ -53,7 +53,7 @@ func (b Balance) Type() string {
 	return KindDataCapBalance
 }
 
-func (Balance) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func (Balance) Diff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {
 		log.Debugw("Diff", "kind", KindDataCapBalance, zap.Inline(act), "duration", time.Since(start))
@@ -61,7 +61,7 @@ func (Balance) Diff(ctx context.Context, api tasks.DataSource, act *actors.Actor
 	return DiffBalances(ctx, api, act)
 }
 
-func DiffBalances(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (BalanceChangeList, error) {
+func DiffBalances(ctx context.Context, api tasks.DataSource, act *actors.Change) (BalanceChangeList, error) {
 	mapChange, err := generic.DiffActorMap(ctx, api, act, DatacapStateLoader, DatacapBalancesMapLoader)
 	if err != nil {
 		return nil, err

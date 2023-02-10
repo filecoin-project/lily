@@ -68,7 +68,7 @@ func (a Allowance) Type() string {
 	return KindDataCapAllowance
 }
 
-func (Allowance) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func (Allowance) Diff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {
 		log.Debugw("Diff", "kind", KindDataCapAllowance, zap.Inline(act), "duration", time.Since(start))
@@ -76,7 +76,7 @@ func (Allowance) Diff(ctx context.Context, api tasks.DataSource, act *actors.Act
 	return DiffAllowances(ctx, api, act)
 }
 
-func DiffAllowances(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (AllowanceChangeMap, error) {
+func DiffAllowances(ctx context.Context, api tasks.DataSource, act *actors.Change) (AllowanceChangeMap, error) {
 	mapChange, err := generic.DiffActorMap(ctx, api, act, DatacapStateLoader, DatacapAllowancesMapLoader)
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func DiffAllowances(ctx context.Context, api tasks.DataSource, act *actors.Actor
 	return out, nil
 }
 
-func diffOwnerMap(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, ownerAddress address.Address, ownerKey []byte) ([]*AllowanceChange, error) {
+func diffOwnerMap(ctx context.Context, api tasks.DataSource, act *actors.Change, ownerAddress address.Address, ownerKey []byte) ([]*AllowanceChange, error) {
 	mapChange, err := generic.DiffActorMap(ctx, api, act, DatacapStateLoader, func(i interface{}) (adt.Map, *adt.MapOpts, error) {
 		datacapState := i.(datacap.State)
 		clientAllocationMap, err := datacapState.AllowanceMapForOwner(ownerAddress)

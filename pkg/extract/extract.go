@@ -2,6 +2,7 @@ package extract
 
 import (
 	"context"
+	"runtime"
 	"time"
 
 	actortypes "github.com/filecoin-project/go-state-types/actors"
@@ -57,7 +58,7 @@ func State(ctx context.Context, api tasks.DataSource, current, executed *types.T
 	grp.Go(func() error {
 		start := time.Now()
 		// all actor changes between current and parent, actor state exists in current.
-		actorChanges, err = Actors(grpCtx, api, current, executed, actorVersion, 8)
+		actorChanges, err = Actors(ctx, api, current, executed, runtime.NumCPU())
 		if err != nil {
 			log.Errorw("failed to extract actor states", "error", err)
 			return err

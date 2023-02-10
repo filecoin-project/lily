@@ -31,7 +31,7 @@ func (a *ActorChange) Kind() actors.ActorStateKind {
 
 type Actor struct{}
 
-func (Actor) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func (Actor) Diff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {
 		log.Debugw("Diff", "kind", KindActorChange, zap.Inline(act), "duration", time.Since(start))
@@ -43,7 +43,7 @@ func (Actor) Type() string {
 	return KindActorChange
 }
 
-func ActorDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func ActorDiff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	switch act.Type {
 	case core.ChangeTypeAdd:
 		currentState, err := api.ChainReadObj(ctx, act.Current.Head)

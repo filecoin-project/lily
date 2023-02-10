@@ -59,7 +59,7 @@ func (c Clients) Type() string {
 	return KindVerifregClients
 }
 
-func (Clients) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func (Clients) Diff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {
 		log.Debugw("Diff", "kind", KindVerifregClients, zap.Inline(act), "duration", time.Since(start))
@@ -67,7 +67,7 @@ func (Clients) Diff(ctx context.Context, api tasks.DataSource, act *actors.Actor
 	return DiffClients(ctx, api, act)
 }
 
-func DiffClients(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func DiffClients(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	mapChange, err := generic.DiffActorMap(ctx, api, act, VerifregStateLoader, VerifiregClientsMapLoader)
 	if err != nil {
 		return nil, err

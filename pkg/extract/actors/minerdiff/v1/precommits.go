@@ -59,7 +59,7 @@ func (c PreCommit) Type() string {
 	return KindMinerPreCommit
 }
 
-func (PreCommit) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func (PreCommit) Diff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {
 		log.Debugw("Diff", "kind", KindMinerPreCommit, zap.Inline(act), "duration", time.Since(start))
@@ -67,7 +67,7 @@ func (PreCommit) Diff(ctx context.Context, api tasks.DataSource, act *actors.Act
 	return PreCommitDiff(ctx, api, act)
 }
 
-func PreCommitDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func PreCommitDiff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	mapChange, err := generic.DiffActorMap(ctx, api, act, MinerStateLoader, MinerPreCommitMapLoader)
 	if err != nil {
 		return nil, err

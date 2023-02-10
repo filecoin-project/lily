@@ -55,7 +55,7 @@ func (v Verifiers) Type() string {
 	return KindVerifregVerifiers
 }
 
-func (Verifiers) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func (Verifiers) Diff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {
 		log.Debugw("Diff", "kind", KindVerifregVerifiers, zap.Inline(act), "duration", time.Since(start))
@@ -63,7 +63,7 @@ func (Verifiers) Diff(ctx context.Context, api tasks.DataSource, act *actors.Act
 	return DiffVerifiers(ctx, api, act)
 }
 
-func DiffVerifiers(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func DiffVerifiers(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	mapChange, err := generic.DiffActorMap(ctx, api, act, VerifregStateLoader, VerifiregVerifiersMapLoader)
 	if err != nil {
 		return nil, err

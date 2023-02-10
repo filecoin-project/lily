@@ -52,7 +52,7 @@ func (c Claims) Type() string {
 	return KindPowerClaims
 }
 
-func (Claims) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func (Claims) Diff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {
 		log.Debugw("Diff", "kind", KindPowerClaims, zap.Inline(act), "duration", time.Since(start))
@@ -60,7 +60,7 @@ func (Claims) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorC
 	return DiffClaims(ctx, api, act)
 }
 
-func DiffClaims(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func DiffClaims(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	mapChange, err := generic.DiffActorMap(ctx, api, act, PowerStateLoader, PowerClaimsMapLoader)
 	if err != nil {
 		return nil, err

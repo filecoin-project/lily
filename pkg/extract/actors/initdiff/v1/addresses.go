@@ -55,7 +55,7 @@ func (a Addresses) Type() string {
 	return KindInitAddresses
 }
 
-func (Addresses) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func (Addresses) Diff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {
 		log.Debugw("Diff", "kind", KindInitAddresses, zap.Inline(act), "duration", time.Since(start))
@@ -63,7 +63,7 @@ func (Addresses) Diff(ctx context.Context, api tasks.DataSource, act *actors.Act
 	return AddressesDiff(ctx, api, act)
 }
 
-func AddressesDiff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func AddressesDiff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	mapChange, err := generic.DiffActorMap(ctx, api, act, InitStateLoader, InitAddressesMapLoader)
 	if err != nil {
 		return nil, err

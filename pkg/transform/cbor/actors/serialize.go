@@ -160,7 +160,7 @@ func ProcessActorsStates(ctx context.Context, s store.Store, changes *extract.Ac
 	return out, nil
 }
 
-func PutActorDiffResult(ctx context.Context, s store.Store, result actors.ActorDiffResult) (cid.Cid, error) {
+func PutActorDiffResult(ctx context.Context, s store.Store, result actors.DiffResult) (cid.Cid, error) {
 	changes, err := result.MarshalStateChange(ctx, s)
 	if err != nil {
 		return cid.Undef, err
@@ -168,7 +168,7 @@ func PutActorDiffResult(ctx context.Context, s store.Store, result actors.ActorD
 	return s.Put(ctx, changes)
 }
 
-func PutActorDiffResultMap(ctx context.Context, s store.Store, results map[address.Address]actors.ActorDiffResult) (cid.Cid, error) {
+func PutActorDiffResultMap(ctx context.Context, s store.Store, results map[address.Address]actors.DiffResult) (cid.Cid, error) {
 	actorHamt, err := adt.MakeEmptyMap(s, 5 /*TODO*/)
 	if err != nil {
 		return cid.Undef, err

@@ -10,7 +10,7 @@ import (
 	"github.com/filecoin-project/lily/tasks"
 )
 
-func DiffActorArray(ctx context.Context, api tasks.DataSource, act *actors.ActorChange, actorStateLoader ActorStateLoader, actorArrayLoader ActorStateArrayLoader) (core.ArrayModifications, error) {
+func DiffActorArray(ctx context.Context, api tasks.DataSource, act *actors.Change, actorStateLoader ActorStateLoader, actorArrayLoader ActorStateArrayLoader) (core.ArrayModifications, error) {
 	if act.Type == core.ChangeTypeRemove {
 		executedActor, err := actorStateLoader(api.Store(), act.Executed)
 		if err != nil {

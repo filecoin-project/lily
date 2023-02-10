@@ -38,7 +38,7 @@ func (i Info) Type() string {
 	return KindMinerInfo
 }
 
-func (Info) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func (Info) Diff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {
 		log.Debugw("Diff", "kind", KindMinerInfo, zap.Inline(act), "duration", time.Since(start))
@@ -55,7 +55,7 @@ type DiffInfoAPI interface {
 
 // separate method for testing purposes
 
-func InfoDiff(ctx context.Context, api DiffInfoAPI, act *actors.ActorChange) (*InfoChange, error) {
+func InfoDiff(ctx context.Context, api DiffInfoAPI, act *actors.Change) (*InfoChange, error) {
 	// was removed, no new info
 	if act.Type == core.ChangeTypeRemove {
 		return nil, nil

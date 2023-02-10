@@ -15,7 +15,7 @@ import (
 
 var log = logging.Logger("extract/actors/miner")
 
-func ActorStateChangeHandler(changes []actors.ActorStateChange) (actors.ActorDiffResult, error) {
+func ActorStateChangeHandler(changes []actors.ActorStateChange) (actors.DiffResult, error) {
 	var stateDiff = new(StateDiffResult)
 	for _, stateChange := range changes {
 		switch v := stateChange.(type) {

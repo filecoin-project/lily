@@ -58,7 +58,7 @@ func (p Proposals) Type() string {
 	return KindMarketProposal
 }
 
-func (Proposals) Diff(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func (Proposals) Diff(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	start := time.Now()
 	defer func() {
 		log.Debugw("Diff", "kind", KindMarketProposal, zap.Inline(act), "duration", time.Since(start))
@@ -66,7 +66,7 @@ func (Proposals) Diff(ctx context.Context, api tasks.DataSource, act *actors.Act
 	return DiffProposals(ctx, api, act)
 }
 
-func DiffProposals(ctx context.Context, api tasks.DataSource, act *actors.ActorChange) (actors.ActorStateChange, error) {
+func DiffProposals(ctx context.Context, api tasks.DataSource, act *actors.Change) (actors.ActorStateChange, error) {
 	arrayChanges, err := generic.DiffActorArray(ctx, api, act, MarketStateLoader, MarketProposlasArrayLoader)
 	if err != nil {
 		return nil, err
