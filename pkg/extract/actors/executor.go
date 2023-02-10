@@ -15,7 +15,6 @@ type DifferReport struct {
 	DiffType  string
 	StartTime time.Time
 	Duration  time.Duration
-	Error     error
 	Result    ActorStateChange
 }
 
@@ -33,11 +32,13 @@ func (s *StateDiffer) ActorDiff(ctx context.Context, api tasks.DataSource, act *
 	for i, fn := range s.Methods {
 		start := time.Now()
 		res, err := fn.Diff(ctx, api, act)
+		if err != nil {
+			return nil, err
+		}
 		out[i] = DifferReport{
 			DiffType:  fn.Type(),
 			StartTime: start,
 			Duration:  time.Since(start),
-			Error:     err,
 			Result:    res,
 		}
 	}

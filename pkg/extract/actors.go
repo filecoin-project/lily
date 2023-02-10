@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	"github.com/filecoin-project/go-address"
 	actortypes "github.com/filecoin-project/go-state-types/actors"
@@ -113,7 +114,7 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 		// cancel is the channel used to cancel any active workers
 		cancel = make(chan struct{})
 		// scheduledWorkers is the number of workers scheduled for execution, its value decreases as workers complete
-		scheduledWorkers = 0
+		scheduledWorkers = int64(0)
 		// workerCtx is the context used by the workers.
 		// TODO a method deep in the call stack of this function is not respecting context cancellation
 		workerCtx = context.TODO()
@@ -135,25 +136,29 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 		pool.Submit(func() {
 			defer func() {
 				wg.Done()
-				scheduledWorkers--
+				atomic.AddInt64(&scheduledWorkers, -1)
 
 			}()
 			res, err := diffRawActorState(workerCtx, api, act)
 			if err != nil {
 				// attempt to send the error or bail if canceled
-				select {
-				case <-cancel:
-					return
-				case errCh <- err:
-					return
+				for {
+					select {
+					case <-cancel:
+						return
+					case errCh <- err:
+						return
+					}
 				}
 			}
 			// attempt to send the result or bail if canceled
-			select {
-			case <-cancel:
-				return
-			case resCh <- res:
-				return
+			for {
+				select {
+				case <-cancel:
+					return
+				case resCh <- res:
+					return
+				}
 			}
 		})
 
@@ -162,26 +167,30 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 		pool.Submit(func() {
 			defer func() {
 				wg.Done()
-				scheduledWorkers--
+				atomic.AddInt64(&scheduledWorkers, -1)
 
 			}()
 			res, ok, err := diffTypedActorState(workerCtx, api, act)
 			if err != nil {
 				// attempt to send the error or bail if canceled
-				select {
-				case <-cancel:
-					return
-				case errCh <- err:
-					return
+				for {
+					select {
+					case <-cancel:
+						return
+					case errCh <- err:
+						return
+					}
 				}
 			}
 			if ok {
 				// attempt to send the result or bail if canceled
-				select {
-				case <-cancel:
-					return
-				case resCh <- res:
-					return
+				for {
+					select {
+					case <-cancel:
+						return
+					case resCh <- res:
+						return
+					}
 				}
 			}
 			// Not all actors have their state diffed, for example account actors have no state to diff: their state is empty.
@@ -196,14 +205,20 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 	go func() {
 		wg.Wait()
 		done <- struct{}{}
+		log.Info("cleaned up happy path go routine")
 	}()
 
 	// stop the worker pool, dropping any scheduled workers, and complete any wait-groups for the case a workers were canceled.
 	cleanup := func() {
+		log.Info("cancel any remaining workers")
+		close(cancel)
 		pool.Stop()
-		for i := 0; i < scheduledWorkers; i++ {
+		log.Info("worker pool stopped")
+		for i := scheduledWorkers; i > 0; i-- {
 			wg.Done()
 		}
+		close(resCh)
+		close(errCh)
 	}
 
 	// result of diffing all actor states
@@ -219,13 +234,11 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 		// canceling the context or receiving an error causes all workers to stop and drops any scheduled workers.
 		case <-workerCtx.Done():
 			log.Errorw("context canceled", "error", workerCtx.Err())
-			cancel <- struct{}{}
 			cleanup()
 			<-done
 			return nil, workerCtx.Err()
 		case err := <-errCh:
-			log.Infow("worker received error while processing", "error", err)
-			cancel <- struct{}{}
+			log.Errorw("worker received error while processing", "error", err)
 			cleanup()
 			<-done
 			return nil, err
