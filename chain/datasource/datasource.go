@@ -138,6 +138,22 @@ type DataSource struct {
 	diffPreCommitGroup singleflight.Group
 }
 
+func (t *DataSource) NetworkName(ctx context.Context) (string, error) {
+	name, err := t.node.StateNetworkName(ctx)
+	if err != nil {
+		return "", err
+	}
+	return string(name), nil
+}
+
+func (t *DataSource) NetworkVersion(ctx context.Context, tsk types.TipSetKey) (uint, error) {
+	v, err := t.node.StateNetworkVersion(ctx, tsk)
+	if err != nil {
+		return 0, err
+	}
+	return uint(v), nil
+}
+
 func (t *DataSource) ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi.TokenAmount, error) {
 	return t.node.ComputeBaseFee(ctx, ts)
 }
@@ -238,6 +254,10 @@ func (t *DataSource) CirculatingSupply(ctx context.Context, ts *types.TipSet) (a
 	return t.node.CirculatingSupply(ctx, ts.Key())
 }
 
+func (t *DataSource) MessageExecutionsV2(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecutionV2, error) {
+	return t.node.GetMessageExecutionsForTipSetV2(ctx, ts, pts)
+}
+
 func (t *DataSource) MessageExecutions(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error) {
 	metrics.RecordInc(ctx, metrics.DataSourceMessageExecutionRead)
 	ctx, span := otel.Tracer("").Start(ctx, "DataSource.MessageExecutions")
@@ -280,6 +300,10 @@ func (t *DataSource) MinerLoad(store adt.Store, act *types.Actor) (miner.State, 
 
 func (t *DataSource) ShouldBurnFn(ctx context.Context, ts *types.TipSet) (lens.ShouldBurnFn, error) {
 	return t.node.BurnFundsFn(ctx, ts)
+}
+
+func (t *DataSource) ChainReadObj(ctx context.Context, obj cid.Cid) ([]byte, error) {
+	return t.node.ChainReadObj(ctx, obj)
 }
 
 func ComputeGasOutputs(ctx context.Context, block *types.BlockHeader, message *types.Message, receipt *types.MessageReceipt, shouldBurnFn lens.ShouldBurnFn) (vm.GasOutputs, error) {

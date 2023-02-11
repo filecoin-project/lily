@@ -18,7 +18,7 @@ type SectorDealsExtractor struct{}
 
 func (SectorDealsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
 	log.Debugw("extract", zap.String("extractor", "SectorDealsExtractor"), zap.Inline(a))
-	ctx, span := otel.Tracer("").Start(ctx, "SectorDealsExtractor.Extract")
+	ctx, span := otel.Tracer("").Start(ctx, "SectorDealsExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

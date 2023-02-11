@@ -74,6 +74,30 @@ func (s *state{{.v}}) VerifiedClientsMapHashFunction() func(input []byte) []byte
            	}
 }
 
+func (s *state{{.v}}) AllowanceMap() (adt.Map, error) {
+	return adt{{.v}}.AsMap(s.store, s.Token.Allowances, int(s.Token.HamtBitWidth))
+}
+
+func (s *state{{.v}}) AllowanceMapBitWidth() int {
+	return int(s.Token.HamtBitWidth)
+}
+
+func (s *state{{.v}}) AllowanceMapHashFunction() func(input []byte) []byte {
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+}
+
+func (s *state{{.v}}) AllowanceMapForOwner(owner address.Address) (adt.Map, error) {
+	innerHamtCid, err := s.getInnerHamtCid(s.store, abi.IdAddrKey(owner), s.Token.Allowances, int(s.Token.HamtBitWidth))
+	if err != nil {
+		return nil, err
+	}
+	return adt{{.v}}.AsMap(s.store, innerHamtCid, int(s.Token.HamtBitWidth))
+}
+
+
 func (s *state{{.v}}) ActorKey() string {
     return actors.DatacapKey
 }
@@ -89,4 +113,20 @@ func (s *state{{.v}}) Code() cid.Cid {
 	}
 
 	return code
+}
+
+func (s *state{{.v}}) getInnerHamtCid(store adt.Store, key abi.Keyer, mapCid cid.Cid, bitwidth int) (cid.Cid, error) {
+	actorToHamtMap, err := adt{{.v}}.AsMap(store, mapCid, bitwidth)
+	if err != nil {
+		return cid.Undef, fmt.Errorf("couldn't get outer map: %x", err)
+	}
+
+	var innerHamtCid cbg.CborCid
+	if found, err := actorToHamtMap.Get(key, &innerHamtCid); err != nil {
+		return cid.Undef, fmt.Errorf("looking up key: %s: %w", key, err)
+	} else if !found {
+		return cid.Undef, fmt.Errorf("did not find key: %s", key)
+	}
+
+	return cid.Cid(innerHamtCid), nil
 }

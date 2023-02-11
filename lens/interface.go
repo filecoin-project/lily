@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/filecoin-project/go-state-types/exitcode"
+	"github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/lotus/node/modules/dtypes"
 
 	"github.com/filecoin-project/go-address"
@@ -23,6 +24,7 @@ type API interface {
 	VMAPI
 
 	GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*MessageExecution, error)
+	GetMessageExecutionsForTipSetV2(ctx context.Context, ts, pts *types.TipSet) ([]*MessageExecutionV2, error)
 }
 type StoreAPI interface {
 	// TODO this should be the lotus store not the specs-actors store.
@@ -63,6 +65,7 @@ type StateAPI interface {
 	StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error)
 	CirculatingSupply(context.Context, types.TipSetKey) (api.CirculatingSupply, error)
 	StateNetworkName(context.Context) (dtypes.NetworkName, error)
+	StateNetworkVersion(ctx context.Context, key types.TipSetKey) (network.Version, error)
 }
 
 type ShouldBurnFn func(ctx context.Context, msg *types.Message, errcode exitcode.ExitCode) (bool, error)
@@ -81,6 +84,17 @@ type MessageExecution struct {
 
 	FromActorCode cid.Cid // code of the actor the message is from
 	ToActorCode   cid.Cid // code of the actor the message is to
+
+	Implicit bool
+}
+
+type MessageExecutionV2 struct {
+	Cid       cid.Cid
+	StateRoot cid.Cid
+	Height    abi.ChainEpoch
+
+	Message *types.Message
+	Ret     *vm.ApplyRet
 
 	Implicit bool
 }

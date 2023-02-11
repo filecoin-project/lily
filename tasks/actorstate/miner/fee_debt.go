@@ -16,7 +16,7 @@ type FeeDebtExtractor struct{}
 
 func (FeeDebtExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
 	log.Debugw("extract", zap.String("extractor", "FeeDebtExtractor"), zap.Inline(a))
-	ctx, span := otel.Tracer("").Start(ctx, "FeeDebtExtractor.Extract")
+	ctx, span := otel.Tracer("").Start(ctx, "FeeDebtExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

@@ -95,6 +95,33 @@ func (s *state7) VerifiersMapHashFunction() func(input []byte) []byte {
 
 }
 
+func (s *state7) AllocationsMap() (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v7")
+
+}
+
+func (s *state7) AllocationsMapBitWidth() int {
+
+	return builtin7.DefaultHamtBitwidth
+
+}
+
+func (s *state7) AllocationsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state7) AllocationMapForClient(clientIdAddr address.Address) (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v7")
+
+}
+
 func (s *state7) RootKey() (address.Address, error) {
 	return s.State.RootKey, nil
 }
@@ -152,5 +179,40 @@ func (s *state7) GetClaim(providerIdAddr address.Address, claimId verifreg9.Clai
 func (s *state7) GetClaims(providerIdAddr address.Address) (map[verifreg9.ClaimId]verifreg9.Claim, error) {
 
 	return nil, fmt.Errorf("unsupported in actors v7")
+
+}
+
+func (s *state7) ClaimsMap() (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v7")
+
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state7) ClaimsMapBitWidth() int {
+
+	return builtin7.DefaultHamtBitwidth
+
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state7) ClaimsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state7) ClaimMapForProvider(providerIdAddr address.Address) (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v7")
+
+}
+
+func (s *state7) getInnerHamtCid(store adt.Store, key abi.Keyer, mapCid cid.Cid, bitwidth int) (cid.Cid, error) {
+
+	return cid.Undef, fmt.Errorf("unsupported in actors v7")
 
 }

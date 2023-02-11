@@ -105,7 +105,7 @@ type DealStates interface {
 	ForEach(cb func(id abi.DealID, ds DealState) error) error
 	Get(id abi.DealID) (*DealState, bool, error)
 
-	array() adt.Array
+	AsArray() adt.Array
 	decode(*cbg.Deferred) (*DealState, error)
 }
 
@@ -113,7 +113,7 @@ type DealProposals interface {
 	ForEach(cb func(id abi.DealID, dp markettypes.DealProposal) error) error
 	Get(id abi.DealID) (*markettypes.DealProposal, bool, error)
 
-	array() adt.Array
+	AsArray() adt.Array
 	decode(*cbg.Deferred) (*markettypes.DealProposal, error)
 }
 

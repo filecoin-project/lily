@@ -3,6 +3,7 @@ package lily
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"sync"
 
@@ -41,6 +42,9 @@ import (
 	"github.com/filecoin-project/lily/lens/lily/modules"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/network"
+	indexer2 "github.com/filecoin-project/lily/pkg/indexer"
+	"github.com/filecoin-project/lily/pkg/transform/cbor"
+	"github.com/filecoin-project/lily/pkg/transform/timescale"
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 )
@@ -130,6 +134,94 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 		RestartDelay:        cfg.JobConfig.RestartDelay,
 	})
 	return res, nil
+}
+
+func (m *LilyNodeAPI) LilyIndexIPLD(_ context.Context, cfg *LilyIndexIPLDConfig) (bool, error) {
+	return false, nil
+	/*
+		// the context's passed to these methods live for the duration of the clients request, so make a new one.
+		ctx := context.Background()
+
+		// TODO add file buffering
+		f, err := os.OpenFile(cfg.Path, os.O_CREATE|os.O_TRUNC|os.O_EXCL|os.O_WRONLY, 0o644)
+		defer f.Close()
+		if err != nil {
+			return false, err
+		}
+
+		taskAPI, err := datasource.NewDataSource(m)
+		if err != nil {
+			return false, err
+		}
+			// connect to the database, were gonna write stuff to this.
+			db, err := gorm.Open(postgres.Open("host=localhost user=postgres password=password dbname=postgres port=5432 sslmode=disable"), &gorm.Config{
+				NamingStrategy: schema.NamingStrategy{
+					TablePrefix: "z_", // all tables created will be prefixed with `z_` because I am lazy and want them all in the same spot at the bottom of my table list
+					// TODO figure out how to make a new schema with gorm...
+				},
+			})
+			if err != nil {
+				return false, err
+			}
+			if err := lambda.ParseParams(ctx, taskAPI, db); err != nil {
+				return false, err
+			}
+
+
+		currentTs, err := m.ChainGetTipSet(ctx, cfg.TipSet)
+		if err != nil {
+			return false, err
+		}
+
+		executedTs, err := m.ChainGetTipSet(ctx, currentTs.Parents())
+		if err != nil {
+			return false, err
+		}
+
+		chainState, err := extract.State(ctx, taskAPI, currentTs, executedTs)
+		if err != nil {
+			return false, err
+		}
+
+		bs := blockstore.NewMemorySync()
+		if err := cbor.Persist(ctx, chainState); err != nil; {
+			return false, err
+		}
+		if err != nil {
+			return false, err
+		}
+		if err := cbor.WriteCarV1(ctx, root, bs, f); err != nil {
+			return false, err
+		}
+		return true, nil
+	*/
+}
+
+func (m *LilyNodeAPI) LilyIndexIPLDFile(_ context.Context, cfg *LilyIndexIPLDFileConfig) (bool, error) {
+	// the context's passed to these methods live for the duration of the clients request, so make a new one.
+	ctx := context.Background()
+	md := storage.Metadata{
+		JobName: cfg.JobConfig.Name,
+	}
+
+	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+	strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
+	if err != nil {
+		return false, err
+	}
+
+	// TODO add buffering
+	f, err := os.OpenFile(cfg.Path, os.O_RDONLY, 0o644)
+	defer f.Close()
+	if err != nil {
+		return false, err
+	}
+
+	if err := timescale.Process(ctx, f, strg, m.StateManager.GetNetworkVersion); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (m *LilyNodeAPI) LilyIndex(_ context.Context, cfg *LilyIndexConfig) (interface{}, error) {
@@ -284,29 +376,58 @@ func (m *LilyNodeAPI) LilyWatchNotify(_ context.Context, cfg *LilyWatchNotifyCon
 }
 
 func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedule.JobSubmitResult, error) {
-	// the context's passed to these methods live for the duration of the clients request, so make a new one.
-	ctx := context.Background()
+	/*
+		// the context's passed to these methods live for the duration of the clients request, so make a new one.
+		ctx := context.Background()
 
-	md := storage.Metadata{
-		JobName: cfg.JobConfig.Name,
-	}
+		md := storage.Metadata{
+			JobName: cfg.JobConfig.Name,
+		}
 
-	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
-	if err != nil {
-		return nil, err
-	}
+		// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+		strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
+		if err != nil {
+			return nil, err
+		}
+
+		taskAPI, err := datasource.NewDataSource(m)
+		if err != nil {
+			return nil, err
+		}
+
+		// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+		idx, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
+		if err != nil {
+			return nil, err
+		}
+
+		res := m.Scheduler.Submit(&schedule.JobConfig{
+			Name: cfg.JobConfig.Name,
+			Type: "walk",
+			Params: map[string]string{
+				"window":    cfg.JobConfig.Window.String(),
+				"minHeight": fmt.Sprintf("%d", cfg.From),
+				"maxHeight": fmt.Sprintf("%d", cfg.To),
+				"storage":   cfg.JobConfig.Storage,
+			},
+			Tasks:               cfg.JobConfig.Tasks,
+			Job:                 walk.NewWalker(idx, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To),
+			RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
+			RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
+			RestartDelay:        cfg.JobConfig.RestartDelay,
+		})
+
+	*/
 
 	taskAPI, err := datasource.NewDataSource(m)
 	if err != nil {
 		return nil, err
 	}
-
-	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	idx, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
+	transformer, err := cbor.NewTransformer("/Users/frrist/Workspace/src/github.com/filecoin-project/lily/garage", cfg.JobConfig.Name)
 	if err != nil {
 		return nil, err
 	}
+	stateIndexer := indexer2.NewStateIndexer(taskAPI, transformer)
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
 		Name: cfg.JobConfig.Name,
@@ -318,7 +439,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 			"storage":   cfg.JobConfig.Storage,
 		},
 		Tasks:               cfg.JobConfig.Tasks,
-		Job:                 walk.NewWalker(idx, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To),
+		Job:                 walk.NewWalker(stateIndexer, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To),
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,
@@ -533,6 +654,48 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, next *t
 			Implicit:      execution.Implicit,
 			ToActorCode:   toCode,
 			FromActorCode: fromCode,
+		}
+	}
+	return out, nil
+}
+
+func (m *LilyNodeAPI) GetMessageExecutionsForTipSetV2(ctx context.Context, next *types.TipSet, current *types.TipSet) ([]*lens.MessageExecutionV2, error) {
+	// this is defined in the lily daemon dep injection constructor, failure here is a developer error.
+	msgMonitor, ok := m.ExecMonitor.(*modules.BufferedExecMonitor)
+	if !ok {
+		panic(fmt.Sprintf("bad cast, developer error expected modules.BufferedExecMonitor, got %T", m.ExecMonitor))
+	}
+
+	// if lily was watching the chain when this tipset was applied then its exec monitor will already
+	// contain executions for this tipset.
+	executions, err := msgMonitor.ExecutionFor(current)
+	if err != nil {
+		if err == modules.ErrExecutionTraceNotFound {
+			// if lily hasn't watched this tipset be applied then we need to compute its execution trace.
+			// this will likely be the case for most walk tasks.
+			_, err := m.StateManager.ExecutionTraceWithMonitor(ctx, current, msgMonitor)
+			if err != nil {
+				return nil, fmt.Errorf("failed to compute execution trace for tipset %s: %w", current.Key().String(), err)
+			}
+			// the above call will populate the msgMonitor with an execution trace for this tipset, get it.
+			executions, err = msgMonitor.ExecutionFor(current)
+			if err != nil {
+				return nil, fmt.Errorf("failed to find execution trace for tipset %s: %w", current.Key().String(), err)
+			}
+		} else {
+			return nil, fmt.Errorf("failed to extract message execution for tipset %s: %w", next, err)
+		}
+	}
+
+	out := make([]*lens.MessageExecutionV2, len(executions))
+	for idx, execution := range executions {
+		out[idx] = &lens.MessageExecutionV2{
+			Cid:       execution.Mcid,
+			StateRoot: execution.TipSet.ParentState(),
+			Height:    execution.TipSet.Height(),
+			Message:   execution.Msg,
+			Ret:       execution.Ret,
+			Implicit:  execution.Implicit,
 		}
 	}
 	return out, nil

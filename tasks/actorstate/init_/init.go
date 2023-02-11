@@ -24,7 +24,7 @@ type InitExtractor struct{}
 
 func (InitExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
 	log.Debugw("extract", zap.String("extractor", "InitExtractor"), zap.Inline(a))
-	ctx, span := otel.Tracer("").Start(ctx, "InitExtractor.Extract")
+	ctx, span := otel.Tracer("").Start(ctx, "InitExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

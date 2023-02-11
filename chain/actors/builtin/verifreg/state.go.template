@@ -8,6 +8,10 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
 
+{{if (ge .v 9)}}
+	cbg "github.com/whyrusleeping/cbor-gen"
+{{end}}
+
 	"github.com/filecoin-project/lily/chain/actors/adt"
 
 {{if (le .v 1)}}
@@ -126,6 +130,48 @@ func (s *state{{.v}}) VerifiersMapHashFunction() func(input []byte) []byte {
     {{end}}
 }
 
+func (s *state{{.v}}) AllocationsMap() (adt.Map, error) {
+{{if (le .v 8)}}
+    return nil, fmt.Errorf("unsupported in actors v{{.v}}")
+{{else}}
+    return adt{{.v}}.AsMap(s.store, s.Allocations{{if (ge .v 3)}}, builtin{{.v}}.DefaultHamtBitwidth{{end}})
+{{end}}
+}
+
+func (s *state{{.v}}) AllocationsMapBitWidth() int {
+{{if (ge .v 3)}}
+    return builtin{{.v}}.DefaultHamtBitwidth
+{{else}}
+    return 5
+{{end}}
+}
+
+func (s *state{{.v}}) AllocationsMapHashFunction() func(input []byte) []byte {
+{{if (le .v 1)}}
+    return func(input []byte) []byte {
+    res := sha256simd.Sum256(input)
+    return res[:]
+    }
+{{else}}
+    return func(input []byte) []byte {
+    res := sha256.Sum256(input)
+    return res[:]
+    }
+{{end}}
+}
+
+func (s *state{{.v}}) AllocationMapForClient(clientIdAddr address.Address) (adt.Map, error) {
+{{if (le .v 8)}}
+    return nil, fmt.Errorf("unsupported in actors v{{.v}}")
+{{else}}
+    innerHamtCid, err := s.getInnerHamtCid(s.store, abi.IdAddrKey(clientIdAddr), s.Allocations, builtin{{.v}}.DefaultHamtBitwidth)
+    if err != nil {
+    return nil, err
+    }
+    return adt{{.v}}.AsMap(s.store, innerHamtCid, builtin{{.v}}.DefaultHamtBitwidth)
+{{end}}
+}
+
 func (s *state{{.v}}) RootKey() (address.Address, error) {
 	return s.State.RootKey, nil
 }
@@ -198,3 +244,68 @@ func (s *state{{.v}}) GetClaims(providerIdAddr address.Address) (map[verifreg9.C
 	return s.LoadClaimsToMap(s.store, providerIdAddr)
 {{end}}
 }
+
+func (s *state{{.v}}) ClaimsMap() (adt.Map, error) {
+{{if (le .v 8)}}
+    return nil, fmt.Errorf("unsupported in actors v{{.v}}")
+{{else}}
+    return adt{{.v}}.AsMap(s.store, s.Claims, builtin{{.v}}.DefaultHamtBitwidth)
+{{end}}
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state{{.v}}) ClaimsMapBitWidth() int {
+    {{if (ge .v 3)}}
+        return builtin{{.v}}.DefaultHamtBitwidth
+    {{else}}
+        return 5
+    {{end}}
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state{{.v}}) ClaimsMapHashFunction() func(input []byte) []byte {
+    {{if (le .v 1)}}
+        return func(input []byte) []byte {
+            res := sha256simd.Sum256(input)
+            return res[:]
+        }
+    {{else}}
+        return func(input []byte) []byte {
+            res := sha256.Sum256(input)
+            return res[:]
+        }
+    {{end}}
+}
+
+func (s *state{{.v}}) ClaimMapForProvider(providerIdAddr address.Address) (adt.Map, error) {
+{{if (le .v 8)}}
+    return nil, fmt.Errorf("unsupported in actors v{{.v}}")
+{{else}}
+	innerHamtCid, err := s.getInnerHamtCid(s.store, abi.IdAddrKey(providerIdAddr), s.Claims, builtin{{.v}}.DefaultHamtBitwidth)
+	if err != nil {
+		return nil, err
+	}
+	return adt{{.v}}.AsMap(s.store, innerHamtCid, builtin{{.v}}.DefaultHamtBitwidth)
+{{end}}
+}
+
+func (s *state{{.v}}) getInnerHamtCid(store adt.Store, key abi.Keyer, mapCid cid.Cid, bitwidth int) (cid.Cid, error) {
+{{if (le .v 8)}}
+    return cid.Undef, fmt.Errorf("unsupported in actors v{{.v}}")
+{{else}}
+	actorToHamtMap, err := adt{{.v}}.AsMap(store, mapCid, bitwidth)
+	if err != nil {
+		return cid.Undef, fmt.Errorf("couldn't get outer map: %x", err)
+	}
+
+	var innerHamtCid cbg.CborCid
+	if found, err := actorToHamtMap.Get(key, &innerHamtCid); err != nil {
+		return cid.Undef, fmt.Errorf("looking up key: %s: %w", key, err)
+	} else if !found {
+		return cid.Undef, fmt.Errorf("did not find key: %s", key)
+	}
+
+	return cid.Cid(innerHamtCid), nil
+{{end}}
+}
+

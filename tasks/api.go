@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -52,6 +53,7 @@ type DataSource interface {
 	MinerPower(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.MinerPower, error)
 	ActorStateChanges(ctx context.Context, ts, pts *types.TipSet) (ActorStateChangeDiff, error)
 	MessageExecutions(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecution, error)
+	MessageExecutionsV2(ctx context.Context, ts, pts *types.TipSet) ([]*lens.MessageExecutionV2, error)
 	Store() adt.Store
 
 	ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi.TokenAmount, error)
@@ -66,4 +68,9 @@ type DataSource interface {
 	MinerLoad(store adt.Store, act *types.Actor) (miner.State, error)
 
 	ShouldBurnFn(ctx context.Context, ts *types.TipSet) (lens.ShouldBurnFn, error)
+
+	ChainReadObj(ctx context.Context, obj cid.Cid) ([]byte, error)
+
+	NetworkName(ctx context.Context) (string, error)
+	NetworkVersion(ctx context.Context, tsk types.TipSetKey) (uint, error)
 }

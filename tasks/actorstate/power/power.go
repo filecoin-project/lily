@@ -68,7 +68,7 @@ func (p *PowerStateExtractionContext) HasPreviousState() bool {
 }
 
 func (StoragePowerExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "StoragePowerExtractor.Extract")
+	ctx, span := otel.Tracer("").Start(ctx, "StoragePowerExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

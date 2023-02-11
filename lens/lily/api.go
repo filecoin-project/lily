@@ -20,6 +20,8 @@ type LilyAPI interface {
 	AuthVerify(ctx context.Context, token string) ([]auth.Permission, error)
 
 	LilyIndex(ctx context.Context, cfg *LilyIndexConfig) (interface{}, error)
+	LilyIndexIPLD(ctx context.Context, cfg *LilyIndexIPLDConfig) (bool, error)
+	LilyIndexIPLDFile(ctx context.Context, cfg *LilyIndexIPLDFileConfig) (bool, error)
 	LilyWatch(ctx context.Context, cfg *LilyWatchConfig) (*schedule.JobSubmitResult, error)
 	LilyWalk(ctx context.Context, cfg *LilyWalkConfig) (*schedule.JobSubmitResult, error)
 	LilySurvey(ctx context.Context, cfg *LilySurveyConfig) (*schedule.JobSubmitResult, error)
@@ -158,6 +160,20 @@ type LilyIndexConfig struct {
 	JobConfig LilyJobConfig
 
 	TipSet types.TipSetKey
+}
+
+type LilyIndexIPLDFileConfig struct {
+	JobConfig LilyJobConfig
+
+	Path string
+}
+
+type LilyIndexIPLDConfig struct {
+	JobConfig LilyJobConfig
+
+	TipSet          types.TipSetKey
+	Path            string
+	WriteBufferSize int
 }
 
 type LilyIndexNotifyConfig struct {

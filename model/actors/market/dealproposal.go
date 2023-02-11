@@ -37,7 +37,7 @@ type MarketDealProposal struct {
 	ProviderID string `pg:",notnull"`
 	// The amount of FIL (in attoFIL) the client has pledged as collateral.
 	ClientCollateral string `pg:",notnull"`
-	// The amount of FIL (in attoFIL) the provider has pledged as collateral. The Provider deal collateral is only slashed when a sector is terminated before the deal expires.
+	// The amount of FIL (in attoFIL) the provider has pledged as collateral. The Client deal collateral is only slashed when a sector is terminated before the deal expires.
 	ProviderCollateral string `pg:",notnull"`
 	// The amount of FIL (in attoFIL) that will be transferred from the client to the provider every epoch this deal is active for.
 	StoragePricePerEpoch string `pg:",notnull"`

@@ -34,13 +34,13 @@ func DiffDealProposals(ctx context.Context, store adt.Store, pre, cur State) (*D
 	diffContainer := NewMarketProposalsDiffContainer(preP, curP)
 	if requiresLegacyDiffing(pre, cur, preOpts, curOpts) {
 		log.Warn("actor AMT opts differ, running slower generic array diff", "preCID", pre.Code(), "curCID", cur.Code())
-		if err := diff.CompareArray(preP.array(), curP.array(), diffContainer); err != nil {
+		if err := diff.CompareArray(preP.AsArray(), curP.AsArray(), diffContainer); err != nil {
 			return nil, fmt.Errorf("diffing deal states: %w", err)
 		}
 		return diffContainer.Results, nil
 	}
 
-	changes, err := diff.Amt(ctx, preP.array(), curP.array(), store, store, amt.UseTreeBitWidth(uint(preOpts)))
+	changes, err := diff.Amt(ctx, preP.AsArray(), curP.AsArray(), store, store, amt.UseTreeBitWidth(uint(preOpts)))
 	if err != nil {
 		return nil, err
 	}
@@ -116,13 +116,13 @@ func DiffDealStates(ctx context.Context, store adt.Store, pre, cur State) (*Deal
 	diffContainer := NewMarketStatesDiffContainer(preS, curS)
 	if requiresLegacyDiffing(pre, cur, preOpts, curOpts) {
 		log.Warn("actor AMT opts differ, running slower generic array diff", "preCID", pre.Code(), "curCID", cur.Code())
-		if err := diff.CompareArray(preS.array(), curS.array(), diffContainer); err != nil {
+		if err := diff.CompareArray(preS.AsArray(), curS.AsArray(), diffContainer); err != nil {
 			return nil, fmt.Errorf("diffing deal states: %w", err)
 		}
 		return diffContainer.Results, nil
 	}
 
-	changes, err := diff.Amt(ctx, preS.array(), curS.array(), store, store, amt.UseTreeBitWidth(uint(preOpts)))
+	changes, err := diff.Amt(ctx, preS.AsArray(), curS.AsArray(), store, store, amt.UseTreeBitWidth(uint(preOpts)))
 	if err != nil {
 		return nil, err
 	}

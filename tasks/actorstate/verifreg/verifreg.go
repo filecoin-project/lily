@@ -66,7 +66,7 @@ func NewVerifiedRegistryExtractorContext(ctx context.Context, a actorstate.Actor
 }
 
 func (VerifiedRegistryExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "VerifiedRegistryExtractor.Extract")
+	ctx, span := otel.Tracer("").Start(ctx, "VerifiedRegistryExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

@@ -596,7 +596,7 @@ COMMENT ON COLUMN {{ .SchemaName | default "public"}}.market_deal_proposals.prov
 COMMENT ON COLUMN {{ .SchemaName | default "public"}}.market_deal_proposals.start_epoch IS 'The epoch at which this deal with begin. Storage deal must appear in a sealed (proven) sector no later than start_epoch, otherwise it is invalid.';
 COMMENT ON COLUMN {{ .SchemaName | default "public"}}.market_deal_proposals.end_epoch IS 'The epoch at which this deal with end.';
 COMMENT ON COLUMN {{ .SchemaName | default "public"}}.market_deal_proposals.storage_price_per_epoch IS 'The amount of FIL (in attoFIL) that will be transferred from the client to the provider every epoch this deal is active for.';
-COMMENT ON COLUMN {{ .SchemaName | default "public"}}.market_deal_proposals.provider_collateral IS 'The amount of FIL (in attoFIL) the provider has pledged as collateral. The Provider deal collateral is only slashed when a sector is terminated before the deal expires.';
+COMMENT ON COLUMN {{ .SchemaName | default "public"}}.market_deal_proposals.provider_collateral IS 'The amount of FIL (in attoFIL) the provider has pledged as collateral. The Client deal collateral is only slashed when a sector is terminated before the deal expires.';
 COMMENT ON COLUMN {{ .SchemaName | default "public"}}.market_deal_proposals.client_collateral IS 'The amount of FIL (in attoFIL) the client has pledged as collateral.';
 COMMENT ON COLUMN {{ .SchemaName | default "public"}}.market_deal_proposals.label IS 'An arbitrary client chosen label to apply to the deal.';
 COMMENT ON COLUMN {{ .SchemaName | default "public"}}.market_deal_proposals.height IS 'Epoch at which this deal proposal was added or changed.';

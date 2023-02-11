@@ -64,6 +64,11 @@ type State interface {
 	VerifiedClients() (adt.Map, error)
 	VerifiedClientsMapBitWidth() int
 	VerifiedClientsMapHashFunction() func(input []byte) []byte
+
+    AllowanceMap() (adt.Map, error)
+    AllowanceMapBitWidth() int
+    AllowanceMapHashFunction() func(input []byte) []byte
+    AllowanceMapForOwner(owner address.Address) (adt.Map, error)
 }
 
 func AllCodes() []cid.Cid {

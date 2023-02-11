@@ -22,7 +22,7 @@ type PoStExtractor struct{}
 
 func (PoStExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
 	log.Debugw("extract", zap.String("extractor", "PoStExtractor"), zap.Inline(a))
-	ctx, span := otel.Tracer("").Start(ctx, "PoStExtractor.Extract")
+	ctx, span := otel.Tracer("").Start(ctx, "PoStExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

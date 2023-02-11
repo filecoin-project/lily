@@ -197,7 +197,7 @@ var TableFieldComments = map[string]map[string]string{
 		"Label":                "An arbitrary client chosen label to apply to the deal. The value is base64 encoded before persisting.",
 		"PaddedPieceSize":      "The piece size in bytes with padding.",
 		"PieceCID":             "CID of a sector piece. A Piece is an object that represents a whole or part of a File.",
-		"ProviderCollateral":   "The amount of FIL (in attoFIL) the provider has pledged as collateral. The Provider deal collateral is only slashed when a sector is terminated before the deal expires.",
+		"ProviderCollateral":   "The amount of FIL (in attoFIL) the provider has pledged as collateral. The Client deal collateral is only slashed when a sector is terminated before the deal expires.",
 		"ProviderID":           "Address of the actor providing the services.",
 		"StartEpoch":           "The epoch at which this deal with begin. Storage deal must appear in a sealed (proven) sector no later than start_epoch, otherwise it is invalid.",
 		"StateRoot":            "CID of the parent state root for this deal.",

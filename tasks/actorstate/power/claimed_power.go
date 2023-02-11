@@ -19,7 +19,7 @@ type ClaimedPowerExtractor struct{}
 
 func (c ClaimedPowerExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
 	log.Debugw("extract", zap.String("extractor", "ClaimedPowerExtractor"), zap.Inline(a))
-	ctx, span := otel.Tracer("").Start(ctx, "ClaimedPowerExtractor.Extract")
+	ctx, span := otel.Tracer("").Start(ctx, "ClaimedPowerExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

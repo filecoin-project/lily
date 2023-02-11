@@ -16,8 +16,8 @@ import (
 type RawActorStateExtractor struct{}
 
 func (RawActorStateExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
-	log.Debugw("Extract", zap.String("extractor", "RawStateActorExtractor"), zap.Inline(a))
-	ctx, span := otel.Tracer("").Start(ctx, "RawActorStateExtractor.Extract")
+	log.Debugw("Transform", zap.String("extractor", "RawStateActorExtractor"), zap.Inline(a))
+	ctx, span := otel.Tracer("").Start(ctx, "RawActorStateExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

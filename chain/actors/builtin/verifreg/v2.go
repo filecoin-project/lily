@@ -93,6 +93,33 @@ func (s *state2) VerifiersMapHashFunction() func(input []byte) []byte {
 
 }
 
+func (s *state2) AllocationsMap() (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v2")
+
+}
+
+func (s *state2) AllocationsMapBitWidth() int {
+
+	return 5
+
+}
+
+func (s *state2) AllocationsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state2) AllocationMapForClient(clientIdAddr address.Address) (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v2")
+
+}
+
 func (s *state2) RootKey() (address.Address, error) {
 	return s.State.RootKey, nil
 }
@@ -151,5 +178,40 @@ func (s *state2) GetClaim(providerIdAddr address.Address, claimId verifreg9.Clai
 func (s *state2) GetClaims(providerIdAddr address.Address) (map[verifreg9.ClaimId]verifreg9.Claim, error) {
 
 	return nil, fmt.Errorf("unsupported in actors v2")
+
+}
+
+func (s *state2) ClaimsMap() (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v2")
+
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state2) ClaimsMapBitWidth() int {
+
+	return 5
+
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state2) ClaimsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state2) ClaimMapForProvider(providerIdAddr address.Address) (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v2")
+
+}
+
+func (s *state2) getInnerHamtCid(store adt.Store, key abi.Keyer, mapCid cid.Cid, bitwidth int) (cid.Cid, error) {
+
+	return cid.Undef, fmt.Errorf("unsupported in actors v2")
 
 }

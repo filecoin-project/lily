@@ -17,7 +17,7 @@ type BeneficiaryExtractor struct{}
 
 func (BeneficiaryExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
 	log.Debugw("extract", zap.String("extractor", "BeneficiaryExtractor"), zap.Inline(a))
-	ctx, span := otel.Tracer("").Start(ctx, "BeneficiaryExtractor.Extract")
+	ctx, span := otel.Tracer("").Start(ctx, "BeneficiaryExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)

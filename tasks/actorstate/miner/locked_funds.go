@@ -16,7 +16,7 @@ type LockedFundsExtractor struct{}
 
 func (LockedFundsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
 	log.Debugw("extract", zap.String("extractor", "LockedFundsExtractor"), zap.Inline(a))
-	ctx, span := otel.Tracer("").Start(ctx, "LockedFundsExtractor.Extract")
+	ctx, span := otel.Tracer("").Start(ctx, "LockedFundsExtractor.Transform")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)
