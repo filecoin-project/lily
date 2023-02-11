@@ -82,6 +82,10 @@ type JobConfig struct {
 	EndedAt time.Time
 }
 
+func (j *JobConfig) UpdateCurrentHeight(height int) {
+	j.CurrentHeight = height
+}
+
 // Locker represents a general lock that a job may need to take before operating.
 type Locker interface {
 	Lock(context.Context) error

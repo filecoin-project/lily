@@ -220,14 +220,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		return nil, err
 	}
 
-	watchJob := watch.NewWatcher(wapi, idx, cfg.JobConfig.Name,
-		watch.WithTasks(cfg.JobConfig.Tasks...),
-		watch.WithConfidence(cfg.Confidence),
-		watch.WithConcurrentWorkers(cfg.Workers),
-		watch.WithBufferSize(cfg.BufferSize),
-	)
-
-	res := m.Scheduler.Submit(&schedule.JobConfig{
+	jobConfig := &schedule.JobConfig{
 		Name: cfg.JobConfig.Name,
 		Type: "watch",
 		Params: map[string]string{
@@ -238,12 +231,21 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 			"buffer":     strconv.Itoa(cfg.BufferSize),
 		},
 		Tasks:               cfg.JobConfig.Tasks,
-		Job:                 watchJob,
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,
-	})
+	}
 
+	watchJob := watch.NewWatcher(wapi, idx, cfg.JobConfig.Name,
+		jobConfig,
+		watch.WithTasks(cfg.JobConfig.Tasks...),
+		watch.WithConfidence(cfg.Confidence),
+		watch.WithConcurrentWorkers(cfg.Workers),
+		watch.WithBufferSize(cfg.BufferSize),
+	)
+	jobConfig.Job = watchJob
+
+	res := m.Scheduler.Submit(jobConfig)
 	return res, nil
 }
 
@@ -259,13 +261,7 @@ func (m *LilyNodeAPI) LilyWatchNotify(_ context.Context, cfg *LilyWatchNotifyCon
 	}
 	idx := distributed.NewTipSetIndexer(queue.NewAsynq(notifier))
 
-	watchJob := watch.NewWatcher(wapi, idx, cfg.JobConfig.Name,
-		watch.WithTasks(cfg.JobConfig.Tasks...),
-		watch.WithConfidence(cfg.Confidence),
-		watch.WithBufferSize(cfg.BufferSize),
-	)
-
-	res := m.Scheduler.Submit(&schedule.JobConfig{
+	jobConfig := &schedule.JobConfig{
 		Name: cfg.JobConfig.Name,
 		Type: "watch-notify",
 		Params: map[string]string{
@@ -274,11 +270,19 @@ func (m *LilyNodeAPI) LilyWatchNotify(_ context.Context, cfg *LilyWatchNotifyCon
 			"queue":      cfg.Queue,
 		},
 		Tasks:               cfg.JobConfig.Tasks,
-		Job:                 watchJob,
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,
-	})
+	}
+
+	watchJob := watch.NewWatcher(wapi, idx, cfg.JobConfig.Name,
+		jobConfig,
+		watch.WithTasks(cfg.JobConfig.Tasks...),
+		watch.WithConfidence(cfg.Confidence),
+		watch.WithBufferSize(cfg.BufferSize),
+	)
+	jobConfig.Job = watchJob
+	res := m.Scheduler.Submit(jobConfig)
 
 	return res, err
 }
@@ -402,7 +406,7 @@ func (m *LilyNodeAPI) LilyGapFill(_ context.Context, cfg *LilyGapFillConfig) (*s
 		return nil, err
 	}
 
-	res := m.Scheduler.Submit(&schedule.JobConfig{
+	jobConfig := &schedule.JobConfig{
 		Name: cfg.JobConfig.Name,
 		Type: "fill",
 		Params: map[string]string{
@@ -411,12 +415,13 @@ func (m *LilyNodeAPI) LilyGapFill(_ context.Context, cfg *LilyGapFillConfig) (*s
 			"storage":   cfg.JobConfig.Storage,
 		},
 		Tasks:               cfg.JobConfig.Tasks,
-		Job:                 gap.NewFiller(m, db, cfg.JobConfig.Name, cfg.From, cfg.To, cfg.JobConfig.Tasks),
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,
-	})
-
+	}
+	filler := gap.NewFiller(m, db, cfg.JobConfig.Name, cfg.From, cfg.To, cfg.JobConfig.Tasks, jobConfig)
+	jobConfig.Job = filler
+	res := m.Scheduler.Submit(jobConfig)
 	return res, nil
 }
 
