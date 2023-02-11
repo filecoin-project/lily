@@ -17,6 +17,8 @@ type ChainState struct {
 	NetworkName    string
 	NetworkVersion uint64
 	ActorVersion   uint64
+	Current        *types.TipSet
+	Parent         *types.TipSet
 	Message        *MessageStateChanges
 	Actors         *ActorStateChanges
 }
@@ -75,6 +77,8 @@ func State(ctx context.Context, api tasks.DataSource, current, executed *types.T
 		NetworkName:    networkName,
 		NetworkVersion: uint64(networkVersion),
 		ActorVersion:   uint64(actorVersion),
+		Current:        current,
+		Parent:         executed,
 		Message:        blockmessages,
 		Actors:         actorChanges,
 	}, nil

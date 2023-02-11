@@ -12,8 +12,6 @@ import (
 )
 
 type MessageStateChanges struct {
-	Current           *types.TipSet
-	Executed          *types.TipSet
 	BaseFee           abi.TokenAmount
 	CirculatingSupply CirculatingSupply
 	FullBlocks        map[cid.Cid]*chain.FullBlock
@@ -44,9 +42,7 @@ func FullBlockMessages(ctx context.Context, api tasks.DataSource, current, execu
 	}
 
 	return &MessageStateChanges{
-		Current:  current,
-		Executed: executed,
-		BaseFee:  baseFee,
+		BaseFee: baseFee,
 		CirculatingSupply: CirculatingSupply{
 			FilVested:           cs.FilVested,
 			FilMined:            cs.FilMined,

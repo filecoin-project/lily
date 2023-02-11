@@ -11,7 +11,6 @@ import (
 	"github.com/filecoin-project/go-state-types/exitcode"
 	network2 "github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/lotus/api"
-	"github.com/filecoin-project/lotus/blockstore"
 	"github.com/filecoin-project/lotus/chain/consensus/filcns"
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/state"
@@ -43,7 +42,7 @@ import (
 	"github.com/filecoin-project/lily/lens/lily/modules"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/network"
-	"github.com/filecoin-project/lily/pkg/extract"
+	indexer2 "github.com/filecoin-project/lily/pkg/indexer"
 	"github.com/filecoin-project/lily/pkg/transform/cbor"
 	"github.com/filecoin-project/lily/pkg/transform/timescale"
 	"github.com/filecoin-project/lily/schedule"
@@ -138,62 +137,64 @@ func (m *LilyNodeAPI) StartTipSetWorker(_ context.Context, cfg *LilyTipSetWorker
 }
 
 func (m *LilyNodeAPI) LilyIndexIPLD(_ context.Context, cfg *LilyIndexIPLDConfig) (bool, error) {
-	// the context's passed to these methods live for the duration of the clients request, so make a new one.
-	ctx := context.Background()
-
-	// TODO add file buffering
-	f, err := os.OpenFile(cfg.Path, os.O_CREATE|os.O_TRUNC|os.O_EXCL|os.O_WRONLY, 0o644)
-	defer f.Close()
-	if err != nil {
-		return false, err
-	}
-
-	taskAPI, err := datasource.NewDataSource(m)
-	if err != nil {
-		return false, err
-	}
-
+	return false, nil
 	/*
-		// connect to the database, were gonna write stuff to this.
-		db, err := gorm.Open(postgres.Open("host=localhost user=postgres password=password dbname=postgres port=5432 sslmode=disable"), &gorm.Config{
-			NamingStrategy: schema.NamingStrategy{
-				TablePrefix: "z_", // all tables created will be prefixed with `z_` because I am lazy and want them all in the same spot at the bottom of my table list
-				// TODO figure out how to make a new schema with gorm...
-			},
-		})
+		// the context's passed to these methods live for the duration of the clients request, so make a new one.
+		ctx := context.Background()
+
+		// TODO add file buffering
+		f, err := os.OpenFile(cfg.Path, os.O_CREATE|os.O_TRUNC|os.O_EXCL|os.O_WRONLY, 0o644)
+		defer f.Close()
 		if err != nil {
 			return false, err
 		}
-		if err := lambda.ParseParams(ctx, taskAPI, db); err != nil {
+
+		taskAPI, err := datasource.NewDataSource(m)
+		if err != nil {
+			return false, err
+		}
+			// connect to the database, were gonna write stuff to this.
+			db, err := gorm.Open(postgres.Open("host=localhost user=postgres password=password dbname=postgres port=5432 sslmode=disable"), &gorm.Config{
+				NamingStrategy: schema.NamingStrategy{
+					TablePrefix: "z_", // all tables created will be prefixed with `z_` because I am lazy and want them all in the same spot at the bottom of my table list
+					// TODO figure out how to make a new schema with gorm...
+				},
+			})
+			if err != nil {
+				return false, err
+			}
+			if err := lambda.ParseParams(ctx, taskAPI, db); err != nil {
+				return false, err
+			}
+
+
+		currentTs, err := m.ChainGetTipSet(ctx, cfg.TipSet)
+		if err != nil {
 			return false, err
 		}
 
+		executedTs, err := m.ChainGetTipSet(ctx, currentTs.Parents())
+		if err != nil {
+			return false, err
+		}
 
+		chainState, err := extract.State(ctx, taskAPI, currentTs, executedTs)
+		if err != nil {
+			return false, err
+		}
+
+		bs := blockstore.NewMemorySync()
+		if err := cbor.Persist(ctx, chainState); err != nil; {
+			return false, err
+		}
+		if err != nil {
+			return false, err
+		}
+		if err := cbor.WriteCarV1(ctx, root, bs, f); err != nil {
+			return false, err
+		}
+		return true, nil
 	*/
-	currentTs, err := m.ChainGetTipSet(ctx, cfg.TipSet)
-	if err != nil {
-		return false, err
-	}
-
-	executedTs, err := m.ChainGetTipSet(ctx, currentTs.Parents())
-	if err != nil {
-		return false, err
-	}
-
-	chainState, err := extract.State(ctx, taskAPI, currentTs, executedTs)
-	if err != nil {
-		return false, err
-	}
-
-	bs := blockstore.NewMemorySync()
-	root, err := cbor.PersistToStore(ctx, bs, currentTs, executedTs, chainState)
-	if err != nil {
-		return false, err
-	}
-	if err := cbor.WriteCarV1(ctx, root, bs, f); err != nil {
-		return false, err
-	}
-	return true, nil
 }
 
 func (m *LilyNodeAPI) LilyIndexIPLDFile(_ context.Context, cfg *LilyIndexIPLDFileConfig) (bool, error) {
@@ -375,29 +376,58 @@ func (m *LilyNodeAPI) LilyWatchNotify(_ context.Context, cfg *LilyWatchNotifyCon
 }
 
 func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedule.JobSubmitResult, error) {
-	// the context's passed to these methods live for the duration of the clients request, so make a new one.
-	ctx := context.Background()
+	/*
+		// the context's passed to these methods live for the duration of the clients request, so make a new one.
+		ctx := context.Background()
 
-	md := storage.Metadata{
-		JobName: cfg.JobConfig.Name,
-	}
+		md := storage.Metadata{
+			JobName: cfg.JobConfig.Name,
+		}
 
-	// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
-	strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
-	if err != nil {
-		return nil, err
-	}
+		// create a database connection for this watch, ensure its pingable, and run migrations if needed/configured to.
+		strg, err := m.StorageCatalog.Connect(ctx, cfg.JobConfig.Storage, md)
+		if err != nil {
+			return nil, err
+		}
+
+		taskAPI, err := datasource.NewDataSource(m)
+		if err != nil {
+			return nil, err
+		}
+
+		// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
+		idx, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
+		if err != nil {
+			return nil, err
+		}
+
+		res := m.Scheduler.Submit(&schedule.JobConfig{
+			Name: cfg.JobConfig.Name,
+			Type: "walk",
+			Params: map[string]string{
+				"window":    cfg.JobConfig.Window.String(),
+				"minHeight": fmt.Sprintf("%d", cfg.From),
+				"maxHeight": fmt.Sprintf("%d", cfg.To),
+				"storage":   cfg.JobConfig.Storage,
+			},
+			Tasks:               cfg.JobConfig.Tasks,
+			Job:                 walk.NewWalker(idx, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To),
+			RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
+			RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
+			RestartDelay:        cfg.JobConfig.RestartDelay,
+		})
+
+	*/
 
 	taskAPI, err := datasource.NewDataSource(m)
 	if err != nil {
 		return nil, err
 	}
-
-	// instantiate an indexer to extract block, message, and actor state data from observed tipsets and persists it to the storage.
-	idx, err := integrated.NewManager(strg, tipset.NewBuilder(taskAPI, cfg.JobConfig.Name), integrated.WithWindow(cfg.JobConfig.Window))
+	transformer, err := cbor.NewTransformer("/Users/frrist/Workspace/src/github.com/filecoin-project/lily/garage", cfg.JobConfig.Name)
 	if err != nil {
 		return nil, err
 	}
+	stateIndexer := indexer2.NewStateIndexer(taskAPI, transformer)
 
 	res := m.Scheduler.Submit(&schedule.JobConfig{
 		Name: cfg.JobConfig.Name,
@@ -409,7 +439,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 			"storage":   cfg.JobConfig.Storage,
 		},
 		Tasks:               cfg.JobConfig.Tasks,
-		Job:                 walk.NewWalker(idx, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To),
+		Job:                 walk.NewWalker(stateIndexer, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To),
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,

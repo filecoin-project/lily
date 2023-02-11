@@ -1,9 +1,13 @@
 package cbor
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	adtStore "github.com/filecoin-project/go-state-types/store"
@@ -108,6 +112,44 @@ func (s *StateExtractionIPLD) MarshalLogObject(enc zapcore.ObjectEncoder) error 
 	return nil
 }
 
+func NewTransformer(dir, prefix string) (*Transformer, error) {
+	if dirInfo, err := os.Stat(dir); err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("path (%s) does not exist: %w", dir, err)
+		}
+		if !dirInfo.IsDir() {
+			return nil, fmt.Errorf("path (%s) is not a directory", dir)
+		}
+	}
+	return &Transformer{carDirectory: dir, prefix: prefix}, nil
+}
+
+type Transformer struct {
+	carDirectory string
+	prefix       string
+}
+
+func (t *Transformer) Persist(ctx context.Context, chainState *extract.ChainState) error {
+	start := time.Now()
+	carPath := filepath.Join(t.carDirectory, fmt.Sprintf("%s_%d_%d.car", t.prefix, chainState.Parent.Height(), chainState.Current.Height()))
+	f, err := os.OpenFile(carPath, os.O_CREATE|os.O_TRUNC|os.O_EXCL|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	bs := blockstore.NewMemorySync()
+	root, err := PersistToStore(ctx, bs, chainState)
+	if err != nil {
+		return err
+	}
+	bw := bufio.NewWriterSize(f, 1<<20)
+	if err := WriteCarV1(ctx, root, bs, bw); err != nil {
+		return err
+	}
+	log.Infow("created chain delta", "path", carPath, "duration", time.Since(start))
+	return nil
+}
+
 func WriteCarV1(ctx context.Context, root cid.Cid, bs blockstore.Blockstore, w io.Writer) error {
 	if err := v1car.WriteHeader(&v1car.CarHeader{
 		Roots:   []cid.Cid{root},
@@ -133,16 +175,8 @@ func WriteCarV1(ctx context.Context, root cid.Cid, bs blockstore.Blockstore, w i
 	return nil
 }
 
-func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, executed *types.TipSet, chainState *extract.ChainState) (cid.Cid, error) {
+func PersistToStore(ctx context.Context, bs blockstore.Blockstore, chainState *extract.ChainState) (cid.Cid, error) {
 	store := adtStore.WrapBlockStore(ctx, bs)
-
-	// sanity check
-	if !chainState.Message.Current.Equals(chainState.Actors.Current) {
-		return cid.Undef, fmt.Errorf("actor and message current tipset does not match")
-	}
-	if !chainState.Message.Executed.Equals(chainState.Actors.Executed) {
-		return cid.Undef, fmt.Errorf("actor and message executed tipset does not match")
-	}
 
 	implicitMsgsAMT, err := cbormessages.MakeImplicitMessagesHAMT(ctx, store, chainState.Message.ImplicitMessages)
 	if err != nil {
@@ -165,8 +199,8 @@ func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, exec
 	}
 
 	extractedState := &StateExtractionIPLD{
-		Current:             *current,
-		Parent:              *executed,
+		Current:             *chainState.Current,
+		Parent:              *chainState.Parent,
 		BaseFee:             chainState.Message.BaseFee,
 		FilVested:           chainState.Message.CirculatingSupply.FilVested,
 		FilMined:            chainState.Message.CirculatingSupply.FilMined,
@@ -198,7 +232,7 @@ func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, exec
 	dsn := "host=localhost user=postgres password=password dbname=postgres port=5432 sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
-			TablePrefix:   "lily_cbor",
+			TablePrefix:   "lily_cbor_",
 			SingularTable: false,
 		},
 	})
@@ -209,7 +243,7 @@ func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, exec
 		return cid.Undef, err
 	}
 	rootModel := RootStateModel{
-		Height:          uint64(current.Height()),
+		Height:          uint64(chainState.Current.Height()),
 		Cid:             root.String(),
 		StateVersion:    rootState.StateVersion,
 		NetworkName:     rootState.NetworkName,
@@ -217,9 +251,9 @@ func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, exec
 		StateExtraction: rootState.State.String(),
 	}
 	stateModel := StateExtractionModel{
-		Height:           uint64(current.Height()),
-		CurrentTipSet:    current.String(),
-		ParentTipSet:     executed.String(),
+		Height:           uint64(chainState.Current.Height()),
+		CurrentTipSet:    chainState.Current.String(),
+		ParentTipSet:     chainState.Parent.String(),
 		BaseFee:          chainState.Message.BaseFee.String(),
 		FullBlocks:       fullBlkHAMT.String(),
 		ImplicitMessages: implicitMsgsAMT.String(),
@@ -233,7 +267,7 @@ func PersistToStore(ctx context.Context, bs blockstore.Blockstore, current, exec
 			return err
 		}
 		as := actorStateContainer.AsModel()
-		as.Height = uint64(current.Height())
+		as.Height = uint64(chainState.Current.Height())
 		if err := tx.Create(as).Error; err != nil {
 			return err
 		}

@@ -197,7 +197,6 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 			log.Debugw("no actor diff for actor", "current_network", curNtwkVersion, "executed_network", exeNtwkVersion,
 				"address", act.Address, "current_code", act.Current.Code, "current_version",
 				act.CurVersion, "executed_code", act.Executed.Code, "executed_version", act.ExeVersion)
-
 		})
 	}
 
@@ -205,15 +204,15 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 	go func() {
 		wg.Wait()
 		done <- struct{}{}
-		log.Info("cleaned up happy path go routine")
+		log.Debugw("cleaned up happy path go routine")
 	}()
 
 	// stop the worker pool, dropping any scheduled workers, and complete any wait-groups for the case a workers were canceled.
 	cleanup := func() {
-		log.Info("cancel any remaining workers")
+		log.Debug("cancel any remaining workers")
 		close(cancel)
 		pool.Stop()
-		log.Info("worker pool stopped")
+		log.Debug("worker pool stopped")
 		for i := scheduledWorkers; i > 0; i-- {
 			wg.Done()
 		}
@@ -229,7 +228,7 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 		RawActors:   make(map[address.Address]actors.DiffResult, len(actorChanges)), // there are at most actorChanges entries
 	}
 	for {
-		log.Infof("diff jobs todo %d", scheduledWorkers)
+		log.Debugw("diff jobs todo %d", scheduledWorkers)
 		select {
 		// canceling the context or receiving an error causes all workers to stop and drops any scheduled workers.
 		case <-workerCtx.Done():
@@ -245,7 +244,7 @@ func Actors(ctx context.Context, api tasks.DataSource, current, executed *types.
 
 			// happy path, all workers completed and we can return with a result
 		case <-done:
-			log.Info("done processing")
+			log.Debug("done processing")
 			cleanup()
 			return out, nil
 
@@ -287,7 +286,7 @@ func diffRawActorState(ctx context.Context, api tasks.DataSource, act *actors.Ch
 		ActorHandler: handler,
 		ReportHandler: func(reports []actors.DifferReport) error {
 			for _, report := range reports {
-				log.Infow("reporting", "type", report.DiffType, "duration", report.Duration)
+				log.Debugw("reporting", "type", report.DiffType, "duration", report.Duration)
 			}
 			return nil
 		},
@@ -335,7 +334,7 @@ func diffTypedActorState(ctx context.Context, api tasks.DataSource, act *actors.
 		ActorHandler: handler,
 		ReportHandler: func(reports []actors.DifferReport) error {
 			for _, report := range reports {
-				log.Infow("reporting", "type", report.DiffType, "duration", report.Duration)
+				log.Debugw("reporting", "type", report.DiffType, "duration", report.Duration)
 			}
 			return nil
 		},
