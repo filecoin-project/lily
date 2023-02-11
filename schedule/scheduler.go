@@ -40,6 +40,9 @@ type JobConfig struct {
 	// running is true if the job is executing, false otherwise.
 	running bool
 
+	// current height
+	CurrentHeight int
+
 	// errorMsg will contain a (helpful) string iff a jobs execution has halted due to an error.
 	errorMsg string
 
@@ -347,6 +350,8 @@ type JobListResult struct {
 	Params    map[string]string
 	StartedAt time.Time
 	EndedAt   time.Time
+
+	CurrentHeight int
 }
 
 var InvalidJobID = JobID(0)
@@ -376,6 +381,7 @@ func (s *Scheduler) Jobs() []JobListResult {
 			Params:              j.Params,
 			StartedAt:           j.StartedAt,
 			EndedAt:             j.EndedAt,
+			CurrentHeight:       j.CurrentHeight,
 		})
 		j.lk.Unlock()
 	}

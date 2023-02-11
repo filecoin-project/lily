@@ -12,11 +12,12 @@ import (
 
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/schedule"
 )
 
 var log = logging.Logger("lily/chain/walk")
 
-func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, minHeight, maxHeight int64) *Walker {
+func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, minHeight, maxHeight int64, config *schedule.JobConfig) *Walker {
 	return &Walker{
 		node:      node,
 		obs:       obs,
@@ -24,18 +25,21 @@ func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, 
 		tasks:     tasks,
 		minHeight: minHeight,
 		maxHeight: maxHeight,
+		config:    config,
 	}
 }
 
 // Walker is a job that indexes blocks by walking the chain history.
 type Walker struct {
-	node      lens.API
-	obs       indexer.Indexer
-	name      string
-	tasks     []string
-	minHeight int64 // limit persisting to tipsets equal to or above this height
-	maxHeight int64 // limit persisting to tipsets equal to or below this height}
-	done      chan struct{}
+	node          lens.API
+	obs           indexer.Indexer
+	name          string
+	tasks         []string
+	minHeight     int64 // limit persisting to tipsets equal to or above this height
+	maxHeight     int64 // limit persisting to tipsets equal to or below this height}
+	currentHeight int64
+	done          chan struct{}
+	config        *schedule.JobConfig
 }
 
 // Run starts walking the chain history and continues until the context is done or
@@ -96,6 +100,7 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 		default:
 		}
 		log.Infow("walk tipset", "height", ts.Height(), "reporter", c.name)
+		c.config.CurrentHeight = int(ts.Height())
 		if success, err := c.obs.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Walk), indexer.WithTasks(c.tasks)); err != nil {
 			span.RecordError(err)
 			return fmt.Errorf("notify tipset: %w", err)

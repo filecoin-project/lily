@@ -90,6 +90,8 @@ type LilyJobConfig struct {
 	RestartDelay time.Duration
 	// Storage is the name of the storage system the job will use, may be empty.
 	Storage string
+	// Current Height
+	CurrentHeight int
 }
 
 type LilyWatchConfig struct {

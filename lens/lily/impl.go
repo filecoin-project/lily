@@ -308,7 +308,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		return nil, err
 	}
 
-	res := m.Scheduler.Submit(&schedule.JobConfig{
+	jobConfig := &schedule.JobConfig{
 		Name: cfg.JobConfig.Name,
 		Type: "walk",
 		Params: map[string]string{
@@ -318,12 +318,14 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 			"storage":   cfg.JobConfig.Storage,
 		},
 		Tasks:               cfg.JobConfig.Tasks,
-		Job:                 walk.NewWalker(idx, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To),
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,
-	})
+	}
+	walker := walk.NewWalker(idx, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To, jobConfig)
 
+	jobConfig.Job = walker
+	res := m.Scheduler.Submit(jobConfig)
 	return res, nil
 }
 
@@ -334,7 +336,7 @@ func (m *LilyNodeAPI) LilyWalkNotify(_ context.Context, cfg *LilyWalkNotifyConfi
 	}
 	idx := distributed.NewTipSetIndexer(queue.NewAsynq(notifier))
 
-	res := m.Scheduler.Submit(&schedule.JobConfig{
+	jobConfig := &schedule.JobConfig{
 		Name: cfg.WalkConfig.JobConfig.Name,
 		Type: "walk-notify",
 		Params: map[string]string{
@@ -343,12 +345,14 @@ func (m *LilyNodeAPI) LilyWalkNotify(_ context.Context, cfg *LilyWalkNotifyConfi
 			"queue":     cfg.Queue,
 		},
 		Tasks:               cfg.WalkConfig.JobConfig.Tasks,
-		Job:                 walk.NewWalker(idx, m, cfg.WalkConfig.JobConfig.Name, cfg.WalkConfig.JobConfig.Tasks, cfg.WalkConfig.From, cfg.WalkConfig.To),
 		RestartOnFailure:    cfg.WalkConfig.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.WalkConfig.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.WalkConfig.JobConfig.RestartDelay,
-	})
+	}
+	walker := walk.NewWalker(idx, m, cfg.WalkConfig.JobConfig.Name, cfg.WalkConfig.JobConfig.Tasks, cfg.WalkConfig.From, cfg.WalkConfig.To, jobConfig)
+	jobConfig.Job = walker
 
+	res := m.Scheduler.Submit(jobConfig)
 	return res, nil
 }
 
