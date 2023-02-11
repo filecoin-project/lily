@@ -312,6 +312,8 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		return nil, err
 	}
 
+	reporter := &schedule.Reporter{}
+
 	jobConfig := &schedule.JobConfig{
 		Name: cfg.JobConfig.Name,
 		Type: "walk",
@@ -325,10 +327,10 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,
+		Reporter:            reporter,
+		Job:                 walk.NewWalker(idx, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To, reporter),
 	}
-	walker := walk.NewWalker(idx, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To, jobConfig)
 
-	jobConfig.Job = walker
 	res := m.Scheduler.Submit(jobConfig)
 	return res, nil
 }

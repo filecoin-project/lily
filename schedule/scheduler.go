@@ -29,6 +29,24 @@ type Job interface {
 	Done() <-chan struct{}
 }
 
+type Reporter struct {
+	statusMu sync.Mutex
+	// TODO: this could also be a map[string]interface{}
+	status string
+}
+
+func (r *Reporter) SetReport(s string) {
+	r.statusMu.Lock()
+	defer r.statusMu.Unlock()
+	r.status = s
+}
+
+func (r *Reporter) Report() string {
+	r.statusMu.Lock()
+	defer r.statusMu.Unlock()
+	return r.status
+}
+
 type JobConfig struct {
 	lk sync.Mutex
 	// ID of the task
@@ -39,9 +57,6 @@ type JobConfig struct {
 
 	// running is true if the job is executing, false otherwise.
 	running bool
-
-	// current height
-	CurrentHeight int
 
 	// errorMsg will contain a (helpful) string iff a jobs execution has halted due to an error.
 	errorMsg string
@@ -80,10 +95,8 @@ type JobConfig struct {
 
 	// EndedAt is the time the job stopped running, either through successful completion or failure. Reset if job is restarted.
 	EndedAt time.Time
-}
 
-func (j *JobConfig) UpdateCurrentHeight(height int) {
-	j.CurrentHeight = height
+	Reporter *Reporter
 }
 
 // Locker represents a general lock that a job may need to take before operating.
@@ -355,7 +368,7 @@ type JobListResult struct {
 	StartedAt time.Time
 	EndedAt   time.Time
 
-	CurrentHeight int
+	Report string
 }
 
 var InvalidJobID = JobID(0)
@@ -385,7 +398,7 @@ func (s *Scheduler) Jobs() []JobListResult {
 			Params:              j.Params,
 			StartedAt:           j.StartedAt,
 			EndedAt:             j.EndedAt,
-			CurrentHeight:       j.CurrentHeight,
+			Report:              j.Reporter.GetStatus(),
 		})
 		j.lk.Unlock()
 	}
