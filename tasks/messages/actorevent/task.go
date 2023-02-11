@@ -16,7 +16,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/model"
-	messages2 "github.com/filecoin-project/lily/model/messages"
+	messagemodel "github.com/filecoin-project/lily/model/messages"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lily/tasks/messages"
@@ -57,7 +57,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	}
 
 	var (
-		out            = make(messages2.ActorEventList, 0, len(blkMsgRect))
+		out            = make(messagemodel.ActorEventList, 0, len(blkMsgRect))
 		errorsDetected = make([]*messages.MessageError, 0, len(blkMsgRect))
 		msgsSeen       = make(map[cid.Cid]bool, len(blkMsgRect))
 	)
@@ -108,7 +108,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 					return err
 				}
 				for _, e := range evt.Entries {
-					out = append(out, &messages2.ActorEvent{
+					out = append(out, &messagemodel.ActorEvent{
 						Height:     int64(current.Height()),
 						StateRoot:  current.ParentState().String(),
 						MessageCid: msg.Cid().String(),
