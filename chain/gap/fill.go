@@ -72,7 +72,7 @@ func (g *Filler) Run(ctx context.Context) error {
 		runStart := time.Now()
 
 		log.Infow("filling gap", "height", heights, "reporter", g.name)
-		g.report.UpdateCurrentHeight(int(height))
+		g.report.UpdateCurrentHeight(int64(height))
 		ts, err := g.node.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(height), types.EmptyTSK)
 		if err != nil {
 			return err

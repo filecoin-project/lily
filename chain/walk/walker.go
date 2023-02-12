@@ -99,7 +99,7 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 		default:
 		}
 		log.Infow("walk tipset", "height", ts.Height(), "reporter", c.name)
-		c.report.UpdateCurrentHeight(int(ts.Height()))
+		c.report.UpdateCurrentHeight(int64(ts.Height()))
 		if success, err := c.obs.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Walk), indexer.WithTasks(c.tasks)); err != nil {
 			span.RecordError(err)
 			return fmt.Errorf("notify tipset: %w", err)

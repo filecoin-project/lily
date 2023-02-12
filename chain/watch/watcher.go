@@ -238,7 +238,7 @@ func (c *Watcher) indexTipSetAsync(ctx context.Context, ts *types.TipSet) error 
 		log.Warnw("queuing worker in watcher pool", "waiting", c.pool.WaitingQueueSize(), "reporter", c.name)
 	}
 	log.Infow("submitting tipset for async indexing", "height", ts.Height(), "active", c.active, "reporter", c.name)
-	c.report.UpdateCurrentHeight(int(ts.Height()))
+	c.report.UpdateCurrentHeight(int64(ts.Height()))
 	ctx, span := otel.Tracer("").Start(ctx, "Watcher.indexTipSetAsync")
 	c.pool.Submit(func() {
 		atomic.AddInt64(&c.active, 1)

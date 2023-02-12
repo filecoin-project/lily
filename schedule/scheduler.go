@@ -84,10 +84,10 @@ type JobConfig struct {
 
 type Reporter struct {
 	// Current Height is the current height of the job
-	CurrentHeight int
+	CurrentHeight int64
 }
 
-func (r *Reporter) UpdateCurrentHeight(height int) {
+func (r *Reporter) UpdateCurrentHeight(height int64) {
 	r.CurrentHeight = height
 }
 
