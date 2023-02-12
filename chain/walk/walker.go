@@ -17,7 +17,7 @@ import (
 
 var log = logging.Logger("lily/chain/walk")
 
-func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, minHeight, maxHeight int64, config *schedule.JobConfig) *Walker {
+func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, minHeight, maxHeight int64, r *schedule.Reporter) *Walker {
 	return &Walker{
 		node:      node,
 		obs:       obs,
@@ -25,21 +25,20 @@ func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, 
 		tasks:     tasks,
 		minHeight: minHeight,
 		maxHeight: maxHeight,
-		config:    config,
+		report:    r,
 	}
 }
 
 // Walker is a job that indexes blocks by walking the chain history.
 type Walker struct {
-	node          lens.API
-	obs           indexer.Indexer
-	name          string
-	tasks         []string
-	minHeight     int64 // limit persisting to tipsets equal to or above this height
-	maxHeight     int64 // limit persisting to tipsets equal to or below this height}
-	currentHeight int64
-	done          chan struct{}
-	config        *schedule.JobConfig
+	node      lens.API
+	obs       indexer.Indexer
+	name      string
+	tasks     []string
+	minHeight int64 // limit persisting to tipsets equal to or above this height
+	maxHeight int64 // limit persisting to tipsets equal to or below this height}
+	done      chan struct{}
+	report    *schedule.Reporter
 }
 
 // Run starts walking the chain history and continues until the context is done or
@@ -100,7 +99,7 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 		default:
 		}
 		log.Infow("walk tipset", "height", ts.Height(), "reporter", c.name)
-		c.config.UpdateCurrentHeight(int(ts.Height()))
+		c.report.UpdateCurrentHeight(int(ts.Height()))
 		if success, err := c.obs.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Walk), indexer.WithTasks(c.tasks)); err != nil {
 			span.RecordError(err)
 			return fmt.Errorf("notify tipset: %w", err)

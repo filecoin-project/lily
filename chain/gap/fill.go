@@ -26,10 +26,10 @@ type Filler struct {
 	minHeight, maxHeight int64
 	tasks                []string
 	done                 chan struct{}
-	config               *schedule.JobConfig
+	report               *schedule.Reporter
 }
 
-func NewFiller(node lens.API, db *storage.Database, name string, minHeight, maxHeight int64, tasks []string, config *schedule.JobConfig) *Filler {
+func NewFiller(node lens.API, db *storage.Database, name string, minHeight, maxHeight int64, tasks []string, r *schedule.Reporter) *Filler {
 	return &Filler{
 		DB:        db,
 		node:      node,
@@ -37,7 +37,7 @@ func NewFiller(node lens.API, db *storage.Database, name string, minHeight, maxH
 		maxHeight: maxHeight,
 		minHeight: minHeight,
 		tasks:     tasks,
-		config:    config,
+		report:    r,
 	}
 }
 
@@ -72,7 +72,7 @@ func (g *Filler) Run(ctx context.Context) error {
 		runStart := time.Now()
 
 		log.Infow("filling gap", "height", heights, "reporter", g.name)
-		g.config.UpdateCurrentHeight(int(height))
+		g.report.UpdateCurrentHeight(int(height))
 		ts, err := g.node.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(height), types.EmptyTSK)
 		if err != nil {
 			return err

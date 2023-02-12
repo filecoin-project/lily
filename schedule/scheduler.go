@@ -40,13 +40,13 @@ type JobConfig struct {
 	// running is true if the job is executing, false otherwise.
 	running bool
 
-	// current height
-	CurrentHeight int
-
 	// errorMsg will contain a (helpful) string iff a jobs execution has halted due to an error.
 	errorMsg string
 
 	log *zap.SugaredLogger
+
+	// Reporter is a job report
+	Reporter *Reporter
 
 	// Name is a human readable name for the job for use in logging
 	Name string
@@ -82,8 +82,17 @@ type JobConfig struct {
 	EndedAt time.Time
 }
 
-func (j *JobConfig) UpdateCurrentHeight(height int) {
-	j.CurrentHeight = height
+type Reporter struct {
+	// Current Height is the current height of the job
+	CurrentHeight int
+}
+
+func (r *Reporter) UpdateCurrentHeight(height int) {
+	r.CurrentHeight = height
+}
+
+func (r *Reporter) GetStatus() Reporter {
+	return *r
 }
 
 // Locker represents a general lock that a job may need to take before operating.
@@ -355,7 +364,7 @@ type JobListResult struct {
 	StartedAt time.Time
 	EndedAt   time.Time
 
-	CurrentHeight int
+	Report Reporter
 }
 
 var InvalidJobID = JobID(0)
@@ -372,7 +381,7 @@ func (s *Scheduler) Jobs() []JobListResult {
 	var out []JobListResult
 	for _, j := range s.jobs {
 		j.lk.Lock()
-		out = append(out, JobListResult{
+		result := JobListResult{
 			ID:                  j.id,
 			Name:                j.Name,
 			Tasks:               j.Tasks,
@@ -385,8 +394,11 @@ func (s *Scheduler) Jobs() []JobListResult {
 			Params:              j.Params,
 			StartedAt:           j.StartedAt,
 			EndedAt:             j.EndedAt,
-			CurrentHeight:       j.CurrentHeight,
-		})
+		}
+		if j.Reporter != nil {
+			result.Report = j.Reporter.GetStatus()
+		}
+		out = append(out, result)
 		j.lk.Unlock()
 	}
 	sort.Slice(out, func(i, j int) bool {
