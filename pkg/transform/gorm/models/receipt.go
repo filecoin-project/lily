@@ -19,8 +19,9 @@ type MessageReceipt struct {
 }
 
 type Receipt struct {
-	Index    int64 `gorm:"primaryKey"`
-	ExitCode int64
-	GasUsed  int64
-	Return   []byte
+	Index      int64 `gorm:"primaryKey"`
+	ExitCode   int64
+	GasUsed    int64
+	Return     []byte
+	EventsRoot types.DbCid
 }
