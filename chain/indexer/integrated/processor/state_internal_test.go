@@ -90,9 +90,11 @@ func TestNewProcessor(t *testing.T) {
 	)), proc.actorProcessors[tasktype.MinerSectorInfoV1_6])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewCustomTypedActorExtractorMap(
 		map[cid.Cid][]actorstate.ActorStateExtractor{
-			miner.VersionCodes()[actors.Version7]: {minertask.V7SectorInfoExtractor{}},
-			miner.VersionCodes()[actors.Version8]: {minertask.V7SectorInfoExtractor{}},
-			miner.VersionCodes()[actors.Version9]: {minertask.V7SectorInfoExtractor{}},
+			miner.VersionCodes()[actors.Version7]:  {minertask.V7SectorInfoExtractor{}},
+			miner.VersionCodes()[actors.Version8]:  {minertask.V7SectorInfoExtractor{}},
+			miner.VersionCodes()[actors.Version9]:  {minertask.V7SectorInfoExtractor{}},
+			miner.VersionCodes()[actors.Version10]: {minertask.V7SectorInfoExtractor{}},
+			miner.VersionCodes()[actors.Version11]: {minertask.V7SectorInfoExtractor{}},
 		},
 	)), proc.actorProcessors[tasktype.MinerSectorInfoV7])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(power.AllCodes(), powertask.ClaimedPowerExtractor{})), proc.actorProcessors[tasktype.PowerActorClaim])
@@ -106,15 +108,17 @@ func TestNewProcessor(t *testing.T) {
 
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewCustomTypedActorExtractorMap(
 		map[cid.Cid][]actorstate.ActorStateExtractor{
-			miner.VersionCodes()[actors.Version0]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version2]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version3]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version4]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version5]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version6]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version7]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version8]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version9]: {minertask.PreCommitInfoExtractorV9{}},
+			miner.VersionCodes()[actors.Version0]:  {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actors.Version2]:  {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actors.Version3]:  {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actors.Version4]:  {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actors.Version5]:  {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actors.Version6]:  {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actors.Version7]:  {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actors.Version8]:  {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actors.Version9]:  {minertask.PreCommitInfoExtractorV9{}},
+			miner.VersionCodes()[actors.Version10]: {minertask.PreCommitInfoExtractorV9{}},
+			miner.VersionCodes()[actors.Version11]: {minertask.PreCommitInfoExtractorV9{}},
 		},
 	)), proc.actorProcessors[tasktype.MinerPreCommitInfo])
 

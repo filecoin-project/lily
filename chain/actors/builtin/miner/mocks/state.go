@@ -24,6 +24,8 @@ import (
 
 	typegen "github.com/whyrusleeping/cbor-gen"
 
+	v11miner "github.com/filecoin-project/go-state-types/builtin/v11/miner"
+
 	v8miner "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 
 	v9miner "github.com/filecoin-project/go-state-types/builtin/v9/miner"
@@ -163,14 +165,14 @@ func (_m *State) DeadlinesChanged(_a0 miner.State) (bool, error) {
 }
 
 // DecodeSectorOnChainInfo provides a mock function with given fields: _a0
-func (_m *State) DecodeSectorOnChainInfo(_a0 *typegen.Deferred) (v9miner.SectorOnChainInfo, error) {
+func (_m *State) DecodeSectorOnChainInfo(_a0 *typegen.Deferred) (v11miner.SectorOnChainInfo, error) {
 	ret := _m.Called(_a0)
 
-	var r0 v9miner.SectorOnChainInfo
-	if rf, ok := ret.Get(0).(func(*typegen.Deferred) v9miner.SectorOnChainInfo); ok {
+	var r0 v11miner.SectorOnChainInfo
+	if rf, ok := ret.Get(0).(func(*typegen.Deferred) v11miner.SectorOnChainInfo); ok {
 		r0 = rf(_a0)
 	} else {
-		r0 = ret.Get(0).(v9miner.SectorOnChainInfo)
+		r0 = ret.Get(0).(v11miner.SectorOnChainInfo)
 	}
 
 	var r1 error
@@ -393,15 +395,15 @@ func (_m *State) GetProvingPeriodStart() (abi.ChainEpoch, error) {
 }
 
 // GetSector provides a mock function with given fields: _a0
-func (_m *State) GetSector(_a0 abi.SectorNumber) (*v9miner.SectorOnChainInfo, error) {
+func (_m *State) GetSector(_a0 abi.SectorNumber) (*v11miner.SectorOnChainInfo, error) {
 	ret := _m.Called(_a0)
 
-	var r0 *v9miner.SectorOnChainInfo
-	if rf, ok := ret.Get(0).(func(abi.SectorNumber) *v9miner.SectorOnChainInfo); ok {
+	var r0 *v11miner.SectorOnChainInfo
+	if rf, ok := ret.Get(0).(func(abi.SectorNumber) *v11miner.SectorOnChainInfo); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v9miner.SectorOnChainInfo)
+			r0 = ret.Get(0).(*v11miner.SectorOnChainInfo)
 		}
 	}
 
@@ -520,15 +522,15 @@ func (_m *State) LoadDeadline(idx uint64) (miner.Deadline, error) {
 }
 
 // LoadSectors provides a mock function with given fields: sectorNos
-func (_m *State) LoadSectors(sectorNos *bitfield.BitField) ([]*v9miner.SectorOnChainInfo, error) {
+func (_m *State) LoadSectors(sectorNos *bitfield.BitField) ([]*v11miner.SectorOnChainInfo, error) {
 	ret := _m.Called(sectorNos)
 
-	var r0 []*v9miner.SectorOnChainInfo
-	if rf, ok := ret.Get(0).(func(*bitfield.BitField) []*v9miner.SectorOnChainInfo); ok {
+	var r0 []*v11miner.SectorOnChainInfo
+	if rf, ok := ret.Get(0).(func(*bitfield.BitField) []*v11miner.SectorOnChainInfo); ok {
 		r0 = rf(sectorNos)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*v9miner.SectorOnChainInfo)
+			r0 = ret.Get(0).([]*v11miner.SectorOnChainInfo)
 		}
 	}
 
