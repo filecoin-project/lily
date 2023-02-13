@@ -560,8 +560,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 					verifregactors.VersionCodes()[actors.Version5]: {verifregtask.ClientExtractor{}},
 					verifregactors.VersionCodes()[actors.Version6]: {verifregtask.ClientExtractor{}},
 					verifregactors.VersionCodes()[actors.Version7]: {verifregtask.ClientExtractor{}},
-					// hyperspace bug
-					//verifregactors.VersionCodes()[actors.Version8]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actors.Version8]: {verifregtask.ClientExtractor{}},
 					// version 9 no longer track clients and has been migrated to the datacap actor
 				},
 			))
