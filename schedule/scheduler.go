@@ -91,10 +91,6 @@ func (r *Reporter) UpdateCurrentHeight(height int64) {
 	r.CurrentHeight = height
 }
 
-func (r *Reporter) GetStatus() Reporter {
-	return *r
-}
-
 // Locker represents a general lock that a job may need to take before operating.
 type Locker interface {
 	Lock(context.Context) error
@@ -364,7 +360,7 @@ type JobListResult struct {
 	StartedAt time.Time
 	EndedAt   time.Time
 
-	Report Reporter
+	Report *Reporter
 }
 
 var InvalidJobID = JobID(0)
@@ -394,9 +390,7 @@ func (s *Scheduler) Jobs() []JobListResult {
 			Params:              j.Params,
 			StartedAt:           j.StartedAt,
 			EndedAt:             j.EndedAt,
-		}
-		if j.Reporter != nil {
-			result.Report = j.Reporter.GetStatus()
+			Report:              j.Reporter,
 		}
 		out = append(out, result)
 		j.lk.Unlock()
