@@ -13,6 +13,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/integrated"
 	"github.com/filecoin-project/lily/chain/indexer/integrated/tipset"
 	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 )
 
@@ -25,9 +26,10 @@ type Filler struct {
 	minHeight, maxHeight int64
 	tasks                []string
 	done                 chan struct{}
+	report               *schedule.Reporter
 }
 
-func NewFiller(node lens.API, db *storage.Database, name string, minHeight, maxHeight int64, tasks []string) *Filler {
+func NewFiller(node lens.API, db *storage.Database, name string, minHeight, maxHeight int64, tasks []string, r *schedule.Reporter) *Filler {
 	return &Filler{
 		DB:        db,
 		node:      node,
@@ -35,6 +37,7 @@ func NewFiller(node lens.API, db *storage.Database, name string, minHeight, maxH
 		maxHeight: maxHeight,
 		minHeight: minHeight,
 		tasks:     tasks,
+		report:    r,
 	}
 }
 
@@ -69,7 +72,7 @@ func (g *Filler) Run(ctx context.Context) error {
 		runStart := time.Now()
 
 		log.Infow("filling gap", "height", heights, "reporter", g.name)
-
+		g.report.UpdateCurrentHeight(height)
 		ts, err := g.node.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(height), types.EmptyTSK)
 		if err != nil {
 			return err

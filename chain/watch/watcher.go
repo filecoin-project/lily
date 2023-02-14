@@ -18,6 +18,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/lily/schedule"
 )
 
 var log = logging.Logger("lily/chain/watch")
@@ -75,6 +76,7 @@ type Watcher struct {
 
 	// metric tracking
 	active int64 // must be accessed using atomic operations, updated automatically.
+	report *schedule.Reporter
 
 	// error handling
 	fatalMu sync.Mutex
@@ -91,7 +93,7 @@ var (
 // NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held
 // in a cache awaiting possible reversion. Tipsets will be written to the database when they are evicted from
 // the cache due to incoming later tipsets.
-func NewWatcher(api WatcherAPI, indexer indexer.Indexer, name string, opts ...WatcherOpt) *Watcher {
+func NewWatcher(api WatcherAPI, indexer indexer.Indexer, name string, r *schedule.Reporter, opts ...WatcherOpt) *Watcher {
 	w := &Watcher{
 		api:     api,
 		name:    name,
@@ -101,6 +103,7 @@ func NewWatcher(api WatcherAPI, indexer indexer.Indexer, name string, opts ...Wa
 		confidence: WatcherDefaultConfidence,
 		poolSize:   WatcherDefaultConcurrentWorkers,
 		tasks:      WatcherDefaultTasks,
+		report:     r,
 	}
 
 	for _, opt := range opts {
@@ -235,7 +238,7 @@ func (c *Watcher) indexTipSetAsync(ctx context.Context, ts *types.TipSet) error 
 		log.Warnw("queuing worker in watcher pool", "waiting", c.pool.WaitingQueueSize(), "reporter", c.name)
 	}
 	log.Infow("submitting tipset for async indexing", "height", ts.Height(), "active", c.active, "reporter", c.name)
-
+	c.report.UpdateCurrentHeight(int64(ts.Height()))
 	ctx, span := otel.Tracer("").Start(ctx, "Watcher.indexTipSetAsync")
 	c.pool.Submit(func() {
 		atomic.AddInt64(&c.active, 1)

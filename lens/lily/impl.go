@@ -220,14 +220,15 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		return nil, err
 	}
 
+	reporter := &schedule.Reporter{}
 	watchJob := watch.NewWatcher(wapi, idx, cfg.JobConfig.Name,
+		reporter,
 		watch.WithTasks(cfg.JobConfig.Tasks...),
 		watch.WithConfidence(cfg.Confidence),
 		watch.WithConcurrentWorkers(cfg.Workers),
 		watch.WithBufferSize(cfg.BufferSize),
 	)
-
-	res := m.Scheduler.Submit(&schedule.JobConfig{
+	jobConfig := &schedule.JobConfig{
 		Name: cfg.JobConfig.Name,
 		Type: "watch",
 		Params: map[string]string{
@@ -238,12 +239,14 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 			"buffer":     strconv.Itoa(cfg.BufferSize),
 		},
 		Tasks:               cfg.JobConfig.Tasks,
-		Job:                 watchJob,
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,
-	})
+		Job:                 watchJob,
+		Reporter:            reporter,
+	}
 
+	res := m.Scheduler.Submit(jobConfig)
 	return res, nil
 }
 
@@ -258,14 +261,14 @@ func (m *LilyNodeAPI) LilyWatchNotify(_ context.Context, cfg *LilyWatchNotifyCon
 		return nil, err
 	}
 	idx := distributed.NewTipSetIndexer(queue.NewAsynq(notifier))
-
+	reporter := &schedule.Reporter{}
 	watchJob := watch.NewWatcher(wapi, idx, cfg.JobConfig.Name,
+		reporter,
 		watch.WithTasks(cfg.JobConfig.Tasks...),
 		watch.WithConfidence(cfg.Confidence),
 		watch.WithBufferSize(cfg.BufferSize),
 	)
-
-	res := m.Scheduler.Submit(&schedule.JobConfig{
+	jobConfig := &schedule.JobConfig{
 		Name: cfg.JobConfig.Name,
 		Type: "watch-notify",
 		Params: map[string]string{
@@ -274,12 +277,13 @@ func (m *LilyNodeAPI) LilyWatchNotify(_ context.Context, cfg *LilyWatchNotifyCon
 			"queue":      cfg.Queue,
 		},
 		Tasks:               cfg.JobConfig.Tasks,
-		Job:                 watchJob,
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,
-	})
-
+		Job:                 watchJob,
+		Reporter:            reporter,
+	}
+	res := m.Scheduler.Submit(jobConfig)
 	return res, err
 }
 
@@ -308,7 +312,8 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		return nil, err
 	}
 
-	res := m.Scheduler.Submit(&schedule.JobConfig{
+	reporter := &schedule.Reporter{}
+	jobConfig := &schedule.JobConfig{
 		Name: cfg.JobConfig.Name,
 		Type: "walk",
 		Params: map[string]string{
@@ -318,12 +323,14 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 			"storage":   cfg.JobConfig.Storage,
 		},
 		Tasks:               cfg.JobConfig.Tasks,
-		Job:                 walk.NewWalker(idx, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To),
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,
-	})
+		Job:                 walk.NewWalker(idx, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To, reporter),
+		Reporter:            reporter,
+	}
 
+	res := m.Scheduler.Submit(jobConfig)
 	return res, nil
 }
 
@@ -334,7 +341,8 @@ func (m *LilyNodeAPI) LilyWalkNotify(_ context.Context, cfg *LilyWalkNotifyConfi
 	}
 	idx := distributed.NewTipSetIndexer(queue.NewAsynq(notifier))
 
-	res := m.Scheduler.Submit(&schedule.JobConfig{
+	reporter := &schedule.Reporter{}
+	jobConfig := &schedule.JobConfig{
 		Name: cfg.WalkConfig.JobConfig.Name,
 		Type: "walk-notify",
 		Params: map[string]string{
@@ -343,12 +351,13 @@ func (m *LilyNodeAPI) LilyWalkNotify(_ context.Context, cfg *LilyWalkNotifyConfi
 			"queue":     cfg.Queue,
 		},
 		Tasks:               cfg.WalkConfig.JobConfig.Tasks,
-		Job:                 walk.NewWalker(idx, m, cfg.WalkConfig.JobConfig.Name, cfg.WalkConfig.JobConfig.Tasks, cfg.WalkConfig.From, cfg.WalkConfig.To),
 		RestartOnFailure:    cfg.WalkConfig.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.WalkConfig.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.WalkConfig.JobConfig.RestartDelay,
-	})
-
+		Job:                 walk.NewWalker(idx, m, cfg.WalkConfig.JobConfig.Name, cfg.WalkConfig.JobConfig.Tasks, cfg.WalkConfig.From, cfg.WalkConfig.To, reporter),
+		Reporter:            reporter,
+	}
+	res := m.Scheduler.Submit(jobConfig)
 	return res, nil
 }
 
@@ -397,8 +406,8 @@ func (m *LilyNodeAPI) LilyGapFill(_ context.Context, cfg *LilyGapFillConfig) (*s
 	if err != nil {
 		return nil, err
 	}
-
-	res := m.Scheduler.Submit(&schedule.JobConfig{
+	reporter := &schedule.Reporter{}
+	jobConfig := &schedule.JobConfig{
 		Name: cfg.JobConfig.Name,
 		Type: "fill",
 		Params: map[string]string{
@@ -407,12 +416,13 @@ func (m *LilyNodeAPI) LilyGapFill(_ context.Context, cfg *LilyGapFillConfig) (*s
 			"storage":   cfg.JobConfig.Storage,
 		},
 		Tasks:               cfg.JobConfig.Tasks,
-		Job:                 gap.NewFiller(m, db, cfg.JobConfig.Name, cfg.From, cfg.To, cfg.JobConfig.Tasks),
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,
-	})
-
+		Reporter:            reporter,
+		Job:                 gap.NewFiller(m, db, cfg.JobConfig.Name, cfg.From, cfg.To, cfg.JobConfig.Tasks, reporter),
+	}
+	res := m.Scheduler.Submit(jobConfig)
 	return res, nil
 }
 

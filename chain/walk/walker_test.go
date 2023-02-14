@@ -16,6 +16,7 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/integrated/tipset"
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/model/blocks"
+	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lily/testutil"
 )
@@ -54,7 +55,8 @@ func TestWalker(t *testing.T) {
 	require.NoError(t, err, "NewManager")
 
 	t.Logf("initializing indexer")
-	idx := NewWalker(im, nodeAPI, t.Name(), []string{tasktype.BlocksTask}, 0, int64(head.Height()))
+	reporter := &schedule.Reporter{}
+	idx := NewWalker(im, nodeAPI, t.Name(), []string{tasktype.BlocksTask}, 0, int64(head.Height()), reporter)
 
 	t.Logf("indexing chain")
 	err = idx.WalkChain(ctx, nodeAPI, head)

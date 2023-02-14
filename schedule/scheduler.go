@@ -45,6 +45,9 @@ type JobConfig struct {
 
 	log *zap.SugaredLogger
 
+	// Reporter is a job report
+	Reporter *Reporter
+
 	// Name is a human readable name for the job for use in logging
 	Name string
 
@@ -77,6 +80,15 @@ type JobConfig struct {
 
 	// EndedAt is the time the job stopped running, either through successful completion or failure. Reset if job is restarted.
 	EndedAt time.Time
+}
+
+type Reporter struct {
+	// Current Height is the current height of the job
+	CurrentHeight int64
+}
+
+func (r *Reporter) UpdateCurrentHeight(height int64) {
+	r.CurrentHeight = height
 }
 
 // Locker represents a general lock that a job may need to take before operating.
@@ -347,6 +359,8 @@ type JobListResult struct {
 	Params    map[string]string
 	StartedAt time.Time
 	EndedAt   time.Time
+
+	Report *Reporter
 }
 
 var InvalidJobID = JobID(0)
@@ -363,7 +377,7 @@ func (s *Scheduler) Jobs() []JobListResult {
 	var out []JobListResult
 	for _, j := range s.jobs {
 		j.lk.Lock()
-		out = append(out, JobListResult{
+		result := JobListResult{
 			ID:                  j.id,
 			Name:                j.Name,
 			Tasks:               j.Tasks,
@@ -376,7 +390,9 @@ func (s *Scheduler) Jobs() []JobListResult {
 			Params:              j.Params,
 			StartedAt:           j.StartedAt,
 			EndedAt:             j.EndedAt,
-		})
+			Report:              j.Reporter,
+		}
+		out = append(out, result)
 		j.lk.Unlock()
 	}
 	sort.Slice(out, func(i, j int) bool {
