@@ -103,7 +103,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				if err != nil {
 					errorsDetected = append(errorsDetected, &messages.MessageError{
 						Cid:   msg.Cid(),
-						Error: fmt.Sprintf("failed to make ID address from event emitter (%s): %w", evt.Emitter, err),
+						Error: fmt.Sprintf("failed to make ID address from event emitter (%s): %s", evt.Emitter, err),
 					})
 					return err
 				}
@@ -125,7 +125,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			if err != nil {
 				errorsDetected = append(errorsDetected, &messages.MessageError{
 					Cid:   msg.Cid(),
-					Error: fmt.Sprintf("loading actor events amt (%s): %w", *rec.EventsRoot, err),
+					Error: fmt.Sprintf("loading actor events amt (%s): %s", *rec.EventsRoot, err),
 				})
 				continue
 			}
