@@ -13,8 +13,8 @@ require (
 	github.com/filecoin-project/go-hamt-ipld/v3 v3.1.1-0.20220505191157-d7766f8628ec
 	github.com/filecoin-project/go-jsonrpc v0.2.1
 	github.com/filecoin-project/go-paramfetch v0.0.4
-	github.com/filecoin-project/go-state-types v0.10.0-alpha-9.0.20230127204632-9a067d394297
-	github.com/filecoin-project/lotus v1.20.0-hyperspace-0201
+	github.com/filecoin-project/go-state-types v0.10.0-rc2.0.20230213183937-7f1ede218b87
+	github.com/filecoin-project/lotus v1.20.0-hyperspace-nv20
 	github.com/filecoin-project/specs-actors v0.9.15
 	github.com/filecoin-project/specs-actors/v2 v2.3.6
 	github.com/filecoin-project/specs-actors/v3 v3.1.2
@@ -218,7 +218,7 @@ require (
 	github.com/ipld/go-car/v2 v2.5.0 // indirect
 	github.com/ipld/go-codec-dagpb v1.5.0 // indirect
 	github.com/ipld/go-ipld-adl-hamt v0.0.0-20220616142416-9004dbd839e0 // indirect
-	github.com/ipld/go-ipld-prime v0.18.0 // indirect
+	github.com/ipld/go-ipld-prime v0.20.0 // indirect
 	github.com/ipld/go-ipld-selector-text-lite v0.0.1 // indirect
 	github.com/ipsn/go-secp256k1 v0.0.0-20180726113642-9d62b9f0bc52 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
@@ -279,7 +279,7 @@ require (
 	github.com/multiformats/go-multiaddr-dns v0.3.1 // indirect
 	github.com/multiformats/go-multiaddr-fmt v0.1.0 // indirect
 	github.com/multiformats/go-multibase v0.1.1 // indirect
-	github.com/multiformats/go-multicodec v0.6.0 // indirect
+	github.com/multiformats/go-multicodec v0.8.0 // indirect
 	github.com/multiformats/go-multistream v0.3.3 // indirect
 	github.com/nikkolasg/hexjson v0.0.0-20181101101858-78e39397e00c // indirect
 	github.com/nkovacs/streamquote v1.0.0 // indirect
