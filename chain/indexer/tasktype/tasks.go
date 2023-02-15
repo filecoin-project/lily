@@ -71,6 +71,7 @@ var TaskLookup = map[string][]string{
 		GasOutputs,
 		MessageGasEconomy,
 		BlockMessage,
+		ActorEvent,
 	},
 	ChainEconomicsTask: {
 		ChainEconomics,
