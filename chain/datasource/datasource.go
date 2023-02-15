@@ -20,6 +20,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/vm"
 	states0 "github.com/filecoin-project/specs-actors/actors/states"
 	states2 "github.com/filecoin-project/specs-actors/v2/actors/states"
+	states3 "github.com/filecoin-project/specs-actors/v3/actors/states"
 	states4 "github.com/filecoin-project/specs-actors/v4/actors/states"
 	states5 "github.com/filecoin-project/specs-actors/v5/actors/states"
 	lru "github.com/hashicorp/golang-lru"
@@ -445,8 +446,8 @@ func getStateTreeHamtRootCIDAndVersion(ctx context.Context, store adt.Store, c c
 		}
 		return tree.Map, root.Version, nil
 	case types.StateTreeVersion2:
-		var tree *states2.Tree
-		tree, err := states2.LoadTree(store, root.Actors)
+		var tree *states3.Tree
+		tree, err := states3.LoadTree(store, root.Actors)
 		if err != nil {
 			return nil, 0, err
 		}
