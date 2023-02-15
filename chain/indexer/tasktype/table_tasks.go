@@ -27,6 +27,7 @@ const (
 	InternalMessage                = "internal_messages"
 	InternalParsedMessage          = "internal_parsed_messages"
 	VMMessage                      = "vm_messages"
+	ActorEvent                     = "actor_events"
 	MultisigTransaction            = "multisig_transaction"
 	ChainPower                     = "chain_power"
 	PowerActorClaim                = "power_actor_claim"
@@ -68,6 +69,7 @@ var AllTableTasks = []string{
 	InternalMessage,
 	InternalParsedMessage,
 	VMMessage,
+	ActorEvent,
 	MultisigTransaction,
 	ChainPower,
 	PowerActorClaim,
@@ -109,6 +111,7 @@ var TableLookup = map[string]struct{}{
 	InternalMessage:                {},
 	InternalParsedMessage:          {},
 	VMMessage:                      {},
+	ActorEvent:                     {},
 	MultisigTransaction:            {},
 	ChainPower:                     {},
 	PowerActorClaim:                {},
@@ -150,6 +153,7 @@ var TableComment = map[string]string{
 	InternalMessage:                ``,
 	InternalParsedMessage:          ``,
 	VMMessage:                      ``,
+	ActorEvent:                     ``,
 	MultisigTransaction:            ``,
 	ChainPower:                     ``,
 	PowerActorClaim:                ``,
@@ -227,6 +231,7 @@ var TableFieldComments = map[string]map[string]string{
 		"To":        "To receiver of message.",
 		"Value":     "Value attoFIL contained in message.",
 	},
+	ActorEvent: {},
 	MultisigTransaction: {
 		"To": "Transaction State",
 	},
