@@ -24,6 +24,7 @@ import (
 	rewardactors "github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	verifregactors "github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/tasks/messageexecutions/vm"
+	"github.com/filecoin-project/lily/tasks/messages/actorevent"
 
 	"github.com/filecoin-project/lily/tasks"
 	// actor tasks
@@ -601,6 +602,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			out.TipsetsProcessors[t] = msapprovaltask.NewTask(api)
 		case tasktype.VMMessage:
 			out.TipsetsProcessors[t] = vm.NewTask(api)
+		case tasktype.ActorEvent:
+			out.TipsetsProcessors[t] = actorevent.NewTask(api)
 
 			//
 			// Blocks
