@@ -1,10 +1,10 @@
 package v1
 
-// Schema version 14 adds receipt return tracking
+// Schema version 16 adds receipt return tracking
 
 func init() {
 	patches.Register(
-		15,
+		16,
 		`
 	CREATE TABLE IF NOT EXISTS {{ .SchemaName | default "public"}}.receipt_returns (
 		message		text  NOT NULL,
