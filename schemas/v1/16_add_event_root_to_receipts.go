@@ -2,7 +2,7 @@ package v1
 
 func init() {
 	patches.Register(
-		13,
+		16,
 		`
 ALTER TABLE {{ .SchemaName | default "public"}}.receipts
 	ADD COLUMN events_root TEXT;
