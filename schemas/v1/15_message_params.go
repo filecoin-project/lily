@@ -1,10 +1,10 @@
 package v1
 
-// Schema version 13 adds message params tracking
+// Schema version 15 adds message params tracking
 
 func init() {
 	patches.Register(
-		14,
+		15,
 		`
 	CREATE TABLE IF NOT EXISTS {{ .SchemaName | default "public"}}.message_params (
 		cid		text  NOT NULL,
