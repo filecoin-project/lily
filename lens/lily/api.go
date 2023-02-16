@@ -69,6 +69,8 @@ type LilyAPI interface {
 	NetPubsubScores(context.Context) ([]api.PubsubScore, error)
 	NetAgentVersion(ctx context.Context, p peer.ID) (string, error)
 	NetPeerInfo(context.Context, peer.ID) (*api.ExtendedPeerInfo, error)
+	NetConnect(context.Context, peer.AddrInfo) error
+	NetDisconnect(context.Context, peer.ID) error
 
 	StartTipSetWorker(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error)
 
