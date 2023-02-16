@@ -163,6 +163,7 @@ func main() {
 			commands.LogCmd,
 			commands.MigrateCmd,
 			commands.NetCmd,
+			commands.ShedCmd,
 			commands.StopCmd,
 			commands.SyncCmd,
 			commands.WaitAPICmd,
