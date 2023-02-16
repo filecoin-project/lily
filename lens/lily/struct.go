@@ -71,14 +71,24 @@ type LilyAPIStruct struct {
 		NetPeers         func(context.Context) ([]peer.AddrInfo, error)                `perm:"read"`
 		NetAddrsListen   func(context.Context) (peer.AddrInfo, error)                  `perm:"read"`
 		NetPubsubScores  func(context.Context) ([]api.PubsubScore, error)              `perm:"read"`
-		NetAgentVersion  func(ctx context.Context, p peer.ID) (string, error)          `perm:"read"`
+		NetAgentVersion  func(context.Context, peer.ID) (string, error)                `perm:"read"`
 		NetPeerInfo      func(context.Context, peer.ID) (*api.ExtendedPeerInfo, error) `perm:"read"`
+		NetConnect       func(context.Context, peer.AddrInfo) error                    `perm:"read"`
+		NetDisconnect    func(context.Context, peer.ID) error                          `perm:"read"`
 
 		StartTipSetWorker func(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
 
 		FindOldestState func(ctx context.Context, limit int64) ([]*StateReport, error)      `perm:"read"`
 		StateCompute    func(ctx context.Context, tsk types.TipSetKey) (interface{}, error) `perm:"read"`
 	}
+}
+
+func (s *LilyAPIStruct) NetDisconnect(ctx context.Context, id peer.ID) error {
+	return s.Internal.NetDisconnect(ctx, id)
+}
+
+func (s *LilyAPIStruct) NetConnect(ctx context.Context, p peer.AddrInfo) error {
+	return s.Internal.NetConnect(ctx, p)
 }
 
 func (s *LilyAPIStruct) StateCompute(ctx context.Context, tsk types.TipSetKey) (interface{}, error) {

@@ -9,6 +9,7 @@ import (
 	"text/tabwriter"
 
 	lotuscli "github.com/filecoin-project/lotus/cli"
+	"github.com/filecoin-project/lotus/lib/addrutil"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/urfave/cli/v2"
 )
@@ -17,6 +18,8 @@ var NetCmd = &cli.Command{
 	Name:  "net",
 	Usage: "Manage P2P Network",
 	Subcommands: []*cli.Command{
+		NetConnect,
+		NetDisconnect,
 		NetID,
 		NetListen,
 		NetPeers,
@@ -42,6 +45,68 @@ var NetID = &cli.Command{
 		}
 
 		fmt.Println(pid)
+		return nil
+	},
+}
+
+var NetDisconnect = &cli.Command{
+	Name:      "disconnect",
+	Usage:     "Disconnect from a peer",
+	ArgsUsage: "[peerID]",
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+		api, closer, err := GetAPI(ctx)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		ids := cctx.Args().Slice()
+		for _, id := range ids {
+			pid, err := peer.Decode(id)
+			if err != nil {
+				fmt.Println("failure")
+				return err
+			}
+			fmt.Printf("disconnect %s: ", pid.Pretty())
+			err = api.NetDisconnect(ctx, pid)
+			if err != nil {
+				fmt.Println("failure")
+				return err
+			}
+			fmt.Println("success")
+		}
+		return nil
+	},
+}
+
+var NetConnect = &cli.Command{
+	Name:      "connect",
+	Usage:     "Connect to a peer",
+	ArgsUsage: "[peerMultiaddr]",
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+		api, closer, err := GetAPI(ctx)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		pis, err := addrutil.ParseAddresses(ctx, cctx.Args().Slice())
+		if err != nil {
+			return err
+		}
+
+		for _, pi := range pis {
+			fmt.Printf("connect %s: ", pi.ID.Pretty())
+			err := api.NetConnect(ctx, pi)
+			if err != nil {
+				fmt.Println("failure")
+				return err
+			}
+			fmt.Println("success")
+		}
+
 		return nil
 	},
 }
