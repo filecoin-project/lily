@@ -2,7 +2,7 @@ package v1
 
 func init() {
 	patches.Register(
-		13,
+		14,
 		`
 	CREATE TABLE IF NOT EXISTS {{ .SchemaName | default "public"}}.actor_events (
 	    height 			bigint 	NOT NULL,
