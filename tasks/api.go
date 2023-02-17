@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -58,6 +59,7 @@ type DataSource interface {
 	TipSetBlockMessages(ctx context.Context, ts *types.TipSet) ([]*lens.BlockMessages, error)
 
 	TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*lens.BlockMessageReceipts, error)
+	MessageReceiptEvents(ctx context.Context, root cid.Cid) ([]types.Event, error)
 
 	DiffSectors(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.SectorChanges, error)
 	DiffPreCommits(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.PreCommitChanges, error)

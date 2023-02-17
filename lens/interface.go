@@ -48,6 +48,9 @@ type ChainAPI interface {
 
 	MessagesForTipSetBlocks(ctx context.Context, ts *types.TipSet) ([]*BlockMessages, error)
 	TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*BlockMessageReceipts, error)
+
+	// added during hyperspace
+	ChainGetEvents(ctx context.Context, root cid.Cid) ([]types.Event, error)
 }
 
 type StateAPI interface {
