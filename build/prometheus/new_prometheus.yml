@@ -12,4 +12,4 @@ remote_write:
   - url: https://prometheus-us-central1.grafana.net/api/prom/push
     basic_auth:
       username: 14299
-      password_file: "/etc/prometheus/password_file"
+      password_file: "/etc/prometheus/password_file.txt"
