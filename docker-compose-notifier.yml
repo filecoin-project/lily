@@ -5,7 +5,7 @@ services:
     image: filecoin/lily:v0.13.0
     env_file:
       # Check envvars for configurable options
-      - ./build/lily/notifier.env
+      - ./build/lily/new_notifier.env
     ports:
       - 1234:1234
     volumes:
@@ -13,44 +13,34 @@ services:
       - lily_notifier_data:/var/lib/lily
       # persist params through restarts
       - lily_notifier_tmp:/var/tmp/filecoin-proof-parameters
+      # snapshot
+      - ./build/lily/snapshot:/var/lib/lily/snapshot
       # notifier-specific config
-      - ./build/lily/notifier_config.toml:/var/lib/lily/config.toml
+      - ./build/lily/new_notifier_config.toml:/var/lib/lily/config.toml
       - ./build/lily/docker_init.sh:/usr/bin/docker_init.sh
     entrypoint: /usr/bin/docker_init.sh
+    networks:
+      - back-tier
     command:
-      - "daemon --bootstrap=false"
-
-  grafana-agent:
-    image: "grafana/agent:${GRAFANA_AGENT_VERSION}"
-    network_mode: host
-    restart: always
-    pid: "host"
-    cap_add:
-      - SYS_TIME
+      - "daemon --repo=/var/lib/lily --config=/var/lib/lily/config.toml --bootstrap=false"
+  prometheus:
+    image: prom/prometheus:v2.36.2
     volumes:
-      - /:/host/root:ro,rslave
-      - /sys:/host/sys:ro,rslave
-      - /proc:/host/proc:ro,rslave
-      - /var/run:/host/var/run:ro,rslave
-      - /var/grafana-agent:/var/grafana-agent
+      - ./build/prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
     command:
-      - "-enable-features=remote-configs"
-      - "-config.file=https://raw.githubusercontent.com/filecoin-project/filcryo/main/grafana-agent/config.yaml"
-      - "-config.expand-env"
-    environment:
-      PROMETHEUS_URL: "https://prometheus-us-central1.grafana.net/api/prom/push"
-      PROMETHEUS_USERNAME: "${PROMETHEUS_USERNAME}"
-      PROMETHEUS_PASSWORD: "${PROMETHEUS_PASSWORD}"
-      LOKI_URL: "https://logs-prod-us-central1.grafana.net/loki/api/v1/push"
-      LOKI_USERNAME: "${LOKI_USERNAME}"
-      LOKI_PASSWORD: "${LOKI_PASSWORD}"
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - 9090:9090
+    networks:
+      - back-tier
+    restart: always
       
 
 volumes:
-  timescaledb: {}
   prometheus_data: {}
-  grafana_data: {}
   lily_notifier_data: {}
-  lily_worker_data: {}
   lily_notifier_tmp: {}
-  lily_worker_tmp: {}

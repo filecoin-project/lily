@@ -1,0 +1,61 @@
+[API]
+  ListenAddress = "/ip4/127.0.0.1/tcp/1234/http"
+  RemoteListenAddress = ""
+  Timeout = "30s"
+
+[Backup]
+  DisableMetadataLog = false
+
+[Logging]
+
+[Libp2p]
+  ListenAddresses = ["/ip4/0.0.0.0/tcp/0", "/ip6/::/tcp/0"]
+  AnnounceAddresses = []
+  NoAnnounceAddresses = []
+  DisableNatPortMap = false
+  ConnMgrLow = 150
+  ConnMgrHigh = 180
+  ConnMgrGrace = "20s"
+
+[Pubsub]
+  Bootstrapper = false
+  RemoteTracer = "/dns4/pubsub-tracer.filecoin.io/tcp/4001/p2p/QmTd6UvR47vUidRNZ1ZKXHrAFhqTJAD27rKL9XYghEKgKX"
+
+[Client]
+  UseIpfs = false
+  IpfsOnlineMode = false
+  IpfsMAddr = ""
+  IpfsUseForRetrieval = false
+  SimultaneousTransfersForStorage = 20
+  SimultaneousTransfersForRetrieval = 20
+  OffChainRetrieval = false
+
+[Chainstore]
+  EnableSplitstore = false
+  [Chainstore.Splitstore]
+    ColdStoreType = ""
+    HotStoreType = ""
+    MarkSetType = ""
+    HotStoreMessageRetention = 0
+    HotStoreFullGCFrequency = 0
+    EnableColdStoreAutoPrune = false
+    ColdStoreFullGCFrequency = 0
+    ColdStoreRetention = 0
+
+[Storage]
+  [Storage.File]
+    [Storage.File.CSV]
+      Format = "CSV"
+      Path = "/tmp"
+      OmitHeader = false
+      FilePattern = "{table}.csv"
+
+[Queue]
+  [Queue.Notifiers]
+    [Queue.Notifiers.Notifier1]
+        Network = "tcp"
+        Addr = "10.168.0.2:6379"
+        Username = ""
+        Password = "${REDIS_PASSWORD}"
+        DB = 0
+        PoolSize = 0

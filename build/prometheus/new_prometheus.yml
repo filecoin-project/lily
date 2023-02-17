@@ -1,0 +1,15 @@
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+  external_labels:
+      monitor: 'lily'
+scrape_configs:
+  - job_name: 'lily'
+    scrape_interval: 15s
+    static_configs:
+         - targets: ['notifier:9991', 'worker:9991']
+remote_write:
+  - url: https://prometheus-us-central1.grafana.net/api/prom/push
+    basic_auth:
+      username: 14299
+      password_file: "/etc/prometheus/password_file"
