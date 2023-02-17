@@ -139,6 +139,10 @@ type DataSource struct {
 	diffPreCommitGroup singleflight.Group
 }
 
+func (t *DataSource) MessageReceiptEvents(ctx context.Context, root cid.Cid) ([]types.Event, error) {
+	return t.node.ChainGetEvents(ctx, root)
+}
+
 func (t *DataSource) ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi.TokenAmount, error) {
 	return t.node.ComputeBaseFee(ctx, ts)
 }

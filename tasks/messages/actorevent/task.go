@@ -1,19 +1,14 @@
 package actorevent
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"math"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-amt-ipld/v4"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
-	cbg "github.com/whyrusleeping/cbor-gen"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lily/model"
 	messagemodel "github.com/filecoin-project/lily/model/messages"
@@ -85,29 +80,25 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				continue
 			}
 
-			evtArr, err := amt.LoadAMT(ctx, t.node.Store(), *rec.EventsRoot, amt.UseTreeBitWidth(types.EventAMTBitwidth))
+			events, err := t.node.MessageReceiptEvents(ctx, *rec.EventsRoot)
 			if err != nil {
-				report.ErrorsDetected = fmt.Errorf("loading actor events amt (%s): %w", *rec.EventsRoot, err)
-				return nil, report, nil
+				errorsDetected = append(errorsDetected, &messages.MessageError{
+					Cid:   msg.Cid(),
+					Error: fmt.Sprintf("failed to get receipt events: %s", err),
+				})
+				continue
 			}
-			var evt types.Event
-			err = evtArr.ForEach(ctx, func(evtIdx uint64, deferred *cbg.Deferred) error {
-				if evtIdx > math.MaxInt {
-					return xerrors.Errorf("too many events")
-				}
-				if err := evt.UnmarshalCBOR(bytes.NewReader(deferred.Raw)); err != nil {
-					return err
-				}
 
-				emitter, err := address.NewIDAddress(uint64(evt.Emitter))
-				if err != nil {
-					errorsDetected = append(errorsDetected, &messages.MessageError{
-						Cid:   msg.Cid(),
-						Error: fmt.Sprintf("failed to make ID address from event emitter (%s): %s", evt.Emitter, err),
-					})
-					return err
-				}
-				for _, e := range evt.Entries {
+			for evtIdx, event := range events {
+				for _, e := range event.Entries {
+					emitter, err := address.NewIDAddress(uint64(event.Emitter))
+					if err != nil {
+						errorsDetected = append(errorsDetected, &messages.MessageError{
+							Cid:   msg.Cid(),
+							Error: fmt.Sprintf("failed to make ID address from event emitter (%s): %s", event.Emitter, err),
+						})
+						continue
+					}
 					out = append(out, &messagemodel.ActorEvent{
 						Height:     int64(current.Height()),
 						StateRoot:  current.ParentState().String(),
@@ -119,19 +110,9 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 						Value:      e.Value,
 					})
 				}
-				return nil
-			})
-
-			if err != nil {
-				errorsDetected = append(errorsDetected, &messages.MessageError{
-					Cid:   msg.Cid(),
-					Error: fmt.Sprintf("loading actor events amt (%s): %s", *rec.EventsRoot, err),
-				})
-				continue
 			}
 		}
 	}
-
 	if len(errorsDetected) != 0 {
 		report.ErrorsDetected = errorsDetected
 	}
