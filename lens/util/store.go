@@ -14,118 +14,13 @@ import (
 	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
 	cbg "github.com/whyrusleeping/cbor-gen"
+
+	"github.com/filecoin-project/lily/metrics"
 )
 
 type CacheConfig struct {
 	BlockstoreCacheSize uint
 	StatestoreCacheSize uint
-}
-
-func NewCachingStore(backing blockstore.Blockstore) *ProxyingBlockstore {
-	bs := blockstore.NewMemorySync()
-
-	return &ProxyingBlockstore{
-		cache: bs,
-		store: backing,
-	}
-}
-
-type ProxyingBlockstore struct {
-	cache blockstore.Blockstore
-	store blockstore.Blockstore
-	gets  int64 // updated atomically
-}
-
-func (pb *ProxyingBlockstore) View(ctx context.Context, key cid.Cid, callback func([]byte) error) error {
-	if err := pb.cache.View(ctx, key, callback); err == nil {
-		return nil
-	}
-	return pb.store.View(ctx, key, callback)
-}
-
-func (pb *ProxyingBlockstore) DeleteMany(ctx context.Context, keys []cid.Cid) error {
-	return pb.cache.DeleteMany(ctx, keys)
-}
-
-func (pb *ProxyingBlockstore) Get(ctx context.Context, c cid.Cid) (blocks.Block, error) {
-	atomic.AddInt64(&pb.gets, 1)
-	if block, err := pb.cache.Get(ctx, c); err == nil {
-		return block, err
-	}
-
-	return pb.store.Get(ctx, c)
-}
-
-func (pb *ProxyingBlockstore) Has(ctx context.Context, c cid.Cid) (bool, error) {
-	if h, err := pb.cache.Has(ctx, c); err == nil && h {
-		return true, nil
-	}
-
-	return pb.store.Has(ctx, c)
-}
-
-func (pb *ProxyingBlockstore) DeleteBlock(ctx context.Context, c cid.Cid) error {
-	return pb.cache.DeleteBlock(ctx, c)
-}
-
-func (pb *ProxyingBlockstore) GetSize(ctx context.Context, c cid.Cid) (int, error) {
-	if s, err := pb.cache.GetSize(ctx, c); err == nil {
-		return s, nil
-	}
-	return pb.store.GetSize(ctx, c)
-}
-
-func (pb *ProxyingBlockstore) Put(ctx context.Context, b blocks.Block) error {
-	return pb.cache.Put(ctx, b)
-}
-
-func (pb *ProxyingBlockstore) PutMany(ctx context.Context, bs []blocks.Block) error {
-	for _, b := range bs {
-		if err := pb.Put(ctx, b); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (pb *ProxyingBlockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, error) {
-	outChan := make(chan cid.Cid, 10)
-
-	cctx, cncl := context.WithCancel(ctx)
-	akc, err := pb.cache.AllKeysChan(cctx)
-	if err != nil {
-		cncl()
-		return nil, err
-	}
-	akc2, err2 := pb.store.AllKeysChan(cctx)
-	if err2 != nil {
-		cncl()
-		return nil, err2
-	}
-	go func() {
-		defer cncl()
-		defer close(outChan)
-		for c := range akc {
-			outChan <- c
-		}
-		for c := range akc2 {
-			outChan <- c
-		}
-	}()
-
-	return outChan, nil
-}
-
-func (pb *ProxyingBlockstore) HashOnRead(enabled bool) {
-}
-
-func (pb *ProxyingBlockstore) GetCount() int64 {
-	c := atomic.LoadInt64(&pb.gets)
-	return c
-}
-
-func (pb *ProxyingBlockstore) ResetMetrics() {
-	atomic.StoreInt64(&pb.gets, 0)
 }
 
 var _ blockstore.Blockstore = (*CachingBlockstore)(nil)
@@ -139,6 +34,7 @@ type CachingBlockstore struct {
 }
 
 func NewCachingBlockstore(blocks blockstore.Blockstore, cacheSize int) (*CachingBlockstore, error) {
+	metrics.RecordCount(context.TODO(), metrics.BlockStoreCacheLimit, cacheSize)
 	cache, err := lru.NewARC(cacheSize)
 	if err != nil {
 		return nil, fmt.Errorf("new arc: %w", err)
@@ -179,6 +75,8 @@ func (cs *CachingBlockstore) DeleteMany(ctx context.Context, cids []cid.Cid) err
 }
 
 func (cs *CachingBlockstore) Get(ctx context.Context, c cid.Cid) (blocks.Block, error) {
+	metrics.RecordCount(ctx, metrics.BlockStoreCacheSize, cs.cache.Len())
+	metrics.RecordInc(ctx, metrics.BlockStoreCacheRead)
 	reads := atomic.AddInt64(&cs.reads, 1)
 	if reads%1000000 == 0 {
 		hits := atomic.LoadInt64(&cs.hits)
@@ -188,6 +86,7 @@ func (cs *CachingBlockstore) Get(ctx context.Context, c cid.Cid) (blocks.Block, 
 
 	v, hit := cs.cache.Get(c)
 	if hit {
+		metrics.RecordInc(ctx, metrics.BlockStoreCacheHits)
 		atomic.AddInt64(&cs.hits, 1)
 		return v.(blocks.Block), nil
 	}
@@ -203,6 +102,7 @@ func (cs *CachingBlockstore) Get(ctx context.Context, c cid.Cid) (blocks.Block, 
 }
 
 func (cs *CachingBlockstore) View(ctx context.Context, c cid.Cid, callback func([]byte) error) error {
+	metrics.RecordInc(ctx, metrics.BlockStoreCacheRead)
 	reads := atomic.AddInt64(&cs.reads, 1)
 	if reads%1000000 == 0 {
 		hits := atomic.LoadInt64(&cs.hits)
@@ -211,6 +111,7 @@ func (cs *CachingBlockstore) View(ctx context.Context, c cid.Cid, callback func(
 	}
 	v, hit := cs.cache.Get(c)
 	if hit {
+		metrics.RecordInc(ctx, metrics.BlockStoreCacheHits)
 		atomic.AddInt64(&cs.hits, 1)
 		return callback(v.(blocks.Block).RawData())
 	}
@@ -226,6 +127,7 @@ func (cs *CachingBlockstore) View(ctx context.Context, c cid.Cid, callback func(
 }
 
 func (cs *CachingBlockstore) Has(ctx context.Context, c cid.Cid) (bool, error) {
+	metrics.RecordInc(ctx, metrics.BlockStoreCacheRead)
 	atomic.AddInt64(&cs.reads, 1)
 	// Safe to query cache since blockstore never deletes
 	if cs.cache.Contains(c) {
@@ -246,6 +148,7 @@ type CachingStateStore struct {
 }
 
 func NewCachingStateStore(blocks blockstore.Blockstore, cacheSize int) (*CachingStateStore, error) {
+	metrics.RecordCount(context.TODO(), metrics.StateStoreCacheLimit, cacheSize)
 	cache, err := lru.NewARC(cacheSize)
 	if err != nil {
 		return nil, fmt.Errorf("new arc: %w", err)
@@ -265,6 +168,8 @@ func (cas *CachingStateStore) Context() context.Context {
 }
 
 func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{}) error {
+	metrics.RecordCount(ctx, metrics.StateStoreCacheSize, cas.cache.Len())
+	metrics.RecordInc(ctx, metrics.StateStoreCacheRead)
 	reads := atomic.AddInt64(&cas.reads, 1)
 	if reads%1000000 == 0 {
 		hits := atomic.LoadInt64(&cas.hits)
@@ -280,6 +185,7 @@ func (cas *CachingStateStore) Get(ctx context.Context, c cid.Cid, out interface{
 	if hit {
 		err := cas.tryAssign(v, out)
 		if err == nil {
+			metrics.RecordInc(ctx, metrics.StateStoreCacheHits)
 			atomic.AddInt64(&cas.hits, 1)
 			return nil
 		}
