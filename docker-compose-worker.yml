@@ -4,11 +4,11 @@ networks:
   worker-network:
 
 services:
-  notifier:
+  worker:
     image: filecoin/lily:v0.13.0
     env_file:
       # Check envvars for configurable options
-      - ./build/lily/new_notifier.env
+      - ./build/lily/new_worker.env
     ports:
       - 1234:1234
     volumes:
