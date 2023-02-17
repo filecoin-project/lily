@@ -49,6 +49,13 @@
       Path = "/tmp"
       OmitHeader = false
       FilePattern = "{table}.csv"
+  [Storage.Postgresql]
+    [Storage.Postgresql.Database1]
+      URL = xxxx
+      ApplicationName = "lily"
+      SchemaName = "visor"
+      PoolSize = 20
+      AllowUpsert = false
 
 [Queue]
   [Queue.Workers]
