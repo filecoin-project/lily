@@ -158,7 +158,6 @@ func main() {
 			commands.ChainCmd,
 			commands.DaemonCmd,
 			commands.ExportChainCmd,
-			commands.HelpCmd,
 			commands.InitCmd,
 			commands.LogCmd,
 			commands.MigrateCmd,
