@@ -71,6 +71,17 @@ var (
 
 	TipSetWorkerConcurrency   = stats.Int64("tipset_worker_concurrency", "Concurrency of tipset worker", stats.UnitDimensionless)
 	TipSetWorkerQueuePriority = stats.Int64("tipset_worker_queue_priority", "Priority of tipset worker queue", stats.UnitDimensionless)
+
+	// Store caches
+	StateStoreCacheLimit = stats.Int64("state_store_cache_limit", "Max size of cache", stats.UnitDimensionless)
+	StateStoreCacheHits  = stats.Int64("state_store_cache_hits", "Number of cache hits for the state store cache", stats.UnitDimensionless)
+	StateStoreCacheRead  = stats.Int64("state_store_cache_read", "Number of reads from the state store cache", stats.UnitDimensionless)
+	StateStoreCacheSize  = stats.Int64("state_store_cache_size", "Number of elements in the cache", stats.UnitDimensionless)
+
+	BlockStoreCacheLimit = stats.Int64("block_store_cache_limit", "Max size of cache", stats.UnitDimensionless)
+	BlockStoreCacheHits  = stats.Int64("block_store_cache_hits", "Number of cache hits for the block store cache", stats.UnitDimensionless)
+	BlockStoreCacheRead  = stats.Int64("block_store_cache_read", "Number of reads from the block store cache", stats.UnitDimensionless)
+	BlockStoreCacheSize  = stats.Int64("block_store_cache_size", "Number of elements in the cache", stats.UnitDimensionless)
 )
 
 var DefaultViews = []*view.View{
@@ -78,6 +89,46 @@ var DefaultViews = []*view.View{
 		Measure:     LilyInfo,
 		Aggregation: view.LastValue(),
 		TagKeys:     []tag.Key{Version},
+	},
+	{
+		Measure:     StateStoreCacheLimit,
+		Aggregation: view.LastValue(),
+		TagKeys:     []tag.Key{},
+	},
+	{
+		Measure:     StateStoreCacheHits,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	},
+	{
+		Measure:     StateStoreCacheRead,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	},
+	{
+		Measure:     StateStoreCacheSize,
+		Aggregation: view.LastValue(),
+		TagKeys:     []tag.Key{},
+	},
+	{
+		Measure:     BlockStoreCacheLimit,
+		Aggregation: view.LastValue(),
+		TagKeys:     []tag.Key{},
+	},
+	{
+		Measure:     BlockStoreCacheHits,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	},
+	{
+		Measure:     BlockStoreCacheRead,
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{},
+	},
+	{
+		Measure:     BlockStoreCacheSize,
+		Aggregation: view.LastValue(),
+		TagKeys:     []tag.Key{},
 	},
 	{
 		Measure:     TipSetWorkerConcurrency,
@@ -279,6 +330,11 @@ func RecordDec(ctx context.Context, m *stats.Int64Measure) {
 // RecordCount is a convenience function that increments a counter by a count.
 func RecordCount(ctx context.Context, m *stats.Int64Measure, count int) {
 	stats.Record(ctx, m.M(int64(count)))
+}
+
+// RecordInt64Count is a convenience function that increments a counter by a count.
+func RecordInt64Count(ctx context.Context, m *stats.Int64Measure, count int64) {
+	stats.Record(ctx, m.M(count))
 }
 
 // WithTagValue is a convenience function that upserts the tag value in the given context.
