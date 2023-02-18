@@ -11,6 +11,8 @@ services:
       - ./build/lily/new_worker.env
     ports:
       - 1234:1234
+      # export the metrics port
+      - 9991:9991
     volumes:
       # holds lily datastore repo
       - lily_worker_data:/var/lib/lily
