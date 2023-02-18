@@ -64,7 +64,7 @@
         Network = "tcp"
         Addr = "10.168.0.2:6379"
         Username = ""
-        PasswordEnv = "LILY_ASYNQ_REDIS_PASSWORD"
+        PasswordEnv = "LILY_REDIS_PASSWORD"
         DB = 0
         PoolSize = 0
       [Queue.Workers.Worker1.WorkerConfig]
