@@ -54,7 +54,7 @@
   [Queue.Notifiers]
     [Queue.Notifiers.Notifier1]
         Network = "tcp"
-        Addr = "10.168.0.2:6379"
+        Addr = "REDIS_ADDRESS"
         Username = ""
         PasswordEnv = "LILY_REDIS_PASSWORD"
         DB = 0

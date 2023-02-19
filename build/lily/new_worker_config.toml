@@ -62,7 +62,7 @@
     [Queue.Workers.Worker1]
       [Queue.Workers.Worker1.RedisConfig]
         Network = "tcp"
-        Addr = "10.168.0.2:6379"
+        Addr = "REDIS_ADDRESS"
         Username = ""
         PasswordEnv = "LILY_REDIS_PASSWORD"
         DB = 0
