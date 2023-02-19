@@ -48,9 +48,16 @@ services:
     restart: always
     deploy:
       mode: global
-      
+  promtail:
+    image: grafana/promtail:2.7.0
+    volumes:
+      - ./build/promtail/config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/hosts:/etc/hosts:ro
+    entrypoint: [ "/bin/sh","-c" ]
+    command:
+      - "/usr/bin/promtail -config.file=/etc/promtail/config.yml -client.external-labels=hostname=$(tail -2 /etc/hosts | cut -d' ' -f1 | head -1)"
 
 volumes:
-  prometheus_worker_data: {}
   lily_worker_data: {}
   lily_worker_tmp: {}
