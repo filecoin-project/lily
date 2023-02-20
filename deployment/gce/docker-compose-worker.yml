@@ -4,30 +4,29 @@ networks:
   back-tier:
 
 services:
-  notifier:
+  worker:
     image: filecoin/lily:v0.13.0
     env_file:
       # Check envvars for configurable options
-      - ./build/lily/new_notifier.env
+      - ./lily/worker.env
     ports:
-      - 1234:1234
       # export the metrics port
       - 9991:9991
     volumes:
       # holds lily datastore repo
-      - lily_notifier_data:/var/lib/lily
+      - lily_worker_data:/var/lib/lily
       # persist params through restarts
-      - lily_notifier_tmp:/var/tmp/filecoin-proof-parameters
+      - lily_worker_tmp:/var/tmp/filecoin-proof-parameters
       # snapshot
-      - ./build/lily/snapshot:/var/lib/lily/snapshot
+      - ./snapshot:/var/lib/lily/snapshot
       # notifier-specific config
-      - ./build/lily/new_notifier_config.toml:/var/lib/lily/config.toml
+      - ./lily/worker_config.toml:/var/lib/lily/config.toml
       - ./build/lily/docker_init.sh:/usr/bin/docker_init.sh
     entrypoint: /usr/bin/docker_init.sh
     networks:
       - back-tier
     command:
-      - "daemon --repo=/var/lib/lily --config=/var/lib/lily/config.toml"
+      - "daemon --repo=/var/lib/lily --config=/var/lib/lily/config.toml --bootstrap=false"
   node-exporter:
     image: quay.io/prometheus/node-exporter:latest
     volumes:
@@ -51,7 +50,7 @@ services:
   promtail:
     image: grafana/promtail:2.7.0
     volumes:
-      - ./build/promtail/config.yml:/etc/promtail/config.yml
+      - ./promtail/config.yml:/etc/promtail/config.yml
       - /var/run/docker.sock:/var/run/docker.sock
       - /etc/hosts:/etc/hosts:ro
     entrypoint: [ "/bin/sh","-c" ]
@@ -59,5 +58,5 @@ services:
       - "/usr/bin/promtail -config.file=/etc/promtail/config.yml -client.external-labels=hostname=$(tail -2 /etc/hosts | cut -d' ' -f1 | head -1)"
 
 volumes:
-  lily_notifier_data: {}
-  lily_notifier_tmp: {}
+  lily_worker_data: {}
+  lily_worker_tmp: {}

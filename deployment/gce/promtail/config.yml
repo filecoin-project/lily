@@ -26,20 +26,6 @@ scrape_configs:
         regex: '/(.*)'
         target_label: 'container'
     pipeline_stages:
-    - json:
-        expressions:
-          output: log
-          stream: stream
-          attrs:
-    - json:
-        expressions:
-          tag:
-        source: attrs
-    - timestamp:
-        format: RFC3339Nano
-        source: time
-    - labels:
-        tag:
-        stream:
-    - output:
-        source: output
+      - docker: {}
+      - static_labels:
+          job: docker
