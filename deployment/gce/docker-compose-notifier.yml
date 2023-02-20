@@ -6,9 +6,10 @@ networks:
 services:
   notifier:
     image: filecoin/lily:v0.13.0
+    container_name: lily-notifier
     env_file:
       # Check envvars for configurable options
-      - ./lily/notifier/notifier.env
+      - ./lily/notifier.env
     ports:
       # export the metrics port
       - 9991:9991
@@ -20,7 +21,7 @@ services:
       # snapshot
       - ./snapshot:/var/lib/lily/snapshot
       # notifier-specific config
-      - ./lily/notifier/notifier_config.toml:/var/lib/lily/config.toml
+      - ./lily/notifier_config.toml:/var/lib/lily/config.toml
       - ./lily/docker_init.sh:/usr/bin/docker_init.sh
     entrypoint: /usr/bin/docker_init.sh
     networks:
@@ -29,6 +30,7 @@ services:
       - "daemon --repo=/var/lib/lily --config=/var/lib/lily/config.toml"
   node-exporter:
     image: quay.io/prometheus/node-exporter:latest
+    container_name: node-exporter
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -49,6 +51,7 @@ services:
       mode: global
   promtail:
     image: grafana/promtail:2.7.0
+    container_name: promtail
     volumes:
       - ./promtail/config.yml:/etc/promtail/config.yml
       - /var/run/docker.sock:/var/run/docker.sock
