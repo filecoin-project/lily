@@ -1,7 +1,7 @@
 version: '3.5'
 
 networks:
-  back-tier:
+  worker-network:
 
 services:
   worker:
@@ -25,7 +25,7 @@ services:
       - ./lily/docker_init.sh:/usr/bin/docker_init.sh
     entrypoint: /usr/bin/docker_init.sh
     networks:
-      - back-tier
+      - worker-network
     command:
       - "daemon --repo=/var/lib/lily --config=/var/lib/lily/config.toml"
   node-exporter:
@@ -45,7 +45,7 @@ services:
     ports:
       - 9100:9100
     networks:
-      - back-tier
+      - worker-network
     restart: always
     deploy:
       mode: global
