@@ -27,4 +27,14 @@ fi
 
 chmod -R 0600 ${LILY_REPO}/keystore
 
-lily $@
+lily daemon --repo=/var/lib/lily --config=/var/lib/lily/config.toml > /var/lib/lily/lily.log 2>&1 &
+
+# wait for lily daemon
+sleep 10
+
+lily sync wait
+
+lily job run --storage="Database1" tipset-worker --queue="Worker1"
+
+# resume recently background job
+fg %1

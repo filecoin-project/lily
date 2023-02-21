@@ -22,12 +22,10 @@ services:
       - ./snapshot:/var/lib/lily/snapshot
       # worker-specific config
       - ./lily/worker_config.toml:/var/lib/lily/config.toml
-      - ./lily/docker_init.sh:/usr/bin/docker_init.sh
+      - ./lily/worker_docker_init.sh:/usr/bin/docker_init.sh
     entrypoint: /usr/bin/docker_init.sh
     networks:
       - worker-network
-    command:
-      - "daemon --repo=/var/lib/lily --config=/var/lib/lily/config.toml"
   node-exporter:
     image: quay.io/prometheus/node-exporter:latest
     container_name: node-exporter
