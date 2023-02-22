@@ -19,6 +19,7 @@ type ActorEvent struct {
 
 	Emitter string `pg:",notnull"`
 	Flags   []byte `pg:",notnull"`
+	Codec   uint64 `pg:",notnull,use_zero"`
 	Key     string `pg:",notnull"`
 	Value   []byte `pg:",notnull"`
 }

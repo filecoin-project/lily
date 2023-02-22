@@ -106,6 +106,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 						EventIndex: int64(evtIdx),
 						Emitter:    emitter.String(),
 						Flags:      []byte{e.Flags},
+						Codec:      e.Codec,
 						Key:        e.Key,
 						Value:      e.Value,
 					})
