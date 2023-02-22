@@ -8,7 +8,9 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
 
-	"github.com/filecoin-project/lily/chain/actors"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
+	"github.com/filecoin-project/lotus/chain/actors"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 
 	datacap9 "github.com/filecoin-project/go-state-types/builtin/v9/datacap"
@@ -52,7 +54,7 @@ func (s *state9) GetState() interface{} {
 }
 
 func (s *state9) ForEachClient(cb func(addr address.Address, dcap abi.StoragePower) error) error {
-	return forEachClient(s.store, actors.Version9, s.VerifiedClients, cb)
+	return forEachClient(s.store, actorstypes.Version9, s.VerifiedClients, cb)
 }
 
 func (s *state9) VerifiedClients() (adt.Map, error) {
@@ -60,7 +62,7 @@ func (s *state9) VerifiedClients() (adt.Map, error) {
 }
 
 func (s *state9) VerifiedClientDataCap(addr address.Address) (bool, abi.StoragePower, error) {
-	return getDataCap(s.store, actors.Version9, s.VerifiedClients, addr)
+	return getDataCap(s.store, actorstypes.Version9, s.VerifiedClients, addr)
 }
 
 func (s *state9) VerifiedClientsMapBitWidth() int {
@@ -75,11 +77,11 @@ func (s *state9) VerifiedClientsMapHashFunction() func(input []byte) []byte {
 }
 
 func (s *state9) ActorKey() string {
-	return actors.DatacapKey
+	return manifest.DatacapKey
 }
 
-func (s *state9) ActorVersion() actors.Version {
-	return actors.Version9
+func (s *state9) ActorVersion() actorstypes.Version {
+	return actorstypes.Version9
 }
 
 func (s *state9) Code() cid.Cid {

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/filecoin-project/go-address"
 	"github.com/ipfs/go-cid"
 
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
@@ -21,36 +20,16 @@ import (
 
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
 
-	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/builtin"
 	"github.com/filecoin-project/go-state-types/proof"
 
 	"github.com/filecoin-project/lotus/chain/actors"
 
 	smoothingtypes "github.com/filecoin-project/go-state-types/builtin/v8/util/smoothing"
-	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
-)
-
-var SystemActorAddr = builtin.SystemActorAddr
-var BurntFundsActorAddr = builtin.BurntFundsActorAddr
-var CronActorAddr = builtin.CronActorAddr
-var SaftAddress = makeAddress("t0122")
-var ReserveAddress = makeAddress("t090")
-var RootVerifierAddress = makeAddress("t080")
-
-var (
-	ExpectedLeadersPerEpoch = builtin.ExpectedLeadersPerEpoch
 )
 
 const (
 	EpochDurationSeconds = builtin.EpochDurationSeconds
-	EpochsInDay          = builtin.EpochsInDay
-	SecondsInDay         = builtin.SecondsInDay
-)
-
-const (
-	MethodSend        = builtin.MethodSend
-	MethodConstructor = builtin.MethodConstructor
 )
 
 // These are all just type aliases across actor versions. In the future, that might change
@@ -59,10 +38,6 @@ type SectorInfo = proof.SectorInfo
 type ExtendedSectorInfo = proof.ExtendedSectorInfo
 type PoStProof = proof.PoStProof
 type FilterEstimate = smoothingtypes.FilterEstimate
-
-func QAPowerForWeight(size abi.SectorSize, duration abi.ChainEpoch, dealWeight, verifiedWeight abi.DealWeight) abi.StoragePower {
-	return minertypes.QAPowerForWeight(size, duration, dealWeight, verifiedWeight)
-}
 
 func ActorNameByCode(c cid.Cid) string {
 	if name, version, ok := actors.GetActorMetaByCode(c); ok {
@@ -95,200 +70,6 @@ func ActorNameByCode(c cid.Cid) string {
 	default:
 		return "<unknown>"
 	}
-}
-
-func IsBuiltinActor(c cid.Cid) bool {
-	_, _, ok := actors.GetActorMetaByCode(c)
-	if ok {
-		return true
-	}
-
-	if builtin0.IsBuiltinActor(c) {
-		return true
-	}
-
-	if builtin2.IsBuiltinActor(c) {
-		return true
-	}
-
-	if builtin3.IsBuiltinActor(c) {
-		return true
-	}
-
-	if builtin4.IsBuiltinActor(c) {
-		return true
-	}
-
-	if builtin5.IsBuiltinActor(c) {
-		return true
-	}
-
-	if builtin6.IsBuiltinActor(c) {
-		return true
-	}
-
-	if builtin7.IsBuiltinActor(c) {
-		return true
-	}
-
-	return false
-}
-
-func IsAccountActor(c cid.Cid) bool {
-	name, _, ok := actors.GetActorMetaByCode(c)
-	if ok {
-		return name == "account"
-	}
-
-	if c == builtin0.AccountActorCodeID {
-		return true
-	}
-
-	if c == builtin2.AccountActorCodeID {
-		return true
-	}
-
-	if c == builtin3.AccountActorCodeID {
-		return true
-	}
-
-	if c == builtin4.AccountActorCodeID {
-		return true
-	}
-
-	if c == builtin5.AccountActorCodeID {
-		return true
-	}
-
-	if c == builtin6.AccountActorCodeID {
-		return true
-	}
-
-	if c == builtin7.AccountActorCodeID {
-		return true
-	}
-
-	return false
-}
-
-func IsStorageMinerActor(c cid.Cid) bool {
-	name, _, ok := actors.GetActorMetaByCode(c)
-	if ok {
-		return name == actors.MinerKey
-	}
-
-	if c == builtin0.StorageMinerActorCodeID {
-		return true
-	}
-
-	if c == builtin2.StorageMinerActorCodeID {
-		return true
-	}
-
-	if c == builtin3.StorageMinerActorCodeID {
-		return true
-	}
-
-	if c == builtin4.StorageMinerActorCodeID {
-		return true
-	}
-
-	if c == builtin5.StorageMinerActorCodeID {
-		return true
-	}
-
-	if c == builtin6.StorageMinerActorCodeID {
-		return true
-	}
-
-	if c == builtin7.StorageMinerActorCodeID {
-		return true
-	}
-
-	return false
-}
-
-func IsMultisigActor(c cid.Cid) bool {
-	name, _, ok := actors.GetActorMetaByCode(c)
-	if ok {
-		return name == actors.MultisigKey
-	}
-
-	if c == builtin0.MultisigActorCodeID {
-		return true
-	}
-
-	if c == builtin2.MultisigActorCodeID {
-		return true
-	}
-
-	if c == builtin3.MultisigActorCodeID {
-		return true
-	}
-
-	if c == builtin4.MultisigActorCodeID {
-		return true
-	}
-
-	if c == builtin5.MultisigActorCodeID {
-		return true
-	}
-
-	if c == builtin6.MultisigActorCodeID {
-		return true
-	}
-
-	if c == builtin7.MultisigActorCodeID {
-		return true
-	}
-
-	return false
-}
-
-func IsPaymentChannelActor(c cid.Cid) bool {
-	name, _, ok := actors.GetActorMetaByCode(c)
-	if ok {
-		return name == "paymentchannel"
-	}
-
-	if c == builtin0.PaymentChannelActorCodeID {
-		return true
-	}
-
-	if c == builtin2.PaymentChannelActorCodeID {
-		return true
-	}
-
-	if c == builtin3.PaymentChannelActorCodeID {
-		return true
-	}
-
-	if c == builtin4.PaymentChannelActorCodeID {
-		return true
-	}
-
-	if c == builtin5.PaymentChannelActorCodeID {
-		return true
-	}
-
-	if c == builtin6.PaymentChannelActorCodeID {
-		return true
-	}
-
-	if c == builtin7.PaymentChannelActorCodeID {
-		return true
-	}
-
-	return false
-}
-
-func makeAddress(addr string) address.Address {
-	ret, err := address.NewFromString(addr)
-	if err != nil {
-		panic(err)
-	}
-
-	return ret
 }
 
 func ActorFamily(name string) string {

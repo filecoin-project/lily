@@ -6,7 +6,6 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/big"
-	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
@@ -32,29 +31,34 @@ import (
 
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
 
-	builtin9 "github.com/filecoin-project/go-state-types/builtin"
+	builtin10 "github.com/filecoin-project/go-state-types/builtin"
 
-	"github.com/filecoin-project/lily/chain/actors"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
+	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 )
 
 var (
-	Address = builtin9.StoragePowerActorAddr
-	Methods = builtin9.MethodsPower
+	Address = builtin10.StoragePowerActorAddr
+	Methods = builtin10.MethodsPower
 )
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
 	if name, av, ok := lotusactors.GetActorMetaByCode(act.Code); ok {
-		if name != actors.PowerKey {
+		if name != manifest.PowerKey {
 			return nil, fmt.Errorf("actor code is not power: %s", name)
 		}
 
-		switch actors.Version(av) {
+		switch actorstypes.Version(av) {
 
-		case actors.Version8:
+		case actorstypes.Version8:
 			return load8(store, act.Head)
 
-		case actors.Version9:
+		case actorstypes.Version9:
 			return load9(store, act.Head)
+
+		case actorstypes.Version10:
+			return load10(store, act.Head)
 
 		}
 	}
@@ -92,7 +96,7 @@ type State interface {
 
 	Code() cid.Cid
 	ActorKey() string
-	ActorVersion() actors.Version
+	ActorVersion() actorstypes.Version
 
 	TotalLocked() (abi.TokenAmount, error)
 	TotalPower() (Claim, error)
@@ -141,19 +145,21 @@ func AllCodes() []cid.Cid {
 		(&state7{}).Code(),
 		(&state8{}).Code(),
 		(&state9{}).Code(),
+		(&state10{}).Code(),
 	}
 }
 
-func VersionCodes() map[actors.Version]cid.Cid {
-	return map[actors.Version]cid.Cid{
-		actors.Version0: (&state0{}).Code(),
-		actors.Version2: (&state2{}).Code(),
-		actors.Version3: (&state3{}).Code(),
-		actors.Version4: (&state4{}).Code(),
-		actors.Version5: (&state5{}).Code(),
-		actors.Version6: (&state6{}).Code(),
-		actors.Version7: (&state7{}).Code(),
-		actors.Version8: (&state8{}).Code(),
-		actors.Version9: (&state9{}).Code(),
+func VersionCodes() map[actorstypes.Version]cid.Cid {
+	return map[actorstypes.Version]cid.Cid{
+		actorstypes.Version0:  (&state0{}).Code(),
+		actorstypes.Version2:  (&state2{}).Code(),
+		actorstypes.Version3:  (&state3{}).Code(),
+		actorstypes.Version4:  (&state4{}).Code(),
+		actorstypes.Version5:  (&state5{}).Code(),
+		actorstypes.Version6:  (&state6{}).Code(),
+		actorstypes.Version7:  (&state7{}).Code(),
+		actorstypes.Version8:  (&state8{}).Code(),
+		actorstypes.Version9:  (&state9{}).Code(),
+		actorstypes.Version10: (&state10{}).Code(),
 	}
 }

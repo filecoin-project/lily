@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"github.com/filecoin-project/go-address"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/metrics"
 )
@@ -80,10 +80,10 @@ func (t *DataSource) DiffPreCommits(ctx context.Context, addr address.Address, t
 }
 
 func (t *DataSource) DiffPreCommitsV8(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.PreCommitChangesV8, error) {
-	if pre.ActorVersion() > actors.Version8 {
+	if pre.ActorVersion() > actorstypes.Version8 {
 		return nil, fmt.Errorf("cannot diff pre actor version %d using DiffPreCommitsV8 method", pre.ActorVersion())
 	}
-	if cur.ActorVersion() > actors.Version8 {
+	if cur.ActorVersion() > actorstypes.Version8 {
 		return nil, fmt.Errorf("cannot diff cur actor version %d using DiffPreCommitsV8 method", cur.ActorVersion())
 	}
 	metrics.RecordInc(ctx, metrics.DataSourcePreCommitDiffRead)

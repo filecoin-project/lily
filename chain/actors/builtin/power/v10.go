@@ -16,19 +16,18 @@ import (
 
 	"crypto/sha256"
 
-	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
-
-	power4 "github.com/filecoin-project/specs-actors/v4/actors/builtin/power"
-	adt4 "github.com/filecoin-project/specs-actors/v4/actors/util/adt"
+	builtin10 "github.com/filecoin-project/go-state-types/builtin"
+	power10 "github.com/filecoin-project/go-state-types/builtin/v10/power"
+	adt10 "github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/manifest"
 )
 
-var _ State = (*state4)(nil)
+var _ State = (*state10)(nil)
 
-func load4(store adt.Store, root cid.Cid) (State, error) {
-	out := state4{store: store}
+func load10(store adt.Store, root cid.Cid) (State, error) {
+	out := state10{store: store}
 	err := store.Get(store.Context(), root, &out)
 	if err != nil {
 		return nil, err
@@ -36,16 +35,16 @@ func load4(store adt.Store, root cid.Cid) (State, error) {
 	return &out, nil
 }
 
-type state4 struct {
-	power4.State
+type state10 struct {
+	power10.State
 	store adt.Store
 }
 
-func (s *state4) TotalLocked() (abi.TokenAmount, error) {
+func (s *state10) TotalLocked() (abi.TokenAmount, error) {
 	return s.TotalPledgeCollateral, nil
 }
 
-func (s *state4) TotalPower() (Claim, error) {
+func (s *state10) TotalPower() (Claim, error) {
 	return Claim{
 		RawBytePower:    s.TotalRawBytePower,
 		QualityAdjPower: s.TotalQualityAdjPower,
@@ -53,19 +52,19 @@ func (s *state4) TotalPower() (Claim, error) {
 }
 
 // Committed power to the network. Includes miners below the minimum threshold.
-func (s *state4) TotalCommitted() (Claim, error) {
+func (s *state10) TotalCommitted() (Claim, error) {
 	return Claim{
 		RawBytePower:    s.TotalBytesCommitted,
 		QualityAdjPower: s.TotalQABytesCommitted,
 	}, nil
 }
 
-func (s *state4) MinerPower(addr address.Address) (Claim, bool, error) {
+func (s *state10) MinerPower(addr address.Address) (Claim, bool, error) {
 	claims, err := s.ClaimsMap()
 	if err != nil {
 		return Claim{}, false, err
 	}
-	var claim power4.Claim
+	var claim power10.Claim
 	ok, err := claims.Get(abi.AddrKey(addr), &claim)
 	if err != nil {
 		return Claim{}, false, err
@@ -76,19 +75,19 @@ func (s *state4) MinerPower(addr address.Address) (Claim, bool, error) {
 	}, ok, nil
 }
 
-func (s *state4) MinerNominalPowerMeetsConsensusMinimum(a address.Address) (bool, error) {
+func (s *state10) MinerNominalPowerMeetsConsensusMinimum(a address.Address) (bool, error) {
 	return s.State.MinerNominalPowerMeetsConsensusMinimum(s.store, a)
 }
 
-func (s *state4) TotalPowerSmoothed() (builtin.FilterEstimate, error) {
+func (s *state10) TotalPowerSmoothed() (builtin.FilterEstimate, error) {
 	return builtin.FilterEstimate(s.State.ThisEpochQAPowerSmoothed), nil
 }
 
-func (s *state4) MinerCounts() (uint64, uint64, error) {
+func (s *state10) MinerCounts() (uint64, uint64, error) {
 	return uint64(s.State.MinerAboveMinPowerCount), uint64(s.State.MinerCount), nil
 }
 
-func (s *state4) ListAllMiners() ([]address.Address, error) {
+func (s *state10) ListAllMiners() ([]address.Address, error) {
 	claims, err := s.ClaimsMap()
 	if err != nil {
 		return nil, err
@@ -110,13 +109,13 @@ func (s *state4) ListAllMiners() ([]address.Address, error) {
 	return miners, nil
 }
 
-func (s *state4) ForEachClaim(cb func(miner address.Address, claim Claim) error) error {
+func (s *state10) ForEachClaim(cb func(miner address.Address, claim Claim) error) error {
 	claims, err := s.ClaimsMap()
 	if err != nil {
 		return err
 	}
 
-	var claim power4.Claim
+	var claim power10.Claim
 	return claims.ForEach(&claim, func(k string) error {
 		a, err := address.NewFromBytes([]byte(k))
 		if err != nil {
@@ -129,26 +128,26 @@ func (s *state4) ForEachClaim(cb func(miner address.Address, claim Claim) error)
 	})
 }
 
-func (s *state4) ClaimsChanged(other State) (bool, error) {
-	other4, ok := other.(*state4)
+func (s *state10) ClaimsChanged(other State) (bool, error) {
+	other10, ok := other.(*state10)
 	if !ok {
 		// treat an upgrade as a change, always
 		return true, nil
 	}
-	return !s.State.Claims.Equals(other4.State.Claims), nil
+	return !s.State.Claims.Equals(other10.State.Claims), nil
 }
 
-func (s *state4) ClaimsMap() (adt.Map, error) {
-	return adt4.AsMap(s.store, s.Claims, builtin4.DefaultHamtBitwidth)
+func (s *state10) ClaimsMap() (adt.Map, error) {
+	return adt10.AsMap(s.store, s.Claims, builtin10.DefaultHamtBitwidth)
 }
 
-func (s *state4) ClaimsMapBitWidth() int {
+func (s *state10) ClaimsMapBitWidth() int {
 
-	return builtin4.DefaultHamtBitwidth
+	return builtin10.DefaultHamtBitwidth
 
 }
 
-func (s *state4) ClaimsMapHashFunction() func(input []byte) []byte {
+func (s *state10) ClaimsMapHashFunction() func(input []byte) []byte {
 
 	return func(input []byte) []byte {
 		res := sha256.Sum256(input)
@@ -157,30 +156,30 @@ func (s *state4) ClaimsMapHashFunction() func(input []byte) []byte {
 
 }
 
-func (s *state4) decodeClaim(val *cbg.Deferred) (Claim, error) {
-	var ci power4.Claim
+func (s *state10) decodeClaim(val *cbg.Deferred) (Claim, error) {
+	var ci power10.Claim
 	if err := ci.UnmarshalCBOR(bytes.NewReader(val.Raw)); err != nil {
 		return Claim{}, err
 	}
-	return fromV4Claim(ci), nil
+	return fromV10Claim(ci), nil
 }
 
-func fromV4Claim(v4 power4.Claim) Claim {
+func fromV10Claim(v10 power10.Claim) Claim {
 	return Claim{
-		RawBytePower:    v4.RawBytePower,
-		QualityAdjPower: v4.QualityAdjPower,
+		RawBytePower:    v10.RawBytePower,
+		QualityAdjPower: v10.QualityAdjPower,
 	}
 }
 
-func (s *state4) ActorKey() string {
+func (s *state10) ActorKey() string {
 	return manifest.PowerKey
 }
 
-func (s *state4) ActorVersion() actorstypes.Version {
-	return actorstypes.Version4
+func (s *state10) ActorVersion() actorstypes.Version {
+	return actorstypes.Version10
 }
 
-func (s *state4) Code() cid.Cid {
+func (s *state10) Code() cid.Cid {
 	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
 	if !ok {
 		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))

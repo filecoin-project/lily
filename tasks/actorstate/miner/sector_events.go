@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-bitfield"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
@@ -68,7 +68,7 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		grp.Go(func() error {
 			start := time.Now()
 			// collect changes made to miner precommit map (HAMT)
-			if extState.CurrentState().ActorVersion() > actors.Version8 {
+			if extState.CurrentState().ActorVersion() > actorstypes.Version8 {
 				preCommitChanges, err = node.DiffPreCommits(grpCtx, a.Address, a.Current, a.Executed, extState.ParentState(), extState.CurrentState())
 				if err != nil {
 					return fmt.Errorf("diffing precommits %w", err)

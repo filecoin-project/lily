@@ -10,10 +10,13 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/go-state-types/builtin"
+	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/filecoin-project/lotus/api"
 	lotusbuild "github.com/filecoin-project/lotus/build"
+	"github.com/filecoin-project/lotus/chain/actors"
 	"github.com/filecoin-project/lotus/chain/types"
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/ipfs/go-cid"
@@ -21,7 +24,6 @@ import (
 	"github.com/urfave/cli/v2"
 	"gopkg.in/cheggaaa/pb.v1"
 
-	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lily/lens/util"
 )
@@ -48,14 +50,14 @@ var ChainActorCodesCmd = &cli.Command{
 	Name:  "actor-codes",
 	Usage: "Print actor codes and names",
 	Action: func(cctx *cli.Context) error {
-		for _, a := range []string{actors.AccountKey, actors.CronKey, actors.DatacapKey, actors.InitKey, actors.MarketKey, actors.MinerKey, actors.MultisigKey, actors.PaychKey, actors.PowerKey, actors.RewardKey, actors.SystemKey, actors.VerifregKey} {
-			av := make(map[actors.Version]cid.Cid)
+		for _, a := range []string{manifest.AccountKey, manifest.CronKey, manifest.DatacapKey, manifest.InitKey, manifest.MarketKey, manifest.MinerKey, manifest.MultisigKey, manifest.PaychKey, manifest.PowerKey, manifest.RewardKey, manifest.SystemKey, manifest.VerifregKey} {
+			av := make(map[actorstypes.Version]cid.Cid)
 			for _, v := range []int{0, 2, 3, 4, 5, 6, 7, 8, 9} {
-				code, ok := actors.GetActorCodeID(actors.Version(v), a)
+				code, ok := actors.GetActorCodeID(actorstypes.Version(v), a)
 				if !ok {
 					continue
 				}
-				av[actors.Version(v)] = code
+				av[actorstypes.Version(v)] = code
 			}
 			fmt.Printf("# %s\n", a)
 			fmt.Print("## Metadata\n")
@@ -711,7 +713,7 @@ func parseTipSet(ctx context.Context, api lily.LilyAPI, vals []string) (*types.T
 	return types.NewTipSet(headers)
 }
 
-func printSortedActorVersions(av map[actors.Version]cid.Cid) error {
+func printSortedActorVersions(av map[actorstypes.Version]cid.Cid) error {
 	t := table.NewWriter()
 	t.AppendHeader(table.Row{"Version", "Name", "Family", "Code"})
 	var versions []int
@@ -720,11 +722,11 @@ func printSortedActorVersions(av map[actors.Version]cid.Cid) error {
 	}
 	sort.Ints(versions)
 	for _, v := range versions {
-		name, family, err := util.ActorNameAndFamilyFromCode(av[actors.Version(v)])
+		name, family, err := util.ActorNameAndFamilyFromCode(av[actorstypes.Version(v)])
 		if err != nil {
 			return err
 		}
-		t.AppendRow(table.Row{v, name, family, av[actors.Version(v)]})
+		t.AppendRow(table.Row{v, name, family, av[actorstypes.Version(v)]})
 		t.AppendSeparator()
 	}
 	fmt.Println(t.RenderMarkdown())
@@ -741,29 +743,29 @@ func printActorMethods(actorKey string) error {
 	)
 
 	switch actorKey {
-	case actors.AccountKey:
+	case manifest.AccountKey:
 		correspondingMethods = builtin.MethodsAccount
-	case actors.CronKey:
+	case manifest.CronKey:
 		correspondingMethods = builtin.MethodsCron
-	case actors.DatacapKey:
+	case manifest.DatacapKey:
 		correspondingMethods = builtin.MethodsDatacap
-	case actors.MarketKey:
+	case manifest.MarketKey:
 		correspondingMethods = builtin.MethodsMarket
-	case actors.MinerKey:
+	case manifest.MinerKey:
 		correspondingMethods = builtin.MethodsMiner
-	case actors.InitKey:
+	case manifest.InitKey:
 		correspondingMethods = builtin.MethodsInit
-	case actors.MultisigKey:
+	case manifest.MultisigKey:
 		correspondingMethods = builtin.MethodsMultisig
-	case actors.PaychKey:
+	case manifest.PaychKey:
 		correspondingMethods = builtin.MethodsPaych
-	case actors.PowerKey:
+	case manifest.PowerKey:
 		correspondingMethods = builtin.MethodsPower
-	case actors.RewardKey:
+	case manifest.RewardKey:
 		correspondingMethods = builtin.MethodsReward
-	case actors.SystemKey:
+	case manifest.SystemKey:
 		correspondingMethods = nil
-	case actors.VerifregKey:
+	case manifest.VerifregKey:
 		correspondingMethods = builtin.MethodsVerifiedRegistry
 	default:
 		return fmt.Errorf("unknown actor key: %s", actorKey)

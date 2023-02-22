@@ -10,9 +10,12 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
-	"github.com/filecoin-project/lily/chain/actors"
+	"github.com/filecoin-project/lotus/chain/actors"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
+
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
 
     {{if (le .v 1)}}
         sha256simd "github.com/minio/sha256-simd"
@@ -132,11 +135,11 @@ func (s *state{{.v}}) decodeTransaction(val *cbg.Deferred) (Transaction, error) 
 }
 
 func (s *state{{.v}}) ActorKey() string {
-    return actors.MultisigKey
+    return manifest.MultisigKey
 }
 
-func (s *state{{.v}}) ActorVersion() actors.Version {
-    return actors.Version{{.v}}
+func (s *state{{.v}}) ActorVersion() actorstypes.Version {
+    return actorstypes.Version{{.v}}
 }
 
 func (s *state{{.v}}) Code() cid.Cid {

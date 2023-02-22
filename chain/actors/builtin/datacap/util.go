@@ -1,6 +1,7 @@
 package datacap
 
 import (
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/multiformats/go-varint"
 	"golang.org/x/xerrors"
 
@@ -10,8 +11,6 @@ import (
 	"github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
 
 	"github.com/filecoin-project/lotus/chain/actors/adt"
-
-	"github.com/filecoin-project/lily/chain/actors"
 )
 
 // taking this as a function instead of asking the caller to call it helps reduce some of the error
@@ -20,7 +19,7 @@ import (
 // "go made me do it"
 type rootFunc func() (adt.Map, error)
 
-func getDataCap(store adt.Store, ver actors.Version, root rootFunc, addr address.Address) (bool, abi.StoragePower, error) {
+func getDataCap(store adt.Store, ver actorstypes.Version, root rootFunc, addr address.Address) (bool, abi.StoragePower, error) {
 	if addr.Protocol() != address.ID {
 		return false, big.Zero(), xerrors.Errorf("can only look up ID addresses")
 	}
@@ -39,7 +38,7 @@ func getDataCap(store adt.Store, ver actors.Version, root rootFunc, addr address
 	return true, big.Div(dcap, verifreg.DataCapGranularity), nil
 }
 
-func forEachClient(store adt.Store, ver actors.Version, root rootFunc, cb func(addr address.Address, dcap abi.StoragePower) error) error {
+func forEachClient(store adt.Store, ver actorstypes.Version, root rootFunc, cb func(addr address.Address, dcap abi.StoragePower) error) error {
 	vh, err := root()
 	if err != nil {
 		return xerrors.Errorf("loading verified clients: %w", err)

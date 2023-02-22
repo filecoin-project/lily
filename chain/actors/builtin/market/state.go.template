@@ -7,12 +7,18 @@ import (
 	"fmt"
 
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/chain/actors"
+	lotusactors "github.com/filecoin-project/lotus/chain/actors"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lotus/chain/actors/adt"
+
+{{if (ge .v 9)}}
+	verifregtypes "github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
+{{end}}
 
 {{if (le .v 7)}}
 	market{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin/market"
@@ -139,16 +145,17 @@ func (s *dealStates{{.v}}) array() adt.Array {
 }
 
 func fromV{{.v}}DealState(v{{.v}} market{{.v}}.DealState) DealState {
-    {{if (le .v 8)}}
-    return DealState{
-        SectorStartEpoch: v{{.v}}.SectorStartEpoch,
-        LastUpdatedEpoch: v{{.v}}.LastUpdatedEpoch,
-        SlashEpoch: v{{.v}}.SlashEpoch,
-        VerifiedClaim: 0,
-    }
-    {{else}}
-    return (DealState)(v{{.v}})
-    {{end}}
+	ret := DealState{
+	SectorStartEpoch: v{{.v}}.SectorStartEpoch,
+	LastUpdatedEpoch: v{{.v}}.LastUpdatedEpoch,
+	SlashEpoch: v{{.v}}.SlashEpoch,
+	VerifiedClaim: 0,
+	}
+	{{if (ge .v 9)}}
+		ret.VerifiedClaim = verifregtypes.AllocationId(v{{.v}}.VerifiedClaim)
+	{{end}}
+
+	return ret
 }
 
 type dealProposals{{.v}} struct {
@@ -241,15 +248,15 @@ func (s *state{{.v}}) DealStatesAmtBitwidth() int {
 }
 
 func (s *state{{.v}}) ActorKey() string {
-    return actors.MarketKey
+    return manifest.MarketKey
 }
 
-func (s *state{{.v}}) ActorVersion() actors.Version {
-    return actors.Version{{.v}}
+func (s *state{{.v}}) ActorVersion() actorstypes.Version {
+    return actorstypes.Version{{.v}}
 }
 
 func (s *state{{.v}}) Code() cid.Cid {
-	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
+	code, ok := lotusactors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
 	if !ok {
 		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))
 	}

@@ -19,7 +19,9 @@ import (
 
 	verifreg9 "github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
 
-	"github.com/filecoin-project/lily/chain/actors"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
+	"github.com/filecoin-project/lotus/chain/actors"
 )
 
 var _ State = (*state6)(nil)
@@ -39,11 +41,11 @@ type state6 struct {
 }
 
 func (s *state6) ActorKey() string {
-	return actors.VerifregKey
+	return manifest.VerifregKey
 }
 
-func (s *state6) ActorVersion() actors.Version {
-	return actors.Version6
+func (s *state6) ActorVersion() actorstypes.Version {
+	return actorstypes.Version6
 }
 
 func (s *state6) Code() cid.Cid {
@@ -101,25 +103,25 @@ func (s *state6) RootKey() (address.Address, error) {
 
 func (s *state6) VerifiedClientDataCap(addr address.Address) (bool, abi.StoragePower, error) {
 
-	return getDataCap(s.store, actors.Version6, s.VerifiedClientsMap, addr)
+	return getDataCap(s.store, actorstypes.Version6, s.VerifiedClientsMap, addr)
 
 }
 
 func (s *state6) VerifierDataCap(addr address.Address) (bool, abi.StoragePower, error) {
-	return getDataCap(s.store, actors.Version6, s.VerifiersMap, addr)
+	return getDataCap(s.store, actorstypes.Version6, s.VerifiersMap, addr)
 }
 
 func (s *state6) RemoveDataCapProposalID(verifier address.Address, client address.Address) (bool, uint64, error) {
-	return getRemoveDataCapProposalID(s.store, actors.Version6, s.removeDataCapProposalIDs, verifier, client)
+	return getRemoveDataCapProposalID(s.store, actorstypes.Version6, s.removeDataCapProposalIDs, verifier, client)
 }
 
 func (s *state6) ForEachVerifier(cb func(addr address.Address, dcap abi.StoragePower) error) error {
-	return forEachCap(s.store, actors.Version6, s.VerifiersMap, cb)
+	return forEachCap(s.store, actorstypes.Version6, s.VerifiersMap, cb)
 }
 
 func (s *state6) ForEachClient(cb func(addr address.Address, dcap abi.StoragePower) error) error {
 
-	return forEachCap(s.store, actors.Version6, s.VerifiedClientsMap, cb)
+	return forEachCap(s.store, actorstypes.Version6, s.VerifiedClientsMap, cb)
 
 }
 
@@ -132,25 +134,25 @@ func (s *state6) GetState() interface{} {
 	return &s.State
 }
 
-func (s *state6) GetAllocation(clientIdAddr address.Address, allocationId verifreg9.AllocationId) (*verifreg9.Allocation, bool, error) {
+func (s *state6) GetAllocation(clientIdAddr address.Address, allocationId verifreg9.AllocationId) (*Allocation, bool, error) {
 
 	return nil, false, fmt.Errorf("unsupported in actors v6")
 
 }
 
-func (s *state6) GetAllocations(clientIdAddr address.Address) (map[verifreg9.AllocationId]verifreg9.Allocation, error) {
+func (s *state6) GetAllocations(clientIdAddr address.Address) (map[AllocationId]Allocation, error) {
 
 	return nil, fmt.Errorf("unsupported in actors v6")
 
 }
 
-func (s *state6) GetClaim(providerIdAddr address.Address, claimId verifreg9.ClaimId) (*verifreg9.Claim, bool, error) {
+func (s *state6) GetClaim(providerIdAddr address.Address, claimId verifreg9.ClaimId) (*Claim, bool, error) {
 
 	return nil, false, fmt.Errorf("unsupported in actors v6")
 
 }
 
-func (s *state6) GetClaims(providerIdAddr address.Address) (map[verifreg9.ClaimId]verifreg9.Claim, error) {
+func (s *state6) GetClaims(providerIdAddr address.Address) (map[ClaimId]Claim, error) {
 
 	return nil, fmt.Errorf("unsupported in actors v6")
 

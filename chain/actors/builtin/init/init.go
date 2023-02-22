@@ -9,6 +9,8 @@ import (
 	"github.com/filecoin-project/go-state-types/cbor"
 	"github.com/ipfs/go-cid"
 
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
 	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -28,29 +30,30 @@ import (
 
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
 
-	builtin9 "github.com/filecoin-project/go-state-types/builtin"
-
-	"github.com/filecoin-project/lily/chain/actors"
+	builtin10 "github.com/filecoin-project/go-state-types/builtin"
 )
 
 var (
-	Address = builtin9.InitActorAddr
-	Methods = builtin9.MethodsInit
+	Address = builtin10.InitActorAddr
+	Methods = builtin10.MethodsInit
 )
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
 	if name, av, ok := lotusactors.GetActorMetaByCode(act.Code); ok {
-		if name != actors.InitKey {
+		if name != manifest.InitKey {
 			return nil, fmt.Errorf("actor code is not init: %s", name)
 		}
 
-		switch actors.Version(av) {
+		switch actorstypes.Version(av) {
 
-		case actors.Version8:
+		case actorstypes.Version8:
 			return load8(store, act.Head)
 
-		case actors.Version9:
+		case actorstypes.Version9:
 			return load9(store, act.Head)
+
+		case actorstypes.Version10:
+			return load10(store, act.Head)
 
 		}
 	}
@@ -83,35 +86,38 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 	return nil, fmt.Errorf("unknown actor code %s", act.Code)
 }
 
-func MakeState(store adt.Store, av actors.Version, networkName string) (State, error) {
+func MakeState(store adt.Store, av actorstypes.Version, networkName string) (State, error) {
 	switch av {
 
-	case actors.Version0:
+	case actorstypes.Version0:
 		return make0(store, networkName)
 
-	case actors.Version2:
+	case actorstypes.Version2:
 		return make2(store, networkName)
 
-	case actors.Version3:
+	case actorstypes.Version3:
 		return make3(store, networkName)
 
-	case actors.Version4:
+	case actorstypes.Version4:
 		return make4(store, networkName)
 
-	case actors.Version5:
+	case actorstypes.Version5:
 		return make5(store, networkName)
 
-	case actors.Version6:
+	case actorstypes.Version6:
 		return make6(store, networkName)
 
-	case actors.Version7:
+	case actorstypes.Version7:
 		return make7(store, networkName)
 
-	case actors.Version8:
+	case actorstypes.Version8:
 		return make8(store, networkName)
 
-	case actors.Version9:
+	case actorstypes.Version9:
 		return make9(store, networkName)
+
+	case actorstypes.Version10:
+		return make10(store, networkName)
 
 	}
 	return nil, fmt.Errorf("unknown actor version %d", av)
@@ -122,7 +128,7 @@ type State interface {
 
 	Code() cid.Cid
 	ActorKey() string
-	ActorVersion() actors.Version
+	ActorVersion() actorstypes.Version
 
 	ResolveAddress(address address.Address) (address.Address, bool, error)
 	MapAddressToNewID(address address.Address) (address.Address, error)
@@ -162,19 +168,21 @@ func AllCodes() []cid.Cid {
 		(&state7{}).Code(),
 		(&state8{}).Code(),
 		(&state9{}).Code(),
+		(&state10{}).Code(),
 	}
 }
 
-func VersionCodes() map[actors.Version]cid.Cid {
-	return map[actors.Version]cid.Cid{
-		actors.Version0: (&state0{}).Code(),
-		actors.Version2: (&state2{}).Code(),
-		actors.Version3: (&state3{}).Code(),
-		actors.Version4: (&state4{}).Code(),
-		actors.Version5: (&state5{}).Code(),
-		actors.Version6: (&state6{}).Code(),
-		actors.Version7: (&state7{}).Code(),
-		actors.Version8: (&state8{}).Code(),
-		actors.Version9: (&state9{}).Code(),
+func VersionCodes() map[actorstypes.Version]cid.Cid {
+	return map[actorstypes.Version]cid.Cid{
+		actorstypes.Version0:  (&state0{}).Code(),
+		actorstypes.Version2:  (&state2{}).Code(),
+		actorstypes.Version3:  (&state3{}).Code(),
+		actorstypes.Version4:  (&state4{}).Code(),
+		actorstypes.Version5:  (&state5{}).Code(),
+		actorstypes.Version6:  (&state6{}).Code(),
+		actorstypes.Version7:  (&state7{}).Code(),
+		actorstypes.Version8:  (&state8{}).Code(),
+		actorstypes.Version9:  (&state9{}).Code(),
+		actorstypes.Version10: (&state10{}).Code(),
 	}
 }

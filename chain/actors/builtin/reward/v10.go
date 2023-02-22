@@ -13,15 +13,15 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lotus/chain/actors"
 
-	miner7 "github.com/filecoin-project/specs-actors/v7/actors/builtin/miner"
-	reward7 "github.com/filecoin-project/specs-actors/v7/actors/builtin/reward"
-	smoothing7 "github.com/filecoin-project/specs-actors/v7/actors/util/smoothing"
+	miner10 "github.com/filecoin-project/go-state-types/builtin/v10/miner"
+	reward10 "github.com/filecoin-project/go-state-types/builtin/v10/reward"
+	smoothing10 "github.com/filecoin-project/go-state-types/builtin/v10/util/smoothing"
 )
 
-var _ State = (*state7)(nil)
+var _ State = (*state10)(nil)
 
-func load7(store adt.Store, root cid.Cid) (State, error) {
-	out := state7{store: store}
+func load10(store adt.Store, root cid.Cid) (State, error) {
+	out := state10{store: store}
 	err := store.Get(store.Context(), root, &out)
 	if err != nil {
 		return nil, err
@@ -29,16 +29,16 @@ func load7(store adt.Store, root cid.Cid) (State, error) {
 	return &out, nil
 }
 
-type state7 struct {
-	reward7.State
+type state10 struct {
+	reward10.State
 	store adt.Store
 }
 
-func (s *state7) ThisEpochReward() (abi.TokenAmount, error) {
+func (s *state10) ThisEpochReward() (abi.TokenAmount, error) {
 	return s.State.ThisEpochReward, nil
 }
 
-func (s *state7) ThisEpochRewardSmoothed() (builtin.FilterEstimate, error) {
+func (s *state10) ThisEpochRewardSmoothed() (builtin.FilterEstimate, error) {
 
 	return builtin.FilterEstimate{
 		PositionEstimate: s.State.ThisEpochRewardSmoothed.PositionEstimate,
@@ -47,36 +47,36 @@ func (s *state7) ThisEpochRewardSmoothed() (builtin.FilterEstimate, error) {
 
 }
 
-func (s *state7) ThisEpochBaselinePower() (abi.StoragePower, error) {
+func (s *state10) ThisEpochBaselinePower() (abi.StoragePower, error) {
 	return s.State.ThisEpochBaselinePower, nil
 }
 
-func (s *state7) TotalStoragePowerReward() (abi.TokenAmount, error) {
+func (s *state10) TotalStoragePowerReward() (abi.TokenAmount, error) {
 	return s.State.TotalStoragePowerReward, nil
 }
 
-func (s *state7) EffectiveBaselinePower() (abi.StoragePower, error) {
+func (s *state10) EffectiveBaselinePower() (abi.StoragePower, error) {
 	return s.State.EffectiveBaselinePower, nil
 }
 
-func (s *state7) EffectiveNetworkTime() (abi.ChainEpoch, error) {
+func (s *state10) EffectiveNetworkTime() (abi.ChainEpoch, error) {
 	return s.State.EffectiveNetworkTime, nil
 }
 
-func (s *state7) CumsumBaseline() (reward7.Spacetime, error) {
+func (s *state10) CumsumBaseline() (reward10.Spacetime, error) {
 	return s.State.CumsumBaseline, nil
 }
 
-func (s *state7) CumsumRealized() (reward7.Spacetime, error) {
+func (s *state10) CumsumRealized() (reward10.Spacetime, error) {
 	return s.State.CumsumRealized, nil
 }
 
-func (s *state7) InitialPledgeForPower(qaPower abi.StoragePower, networkTotalPledge abi.TokenAmount, networkQAPower *builtin.FilterEstimate, circSupply abi.TokenAmount) (abi.TokenAmount, error) {
-	return miner7.InitialPledgeForPower(
+func (s *state10) InitialPledgeForPower(qaPower abi.StoragePower, networkTotalPledge abi.TokenAmount, networkQAPower *builtin.FilterEstimate, circSupply abi.TokenAmount) (abi.TokenAmount, error) {
+	return miner10.InitialPledgeForPower(
 		qaPower,
 		s.State.ThisEpochBaselinePower,
 		s.State.ThisEpochRewardSmoothed,
-		smoothing7.FilterEstimate{
+		smoothing10.FilterEstimate{
 			PositionEstimate: networkQAPower.PositionEstimate,
 			VelocityEstimate: networkQAPower.VelocityEstimate,
 		},
@@ -84,24 +84,24 @@ func (s *state7) InitialPledgeForPower(qaPower abi.StoragePower, networkTotalPle
 	), nil
 }
 
-func (s *state7) PreCommitDepositForPower(networkQAPower builtin.FilterEstimate, sectorWeight abi.StoragePower) (abi.TokenAmount, error) {
-	return miner7.PreCommitDepositForPower(s.State.ThisEpochRewardSmoothed,
-		smoothing7.FilterEstimate{
+func (s *state10) PreCommitDepositForPower(networkQAPower builtin.FilterEstimate, sectorWeight abi.StoragePower) (abi.TokenAmount, error) {
+	return miner10.PreCommitDepositForPower(s.State.ThisEpochRewardSmoothed,
+		smoothing10.FilterEstimate{
 			PositionEstimate: networkQAPower.PositionEstimate,
 			VelocityEstimate: networkQAPower.VelocityEstimate,
 		},
 		sectorWeight), nil
 }
 
-func (s *state7) ActorKey() string {
+func (s *state10) ActorKey() string {
 	return manifest.RewardKey
 }
 
-func (s *state7) ActorVersion() actorstypes.Version {
-	return actorstypes.Version7
+func (s *state10) ActorVersion() actorstypes.Version {
+	return actorstypes.Version10
 }
 
-func (s *state7) Code() cid.Cid {
+func (s *state10) Code() cid.Cid {
 	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
 	if !ok {
 		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))

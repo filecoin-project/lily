@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -14,7 +15,6 @@ import (
 	"go.opentelemetry.io/otel"
 
 	// actor accessors
-	actors "github.com/filecoin-project/lily/chain/actors"
 	datacapactors "github.com/filecoin-project/lily/chain/actors/builtin/datacap"
 	initactors "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	marketactors "github.com/filecoin-project/lily/chain/actors/builtin/market"
@@ -414,7 +414,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 		case tasktype.MinerBeneficiary:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
 				map[cid.Cid][]actorstate.ActorStateExtractor{
-					mineractors.VersionCodes()[actors.Version9]: {minertask.BeneficiaryExtractor{}},
+					mineractors.VersionCodes()[actorstypes.Version9]: {minertask.BeneficiaryExtractor{}},
 				},
 			))
 		case tasktype.MinerCurrentDeadlineInfo:
@@ -436,15 +436,15 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 		case tasktype.MinerPreCommitInfo:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
 				map[cid.Cid][]actorstate.ActorStateExtractor{
-					mineractors.VersionCodes()[actors.Version0]: {minertask.PreCommitInfoExtractorV8{}},
-					mineractors.VersionCodes()[actors.Version2]: {minertask.PreCommitInfoExtractorV8{}},
-					mineractors.VersionCodes()[actors.Version3]: {minertask.PreCommitInfoExtractorV8{}},
-					mineractors.VersionCodes()[actors.Version4]: {minertask.PreCommitInfoExtractorV8{}},
-					mineractors.VersionCodes()[actors.Version5]: {minertask.PreCommitInfoExtractorV8{}},
-					mineractors.VersionCodes()[actors.Version6]: {minertask.PreCommitInfoExtractorV8{}},
-					mineractors.VersionCodes()[actors.Version7]: {minertask.PreCommitInfoExtractorV8{}},
-					mineractors.VersionCodes()[actors.Version8]: {minertask.PreCommitInfoExtractorV8{}},
-					mineractors.VersionCodes()[actors.Version9]: {minertask.PreCommitInfoExtractorV9{}},
+					mineractors.VersionCodes()[actorstypes.Version0]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actorstypes.Version2]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actorstypes.Version3]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actorstypes.Version4]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actorstypes.Version5]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actorstypes.Version6]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actorstypes.Version7]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actorstypes.Version8]: {minertask.PreCommitInfoExtractorV8{}},
+					mineractors.VersionCodes()[actorstypes.Version9]: {minertask.PreCommitInfoExtractorV9{}},
 				},
 			))
 		case tasktype.MinerSectorDeal:
@@ -462,20 +462,20 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 		case tasktype.MinerSectorInfoV1_6:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
 				map[cid.Cid][]actorstate.ActorStateExtractor{
-					mineractors.VersionCodes()[actors.Version0]: {minertask.SectorInfoExtractor{}},
-					mineractors.VersionCodes()[actors.Version2]: {minertask.SectorInfoExtractor{}},
-					mineractors.VersionCodes()[actors.Version3]: {minertask.SectorInfoExtractor{}},
-					mineractors.VersionCodes()[actors.Version4]: {minertask.SectorInfoExtractor{}},
-					mineractors.VersionCodes()[actors.Version5]: {minertask.SectorInfoExtractor{}},
-					mineractors.VersionCodes()[actors.Version6]: {minertask.SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actorstypes.Version0]: {minertask.SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actorstypes.Version2]: {minertask.SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actorstypes.Version3]: {minertask.SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actorstypes.Version4]: {minertask.SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actorstypes.Version5]: {minertask.SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actorstypes.Version6]: {minertask.SectorInfoExtractor{}},
 				},
 			))
 		case tasktype.MinerSectorInfoV7:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
 				map[cid.Cid][]actorstate.ActorStateExtractor{
-					mineractors.VersionCodes()[actors.Version7]: {minertask.V7SectorInfoExtractor{}},
-					mineractors.VersionCodes()[actors.Version8]: {minertask.V7SectorInfoExtractor{}},
-					mineractors.VersionCodes()[actors.Version9]: {minertask.V7SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actorstypes.Version7]: {minertask.V7SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actorstypes.Version8]: {minertask.V7SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actorstypes.Version9]: {minertask.V7SectorInfoExtractor{}},
 				},
 			))
 
@@ -545,14 +545,14 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 		case tasktype.VerifiedRegistryVerifiedClient:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
 				map[cid.Cid][]actorstate.ActorStateExtractor{
-					verifregactors.VersionCodes()[actors.Version0]: {verifregtask.ClientExtractor{}},
-					verifregactors.VersionCodes()[actors.Version2]: {verifregtask.ClientExtractor{}},
-					verifregactors.VersionCodes()[actors.Version3]: {verifregtask.ClientExtractor{}},
-					verifregactors.VersionCodes()[actors.Version4]: {verifregtask.ClientExtractor{}},
-					verifregactors.VersionCodes()[actors.Version5]: {verifregtask.ClientExtractor{}},
-					verifregactors.VersionCodes()[actors.Version6]: {verifregtask.ClientExtractor{}},
-					verifregactors.VersionCodes()[actors.Version7]: {verifregtask.ClientExtractor{}},
-					verifregactors.VersionCodes()[actors.Version8]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actorstypes.Version0]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actorstypes.Version2]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actorstypes.Version3]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actorstypes.Version4]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actorstypes.Version5]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actorstypes.Version6]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actorstypes.Version7]: {verifregtask.ClientExtractor{}},
+					verifregactors.VersionCodes()[actorstypes.Version8]: {verifregtask.ClientExtractor{}},
 					// version 9 no longer track clients and has been migrated to the datacap actor
 				},
 			))

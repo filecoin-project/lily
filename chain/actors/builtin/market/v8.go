@@ -7,7 +7,9 @@ import (
 	"fmt"
 
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/chain/actors"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
+	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
@@ -122,14 +124,14 @@ func (s *dealStates8) array() adt.Array {
 }
 
 func fromV8DealState(v8 market8.DealState) DealState {
-
-	return DealState{
+	ret := DealState{
 		SectorStartEpoch: v8.SectorStartEpoch,
 		LastUpdatedEpoch: v8.LastUpdatedEpoch,
 		SlashEpoch:       v8.SlashEpoch,
 		VerifiedClaim:    0,
 	}
 
+	return ret
 }
 
 type dealProposals8 struct {
@@ -219,15 +221,15 @@ func (s *state8) DealStatesAmtBitwidth() int {
 }
 
 func (s *state8) ActorKey() string {
-	return actors.MarketKey
+	return manifest.MarketKey
 }
 
-func (s *state8) ActorVersion() actors.Version {
-	return actors.Version8
+func (s *state8) ActorVersion() actorstypes.Version {
+	return actorstypes.Version8
 }
 
 func (s *state8) Code() cid.Cid {
-	code, ok := actors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
+	code, ok := lotusactors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
 	if !ok {
 		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))
 	}

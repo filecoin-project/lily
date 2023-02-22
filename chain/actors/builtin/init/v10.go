@@ -19,15 +19,15 @@ import (
 
 	"crypto/sha256"
 
-	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
-	init6 "github.com/filecoin-project/specs-actors/v6/actors/builtin/init"
-	adt6 "github.com/filecoin-project/specs-actors/v6/actors/util/adt"
+	builtin10 "github.com/filecoin-project/go-state-types/builtin"
+	init10 "github.com/filecoin-project/go-state-types/builtin/v10/init"
+	adt10 "github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 )
 
-var _ State = (*state6)(nil)
+var _ State = (*state10)(nil)
 
-func load6(store adt.Store, root cid.Cid) (State, error) {
-	out := state6{store: store}
+func load10(store adt.Store, root cid.Cid) (State, error) {
+	out := state10{store: store}
 	err := store.Get(store.Context(), root, &out)
 	if err != nil {
 		return nil, err
@@ -35,10 +35,10 @@ func load6(store adt.Store, root cid.Cid) (State, error) {
 	return &out, nil
 }
 
-func make6(store adt.Store, networkName string) (State, error) {
-	out := state6{store: store}
+func make10(store adt.Store, networkName string) (State, error) {
+	out := state10{store: store}
 
-	s, err := init6.ConstructState(store, networkName)
+	s, err := init10.ConstructState(store, networkName)
 	if err != nil {
 		return nil, err
 	}
@@ -48,21 +48,21 @@ func make6(store adt.Store, networkName string) (State, error) {
 	return &out, nil
 }
 
-type state6 struct {
-	init6.State
+type state10 struct {
+	init10.State
 	store adt.Store
 }
 
-func (s *state6) ResolveAddress(address address.Address) (address.Address, bool, error) {
+func (s *state10) ResolveAddress(address address.Address) (address.Address, bool, error) {
 	return s.State.ResolveAddress(s.store, address)
 }
 
-func (s *state6) MapAddressToNewID(address address.Address) (address.Address, error) {
+func (s *state10) MapAddressToNewID(address address.Address) (address.Address, error) {
 	return s.State.MapAddressToNewID(s.store, address)
 }
 
-func (s *state6) ForEachActor(cb func(id abi.ActorID, address address.Address) error) error {
-	addrs, err := adt6.AsMap(s.store, s.State.AddressMap, builtin6.DefaultHamtBitwidth)
+func (s *state10) ForEachActor(cb func(id abi.ActorID, address address.Address) error) error {
+	addrs, err := adt10.AsMap(s.store, s.State.AddressMap, builtin10.DefaultHamtBitwidth)
 	if err != nil {
 		return err
 	}
@@ -76,22 +76,22 @@ func (s *state6) ForEachActor(cb func(id abi.ActorID, address address.Address) e
 	})
 }
 
-func (s *state6) NetworkName() (dtypes.NetworkName, error) {
+func (s *state10) NetworkName() (dtypes.NetworkName, error) {
 	return dtypes.NetworkName(s.State.NetworkName), nil
 }
 
-func (s *state6) SetNetworkName(name string) error {
+func (s *state10) SetNetworkName(name string) error {
 	s.State.NetworkName = name
 	return nil
 }
 
-func (s *state6) SetNextID(id abi.ActorID) error {
+func (s *state10) SetNextID(id abi.ActorID) error {
 	s.State.NextID = id
 	return nil
 }
 
-func (s *state6) Remove(addrs ...address.Address) (err error) {
-	m, err := adt6.AsMap(s.store, s.State.AddressMap, builtin6.DefaultHamtBitwidth)
+func (s *state10) Remove(addrs ...address.Address) (err error) {
+	m, err := adt10.AsMap(s.store, s.State.AddressMap, builtin10.DefaultHamtBitwidth)
 	if err != nil {
 		return err
 	}
@@ -108,22 +108,22 @@ func (s *state6) Remove(addrs ...address.Address) (err error) {
 	return nil
 }
 
-func (s *state6) SetAddressMap(mcid cid.Cid) error {
+func (s *state10) SetAddressMap(mcid cid.Cid) error {
 	s.State.AddressMap = mcid
 	return nil
 }
 
-func (s *state6) AddressMap() (adt.Map, error) {
-	return adt6.AsMap(s.store, s.State.AddressMap, builtin6.DefaultHamtBitwidth)
+func (s *state10) AddressMap() (adt.Map, error) {
+	return adt10.AsMap(s.store, s.State.AddressMap, builtin10.DefaultHamtBitwidth)
 }
 
-func (s *state6) AddressMapBitWidth() int {
+func (s *state10) AddressMapBitWidth() int {
 
-	return builtin6.DefaultHamtBitwidth
+	return builtin10.DefaultHamtBitwidth
 
 }
 
-func (s *state6) AddressMapHashFunction() func(input []byte) []byte {
+func (s *state10) AddressMapHashFunction() func(input []byte) []byte {
 
 	return func(input []byte) []byte {
 		res := sha256.Sum256(input)
@@ -132,19 +132,19 @@ func (s *state6) AddressMapHashFunction() func(input []byte) []byte {
 
 }
 
-func (s *state6) GetState() interface{} {
+func (s *state10) GetState() interface{} {
 	return &s.State
 }
 
-func (s *state6) ActorKey() string {
+func (s *state10) ActorKey() string {
 	return manifest.InitKey
 }
 
-func (s *state6) ActorVersion() actorstypes.Version {
-	return actorstypes.Version6
+func (s *state10) ActorVersion() actorstypes.Version {
+	return actorstypes.Version10
 }
 
-func (s *state6) Code() cid.Cid {
+func (s *state10) Code() cid.Cid {
 	code, ok := lotusactors.GetActorCodeID(s.ActorVersion(), s.ActorKey())
 	if !ok {
 		panic(fmt.Errorf("didn't find actor %v code id for actor version %d", s.ActorKey(), s.ActorVersion()))

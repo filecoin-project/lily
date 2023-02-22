@@ -7,7 +7,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/chain/actors"
+	"github.com/filecoin-project/lotus/chain/actors"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
@@ -19,6 +19,9 @@ import (
 	builtin9 "github.com/filecoin-project/go-state-types/builtin"
 	power9 "github.com/filecoin-project/go-state-types/builtin/v9/power"
 	adt9 "github.com/filecoin-project/go-state-types/builtin/v9/util/adt"
+
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
 )
 
 var _ State = (*state9)(nil)
@@ -169,11 +172,11 @@ func fromV9Claim(v9 power9.Claim) Claim {
 }
 
 func (s *state9) ActorKey() string {
-	return actors.PowerKey
+	return manifest.PowerKey
 }
 
-func (s *state9) ActorVersion() actors.Version {
-	return actors.Version9
+func (s *state9) ActorVersion() actorstypes.Version {
+	return actorstypes.Version9
 }
 
 func (s *state9) Code() cid.Cid {
