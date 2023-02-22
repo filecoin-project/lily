@@ -43,6 +43,7 @@ const (
 	MultisigApproval               = "multisig_approvals"
 	VerifiedRegistryVerifier       = "verified_registry_verifier"
 	VerifiedRegistryVerifiedClient = "verified_registry_verified_client"
+	VerifiedRegistryClaim          = "verified_registry_claim"
 )
 
 var AllTableTasks = []string{
@@ -87,6 +88,7 @@ var AllTableTasks = []string{
 	MultisigApproval,
 	VerifiedRegistryVerifier,
 	VerifiedRegistryVerifiedClient,
+	VerifiedRegistryClaim,
 }
 
 var TableLookup = map[string]struct{}{
@@ -131,6 +133,7 @@ var TableLookup = map[string]struct{}{
 	MultisigApproval:               {},
 	VerifiedRegistryVerifier:       {},
 	VerifiedRegistryVerifiedClient: {},
+	VerifiedRegistryClaim:          {},
 }
 
 var TableComment = map[string]string{
@@ -175,6 +178,7 @@ var TableComment = map[string]string{
 	MultisigApproval:               ``,
 	VerifiedRegistryVerifier:       ``,
 	VerifiedRegistryVerifiedClient: ``,
+	VerifiedRegistryClaim:          ``,
 }
 
 var TableFieldComments = map[string]map[string]string{
@@ -231,9 +235,10 @@ var TableFieldComments = map[string]map[string]string{
 		"From":      "From sender of message.",
 		"GasUsed":   "GasUsed by message.",
 		"Height":    "Height message was executed at.",
+		"Index":     "Index indicating the order of the messages execution.",
 		"Method":    "Method called on To (receiver).",
 		"Params":    "Params contained in message.",
-		"Returns":   "Return value of message.",
+		"Returns":   "Returns value of message receipt.",
 		"Source":    "On-chain message triggering the message.",
 		"StateRoot": "StateRoot message was applied to.",
 		"To":        "To receiver of message.",
@@ -275,4 +280,5 @@ var TableFieldComments = map[string]map[string]string{
 	MultisigApproval:               {},
 	VerifiedRegistryVerifier:       {},
 	VerifiedRegistryVerifiedClient: {},
+	VerifiedRegistryClaim:          {},
 }

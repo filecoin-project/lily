@@ -57,6 +57,7 @@ var TaskLookup = map[string][]string{
 	ActorStatesVerifreg: {
 		VerifiedRegistryVerifier,
 		VerifiedRegistryVerifiedClient,
+		VerifiedRegistryClaim,
 		DataCapBalance,
 	},
 	BlocksTask: {
