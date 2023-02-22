@@ -21,7 +21,9 @@ import (
     verifregtypes "github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
-	"github.com/filecoin-project/lily/chain/actors"
+
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
 )
 
 var (
@@ -31,14 +33,14 @@ var (
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
 	if name, av, ok := lotusactors.GetActorMetaByCode(act.Code); ok {
-       if name != actors.VerifregKey {
+       if name != manifest.VerifregKey {
           return nil, fmt.Errorf("actor code is not verifreg: %s", name)
        }
 
-       switch actors.Version(av) {
+       switch actorstypes.Version(av) {
             {{range .versions}}
                 {{if (ge . 8)}}
-                case actors.Version{{.}}:
+                case actorstypes.Version{{.}}:
                      return load{{.}}(store, act.Head)
                  {{end}}
             {{end}}
@@ -62,7 +64,7 @@ type State interface {
 
 	Code() cid.Cid
 	ActorKey() string
-	ActorVersion() actors.Version
+	ActorVersion() actorstypes.Version
 
 	VerifiersMap() (adt.Map, error)
 	VerifiersMapBitWidth() int
@@ -108,10 +110,15 @@ func AllCodes() []cid.Cid {
     }
 }
 
-func VersionCodes() map[actors.Version]cid.Cid {
-	return map[actors.Version]cid.Cid{
+func VersionCodes() map[actorstypes.Version]cid.Cid {
+	return map[actorstypes.Version]cid.Cid{
         {{- range .versions}}
-            actors.Version{{.}}: (&state{{.}}{}).Code(),
+            actorstypes.Version{{.}}: (&state{{.}}{}).Code(),
         {{- end}}
 	}
 }
+
+type Allocation = verifregtypes.Allocation
+type AllocationId = verifregtypes.AllocationId
+type Claim = verifregtypes.Claim
+type ClaimId = verifregtypes.ClaimId

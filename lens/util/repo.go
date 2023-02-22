@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-bitfield"
-	builtin2 "github.com/filecoin-project/go-state-types/builtin"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -47,14 +46,6 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (_ string
 	// messages can contain unexpected params and remain valid, we need to ignore this case for parsing.
 	if m.Params == reflect.TypeOf(new(abi.EmptyValue)) {
 		return "", m.Name, nil
-	}
-
-	if method == builtin2.UniversalReceiverHookMethodNum {
-		b, err := json.Marshal(m.Params)
-		if err != nil {
-			return "", "", err
-		}
-		return string(b), m.Name, nil
 	}
 
 	defer func() {

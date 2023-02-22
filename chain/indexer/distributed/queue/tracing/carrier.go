@@ -32,7 +32,7 @@ type TraceCarrier struct {
 	Remote  bool          `json:"remote"`
 }
 
-//MarshalJSON converts TraceCarrier to a trace.SpanContext and marshals it to JSON.
+// MarshalJSON converts TraceCarrier to a trace.SpanContext and marshals it to JSON.
 func (c *TraceCarrier) MarshalJSON() ([]byte, error) {
 	return c.AsSpanContext().MarshalJSON()
 }

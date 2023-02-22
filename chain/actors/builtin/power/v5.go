@@ -7,7 +7,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/chain/actors"
+	"github.com/filecoin-project/lotus/chain/actors"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
@@ -20,6 +20,9 @@ import (
 
 	power5 "github.com/filecoin-project/specs-actors/v5/actors/builtin/power"
 	adt5 "github.com/filecoin-project/specs-actors/v5/actors/util/adt"
+
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
 )
 
 var _ State = (*state5)(nil)
@@ -170,11 +173,11 @@ func fromV5Claim(v5 power5.Claim) Claim {
 }
 
 func (s *state5) ActorKey() string {
-	return actors.PowerKey
+	return manifest.PowerKey
 }
 
-func (s *state5) ActorVersion() actors.Version {
-	return actors.Version5
+func (s *state5) ActorVersion() actorstypes.Version {
+	return actorstypes.Version5
 }
 
 func (s *state5) Code() cid.Cid {

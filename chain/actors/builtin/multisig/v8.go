@@ -8,11 +8,14 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lily/chain/actors"
+	"github.com/filecoin-project/lotus/chain/actors"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
+
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
 
 	"crypto/sha256"
 
@@ -113,11 +116,11 @@ func (s *state8) decodeTransaction(val *cbg.Deferred) (Transaction, error) {
 }
 
 func (s *state8) ActorKey() string {
-	return actors.MultisigKey
+	return manifest.MultisigKey
 }
 
-func (s *state8) ActorVersion() actors.Version {
-	return actors.Version8
+func (s *state8) ActorVersion() actorstypes.Version {
+	return actorstypes.Version8
 }
 
 func (s *state8) Code() cid.Cid {

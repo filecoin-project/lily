@@ -12,7 +12,10 @@ import (
 	"github.com/filecoin-project/go-state-types/cbor"
 	"github.com/ipfs/go-cid"
 
-	msig9 "github.com/filecoin-project/go-state-types/builtin/v9/multisig"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
+
+	msig10 "github.com/filecoin-project/go-state-types/builtin/v10/multisig"
 
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 
@@ -38,17 +41,20 @@ import (
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
 	if name, av, ok := lotusactors.GetActorMetaByCode(act.Code); ok {
-		if name != actors.MultisigKey {
+		if name != manifest.MultisigKey {
 			return nil, fmt.Errorf("actor code is not multisig: %s", name)
 		}
 
-		switch actors.Version(av) {
+		switch actorstypes.Version(av) {
 
-		case actors.Version8:
+		case actorstypes.Version8:
 			return load8(store, act.Head)
 
-		case actors.Version9:
+		case actorstypes.Version9:
 			return load9(store, act.Head)
+
+		case actorstypes.Version10:
+			return load10(store, act.Head)
 
 		}
 	}
@@ -86,7 +92,7 @@ type State interface {
 
 	Code() cid.Cid
 	ActorKey() string
-	ActorVersion() actors.Version
+	ActorVersion() actorstypes.Version
 
 	LockedBalance(epoch abi.ChainEpoch) (abi.TokenAmount, error)
 	StartEpoch() (abi.ChainEpoch, error)
@@ -104,19 +110,19 @@ type State interface {
 	decodeTransaction(val *cbg.Deferred) (Transaction, error)
 }
 
-type Transaction = msig9.Transaction
+type Transaction = msig10.Transaction
 
 var Methods = builtintypes.MethodsMultisig
 
 // these types are the same between v0 and v6
-type ProposalHashData = msig9.ProposalHashData
-type ProposeReturn = msig9.ProposeReturn
-type ProposeParams = msig9.ProposeParams
-type ApproveReturn = msig9.ApproveReturn
-type TxnIDParams = msig9.TxnIDParams
+type ProposalHashData = msig10.ProposalHashData
+type ProposeReturn = msig10.ProposeReturn
+type ProposeParams = msig10.ProposeParams
+type ApproveReturn = msig10.ApproveReturn
+type TxnIDParams = msig10.TxnIDParams
 
 func txnParams(id uint64, data *ProposalHashData) ([]byte, error) {
-	params := msig9.TxnIDParams{ID: msig9.TxnID(id)}
+	params := msig10.TxnIDParams{ID: msig10.TxnID(id)}
 	if data != nil {
 		if data.Requester.Protocol() != address.ID {
 			return nil, fmt.Errorf("proposer address must be an ID address, was %s", data.Requester)
@@ -149,19 +155,21 @@ func AllCodes() []cid.Cid {
 		(&state7{}).Code(),
 		(&state8{}).Code(),
 		(&state9{}).Code(),
+		(&state10{}).Code(),
 	}
 }
 
-func VersionCodes() map[actors.Version]cid.Cid {
-	return map[actors.Version]cid.Cid{
-		actors.Version0: (&state0{}).Code(),
-		actors.Version2: (&state2{}).Code(),
-		actors.Version3: (&state3{}).Code(),
-		actors.Version4: (&state4{}).Code(),
-		actors.Version5: (&state5{}).Code(),
-		actors.Version6: (&state6{}).Code(),
-		actors.Version7: (&state7{}).Code(),
-		actors.Version8: (&state8{}).Code(),
-		actors.Version9: (&state9{}).Code(),
+func VersionCodes() map[actorstypes.Version]cid.Cid {
+	return map[actorstypes.Version]cid.Cid{
+		actorstypes.Version0:  (&state0{}).Code(),
+		actorstypes.Version2:  (&state2{}).Code(),
+		actorstypes.Version3:  (&state3{}).Code(),
+		actorstypes.Version4:  (&state4{}).Code(),
+		actorstypes.Version5:  (&state5{}).Code(),
+		actorstypes.Version6:  (&state6{}).Code(),
+		actorstypes.Version7:  (&state7{}).Code(),
+		actorstypes.Version8:  (&state8{}).Code(),
+		actorstypes.Version9:  (&state9{}).Code(),
+		actorstypes.Version10: (&state10{}).Code(),
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/go-state-types/network"
 	lotusactors "github.com/filecoin-project/lotus/chain/actors"
-	"github.com/filecoin-project/lily/chain/actors"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"github.com/ipfs/go-cid"
 	"golang.org/x/xerrors"
@@ -16,10 +15,14 @@ import (
 	"github.com/filecoin-project/go-state-types/dline"
 	"github.com/filecoin-project/go-state-types/proof"
 
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
+
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 	"github.com/filecoin-project/lotus/chain/types"
-	miner{{.latestVersion}} "github.com/filecoin-project/go-state-types/builtin{{import .latestVersion}}miner"
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	miner8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
+	miner{{.latestVersion}} "github.com/filecoin-project/go-state-types/builtin/v{{.latestVersion}}/miner"
 
 {{range .versions}}
     {{if (le . 7)}}
@@ -30,14 +33,14 @@ import (
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
 	if name, av, ok := lotusactors.GetActorMetaByCode(act.Code); ok {
-       if name != actors.MinerKey {
+       if name != manifest.MinerKey {
           return nil, xerrors.Errorf("actor code is not miner: %s", name)
        }
 
-       switch actors.Version(av) {
+       switch actorstypes.Version(av) {
             {{range .versions}}
                 {{if (ge . 8)}}
-                case actors.Version{{.}}:
+                case actorstypes.Version{{.}}:
                      return load{{.}}(store, act.Head)
                  {{end}}
             {{end}}
@@ -56,10 +59,10 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 	return nil, xerrors.Errorf("unknown actor code %s", act.Code)
 }
 
-func MakeState(store adt.Store, av actors.Version) (State, error) {
+func MakeState(store adt.Store, av actorstypes.Version) (State, error) {
 	switch av {
 {{range .versions}}
-	case actors.Version{{.}}:
+	case actorstypes.Version{{.}}:
 		return make{{.}}(store)
 {{end}}
 }
@@ -71,7 +74,7 @@ type State interface {
 
 	Code() cid.Cid
 	ActorKey() string
-	ActorVersion() actors.Version
+	ActorVersion() actorstypes.Version
 
 	// Total available balance to spend.
 	AvailableBalance(abi.TokenAmount) (abi.TokenAmount, error)
@@ -84,8 +87,8 @@ type State interface {
 	GetSector(abi.SectorNumber) (*SectorOnChainInfo, error)
 	FindSector(abi.SectorNumber) (*SectorLocation, error)
 	GetSectorExpiration(abi.SectorNumber) (*SectorExpiration, error)
-	GetPrecommittedSector(abi.SectorNumber) (*miner{{.latestVersion}}.SectorPreCommitOnChainInfo, error)
-	ForEachPrecommittedSector(func(miner{{.latestVersion}}.SectorPreCommitOnChainInfo) error) error
+	GetPrecommittedSector(abi.SectorNumber) (*SectorPreCommitOnChainInfo, error)
+	ForEachPrecommittedSector(func(SectorPreCommitOnChainInfo) error) error
 	LoadSectors(sectorNos *bitfield.BitField) ([]*SectorOnChainInfo, error)
 	NumLiveSectors() (uint64, error)
 	IsAllocated(abi.SectorNumber) (bool, error)
@@ -120,7 +123,7 @@ type State interface {
 	PrecommitsMap() (adt.Map, error)
 	PrecommitsMapBitWidth() int
 	PrecommitsMapHashFunction() func(input []byte) []byte
-	DecodeSectorPreCommitOnChainInfo(*cbg.Deferred) (miner{{.latestVersion}}.SectorPreCommitOnChainInfo, error)
+	DecodeSectorPreCommitOnChainInfo(*cbg.Deferred) (SectorPreCommitOnChainInfo, error)
 	DecodeSectorPreCommitOnChainInfoToV8(*cbg.Deferred) (miner8.SectorPreCommitOnChainInfo, error)
 	ForEachPrecommittedSectorV8(func(miner8.SectorPreCommitOnChainInfo) error) error
 }
@@ -214,9 +217,13 @@ func WinningPoStProofTypeFromWindowPoStProofType(nver network.Version, proof abi
 	}
 }
 
-type MinerInfo = miner{{.latestVersion}}.MinerInfo
-type WorkerKeyChange = miner{{.latestVersion}}.WorkerKeyChange
+type MinerInfo = minertypes.MinerInfo
+type WorkerKeyChange = minertypes.WorkerKeyChange
 type WindowPostVerifyInfo = proof.WindowPoStVerifyInfo
+type BeneficiaryTerm = minertypes.BeneficiaryTerm
+type PendingBeneficiaryChange = minertypes.PendingBeneficiaryChange
+type SectorPreCommitOnChainInfo = minertypes.SectorPreCommitOnChainInfo
+type SectorPreCommitInfo = minertypes.SectorPreCommitInfo
 
 type SectorExpiration struct {
 	OnTime abi.ChainEpoch
@@ -237,8 +244,8 @@ type SectorExtensions struct {
 }
 
 type PreCommitChanges struct {
-	Added   []miner{{.latestVersion}}.SectorPreCommitOnChainInfo
-	Removed []miner{{.latestVersion}}.SectorPreCommitOnChainInfo
+	Added   []SectorPreCommitOnChainInfo
+	Removed []SectorPreCommitOnChainInfo
 }
 
 type LockedFunds struct {
@@ -271,10 +278,10 @@ func AllCodes() []cid.Cid {
     }
 }
 
-func VersionCodes() map[actors.Version]cid.Cid {
-	return map[actors.Version]cid.Cid{
+func VersionCodes() map[actorstypes.Version]cid.Cid {
+	return map[actorstypes.Version]cid.Cid{
         {{- range .versions}}
-            actors.Version{{.}}: (&state{{.}}{}).Code(),
+            actorstypes.Version{{.}}: (&state{{.}}{}).Code(),
         {{- end}}
 	}
 }

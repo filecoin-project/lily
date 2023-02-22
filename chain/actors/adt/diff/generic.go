@@ -28,6 +28,7 @@ type ArrayDiffer interface {
 // - All values that exist in curArr nnd not in prevArr are passed to ArrayDiffer.Add()
 // - All values that exist in preArr and in curArr are passed to ArrayDiffer.Modify()
 //   - It is the responsibility of ArrayDiffer.Modify() to determine if the values it was passed have been modified.
+//
 // If `preArr` and `curArr` are both backed by /v3/AMTs with the same bitwidth use the more efficient Amt method.
 func CompareArray(preArr, curArr adt.Array, out ArrayDiffer) error {
 	notNew := make(map[int64]struct{}, curArr.Length())
@@ -84,6 +85,7 @@ type MapDiffer interface {
 // - All values that exist in curMap nnd not in prevArr are passed to MapDiffer.Add()
 // - All values that exist in preMap and in curMap are passed to MapDiffer.Modify()
 //   - It is the responsibility of ArrayDiffer.Modify() to determine if the values it was passed have been modified.
+//
 // If `preMap` and `curMap` are both backed by /v3/HAMTs with the same bitwidth and hash function use the more efficient Hamt method.
 func CompareMap(preMap, curMap adt.Map, out MapDiffer) error {
 	notNew := make(map[string]struct{})

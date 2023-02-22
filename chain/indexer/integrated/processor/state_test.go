@@ -3,10 +3,10 @@ package processor_test
 import (
 	"testing"
 
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/filecoin-project/lily/chain/actors/builtin/datacap"
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
@@ -70,15 +70,15 @@ func TestMakeProcessorsActors(t *testing.T) {
 				taskName: tasktype.MinerPreCommitInfo,
 				extractor: actorstate.NewCustomTypedActorExtractorMap(
 					map[cid.Cid][]actorstate.ActorStateExtractor{
-						miner.VersionCodes()[actors.Version0]: {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actors.Version2]: {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actors.Version3]: {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actors.Version4]: {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actors.Version5]: {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actors.Version6]: {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actors.Version7]: {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actors.Version8]: {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actors.Version9]: {minertask.PreCommitInfoExtractorV9{}},
+						miner.VersionCodes()[actorstypes.Version0]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version2]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version3]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version4]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version5]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version6]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version7]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version8]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version9]: {minertask.PreCommitInfoExtractorV9{}},
 					},
 				),
 			},
@@ -98,12 +98,12 @@ func TestMakeProcessorsActors(t *testing.T) {
 				taskName: tasktype.MinerSectorInfoV1_6,
 				extractor: actorstate.NewCustomTypedActorExtractorMap(
 					map[cid.Cid][]actorstate.ActorStateExtractor{
-						miner.VersionCodes()[actors.Version0]: {minertask.SectorInfoExtractor{}},
-						miner.VersionCodes()[actors.Version2]: {minertask.SectorInfoExtractor{}},
-						miner.VersionCodes()[actors.Version3]: {minertask.SectorInfoExtractor{}},
-						miner.VersionCodes()[actors.Version4]: {minertask.SectorInfoExtractor{}},
-						miner.VersionCodes()[actors.Version5]: {minertask.SectorInfoExtractor{}},
-						miner.VersionCodes()[actors.Version6]: {minertask.SectorInfoExtractor{}},
+						miner.VersionCodes()[actorstypes.Version0]: {minertask.SectorInfoExtractor{}},
+						miner.VersionCodes()[actorstypes.Version2]: {minertask.SectorInfoExtractor{}},
+						miner.VersionCodes()[actorstypes.Version3]: {minertask.SectorInfoExtractor{}},
+						miner.VersionCodes()[actorstypes.Version4]: {minertask.SectorInfoExtractor{}},
+						miner.VersionCodes()[actorstypes.Version5]: {minertask.SectorInfoExtractor{}},
+						miner.VersionCodes()[actorstypes.Version6]: {minertask.SectorInfoExtractor{}},
 					},
 				),
 			},
@@ -111,9 +111,9 @@ func TestMakeProcessorsActors(t *testing.T) {
 				taskName: tasktype.MinerSectorInfoV7,
 				extractor: actorstate.NewCustomTypedActorExtractorMap(
 					map[cid.Cid][]actorstate.ActorStateExtractor{
-						miner.VersionCodes()[actors.Version7]: {minertask.V7SectorInfoExtractor{}},
-						miner.VersionCodes()[actors.Version8]: {minertask.V7SectorInfoExtractor{}},
-						miner.VersionCodes()[actors.Version9]: {minertask.V7SectorInfoExtractor{}},
+						miner.VersionCodes()[actorstypes.Version7]: {minertask.V7SectorInfoExtractor{}},
+						miner.VersionCodes()[actorstypes.Version8]: {minertask.V7SectorInfoExtractor{}},
+						miner.VersionCodes()[actorstypes.Version9]: {minertask.V7SectorInfoExtractor{}},
 					},
 				),
 			},
@@ -249,14 +249,14 @@ func TestMakeProcessorsActors(t *testing.T) {
 				taskName: tasktype.VerifiedRegistryVerifiedClient,
 				extractor: actorstate.NewCustomTypedActorExtractorMap(
 					map[cid.Cid][]actorstate.ActorStateExtractor{
-						verifreg.VersionCodes()[actors.Version0]: {verifregtask.ClientExtractor{}},
-						verifreg.VersionCodes()[actors.Version2]: {verifregtask.ClientExtractor{}},
-						verifreg.VersionCodes()[actors.Version3]: {verifregtask.ClientExtractor{}},
-						verifreg.VersionCodes()[actors.Version4]: {verifregtask.ClientExtractor{}},
-						verifreg.VersionCodes()[actors.Version5]: {verifregtask.ClientExtractor{}},
-						verifreg.VersionCodes()[actors.Version6]: {verifregtask.ClientExtractor{}},
-						verifreg.VersionCodes()[actors.Version7]: {verifregtask.ClientExtractor{}},
-						verifreg.VersionCodes()[actors.Version8]: {verifregtask.ClientExtractor{}},
+						verifreg.VersionCodes()[actorstypes.Version0]: {verifregtask.ClientExtractor{}},
+						verifreg.VersionCodes()[actorstypes.Version2]: {verifregtask.ClientExtractor{}},
+						verifreg.VersionCodes()[actorstypes.Version3]: {verifregtask.ClientExtractor{}},
+						verifreg.VersionCodes()[actorstypes.Version4]: {verifregtask.ClientExtractor{}},
+						verifreg.VersionCodes()[actorstypes.Version5]: {verifregtask.ClientExtractor{}},
+						verifreg.VersionCodes()[actorstypes.Version6]: {verifregtask.ClientExtractor{}},
+						verifreg.VersionCodes()[actorstypes.Version7]: {verifregtask.ClientExtractor{}},
+						verifreg.VersionCodes()[actorstypes.Version8]: {verifregtask.ClientExtractor{}},
 					},
 				),
 			},
