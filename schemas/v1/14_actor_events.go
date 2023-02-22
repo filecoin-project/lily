@@ -12,6 +12,7 @@ func init() {
 	    
 	    emitter 		text	NOT NULL,
 	    flags 			bytea	NOT NULL,
+	    codec			bigint 	NOT NULL,
 	    key 			text 	NOT NULL,
 	    value			bytea	NOT NULL,
 	    
