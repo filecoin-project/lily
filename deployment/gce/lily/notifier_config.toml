@@ -51,7 +51,7 @@
       FilePattern = "{table}.csv"
   [Storage.Postgresql]
     [Storage.Postgresql.Database1]
-      URL = xxxx
+      URL = "POSTGRESQL_URL"
       ApplicationName = "lily"
       SchemaName = "visor"
       PoolSize = 20
