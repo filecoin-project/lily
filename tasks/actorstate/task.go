@@ -151,8 +151,8 @@ func (t *Task) startActorStateExtraction(ctx context.Context, current, executed 
 							Head:    ac.Actor.Head,
 							Address: addr,
 						}
-						stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
-						defer stop()
+						// stop := metrics.Timer(ctx, metrics.StateExtractionDuration)
+						// defer stop()
 						data, err := e.Extract(ctx, info, t.node)
 						if err != nil {
 							res.Error = fmt.Errorf("failed to extract parsed actor state: %w", err)
