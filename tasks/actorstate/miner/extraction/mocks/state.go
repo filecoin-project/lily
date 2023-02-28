@@ -1,7 +1,7 @@
 package mocks
 
 import (
-	"github.com/filecoin-project/go-address"
+	address "github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/stretchr/testify/mock"
 

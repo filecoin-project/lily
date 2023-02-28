@@ -10,7 +10,7 @@ import (
 	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
 	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
-	"github.com/ipfs/go-cid"
+	cid "github.com/ipfs/go-cid"
 )
 
 type Version int
@@ -27,6 +27,8 @@ const (
 	Version9  Version = 9
 	Version10 Version = 10
 	Version11 Version = 11
+	Version12 Version = 12
+	Version13 Version = 13
 )
 const (
 	AccountKey  = "account"
