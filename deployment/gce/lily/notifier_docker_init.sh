@@ -39,5 +39,7 @@ lily job run --tasks=${tasks} --storage="Database1" watch notify --queue="Notifi
 
 lily job run --tasks="peeragents" --storage="Database1" survey  --interval="24h"  notify --queue="Notifier1"
 
+lily job run --storage="Database1" tipset-worker --queue="Worker1"
+
 # resume daemon stdout
 lily job wait --id=1

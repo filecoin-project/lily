@@ -66,3 +66,21 @@
         PasswordEnv = "LILY_REDIS_PASSWORD"
         DB = 0
         PoolSize = 0
+  [Queue.Workers]
+    [Queue.Workers.Worker1]
+      [Queue.Workers.Worker1.RedisConfig]
+        Network = "tcp"
+        Addr = "REDIS_ADDRESS"
+        Username = ""
+        PasswordEnv = "LILY_REDIS_PASSWORD"
+        DB = 0
+        PoolSize = 0
+      [Queue.Workers.Worker1.WorkerConfig]
+        Concurrency = 1
+        LoggerLevel = "debug"
+        WatchQueuePriority = 5
+        FillQueuePriority = 3
+        IndexQueuePriority = 1
+        WalkQueuePriority = 1
+        StrictPriority = false
+        ShutdownTimeout = 30000000000
