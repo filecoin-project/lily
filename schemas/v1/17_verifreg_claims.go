@@ -7,8 +7,8 @@ func init() {
 	CREATE TABLE IF NOT EXISTS {{ .SchemaName | default "public"}}.verified_registry_claims  (
 	    height BIGINT NOT NULL,
 	    state_root TEXT NOT NULL,
-		provider TEXT NOT NULL,
 		claim_id BIGINT NOT NULL,
+		provider TEXT NOT NULL,
 		client TEXT NOT NULL,
 		data TEXT NOT NULL,
 		size BIGINT NOT NULL,
@@ -18,7 +18,7 @@ func init() {
 		sector BIGINT NOT NULL,
 		event 		{{ .SchemaName | default "public"}}.verified_registry_event_type NOT NULL,
 		
-		PRIMARY KEY(height, state_root, provider, claim_id)
+		PRIMARY KEY(height, state_root, claim_id)
 	);
 `,
 	)

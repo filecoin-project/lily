@@ -12,8 +12,8 @@ import (
 type VerifiedRegistryClaim struct {
 	Height    int64  `pg:",pk,notnull,use_zero"`
 	StateRoot string `pg:",pk,notnull"`
-	Provider  string `pg:",pk,notnull"`
 	ClaimID   uint64 `pg:",pk,notnull"`
+	Provider  string `pg:",notnull"`
 	Client    string `pg:",notnull"`
 	Data      string `pg:",notnull"`
 	Size      uint64 `pg:",notnull,use_zero"`
