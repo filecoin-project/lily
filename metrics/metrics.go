@@ -56,12 +56,13 @@ var (
 
 	// DataSource API
 
-	DataSourceSectorDiffCacheHit       = stats.Int64("data_source_sector_diff_cache_hit", "Number of cache hits for sector diff", stats.UnitDimensionless)
-	DataSourceSectorDiffRead           = stats.Int64("data_source_sector_diff_read", "Number of reads for sector diff", stats.UnitDimensionless)
-	DataSourcePreCommitDiffCacheHit    = stats.Int64("data_source_precommit_diff_cache_hit", "Number of cache hits for precommit diff", stats.UnitDimensionless)
-	DataSourcePreCommitDiffRead        = stats.Int64("data_source_precommit_diff_read", "Number of reads for precommit diff", stats.UnitDimensionless)
-	DataSourceMessageExecutionRead     = stats.Int64("data_source_message_execution_read", "Number of reads for message executions", stats.UnitDimensionless)
-	DataSourceMessageExecutionCacheHit = stats.Int64("data_source_message_execution_cache_hit", "Number of cache hits for message executions", stats.UnitDimensionless)
+	DataSourceSectorDiffCacheHit        = stats.Int64("data_source_sector_diff_cache_hit", "Number of cache hits for sector diff", stats.UnitDimensionless)
+	DataSourceSectorDiffRead            = stats.Int64("data_source_sector_diff_read", "Number of reads for sector diff", stats.UnitDimensionless)
+	DataSourcePreCommitDiffCacheHit     = stats.Int64("data_source_precommit_diff_cache_hit", "Number of cache hits for precommit diff", stats.UnitDimensionless)
+	DataSourcePreCommitDiffRead         = stats.Int64("data_source_precommit_diff_read", "Number of reads for precommit diff", stats.UnitDimensionless)
+	DataSourceMessageExecutionRead      = stats.Int64("data_source_message_execution_read", "Number of reads for message executions", stats.UnitDimensionless)
+	DataSourceMessageExecutionCacheHit  = stats.Int64("data_source_message_execution_cache_hit", "Number of cache hits for message executions", stats.UnitDimensionless)
+	DataSourceActorStateChangesDuration = stats.Float64("data_source_actor_state_change_ms", "Time take to collect actors whose state changed", stats.UnitMilliseconds)
 
 	// Distributed Indexer
 
@@ -165,6 +166,11 @@ var DefaultViews = []*view.View{
 		Measure:     DataSourcePreCommitDiffRead,
 		Aggregation: view.Count(),
 		TagKeys:     []tag.Key{Job, TaskType, Name},
+	},
+	{
+		Measure:     DataSourceActorStateChangesDuration,
+		Aggregation: defaultMillisecondsDistribution,
+		TagKeys:     []tag.Key{},
 	},
 	{
 		Measure:     ProcessingDuration,

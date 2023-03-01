@@ -329,6 +329,8 @@ func getStateTreeRoot(ctx context.Context, s adt.Store, ts *types.TipSet) cid.Ci
 }
 
 func GetActorStateChanges(ctx context.Context, store adt.Store, current, executed *types.TipSet) (tasks.ActorStateChangeDiff, error) {
+	stop := metrics.Timer(ctx, metrics.DataSourceActorStateChangesDuration)
+	defer stop()
 	ctx, span := otel.Tracer("").Start(ctx, "GetActorStateChanges")
 	defer span.End()
 
