@@ -5,7 +5,7 @@ func init() {
 		13,
 		`
 ALTER TABLE {{ .SchemaName | default "public"}}.vm_messages
-    ADD COLUMN "index" BIGINT NOT NULL DEFAULT -1;
+    ADD COLUMN IF NOT EXISTS "index" BIGINT NOT NULL DEFAULT -1;
 
 ALTER TABLE {{ .SchemaName | default "public"}}.vm_messages ALTER COLUMN "index" DROP DEFAULT;
 
