@@ -115,6 +115,11 @@ type State interface {
 	GetClaim(providerIdAddr address.Address, claimId verifregtypes.ClaimId) (*verifregtypes.Claim, bool, error)
 	GetClaims(providerIdAddr address.Address) (map[verifregtypes.ClaimId]verifregtypes.Claim, error)
 	GetState() interface{}
+
+	ClaimsMap() (adt.Map, error)
+	ClaimMapForProvider(providerIdAddr address.Address) (adt.Map, error)
+	ClaimsMapBitWidth() int
+	ClaimsMapHashFunction() func(input []byte) []byte
 }
 
 type VerifierInfo struct {

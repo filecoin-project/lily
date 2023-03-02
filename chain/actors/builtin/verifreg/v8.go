@@ -155,3 +155,38 @@ func (s *state8) GetClaims(providerIdAddr address.Address) (map[ClaimId]Claim, e
 	return nil, fmt.Errorf("unsupported in actors v8")
 
 }
+
+func (s *state8) ClaimsMap() (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v8")
+
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state8) ClaimsMapBitWidth() int {
+
+	return builtin8.DefaultHamtBitwidth
+
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state8) ClaimsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state8) ClaimMapForProvider(providerIdAddr address.Address) (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v8")
+
+}
+
+func (s *state8) getInnerHamtCid(store adt.Store, key abi.Keyer, mapCid cid.Cid, bitwidth int) (cid.Cid, error) {
+
+	return cid.Undef, fmt.Errorf("unsupported in actors v8")
+
+}

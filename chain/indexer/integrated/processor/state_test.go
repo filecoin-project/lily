@@ -260,6 +260,13 @@ func TestMakeProcessorsActors(t *testing.T) {
 					},
 				),
 			},
+			{
+				taskName: tasktype.VerifiedRegistryClaim,
+				extractor: actorstate.NewCustomTypedActorExtractorMap(
+					map[cid.Cid][]actorstate.ActorStateExtractor{
+						verifreg.AllCodes()[actorstypes.Version8]: {verifregtask.ClaimExtractor{}},
+					}),
+			},
 		}
 		for _, tc := range testCases {
 			t.Run(tc.taskName, func(t *testing.T) {
@@ -391,7 +398,7 @@ func TestMakeProcessorsAllTasks(t *testing.T) {
 	// If this test fails it indicates a new processor and/or task name was added and test should be created for it in one of the above test cases.
 	proc, err := processor.MakeProcessors(nil, append(tasktype.AllTableTasks, processor.BuiltinTaskName))
 	require.NoError(t, err)
-	require.Len(t, proc.ActorProcessors, 23)
+	require.Len(t, proc.ActorProcessors, 24)
 	require.Len(t, proc.TipsetProcessors, 9)
 	require.Len(t, proc.TipsetsProcessors, 9)
 	require.Len(t, proc.ReportProcessors, 1)

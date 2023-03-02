@@ -157,3 +157,38 @@ func (s *state5) GetClaims(providerIdAddr address.Address) (map[ClaimId]Claim, e
 	return nil, fmt.Errorf("unsupported in actors v5")
 
 }
+
+func (s *state5) ClaimsMap() (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v5")
+
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state5) ClaimsMapBitWidth() int {
+
+	return builtin5.DefaultHamtBitwidth
+
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state5) ClaimsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state5) ClaimMapForProvider(providerIdAddr address.Address) (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v5")
+
+}
+
+func (s *state5) getInnerHamtCid(store adt.Store, key abi.Keyer, mapCid cid.Cid, bitwidth int) (cid.Cid, error) {
+
+	return cid.Undef, fmt.Errorf("unsupported in actors v5")
+
+}

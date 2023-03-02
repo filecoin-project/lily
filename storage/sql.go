@@ -90,6 +90,7 @@ var Models = []interface{}{
 
 	(*verifreg.VerifiedRegistryVerifier)(nil),
 	(*verifreg.VerifiedRegistryVerifiedClient)(nil),
+	(*verifreg.VerifiedRegistryClaim)(nil),
 }
 
 var log = logging.Logger("lily/storage")

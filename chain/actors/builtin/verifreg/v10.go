@@ -23,6 +23,8 @@ import (
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/filecoin-project/lotus/chain/actors"
+
+	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 var _ State = (*state10)(nil)
@@ -170,5 +172,56 @@ func (s *state10) GetClaims(providerIdAddr address.Address) (map[ClaimId]Claim, 
 	}
 
 	return retMap, err
+
+}
+
+func (s *state10) ClaimsMap() (adt.Map, error) {
+
+	return adt10.AsMap(s.store, s.Claims, builtin10.DefaultHamtBitwidth)
+
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state10) ClaimsMapBitWidth() int {
+
+	return builtin10.DefaultHamtBitwidth
+
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state10) ClaimsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state10) ClaimMapForProvider(providerIdAddr address.Address) (adt.Map, error) {
+
+	innerHamtCid, err := s.getInnerHamtCid(s.store, abi.IdAddrKey(providerIdAddr), s.Claims, builtin10.DefaultHamtBitwidth)
+	if err != nil {
+		return nil, err
+	}
+	return adt10.AsMap(s.store, innerHamtCid, builtin10.DefaultHamtBitwidth)
+
+}
+
+func (s *state10) getInnerHamtCid(store adt.Store, key abi.Keyer, mapCid cid.Cid, bitwidth int) (cid.Cid, error) {
+
+	actorToHamtMap, err := adt10.AsMap(store, mapCid, bitwidth)
+	if err != nil {
+		return cid.Undef, fmt.Errorf("couldn't get outer map: %x", err)
+	}
+
+	var innerHamtCid cbg.CborCid
+	if found, err := actorToHamtMap.Get(key, &innerHamtCid); err != nil {
+		return cid.Undef, fmt.Errorf("looking up key: %s: %w", key, err)
+	} else if !found {
+		return cid.Undef, fmt.Errorf("did not find key: %s", key)
+	}
+
+	return cid.Cid(innerHamtCid), nil
 
 }
