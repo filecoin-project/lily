@@ -8,6 +8,8 @@ func init() {
 SET search_path TO {{ .SchemaName }},public;
 {{- end }}
 
+-- Convert messages to a hypertable partitioned on height (time)
+-- Setting the time interval to 2880 heights so there will be one chunk per day.
 SELECT create_hypertable(
 	'vm_messages',
 	'height',
