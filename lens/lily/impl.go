@@ -10,7 +10,7 @@ import (
 	"github.com/filecoin-project/go-state-types/exitcode"
 	network2 "github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/lotus/api"
-	"github.com/filecoin-project/lotus/chain/consensus/filcns"
+	"github.com/filecoin-project/lotus/chain/consensus"
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/stmgr"
@@ -701,7 +701,7 @@ func (m *LilyNodeAPI) BurnFundsFn(ctx context.Context, ts *types.TipSet) (lens.S
 			StateBase:      ts.ParentState(),
 			Epoch:          ts.Height(),
 			Bstore:         m.ChainAPI.Chain.StateBlockstore(),
-			Actors:         filcns.NewActorRegistry(),
+			Actors:         consensus.NewActorRegistry(),
 			Syscalls:       m.StateManager.Syscalls,
 			CircSupplyCalc: m.StateManager.GetVMCirculatingSupply,
 			NetworkVersion: util.DefaultNetwork.Version(ctx, ts.Height()),
