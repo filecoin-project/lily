@@ -9,7 +9,7 @@ services:
     container_name: lily-notifier
     env_file:
       # Check envvars for configurable options
-      - ./lily/notifier.env
+      - ./lily/lily.env
     ports:
       # export the metrics port
       - 9991:9991
@@ -21,7 +21,7 @@ services:
       # snapshot
       - ./snapshot:/var/lib/lily/snapshot
       # notifier-specific config
-      - ./lily/notifier_config.toml:/var/lib/lily/config.toml
+      - ./lily/config.toml:/var/lib/lily/config.toml
       - ./lily/notifier_docker_init.sh:/usr/bin/docker_init.sh
     entrypoint: /usr/bin/docker_init.sh
     networks:
