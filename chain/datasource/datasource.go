@@ -292,7 +292,7 @@ func ComputeGasOutputs(ctx context.Context, block *types.BlockHeader, message *t
 }
 
 type StateTreeMeta struct {
-	// Root is the root od Map
+	// Root is the root of Map
 	Root cid.Cid
 	// Tree is the actual StateTree
 	Tree *state.StateTree
