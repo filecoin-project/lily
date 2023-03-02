@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/filecoin-project/go-bitfield"
+	"github.com/filecoin-project/lotus/chain/consensus"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -19,7 +19,6 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	builtin "github.com/filecoin-project/lotus/chain/actors/builtin"
-	"github.com/filecoin-project/lotus/chain/consensus/filcns"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
@@ -31,10 +30,54 @@ import (
 var ActorRegistry *vm.ActorRegistry
 
 func init() {
-	ActorRegistry = filcns.NewActorRegistry()
+	ActorRegistry = consensus.NewActorRegistry()
 }
 
 var log = logging.Logger("lily/lens")
+
+func ParseVmMessageParams(params []byte, paramsCodec uint64, method abi.MethodNum, actCode cid.Cid) (string, string, error) {
+	m, found := ActorRegistry.Methods[actCode][method]
+	if !found {
+		// if the method wasn't found it is likely the case the method was one of:
+		// https://github.com/filecoin-project/builtin-actors/blob/f5311fe735df4d9baf5f82d4b3db10f3c51688c4/actors/docs/README.md?plain=1#L31
+		// so we just marshal the raw value to json and bail with a warning
+		paramj, err := json.Marshal(params)
+		if err != nil {
+			return "", "", err
+		}
+		err = fmt.Errorf("unknown method %d with codec %d for actorCode %s name %s", method, paramsCodec, actCode, builtin.ActorNameByCode(actCode))
+		log.Warnw("parsing vm message params", "error", err)
+		return string(paramj), builtin.ActorNameByCode(actCode), nil
+	}
+	// If the codec is 0, the parameters/return value are "empty".
+	// If the codec is 0x55, it's bytes.
+	if paramsCodec == 0 || paramsCodec == 0x55 {
+		return string(params), m.Name, nil
+	}
+	return ParseParams(params, method, actCode)
+}
+
+func ParseVmMessageReturn(ret []byte, retCodec uint64, method abi.MethodNum, actCode cid.Cid) (string, string, error) {
+	m, found := ActorRegistry.Methods[actCode][method]
+	if !found {
+		// if the method wasn't found it is likely the case the method was one of:
+		// https://github.com/filecoin-project/builtin-actors/blob/f5311fe735df4d9baf5f82d4b3db10f3c51688c4/actors/docs/README.md?plain=1#L31
+		// so we just marshal the raw value to json and bail with a warning
+		retJ, err := json.Marshal(ret)
+		if err != nil {
+			return "", "", err
+		}
+		err = fmt.Errorf("unknown method %d with codec %d for actorCode %s name %s", method, retCodec, actCode, builtin.ActorNameByCode(actCode))
+		log.Warnw("parsing vm message return", "error", err)
+		return string(retJ), builtin.ActorNameByCode(actCode), nil
+	}
+	// If the codec is 0, the parameters/return value are "empty".
+	// If the codec is 0x55, it's bytes.
+	if retCodec == 0 || retCodec == 0x55 {
+		return string(ret), m.Name, nil
+	}
+	return ParseReturn(ret, method, actCode)
+}
 
 func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (_ string, _ string, err error) {
 	m, found := ActorRegistry.Methods[actCode][method]
@@ -141,10 +184,8 @@ type MessageParamsReturn struct {
 }
 
 type MessageTrace struct {
-	Message   *types.Message
-	Receipt   *types.MessageReceipt
-	Error     string
-	Duration  time.Duration
+	Message   types.MessageTrace
+	Receipt   types.ReturnTrace
 	GasCharge []*types.GasTrace
 	Index     uint64
 }
@@ -161,8 +202,6 @@ func walkExecutionTrace(et *types.ExecutionTrace, trace *[]*MessageTrace, index 
 		*trace = append(*trace, &MessageTrace{
 			Message:   sub.Msg,
 			Receipt:   sub.MsgRct,
-			Error:     sub.Error,
-			Duration:  sub.Duration,
 			GasCharge: sub.GasCharges,
 			Index:     *index,
 		})
