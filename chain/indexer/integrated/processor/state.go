@@ -559,6 +559,12 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 					// version 9 no longer track clients and has been migrated to the datacap actor
 				},
 			))
+		case tasktype.VerifiedRegistryClaim:
+			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
+				map[cid.Cid][]actorstate.ActorStateExtractor{
+					verifregactors.VersionCodes()[actorstypes.Version9]: {verifregtask.ClaimExtractor{}},
+				},
+			))
 
 			//
 			// Raw Actors

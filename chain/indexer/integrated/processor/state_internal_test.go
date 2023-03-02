@@ -52,7 +52,7 @@ func TestNewProcessor(t *testing.T) {
 	proc, err := New(nil, t.Name(), tasktype.AllTableTasks)
 	require.NoError(t, err)
 	require.Equal(t, t.Name(), proc.name)
-	require.Len(t, proc.actorProcessors, 23)
+	require.Len(t, proc.actorProcessors, 24)
 	require.Len(t, proc.tipsetProcessors, 9)
 	require.Len(t, proc.tipsetsProcessors, 9)
 	require.Len(t, proc.builtinProcessors, 1)
@@ -136,7 +136,14 @@ func TestNewProcessor(t *testing.T) {
 			verifreg.VersionCodes()[actorstypes.Version8]: {verifregtask.ClientExtractor{}},
 		},
 	)), proc.actorProcessors[tasktype.VerifiedRegistryVerifiedClient])
+
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(datacap.AllCodes(), datacaptask.BalanceExtractor{})), proc.actorProcessors[tasktype.DataCapBalance])
+
+	require.Equal(t, actorstate.NewTask(nil, actorstate.NewCustomTypedActorExtractorMap(
+		map[cid.Cid][]actorstate.ActorStateExtractor{
+			verifreg.VersionCodes()[actorstypes.Version9]: {verifregtask.ClaimExtractor{}},
+		},
+	)), proc.actorProcessors[tasktype.VerifiedRegistryClaim])
 
 	rae := &actorstate.RawActorExtractorMap{}
 	rae.Register(&rawtask.RawActorExtractor{})
