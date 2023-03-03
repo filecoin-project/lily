@@ -50,13 +50,15 @@ services:
   promtail:
     image: grafana/promtail:2.7.0
     container_name: promtail
+    env_file:
+      - ./promtail/promtail.env
     volumes:
       - ./promtail/config.yml:/etc/promtail/config.yml
       - /var/run/docker.sock:/var/run/docker.sock
       - /etc/hosts:/etc/hosts:ro
     entrypoint: [ "/bin/sh","-c" ]
     command:
-      - "/usr/bin/promtail -config.file=/etc/promtail/config.yml -client.external-labels=hostname=$(tail -2 /etc/hosts | cut -d' ' -f1 | head -1)"
+      - "/usr/bin/promtail -config.file=/etc/promtail/config.yml -client.external-labels=hostname=$(tail -2 /etc/hosts | cut -d' ' -f1 | head -1)  -config.expand-env"
 
 volumes:
   lily_notifier_data: {}

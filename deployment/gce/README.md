@@ -5,11 +5,13 @@
 - git
 
 ## Provide the necessary URL and Password
-- In **lily/worker.env**, **lily/notifier.env**
+- In **lily/lily.env**
   - `LILY_REDIS_ADDR`
   - `LILY_REDIS_PASSWORD`
-- In **lily/worker_config.toml**, **lily/notifier_config.toml**
+  - `LILY_STORAGE_POSTGRESQL_DB_URL`
+- In **lily/config.toml**
   - `[Storage.Postgresql.Database1]`: to replace the `POSTGRESQL_URL` 
   - `[Queue.Notifiers.Notifier1]`: to replace the `REDIS_ADDRESS`
-- In **promtail/config.yml**
-  - `clients:url`: to replace the `remote_loki_url`
+- In **promtail/promtail.env**
+  - `REMOTE_LOKI_URL`
+  - `LILY_ENV`: default value is `lily_gce_staging`
