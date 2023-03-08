@@ -5,6 +5,54 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.14.0"></a>
+## [v0.14.0] - 2023-3-8
+
+## DATABASE MIGRATION
+This release includes a migration which must be applied before deploying against an existing database.
+* [1.13](https://github.com/filecoin-project/lily/blob/master/schemas/v1/13_vm_messages_index.go)
+* [1.14](https://github.com/filecoin-project/lily/blob/master/schemas/v1/14_actor_events.go)
+* [1.15](https://github.com/filecoin-project/lily/blob/master/schemas/v1/15_message_params.go)
+* [1.16](https://github.com/filecoin-project/lily/blob/master/schemas/v1/16_receipt_returns.go)
+* [1.17](https://github.com/filecoin-project/lily/blob/master/schemas/v1/17_verifreg_claims.go)
+* [1.18](https://github.com/filecoin-project/lily/blob/master/schemas/v1/18_vm_messages_migration.go)
+
+### Feat
+* update command to print all actor codes and version ([#1111](https://github.com/filecoin-project/lily/pull/1111))
+* [command] add currentheight to job list ([#1131](https://github.com/filecoin-project/lily/pull/1131))
+* add logic for connecting and disconnecting from peers ([1133](https://github.com/filecoin-project/lily/pull/1133))
+* metrics for state & block store caches ([#1136](https://github.com/filecoin-project/lily/pull/1136))
+* upgrade to lotus v.1.20.0 with support for network version 18 (FEVM) ([#1140](https://github.com/filecoin-project/lily/pull/1140))
+  * implement actorevent task and schema
+    * task name `actor_events`
+    * requires migration [1.14](https://github.com/filecoin-project/lily/blob/master/schemas/v1/14_actor_events.go)
+    * parses and persists changes to actor events structure in nv18
+  * implement messageparam task and schema
+    * task name `message_params`
+    * requires migration [1.15](https://github.com/filecoin-project/lily/blob/master/schemas/v1/15_message_params.go)
+    * parses and persists changes to actor events structure in nv18
+  * implement receiptreturn task and schema
+    * task name `receipt_returns`
+    * requires migration [1.16](https://github.com/filecoin-project/lily/blob/master/schemas/v1/16_receipt_returns.go)
+    * parses and persists changes to actor events structure in nv18
+  * implement claim extractor and schema
+    * task name `verified_registry_claim`
+    * requires migration [1.17](https://github.com/filecoin-project/lily/blob/master/schemas/v1/17_verifreg_claims.go)
+    * parses and persists changes to actor events structure in nv18
+* Add docker compose file for notifier and worker ([#1138](https://github.com/filecoin-project/lily/pull/1138))
+
+### Fix
+* only parse vm messages with exit code OK ([#1112](https://github.com/filecoin-project/lily/pull/1112))
+* bug in verifreg verifier event tracking ([#1124](https://github.com/filecoin-project/lily/pull/1124))
+* add index column constraint to vm_messages table ([#1127](https://github.com/filecoin-project/lily/pull/1127))
+* move the models-* subcmd to a different cmd ([#1135](https://github.com/filecoin-project/lily/pull/1135))
+* reduce time bucket size ([#1143](https://github.com/filecoin-project/lily/pull/1143))
+
+### Chore
+* Cache proof params in production docker image by @placer14 in https://github.com/filecoin-project/lily/pull/1101
+* Migrate vm_messages to hypertable ([#1149](https://github.com/filecoin-project/lily/pull/1149))
+  * requires [1.18](https://github.com/filecoin-project/lily/blob/master/schemas/v1/18_vm_messages_migration.go)
+
 <a name="v0.13.0"></a>
 ## [v0.13.0] - 2022-11-28
 
