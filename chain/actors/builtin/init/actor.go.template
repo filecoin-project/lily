@@ -9,6 +9,8 @@ import (
 	"github.com/filecoin-project/go-state-types/cbor"
 	"github.com/ipfs/go-cid"
 
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
 	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -20,7 +22,6 @@ import (
 {{end}}
     builtin{{.latestVersion}} "github.com/filecoin-project/go-state-types/builtin"
 
-	"github.com/filecoin-project/lily/chain/actors"
 )
 
 var (
@@ -30,14 +31,14 @@ var (
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
 	if name, av, ok := lotusactors.GetActorMetaByCode(act.Code); ok {
-       if name != actors.InitKey {
+       if name != manifest.InitKey {
           return nil, fmt.Errorf("actor code is not init: %s", name)
        }
 
-       switch actors.Version(av) {
+       switch actorstypes.Version(av) {
             {{range .versions}}
                 {{if (ge . 8)}}
-                case actors.Version{{.}}:
+                case actorstypes.Version{{.}}:
                      return load{{.}}(store, act.Head)
                  {{end}}
             {{end}}
@@ -56,10 +57,10 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 	return nil, fmt.Errorf("unknown actor code %s", act.Code)
 }
 
-func MakeState(store adt.Store, av actors.Version, networkName string) (State, error) {
+func MakeState(store adt.Store, av actorstypes.Version, networkName string) (State, error) {
 	switch av {
 {{range .versions}}
-	case actors.Version{{.}}:
+	case actorstypes.Version{{.}}:
 		return make{{.}}(store, networkName)
 {{end}}
 }
@@ -71,7 +72,7 @@ type State interface {
 
 	Code() cid.Cid
 	ActorKey() string
-	ActorVersion() actors.Version
+	ActorVersion() actorstypes.Version
 
 	ResolveAddress(address address.Address) (address.Address, bool, error)
 	MapAddressToNewID(address address.Address) (address.Address, error)
@@ -108,10 +109,10 @@ func AllCodes() []cid.Cid {
     }
 }
 
-func VersionCodes() map[actors.Version]cid.Cid {
-	return map[actors.Version]cid.Cid{
+func VersionCodes() map[actorstypes.Version]cid.Cid {
+	return map[actorstypes.Version]cid.Cid{
         {{- range .versions}}
-            actors.Version{{.}}: (&state{{.}}{}).Code(),
+            actorstypes.Version{{.}}: (&state{{.}}{}).Code(),
         {{- end}}
 	}
 }

@@ -5,11 +5,10 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/specs-actors/v7/actors/builtin/verifreg"
 	"golang.org/x/xerrors"
-
-	"github.com/filecoin-project/lily/chain/actors"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 )
@@ -21,7 +20,7 @@ import (
 type rootFunc func() (adt.Map, error)
 
 // Assumes that the bitwidth for v3 HAMTs is the DefaultHamtBitwidth
-func getDataCap(store adt.Store, ver actors.Version, root rootFunc, addr address.Address) (bool, abi.StoragePower, error) {
+func getDataCap(store adt.Store, ver actorstypes.Version, root rootFunc, addr address.Address) (bool, abi.StoragePower, error) {
 	if addr.Protocol() != address.ID {
 		return false, big.Zero(), fmt.Errorf("can only look up ID addresses")
 	}
@@ -41,7 +40,7 @@ func getDataCap(store adt.Store, ver actors.Version, root rootFunc, addr address
 }
 
 // Assumes that the bitwidth for v3 HAMTs is the DefaultHamtBitwidth
-func forEachCap(store adt.Store, ver actors.Version, root rootFunc, cb func(addr address.Address, dcap abi.StoragePower) error) error {
+func forEachCap(store adt.Store, ver actorstypes.Version, root rootFunc, cb func(addr address.Address, dcap abi.StoragePower) error) error {
 	vh, err := root()
 	if err != nil {
 		return fmt.Errorf("loading verified clients: %w", err)
@@ -56,7 +55,7 @@ func forEachCap(store adt.Store, ver actors.Version, root rootFunc, cb func(addr
 	})
 }
 
-func getRemoveDataCapProposalID(store adt.Store, ver actors.Version, root rootFunc, verifier address.Address, client address.Address) (bool, uint64, error) {
+func getRemoveDataCapProposalID(store adt.Store, ver actorstypes.Version, root rootFunc, verifier address.Address, client address.Address) (bool, uint64, error) {
 	if verifier.Protocol() != address.ID {
 		return false, 0, xerrors.Errorf("can only look up ID addresses")
 	}

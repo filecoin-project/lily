@@ -7,9 +7,11 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
 
-	"github.com/filecoin-project/lily/chain/actors"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lotus/chain/actors"
 
 	miner8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	reward8 "github.com/filecoin-project/go-state-types/builtin/v8/reward"
@@ -92,11 +94,11 @@ func (s *state8) PreCommitDepositForPower(networkQAPower builtin.FilterEstimate,
 }
 
 func (s *state8) ActorKey() string {
-	return actors.RewardKey
+	return manifest.RewardKey
 }
 
-func (s *state8) ActorVersion() actors.Version {
-	return actors.Version8
+func (s *state8) ActorVersion() actorstypes.Version {
+	return actorstypes.Version8
 }
 
 func (s *state8) Code() cid.Cid {

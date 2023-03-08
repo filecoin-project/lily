@@ -4,7 +4,6 @@ package miner
 import (
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/go-state-types/network"
-	"github.com/filecoin-project/lily/chain/actors"
 	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -16,8 +15,12 @@ import (
 	"github.com/filecoin-project/go-state-types/dline"
 	"github.com/filecoin-project/go-state-types/proof"
 
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
+
+	miner10 "github.com/filecoin-project/go-state-types/builtin/v10/miner"
 	miner8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
-	miner9 "github.com/filecoin-project/go-state-types/builtin/v9/miner"
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 	"github.com/filecoin-project/lotus/chain/types"
 
@@ -38,17 +41,20 @@ import (
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
 	if name, av, ok := lotusactors.GetActorMetaByCode(act.Code); ok {
-		if name != actors.MinerKey {
+		if name != manifest.MinerKey {
 			return nil, xerrors.Errorf("actor code is not miner: %s", name)
 		}
 
-		switch actors.Version(av) {
+		switch actorstypes.Version(av) {
 
-		case actors.Version8:
+		case actorstypes.Version8:
 			return load8(store, act.Head)
 
-		case actors.Version9:
+		case actorstypes.Version9:
 			return load9(store, act.Head)
+
+		case actorstypes.Version10:
+			return load10(store, act.Head)
 
 		}
 	}
@@ -81,35 +87,38 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 	return nil, xerrors.Errorf("unknown actor code %s", act.Code)
 }
 
-func MakeState(store adt.Store, av actors.Version) (State, error) {
+func MakeState(store adt.Store, av actorstypes.Version) (State, error) {
 	switch av {
 
-	case actors.Version0:
+	case actorstypes.Version0:
 		return make0(store)
 
-	case actors.Version2:
+	case actorstypes.Version2:
 		return make2(store)
 
-	case actors.Version3:
+	case actorstypes.Version3:
 		return make3(store)
 
-	case actors.Version4:
+	case actorstypes.Version4:
 		return make4(store)
 
-	case actors.Version5:
+	case actorstypes.Version5:
 		return make5(store)
 
-	case actors.Version6:
+	case actorstypes.Version6:
 		return make6(store)
 
-	case actors.Version7:
+	case actorstypes.Version7:
 		return make7(store)
 
-	case actors.Version8:
+	case actorstypes.Version8:
 		return make8(store)
 
-	case actors.Version9:
+	case actorstypes.Version9:
 		return make9(store)
+
+	case actorstypes.Version10:
+		return make10(store)
 
 	}
 	return nil, xerrors.Errorf("unknown actor version %d", av)
@@ -120,7 +129,7 @@ type State interface {
 
 	Code() cid.Cid
 	ActorKey() string
-	ActorVersion() actors.Version
+	ActorVersion() actorstypes.Version
 
 	// Total available balance to spend.
 	AvailableBalance(abi.TokenAmount) (abi.TokenAmount, error)
@@ -133,8 +142,8 @@ type State interface {
 	GetSector(abi.SectorNumber) (*SectorOnChainInfo, error)
 	FindSector(abi.SectorNumber) (*SectorLocation, error)
 	GetSectorExpiration(abi.SectorNumber) (*SectorExpiration, error)
-	GetPrecommittedSector(abi.SectorNumber) (*miner9.SectorPreCommitOnChainInfo, error)
-	ForEachPrecommittedSector(func(miner9.SectorPreCommitOnChainInfo) error) error
+	GetPrecommittedSector(abi.SectorNumber) (*SectorPreCommitOnChainInfo, error)
+	ForEachPrecommittedSector(func(SectorPreCommitOnChainInfo) error) error
 	LoadSectors(sectorNos *bitfield.BitField) ([]*SectorOnChainInfo, error)
 	NumLiveSectors() (uint64, error)
 	IsAllocated(abi.SectorNumber) (bool, error)
@@ -169,7 +178,7 @@ type State interface {
 	PrecommitsMap() (adt.Map, error)
 	PrecommitsMapBitWidth() int
 	PrecommitsMapHashFunction() func(input []byte) []byte
-	DecodeSectorPreCommitOnChainInfo(*cbg.Deferred) (miner9.SectorPreCommitOnChainInfo, error)
+	DecodeSectorPreCommitOnChainInfo(*cbg.Deferred) (SectorPreCommitOnChainInfo, error)
 	DecodeSectorPreCommitOnChainInfoToV8(*cbg.Deferred) (miner8.SectorPreCommitOnChainInfo, error)
 	ForEachPrecommittedSectorV8(func(miner8.SectorPreCommitOnChainInfo) error) error
 }
@@ -208,7 +217,7 @@ type Partition interface {
 	UnprovenSectors() (bitfield.BitField, error)
 }
 
-type SectorOnChainInfo = miner9.SectorOnChainInfo
+type SectorOnChainInfo = miner10.SectorOnChainInfo
 
 func PreferredSealProofTypeFromWindowPoStType(nver network.Version, proof abi.RegisteredPoStProof) (abi.RegisteredSealProof, error) {
 	// We added support for the new proofs in network version 7, and removed support for the old
@@ -263,9 +272,13 @@ func WinningPoStProofTypeFromWindowPoStProofType(nver network.Version, proof abi
 	}
 }
 
-type MinerInfo = miner9.MinerInfo
-type WorkerKeyChange = miner9.WorkerKeyChange
+type MinerInfo = minertypes.MinerInfo
+type WorkerKeyChange = minertypes.WorkerKeyChange
 type WindowPostVerifyInfo = proof.WindowPoStVerifyInfo
+type BeneficiaryTerm = minertypes.BeneficiaryTerm
+type PendingBeneficiaryChange = minertypes.PendingBeneficiaryChange
+type SectorPreCommitOnChainInfo = minertypes.SectorPreCommitOnChainInfo
+type SectorPreCommitInfo = minertypes.SectorPreCommitInfo
 
 type SectorExpiration struct {
 	OnTime abi.ChainEpoch
@@ -286,8 +299,8 @@ type SectorExtensions struct {
 }
 
 type PreCommitChanges struct {
-	Added   []miner9.SectorPreCommitOnChainInfo
-	Removed []miner9.SectorPreCommitOnChainInfo
+	Added   []SectorPreCommitOnChainInfo
+	Removed []SectorPreCommitOnChainInfo
 }
 
 type LockedFunds struct {
@@ -323,19 +336,21 @@ func AllCodes() []cid.Cid {
 		(&state7{}).Code(),
 		(&state8{}).Code(),
 		(&state9{}).Code(),
+		(&state10{}).Code(),
 	}
 }
 
-func VersionCodes() map[actors.Version]cid.Cid {
-	return map[actors.Version]cid.Cid{
-		actors.Version0: (&state0{}).Code(),
-		actors.Version2: (&state2{}).Code(),
-		actors.Version3: (&state3{}).Code(),
-		actors.Version4: (&state4{}).Code(),
-		actors.Version5: (&state5{}).Code(),
-		actors.Version6: (&state6{}).Code(),
-		actors.Version7: (&state7{}).Code(),
-		actors.Version8: (&state8{}).Code(),
-		actors.Version9: (&state9{}).Code(),
+func VersionCodes() map[actorstypes.Version]cid.Cid {
+	return map[actorstypes.Version]cid.Cid{
+		actorstypes.Version0:  (&state0{}).Code(),
+		actorstypes.Version2:  (&state2{}).Code(),
+		actorstypes.Version3:  (&state3{}).Code(),
+		actorstypes.Version4:  (&state4{}).Code(),
+		actorstypes.Version5:  (&state5{}).Code(),
+		actorstypes.Version6:  (&state6{}).Code(),
+		actorstypes.Version7:  (&state7{}).Code(),
+		actorstypes.Version8:  (&state8{}).Code(),
+		actorstypes.Version9:  (&state9{}).Code(),
+		actorstypes.Version10: (&state10{}).Code(),
 	}
 }

@@ -10,13 +10,15 @@ import (
 	rle "github.com/filecoin-project/go-bitfield/rle"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/dline"
-	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
+
 	minertypesv8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
-	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
+	"github.com/filecoin-project/lotus/chain/actors"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 
 	"crypto/sha256"
@@ -200,7 +202,7 @@ func (s *state2) GetSectorExpiration(num abi.SectorNumber) (*SectorExpiration, e
 	return &out, nil
 }
 
-func (s *state2) GetPrecommittedSector(num abi.SectorNumber) (*minertypes.SectorPreCommitOnChainInfo, error) {
+func (s *state2) GetPrecommittedSector(num abi.SectorNumber) (*SectorPreCommitOnChainInfo, error) {
 	info, ok, err := s.State.GetPrecommittedSector(s.store, num)
 	if !ok || err != nil {
 		return nil, err
@@ -211,7 +213,7 @@ func (s *state2) GetPrecommittedSector(num abi.SectorNumber) (*minertypes.Sector
 	return &ret, nil
 }
 
-func (s *state2) ForEachPrecommittedSector(cb func(minertypes.SectorPreCommitOnChainInfo) error) error {
+func (s *state2) ForEachPrecommittedSector(cb func(SectorPreCommitOnChainInfo) error) error {
 	precommitted, err := adt2.AsMap(s.store, s.State.PreCommittedSectors)
 	if err != nil {
 		return err
@@ -439,11 +441,11 @@ func (s *state2) PrecommitsMapHashFunction() func(input []byte) []byte {
 
 }
 
-func (s *state2) DecodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (minertypes.SectorPreCommitOnChainInfo, error) {
+func (s *state2) DecodeSectorPreCommitOnChainInfo(val *cbg.Deferred) (SectorPreCommitOnChainInfo, error) {
 	var sp miner2.SectorPreCommitOnChainInfo
 	err := sp.UnmarshalCBOR(bytes.NewReader(val.Raw))
 	if err != nil {
-		return minertypes.SectorPreCommitOnChainInfo{}, err
+		return SectorPreCommitOnChainInfo{}, err
 	}
 
 	return fromV2SectorPreCommitOnChainInfo(sp), nil
@@ -591,9 +593,9 @@ func fromV2SectorOnChainInfo(v2 miner2.SectorOnChainInfo) SectorOnChainInfo {
 	return info
 }
 
-func fromV2SectorPreCommitOnChainInfo(v2 miner2.SectorPreCommitOnChainInfo) minertypes.SectorPreCommitOnChainInfo {
-	return minertypes.SectorPreCommitOnChainInfo{
-		Info: minertypes.SectorPreCommitInfo{
+func fromV2SectorPreCommitOnChainInfo(v2 miner2.SectorPreCommitOnChainInfo) SectorPreCommitOnChainInfo {
+	ret := SectorPreCommitOnChainInfo{
+		Info: SectorPreCommitInfo{
 			SealProof:     v2.Info.SealProof,
 			SectorNumber:  v2.Info.SectorNumber,
 			SealedCID:     v2.Info.SealedCID,
@@ -605,6 +607,8 @@ func fromV2SectorPreCommitOnChainInfo(v2 miner2.SectorPreCommitOnChainInfo) mine
 		PreCommitDeposit: v2.PreCommitDeposit,
 		PreCommitEpoch:   v2.PreCommitEpoch,
 	}
+
+	return ret
 }
 
 func fromV2SectorPreCommitOnChainInfoToV8(v2 miner2.SectorPreCommitOnChainInfo) minertypesv8.SectorPreCommitOnChainInfo {
@@ -626,11 +630,11 @@ func (s *state2) SectorsAmtBitwidth() int {
 }
 
 func (s *state2) ActorKey() string {
-	return actors.MinerKey
+	return manifest.MinerKey
 }
 
-func (s *state2) ActorVersion() actors.Version {
-	return actors.Version2
+func (s *state2) ActorVersion() actorstypes.Version {
+	return actorstypes.Version2
 }
 
 func (s *state2) Code() cid.Cid {

@@ -88,7 +88,7 @@ testfull: build
 # testshort runs tests that don't require external dependencies such as postgres or redis
 .PHONY: testshort
 testshort:
-	go test -short ./... -v
+	go test -short ./... 
 
 
 .PHONY: lily

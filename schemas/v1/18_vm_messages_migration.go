@@ -2,7 +2,7 @@ package v1
 
 func init() {
 	patches.Register(
-		14,
+		18,
 		`
 {{- if and .SchemaName (ne .SchemaName "public") }}
 SET search_path TO {{ .SchemaName }},public;

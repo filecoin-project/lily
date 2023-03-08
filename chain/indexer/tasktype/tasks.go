@@ -57,6 +57,7 @@ var TaskLookup = map[string][]string{
 	ActorStatesVerifreg: {
 		VerifiedRegistryVerifier,
 		VerifiedRegistryVerifiedClient,
+		VerifiedRegistryClaim,
 		DataCapBalance,
 	},
 	BlocksTask: {
@@ -71,6 +72,9 @@ var TaskLookup = map[string][]string{
 		GasOutputs,
 		MessageGasEconomy,
 		BlockMessage,
+		ActorEvent,
+		MessageParam,
+		ReceiptReturn,
 	},
 	ChainEconomicsTask: {
 		ChainEconomics,

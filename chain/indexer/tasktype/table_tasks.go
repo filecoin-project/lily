@@ -27,6 +27,9 @@ const (
 	InternalMessage                = "internal_messages"
 	InternalParsedMessage          = "internal_parsed_messages"
 	VMMessage                      = "vm_messages"
+	ActorEvent                     = "actor_events"
+	MessageParam                   = "message_params"
+	ReceiptReturn                  = "receipt_returns"
 	MultisigTransaction            = "multisig_transaction"
 	ChainPower                     = "chain_power"
 	PowerActorClaim                = "power_actor_claim"
@@ -40,6 +43,7 @@ const (
 	MultisigApproval               = "multisig_approvals"
 	VerifiedRegistryVerifier       = "verified_registry_verifier"
 	VerifiedRegistryVerifiedClient = "verified_registry_verified_client"
+	VerifiedRegistryClaim          = "verified_registry_claim"
 )
 
 var AllTableTasks = []string{
@@ -68,6 +72,9 @@ var AllTableTasks = []string{
 	InternalMessage,
 	InternalParsedMessage,
 	VMMessage,
+	ActorEvent,
+	MessageParam,
+	ReceiptReturn,
 	MultisigTransaction,
 	ChainPower,
 	PowerActorClaim,
@@ -81,6 +88,7 @@ var AllTableTasks = []string{
 	MultisigApproval,
 	VerifiedRegistryVerifier,
 	VerifiedRegistryVerifiedClient,
+	VerifiedRegistryClaim,
 }
 
 var TableLookup = map[string]struct{}{
@@ -109,6 +117,9 @@ var TableLookup = map[string]struct{}{
 	InternalMessage:                {},
 	InternalParsedMessage:          {},
 	VMMessage:                      {},
+	ActorEvent:                     {},
+	MessageParam:                   {},
+	ReceiptReturn:                  {},
 	MultisigTransaction:            {},
 	ChainPower:                     {},
 	PowerActorClaim:                {},
@@ -122,6 +133,7 @@ var TableLookup = map[string]struct{}{
 	MultisigApproval:               {},
 	VerifiedRegistryVerifier:       {},
 	VerifiedRegistryVerifiedClient: {},
+	VerifiedRegistryClaim:          {},
 }
 
 var TableComment = map[string]string{
@@ -150,6 +162,9 @@ var TableComment = map[string]string{
 	InternalMessage:                ``,
 	InternalParsedMessage:          ``,
 	VMMessage:                      ``,
+	ActorEvent:                     ``,
+	MessageParam:                   ``,
+	ReceiptReturn:                  ``,
 	MultisigTransaction:            ``,
 	ChainPower:                     ``,
 	PowerActorClaim:                ``,
@@ -163,6 +178,7 @@ var TableComment = map[string]string{
 	MultisigApproval:               ``,
 	VerifiedRegistryVerifier:       ``,
 	VerifiedRegistryVerifiedClient: ``,
+	VerifiedRegistryClaim:          ``,
 }
 
 var TableFieldComments = map[string]map[string]string{
@@ -219,14 +235,18 @@ var TableFieldComments = map[string]map[string]string{
 		"From":      "From sender of message.",
 		"GasUsed":   "GasUsed by message.",
 		"Height":    "Height message was executed at.",
+		"Index":     "Index indicating the order of the messages execution.",
 		"Method":    "Method called on To (receiver).",
 		"Params":    "Params contained in message.",
-		"Returns":   "Return value of message.",
+		"Returns":   "Returns value of message receipt.",
 		"Source":    "On-chain message triggering the message.",
 		"StateRoot": "StateRoot message was applied to.",
 		"To":        "To receiver of message.",
 		"Value":     "Value attoFIL contained in message.",
 	},
+	ActorEvent:    {},
+	MessageParam:  {},
+	ReceiptReturn: {},
 	MultisigTransaction: {
 		"To": "Transaction State",
 	},
@@ -260,4 +280,5 @@ var TableFieldComments = map[string]map[string]string{
 	MultisigApproval:               {},
 	VerifiedRegistryVerifier:       {},
 	VerifiedRegistryVerifiedClient: {},
+	VerifiedRegistryClaim:          {},
 }

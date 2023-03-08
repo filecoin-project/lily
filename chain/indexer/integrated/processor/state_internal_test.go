@@ -3,10 +3,10 @@ package processor
 import (
 	"testing"
 
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/filecoin-project/lily/chain/actors/builtin/datacap"
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
@@ -18,9 +18,12 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	datacaptask "github.com/filecoin-project/lily/tasks/actorstate/datacap"
 	"github.com/filecoin-project/lily/tasks/messageexecutions/vm"
+	"github.com/filecoin-project/lily/tasks/messages/actorevent"
 	"github.com/filecoin-project/lily/tasks/messages/blockmessage"
 	"github.com/filecoin-project/lily/tasks/messages/gaseconomy"
 	"github.com/filecoin-project/lily/tasks/messages/message"
+	"github.com/filecoin-project/lily/tasks/messages/messageparam"
+	"github.com/filecoin-project/lily/tasks/messages/receiptreturn"
 
 	"github.com/filecoin-project/lily/tasks/actorstate"
 	inittask "github.com/filecoin-project/lily/tasks/actorstate/init_"
@@ -49,9 +52,9 @@ func TestNewProcessor(t *testing.T) {
 	proc, err := New(nil, t.Name(), tasktype.AllTableTasks)
 	require.NoError(t, err)
 	require.Equal(t, t.Name(), proc.name)
-	require.Len(t, proc.actorProcessors, 23)
-	require.Len(t, proc.tipsetProcessors, 8)
-	require.Len(t, proc.tipsetsProcessors, 7)
+	require.Len(t, proc.actorProcessors, 24)
+	require.Len(t, proc.tipsetProcessors, 9)
+	require.Len(t, proc.tipsetsProcessors, 9)
 	require.Len(t, proc.builtinProcessors, 1)
 
 	require.Equal(t, gasoutput.NewTask(nil), proc.tipsetsProcessors[tasktype.GasOutputs])
@@ -61,6 +64,8 @@ func TestNewProcessor(t *testing.T) {
 	require.Equal(t, internalparsedmessage.NewTask(nil), proc.tipsetsProcessors[tasktype.InternalParsedMessage])
 	require.Equal(t, msapprovals.NewTask(nil), proc.tipsetsProcessors[tasktype.MultisigApproval])
 	require.Equal(t, vm.NewTask(nil), proc.tipsetsProcessors[tasktype.VMMessage])
+	require.Equal(t, actorevent.NewTask(nil), proc.tipsetsProcessors[tasktype.ActorEvent])
+	require.Equal(t, receiptreturn.NewTask(nil), proc.tipsetsProcessors[tasktype.ReceiptReturn])
 
 	require.Equal(t, message.NewTask(nil), proc.tipsetProcessors[tasktype.Message])
 	require.Equal(t, blockmessage.NewTask(nil), proc.tipsetProcessors[tasktype.BlockMessage])
@@ -70,6 +75,7 @@ func TestNewProcessor(t *testing.T) {
 	require.Equal(t, chaineconomics.NewTask(nil), proc.tipsetProcessors[tasktype.ChainEconomics])
 	require.Equal(t, consensus.NewTask(nil), proc.tipsetProcessors[tasktype.ChainConsensus])
 	require.Equal(t, gaseconomy.NewTask(nil), proc.tipsetProcessors[tasktype.MessageGasEconomy])
+	require.Equal(t, messageparam.NewTask(nil), proc.tipsetProcessors[tasktype.MessageParam])
 
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.DeadlineInfoExtractor{})), proc.actorProcessors[tasktype.MinerCurrentDeadlineInfo])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.FeeDebtExtractor{})), proc.actorProcessors[tasktype.MinerFeeDebt])
@@ -80,19 +86,19 @@ func TestNewProcessor(t *testing.T) {
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.PoStExtractor{})), proc.actorProcessors[tasktype.MinerSectorPost])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewCustomTypedActorExtractorMap(
 		map[cid.Cid][]actorstate.ActorStateExtractor{
-			miner.VersionCodes()[actors.Version0]: {minertask.SectorInfoExtractor{}},
-			miner.VersionCodes()[actors.Version2]: {minertask.SectorInfoExtractor{}},
-			miner.VersionCodes()[actors.Version3]: {minertask.SectorInfoExtractor{}},
-			miner.VersionCodes()[actors.Version4]: {minertask.SectorInfoExtractor{}},
-			miner.VersionCodes()[actors.Version5]: {minertask.SectorInfoExtractor{}},
-			miner.VersionCodes()[actors.Version6]: {minertask.SectorInfoExtractor{}},
+			miner.VersionCodes()[actorstypes.Version0]: {minertask.SectorInfoExtractor{}},
+			miner.VersionCodes()[actorstypes.Version2]: {minertask.SectorInfoExtractor{}},
+			miner.VersionCodes()[actorstypes.Version3]: {minertask.SectorInfoExtractor{}},
+			miner.VersionCodes()[actorstypes.Version4]: {minertask.SectorInfoExtractor{}},
+			miner.VersionCodes()[actorstypes.Version5]: {minertask.SectorInfoExtractor{}},
+			miner.VersionCodes()[actorstypes.Version6]: {minertask.SectorInfoExtractor{}},
 		},
 	)), proc.actorProcessors[tasktype.MinerSectorInfoV1_6])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewCustomTypedActorExtractorMap(
 		map[cid.Cid][]actorstate.ActorStateExtractor{
-			miner.VersionCodes()[actors.Version7]: {minertask.V7SectorInfoExtractor{}},
-			miner.VersionCodes()[actors.Version8]: {minertask.V7SectorInfoExtractor{}},
-			miner.VersionCodes()[actors.Version9]: {minertask.V7SectorInfoExtractor{}},
+			miner.VersionCodes()[actorstypes.Version7]: {minertask.V7SectorInfoExtractor{}},
+			miner.VersionCodes()[actorstypes.Version8]: {minertask.V7SectorInfoExtractor{}},
+			miner.VersionCodes()[actorstypes.Version9]: {minertask.V7SectorInfoExtractor{}},
 		},
 	)), proc.actorProcessors[tasktype.MinerSectorInfoV7])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(power.AllCodes(), powertask.ClaimedPowerExtractor{})), proc.actorProcessors[tasktype.PowerActorClaim])
@@ -106,31 +112,38 @@ func TestNewProcessor(t *testing.T) {
 
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewCustomTypedActorExtractorMap(
 		map[cid.Cid][]actorstate.ActorStateExtractor{
-			miner.VersionCodes()[actors.Version0]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version2]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version3]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version4]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version5]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version6]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version7]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version8]: {minertask.PreCommitInfoExtractorV8{}},
-			miner.VersionCodes()[actors.Version9]: {minertask.PreCommitInfoExtractorV9{}},
+			miner.VersionCodes()[actorstypes.Version0]: {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actorstypes.Version2]: {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actorstypes.Version3]: {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actorstypes.Version4]: {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actorstypes.Version5]: {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actorstypes.Version6]: {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actorstypes.Version7]: {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actorstypes.Version8]: {minertask.PreCommitInfoExtractorV8{}},
+			miner.VersionCodes()[actorstypes.Version9]: {minertask.PreCommitInfoExtractorV9{}},
 		},
 	)), proc.actorProcessors[tasktype.MinerPreCommitInfo])
 
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewCustomTypedActorExtractorMap(
 		map[cid.Cid][]actorstate.ActorStateExtractor{
-			verifreg.VersionCodes()[actors.Version0]: {verifregtask.ClientExtractor{}},
-			verifreg.VersionCodes()[actors.Version2]: {verifregtask.ClientExtractor{}},
-			verifreg.VersionCodes()[actors.Version3]: {verifregtask.ClientExtractor{}},
-			verifreg.VersionCodes()[actors.Version4]: {verifregtask.ClientExtractor{}},
-			verifreg.VersionCodes()[actors.Version5]: {verifregtask.ClientExtractor{}},
-			verifreg.VersionCodes()[actors.Version6]: {verifregtask.ClientExtractor{}},
-			verifreg.VersionCodes()[actors.Version7]: {verifregtask.ClientExtractor{}},
-			verifreg.VersionCodes()[actors.Version8]: {verifregtask.ClientExtractor{}},
+			verifreg.VersionCodes()[actorstypes.Version0]: {verifregtask.ClientExtractor{}},
+			verifreg.VersionCodes()[actorstypes.Version2]: {verifregtask.ClientExtractor{}},
+			verifreg.VersionCodes()[actorstypes.Version3]: {verifregtask.ClientExtractor{}},
+			verifreg.VersionCodes()[actorstypes.Version4]: {verifregtask.ClientExtractor{}},
+			verifreg.VersionCodes()[actorstypes.Version5]: {verifregtask.ClientExtractor{}},
+			verifreg.VersionCodes()[actorstypes.Version6]: {verifregtask.ClientExtractor{}},
+			verifreg.VersionCodes()[actorstypes.Version7]: {verifregtask.ClientExtractor{}},
+			verifreg.VersionCodes()[actorstypes.Version8]: {verifregtask.ClientExtractor{}},
 		},
 	)), proc.actorProcessors[tasktype.VerifiedRegistryVerifiedClient])
+
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(datacap.AllCodes(), datacaptask.BalanceExtractor{})), proc.actorProcessors[tasktype.DataCapBalance])
+
+	require.Equal(t, actorstate.NewTask(nil, actorstate.NewCustomTypedActorExtractorMap(
+		map[cid.Cid][]actorstate.ActorStateExtractor{
+			verifreg.VersionCodes()[actorstypes.Version9]: {verifregtask.ClaimExtractor{}},
+		},
+	)), proc.actorProcessors[tasktype.VerifiedRegistryClaim])
 
 	rae := &actorstate.RawActorExtractorMap{}
 	rae.Register(&rawtask.RawActorExtractor{})

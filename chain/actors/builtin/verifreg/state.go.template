@@ -28,12 +28,21 @@ import (
 	builtin{{.v}} "github.com/filecoin-project/go-state-types/builtin"
 {{end}}
 {{if (ge .v 9)}}
-	"github.com/filecoin-project/go-state-types/big"
+    "github.com/filecoin-project/go-state-types/big"
+    {{if (gt .v 9)}}
+        verifreg9 "github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
+    {{end}}
 {{else}}
     verifreg9 "github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
 {{end}}
 
-	"github.com/filecoin-project/lily/chain/actors"
+	"github.com/filecoin-project/lotus/chain/actors"
+    actorstypes "github.com/filecoin-project/go-state-types/actors"
+    "github.com/filecoin-project/go-state-types/manifest"
+
+    {{if (ge .v 9)}}
+        cbg "github.com/whyrusleeping/cbor-gen"
+    {{end}}
 )
 
 var _ State = (*state{{.v}})(nil)
@@ -53,11 +62,11 @@ type state{{.v}} struct {
 }
 
 func (s *state{{.v}}) ActorKey() string {
-    return actors.VerifregKey
+    return manifest.VerifregKey
 }
 
-func (s *state{{.v}}) ActorVersion() actors.Version {
-    return actors.Version{{.v}}
+func (s *state{{.v}}) ActorVersion() actorstypes.Version {
+    return actorstypes.Version{{.v}}
 }
 
 func (s *state{{.v}}) Code() cid.Cid {
@@ -132,27 +141,27 @@ func (s *state{{.v}}) RootKey() (address.Address, error) {
 
 func (s *state{{.v}}) VerifiedClientDataCap(addr address.Address) (bool, abi.StoragePower, error) {
 {{if (le .v 8)}}
-	return getDataCap(s.store, actors.Version{{.v}}, s.VerifiedClientsMap, addr)
+	return getDataCap(s.store, actorstypes.Version{{.v}}, s.VerifiedClientsMap, addr)
 {{else}}
     return false, big.Zero(), fmt.Errorf("unsupported in actors v{{.v}}")
 {{end}}
 }
 
 func (s *state{{.v}}) VerifierDataCap(addr address.Address) (bool, abi.StoragePower, error) {
-	return getDataCap(s.store, actors.Version{{.v}}, s.VerifiersMap, addr)
+	return getDataCap(s.store, actorstypes.Version{{.v}}, s.VerifiersMap, addr)
 }
 
 func (s *state{{.v}}) RemoveDataCapProposalID(verifier address.Address, client address.Address) (bool, uint64, error) {
-	return getRemoveDataCapProposalID(s.store, actors.Version{{.v}}, s.removeDataCapProposalIDs, verifier, client)
+	return getRemoveDataCapProposalID(s.store, actorstypes.Version{{.v}}, s.removeDataCapProposalIDs, verifier, client)
 }
 
 func (s *state{{.v}}) ForEachVerifier(cb func(addr address.Address, dcap abi.StoragePower) error) error {
-	return forEachCap(s.store, actors.Version{{.v}}, s.VerifiersMap, cb)
+	return forEachCap(s.store, actorstypes.Version{{.v}}, s.VerifiersMap, cb)
 }
 
 func (s *state{{.v}}) ForEachClient(cb func(addr address.Address, dcap abi.StoragePower) error) error {
 {{if (le .v 8)}}
-	return forEachCap(s.store, actors.Version{{.v}}, s.VerifiedClientsMap, cb)
+	return forEachCap(s.store, actorstypes.Version{{.v}}, s.VerifiedClientsMap, cb)
 {{else}}
     return fmt.Errorf("unsupported in actors v{{.v}}")
 {{end}}
@@ -167,34 +176,114 @@ func (s *state{{.v}}) GetState() interface{} {
 	return &s.State
 }
 
-func (s *state{{.v}}) GetAllocation(clientIdAddr address.Address, allocationId verifreg9.AllocationId) (*verifreg9.Allocation, bool, error) {
+func (s *state{{.v}}) GetAllocation(clientIdAddr address.Address, allocationId verifreg9.AllocationId) (*Allocation, bool, error) {
 {{if (le .v 8)}}
     return nil, false, fmt.Errorf("unsupported in actors v{{.v}}")
 {{else}}
-    return s.FindAllocation(s.store, clientIdAddr, allocationId)
-{{end}}
+    alloc, ok, err := s.FindAllocation(s.store, clientIdAddr, verifreg{{.v}}.AllocationId(allocationId))
+    return (*Allocation)(alloc), ok, err{{end}}
 }
 
-func (s *state{{.v}}) GetAllocations(clientIdAddr address.Address) (map[verifreg9.AllocationId]verifreg9.Allocation, error) {
+func (s *state{{.v}}) GetAllocations(clientIdAddr address.Address) (map[AllocationId]Allocation, error) {
 {{if (le .v 8)}}
     return nil, fmt.Errorf("unsupported in actors v{{.v}}")
 {{else}}
-	return s.LoadAllocationsToMap(s.store, clientIdAddr)
+    v{{.v}}Map, err := s.LoadAllocationsToMap(s.store, clientIdAddr)
+
+    retMap := make(map[AllocationId]Allocation, len(v{{.v}}Map))
+    for k, v := range v{{.v}}Map {
+    retMap[AllocationId(k)] = Allocation(v)
+    }
+
+    return retMap, err
 {{end}}
 }
 
-func (s *state{{.v}}) GetClaim(providerIdAddr address.Address, claimId verifreg9.ClaimId) (*verifreg9.Claim, bool, error) {
+func (s *state{{.v}}) GetClaim(providerIdAddr address.Address, claimId verifreg9.ClaimId) (*Claim, bool, error) {
 {{if (le .v 8)}}
     return nil, false, fmt.Errorf("unsupported in actors v{{.v}}")
 {{else}}
-	return s.FindClaim(s.store, providerIdAddr, claimId)
+    claim, ok, err := s.FindClaim(s.store, providerIdAddr, verifreg{{.v}}.ClaimId(claimId))
+    return (*Claim)(claim), ok, err
 {{end}}
 }
 
-func (s *state{{.v}}) GetClaims(providerIdAddr address.Address) (map[verifreg9.ClaimId]verifreg9.Claim, error) {
+func (s *state{{.v}}) GetClaims(providerIdAddr address.Address) (map[ClaimId]Claim, error) {
 {{if (le .v 8)}}
     return nil, fmt.Errorf("unsupported in actors v{{.v}}")
 {{else}}
-	return s.LoadClaimsToMap(s.store, providerIdAddr)
+    v{{.v}}Map, err := s.LoadClaimsToMap(s.store, providerIdAddr)
+
+    retMap := make(map[ClaimId]Claim, len(v{{.v}}Map))
+    for k, v := range v{{.v}}Map {
+    retMap[ClaimId(k)] = Claim(v)
+    }
+
+    return retMap, err
+
+{{end}}
+}
+
+func (s *state{{.v}}) ClaimsMap() (adt.Map, error) {
+{{if (le .v 8)}}
+    return nil, fmt.Errorf("unsupported in actors v{{.v}}")
+{{else}}
+    return adt{{.v}}.AsMap(s.store, s.Claims, builtin{{.v}}.DefaultHamtBitwidth)
+{{end}}
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state{{.v}}) ClaimsMapBitWidth() int {
+{{if (ge .v 3)}}
+    return builtin{{.v}}.DefaultHamtBitwidth
+{{else}}
+    return 5
+{{end}}
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state{{.v}}) ClaimsMapHashFunction() func(input []byte) []byte {
+{{if (le .v 1)}}
+    return func(input []byte) []byte {
+    res := sha256simd.Sum256(input)
+    return res[:]
+    }
+{{else}}
+    return func(input []byte) []byte {
+    res := sha256.Sum256(input)
+    return res[:]
+    }
+{{end}}
+}
+
+func (s *state{{.v}}) ClaimMapForProvider(providerIdAddr address.Address) (adt.Map, error) {
+{{if (le .v 8)}}
+    return nil, fmt.Errorf("unsupported in actors v{{.v}}")
+{{else}}
+    innerHamtCid, err := s.getInnerHamtCid(s.store, abi.IdAddrKey(providerIdAddr), s.Claims, builtin{{.v}}.DefaultHamtBitwidth)
+    if err != nil {
+    return nil, err
+    }
+    return adt{{.v}}.AsMap(s.store, innerHamtCid, builtin{{.v}}.DefaultHamtBitwidth)
+{{end}}
+}
+
+func (s *state{{.v}}) getInnerHamtCid(store adt.Store, key abi.Keyer, mapCid cid.Cid, bitwidth int) (cid.Cid, error) {
+{{if (le .v 8)}}
+    return cid.Undef, fmt.Errorf("unsupported in actors v{{.v}}")
+{{else}}
+    actorToHamtMap, err := adt{{.v}}.AsMap(store, mapCid, bitwidth)
+    if err != nil {
+    return cid.Undef, fmt.Errorf("couldn't get outer map: %x", err)
+    }
+
+    var innerHamtCid cbg.CborCid
+    if found, err := actorToHamtMap.Get(key, &innerHamtCid); err != nil {
+    return cid.Undef, fmt.Errorf("looking up key: %s: %w", key, err)
+    } else if !found {
+    return cid.Undef, fmt.Errorf("did not find key: %s", key)
+    }
+
+    return cid.Cid(innerHamtCid), nil
 {{end}}
 }

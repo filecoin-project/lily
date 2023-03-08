@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -98,7 +99,20 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		// NB: the getActorCode method is the expensive call since it resolves addresses and may load the statetree.
 		for _, child := range util.GetChildMessagesOf(parentMsg) {
 			// Cid() computes a CID, so only call it once
-			childCid := child.Message.Cid()
+			childMsg := &types.Message{
+				To:     child.Message.To,
+				From:   child.Message.From,
+				Value:  child.Message.Value,
+				Method: child.Message.Method,
+				Params: child.Message.Params,
+				// these fields were deprecated in https://github.com/filecoin-project/lotus/commit/dbbcf4b2ee9626796e23a096c66e67ff350810e4
+				Version:    0,
+				GasLimit:   0,
+				Nonce:      0,
+				GasFeeCap:  abi.NewTokenAmount(0),
+				GasPremium: abi.NewTokenAmount(0),
+			}
+			childCid := childMsg.Cid()
 
 			toCode, found := getActorCode(ctx, child.Message.To)
 			if !found && child.Receipt.ExitCode == 0 {
@@ -129,7 +143,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				From:      child.Message.From.String(),
 				To:        child.Message.To.String(),
 				Value:     child.Message.Value.String(),
-				GasUsed:   child.Receipt.GasUsed,
+				GasUsed:   0,
 				ExitCode:  int64(child.Receipt.ExitCode),
 				ActorCode: toActorCode,
 				Method:    uint64(child.Message.Method),
@@ -142,7 +156,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			// As an example: a message may return ErrForbidden, it will have valid params, but will not contain a
 			// parsable return value in its receipt.
 			if child.Receipt.ExitCode.IsSuccess() {
-				params, _, err := util.ParseParams(child.Message.Params, child.Message.Method, toCode)
+				params, _, err := util.ParseVmMessageParams(child.Message.Params, child.Message.ParamsCodec, child.Message.Method, toCode)
 				if err != nil {
 					// a failure here indicates an error in message param parsing, or in exitcode checks above.
 					errorsDetected = append(errorsDetected, &messages.MessageError{
@@ -156,7 +170,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 					vmMsg.Params = params
 				}
 
-				ret, _, err := util.ParseReturn(child.Receipt.Return, child.Message.Method, toCode)
+				ret, _, err := util.ParseVmMessageReturn(child.Receipt.Return, child.Receipt.ReturnCodec, child.Message.Method, toCode)
 				if err != nil {
 					errorsDetected = append(errorsDetected, &messages.MessageError{
 						Cid: parentMsg.Cid,

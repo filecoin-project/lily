@@ -13,15 +13,12 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/go-state-types/builtin"
+	adt2 "github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
-	states0 "github.com/filecoin-project/specs-actors/actors/states"
-	states2 "github.com/filecoin-project/specs-actors/v2/actors/states"
-	states3 "github.com/filecoin-project/specs-actors/v3/actors/states"
-	states4 "github.com/filecoin-project/specs-actors/v4/actors/states"
-	states5 "github.com/filecoin-project/specs-actors/v5/actors/states"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -136,6 +133,10 @@ type DataSource struct {
 
 	diffPreCommitCache *lru.Cache
 	diffPreCommitGroup singleflight.Group
+}
+
+func (t *DataSource) MessageReceiptEvents(ctx context.Context, root cid.Cid) ([]types.Event, error) {
+	return t.node.ChainGetEvents(ctx, root)
 }
 
 func (t *DataSource) ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi.TokenAmount, error) {
@@ -290,7 +291,46 @@ func ComputeGasOutputs(ctx context.Context, block *types.BlockHeader, message *t
 	return vm.ComputeGasOutputs(receipt.GasUsed, message.GasLimit, block.ParentBaseFee, message.GasFeeCap, message.GasPremium, burn), nil
 }
 
+type StateTreeMeta struct {
+	// Root is the root of Map
+	Root cid.Cid
+	// Tree is the actual StateTree
+	Tree *state.StateTree
+}
+
+func (s *StateTreeMeta) LoadMap(store adt.Store) (adt.Map, error) {
+	return adt2.AsMap(store, s.Root, builtin.DefaultHamtBitwidth)
+}
+
+func LoadStateTreeMeta(ctx context.Context, s adt.Store, ts *types.TipSet) (*StateTreeMeta, error) {
+	tree, err := state.LoadStateTree(s, ts.ParentState())
+	if err != nil {
+		return nil, err
+	}
+
+	root := getStateTreeRoot(ctx, s, ts)
+
+	return &StateTreeMeta{
+		Root: root,
+		Tree: tree,
+	}, nil
+
+}
+
+// getStateTreeRoot returns the cid of the state tree hamt. Required since the lotus types have unexported fields and we need to access the hamt root directly for fast diffing
+func getStateTreeRoot(ctx context.Context, s adt.Store, ts *types.TipSet) cid.Cid {
+	var root types.StateRoot
+	// Try loading as a new-style state-tree (version/actors tuple).
+	if err := s.Get(ctx, ts.ParentState(), &root); err != nil {
+		// We failed to decode as the new version, must be an old version.
+		return ts.ParentState()
+	}
+	return root.Actors
+}
+
 func GetActorStateChanges(ctx context.Context, store adt.Store, current, executed *types.TipSet) (tasks.ActorStateChangeDiff, error) {
+	stop := metrics.Timer(ctx, metrics.DataSourceActorStateChangesDuration)
+	defer stop()
 	ctx, span := otel.Tracer("").Start(ctx, "GetActorStateChanges")
 	defer span.End()
 
@@ -299,41 +339,26 @@ func GetActorStateChanges(ctx context.Context, store adt.Store, current, execute
 		return GetGenesisActors(ctx, store, executed)
 	}
 
-	// we have this special method here to get the HAMT node root required by the faster diffing logic. I hate this.
-	oldRoot, oldVersion, err := getStateTreeHamtRootCIDAndVersion(ctx, store, executed.ParentState())
-	if err != nil {
-		return nil, err
-	}
-	newRoot, newVersion, err := getStateTreeHamtRootCIDAndVersion(ctx, store, current.ParentState())
+	oldTree, err := LoadStateTreeMeta(ctx, store, executed)
 	if err != nil {
 		return nil, err
 	}
 
-	if newVersion == oldVersion && (newVersion != types.StateTreeVersion0 && newVersion != types.StateTreeVersion1) {
-		changes, err := fastDiff(ctx, store, oldRoot, newRoot)
+	newTree, err := LoadStateTreeMeta(ctx, store, current)
+	if err != nil {
+		return nil, err
+	}
+
+	if newTree.Tree.Version() > 1 && oldTree.Tree.Version() > 1 {
+		changes, err := fastDiff(ctx, store, oldTree, newTree)
 		if err == nil {
-			metrics.RecordInc(ctx, metrics.DataSourceActorStateChangesFastDiff)
 			log.Infow("got actor state changes", "height", current.Height(), "duration", time.Since(start), "count", len(changes))
-			if span.IsRecording() {
-				span.SetAttributes(attribute.Bool("fast", true), attribute.Int("changes", len(changes)))
-			}
 			return changes, nil
 		}
-		log.Warnw("failed to diff state tree efficiently, falling back to slow method", "error", err)
 	}
-	metrics.RecordInc(ctx, metrics.DataSourceActorStateChangesSlowDiff)
+	log.Warnw("failed to diff state tree efficiently, falling back to slow method", "error", err)
 
-	oldTree, err := state.LoadStateTree(store, executed.ParentState())
-	if err != nil {
-		return nil, err
-	}
-
-	newTree, err := state.LoadStateTree(store, current.ParentState())
-	if err != nil {
-		return nil, err
-	}
-
-	actors, err := state.Diff(ctx, oldTree, newTree)
+	actors, err := state.Diff(ctx, oldTree.Tree, newTree.Tree)
 	if err != nil {
 		return nil, err
 	}
@@ -350,7 +375,6 @@ func GetActorStateChanges(ctx context.Context, store adt.Store, current, execute
 		}
 	}
 	log.Infow("got actor state changes", "height", current.Height(), "duration", time.Since(start), "count", len(out))
-	span.SetAttributes(attribute.Bool("fast", true), attribute.Int("changes", len(out)))
 	return out, nil
 }
 
@@ -372,102 +396,102 @@ func GetGenesisActors(ctx context.Context, store adt.Store, genesis *types.TipSe
 	return out, nil
 }
 
-func fastDiff(ctx context.Context, store adt.Store, oldR, newR adt.Map) (tasks.ActorStateChangeDiff, error) {
-	// TODO: replace hamt.UseTreeBitWidth and hamt.UseHashFunction with values based on network version
-	changes, err := diff.Hamt(ctx, oldR, newR, store, store, hamt.UseTreeBitWidth(5), hamt.UseHashFunction(func(input []byte) []byte {
+func fastDiff(ctx context.Context, store adt.Store, oldTree, newTree *StateTreeMeta) (tasks.ActorStateChangeDiff, error) {
+	oldMap, err := oldTree.LoadMap(store)
+	if err != nil {
+		return nil, err
+	}
+	newMap, err := newTree.LoadMap(store)
+	if err != nil {
+		return nil, err
+	}
+	changes, err := diff.Hamt(ctx, oldMap, newMap, store, store, hamt.UseTreeBitWidth(builtin.DefaultHamtBitwidth), hamt.UseHashFunction(func(input []byte) []byte {
 		res := sha256.Sum256(input)
 		return res[:]
 	}))
 	if err != nil {
 		return nil, err
 	}
+
 	buf := bytes.NewReader(nil)
 	out := map[address.Address]tasks.ActorStateChange{}
+
 	for _, change := range changes {
 		addr, err := address.NewFromBytes([]byte(change.Key))
 		if err != nil {
 			return nil, fmt.Errorf("address in state tree was not valid: %w", err)
 		}
+
 		var ch tasks.ActorStateChange
+
 		switch change.Type {
 		case hamt.Add:
 			ch.ChangeType = tasks.ChangeTypeAdd
-			buf.Reset(change.After.Raw)
-			err = ch.Actor.UnmarshalCBOR(buf)
-			buf.Reset(nil)
-			if err != nil {
-				return nil, err
+			if newTree.Tree.Version() <= types.StateTreeVersion4 {
+				var act types.ActorV4
+				buf.Reset(change.After.Raw)
+				err := act.UnmarshalCBOR(buf)
+				buf.Reset(nil)
+				if err != nil {
+					return nil, err
+				}
+				ch.Actor = *types.AsActorV5(&act)
+			} else {
+				var act types.Actor
+				buf.Reset(change.After.Raw)
+				err := act.UnmarshalCBOR(buf)
+				buf.Reset(nil)
+				if err != nil {
+					return nil, err
+				}
+				ch.Actor = act
 			}
+
 		case hamt.Remove:
-			ch.ChangeType = tasks.ChangeTypeRemove
-			buf.Reset(change.Before.Raw)
-			err = ch.Actor.UnmarshalCBOR(buf)
-			buf.Reset(nil)
-			if err != nil {
-				return nil, err
+			if newTree.Tree.Version() <= types.StateTreeVersion4 {
+				var act types.ActorV4
+				buf.Reset(change.Before.Raw)
+				err := act.UnmarshalCBOR(buf)
+				buf.Reset(nil)
+				if err != nil {
+					return nil, err
+				}
+				ch.Actor = *types.AsActorV5(&act)
+			} else {
+				var act types.Actor
+				buf.Reset(change.Before.Raw)
+				err := act.UnmarshalCBOR(buf)
+				buf.Reset(nil)
+				if err != nil {
+					return nil, err
+				}
+				ch.Actor = act
 			}
+
 		case hamt.Modify:
-			ch.ChangeType = tasks.ChangeTypeModify
-			buf.Reset(change.After.Raw)
-			err = ch.Actor.UnmarshalCBOR(buf)
-			buf.Reset(nil)
-			if err != nil {
-				return nil, err
+			if newTree.Tree.Version() <= types.StateTreeVersion4 {
+				var act types.ActorV4
+				buf.Reset(change.After.Raw)
+				err := act.UnmarshalCBOR(buf)
+				buf.Reset(nil)
+				if err != nil {
+					return nil, err
+				}
+				ch.Actor = *types.AsActorV5(&act)
+			} else {
+				var act types.Actor
+				buf.Reset(change.After.Raw)
+				err := act.UnmarshalCBOR(buf)
+				buf.Reset(nil)
+				if err != nil {
+					return nil, err
+				}
+				ch.Actor = act
 			}
 		}
 		out[addr] = ch
 	}
 	return out, nil
-}
-
-func getStateTreeHamtRootCIDAndVersion(ctx context.Context, store adt.Store, c cid.Cid) (adt.Map, types.StateTreeVersion, error) {
-	var root types.StateRoot
-	// Try loading as a new-style state-tree (version/actors tuple).
-	if err := store.Get(ctx, c, &root); err != nil {
-		// We failed to decode as the new version, must be an old version.
-		root.Actors = c
-		root.Version = types.StateTreeVersion0
-	}
-
-	switch root.Version {
-	case types.StateTreeVersion0:
-		var tree *states0.Tree
-		tree, err := states0.LoadTree(store, root.Actors)
-		if err != nil {
-			return nil, 0, err
-		}
-		return tree.Map, root.Version, nil
-	case types.StateTreeVersion1:
-		var tree *states2.Tree
-		tree, err := states2.LoadTree(store, root.Actors)
-		if err != nil {
-			return nil, 0, err
-		}
-		return tree.Map, root.Version, nil
-	case types.StateTreeVersion2:
-		var tree *states3.Tree
-		tree, err := states3.LoadTree(store, root.Actors)
-		if err != nil {
-			return nil, 0, err
-		}
-		return tree.Map, root.Version, nil
-	case types.StateTreeVersion3:
-		var tree *states4.Tree
-		tree, err := states4.LoadTree(store, root.Actors)
-		if err != nil {
-			return nil, 0, err
-		}
-		return tree.Map, root.Version, nil
-	case types.StateTreeVersion4:
-		var tree *states5.Tree
-		tree, err := states5.LoadTree(store, root.Actors)
-		if err != nil {
-			return nil, 0, err
-		}
-		return tree.Map, root.Version, nil
-	default:
-		return nil, 0, fmt.Errorf("unsupported state tree version: %d", root.Version)
-	}
 }
 
 func asKey(strs ...fmt.Stringer) (string, error) {

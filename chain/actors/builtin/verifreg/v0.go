@@ -17,7 +17,9 @@ import (
 
 	verifreg9 "github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
 
-	"github.com/filecoin-project/lily/chain/actors"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
+	"github.com/filecoin-project/lotus/chain/actors"
 )
 
 var _ State = (*state0)(nil)
@@ -37,11 +39,11 @@ type state0 struct {
 }
 
 func (s *state0) ActorKey() string {
-	return actors.VerifregKey
+	return manifest.VerifregKey
 }
 
-func (s *state0) ActorVersion() actors.Version {
-	return actors.Version0
+func (s *state0) ActorVersion() actorstypes.Version {
+	return actorstypes.Version0
 }
 
 func (s *state0) Code() cid.Cid {
@@ -99,25 +101,25 @@ func (s *state0) RootKey() (address.Address, error) {
 
 func (s *state0) VerifiedClientDataCap(addr address.Address) (bool, abi.StoragePower, error) {
 
-	return getDataCap(s.store, actors.Version0, s.VerifiedClientsMap, addr)
+	return getDataCap(s.store, actorstypes.Version0, s.VerifiedClientsMap, addr)
 
 }
 
 func (s *state0) VerifierDataCap(addr address.Address) (bool, abi.StoragePower, error) {
-	return getDataCap(s.store, actors.Version0, s.VerifiersMap, addr)
+	return getDataCap(s.store, actorstypes.Version0, s.VerifiersMap, addr)
 }
 
 func (s *state0) RemoveDataCapProposalID(verifier address.Address, client address.Address) (bool, uint64, error) {
-	return getRemoveDataCapProposalID(s.store, actors.Version0, s.removeDataCapProposalIDs, verifier, client)
+	return getRemoveDataCapProposalID(s.store, actorstypes.Version0, s.removeDataCapProposalIDs, verifier, client)
 }
 
 func (s *state0) ForEachVerifier(cb func(addr address.Address, dcap abi.StoragePower) error) error {
-	return forEachCap(s.store, actors.Version0, s.VerifiersMap, cb)
+	return forEachCap(s.store, actorstypes.Version0, s.VerifiersMap, cb)
 }
 
 func (s *state0) ForEachClient(cb func(addr address.Address, dcap abi.StoragePower) error) error {
 
-	return forEachCap(s.store, actors.Version0, s.VerifiedClientsMap, cb)
+	return forEachCap(s.store, actorstypes.Version0, s.VerifiedClientsMap, cb)
 
 }
 
@@ -130,26 +132,61 @@ func (s *state0) GetState() interface{} {
 	return &s.State
 }
 
-func (s *state0) GetAllocation(clientIdAddr address.Address, allocationId verifreg9.AllocationId) (*verifreg9.Allocation, bool, error) {
+func (s *state0) GetAllocation(clientIdAddr address.Address, allocationId verifreg9.AllocationId) (*Allocation, bool, error) {
 
 	return nil, false, fmt.Errorf("unsupported in actors v0")
 
 }
 
-func (s *state0) GetAllocations(clientIdAddr address.Address) (map[verifreg9.AllocationId]verifreg9.Allocation, error) {
+func (s *state0) GetAllocations(clientIdAddr address.Address) (map[AllocationId]Allocation, error) {
 
 	return nil, fmt.Errorf("unsupported in actors v0")
 
 }
 
-func (s *state0) GetClaim(providerIdAddr address.Address, claimId verifreg9.ClaimId) (*verifreg9.Claim, bool, error) {
+func (s *state0) GetClaim(providerIdAddr address.Address, claimId verifreg9.ClaimId) (*Claim, bool, error) {
 
 	return nil, false, fmt.Errorf("unsupported in actors v0")
 
 }
 
-func (s *state0) GetClaims(providerIdAddr address.Address) (map[verifreg9.ClaimId]verifreg9.Claim, error) {
+func (s *state0) GetClaims(providerIdAddr address.Address) (map[ClaimId]Claim, error) {
 
 	return nil, fmt.Errorf("unsupported in actors v0")
+
+}
+
+func (s *state0) ClaimsMap() (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v0")
+
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state0) ClaimsMapBitWidth() int {
+
+	return 5
+
+}
+
+// TODO this could return an error since not all versions have a claims map
+func (s *state0) ClaimsMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256simd.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state0) ClaimMapForProvider(providerIdAddr address.Address) (adt.Map, error) {
+
+	return nil, fmt.Errorf("unsupported in actors v0")
+
+}
+
+func (s *state0) getInnerHamtCid(store adt.Store, key abi.Keyer, mapCid cid.Cid, bitwidth int) (cid.Cid, error) {
+
+	return cid.Undef, fmt.Errorf("unsupported in actors v0")
 
 }
