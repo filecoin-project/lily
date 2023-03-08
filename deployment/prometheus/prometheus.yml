@@ -1,0 +1,48 @@
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+  external_labels:
+      monitor: 'lily'
+scrape_configs:
+  - job_name: 'lily-notifier'
+    scrape_interval: 15s
+    static_configs:
+        - targets: []
+          labels:
+                deployment: 'staging'
+  - job_name: 'lily-worker'
+    scrape_interval: 15s
+    static_configs:
+        - targets: []
+          labels:
+                deployment: 'staging'
+  - job_name: 'lily-node-exporter'
+    scrape_interval: 15s
+    static_configs:
+        - targets: []
+          labels:
+                deployment: 'staging'
+
+  - job_name: 'lily-notifier-calibration'
+    scrape_interval: 15s
+    static_configs:
+        - targets: []
+          labels:
+                deployment: 'calibration'
+  - job_name: 'lily-worker-calibration'
+    scrape_interval: 15s
+    static_configs:
+        - targets: []
+          labels:
+                deployment: 'calibration'
+  - job_name: 'lily-node-exporter-calibration'
+    scrape_interval: 15s
+    static_configs:
+        - targets: []
+          labels:
+                deployment: 'calibration'
+remote_write:
+  - url: "REMOTE_PROMETHEUS_URL"
+    basic_auth:
+      username: "USERNAME"
+      password: "PASSWORD"

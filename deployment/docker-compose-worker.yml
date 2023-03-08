@@ -1,0 +1,65 @@
+version: '3.5'
+
+networks:
+  worker-network:
+
+services:
+  worker:
+    image: filecoin/lily:v0.13.0
+    container_name: lily-worker
+    env_file:
+      # Check envvars for configurable options
+      - ./lily/lily.env
+    ports:
+      # export the metrics port
+      - 9991:9991
+    volumes:
+      # holds lily datastore repo
+      - lily_worker_data:/var/lib/lily
+      # persist params through restarts
+      - lily_worker_tmp:/var/tmp/filecoin-proof-parameters
+      # snapshot
+      - ./snapshot:/var/lib/lily/snapshot
+      # worker-specific config
+      - ./lily/config.toml:/var/lib/lily/config.toml
+      - ./lily/worker_docker_init.sh:/usr/bin/docker_init.sh
+    entrypoint: /usr/bin/docker_init.sh
+    networks:
+      - worker-network
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node-exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /:/host:ro,rslave
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    ports:
+      - 9100:9100
+    networks:
+      - worker-network
+    restart: always
+    deploy:
+      mode: global
+  promtail:
+    image: grafana/promtail:2.7.0
+    container_name: promtail
+    env_file:
+      - ./promtail/promtail.env
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/hosts:/etc/hosts:ro
+    entrypoint: [ "/bin/sh","-c" ]
+    command:
+      - "/usr/bin/promtail -config.file=/etc/promtail/config.yml -client.external-labels=hostname=$(tail -2 /etc/hosts | cut -d' ' -f1 | head -1)  -config.expand-env"
+
+volumes:
+  lily_worker_data: {}
+  lily_worker_tmp: {}
