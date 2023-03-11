@@ -11,10 +11,10 @@ require (
 	github.com/filecoin-project/go-amt-ipld/v3 v3.1.1 // indirect
 	github.com/filecoin-project/go-bitfield v0.2.4
 	github.com/filecoin-project/go-hamt-ipld/v3 v3.1.1-0.20220505191157-d7766f8628ec
-	github.com/filecoin-project/go-jsonrpc v0.2.1
+	github.com/filecoin-project/go-jsonrpc v0.2.2
 	github.com/filecoin-project/go-paramfetch v0.0.4
 	github.com/filecoin-project/go-state-types v0.10.0
-	github.com/filecoin-project/lotus v1.20.1-0.20230302000218-dbbcf4b2ee96
+	github.com/filecoin-project/lotus v1.20.1-0.20230310193415-9d994dac9e65
 	github.com/filecoin-project/specs-actors v0.9.15
 	github.com/filecoin-project/specs-actors/v2 v2.3.6
 	github.com/filecoin-project/specs-actors/v3 v3.1.2
