@@ -72,7 +72,7 @@ func ImportFromFsFile(ctx context.Context, r repo.Repo, fs fs.File, snapshot boo
 		return err
 	}
 
-	stm, err := stmgr.NewStateManager(cst, consensus.NewTipSetExecutor(filcns.RewardFunc), vm.Syscalls(ffiwrapper.ProofVerifier), filcns.DefaultUpgradeSchedule(), nil, nil)
+	stm, err := stmgr.NewStateManager(cst, consensus.NewTipSetExecutor(filcns.RewardFunc), vm.Syscalls(ffiwrapper.ProofVerifier), filcns.DefaultUpgradeSchedule(), nil, mds)
 	if err != nil {
 		return err
 	}
