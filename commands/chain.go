@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/filecoin-project/lotus/chain/actors"
 	"reflect"
 	"sort"
 	"strings"
@@ -16,7 +17,6 @@ import (
 	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/filecoin-project/lotus/api"
 	lotusbuild "github.com/filecoin-project/lotus/build"
-	"github.com/filecoin-project/lotus/chain/actors"
 	"github.com/filecoin-project/lotus/chain/types"
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/ipfs/go-cid"
@@ -40,6 +40,7 @@ var ChainCmd = &cli.Command{
 		ChainListCmd,
 		ChainSetHeadCmd,
 		ChainActorCodesCmd,
+		ChainActorMethodsCmd,
 		ChainStateInspect,
 		ChainStateCompute,
 		ChainStateComputeRange,
@@ -48,29 +49,52 @@ var ChainCmd = &cli.Command{
 
 var ChainActorCodesCmd = &cli.Command{
 	Name:  "actor-codes",
-	Usage: "Print actor codes and names",
+	Usage: "Print actor codes and names.",
 	Action: func(cctx *cli.Context) error {
-		for _, a := range []string{manifest.AccountKey, manifest.CronKey, manifest.DatacapKey, manifest.InitKey, manifest.MarketKey, manifest.MinerKey, manifest.MultisigKey, manifest.PaychKey, manifest.PowerKey, manifest.RewardKey, manifest.SystemKey, manifest.VerifregKey} {
+		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version10)
+		t := table.NewWriter()
+		t.AppendHeader(table.Row{"name", "family", "code"})
+		for _, a := range manifests {
 			av := make(map[actorstypes.Version]cid.Cid)
-			for _, v := range []int{0, 2, 3, 4, 5, 6, 7, 8, 9} {
+			for _, v := range []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 10} {
+				code, ok := actors.GetActorCodeID(actorstypes.Version(v), a)
+				if !ok {
+					continue
+				}
+				av[actorstypes.Version(v)] = code
+				name, family, err := util.ActorNameAndFamilyFromCode(av[actorstypes.Version(v)])
+				if err != nil {
+					return err
+				}
+				t.AppendRow(table.Row{name, family, code})
+			}
+		}
+		fmt.Println(t.RenderCSV())
+		return nil
+	},
+}
+
+var ChainActorMethodsCmd = &cli.Command{
+	Name:  "actor-methods",
+	Usage: "Print actor method numbers and their human readable names.",
+	Action: func(cctx *cli.Context) error {
+		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version10)
+		t := table.NewWriter()
+		t.AppendHeader(table.Row{"actor_family", "method_name", "method_number"})
+		for _, a := range manifests {
+			av := make(map[actorstypes.Version]cid.Cid)
+			for _, v := range []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 10} {
 				code, ok := actors.GetActorCodeID(actorstypes.Version(v), a)
 				if !ok {
 					continue
 				}
 				av[actorstypes.Version(v)] = code
 			}
-			fmt.Printf("# %s\n", a)
-			fmt.Print("## Metadata\n")
-			if err := printSortedActorVersions(av); err != nil {
+			if err := printActorMethods(t, a); err != nil {
 				return err
 			}
-			fmt.Println()
-			fmt.Print("## Methods\n")
-			if err := printActorMethods(a); err != nil {
-				return err
-			}
-			fmt.Println()
 		}
+		fmt.Println(t.RenderCSV())
 		return nil
 	},
 }
@@ -713,29 +737,7 @@ func parseTipSet(ctx context.Context, api lily.LilyAPI, vals []string) (*types.T
 	return types.NewTipSet(headers)
 }
 
-func printSortedActorVersions(av map[actorstypes.Version]cid.Cid) error {
-	t := table.NewWriter()
-	t.AppendHeader(table.Row{"Version", "Name", "Family", "Code"})
-	var versions []int
-	for v := range av {
-		versions = append(versions, int(v))
-	}
-	sort.Ints(versions)
-	for _, v := range versions {
-		name, family, err := util.ActorNameAndFamilyFromCode(av[actorstypes.Version(v)])
-		if err != nil {
-			return err
-		}
-		t.AppendRow(table.Row{v, name, family, av[actorstypes.Version(v)]})
-		t.AppendSeparator()
-	}
-	fmt.Println(t.RenderMarkdown())
-	return nil
-}
-
-func printActorMethods(actorKey string) error {
-	t := table.NewWriter()
-	t.AppendHeader(table.Row{"Method Name", "Method Number"})
+func printActorMethods(t table.Writer, actorKey string) error {
 	var (
 		methodName           string
 		methodNumber         any
@@ -749,6 +751,12 @@ func printActorMethods(actorKey string) error {
 		correspondingMethods = builtin.MethodsCron
 	case manifest.DatacapKey:
 		correspondingMethods = builtin.MethodsDatacap
+	case manifest.EamKey:
+		correspondingMethods = builtin.MethodsEAM
+	case manifest.EthAccountKey:
+		correspondingMethods = builtin.MethodsEthAccount
+	case manifest.EvmKey:
+		correspondingMethods = builtin.MethodsEVM
 	case manifest.MarketKey:
 		correspondingMethods = builtin.MethodsMarket
 	case manifest.MinerKey:
@@ -759,6 +767,8 @@ func printActorMethods(actorKey string) error {
 		correspondingMethods = builtin.MethodsMultisig
 	case manifest.PaychKey:
 		correspondingMethods = builtin.MethodsPaych
+	case manifest.PlaceholderKey:
+		correspondingMethods = builtin.MethodsPlaceholder
 	case manifest.PowerKey:
 		correspondingMethods = builtin.MethodsPower
 	case manifest.RewardKey:
@@ -779,10 +789,9 @@ func printActorMethods(actorKey string) error {
 	for i := 0; i < reflect.TypeOf(correspondingMethods).NumField(); i++ {
 		methodName = reflect.TypeOf(correspondingMethods).Field(i).Name
 		methodNumber = reflect.ValueOf(correspondingMethods).Field(i).Interface()
-		t.AppendRow(table.Row{methodName, methodNumber})
+		t.AppendRow(table.Row{actorKey, methodName, methodNumber})
 		t.AppendSeparator()
 	}
 
-	fmt.Println(t.RenderMarkdown())
 	return nil
 }
