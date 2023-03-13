@@ -97,8 +97,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 		// TODO this loop could be parallelized if it becomes a bottleneck.
 		// NB: the getActorCode method is the expensive call since it resolves addresses and may load the statetree.
-		for _, child := range util.GetChildMessagesOf(parentMsg) {
-			// Cid() computes a CID, so only call it once
+		for _, child := range util.GetChildMessagesOf(parentMsg) { // Cid() computes a CID, so only call it once
 			childMsg := &types.Message{
 				To:     child.Message.To,
 				From:   child.Message.From,
@@ -156,7 +155,8 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			// As an example: a message may return ErrForbidden, it will have valid params, but will not contain a
 			// parsable return value in its receipt.
 			if child.Receipt.ExitCode.IsSuccess() {
-				params, _, err := util.ParseVmMessageParams(child.Message.Params, child.Message.ParamsCodec, child.Message.Method, toCode)
+				//params, _, err := util.ParseVmMessageParams(child.Message.Params, child.Message.ParamsCodec, child.Message.Method, toCode)
+				params, _, err := util.ParseParams(child.Message.Params, child.Message.Method, toCode)
 				if err != nil {
 					// a failure here indicates an error in message param parsing, or in exitcode checks above.
 					errorsDetected = append(errorsDetected, &messages.MessageError{
@@ -170,7 +170,8 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 					vmMsg.Params = params
 				}
 
-				ret, _, err := util.ParseVmMessageReturn(child.Receipt.Return, child.Receipt.ReturnCodec, child.Message.Method, toCode)
+				//ret, _, err := util.ParseVmMessageReturn(child.Receipt.Return, child.Receipt.ReturnCodec, child.Message.Method, toCode)
+				ret, _, err := util.ParseReturn(child.Receipt.Return, child.Message.Method, toCode)
 				if err != nil {
 					errorsDetected = append(errorsDetected, &messages.MessageError{
 						Cid: parentMsg.Cid,
