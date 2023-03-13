@@ -35,6 +35,7 @@ const (
 	PowerActorClaim                = "power_actor_claim"
 	ChainReward                    = "chain_reward"
 	Actor                          = "actor"
+	ActorCodes                     = "actor_codes"
 	ActorState                     = "actor_state"
 	IDAddress                      = "id_addresses"
 	GasOutputs                     = "derived_gas_outputs"
@@ -81,6 +82,7 @@ var AllTableTasks = []string{
 	PowerActorClaim,
 	ChainReward,
 	Actor,
+	ActorCodes,
 	ActorState,
 	IDAddress,
 	GasOutputs,
@@ -127,6 +129,7 @@ var TableLookup = map[string]struct{}{
 	PowerActorClaim:                {},
 	ChainReward:                    {},
 	Actor:                          {},
+	ActorCodes:                     {},
 	ActorState:                     {},
 	IDAddress:                      {},
 	GasOutputs:                     {},
@@ -173,6 +176,7 @@ var TableComment = map[string]string{
 	PowerActorClaim:                ``,
 	ChainReward:                    ``,
 	Actor:                          `Actor on chain that were added or updated at an epoch. Associates the actor's state root CID (head) with the chain state root CID from which it decends. Includes account ID nonce and balance at each state.`,
+	ActorCodes:                     `A mapping of a builtin actor's' CID to a human friendly name.`,
 	ActorState:                     `ActorState that were changed at an epoch. Associates actors states as single-level trees with CIDs pointing to complete state tree with the root CID (head) for that actor’s state.`,
 	IDAddress:                      `IDAddress contains a mapping of ID addresses to robust addresses from the init actor’s state.`,
 	GasOutputs:                     ``,

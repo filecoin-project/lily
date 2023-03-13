@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/model/actors/common"
 	"github.com/filecoin-project/lotus/chain/actors"
 	"reflect"
 	"sort"
@@ -50,10 +52,18 @@ var ChainCmd = &cli.Command{
 var ChainActorCodesCmd = &cli.Command{
 	Name:  "actor-codes",
 	Usage: "Print actor codes and names.",
+	Flags: []cli.Flag{
+		&cli.BoolFlag{
+			Name:  "persist",
+			Value: false,
+			Usage: "Whether to persist the data to the backing db.",
+		},
+	},
 	Action: func(cctx *cli.Context) error {
 		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version10)
 		t := table.NewWriter()
 		t.AppendHeader(table.Row{"name", "family", "code"})
+		results := common.ActorCodeList{}
 		for _, a := range manifests {
 			av := make(map[actorstypes.Version]cid.Cid)
 			for _, v := range []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 10} {
@@ -67,8 +77,17 @@ var ChainActorCodesCmd = &cli.Command{
 					return err
 				}
 				t.AppendRow(table.Row{name, family, code})
+				results = append(results, &common.ActorCode{
+					CID:  code.String(),
+					Code: name,
+				})
 			}
 		}
+
+		if cctx.Bool("persist") {
+			_ = model.PersistableList{results}
+		}
+
 		fmt.Println(t.RenderCSV())
 		return nil
 	},
