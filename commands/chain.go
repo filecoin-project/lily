@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/filecoin-project/lily/config"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/actors/common"
+	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lotus/chain/actors"
 	"reflect"
 	"sort"
@@ -49,21 +51,73 @@ var ChainCmd = &cli.Command{
 	},
 }
 
+type chainActorOpts struct {
+	persist bool
+	config  string
+	storage string
+}
+
+var chainActorFlags chainActorOpts
+
 var ChainActorCodesCmd = &cli.Command{
 	Name:  "actor-codes",
 	Usage: "Print actor codes and names.",
 	Flags: []cli.Flag{
 		&cli.BoolFlag{
-			Name:  "persist",
-			Value: false,
-			Usage: "Whether to persist the data to the backing db.",
+			Name:        "persist",
+			Value:       false,
+			Usage:       "Whether to persist the data to the backing db.",
+			Destination: &chainActorFlags.persist,
+		},
+		&cli.StringFlag{
+			Name:        "config",
+			Usage:       "Specify path of config file to use.",
+			EnvVars:     []string{"LILY_CONFIG"},
+			Destination: &chainActorFlags.config,
+		},
+		&cli.StringFlag{
+			Name:        "storage",
+			Usage:       "Specify the storage to use, if persisting the codes.",
+			Destination: &chainActorFlags.storage,
 		},
 	},
 	Action: func(cctx *cli.Context) error {
 		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version10)
 		t := table.NewWriter()
 		t.AppendHeader(table.Row{"name", "family", "code"})
-		results := common.ActorCodeList{}
+
+		// values that may be accessed if user wants to persist to Storage
+		var results common.ActorCodeList
+		var strg model.Storage
+		var ctx context.Context
+
+		if chainActorFlags.persist {
+			results = common.ActorCodeList{}
+
+			cfg, err := config.FromFile(chainActorFlags.config)
+			if err != nil {
+				return err
+			}
+
+			md := storage.Metadata{
+				JobName: chainActorFlags.storage,
+			}
+
+			// context for db connection
+			ctx = context.Background()
+
+			sc, err := storage.NewCatalog(cfg.Storage)
+			if err != nil {
+				return err
+			}
+			fmt.Println("sc", sc)
+			strg, err = sc.Connect(ctx, chainActorFlags.storage, md)
+			fmt.Println("storage", strg)
+			if err != nil {
+				return err
+			}
+		}
+
 		for _, a := range manifests {
 			av := make(map[actorstypes.Version]cid.Cid)
 			for _, v := range []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 10} {
@@ -81,11 +135,11 @@ var ChainActorCodesCmd = &cli.Command{
 					CID:  code.String(),
 					Code: name,
 				})
-			}
-		}
 
-		if cctx.Bool("persist") {
-			_ = model.PersistableList{results}
+				if chainActorFlags.persist {
+					strg.PersistBatch(ctx, results)
+				}
+			}
 		}
 
 		fmt.Println(t.RenderCSV())

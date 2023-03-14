@@ -11,7 +11,6 @@ const (
 	ActorStatesMarketTask   = "actorstatesmarket"   // task that only extracts market actor states (but not the raw state)
 	ActorStatesMultisigTask = "actorstatesmultisig" // task that only extracts multisig actor states (but not the raw state)
 	ActorStatesVerifreg     = "actorstatesverifreg" // task that only extracts verified registry actor states (but not the raw state)
-	ActorMappingsTask       = "actormappings"       // task that provides mappings of actor and their method CIDs to human friendly names
 	BlocksTask              = "blocks"              // task that extracts block data
 	MessagesTask            = "messages"            // task that extracts message data
 	ChainEconomicsTask      = "chaineconomics"      // task that extracts chain economics data
@@ -61,9 +60,6 @@ var TaskLookup = map[string][]string{
 		VerifiedRegistryVerifiedClient,
 		VerifiedRegistryClaim,
 		DataCapBalance,
-	},
-	ActorMappingsTask: {
-		ActorCodes,
 	},
 	BlocksTask: {
 		BlockHeader,

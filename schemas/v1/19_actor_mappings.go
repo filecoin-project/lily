@@ -10,9 +10,9 @@ func init() {
 		cid		text  NOT NULL,
 		code	text  NOT NULL,
 		
-		PRIMARY KEY (cid)
+		PRIMARY KEY (cid, code)
 	);
-	COMMENT ON TABLE {{ .SchemaName | default "public"}}.actor_codes IS 'A mapping of builtin actors CIDs and human friendly names';
+	COMMENT ON TABLE {{ .SchemaName | default "public"}}.actor_codes IS 'A mapping of a builtin actor's' CID to a human friendly name.';
 	COMMENT ON column {{ .SchemaName | default "public"}}.actor_codes.cid IS 'CID of the actor from builtin actors.';
 	COMMENT ON COLUMN {{ .SchemaName | default "public"}}.actor_codes.code IS 'Human-readable identifier for the actor.';
 `,
