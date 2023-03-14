@@ -167,7 +167,9 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 					})
 				} else {
 					// add the message params
-					vmMsg.Params = params
+					if params != "" {
+						vmMsg.Params = params
+					}
 				}
 
 				ret, _, err := util.ParseVmMessageReturn(child.Receipt.Return, child.Receipt.ReturnCodec, child.Message.Method, toCode)
@@ -180,7 +182,9 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 					})
 				} else {
 					// add the message return.
-					vmMsg.Returns = ret
+					if ret != "" {
+						vmMsg.Returns = ret
+					}
 				}
 			}
 
