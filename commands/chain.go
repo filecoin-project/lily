@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"sort"
+	"strings"
+	"time"
+
 	"github.com/filecoin-project/lily/config"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/actors/common"
 	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lotus/chain/actors"
-	"reflect"
-	"sort"
-	"strings"
-	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
@@ -137,7 +138,10 @@ var ChainActorCodesCmd = &cli.Command{
 				})
 
 				if chainActorFlags.persist {
-					strg.PersistBatch(ctx, results)
+					err := strg.PersistBatch(ctx, results)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}

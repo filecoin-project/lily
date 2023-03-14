@@ -36,6 +36,7 @@ const (
 	ChainReward                    = "chain_reward"
 	Actor                          = "actor"
 	ActorState                     = "actor_state"
+	ActorCode                      = "actor_code"
 	IDAddress                      = "id_addresses"
 	GasOutputs                     = "derived_gas_outputs"
 	ChainEconomics                 = "chain_economics"
@@ -82,6 +83,7 @@ var AllTableTasks = []string{
 	ChainReward,
 	Actor,
 	ActorState,
+	ActorCode,
 	IDAddress,
 	GasOutputs,
 	ChainEconomics,

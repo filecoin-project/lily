@@ -16,7 +16,7 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 	}{
 		{
 			taskAlias: tasktype.ActorStatesRawTask,
-			tasks:     []string{tasktype.Actor, tasktype.ActorState},
+			tasks:     []string{tasktype.Actor, tasktype.ActorState, tasktype.ActorCode},
 		},
 		{
 			taskAlias: tasktype.ActorStatesPowerTask,

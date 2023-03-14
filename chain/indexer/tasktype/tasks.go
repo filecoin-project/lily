@@ -24,6 +24,7 @@ var TaskLookup = map[string][]string{
 	ActorStatesRawTask: {
 		Actor,
 		ActorState,
+		ActorCode,
 	},
 	ActorStatesPowerTask: {
 		ChainPower,

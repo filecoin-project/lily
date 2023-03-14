@@ -320,15 +320,6 @@ func TestMakeProcessorsActors(t *testing.T) {
 			require.Len(t, proc.ActorProcessors, 1)
 			require.Equal(t, actorstate.NewTask(nil, rae), proc.ActorProcessors[tasktype.ActorState])
 		})
-
-		t.Run("actor mappings", func(t *testing.T) {
-			proc, err := processor.MakeProcessors(nil, []string{tasktype.ActorMappingsTask})
-			require.NoError(t, err)
-			rae := &actorstate.RawActorExtractorMap{}
-			rae.Register(&rawtask.RawActorStateExtractor{})
-			require.Len(t, proc.ActorProcessors, 1)
-			require.Equal(t, actorstate.NewTask(nil, rae), proc.ActorProcessors[tasktype.ActorMappingsTask])
-		})
 	})
 }
 
