@@ -130,6 +130,7 @@ var TableLookup = map[string]struct{}{
 	ChainReward:                    {},
 	Actor:                          {},
 	ActorState:                     {},
+	ActorCode:                      {},
 	IDAddress:                      {},
 	GasOutputs:                     {},
 	ChainEconomics:                 {},
@@ -176,6 +177,7 @@ var TableComment = map[string]string{
 	ChainReward:                    ``,
 	Actor:                          `Actor on chain that were added or updated at an epoch. Associates the actor's state root CID (head) with the chain state root CID from which it decends. Includes account ID nonce and balance at each state.`,
 	ActorState:                     `ActorState that were changed at an epoch. Associates actors states as single-level trees with CIDs pointing to complete state tree with the root CID (head) for that actor’s state.`,
+	ActorCode:                      ``,
 	IDAddress:                      `IDAddress contains a mapping of ID addresses to robust addresses from the init actor’s state.`,
 	GasOutputs:                     ``,
 	ChainEconomics:                 ``,
@@ -273,6 +275,10 @@ var TableFieldComments = map[string]map[string]string{
 		"Head":   "CID of the root of the state tree for the actor.",
 		"Height": "Epoch when this actor was created or updated.",
 		"State":  "Top level of state data as json.",
+	},
+	ActorCode: {
+		"CID":  "CID of the actor from builtin actors.",
+		"Code": "Human-readable identifier for the actor.",
 	},
 	IDAddress: {
 		"Address":   "Robust address",
