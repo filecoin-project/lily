@@ -4,14 +4,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/DataDog/zstd"
-	"golang.org/x/xerrors"
 	"io"
 	"io/fs"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/DataDog/zstd"
 	"github.com/filecoin-project/lotus/chain/consensus"
 	"github.com/filecoin-project/lotus/chain/consensus/filcns"
 	"github.com/filecoin-project/lotus/chain/stmgr"
@@ -23,6 +22,7 @@ import (
 	"github.com/filecoin-project/lotus/storage/sealer/ffiwrapper"
 	"github.com/mitchellh/go-homedir"
 
+	"golang.org/x/xerrors"
 	"gopkg.in/cheggaaa/pb.v1"
 )
 
