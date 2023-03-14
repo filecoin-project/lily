@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/DataDog/zstd"
+	"golang.org/x/xerrors"
 	"io"
 	"io/fs"
 	"net/http"
@@ -155,6 +157,11 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 
 	bufr := bufio.NewReaderSize(rd, 1<<20)
 
+	header, err := bufr.Peek(4)
+	if err != nil {
+		return xerrors.Errorf("peek header: %w", err)
+	}
+
 	bar := pb.New64(l)
 	br := bar.NewProxyReader(bufr)
 	bar.ShowTimeLeft = true
@@ -162,8 +169,20 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 	bar.ShowSpeed = true
 	bar.Units = pb.U_BYTES
 
+	var ir io.Reader = br
+
+	if string(header[1:]) == "\xB5\x2F\xFD" { // zstd
+		zr := zstd.NewReader(br)
+		defer func() {
+			if err := zr.Close(); err != nil {
+				log.Errorw("closing zstd reader", "error", err)
+			}
+		}()
+		ir = zr
+	}
+
 	bar.Start()
-	ts, err := cst.Import(ctx, br)
+	ts, err := cst.Import(ctx, ir)
 	bar.Finish()
 
 	if err != nil {
