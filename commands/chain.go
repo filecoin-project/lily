@@ -60,28 +60,30 @@ type chainActorOpts struct {
 
 var chainActorFlags chainActorOpts
 
+var persistFlag = &cli.BoolFlag{
+	Name:        "persist",
+	Value:       false,
+	Usage:       "Whether to persist the data to the backing storage.",
+	Destination: &chainActorFlags.persist,
+}
+
+var configFlag = &cli.StringFlag{
+	Name:        "config",
+	Usage:       "Specify path of config file to use.",
+	EnvVars:     []string{"LILY_CONFIG"},
+	Destination: &chainActorFlags.config,
+}
+
+var storageFlag = &cli.StringFlag{
+	Name:        "storage",
+	Usage:       "Specify the storage to use, if persisting the displayed output.",
+	Destination: &chainActorFlags.storage,
+}
+
 var ChainActorCodesCmd = &cli.Command{
 	Name:  "actor-codes",
 	Usage: "Print actor codes and names.",
-	Flags: []cli.Flag{
-		&cli.BoolFlag{
-			Name:        "persist",
-			Value:       false,
-			Usage:       "Whether to persist the data to the backing db.",
-			Destination: &chainActorFlags.persist,
-		},
-		&cli.StringFlag{
-			Name:        "config",
-			Usage:       "Specify path of config file to use.",
-			EnvVars:     []string{"LILY_CONFIG"},
-			Destination: &chainActorFlags.config,
-		},
-		&cli.StringFlag{
-			Name:        "storage",
-			Usage:       "Specify the storage to use, if persisting the codes.",
-			Destination: &chainActorFlags.storage,
-		},
-	},
+	Flags: []cli.Flag{persistFlag, configFlag, storageFlag},
 	Action: func(cctx *cli.Context) error {
 		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version10)
 		t := table.NewWriter()
@@ -111,9 +113,7 @@ var ChainActorCodesCmd = &cli.Command{
 			if err != nil {
 				return err
 			}
-			fmt.Println("sc", sc)
 			strg, err = sc.Connect(ctx, chainActorFlags.storage, md)
-			fmt.Println("storage", strg)
 			if err != nil {
 				return err
 			}
@@ -154,10 +154,40 @@ var ChainActorCodesCmd = &cli.Command{
 var ChainActorMethodsCmd = &cli.Command{
 	Name:  "actor-methods",
 	Usage: "Print actor method numbers and their human readable names.",
+	Flags: []cli.Flag{persistFlag, configFlag, storageFlag},
 	Action: func(cctx *cli.Context) error {
 		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version10)
 		t := table.NewWriter()
 		t.AppendHeader(table.Row{"actor_family", "method_name", "method_number"})
+
+		// values that may be accessed if user wants to persist to Storage
+		var results common.ActorMethodList
+		var strg model.Storage
+		var ctx context.Context
+
+		if chainActorFlags.persist {
+			cfg, err := config.FromFile(chainActorFlags.config)
+			if err != nil {
+				return err
+			}
+
+			md := storage.Metadata{
+				JobName: chainActorFlags.storage,
+			}
+
+			// context for db connection
+			ctx = context.Background()
+
+			sc, err := storage.NewCatalog(cfg.Storage)
+			if err != nil {
+				return err
+			}
+			strg, err = sc.Connect(ctx, chainActorFlags.storage, md)
+			if err != nil {
+				return err
+			}
+		}
+
 		for _, a := range manifests {
 			av := make(map[actorstypes.Version]cid.Cid)
 			for _, v := range []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 10} {
@@ -167,8 +197,22 @@ var ChainActorMethodsCmd = &cli.Command{
 				}
 				av[actorstypes.Version(v)] = code
 			}
-			if err := printActorMethods(t, a); err != nil {
+
+			var err error
+			if results, err = printActorMethods(t, a); err != nil {
 				return err
+			}
+
+			for _, result := range results {
+				t.AppendRow(table.Row{result.Family, result.Method, result.MethodName})
+				t.AppendSeparator()
+			}
+
+			if chainActorFlags.persist {
+				err := strg.PersistBatch(ctx, results)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		fmt.Println(t.RenderCSV())
@@ -814,11 +858,12 @@ func parseTipSet(ctx context.Context, api lily.LilyAPI, vals []string) (*types.T
 	return types.NewTipSet(headers)
 }
 
-func printActorMethods(t table.Writer, actorKey string) error {
+func printActorMethods(t table.Writer, actorKey string) (common.ActorMethodList, error) {
 	var (
 		methodName           string
-		methodNumber         any
+		methodNumber         uint64
 		correspondingMethods interface{}
+		actorMethodList      = common.ActorMethodList{}
 	)
 
 	switch actorKey {
@@ -855,20 +900,23 @@ func printActorMethods(t table.Writer, actorKey string) error {
 	case manifest.VerifregKey:
 		correspondingMethods = builtin.MethodsVerifiedRegistry
 	default:
-		return fmt.Errorf("unknown actor key: %s", actorKey)
+		return nil, fmt.Errorf("unknown actor key: %s", actorKey)
 	}
 
 	// Check if correspondingMethods is nil
 	if correspondingMethods == nil {
-		return nil
+		return nil, nil
 	}
 
 	for i := 0; i < reflect.TypeOf(correspondingMethods).NumField(); i++ {
 		methodName = reflect.TypeOf(correspondingMethods).Field(i).Name
-		methodNumber = reflect.ValueOf(correspondingMethods).Field(i).Interface()
-		t.AppendRow(table.Row{actorKey, methodName, methodNumber})
-		t.AppendSeparator()
+		methodNumber = reflect.ValueOf(correspondingMethods).Field(i).Uint()
+		actorMethodList = append(actorMethodList, &common.ActorMethod{
+			Family:     actorKey,
+			MethodName: methodName,
+			Method:     methodNumber,
+		})
 	}
 
-	return nil
+	return actorMethodList, nil
 }
