@@ -584,6 +584,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			rae := &actorstate.RawActorExtractorMap{}
 			rae.Register(&rawtask.RawActorStateExtractor{})
 			out.ActorProcessors[t] = actorstate.NewTask(api, rae)
+		case tasktype.ActorCode:
+			return nil, fmt.Errorf("no task, use the command `lily chain actor-code` instead")
 
 			//
 			// Messages
