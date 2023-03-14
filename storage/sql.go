@@ -79,7 +79,6 @@ var Models = []interface{}{
 
 	(*common.Actor)(nil),
 	(*common.ActorState)(nil),
-	(*common.ActorCode)(nil),
 
 	(*init_.IDAddress)(nil),
 

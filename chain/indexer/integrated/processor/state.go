@@ -584,8 +584,6 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			rae := &actorstate.RawActorExtractorMap{}
 			rae.Register(&rawtask.RawActorStateExtractor{})
 			out.ActorProcessors[t] = actorstate.NewTask(api, rae)
-		case tasktype.ActorCode:
-			out.ActorProcessors[t] = nil
 
 			//
 			// Messages
