@@ -14,7 +14,7 @@ require (
 	github.com/filecoin-project/go-jsonrpc v0.2.2
 	github.com/filecoin-project/go-paramfetch v0.0.4
 	github.com/filecoin-project/go-state-types v0.10.0
-	github.com/filecoin-project/lotus v1.20.1-0.20230310193415-9d994dac9e65
+	github.com/filecoin-project/lotus v1.20.1-0.20230313222909-dcb49dc8ee41
 	github.com/filecoin-project/specs-actors v0.9.15
 	github.com/filecoin-project/specs-actors/v2 v2.3.6
 	github.com/filecoin-project/specs-actors/v3 v3.1.2
@@ -25,7 +25,7 @@ require (
 	github.com/gammazero/workerpool v1.1.3
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.10.6
-	github.com/hashicorp/golang-lru v0.5.4
+	github.com/hashicorp/golang-lru v0.6.0
 	github.com/ipfs/go-block-format v0.1.1 // indirect
 	github.com/ipfs/go-cid v0.3.2
 	github.com/ipfs/go-fs-lock v0.0.7
@@ -175,6 +175,7 @@ require (
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.2 // indirect
 	github.com/hashicorp/raft v1.1.1 // indirect
 	github.com/hashicorp/raft-boltdb v0.0.0-20171010151810-6e5ba93211ea // indirect
 	github.com/huin/goupnp v1.0.3 // indirect
