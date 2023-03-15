@@ -36,7 +36,7 @@ func init() {
 var log = logging.Logger("lily/lens")
 
 type CBORByteArray struct {
-	params string
+	Params string
 }
 
 func ParseVmMessageParams(params []byte, paramsCodec uint64, method abi.MethodNum, actCode cid.Cid) (string, string, error) {
@@ -56,7 +56,7 @@ func ParseVmMessageParams(params []byte, paramsCodec uint64, method abi.MethodNu
 	// If the codec is 0, the parameters/return value are "empty".
 	// If the codec is 0x55, it's bytes.
 	if paramsCodec == 0 || paramsCodec == 0x55 {
-		paramj, err := json.Marshal(CBORByteArray{params: string(params)})
+		paramj, err := json.Marshal(CBORByteArray{Params: string(params)})
 		if err != nil {
 			return "", "", err
 		}
@@ -82,7 +82,7 @@ func ParseVmMessageReturn(ret []byte, retCodec uint64, method abi.MethodNum, act
 	// If the codec is 0, the parameters/return value are "empty".
 	// If the codec is 0x55, it's bytes.
 	if retCodec == 0 || retCodec == 0x55 {
-		retj, err := json.Marshal(CBORByteArray{params: string(ret)})
+		retj, err := json.Marshal(CBORByteArray{Params: string(ret)})
 		if err != nil {
 			return "", "", err
 		}
