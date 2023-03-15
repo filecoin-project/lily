@@ -95,7 +95,16 @@ func ParseVmMessageReturn(ret []byte, retCodec uint64, method abi.MethodNum, act
 func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (_ string, _ string, err error) {
 	m, found := ActorRegistry.Methods[actCode][method]
 	if !found {
-		return "", "", fmt.Errorf("unknown method %d for actor %s", method, actCode)
+		// if the method wasn't found it is likely the case the method was one of:
+		// https://github.com/filecoin-project/builtin-actors/blob/f5311fe735df4d9baf5f82d4b3db10f3c51688c4/actors/docs/README.md?plain=1#L31
+		// so we just marshal the raw value to json and bail with a warning
+		paramj, err := json.Marshal(params)
+		if err != nil {
+			return "", "", err
+		}
+		err = fmt.Errorf("unknown method %d for actorCode %s name %s", method, actCode, builtin.ActorNameByCode(actCode))
+		log.Warnw("parsing vm message params", "error", err)
+		return string(paramj), "Unknown", nil
 	}
 
 	// if the actor method doesn't expect params don't parse them
