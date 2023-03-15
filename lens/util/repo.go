@@ -25,6 +25,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
 	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/tasks/actorstate/market"
 )
 
 var ActorRegistry *vm.ActorRegistry
@@ -37,12 +38,6 @@ var log = logging.Logger("lily/lens")
 
 type CBORByteArray struct {
 	Params string
-}
-
-func ConvertByteToCleanString(b []byte) string {
-	s := string(b)
-	s = strings.Replace(s, "\u0000", "", -1)
-	return s
 }
 
 func ParseVmMessageParams(params []byte, paramsCodec uint64, method abi.MethodNum, actCode cid.Cid) (string, string, error) {
@@ -62,7 +57,7 @@ func ParseVmMessageParams(params []byte, paramsCodec uint64, method abi.MethodNu
 	// If the codec is 0, the parameters/return value are "empty".
 	// If the codec is 0x55, it's bytes.
 	if paramsCodec == 0 || paramsCodec == 0x55 {
-		paramj, err := json.Marshal(CBORByteArray{Params: ConvertByteToCleanString(params)})
+		paramj, err := json.Marshal(CBORByteArray{Params: market.SanitizeLabel(string(params))})
 		if err != nil {
 			return "", "", err
 		}
@@ -88,7 +83,7 @@ func ParseVmMessageReturn(ret []byte, retCodec uint64, method abi.MethodNum, act
 	// If the codec is 0, the parameters/return value are "empty".
 	// If the codec is 0x55, it's bytes.
 	if retCodec == 0 || retCodec == 0x55 {
-		retj, err := json.Marshal(CBORByteArray{Params: ConvertByteToCleanString(ret)})
+		retj, err := json.Marshal(CBORByteArray{Params: market.SanitizeLabel(string(ret))})
 		if err != nil {
 			return "", "", err
 		}
