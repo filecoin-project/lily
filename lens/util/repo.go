@@ -39,6 +39,12 @@ type CBORByteArray struct {
 	Params string
 }
 
+func ConvertByteToCleanString(b []byte) string {
+	s := string(b)
+	s = strings.Replace(s, "\u0000", "", -1)
+	return s
+}
+
 func ParseVmMessageParams(params []byte, paramsCodec uint64, method abi.MethodNum, actCode cid.Cid) (string, string, error) {
 	m, found := ActorRegistry.Methods[actCode][method]
 	if !found {
@@ -56,7 +62,7 @@ func ParseVmMessageParams(params []byte, paramsCodec uint64, method abi.MethodNu
 	// If the codec is 0, the parameters/return value are "empty".
 	// If the codec is 0x55, it's bytes.
 	if paramsCodec == 0 || paramsCodec == 0x55 {
-		paramj, err := json.Marshal(CBORByteArray{Params: string(params)})
+		paramj, err := json.Marshal(CBORByteArray{Params: ConvertByteToCleanString(params)})
 		if err != nil {
 			return "", "", err
 		}
@@ -82,7 +88,7 @@ func ParseVmMessageReturn(ret []byte, retCodec uint64, method abi.MethodNum, act
 	// If the codec is 0, the parameters/return value are "empty".
 	// If the codec is 0x55, it's bytes.
 	if retCodec == 0 || retCodec == 0x55 {
-		retj, err := json.Marshal(CBORByteArray{Params: string(ret)})
+		retj, err := json.Marshal(CBORByteArray{Params: ConvertByteToCleanString(ret)})
 		if err != nil {
 			return "", "", err
 		}
