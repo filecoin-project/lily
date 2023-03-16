@@ -103,8 +103,8 @@ func (ih *TipSetTaskHandler) HandleIndexTipSetTask(ctx context.Context, t *asynq
 		return err
 	}
 	if !success {
-		log.Errorw("failed to index task successfully", "taskID", taskID, zap.Inline(p))
-		return fmt.Errorf("indexing tipset.(height) %s.(%d) taskID: %s", p.TipSet.Key(), p.TipSet.Height(), taskID)
+		log.Errorw("failed to index task successfully", "taskID", taskID, "height", p.TipSet.Height(), zap.Inline(p))
+		return nil
 	}
 	log.Infow("index tipset success", "taskID", taskID, zap.Inline(p))
 	return nil
