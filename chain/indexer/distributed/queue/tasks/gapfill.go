@@ -103,7 +103,7 @@ func (gh *GapFillTipSetHandler) HandleGapFillTipSetTask(ctx context.Context, t *
 	}
 	if !success {
 		log.Errorw("failed to gap fill task successfully", "taskID", taskID, zap.Inline(p))
-		return fmt.Errorf("gap filling tipset.(height) %s.(%d) taskID: %s", p.TipSet.Key(), p.TipSet.Height(), taskID)
+		return nil
 	} else { // nolint: revive
 		if err := gh.db.SetGapsFilled(ctx, int64(p.TipSet.Height()), p.Tasks...); err != nil {
 			log.Errorw("failed to mark gap as filled", "taskID", taskID, zap.Inline(p), "error", err)
