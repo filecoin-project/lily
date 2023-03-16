@@ -5,6 +5,22 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.14.1"></a>
+## [v0.14.1] - 2023-3-16
+
+### Feat
+* Support importing zstd snapshot directly ([#1156](https://github.com/filecoin-project/lily/pull/1156))
+
+### Fix
+* fix: Fix the error jsonp format in vm_message ([#1160](https://github.com/filecoin-project/lily/pull/1160))
+* fix: Add function for cleaning the Unicode escape sequence ([#1161](https://github.com/filecoin-project/lily/pull/1161))
+* fix: process actor version 10 tasks ([#1166](https://github.com/filecoin-project/lily/pull/1166))
+* fix: prevent unsuccessful task from retrying ([#1162](https://github.com/filecoin-project/lily/pull/1162))
+* fix: don't error on unknown method numbers for FEVM ([#1165](https://github.com/filecoin-project/lily/pull/1165))
+
+### Chore
+* Use 28e3cd44d91681c0 release from filecoin-ffi ([#1158](https://github.com/filecoin-project/lily/pull/1158))
+
 <a name="v0.14.0"></a>
 ## [v0.14.0] - 2023-3-8
 
