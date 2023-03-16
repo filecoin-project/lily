@@ -45,7 +45,7 @@ func (r *AsynQ) EnqueueTipSet(ctx context.Context, ts *types.TipSet, indexType i
 		span.SetAttributes(attribute.String("task_type", task.Type()), attribute.StringSlice("tasks", taskNames), attribute.String("index_type", indexType.String()))
 	}
 
-	_, err = r.c.EnqueueContext(ctx, task, asynq.Queue(indexType.String()))
+	_, err = r.c.EnqueueContext(ctx, task, asynq.Queue(indexType.String()), asynq.MaxRetry(3))
 	if err != nil {
 		return err
 	}
