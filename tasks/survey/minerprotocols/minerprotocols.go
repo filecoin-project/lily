@@ -171,6 +171,11 @@ func fetchMinerProtocolModel(ctx context.Context, api API, addr address.Address,
 		return
 	}
 
+	protosStrArray := []string{}
+	for _, v := range protos {
+		protosStrArray = append(protosStrArray, string(v))
+	}
+
 	// find miners agent version
 	agentVersionI, err := api.Host().Peerstore().Get(minerPeerInfo.ID, "AgentVersion")
 	if err != nil {
@@ -184,7 +189,7 @@ func fetchMinerProtocolModel(ctx context.Context, api API, addr address.Address,
 		MinerID:    addr.String(),
 		PeerID:     peerID,
 		Agent:      agentVersionI.(string),
-		Protocols:  protos,
+		Protocols:  protosStrArray,
 	}
 
 }
