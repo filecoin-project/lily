@@ -33,6 +33,8 @@ import (
 	"github.com/filecoin-project/lily/lens/util"
 )
 
+var actorVersions = []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+
 var ChainCmd = &cli.Command{
 	Name:  "chain",
 	Usage: "Interact with filecoin blockchain",
@@ -60,13 +62,6 @@ type chainActorOpts struct {
 
 var chainActorFlags chainActorOpts
 
-var persistFlag = &cli.BoolFlag{
-	Name:        "persist",
-	Value:       false,
-	Usage:       "Whether to persist the data to the backing storage.",
-	Destination: &chainActorFlags.persist,
-}
-
 var configFlag = &cli.StringFlag{
 	Name:        "config",
 	Usage:       "Specify path of config file to use.",
@@ -83,7 +78,7 @@ var storageFlag = &cli.StringFlag{
 var ChainActorCodesCmd = &cli.Command{
 	Name:  "actor-codes",
 	Usage: "Print actor codes and names.",
-	Flags: []cli.Flag{persistFlag, configFlag, storageFlag},
+	Flags: []cli.Flag{configFlag, storageFlag},
 	Action: func(cctx *cli.Context) error {
 		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version10)
 		t := table.NewWriter()
@@ -94,7 +89,7 @@ var ChainActorCodesCmd = &cli.Command{
 		var strg model.Storage
 		var ctx context.Context
 
-		if chainActorFlags.persist {
+		if chainActorFlags.storage != "" {
 			results = common.ActorCodeList{}
 
 			cfg, err := config.FromFile(chainActorFlags.config)
@@ -137,7 +132,7 @@ var ChainActorCodesCmd = &cli.Command{
 					Code: name,
 				})
 
-				if chainActorFlags.persist {
+				if chainActorFlags.storage != "" {
 					err := strg.PersistBatch(ctx, results)
 					if err != nil {
 						return err
@@ -154,7 +149,7 @@ var ChainActorCodesCmd = &cli.Command{
 var ChainActorMethodsCmd = &cli.Command{
 	Name:  "actor-methods",
 	Usage: "Print actor method numbers and their human readable names.",
-	Flags: []cli.Flag{persistFlag, configFlag, storageFlag},
+	Flags: []cli.Flag{configFlag, storageFlag},
 	Action: func(cctx *cli.Context) error {
 		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version10)
 		t := table.NewWriter()
@@ -190,7 +185,7 @@ var ChainActorMethodsCmd = &cli.Command{
 
 		for _, a := range manifests {
 			av := make(map[actorstypes.Version]cid.Cid)
-			for _, v := range []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 10} {
+			for _, v := range actorVersions {
 				code, ok := actors.GetActorCodeID(actorstypes.Version(v), a)
 				if !ok {
 					continue
