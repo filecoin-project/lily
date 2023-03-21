@@ -7,7 +7,7 @@ import (
 	"go/doc"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -18,7 +18,7 @@ import (
 
 func Gen() error {
 	taskDir := "./chain/indexer/tasktype"
-	rf, err := ioutil.ReadFile(filepath.Join(taskDir, "table_tasks.go.template"))
+	rf, err := os.ReadFile(filepath.Join(taskDir, "table_tasks.go.template"))
 	if err != nil {
 		return fmt.Errorf("loading registry template: %w", err)
 	}
@@ -34,7 +34,7 @@ func Gen() error {
 	}); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(taskDir, "table_tasks.go"), b.Bytes(), 0o666); err != nil {
+	if err := os.WriteFile(filepath.Join(taskDir, "table_tasks.go"), b.Bytes(), 0o666); err != nil {
 		return err
 	}
 	return nil
