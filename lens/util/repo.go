@@ -185,7 +185,8 @@ func MethodAndParamsForMessage(m *types.Message, destCode cid.Cid) (string, stri
 
 	params, method, err := ParseParams(m.Params, m.Method, destCode)
 	if method == "Unknown" {
-		return "", "", fmt.Errorf("unknown method for actor type %s: %d", destCode.String(), int64(m.Method))
+		log.Errorf("unknown method for actor type %s: %d", destCode.String(), int64(m.Method))
+		return "", "", nil
 	}
 	if err != nil {
 		log.Warnf("failed to parse parameters of message %s: %v", m.Cid().String(), err)
