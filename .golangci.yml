@@ -40,6 +40,9 @@ issues:
     - path: schemas/.*
       linters:
         - misspell
+    - linters:
+        - staticcheck
+      text: "SA1019:"
 
 linters-settings:
   goconst:

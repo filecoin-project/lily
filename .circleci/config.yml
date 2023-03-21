@@ -226,9 +226,6 @@ jobs:
       executor:
         type: executor
         default: golang
-      golangci-lint-version:
-        type: string
-        default: 1.28.2
       concurrency:
         type: string
         default: '2'
