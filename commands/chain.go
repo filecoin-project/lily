@@ -116,7 +116,7 @@ var ChainActorCodesCmd = &cli.Command{
 
 		for _, a := range manifests {
 			av := make(map[actorstypes.Version]cid.Cid)
-			for _, v := range []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 10} {
+			for _, v := range actorVersions {
 				code, ok := actors.GetActorCodeID(actorstypes.Version(v), a)
 				if !ok {
 					continue
