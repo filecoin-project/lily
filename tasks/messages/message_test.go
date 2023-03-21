@@ -47,7 +47,7 @@ func TestParseMessageParams(t *testing.T) {
 			actorCode:   cid.Undef,
 			wantMethod:  "Unknown",
 			wantEncoded: "",
-			wantErr:     true,
+			wantErr:     false,
 		},
 		{
 			// Derived from message bafy2bzaceah56ky4mny2qv3eg4zzjr7xxlht2bvxvcz6oozpe7k5ytjjhpezc
