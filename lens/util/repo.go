@@ -104,7 +104,7 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (_ string
 		}
 		err = fmt.Errorf("unknown method %d for actorCode %s name %s", method, actCode, builtin.ActorNameByCode(actCode))
 		log.Warnw("parsing vm message params", "error", err)
-		return string(paramj), "Unknown", nil
+		return string(paramj), method.String(), nil
 	}
 
 	// if the actor method doesn't expect params don't parse them
@@ -185,8 +185,7 @@ func MethodAndParamsForMessage(m *types.Message, destCode cid.Cid) (string, stri
 
 	params, method, err := ParseParams(m.Params, m.Method, destCode)
 	if method == "Unknown" {
-		log.Errorf("unknown method for actor type %s: %d", destCode.String(), int64(m.Method))
-		return "", "", nil
+		return "", "", fmt.Errorf("unknown method for actor type %s: %d", destCode.String(), int64(m.Method))
 	}
 	if err != nil {
 		log.Warnf("failed to parse parameters of message %s: %v", m.Cid().String(), err)
