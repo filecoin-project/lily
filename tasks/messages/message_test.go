@@ -106,9 +106,9 @@ func TestParseMessageParams(t *testing.T) {
 			method:      16,
 			params:      nil,
 			actorCode:   builtin3.AccountActorCodeID,
-			wantMethod:  "",
-			wantEncoded: "",
-			wantErr:     true,
+			wantMethod:  "16",
+			wantEncoded: "null",
+			wantErr:     false,
 		},
 		{
 			// Derived from message bafy2bzacebpiuu7tgya6yz56sfllpqc3rqbo5s5xl7353xeuavc53qlpb4sqw

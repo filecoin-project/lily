@@ -104,7 +104,7 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (_ string
 		}
 		err = fmt.Errorf("unknown method %d for actorCode %s name %s", method, actCode, builtin.ActorNameByCode(actCode))
 		log.Warnw("parsing vm message params", "error", err)
-		return string(paramj), "Unknown", nil
+		return string(paramj), method.String(), nil
 	}
 
 	// if the actor method doesn't expect params don't parse them
