@@ -130,7 +130,7 @@ func TestParseMessageParams(t *testing.T) {
 			actorCode:   builtin3.AccountActorCodeID,
 			wantMethod:  "Constructor",
 			wantEncoded: ``,
-			wantErr:     true,
+			wantErr:     false,
 		},
 		{
 			// Derived from message bafy2bzacedzfkgkgwmyhnrty3nenkmxuhlkfhskywb3olqolhxln3yeb2cklu
