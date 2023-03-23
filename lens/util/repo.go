@@ -109,7 +109,8 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (_ string
 
 	// if the actor method doesn't expect params don't parse them
 	// messages can contain unexpected params and remain valid, we need to ignore this case for parsing.
-	if m.Params == reflect.TypeOf(new(abi.EmptyValue)) {
+	if m.Params == reflect.TypeOf(new(abi.EmptyValue)) ||
+		len(params) == 0 {
 		return "", m.Name, nil
 	}
 
@@ -144,7 +145,8 @@ func ParseReturn(ret []byte, method abi.MethodNum, actCode cid.Cid) (_ string, _
 	}
 
 	// if the actor method doesn't expect returns don't parse them
-	if m.Ret == reflect.TypeOf(new(abi.EmptyValue)) {
+	if m.Ret == reflect.TypeOf(new(abi.EmptyValue)) ||
+		len(ret) == 0 {
 		return "", m.Name, nil
 	}
 
