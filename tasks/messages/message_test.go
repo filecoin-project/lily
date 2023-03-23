@@ -41,6 +41,15 @@ func TestParseMessageParams(t *testing.T) {
 	}{
 
 		{
+			name:        "failing ot parse empty cbor byte params", // usually this is an issue number
+			method:      3844450837,
+			params:      abi.CborBytes{},
+			actorCode:   mustDecodeCID(t, "bafk2bzaceahmzdxhqsm7cu2mexusjp6frm7r4kdesvti3etv5evfqboos2j4g"),
+			wantMethod:  "InvokeContract",
+			wantEncoded: "",
+			wantErr:     false,
+		},
+		{
 			name:        "unknown actor code",
 			method:      4,
 			params:      nil,
