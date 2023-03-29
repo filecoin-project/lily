@@ -57,7 +57,7 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 
 	err = st.ForEach(func(addr address.Address, act *types.Actor) error {
 		if count%200000 == 0 {
-			log.Infow("processed /n", count)
+			log.Infow("processed: ", "count", count)
 		}
 		count++
 
@@ -65,7 +65,7 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 			EvmCount++
 			e, err := evm2.Load(p.node.Store(), act)
 			if err != nil {
-				log.Errorw("fail to load evm actorcount: %w", err)
+				log.Errorw("fail to load evm actorcount: ", "error", err)
 				return nil
 			}
 			bcid, err := e.GetBytecodeCID()
@@ -84,10 +84,10 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 	})
 
 	uniqueBytecodeCIDs := unique(bytecodeCIDs)
-	log.Infow("# of EVM contracts: ", EvmCount)
-	log.Infow("# of unqiue EVM contracts: ", len(uniqueBytecodeCIDs))
-	log.Infow("b# of Eth accounts: ", EthAccountCount)
-	log.Infow("# of placeholder: ", PlaceholderCount)
+	log.Infow("# of EVM contracts: ", "count", EvmCount)
+	log.Infow("# of unqiue EVM contracts: ", "count", len(uniqueBytecodeCIDs))
+	log.Infow("b# of Eth accounts: ", "count", EthAccountCount)
+	log.Infow("# of placeholder: ", "count", PlaceholderCount)
 
 	return nil, report, nil
 }
