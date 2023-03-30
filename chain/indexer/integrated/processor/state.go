@@ -3,7 +3,6 @@ package processor
 import (
 	"context"
 	"fmt"
-	fevmactortask "github.com/filecoin-project/lily/tasks/fevmactorstats"
 	"sync"
 	"time"
 
@@ -58,6 +57,9 @@ import (
 	parentmessagetask "github.com/filecoin-project/lily/tasks/messages/parsedmessage"
 	receipttask "github.com/filecoin-project/lily/tasks/messages/receipt"
 	msapprovaltask "github.com/filecoin-project/lily/tasks/msapprovals"
+
+	// fevm task
+	fevmactorstatstask "github.com/filecoin-project/lily/tasks/fevmactorstats"
 
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/metrics"
@@ -633,7 +635,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			// FEVM
 			//
 		case tasktype.FEVMActorStats:
-			out.TipsetProcessors[t] = fevmactortask.NewTask(api)
+			out.TipsetProcessors[t] = fevmactorstatstask.NewTask(api)
 
 		case BuiltinTaskName:
 			out.ReportProcessors[t] = indexertask.NewTask(api)

@@ -2,13 +2,12 @@ package fevmactorstats
 
 import (
 	"context"
+
 	"github.com/filecoin-project/go-state-types/abi"
+
 	"github.com/filecoin-project/lily/model/fevm"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/lily/model"
-	visormodel "github.com/filecoin-project/lily/model/visor"
-	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lotus/chain/actors/builtin"
 	evm2 "github.com/filecoin-project/lotus/chain/actors/builtin/evm"
 	"github.com/filecoin-project/lotus/chain/state"
@@ -17,6 +16,10 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/filecoin-project/lily/model"
+	visormodel "github.com/filecoin-project/lily/model/visor"
+	"github.com/filecoin-project/lily/tasks"
 )
 
 var log = logging.Logger("lily/tasks/fevmactorstats")
