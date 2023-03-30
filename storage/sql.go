@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/filecoin-project/lily/model/fevm"
 	"reflect"
 	"sort"
 	"strings"
@@ -91,6 +92,8 @@ var Models = []interface{}{
 	(*verifreg.VerifiedRegistryVerifier)(nil),
 	(*verifreg.VerifiedRegistryVerifiedClient)(nil),
 	(*verifreg.VerifiedRegistryClaim)(nil),
+
+	(*fevm.FEVMActorStatsList)(nil),
 }
 
 var log = logging.Logger("lily/storage")

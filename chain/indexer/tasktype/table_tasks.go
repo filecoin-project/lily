@@ -44,8 +44,7 @@ const (
 	VerifiedRegistryVerifier       = "verified_registry_verifier"
 	VerifiedRegistryVerifiedClient = "verified_registry_verified_client"
 	VerifiedRegistryClaim          = "verified_registry_claim"
-	FEVMActorBalance               = "fevm_actor_balance"
-	FEVMActorCount                 = "fevm_actor_count"
+	FEVMActorStats                 = "fevm_actor_stats"
 )
 
 var AllTableTasks = []string{
@@ -91,8 +90,7 @@ var AllTableTasks = []string{
 	VerifiedRegistryVerifier,
 	VerifiedRegistryVerifiedClient,
 	VerifiedRegistryClaim,
-	FEVMActorBalance,
-	FEVMActorCount,
+	FEVMActorStats,
 }
 
 var TableLookup = map[string]struct{}{
@@ -138,8 +136,7 @@ var TableLookup = map[string]struct{}{
 	VerifiedRegistryVerifier:       {},
 	VerifiedRegistryVerifiedClient: {},
 	VerifiedRegistryClaim:          {},
-	FEVMActorBalance:               {},
-	FEVMActorCount:                 {},
+	FEVMActorStats:                 {},
 }
 
 var TableComment = map[string]string{
@@ -185,8 +182,7 @@ var TableComment = map[string]string{
 	VerifiedRegistryVerifier:       ``,
 	VerifiedRegistryVerifiedClient: ``,
 	VerifiedRegistryClaim:          ``,
-	FEVMActorBalance:               ``,
-	FEVMActorCount:                 ``,
+	FEVMActorStats:                 ``,
 }
 
 var TableFieldComments = map[string]map[string]string{
@@ -289,6 +285,5 @@ var TableFieldComments = map[string]map[string]string{
 	VerifiedRegistryVerifier:       {},
 	VerifiedRegistryVerifiedClient: {},
 	VerifiedRegistryClaim:          {},
-	FEVMActorBalance:               {},
-	FEVMActorCount:                 {},
+	FEVMActorStats:                 {},
 }

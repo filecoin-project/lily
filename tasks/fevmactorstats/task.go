@@ -1,7 +1,8 @@
-package actorcount
+package fevmactorstats
 
 import (
 	"context"
+	"github.com/filecoin-project/go-state-types/abi"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lily/model"
@@ -17,7 +18,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-var log = logging.Logger("lily/tasks/fevmactor")
+var log = logging.Logger("lily/tasks/fevmactorstats")
 
 type Task struct {
 	node tasks.DataSource
@@ -50,19 +51,20 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 
 	log.Infow("iterating over all actors")
 	count := 0
-	EvmCount := 0
-	EthAccountCount := 0
-	PlaceholderCount := 0
+	evmBalance := abi.NewTokenAmount(0)
+	ethAccountBalance := abi.NewTokenAmount(0)
+	placeholderBalance := abi.NewTokenAmount(0)
+	evmCount := 0
+	ethAccountCount := 0
+	placeholderCount := 0
 	bytecodeCIDs := []cid.Cid{}
 
 	err = st.ForEach(func(addr address.Address, act *types.Actor) error {
-		if count%200000 == 0 {
-			log.Infow("processed: ", "count", count)
-		}
 		count++
 
 		if builtin.IsEvmActor(act.Code) {
-			EvmCount++
+			evmBalance = types.BigAdd(evmBalance, act.Balance)
+			evmCount++
 			e, err := evm2.Load(p.node.Store(), act)
 			if err != nil {
 				log.Errorw("fail to load evm actorcount: ", "error", err)
@@ -73,21 +75,28 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 		}
 
 		if builtin.IsEthAccountActor(act.Code) {
-			EthAccountCount++
+			ethAccountBalance = types.BigAdd(ethAccountBalance, act.Balance)
+			ethAccountCount++
 		}
 
 		if builtin.IsPlaceholderActor(act.Code) {
-			PlaceholderCount++
+			placeholderBalance = types.BigAdd(placeholderBalance, act.Balance)
+			placeholderCount++
 		}
 
 		return nil
 	})
 
-	uniqueBytecodeCIDs := unique(bytecodeCIDs)
-	log.Infow("# of EVM contracts: ", "count", EvmCount)
-	log.Infow("# of unqiue EVM contracts: ", "count", len(uniqueBytecodeCIDs))
-	log.Infow("b# of Eth accounts: ", "count", EthAccountCount)
-	log.Infow("# of placeholder: ", "count", PlaceholderCount)
+	uniqueBytecode := unique(bytecodeCIDs)
+
+	log.Info("total actor count: ", count)
+	log.Info("EVM count: ", evmCount)
+	log.Info("unique EVM count: ", len(uniqueBytecode))
+	log.Info("Eth accounts count: ", ethAccountCount)
+	log.Info("placeholder count: ", placeholderCount)
+	log.Info("EVM balance: ", evmBalance)
+	log.Info("Eth balance: ", ethAccountBalance)
+	log.Info("placeholder balance: ", placeholderBalance)
 
 	return nil, report, nil
 }
