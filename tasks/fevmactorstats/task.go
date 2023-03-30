@@ -97,15 +97,6 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 
 	uniqueBytecode := unique(bytecodeCIDs)
 
-	log.Info("total actor count: ", count)
-	log.Info("EVM count: ", evmCount)
-	log.Info("unique EVM count: ", len(uniqueBytecode))
-	log.Info("Eth accounts count: ", ethAccountCount)
-	log.Info("placeholder count: ", placeholderCount)
-	log.Info("EVM balance: ", evmBalance)
-	log.Info("Eth balance: ", ethAccountBalance)
-	log.Info("placeholder balance: ", placeholderBalance)
-
 	return &fevm.FEVMActorStats{
 		Height:              int64(ts.Height()),
 		ContractBalance:     evmBalance.String(),
