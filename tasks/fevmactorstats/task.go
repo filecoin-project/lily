@@ -3,6 +3,7 @@ package fevmactorstats
 import (
 	"context"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lily/model/fevm"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lily/model"
@@ -36,7 +37,7 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 		span.SetAttributes(
 			attribute.String("tipset", ts.Key().String()),
 			attribute.Int64("height", int64(ts.Height())),
-			attribute.String("processor", "chaineconomics"),
+			attribute.String("processor", "fevmactorstats"),
 		)
 	}
 	report := &visormodel.ProcessingReport{
@@ -102,7 +103,16 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 	log.Info("Eth balance: ", ethAccountBalance)
 	log.Info("placeholder balance: ", placeholderBalance)
 
-	return nil, report, nil
+	return &fevm.FEVMActorStats{
+		Height:              int64(ts.Height()),
+		ContractBalance:     evmBalance.String(),
+		EthAccountBalance:   ethAccountBalance.String(),
+		PlaceholderBalance:  placeholderBalance.String(),
+		ContractCount:       uint64(evmCount),
+		UniqueContractCount: uint64(len(uniqueBytecode)),
+		EthAccountCount:     uint64(ethAccountCount),
+		PlaceholderCount:    uint64(placeholderCount),
+	}, report, nil
 }
 func unique(intSlice []cid.Cid) []cid.Cid {
 	keys := make(map[cid.Cid]bool)
