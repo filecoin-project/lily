@@ -53,7 +53,7 @@ func TestNewProcessor(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, t.Name(), proc.name)
 	require.Len(t, proc.actorProcessors, 24)
-	require.Len(t, proc.tipsetProcessors, 9)
+	require.Len(t, proc.tipsetProcessors, 10)
 	require.Len(t, proc.tipsetsProcessors, 9)
 	require.Len(t, proc.builtinProcessors, 1)
 

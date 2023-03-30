@@ -17,6 +17,7 @@ const (
 	MultisigApprovalsTask   = "msapprovals"         // task that extracts multisig actor approvals
 	ImplicitMessageTask     = "implicitmessage"     // task that extract implicitly executed messages: cron tick and block reward.
 	ChainConsensusTask      = "consensus"
+	FEVMTask                = "fevm"
 )
 
 var TaskLookup = map[string][]string{
@@ -89,6 +90,9 @@ var TaskLookup = map[string][]string{
 	},
 	ChainConsensusTask: {
 		ChainConsensus,
+	},
+	FEVMTask: {
+		FEVMActorStats,
 	},
 }
 
