@@ -59,18 +59,22 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 	placeholderCount := 0
 	bytecodeCIDs := []cid.Cid{}
 
-	err = st.ForEach(func(addr address.Address, act *types.Actor) error {
+	_ = st.ForEach(func(addr address.Address, act *types.Actor) error {
 		count++
 
 		if builtin.IsEvmActor(act.Code) {
 			evmBalance = types.BigAdd(evmBalance, act.Balance)
 			evmCount++
-			e, err := evm2.Load(p.node.Store(), act)
+			es, err := evm2.Load(p.node.Store(), act)
 			if err != nil {
 				log.Errorw("fail to load evm actorcount: ", "error", err)
-				return nil
+				return err
 			}
-			bcid, err := e.GetBytecodeCID()
+			bcid, err := es.GetBytecodeCID()
+			if err != nil {
+				log.Errorw("fail to get evm bytecode: ", "error", err)
+				return err
+			}
 			bytecodeCIDs = append(bytecodeCIDs, bcid)
 		}
 
