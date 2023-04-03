@@ -58,6 +58,9 @@ import (
 	receipttask "github.com/filecoin-project/lily/tasks/messages/receipt"
 	msapprovaltask "github.com/filecoin-project/lily/tasks/msapprovals"
 
+	// fevm task
+	fevmactorstatstask "github.com/filecoin-project/lily/tasks/fevmactorstats"
+
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
@@ -627,6 +630,12 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			out.TipsetProcessors[t] = chainecontask.NewTask(api)
 		case tasktype.ChainConsensus:
 			out.TipsetProcessors[t] = consensustask.NewTask(api)
+
+			//
+			// FEVM
+			//
+		case tasktype.FEVMActorStats:
+			out.TipsetProcessors[t] = fevmactorstatstask.NewTask(api)
 
 		case BuiltinTaskName:
 			out.ReportProcessors[t] = indexertask.NewTask(api)
