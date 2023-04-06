@@ -70,6 +70,10 @@ func (cs *CachingBlockstore) HashOnRead(enabled bool) {
 	cs.blocks.HashOnRead(enabled)
 }
 
+func (cs *CachingBlockstore) Flush(ctx context.Context) error {
+	return cs.blocks.Flush(ctx)
+}
+
 func (cs *CachingBlockstore) DeleteMany(ctx context.Context, cids []cid.Cid) error {
 	return cs.blocks.DeleteMany(ctx, cids)
 }

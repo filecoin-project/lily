@@ -3,7 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	paramfetch "github.com/filecoin-project/go-paramfetch"
@@ -230,7 +230,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 
 		var genBytes []byte
 		if c.String("genesis") != "" {
-			genBytes, err = ioutil.ReadFile(daemonFlags.genesis)
+			genBytes, err = os.ReadFile(daemonFlags.genesis)
 			if err != nil {
 				return fmt.Errorf("reading genesis: %w", err)
 			}

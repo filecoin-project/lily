@@ -2,8 +2,8 @@ package itests
 
 import (
 	"context"
+	"io"
 	"io/fs"
-	"io/ioutil"
 	"testing"
 
 	"github.com/filecoin-project/lotus/chain/events"
@@ -45,8 +45,7 @@ func NewTestNode(ctx context.Context, t testing.TB, cfg *TestNodeConfig) (lily.L
 
 	err = util.ImportFromFsFile(ctx, r, cfg.Snapshot, true)
 	require.NoError(t, err)
-
-	genBytes, err := ioutil.ReadAll(cfg.Genesis)
+	genBytes, err := io.ReadAll(cfg.Genesis)
 	require.NoError(t, err)
 
 	genesis := node.Options()
