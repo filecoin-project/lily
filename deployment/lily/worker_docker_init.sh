@@ -7,7 +7,7 @@ mkdir -p ${LILY_REPO}/keystore
 
 if [[ ! -z "${LILY_DOCKER_INIT_IMPORT_MAINNET_SNAPSHOT}" ]]; then
   # set default snapshot path if not already defined
-  snapshot="${LILY_DOCKER_INIT_IMPORT_SNAPSHOT_PATH:-https://snapshots.mainnet.filops.net/minimal/latest}"
+  snapshot="${LILY_DOCKER_INIT_IMPORT_SNAPSHOT_PATH:-https://snapshots.mainnet.filops.net/minimal/latest.zst}"
 
   # import snapshot when LILY_DOCKER_INIT_IMPORT_MAINNET_SNAPSHOT is set
   if [[ -f "${LILY_REPO}/datastore/_imported" ]]; then
