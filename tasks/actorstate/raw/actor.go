@@ -61,5 +61,6 @@ func (RawActorExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, no
 		Balance:   a.Actor.Balance.String(),
 		Nonce:     a.Actor.Nonce,
 		State:     stateStr,
+		CodeCID:   a.Actor.Code.String(),
 	}, nil
 }
