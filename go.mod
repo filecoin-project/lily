@@ -13,8 +13,8 @@ require (
 	github.com/filecoin-project/go-hamt-ipld/v3 v3.1.1-0.20220505191157-d7766f8628ec
 	github.com/filecoin-project/go-jsonrpc v0.2.3
 	github.com/filecoin-project/go-paramfetch v0.0.4
-	github.com/filecoin-project/go-state-types v0.10.1-0.20230317164710-0374c694fa8c
-	github.com/filecoin-project/lotus v1.21.0-rc2
+	github.com/filecoin-project/go-state-types v0.11.0-alpha-3
+	github.com/filecoin-project/lotus v1.21.0-rc3
 	github.com/filecoin-project/specs-actors v0.9.15
 	github.com/filecoin-project/specs-actors/v2 v2.3.6
 	github.com/filecoin-project/specs-actors/v3 v3.1.2
