@@ -37,6 +37,8 @@ func NewBlockParents(header *types.BlockHeader) BlockParents {
 			Parent: p.String(),
 		})
 	}
+
+	// Store the orphan block
 	if len(out) == 0 {
 		out = append(out, &BlockParent{
 			Height: int64(header.Height),
