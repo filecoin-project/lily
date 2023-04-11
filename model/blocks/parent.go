@@ -41,7 +41,6 @@ func NewBlockParents(header *types.BlockHeader) BlockParents {
 		out = append(out, &BlockParent{
 			Height: int64(header.Height),
 			Block:  header.Cid().String(),
-			Parent: "",
 		})
 	}
 	return out
