@@ -42,6 +42,14 @@
     ColdStoreFullGCFrequency = 0
     ColdStoreRetention = 0
 
+[Fevm]
+  # EnableEthRPC enables eth_ rpc, and enables storing a mapping of eth transaction hashes to filecoin message Cids.
+  # This will also enable the RealTimeFilterAPI and HistoricFilterAPI by default, but they can be disabled by config options above.
+  #
+  # type: bool
+  # env var: LOTUS_FEVM_ENABLEETHRPC
+  EnableEthRPC = true
+
 [Storage]
   [Storage.File]
     [Storage.File.CSV]
