@@ -118,3 +118,72 @@ func (states ActorStateList) Persist(ctx context.Context, s model.StorageBatch, 
 	metrics.RecordCount(ctx, metrics.PersistModel, len(states))
 	return s.PersistModel(ctx, states)
 }
+
+type ActorCode struct {
+	// CID of the actor from builtin actors.
+	CID string `pg:",pk,notnull"`
+	// Human-readable identifier for the actor.
+	Code string `pg:",pk,notnull"`
+}
+
+type ActorCodeList []*ActorCode
+
+func (a *ActorCode) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+	if a == nil {
+		// Nothing to do
+		return nil
+	}
+
+	ctx, span := otel.Tracer("").Start(ctx, "ActorCode.Persist")
+	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_codes"))
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
+	return s.PersistModel(ctx, a)
+}
+
+func (acl ActorCodeList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_codes"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
+	metrics.RecordCount(ctx, metrics.PersistModel, len(acl))
+	return s.PersistModel(ctx, acl)
+}
+
+type ActorMethod struct {
+	Family     string `pg:",pk,notnull"`
+	MethodName string `pg:",notnull"`
+	Method     uint64 `pg:",pk,notnull"`
+}
+
+type ActorMethodList []*ActorMethod
+
+func (a *ActorMethod) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+	if a == nil {
+		// Nothing to do
+		return nil
+	}
+
+	ctx, span := otel.Tracer("").Start(ctx, "ActorMethod.Persist")
+	defer span.End()
+
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_methods"))
+	metrics.RecordCount(ctx, metrics.PersistModel, 1)
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
+	return s.PersistModel(ctx, a)
+}
+
+func (acl ActorMethodList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_methods"))
+	stop := metrics.Timer(ctx, metrics.PersistDuration)
+	defer stop()
+
+	metrics.RecordCount(ctx, metrics.PersistModel, len(acl))
+	return s.PersistModel(ctx, acl)
+}

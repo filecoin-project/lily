@@ -9,6 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/filecoin-project/lily/config"
+	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/model/actors/common"
+	"github.com/filecoin-project/lily/storage"
+	"github.com/filecoin-project/lotus/chain/actors"
+
 	"github.com/filecoin-project/go-state-types/abi"
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/big"
@@ -16,7 +22,6 @@ import (
 	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/filecoin-project/lotus/api"
 	lotusbuild "github.com/filecoin-project/lotus/build"
-	"github.com/filecoin-project/lotus/chain/actors"
 	"github.com/filecoin-project/lotus/chain/types"
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/ipfs/go-cid"
@@ -27,6 +32,8 @@ import (
 	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lily/lens/util"
 )
+
+var actorVersions = []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 
 var ChainCmd = &cli.Command{
 	Name:  "chain",
@@ -40,37 +47,170 @@ var ChainCmd = &cli.Command{
 		ChainListCmd,
 		ChainSetHeadCmd,
 		ChainActorCodesCmd,
+		ChainActorMethodsCmd,
 		ChainStateInspect,
 		ChainStateCompute,
 		ChainStateComputeRange,
 	},
 }
 
+type chainActorOpts struct {
+	persist bool
+	config  string
+	storage string
+}
+
+var chainActorFlags chainActorOpts
+
+var configFlag = &cli.StringFlag{
+	Name:        "config",
+	Usage:       "Specify path of config file to use.",
+	EnvVars:     []string{"LILY_CONFIG"},
+	Destination: &chainActorFlags.config,
+}
+
+var storageFlag = &cli.StringFlag{
+	Name:        "storage",
+	Usage:       "Specify the storage to use, if persisting the displayed output.",
+	Destination: &chainActorFlags.storage,
+}
+
 var ChainActorCodesCmd = &cli.Command{
 	Name:  "actor-codes",
-	Usage: "Print actor codes and names",
+	Usage: "Print actor codes and names.",
+	Flags: []cli.Flag{configFlag, storageFlag},
 	Action: func(cctx *cli.Context) error {
-		for _, a := range []string{manifest.AccountKey, manifest.CronKey, manifest.DatacapKey, manifest.InitKey, manifest.MarketKey, manifest.MinerKey, manifest.MultisigKey, manifest.PaychKey, manifest.PowerKey, manifest.RewardKey, manifest.SystemKey, manifest.VerifregKey} {
+		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version10)
+		t := table.NewWriter()
+		t.AppendHeader(table.Row{"name", "family", "code"})
+
+		// values that may be accessed if user wants to persist to Storage
+		var results common.ActorCodeList
+		var strg model.Storage
+		var ctx context.Context
+
+		if chainActorFlags.storage != "" {
+			results = common.ActorCodeList{}
+
+			cfg, err := config.FromFile(chainActorFlags.config)
+			if err != nil {
+				return err
+			}
+
+			md := storage.Metadata{
+				JobName: chainActorFlags.storage,
+			}
+
+			// context for db connection
+			ctx = context.Background()
+
+			sc, err := storage.NewCatalog(cfg.Storage)
+			if err != nil {
+				return err
+			}
+			strg, err = sc.Connect(ctx, chainActorFlags.storage, md)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, a := range manifests {
 			av := make(map[actorstypes.Version]cid.Cid)
-			for _, v := range []int{0, 2, 3, 4, 5, 6, 7, 8, 9} {
+			for _, v := range actorVersions {
+				code, ok := actors.GetActorCodeID(actorstypes.Version(v), a)
+				if !ok {
+					continue
+				}
+				av[actorstypes.Version(v)] = code
+				name, family, err := util.ActorNameAndFamilyFromCode(av[actorstypes.Version(v)])
+				if err != nil {
+					return err
+				}
+				t.AppendRow(table.Row{name, family, code})
+				results = append(results, &common.ActorCode{
+					CID:  code.String(),
+					Code: name,
+				})
+
+				if chainActorFlags.storage != "" {
+					err := strg.PersistBatch(ctx, results)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		fmt.Println(t.RenderCSV())
+		return nil
+	},
+}
+
+var ChainActorMethodsCmd = &cli.Command{
+	Name:  "actor-methods",
+	Usage: "Print actor method numbers and their human readable names.",
+	Flags: []cli.Flag{configFlag, storageFlag},
+	Action: func(cctx *cli.Context) error {
+		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version10)
+		t := table.NewWriter()
+		t.AppendHeader(table.Row{"actor_family", "method_name", "method_number"})
+
+		// values that may be accessed if user wants to persist to Storage
+		var results common.ActorMethodList
+		var strg model.Storage
+		var ctx context.Context
+
+		if chainActorFlags.persist {
+			cfg, err := config.FromFile(chainActorFlags.config)
+			if err != nil {
+				return err
+			}
+
+			md := storage.Metadata{
+				JobName: chainActorFlags.storage,
+			}
+
+			// context for db connection
+			ctx = context.Background()
+
+			sc, err := storage.NewCatalog(cfg.Storage)
+			if err != nil {
+				return err
+			}
+			strg, err = sc.Connect(ctx, chainActorFlags.storage, md)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, a := range manifests {
+			av := make(map[actorstypes.Version]cid.Cid)
+			for _, v := range actorVersions {
 				code, ok := actors.GetActorCodeID(actorstypes.Version(v), a)
 				if !ok {
 					continue
 				}
 				av[actorstypes.Version(v)] = code
 			}
-			fmt.Printf("# %s\n", a)
-			fmt.Print("## Metadata\n")
-			if err := printSortedActorVersions(av); err != nil {
+
+			var err error
+			if results, err = printActorMethods(t, a); err != nil {
 				return err
 			}
-			fmt.Println()
-			fmt.Print("## Methods\n")
-			if err := printActorMethods(a); err != nil {
-				return err
+
+			for _, result := range results {
+				t.AppendRow(table.Row{result.Family, result.Method, result.MethodName})
+				t.AppendSeparator()
 			}
-			fmt.Println()
+
+			if chainActorFlags.persist {
+				err := strg.PersistBatch(ctx, results)
+				if err != nil {
+					return err
+				}
+			}
 		}
+		fmt.Println(t.RenderCSV())
 		return nil
 	},
 }
@@ -713,33 +853,12 @@ func parseTipSet(ctx context.Context, api lily.LilyAPI, vals []string) (*types.T
 	return types.NewTipSet(headers)
 }
 
-func printSortedActorVersions(av map[actorstypes.Version]cid.Cid) error {
-	t := table.NewWriter()
-	t.AppendHeader(table.Row{"Version", "Name", "Family", "Code"})
-	var versions []int
-	for v := range av {
-		versions = append(versions, int(v))
-	}
-	sort.Ints(versions)
-	for _, v := range versions {
-		name, family, err := util.ActorNameAndFamilyFromCode(av[actorstypes.Version(v)])
-		if err != nil {
-			return err
-		}
-		t.AppendRow(table.Row{v, name, family, av[actorstypes.Version(v)]})
-		t.AppendSeparator()
-	}
-	fmt.Println(t.RenderMarkdown())
-	return nil
-}
-
-func printActorMethods(actorKey string) error {
-	t := table.NewWriter()
-	t.AppendHeader(table.Row{"Method Name", "Method Number"})
+func printActorMethods(t table.Writer, actorKey string) (common.ActorMethodList, error) {
 	var (
 		methodName           string
-		methodNumber         any
+		methodNumber         uint64
 		correspondingMethods interface{}
+		actorMethodList      = common.ActorMethodList{}
 	)
 
 	switch actorKey {
@@ -749,6 +868,12 @@ func printActorMethods(actorKey string) error {
 		correspondingMethods = builtin.MethodsCron
 	case manifest.DatacapKey:
 		correspondingMethods = builtin.MethodsDatacap
+	case manifest.EamKey:
+		correspondingMethods = builtin.MethodsEAM
+	case manifest.EthAccountKey:
+		correspondingMethods = builtin.MethodsEthAccount
+	case manifest.EvmKey:
+		correspondingMethods = builtin.MethodsEVM
 	case manifest.MarketKey:
 		correspondingMethods = builtin.MethodsMarket
 	case manifest.MinerKey:
@@ -759,6 +884,8 @@ func printActorMethods(actorKey string) error {
 		correspondingMethods = builtin.MethodsMultisig
 	case manifest.PaychKey:
 		correspondingMethods = builtin.MethodsPaych
+	case manifest.PlaceholderKey:
+		correspondingMethods = builtin.MethodsPlaceholder
 	case manifest.PowerKey:
 		correspondingMethods = builtin.MethodsPower
 	case manifest.RewardKey:
@@ -768,21 +895,23 @@ func printActorMethods(actorKey string) error {
 	case manifest.VerifregKey:
 		correspondingMethods = builtin.MethodsVerifiedRegistry
 	default:
-		return fmt.Errorf("unknown actor key: %s", actorKey)
+		return nil, fmt.Errorf("unknown actor key: %s", actorKey)
 	}
 
 	// Check if correspondingMethods is nil
 	if correspondingMethods == nil {
-		return nil
+		return nil, nil
 	}
 
 	for i := 0; i < reflect.TypeOf(correspondingMethods).NumField(); i++ {
 		methodName = reflect.TypeOf(correspondingMethods).Field(i).Name
-		methodNumber = reflect.ValueOf(correspondingMethods).Field(i).Interface()
-		t.AppendRow(table.Row{methodName, methodNumber})
-		t.AppendSeparator()
+		methodNumber = reflect.ValueOf(correspondingMethods).Field(i).Uint()
+		actorMethodList = append(actorMethodList, &common.ActorMethod{
+			Family:     actorKey,
+			MethodName: methodName,
+			Method:     methodNumber,
+		})
 	}
 
-	fmt.Println(t.RenderMarkdown())
-	return nil
+	return actorMethodList, nil
 }
