@@ -14,7 +14,7 @@ require (
 	github.com/filecoin-project/go-jsonrpc v0.2.3
 	github.com/filecoin-project/go-paramfetch v0.0.4
 	github.com/filecoin-project/go-state-types v0.11.0-alpha-3
-	github.com/filecoin-project/lotus v1.21.0-rc3
+	github.com/filecoin-project/lotus v1.20.4-0.20230418031710-e945c0d6f25f
 	github.com/filecoin-project/specs-actors v0.9.15
 	github.com/filecoin-project/specs-actors/v2 v2.3.6
 	github.com/filecoin-project/specs-actors/v3 v3.1.2
