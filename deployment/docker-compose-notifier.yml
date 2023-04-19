@@ -24,6 +24,7 @@ services:
       - ./lily/config.toml:/var/lib/lily/config.toml
       - ./lily/notifier_docker_init.sh:/usr/bin/docker_init.sh
     entrypoint: /usr/bin/docker_init.sh
+    restart: always
     networks:
       - notifier-network
   node-exporter:
