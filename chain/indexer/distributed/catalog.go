@@ -28,19 +28,31 @@ func NewCatalog(cfg config.QueueConfig) (*Catalog, error) {
 
 		// Find the password of the queue, which is either indirectly specified using PasswordEnv or explicit via Password.
 		// TODO use github.com/kelseyhightower/envconfig
-		var queuePassword string
-		if sc.RedisConfig.PasswordEnv != "" {
-			queuePassword = os.Getenv(sc.RedisConfig.PasswordEnv)
+		var redisAddr string
+		if sc.RedisConfig.AddrEnv != "" {
+			redisAddr = os.Getenv(sc.RedisConfig.AddrEnv)
 		} else {
-			queuePassword = sc.RedisConfig.Password
+			redisAddr = sc.RedisConfig.Addr
+		}
+		var redisUser string
+		if sc.RedisConfig.UsernameEnv != "" {
+			redisUser = os.Getenv(sc.RedisConfig.UsernameEnv)
+		} else {
+			redisUser = sc.RedisConfig.Username
+		}
+		var redisPassword string
+		if sc.RedisConfig.PasswordEnv != "" {
+			redisPassword = os.Getenv(sc.RedisConfig.PasswordEnv)
+		} else {
+			redisPassword = sc.RedisConfig.Password
 		}
 
 		c.servers[name] = &TipSetWorker{
 			RedisConfig: asynq.RedisClientOpt{
 				Network:  sc.RedisConfig.Network,
-				Addr:     sc.RedisConfig.Addr,
-				Username: sc.RedisConfig.Username,
-				Password: queuePassword,
+				Addr:     redisAddr,
+				Username: redisUser,
+				Password: redisPassword,
 				DB:       sc.RedisConfig.DB,
 				PoolSize: sc.RedisConfig.PoolSize,
 			},
@@ -62,19 +74,31 @@ func NewCatalog(cfg config.QueueConfig) (*Catalog, error) {
 
 		// Find the password of the queue, which is either indirectly specified using PasswordEnv or explicit via Password.
 		// TODO use github.com/kelseyhightower/envconfig
-		var queuePassword string
-		if cc.PasswordEnv != "" {
-			queuePassword = os.Getenv(cc.PasswordEnv)
+		var redisAddr string
+		if cc.AddrEnv != "" {
+			redisAddr = os.Getenv(cc.AddrEnv)
 		} else {
-			queuePassword = cc.Password
+			redisAddr = cc.Addr
+		}
+		var redisUser string
+		if cc.UsernameEnv != "" {
+			redisUser = os.Getenv(cc.UsernameEnv)
+		} else {
+			redisUser = cc.Username
+		}
+		var redisPassword string
+		if cc.PasswordEnv != "" {
+			redisPassword = os.Getenv(cc.PasswordEnv)
+		} else {
+			redisPassword = cc.Password
 		}
 
 		c.clients[name] = asynq.NewClient(
 			asynq.RedisClientOpt{
 				Network:  cc.Network,
-				Addr:     cc.Addr,
-				Username: cc.Username,
-				Password: queuePassword,
+				Addr:     redisAddr,
+				Username: redisUser,
+				Password: redisPassword,
 				DB:       cc.DB,
 				PoolSize: cc.PoolSize,
 			},

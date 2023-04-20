@@ -63,11 +63,13 @@ type RedisConfig struct {
 	Network string
 
 	// Redis server address in "host:port" format.
-	Addr string
+	Addr    string
+	AddrEnv string
 
 	// Username to authenticate the current connection when Redis ACLs are used.
 	// See: https://redis.io/commands/auth.
-	Username string
+	Username    string
+	UsernameEnv string
 
 	// Password to authenticate the current connection.
 	// See: https://redis.io/commands/auth.
