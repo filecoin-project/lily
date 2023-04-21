@@ -23,12 +23,16 @@ type Actor struct {
 	StateRoot string `pg:",pk,notnull"`
 	// Human-readable identifier for the type of the actor.
 	Code string `pg:",notnull"`
+	// CID identifier for the type of the actor.
+	CodeCID string `pg:",notnull"`
 	// CID of the root of the state tree for the actor.
 	Head string `pg:",notnull"`
 	// Balance of Actor in attoFIL.
 	Balance string `pg:",notnull"`
 	// The next Actor nonce that is expected to appear on chain.
 	Nonce uint64 `pg:",use_zero"`
+	// Top level of state data as json.
+	State string `pg:",type:jsonb"`
 }
 
 func (a *Actor) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
