@@ -422,6 +422,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				map[cid.Cid][]actorstate.ActorStateExtractor{
 					mineractors.VersionCodes()[actorstypes.Version9]:  {minertask.BeneficiaryExtractor{}},
 					mineractors.VersionCodes()[actorstypes.Version10]: {minertask.BeneficiaryExtractor{}},
+					mineractors.VersionCodes()[actorstypes.Version11]: {minertask.BeneficiaryExtractor{}},
 				},
 			))
 		case tasktype.MinerCurrentDeadlineInfo:
@@ -453,6 +454,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 					mineractors.VersionCodes()[actorstypes.Version8]:  {minertask.PreCommitInfoExtractorV8{}},
 					mineractors.VersionCodes()[actorstypes.Version9]:  {minertask.PreCommitInfoExtractorV9{}},
 					mineractors.VersionCodes()[actorstypes.Version10]: {minertask.PreCommitInfoExtractorV9{}},
+					mineractors.VersionCodes()[actorstypes.Version11]: {minertask.PreCommitInfoExtractorV9{}},
 				},
 			))
 		case tasktype.MinerSectorDeal:
@@ -485,6 +487,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 					mineractors.VersionCodes()[actorstypes.Version8]:  {minertask.V7SectorInfoExtractor{}},
 					mineractors.VersionCodes()[actorstypes.Version9]:  {minertask.V7SectorInfoExtractor{}},
 					mineractors.VersionCodes()[actorstypes.Version10]: {minertask.V7SectorInfoExtractor{}},
+					mineractors.VersionCodes()[actorstypes.Version11]: {minertask.V7SectorInfoExtractor{}},
 				},
 			))
 
@@ -570,6 +573,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				map[cid.Cid][]actorstate.ActorStateExtractor{
 					verifregactors.VersionCodes()[actorstypes.Version9]:  {verifregtask.ClaimExtractor{}},
 					verifregactors.VersionCodes()[actorstypes.Version10]: {verifregtask.ClaimExtractor{}},
+					verifregactors.VersionCodes()[actorstypes.Version11]: {verifregtask.ClaimExtractor{}},
 				},
 			))
 
