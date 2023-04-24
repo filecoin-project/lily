@@ -27,7 +27,7 @@ fi
 
 chmod -R 0600 ${LILY_REPO}/keystore
 
-lily daemon --repo=/var/lib/lily --config=/var/lib/lily/config.toml &
+lily --jaeger-tracing --jaeger-provider-url=http://grafana-agent:14268/api/traces --jaeger-sampler-ratio=0.001 daemon --repo=/var/lib/lily --config=/var/lib/lily/config.toml &
 
 # wait for lily daemon
 sleep 10

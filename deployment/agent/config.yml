@@ -1,0 +1,15 @@
+traces:
+  configs:
+    - name: default
+      remote_write:
+        - endpoint: ${TRACING_REMOTE_URL}
+          basic_auth:
+            username: ${TRACING_REMOTE_USERNAME}
+            password: ${TRACING_REMOTE_PASSWORD}
+      receivers:
+        jaeger:
+          protocols:
+            grpc:
+            thrift_binary:
+            thrift_compact:
+            thrift_http:
