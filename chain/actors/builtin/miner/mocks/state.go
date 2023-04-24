@@ -26,7 +26,6 @@ import (
 
 	v11miner "github.com/filecoin-project/go-state-types/builtin/v11/miner"
 
-
 	v8miner "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 
 	v9miner "github.com/filecoin-project/go-state-types/builtin/v9/miner"
