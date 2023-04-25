@@ -6,7 +6,7 @@ positions:
   filename: /tmp/positions.yaml
 
 clients:
-  - url: ${REMOTE_LOKI_URL}
+  - url: ${PROMTAIL_REMOTE_URL}
 
 scrape_configs:
   - job_name: system
@@ -29,4 +29,4 @@ scrape_configs:
       - docker: {}
       - static_labels:
           job: docker
-          environment: ${LILY_ENV:lily_gce_testing}
+          environment: ${PROMTAIL_ENV:lily_gce_testing}

@@ -7,12 +7,11 @@ services:
   worker:
     image: filecoin/lily:v0.13.0
     container_name: lily-worker
-    env_file:
-      # Check envvars for configurable options
-      - ./lily/lily.env
     ports:
       # export the metrics port
       - 9991:9991
+    env_file:
+      - ./.env
     volumes:
       # holds lily datastore repo
       - lily_worker_data:/var/lib/lily
@@ -52,7 +51,7 @@ services:
     image: grafana/promtail:2.7.0
     container_name: promtail
     env_file:
-      - ./promtail/promtail.env
+      - ./.env
     volumes:
       - ./promtail/config.yml:/etc/promtail/config.yml
       - /var/run/docker.sock:/var/run/docker.sock
@@ -60,6 +59,24 @@ services:
     entrypoint: [ "/bin/sh","-c" ]
     command:
       - "/usr/bin/promtail -config.file=/etc/promtail/config.yml -client.external-labels=hostname=$(tail -2 /etc/hosts | cut -d' ' -f1 | head -1)  -config.expand-env"
+  grafana-agent:
+    image: "grafana/agent:v0.32.1"
+    restart: always
+    pid: "host"
+    env_file:
+      - ./.env
+    volumes:
+      - ./agent:/etc/agent
+    entrypoint:
+      - /bin/agent
+      - -server.http.address=0.0.0.0:12345
+      - -config.file=/etc/agent/config.yml
+      - -config.expand-env
+      - -config.enable-read-api
+    ports:
+      - "12345:12345"
+    networks:
+      - worker-network
 
 volumes:
   lily_worker_data: {}
