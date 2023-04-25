@@ -31,16 +31,10 @@
   OffChainRetrieval = false
 
 [Chainstore]
-  EnableSplitstore = false
+  EnableSplitstore = true
   [Chainstore.Splitstore]
-    ColdStoreType = ""
-    HotStoreType = ""
-    MarkSetType = ""
-    HotStoreMessageRetention = 0
-    HotStoreFullGCFrequency = 0
+    ColdStoreType = "discard"
     EnableColdStoreAutoPrune = false
-    ColdStoreFullGCFrequency = 0
-    ColdStoreRetention = 0
 
 [Fevm]
   # EnableEthRPC enables eth_ rpc, and enables storing a mapping of eth transaction hashes to filecoin message Cids.
