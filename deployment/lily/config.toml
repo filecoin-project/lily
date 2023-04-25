@@ -63,7 +63,7 @@
   [Queue.Notifiers]
     [Queue.Notifiers.Notifier1]
         Network = "tcp"
-        Addr = "REDIS_ADDRESS"
+        AddrEnv = "LILY_REDIS_ADDR"
         Username = ""
         PasswordEnv = "LILY_REDIS_PASSWORD"
         DB = 0
@@ -72,7 +72,7 @@
     [Queue.Workers.Worker1]
       [Queue.Workers.Worker1.RedisConfig]
         Network = "tcp"
-        Addr = "REDIS_ADDRESS"
+        AddrEnv = "LILY_REDIS_ADDR"
         Username = ""
         PasswordEnv = "LILY_REDIS_PASSWORD"
         DB = 0
