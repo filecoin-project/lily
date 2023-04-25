@@ -18,7 +18,7 @@ import (
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/manifest"
 
-	miner10 "github.com/filecoin-project/go-state-types/builtin/v10/miner"
+	miner11 "github.com/filecoin-project/go-state-types/builtin/v11/miner"
 	miner8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
@@ -55,6 +55,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 		case actorstypes.Version10:
 			return load10(store, act.Head)
+
+		case actorstypes.Version11:
+			return load11(store, act.Head)
 
 		}
 	}
@@ -119,6 +122,9 @@ func MakeState(store adt.Store, av actorstypes.Version) (State, error) {
 
 	case actorstypes.Version10:
 		return make10(store)
+
+	case actorstypes.Version11:
+		return make11(store)
 
 	}
 	return nil, xerrors.Errorf("unknown actor version %d", av)
@@ -217,7 +223,7 @@ type Partition interface {
 	UnprovenSectors() (bitfield.BitField, error)
 }
 
-type SectorOnChainInfo = miner10.SectorOnChainInfo
+type SectorOnChainInfo = miner11.SectorOnChainInfo
 
 func PreferredSealProofTypeFromWindowPoStType(nver network.Version, proof abi.RegisteredPoStProof) (abi.RegisteredSealProof, error) {
 	// We added support for the new proofs in network version 7, and removed support for the old
@@ -240,15 +246,15 @@ func PreferredSealProofTypeFromWindowPoStType(nver network.Version, proof abi.Re
 	}
 
 	switch proof {
-	case abi.RegisteredPoStProof_StackedDrgWindow2KiBV1:
+	case abi.RegisteredPoStProof_StackedDrgWindow2KiBV1, abi.RegisteredPoStProof_StackedDrgWindow2KiBV1_1:
 		return abi.RegisteredSealProof_StackedDrg2KiBV1_1, nil
-	case abi.RegisteredPoStProof_StackedDrgWindow8MiBV1:
+	case abi.RegisteredPoStProof_StackedDrgWindow8MiBV1, abi.RegisteredPoStProof_StackedDrgWindow8MiBV1_1:
 		return abi.RegisteredSealProof_StackedDrg8MiBV1_1, nil
-	case abi.RegisteredPoStProof_StackedDrgWindow512MiBV1:
+	case abi.RegisteredPoStProof_StackedDrgWindow512MiBV1, abi.RegisteredPoStProof_StackedDrgWindow512MiBV1_1:
 		return abi.RegisteredSealProof_StackedDrg512MiBV1_1, nil
-	case abi.RegisteredPoStProof_StackedDrgWindow32GiBV1:
+	case abi.RegisteredPoStProof_StackedDrgWindow32GiBV1, abi.RegisteredPoStProof_StackedDrgWindow32GiBV1_1:
 		return abi.RegisteredSealProof_StackedDrg32GiBV1_1, nil
-	case abi.RegisteredPoStProof_StackedDrgWindow64GiBV1:
+	case abi.RegisteredPoStProof_StackedDrgWindow64GiBV1, abi.RegisteredPoStProof_StackedDrgWindow64GiBV1_1:
 		return abi.RegisteredSealProof_StackedDrg64GiBV1_1, nil
 	default:
 		return -1, xerrors.Errorf("unrecognized window post type: %d", proof)
@@ -257,15 +263,15 @@ func PreferredSealProofTypeFromWindowPoStType(nver network.Version, proof abi.Re
 
 func WinningPoStProofTypeFromWindowPoStProofType(nver network.Version, proof abi.RegisteredPoStProof) (abi.RegisteredPoStProof, error) {
 	switch proof {
-	case abi.RegisteredPoStProof_StackedDrgWindow2KiBV1:
+	case abi.RegisteredPoStProof_StackedDrgWindow2KiBV1, abi.RegisteredPoStProof_StackedDrgWindow2KiBV1_1:
 		return abi.RegisteredPoStProof_StackedDrgWinning2KiBV1, nil
-	case abi.RegisteredPoStProof_StackedDrgWindow8MiBV1:
+	case abi.RegisteredPoStProof_StackedDrgWindow8MiBV1, abi.RegisteredPoStProof_StackedDrgWindow8MiBV1_1:
 		return abi.RegisteredPoStProof_StackedDrgWinning8MiBV1, nil
-	case abi.RegisteredPoStProof_StackedDrgWindow512MiBV1:
+	case abi.RegisteredPoStProof_StackedDrgWindow512MiBV1, abi.RegisteredPoStProof_StackedDrgWindow512MiBV1_1:
 		return abi.RegisteredPoStProof_StackedDrgWinning512MiBV1, nil
-	case abi.RegisteredPoStProof_StackedDrgWindow32GiBV1:
+	case abi.RegisteredPoStProof_StackedDrgWindow32GiBV1, abi.RegisteredPoStProof_StackedDrgWindow32GiBV1_1:
 		return abi.RegisteredPoStProof_StackedDrgWinning32GiBV1, nil
-	case abi.RegisteredPoStProof_StackedDrgWindow64GiBV1:
+	case abi.RegisteredPoStProof_StackedDrgWindow64GiBV1, abi.RegisteredPoStProof_StackedDrgWindow64GiBV1_1:
 		return abi.RegisteredPoStProof_StackedDrgWinning64GiBV1, nil
 	default:
 		return -1, xerrors.Errorf("unknown proof type %d", proof)
@@ -337,6 +343,7 @@ func AllCodes() []cid.Cid {
 		(&state8{}).Code(),
 		(&state9{}).Code(),
 		(&state10{}).Code(),
+		(&state11{}).Code(),
 	}
 }
 
@@ -352,5 +359,6 @@ func VersionCodes() map[actorstypes.Version]cid.Cid {
 		actorstypes.Version8:  (&state8{}).Code(),
 		actorstypes.Version9:  (&state9{}).Code(),
 		actorstypes.Version10: (&state10{}).Code(),
+		actorstypes.Version11: (&state11{}).Code(),
 	}
 }

@@ -100,6 +100,7 @@ func TestNewProcessor(t *testing.T) {
 			miner.VersionCodes()[actorstypes.Version8]:  {minertask.V7SectorInfoExtractor{}},
 			miner.VersionCodes()[actorstypes.Version9]:  {minertask.V7SectorInfoExtractor{}},
 			miner.VersionCodes()[actorstypes.Version10]: {minertask.V7SectorInfoExtractor{}},
+			miner.VersionCodes()[actorstypes.Version11]: {minertask.V7SectorInfoExtractor{}},
 		},
 	)), proc.actorProcessors[tasktype.MinerSectorInfoV7])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(power.AllCodes(), powertask.ClaimedPowerExtractor{})), proc.actorProcessors[tasktype.PowerActorClaim])
@@ -123,6 +124,7 @@ func TestNewProcessor(t *testing.T) {
 			miner.VersionCodes()[actorstypes.Version8]:  {minertask.PreCommitInfoExtractorV8{}},
 			miner.VersionCodes()[actorstypes.Version9]:  {minertask.PreCommitInfoExtractorV9{}},
 			miner.VersionCodes()[actorstypes.Version10]: {minertask.PreCommitInfoExtractorV9{}},
+			miner.VersionCodes()[actorstypes.Version11]: {minertask.PreCommitInfoExtractorV9{}},
 		},
 	)), proc.actorProcessors[tasktype.MinerPreCommitInfo])
 
@@ -145,6 +147,7 @@ func TestNewProcessor(t *testing.T) {
 		map[cid.Cid][]actorstate.ActorStateExtractor{
 			verifreg.VersionCodes()[actorstypes.Version9]:  {verifregtask.ClaimExtractor{}},
 			verifreg.VersionCodes()[actorstypes.Version10]: {verifregtask.ClaimExtractor{}},
+			verifreg.VersionCodes()[actorstypes.Version11]: {verifregtask.ClaimExtractor{}},
 		},
 	)), proc.actorProcessors[tasktype.VerifiedRegistryClaim])
 

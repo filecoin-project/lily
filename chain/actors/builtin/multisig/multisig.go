@@ -15,7 +15,7 @@ import (
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/manifest"
 
-	msig10 "github.com/filecoin-project/go-state-types/builtin/v10/multisig"
+	msig11 "github.com/filecoin-project/go-state-types/builtin/v11/multisig"
 
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 
@@ -55,6 +55,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 		case actorstypes.Version10:
 			return load10(store, act.Head)
+
+		case actorstypes.Version11:
+			return load11(store, act.Head)
 
 		}
 	}
@@ -110,19 +113,19 @@ type State interface {
 	decodeTransaction(val *cbg.Deferred) (Transaction, error)
 }
 
-type Transaction = msig10.Transaction
+type Transaction = msig11.Transaction
 
 var Methods = builtintypes.MethodsMultisig
 
 // these types are the same between v0 and v6
-type ProposalHashData = msig10.ProposalHashData
-type ProposeReturn = msig10.ProposeReturn
-type ProposeParams = msig10.ProposeParams
-type ApproveReturn = msig10.ApproveReturn
-type TxnIDParams = msig10.TxnIDParams
+type ProposalHashData = msig11.ProposalHashData
+type ProposeReturn = msig11.ProposeReturn
+type ProposeParams = msig11.ProposeParams
+type ApproveReturn = msig11.ApproveReturn
+type TxnIDParams = msig11.TxnIDParams
 
 func txnParams(id uint64, data *ProposalHashData) ([]byte, error) {
-	params := msig10.TxnIDParams{ID: msig10.TxnID(id)}
+	params := msig11.TxnIDParams{ID: msig11.TxnID(id)}
 	if data != nil {
 		if data.Requester.Protocol() != address.ID {
 			return nil, fmt.Errorf("proposer address must be an ID address, was %s", data.Requester)
@@ -156,6 +159,7 @@ func AllCodes() []cid.Cid {
 		(&state8{}).Code(),
 		(&state9{}).Code(),
 		(&state10{}).Code(),
+		(&state11{}).Code(),
 	}
 }
 
@@ -171,5 +175,6 @@ func VersionCodes() map[actorstypes.Version]cid.Cid {
 		actorstypes.Version8:  (&state8{}).Code(),
 		actorstypes.Version9:  (&state9{}).Code(),
 		actorstypes.Version10: (&state10{}).Code(),
+		actorstypes.Version11: (&state11{}).Code(),
 	}
 }

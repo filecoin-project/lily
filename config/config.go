@@ -272,8 +272,7 @@ func EnsureExists(path string) error {
 	if err != nil {
 		return err
 	}
-
-	comm, err := config.ConfigUpdate(SampleConf(), nil, false)
+	comm, err := config.ConfigUpdate(SampleConf(), nil, config.Commented(false))
 	if err != nil {
 		return fmt.Errorf("comment: %w", err)
 	}
