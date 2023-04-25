@@ -9,11 +9,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [v0.15.1] - 2023-4-25
 
 ### Fix
-* fix: using the env variable for lily redis by @Terryhung in https://github.com/filecoin-project/lily/pull/1185
+* fix: using the env variable for lily redis (https://github.com/filecoin-project/lily/pull/1185)
 
 
 ### Chore
-* chore: update ffi version by @Terryhung in https://github.com/filecoin-project/lily/pull/1184
+* chore: update ffi version (https://github.com/filecoin-project/lily/pull/1184)
 
 
 <a name="v0.15.0"></a>
