@@ -5,6 +5,43 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.15.0"></a>
+## [v0.15.0] - 2023-4-25
+
+## DATABASE MIGRATION
+This release includes a migration which must be applied before deploying against an existing database.
+* [1.19](https://github.com/filecoin-project/lily/blob/master/schemas/v1/19_fevm_actor_stats.go)
+* [1.20](https://github.com/filecoin-project/lily/blob/master/schemas/v1/20_actor_mappings.go)
+* [1.21](https://github.com/filecoin-project/lily/blob/master/schemas/v1/21_actor_add_state.go)
+
+### Feat
+* feat: Add retry opt for asynq https://github.com/filecoin-project/lily/pull/1167
+* Create FEVM actor stats task https://github.com/filecoin-project/lily/pull/1173
+  * implement fevm_actor_stats task and schema
+    * task name `fevm_actor_stats`
+    * requires migration [1.19](https://github.com/filecoin-project/lily/blob/master/schemas/v1/19_fevm_actor_stats.go)
+* feat: add cmd to print actor codes and methods in CSV format to stdout https://github.com/filecoin-project/lily/pull/1155
+  * implement cmd for storing actor codes and methods
+    * cmd `lily chain actor-codes` 
+    * requires migration [1.20](https://github.com/filecoin-project/lily/blob/master/schemas/v1/20_actor_mappings.go)
+* feat: add more tasks for notifier default tasks https://github.com/filecoin-project/lily/pull/1178
+* feat: Add the state and code_cid for actors table https://github.com/filecoin-project/lily/pull/1174
+  * add the new field in actors
+    * requires migration [1.21](https://github.com/filecoin-project/lily/blob/master/schemas/v1/21_actor_add_state.go)
+* feat: add grafana agent and refactor configs https://github.com/filecoin-project/lily/pull/1180
+* Read redis address & username from env https://github.com/filecoin-project/lily/pull/1179
+
+
+### Fix
+* fix: log unknown actor type without returning error https://github.com/filecoin-project/lily/pull/1169
+* fix: update the go-state-types for resolving vm message task error https://github.com/filecoin-project/lily/pull/1170
+* fix: do not error on null or empty params for parsing message https://github.com/filecoin-project/lily/pull/1171
+
+### Chore
+* feat:update the lotus version https://github.com/filecoin-project/lily/pull/1153
+* feat: update the lotus version to v1.23.0 https://github.com/filecoin-project/lily/pull/1175
+
+
 <a name="v0.14.1"></a>
 ## [v0.14.1] - 2023-3-16
 
