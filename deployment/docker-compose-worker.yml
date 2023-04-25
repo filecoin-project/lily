@@ -5,7 +5,7 @@ networks:
 
 services:
   worker:
-    image: filecoin/lily:v0.13.0
+    image: filecoin/lily:v0.15.1
     container_name: lily-worker
     ports:
       # export the metrics port

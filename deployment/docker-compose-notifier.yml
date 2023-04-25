@@ -5,7 +5,7 @@ networks:
 
 services:
   notifier:
-    image: filecoin/lily:v0.13.0
+    image: filecoin/lily:v0.15.1
     container_name: lily-notifier
     ports:
       # export the metrics port
