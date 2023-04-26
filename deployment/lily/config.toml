@@ -34,7 +34,8 @@
   EnableSplitstore = true
   [Chainstore.Splitstore]
     ColdStoreType = "discard"
-    HotStoreFullGCFrequency = 10
+    HotStoreFullGCFrequency = 0
+    HotStoreMaxSpaceTarget = 0
 
 [Fevm]
   # EnableEthRPC enables eth_ rpc, and enables storing a mapping of eth transaction hashes to filecoin message Cids.
