@@ -15,6 +15,3 @@
   - `TRACING_REMOTE_URL`
   - `TRACING_REMOTE_USERNAME`
   - `TRACING_REMOTE_PASSWORD`
-- In **lily/config.toml**
-  - `[Queue.Notifiers.Notifier1]`: replace `REDIS_ADDRESS`
-  
