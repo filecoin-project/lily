@@ -19,19 +19,26 @@ import (
 	"github.com/filecoin-project/lily/tasks"
 )
 
-// A Task processes the extraction of actor state according the allowed types in its extracter map.
+// A Task processes the extraction of actor state according the allowed types in its extractor map.
 type Task struct {
-	node tasks.DataSource
-
-	extracterMap ActorExtractorMap
+	node            tasks.DataSource
+	extractorMap    ActorExtractorMap
+	dataTransformer ActorDataTransformer
 }
 
-func NewTask(node tasks.DataSource, extracterMap ActorExtractorMap) *Task {
-	p := &Task{
+func NewTask(node tasks.DataSource, extractorMap ActorExtractorMap) *Task {
+	return &Task{
 		node:         node,
-		extracterMap: extracterMap,
+		extractorMap: extractorMap,
 	}
-	return p
+}
+
+func NewTask2(node tasks.DataSource, extractorMap ActorExtractorMap, dataTransformer ActorDataTransformer) *Task {
+	return &Task{
+		node:            node,
+		extractorMap:    extractorMap,
+		dataTransformer: dataTransformer,
+	}
 }
 
 func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, executed *types.TipSet, candidates tasks.ActorStateChangeDiff) (model.Persistable, *visormodel.ProcessingReport, error) {
@@ -46,7 +53,7 @@ func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, execute
 	// Filter to just allowed actors
 	actors := make(map[address.Address]tasks.ActorStateChange)
 	for addr, ch := range candidates {
-		if t.extracterMap.Allow(ch.Actor.Code) {
+		if t.extractorMap.Allow(ch.Actor.Code) {
 			actors[addr] = ch
 		}
 	}
@@ -98,6 +105,15 @@ func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, execute
 		data = append(data, res.Data)
 	}
 
+	if t.dataTransformer != nil {
+		td, err := t.dataTransformer.Transform(ctx, data)
+		if err != nil {
+			log.Warnw("failed to transform with error: ", err)
+		} else {
+			data = td
+		}
+	}
+
 	log.Debugw("completed processing actor state changes", "height", current.Height(), "success", len(actors)-len(errorsDetected)-skippedActors, "errors", len(errorsDetected), "skipped", skippedActors, "time", time.Since(start))
 
 	if skippedActors > 0 {
@@ -130,7 +146,7 @@ func (t *Task) startActorStateExtraction(ctx context.Context, current, executed 
 				Current:    current,
 				Executed:   executed,
 			}
-			ae, ok := t.extracterMap.GetExtractors(info.Actor.Code)
+			ae, ok := t.extractorMap.GetExtractors(info.Actor.Code)
 			if !ok {
 				results <- &ActorStateResult{
 					Code:         ac.Actor.Code,
@@ -269,4 +285,8 @@ func (c *CustomTypedActorExtractorMap) GetExtractors(code cid.Cid) ([]ActorState
 		return nil, false
 	}
 	return ex, true
+}
+
+type ActorDataTransformer interface {
+	Transform(ctx context.Context, data model.PersistableList) (model.PersistableList, error)
 }

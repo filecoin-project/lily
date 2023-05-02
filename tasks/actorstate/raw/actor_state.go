@@ -3,6 +3,7 @@ package raw
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -44,4 +45,16 @@ func (RawActorStateExtractor) Extract(ctx context.Context, a actorstate.ActorInf
 		Code:   a.Actor.Code.String(),
 		State:  string(state),
 	}, nil
+}
+
+func (RawActorStateExtractor) Transform(ctx context.Context, data model.PersistableList) (model.PersistableList, error) {
+	actorStateList := make(commonmodel.ActorStateList, 0, len(data))
+	for _, d := range data {
+		a, ok := d.(*commonmodel.ActorState)
+		if !ok {
+			return nil, fmt.Errorf("expected Actor type but got: %T", d)
+		}
+		actorStateList = append(actorStateList, a)
+	}
+	return model.PersistableList{actorStateList}, nil
 }

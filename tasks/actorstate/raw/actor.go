@@ -3,6 +3,7 @@ package raw
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
@@ -63,4 +64,16 @@ func (RawActorExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, no
 		State:     stateStr,
 		CodeCID:   a.Actor.Code.String(),
 	}, nil
+}
+
+func (RawActorExtractor) Transform(ctx context.Context, data model.PersistableList) (model.PersistableList, error) {
+	actorList := make(commonmodel.ActorList, 0, len(data))
+	for _, d := range data {
+		a, ok := d.(*commonmodel.Actor)
+		if !ok {
+			return nil, fmt.Errorf("expected Actor type but got: %T", d)
+		}
+		actorList = append(actorList, a)
+	}
+	return model.PersistableList{actorList}, nil
 }
