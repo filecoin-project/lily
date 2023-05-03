@@ -33,7 +33,7 @@ func NewTask(node tasks.DataSource, extractorMap ActorExtractorMap) *Task {
 	}
 }
 
-func NewTask2(node tasks.DataSource, extractorMap ActorExtractorMap, dataTransformer ActorDataTransformer) *Task {
+func NewTaskWithTransformer(node tasks.DataSource, extractorMap ActorExtractorMap, dataTransformer ActorDataTransformer) *Task {
 	return &Task{
 		node:            node,
 		extractorMap:    extractorMap,
