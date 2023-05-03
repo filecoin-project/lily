@@ -31,9 +31,10 @@ import (
 
 	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lily/lens/util"
+	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 )
 
-var actorVersions = []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}
+var actorVersions = lotusactors.Versions
 
 var ChainCmd = &cli.Command{
 	Name:  "chain",
@@ -80,7 +81,7 @@ var ChainActorCodesCmd = &cli.Command{
 	Usage: "Print actor codes and names.",
 	Flags: []cli.Flag{configFlag, storageFlag},
 	Action: func(cctx *cli.Context) error {
-		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version11)
+		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version(actorVersions[len(actorVersions)-1]))
 		t := table.NewWriter()
 		t.AppendHeader(table.Row{"name", "family", "code"})
 
@@ -151,7 +152,7 @@ var ChainActorMethodsCmd = &cli.Command{
 	Usage: "Print actor method numbers and their human readable names.",
 	Flags: []cli.Flag{configFlag, storageFlag},
 	Action: func(cctx *cli.Context) error {
-		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version10)
+		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version(actorVersions[len(actorVersions)-1]))
 		t := table.NewWriter()
 		t.AppendHeader(table.Row{"actor_family", "method_name", "method_number"})
 
