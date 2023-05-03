@@ -153,8 +153,10 @@ func TestNewProcessor(t *testing.T) {
 
 	rae := &actorstate.RawActorExtractorMap{}
 	rae.Register(&rawtask.RawActorExtractor{})
-	require.Equal(t, actorstate.NewTask(nil, rae), proc.actorProcessors[tasktype.Actor])
+	rat := &rawtask.RawActorExtractor{}
+	require.Equal(t, actorstate.NewTask2(nil, rae, rat), proc.actorProcessors[tasktype.Actor])
 	rae1 := &actorstate.RawActorExtractorMap{}
 	rae1.Register(&rawtask.RawActorStateExtractor{})
-	require.Equal(t, actorstate.NewTask(nil, rae1), proc.actorProcessors[tasktype.ActorState])
+	rat1 := &rawtask.RawActorStateExtractor{}
+	require.Equal(t, actorstate.NewTask2(nil, rae1, rat1), proc.actorProcessors[tasktype.ActorState])
 }
