@@ -33,7 +33,7 @@ import (
 	"github.com/filecoin-project/lily/lens/util"
 )
 
-var actorVersions = []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+var actorVersions = []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}
 
 var ChainCmd = &cli.Command{
 	Name:  "chain",
@@ -80,7 +80,7 @@ var ChainActorCodesCmd = &cli.Command{
 	Usage: "Print actor codes and names.",
 	Flags: []cli.Flag{configFlag, storageFlag},
 	Action: func(cctx *cli.Context) error {
-		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version10)
+		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version11)
 		t := table.NewWriter()
 		t.AppendHeader(table.Row{"name", "family", "code"})
 
