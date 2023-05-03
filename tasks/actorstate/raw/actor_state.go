@@ -52,7 +52,7 @@ func (RawActorStateExtractor) Transform(ctx context.Context, data model.Persista
 	for _, d := range data {
 		a, ok := d.(*commonmodel.ActorState)
 		if !ok {
-			return nil, fmt.Errorf("expected Actor type but got: %T", d)
+			return nil, fmt.Errorf("expected ActorState type but got: %T", d)
 		}
 		actorStateList = append(actorStateList, a)
 	}
