@@ -583,11 +583,13 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 		case tasktype.Actor:
 			rae := &actorstate.RawActorExtractorMap{}
 			rae.Register(&rawtask.RawActorExtractor{})
-			out.ActorProcessors[t] = actorstate.NewTask(api, rae)
+			rat := &rawtask.RawActorExtractor{}
+			out.ActorProcessors[t] = actorstate.NewTaskWithTransformer(api, rae, rat)
 		case tasktype.ActorState:
 			rae := &actorstate.RawActorExtractorMap{}
 			rae.Register(&rawtask.RawActorStateExtractor{})
-			out.ActorProcessors[t] = actorstate.NewTask(api, rae)
+			rat := &rawtask.RawActorStateExtractor{}
+			out.ActorProcessors[t] = actorstate.NewTaskWithTransformer(api, rae, rat)
 
 			//
 			// Messages

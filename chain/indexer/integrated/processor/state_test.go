@@ -311,7 +311,8 @@ func TestMakeProcessorsActors(t *testing.T) {
 			rae := &actorstate.RawActorExtractorMap{}
 			rae.Register(&rawtask.RawActorExtractor{})
 			require.Len(t, proc.ActorProcessors, 1)
-			require.Equal(t, actorstate.NewTask(nil, rae), proc.ActorProcessors[tasktype.Actor])
+			rat := &rawtask.RawActorExtractor{}
+			require.Equal(t, actorstate.NewTaskWithTransformer(nil, rae, rat), proc.ActorProcessors[tasktype.Actor])
 
 		})
 
@@ -321,7 +322,8 @@ func TestMakeProcessorsActors(t *testing.T) {
 			rae := &actorstate.RawActorExtractorMap{}
 			rae.Register(&rawtask.RawActorStateExtractor{})
 			require.Len(t, proc.ActorProcessors, 1)
-			require.Equal(t, actorstate.NewTask(nil, rae), proc.ActorProcessors[tasktype.ActorState])
+			rat := &rawtask.RawActorStateExtractor{}
+			require.Equal(t, actorstate.NewTaskWithTransformer(nil, rae, rat), proc.ActorProcessors[tasktype.ActorState])
 		})
 	})
 }
