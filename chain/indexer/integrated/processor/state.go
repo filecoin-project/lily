@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -98,6 +100,8 @@ type ReportProcessor interface {
 var log = logging.Logger("lily/index/processor")
 
 const BuiltinTaskName = "builtin"
+
+const actorChangeLimiterEnv = "LILY_ACTOR_CHANGE_LIMITER"
 
 func New(api tasks.DataSource, name string, taskNames []string) (*StateProcessor, error) {
 	taskNames = append(taskNames, BuiltinTaskName)
@@ -311,18 +315,27 @@ func (sp *StateProcessor) startTipSets(ctx context.Context, current, executed *t
 }
 
 // Skip task processing when actor state changes abnormally.
-// The 10,000 is a threshold
 func (sp *StateProcessor) skipProcessing(changes tasks.ActorStateChangeDiff) error {
-	if len(changes) >= 10000 {
-		return errors.New("skip task - number of actor state changed abnormally")
+	// The 10,000 is a default threshold
+	limit := 10000
+
+	// Access the custom threshold set in the environment variable
+	s := os.Getenv(actorChangeLimiterEnv)
+	v, err := strconv.ParseInt(s, 10, 64)
+	if err == nil {
+		limit = int(v)
 	}
+
+	if len(changes) >= limit {
+		return errors.New(fmt.Sprintf("task skipped - max limit for handling actor state changes is %v", limit))
+	}
+
 	return nil
 }
 
 // startActor starts all ActorProcessor's in parallel, their results are emitted on the `results` channel.
 // A list containing all executed task names is returned.
 func (sp *StateProcessor) startActor(ctx context.Context, current, executed *types.TipSet, results chan *Result) []string {
-
 	if len(sp.actorProcessors) == 0 {
 		return nil
 	}
