@@ -2,6 +2,7 @@ package processor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -309,6 +310,15 @@ func (sp *StateProcessor) startTipSets(ctx context.Context, current, executed *t
 	return taskNames
 }
 
+// Skip task processing when actor state changes abnormally.
+// The 10,000 is a threshold
+func (sp *StateProcessor) skipProcessing(changes tasks.ActorStateChangeDiff) error {
+	if len(changes) >= 10000 {
+		return errors.New("skip task - number of actor state changed abnormally.")
+	}
+	return nil
+}
+
 // startActor starts all ActorProcessor's in parallel, their results are emitted on the `results` channel.
 // A list containing all executed task names is returned.
 func (sp *StateProcessor) startActor(ctx context.Context, current, executed *types.TipSet, results chan *Result) []string {
@@ -369,15 +379,15 @@ func (sp *StateProcessor) startActor(ctx context.Context, current, executed *typ
 					sp.pwg.Done()
 				}()
 
+				if err := sp.skipProcessing(changes); err != nil {
+					results <- genErrResult(ctx, err, name, start)
+					pl.Warnw("processor error", "error", err)
+					return
+				}
+
 				data, report, err := p.ProcessActors(ctx, current, executed, changes)
 				if err != nil {
-					stats.Record(ctx, metrics.ProcessingFailure.M(1))
-					results <- &Result{
-						Task:        name,
-						Error:       err,
-						StartedAt:   start,
-						CompletedAt: time.Now(),
-					}
+					results <- genErrResult(ctx, err, name, start)
 					pl.Warnw("processor error", "error", err)
 					return
 				}
@@ -392,6 +402,16 @@ func (sp *StateProcessor) startActor(ctx context.Context, current, executed *typ
 		}
 	}()
 	return taskNames
+}
+
+func genErrResult(ctx context.Context, err error, name string, start time.Time) *Result {
+	stats.Record(ctx, metrics.ProcessingFailure.M(1))
+	return &Result{
+		Task:        name,
+		Error:       err,
+		StartedAt:   start,
+		CompletedAt: time.Now(),
+	}
 }
 
 type IndexerProcessors struct {
