@@ -314,7 +314,7 @@ func (sp *StateProcessor) startTipSets(ctx context.Context, current, executed *t
 // The 10,000 is a threshold
 func (sp *StateProcessor) skipProcessing(changes tasks.ActorStateChangeDiff) error {
 	if len(changes) >= 10000 {
-		return errors.New("skip task - number of actor state changed abnormally.")
+		return errors.New("skip task - number of actor state changed abnormally")
 	}
 	return nil
 }
