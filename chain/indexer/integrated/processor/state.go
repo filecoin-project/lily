@@ -2,7 +2,6 @@ package processor
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -327,7 +326,7 @@ func (sp *StateProcessor) skipProcessing(changes tasks.ActorStateChangeDiff) err
 	}
 
 	if len(changes) >= limit {
-		return errors.New(fmt.Sprintf("task skipped - max limit for handling actor state changes is %v", limit))
+		return fmt.Errorf("task skipped - max limit for handling actor state changes is %v", limit)
 	}
 
 	return nil
