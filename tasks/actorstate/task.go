@@ -81,19 +81,19 @@ func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, execute
 	ll := log.With("height", int64(current.Height()))
 	ll.Debug("processing actor state changes")
 
-	data := make(model.PersistableList, 0, len(actors))
-	errorsDetected := make([]*ActorStateError, 0, len(actors))
-	skippedActors := 0
-
 	if len(actors) == 0 {
 		ll.Debug("no actor state changes found")
-		return data, report, nil
+		return model.PersistableList{}, report, nil
 	}
 
 	if t.exceedActorChangeLimit(actors) {
 		err := fmt.Errorf("task skipped - max limit for handling actor state changes")
-		return data, report, err
+		return nil, report, err
 	}
+
+	data := make(model.PersistableList, 0, len(actors))
+	errorsDetected := make([]*ActorStateError, 0, len(actors))
+	skippedActors := 0
 
 	start := time.Now()
 	ll.Debug("found actor state changes", "count", len(actors))
