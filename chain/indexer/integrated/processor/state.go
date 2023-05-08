@@ -370,7 +370,13 @@ func (sp *StateProcessor) startActor(ctx context.Context, current, executed *typ
 
 				data, report, err := p.ProcessActors(ctx, current, executed, changes)
 				if err != nil {
-					results <- genErrResult(ctx, err, name, start)
+					stats.Record(ctx, metrics.ProcessingFailure.M(1))
+					results <- &Result{
+						Task:        name,
+						Error:       err,
+						StartedAt:   start,
+						CompletedAt: time.Now(),
+					}
 					pl.Warnw("processor error", "error", err)
 					return
 				}
@@ -385,16 +391,6 @@ func (sp *StateProcessor) startActor(ctx context.Context, current, executed *typ
 		}
 	}()
 	return taskNames
-}
-
-func genErrResult(ctx context.Context, err error, name string, start time.Time) *Result {
-	stats.Record(ctx, metrics.ProcessingFailure.M(1))
-	return &Result{
-		Task:        name,
-		Error:       err,
-		StartedAt:   start,
-		CompletedAt: time.Now(),
-	}
 }
 
 type IndexerProcessors struct {
