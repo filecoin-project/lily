@@ -26,9 +26,6 @@ type ActorEvent struct {
 
 func (a *ActorEvent) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_events"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, a)
 }
@@ -40,9 +37,6 @@ func (al ActorEventList) Persist(ctx context.Context, s model.StorageBatch, vers
 		return nil
 	}
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_events"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, len(al))
 	return s.PersistModel(ctx, al)
 }

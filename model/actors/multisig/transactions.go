@@ -24,9 +24,6 @@ type MultisigTransaction struct {
 
 func (m *MultisigTransaction) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "multisig_transactions"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, m)
 }
@@ -35,9 +32,6 @@ type MultisigTransactionList []*MultisigTransaction
 
 func (ml MultisigTransactionList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "multisig_transactions"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, len(ml))
 	return s.PersistModel(ctx, ml)
 }

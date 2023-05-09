@@ -24,8 +24,6 @@ func (c ChainConsensus) Persist(ctx context.Context, s model.StorageBatch, versi
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_consensus"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	return s.PersistModel(ctx, c)
 }
@@ -41,8 +39,6 @@ func (c ChainConsensusList) Persist(ctx context.Context, s model.StorageBatch, v
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_consensus"))
 	metrics.RecordCount(ctx, metrics.PersistModel, len(c))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if len(c) == 0 {
 		return nil

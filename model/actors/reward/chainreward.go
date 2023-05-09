@@ -73,8 +73,6 @@ func (r *ChainReward) Persist(ctx context.Context, s model.StorageBatch, version
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_rewards"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	vr, ok := r.AsVersion(version)
 	if !ok {

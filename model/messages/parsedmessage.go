@@ -58,8 +58,6 @@ func (pm *ParsedMessage) AsVersion(version model.Version) (interface{}, bool) {
 
 func (pm *ParsedMessage) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "parsed_messages"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	vpm, ok := pm.AsVersion(version)
 	if !ok {
@@ -83,8 +81,6 @@ func (pms ParsedMessages) Persist(ctx context.Context, s model.StorageBatch, ver
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "parsed_messages"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if version.Major != 1 {
 		vpms := make([]interface{}, 0, len(pms))

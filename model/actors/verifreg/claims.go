@@ -26,8 +26,6 @@ type VerifiedRegistryClaim struct {
 
 func (v *VerifiedRegistryClaim) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "verified_registry_claim"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	return s.PersistModel(ctx, v)
 }
@@ -39,8 +37,6 @@ func (v VerifiedRegistryClaimList) Persist(ctx context.Context, s model.StorageB
 		return nil
 	}
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "verified_registry_claim"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	return s.PersistModel(ctx, v)
 }

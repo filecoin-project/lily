@@ -26,8 +26,6 @@ type DataCapBalance struct {
 
 func (d *DataCapBalance) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "data_cap_balances"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	return s.PersistModel(ctx, d)
 }
@@ -36,8 +34,6 @@ type DataCapBalanceList []*DataCapBalance
 
 func (d DataCapBalanceList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "data_cap_balances"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if len(d) == 0 {
 		return nil

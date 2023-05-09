@@ -33,9 +33,6 @@ func (m *MinerBeneficiary) Persist(ctx context.Context, s model.StorageBatch, ve
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_beneficiaries"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, m)
 }
@@ -47,8 +44,6 @@ func (ml MinerBeneficiaryList) Persist(ctx context.Context, s model.StorageBatch
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_beneficiaries"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if len(ml) == 0 {
 		return nil

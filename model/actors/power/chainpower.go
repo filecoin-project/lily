@@ -83,8 +83,6 @@ func (cp *ChainPower) Persist(ctx context.Context, s model.StorageBatch, version
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_powers"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	vcp, ok := cp.AsVersion(version)
 	if !ok {
@@ -108,8 +106,6 @@ func (cpl ChainPowerList) Persist(ctx context.Context, s model.StorageBatch, ver
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_powers"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if len(cpl) == 0 {
 		return nil

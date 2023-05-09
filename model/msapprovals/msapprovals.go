@@ -28,9 +28,6 @@ type MultisigApproval struct {
 
 func (ma *MultisigApproval) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "multisig_approvals"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, ma)
 }
@@ -42,9 +39,6 @@ func (mal MultisigApprovalList) Persist(ctx context.Context, s model.StorageBatc
 		return nil
 	}
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "multisig_approvals"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, len(mal))
 	return s.PersistModel(ctx, mal)
 }

@@ -110,8 +110,6 @@ func (msi *MinerSectorInfoV7) AsVersion(version model.Version) (interface{}, boo
 
 func (msi *MinerSectorInfoV7) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_sector_infos_v7"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	m, ok := msi.AsVersion(version)
 	if !ok {
@@ -134,8 +132,6 @@ func (ml MinerSectorInfoV7List) Persist(ctx context.Context, s model.StorageBatc
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_sector_infos_v7"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if len(ml) == 0 {
 		return nil
@@ -185,8 +181,6 @@ func (msi *MinerSectorInfoV1_6) AsVersion(version model.Version) (interface{}, b
 
 func (msi *MinerSectorInfoV1_6) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_sector_infos"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	m, ok := msi.AsVersion(version)
 	if !ok {
@@ -207,8 +201,6 @@ func (ml MinerSectorInfoV1_6List) Persist(ctx context.Context, s model.StorageBa
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_sector_infos"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if len(ml) == 0 {
 		return nil

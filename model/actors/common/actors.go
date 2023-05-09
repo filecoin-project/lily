@@ -46,8 +46,6 @@ func (a *Actor) Persist(ctx context.Context, s model.StorageBatch, version model
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actors"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	return s.PersistModel(ctx, a)
 }
@@ -64,8 +62,6 @@ func (actors ActorList) Persist(ctx context.Context, s model.StorageBatch, versi
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actors"))
 	metrics.RecordCount(ctx, metrics.PersistModel, len(actors))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if len(actors) == 0 {
 		return nil
@@ -95,9 +91,6 @@ func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, version
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_states"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, as)
 }
@@ -113,8 +106,6 @@ func (states ActorStateList) Persist(ctx context.Context, s model.StorageBatch, 
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_states"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if len(states) == 0 {
 		return nil
@@ -143,17 +134,12 @@ func (a *ActorCode) Persist(ctx context.Context, s model.StorageBatch, version m
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_codes"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	return s.PersistModel(ctx, a)
 }
 
 func (acl ActorCodeList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_codes"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, len(acl))
 	return s.PersistModel(ctx, acl)
 }
@@ -177,17 +163,12 @@ func (a *ActorMethod) Persist(ctx context.Context, s model.StorageBatch, version
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_methods"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	return s.PersistModel(ctx, a)
 }
 
 func (acl ActorMethodList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_methods"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, len(acl))
 	return s.PersistModel(ctx, acl)
 }

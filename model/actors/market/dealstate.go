@@ -22,9 +22,6 @@ type MarketDealState struct {
 
 func (ds *MarketDealState) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "market_deal_states"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, ds)
 }
@@ -39,9 +36,6 @@ func (dss MarketDealStates) Persist(ctx context.Context, s model.StorageBatch, v
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "market_deal_states"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, len(dss))
 	return s.PersistModel(ctx, dss)
 }
