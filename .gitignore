@@ -22,4 +22,4 @@ build/.*
 support/tools/bin
 
 # Deployment
-deployment/.env
+*.env

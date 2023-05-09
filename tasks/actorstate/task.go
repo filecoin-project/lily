@@ -48,15 +48,17 @@ const actorChangeLimiterEnv = "LILY_ACTOR_CHANGE_LIMITER"
 const defaultActorChangeLimit = 10000
 
 // Skip task processing when actor state changes abnormally.
-func (t *Task) exceedActorChangeLimit(changes map[address.Address]tasks.ActorStateChange) bool {
+func (t *Task) exceedsActorChangeLimit(changes map[address.Address]tasks.ActorStateChange) bool {
 	// The 10,000 is a default threshold
 	limit := defaultActorChangeLimit
 
 	// Access the custom threshold set in the environment variable
-	s := os.Getenv(actorChangeLimiterEnv)
-	v, err := strconv.ParseInt(s, 10, 64)
-	if err == nil {
-		limit = int(v)
+	s, ok := os.LookupEnv(actorChangeLimiterEnv)
+	if ok {
+		v, err := strconv.ParseInt(s, 10, 64)
+		if err == nil {
+			limit = int(v)
+		}
 	}
 
 	return len(changes) > limit
@@ -86,7 +88,7 @@ func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, execute
 		return model.PersistableList{}, report, nil
 	}
 
-	if t.exceedActorChangeLimit(actors) {
+	if t.exceedsActorChangeLimit(actors) {
 		err := fmt.Errorf("task skipped - max limit for handling actor state changes")
 		return nil, report, err
 	}
