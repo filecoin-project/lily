@@ -52,6 +52,8 @@ type LilyAPI interface {
 	ChainGetParentMessages(context.Context, cid.Cid) ([]api.Message, error)                            //perm:read
 	ChainSetHead(context.Context, types.TipSetKey) error                                               //perm:read
 	ChainGetGenesis(context.Context) (*types.TipSet, error)                                            //perm:read
+	ChainPrune(ctx context.Context, opts api.PruneOpts) error                                          //perm:admin
+	ChainHotGC(ctx context.Context, opts api.HotGCOpts) error                                          //perm:admin
 
 	// trigger graceful shutdown
 	Shutdown(context.Context) error
