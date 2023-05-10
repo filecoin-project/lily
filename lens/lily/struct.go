@@ -61,8 +61,8 @@ type LilyAPIStruct struct {
 		ChainGetTipSetAfterHeight func(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error) `perm:"read"`
 		ChainSetHead              func(context.Context, types.TipSetKey) error                                  `perm:"read"`
 		ChainGetGenesis           func(context.Context) (*types.TipSet, error)                                  `perm:"read"`
-		ChainPrune                func(ctx context.Context, opts api.PruneOpts) error                           `perm:"admin"`
-		ChainHotGC                func(ctx context.Context, opts api.HotGCOpts) error                           `perm:"admin"`
+		ChainPrune                func(ctx context.Context, opts api.PruneOpts) error                           `perm:"read"`
+		ChainHotGC                func(ctx context.Context, opts api.HotGCOpts) error                           `perm:"read"`
 
 		LogList          func(context.Context) ([]string, error)     `perm:"read"`
 		LogSetLevel      func(context.Context, string, string) error `perm:"read"`
