@@ -45,9 +45,6 @@ type VMMessage struct {
 
 func (v *VMMessage) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "vm_messages"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, v)
 }
@@ -59,9 +56,6 @@ func (vl VMMessageList) Persist(ctx context.Context, s model.StorageBatch, versi
 		return nil
 	}
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "vm_messages"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, len(vl))
 	return s.PersistModel(ctx, vl)
 }

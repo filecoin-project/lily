@@ -58,8 +58,6 @@ func (c *ChainEconomics) AsVersion(version model.Version) (interface{}, bool) {
 
 func (c *ChainEconomics) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_economics"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	m, ok := c.AsVersion(version)
 	if !ok {
@@ -83,8 +81,6 @@ func (l ChainEconomicsList) Persist(ctx context.Context, s model.StorageBatch, v
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_economics"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if version.Major != 1 {
 		// Support older versions, but in a non-optimal way

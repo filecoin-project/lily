@@ -89,8 +89,6 @@ func (mpi *MinerPreCommitInfo) AsVersion(version model.Version) (interface{}, bo
 
 func (mpi *MinerPreCommitInfo) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_pre_commit_infos"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	m, ok := mpi.AsVersion(version)
 	if !ok {
@@ -111,8 +109,6 @@ func (ml MinerPreCommitInfoList) Persist(ctx context.Context, s model.StorageBat
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_pre_commit_infos"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if len(ml) == 0 {
 		return nil

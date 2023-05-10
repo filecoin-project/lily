@@ -53,8 +53,6 @@ func (ia *IDAddress) AsVersion(version model.Version) (interface{}, bool) {
 
 func (ia *IDAddress) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "id_addresses"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	m, ok := ia.AsVersion(version)
 	if !ok {
@@ -75,8 +73,6 @@ func (ias IDAddressList) Persist(ctx context.Context, s model.StorageBatch, vers
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "id_addresses"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if version.Major != 1 {
 		// Support older versions, but in a non-optimal way

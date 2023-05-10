@@ -59,8 +59,6 @@ func (m *MinerLockedFund) Persist(ctx context.Context, s model.StorageBatch, ver
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_locked_funds"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	vm, ok := m.AsVersion(version)
 	if !ok {
@@ -78,8 +76,6 @@ func (ml MinerLockedFundsList) Persist(ctx context.Context, s model.StorageBatch
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_locked_funds"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if len(ml) == 0 {
 		return nil

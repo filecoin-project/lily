@@ -69,8 +69,6 @@ func (g *MessageGasEconomy) AsVersion(version model.Version) (interface{}, bool)
 
 func (g *MessageGasEconomy) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "message_gas_economy"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	vm, ok := g.AsVersion(version)
 	if !ok {

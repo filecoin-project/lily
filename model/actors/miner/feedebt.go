@@ -53,8 +53,6 @@ func (m *MinerFeeDebt) Persist(ctx context.Context, s model.StorageBatch, versio
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_fee_debts"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	vm, ok := m.AsVersion(version)
 	if !ok {
@@ -72,8 +70,6 @@ func (ml MinerFeeDebtList) Persist(ctx context.Context, s model.StorageBatch, ve
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_fee_debts"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if len(ml) == 0 {
 		return nil

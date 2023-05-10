@@ -25,8 +25,6 @@ type VerifiedRegistryVerifier struct {
 
 func (v *VerifiedRegistryVerifier) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "verified_registry_verifier"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	return s.PersistModel(ctx, v)
 }
@@ -35,8 +33,6 @@ type VerifiedRegistryVerifiersList []*VerifiedRegistryVerifier
 
 func (v VerifiedRegistryVerifiersList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "verified_registry_verifier"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	return s.PersistModel(ctx, v)
 }
@@ -52,8 +48,6 @@ type VerifiedRegistryVerifiedClient struct {
 
 func (v *VerifiedRegistryVerifiedClient) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "verified_registry_verified_client"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	return s.PersistModel(ctx, v)
 }
@@ -62,8 +56,6 @@ type VerifiedRegistryVerifiedClientsList []*VerifiedRegistryVerifiedClient
 
 func (v VerifiedRegistryVerifiedClientsList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "verified_registry_verified_client"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	return s.PersistModel(ctx, v)
 }

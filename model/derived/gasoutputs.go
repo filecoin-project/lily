@@ -108,8 +108,6 @@ func (g *GasOutputs) AsVersion(version model.Version) (interface{}, bool) {
 
 func (g *GasOutputs) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "derived_gas_outputs"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	vg, ok := g.AsVersion(version)
 	if !ok {
@@ -133,8 +131,6 @@ func (l GasOutputsList) Persist(ctx context.Context, s model.StorageBatch, versi
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "derived_gas_outputs"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if version.Major != 1 {
 		vgl := make([]interface{}, 0, len(l))

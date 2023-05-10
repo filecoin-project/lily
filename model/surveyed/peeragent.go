@@ -34,8 +34,6 @@ type PeerAgent struct {
 
 func (p *PeerAgent) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "surveyed_peer_agents"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	return s.PersistModel(ctx, p)
 }
@@ -53,8 +51,6 @@ func (l PeerAgentList) Persist(ctx context.Context, s model.StorageBatch, versio
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "surveyed_peer_agents"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	return s.PersistModel(ctx, l)
 }

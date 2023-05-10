@@ -63,6 +63,8 @@ func (me *ModelExporter) ExportResult(ctx context.Context, strg model.Storage, h
 			defer span.End()
 			start := time.Now()
 			ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, res.Name))
+			stop := metrics.Timer(ctx, metrics.PersistDuration)
+			defer stop()
 
 			if err := strg.PersistBatch(ctx, res.Model); err != nil {
 				stats.Record(ctx, metrics.PersistFailure.M(1))

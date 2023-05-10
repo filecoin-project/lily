@@ -74,8 +74,6 @@ func (m *Message) AsVersion(version model.Version) (interface{}, bool) {
 
 func (m *Message) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "messages"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	vm, ok := m.AsVersion(version)
 	if !ok {
@@ -99,8 +97,6 @@ func (ms Messages) Persist(ctx context.Context, s model.StorageBatch, version mo
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "messages"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if version.Major != 1 {
 		vms := make([]interface{}, 0, len(ms))

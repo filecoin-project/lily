@@ -54,8 +54,6 @@ func (p *PowerActorClaim) Persist(ctx context.Context, s model.StorageBatch, ver
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "power_actor_claims"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	vp, ok := p.AsVersion(version)
 	if !ok {
@@ -73,8 +71,6 @@ func (pl PowerActorClaimList) Persist(ctx context.Context, s model.StorageBatch,
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "power_actor_claims"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	if len(pl) == 0 {
 		return nil

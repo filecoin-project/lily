@@ -33,8 +33,6 @@ type MinerProtocol struct {
 
 func (m *MinerProtocol) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "surveyed_miner_protocols"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	return s.PersistModel(ctx, m)
 }
@@ -52,8 +50,6 @@ func (m MinerProtocolList) Persist(ctx context.Context, s model.StorageBatch, ve
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "surveyed_miner_protocols"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
 
 	return s.PersistModel(ctx, m)
 }

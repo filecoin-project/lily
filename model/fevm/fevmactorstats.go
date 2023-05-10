@@ -34,9 +34,6 @@ type FEVMActorStats struct {
 
 func (f *FEVMActorStats) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_actor_stats"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, f)
 }
@@ -48,9 +45,6 @@ func (f FEVMActorStatsList) Persist(ctx context.Context, s model.StorageBatch, v
 		return nil
 	}
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_actor_stats"))
-	stop := metrics.Timer(ctx, metrics.PersistDuration)
-	defer stop()
-
 	metrics.RecordCount(ctx, metrics.PersistModel, len(f))
 	return s.PersistModel(ctx, f)
 }
