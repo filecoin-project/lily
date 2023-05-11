@@ -11,10 +11,10 @@ import (
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
+	"github.com/filecoin-project/lotus/node/modules/dtypes"
 	"github.com/filecoin-project/lotus/node/modules/helpers"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/ipfs/go-cid"
-	"github.com/ipfs/go-datastore"
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
 )
@@ -23,7 +23,7 @@ var log = logging.Logger("lily/lens")
 
 var ErrExecutionTraceNotFound = fmt.Errorf("failed to find execution trace")
 
-func StateManager(lmctx helpers.MetricsCtx, lc fx.Lifecycle, cs *store.ChainStore, exec stmgr.Executor, sys vm.SyscallBuilder, us stmgr.UpgradeSchedule, bs beacon.Schedule, em stmgr.ExecMonitor, ds datastore.Batching, msgIndex index.MsgIndex) (*stmgr.StateManager, error) {
+func StateManager(lmctx helpers.MetricsCtx, lc fx.Lifecycle, cs *store.ChainStore, exec stmgr.Executor, sys vm.SyscallBuilder, us stmgr.UpgradeSchedule, bs beacon.Schedule, em stmgr.ExecMonitor, ds dtypes.MetadataDS, msgIndex index.MsgIndex) (*stmgr.StateManager, error) {
 	sm, err := stmgr.NewStateManagerWithUpgradeScheduleAndMonitor(cs, exec, sys, us, bs, em, ds, msgIndex)
 	if err != nil {
 		return nil, err
