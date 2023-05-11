@@ -1,0 +1,74 @@
+version: '3.5'
+
+services:
+  lily:
+    image: filecoin/lily:v0.15.1
+    container_name: lily
+    ports:
+      # export the metrics port
+      - 9991:9991
+    env_file:
+      - ./.env
+    volumes:
+      # holds lily datastore repo
+      - lily_data:/var/lib/lily
+      # persist params through restarts
+      - lily_tmp:/var/tmp/filecoin-proof-parameters
+      # snapshot
+      - ./snapshot:/var/lib/lily/snapshot
+      # lily config
+      - ./lily/config.toml:/var/lib/lily/config.toml
+      - ./lily/docker_init.sh:/usr/bin/docker_init.sh
+    entrypoint: /usr/bin/docker_init.sh
+    restart: always
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node-exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /:/host:ro,rslave
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    ports:
+      - 9100:9100
+    restart: always
+    deploy:
+      mode: global
+  promtail:
+    image: grafana/promtail:2.7.0
+    container_name: promtail
+    env_file:
+      - ./.env
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/hosts:/etc/hosts:ro
+    entrypoint: [ "/bin/sh","-c" ]
+    command:
+      - "/usr/bin/promtail -config.file=/etc/promtail/config.yml -client.external-labels=hostname=$(tail -2 /etc/hosts | cut -d' ' -f1 | head -1)  -config.expand-env"
+  grafana-agent:
+    image: "grafana/agent:v0.32.1"
+    restart: always
+    pid: "host"
+    env_file:
+      - ./.env
+    volumes:
+      - ./agent:/etc/agent
+    entrypoint:
+      - /bin/agent
+      - -server.http.address=0.0.0.0:12345
+      - -config.file=/etc/agent/config.yml
+      - -config.expand-env
+      - -config.enable-read-api
+    ports:
+      - "12345:12345"
+
+volumes:
+  lily_data: {}
+  lily_tmp: {}
