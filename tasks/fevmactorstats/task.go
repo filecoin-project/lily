@@ -43,6 +43,8 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 			attribute.String("processor", "fevmactorstats"),
 		)
 	}
+	defer span.End()
+
 	report := &visormodel.ProcessingReport{
 		Height:    int64(ts.Height()),
 		StateRoot: ts.ParentState().String(),
