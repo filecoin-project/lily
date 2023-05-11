@@ -52,6 +52,7 @@ var ChainCmd = &cli.Command{
 		ChainStateInspect,
 		ChainStateCompute,
 		ChainStateComputeRange,
+		ChainPruneCmd,
 	},
 }
 
@@ -810,6 +811,105 @@ var ChainSetHeadCmd = &cli.Command{
 		}
 
 		return nil
+	},
+}
+
+var chainPruneHotGCCmd = &cli.Command{
+	Name:  "hot",
+	Usage: "run online (badger vlog) garbage collection on hotstore",
+	Flags: []cli.Flag{
+		&cli.Float64Flag{Name: "threshold", Value: 0.01, Usage: "Threshold of vlog garbage for gc"},
+		&cli.BoolFlag{Name: "periodic", Value: false, Usage: "Run periodic gc over multiple vlogs. Otherwise run gc once"},
+	},
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+		lapi, closer, err := GetAPI(ctx)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		opts := api.HotGCOpts{}
+		opts.Periodic = cctx.Bool("periodic")
+		opts.Threshold = cctx.Float64("threshold")
+
+		gcStart := time.Now()
+		err = lapi.ChainHotGC(ctx, opts)
+		gcTime := time.Since(gcStart)
+		fmt.Printf("Online GC took %v (periodic <%t> threshold <%f>)", gcTime, opts.Periodic, opts.Threshold)
+		return err
+	},
+}
+
+var chainPruneHotMovingGCCmd = &cli.Command{
+	Name:  "hot-moving",
+	Usage: "run moving gc on hotstore",
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+		lapi, closer, err := GetAPI(ctx)
+		if err != nil {
+			return err
+		}
+		defer closer()
+		opts := api.HotGCOpts{}
+		opts.Moving = true
+
+		gcStart := time.Now()
+		err = lapi.ChainHotGC(ctx, opts)
+		gcTime := time.Since(gcStart)
+		fmt.Printf("Moving GC took %v", gcTime)
+		return err
+	},
+}
+
+var chainPruneColdCmd = &cli.Command{
+	Name:  "compact-cold",
+	Usage: "force splitstore compaction on cold store state and run gc",
+	Flags: []cli.Flag{
+		&cli.BoolFlag{
+			Name:  "online-gc",
+			Value: false,
+			Usage: "use online gc for garbage collecting the coldstore",
+		},
+		&cli.BoolFlag{
+			Name:  "moving-gc",
+			Value: false,
+			Usage: "use moving gc for garbage collecting the coldstore",
+		},
+		&cli.IntFlag{
+			Name:  "retention",
+			Value: -1,
+			Usage: "specify state retention policy",
+		},
+	},
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+		lapi, closer, err := GetAPI(ctx)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		opts := api.PruneOpts{}
+		if cctx.Bool("online-gc") {
+			opts.MovingGC = false
+		}
+		if cctx.Bool("moving-gc") {
+			opts.MovingGC = true
+		}
+		opts.RetainState = int64(cctx.Int("retention"))
+
+		return lapi.ChainPrune(ctx, opts)
+	},
+}
+
+var ChainPruneCmd = &cli.Command{
+	Name:  "prune",
+	Usage: "splitstore gc",
+	Subcommands: []*cli.Command{
+		chainPruneColdCmd,
+		chainPruneHotGCCmd,
+		chainPruneHotMovingGCCmd,
 	},
 }
 
