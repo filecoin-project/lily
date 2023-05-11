@@ -290,6 +290,10 @@ github.com/filecoin-project/go-amt-ipld/v3 v3.1.1/go.mod h1:UjM2QhDFrrjD5s1CdnkJ
 github.com/filecoin-project/go-amt-ipld/v4 v4.0.0/go.mod h1:gF053YQ4BIpzTNDoEwHZas7U3oAwncDVGvOHyY8oDpE=
 github.com/filecoin-project/go-amt-ipld/v4 v4.0.1-0.20220601173204-7b82b2c4bc9c h1:XmrGEclwu8YtP+FhQyPkWtmIOLBj45LK43I0VJA0jwM=
 github.com/filecoin-project/go-amt-ipld/v4 v4.0.1-0.20220601173204-7b82b2c4bc9c/go.mod h1:I2C4qb5X5qNqcguwvA95ycNqRe3NSc6iD3EuzBfelPU=
+github.com/filecoin-project/go-amt-ipld/v4 v4.1.0 h1:FGgkMxLz2/eZWmpITRXbgX78znZiDMAbBlmK03lry1Q=
+github.com/filecoin-project/go-amt-ipld/v4 v4.1.0/go.mod h1:ZY43es4ZuaURy3u31wVb+soWCRj42G/vVs3ew/kjn3I=
+github.com/filecoin-project/go-amt-ipld/v4 v4.1.1-0.20230511024927-ecc426107fac h1:O2XNwAvufSLDPX0Ercs571Py01pLzpUN0DypFdAdON8=
+github.com/filecoin-project/go-amt-ipld/v4 v4.1.1-0.20230511024927-ecc426107fac/go.mod h1:0eDVF7pROvxrsxvLJx+SJZXqRaXXcEPUcgb/rG0zGU4=
 github.com/filecoin-project/go-bitfield v0.2.0/go.mod h1:CNl9WG8hgR5mttCnUErjcQjGvuiZjRqK9rHVBsQF4oM=
 github.com/filecoin-project/go-bitfield v0.2.3/go.mod h1:CNl9WG8hgR5mttCnUErjcQjGvuiZjRqK9rHVBsQF4oM=
 github.com/filecoin-project/go-bitfield v0.2.4 h1:uZ7MeE+XfM5lqrHJZ93OnhQKc/rveW8p9au0C68JPgk=
