@@ -28,6 +28,7 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 			attribute.String("processor", "blocks"),
 		)
 	}
+	defer span.End()
 
 	var pl model.PersistableList
 	for _, bh := range ts.Blocks() {
