@@ -3,6 +3,8 @@ package actorstate
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -41,6 +43,27 @@ func NewTaskWithTransformer(node tasks.DataSource, extractorMap ActorExtractorMa
 	}
 }
 
+const actorChangeLimiterEnv = "LILY_ACTOR_CHANGE_LIMITER"
+
+const defaultActorChangeLimit = 10000
+
+// Skip task processing when actor state changes abnormally.
+func (t *Task) exceedsActorChangeLimit(changes map[address.Address]tasks.ActorStateChange) bool {
+	// The 10,000 is a default threshold
+	limit := defaultActorChangeLimit
+
+	// Access the custom threshold set in the environment variable
+	s, ok := os.LookupEnv(actorChangeLimiterEnv)
+	if ok {
+		v, err := strconv.ParseInt(s, 10, 64)
+		if err == nil {
+			limit = int(v)
+		}
+	}
+
+	return len(changes) > limit
+}
+
 func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, executed *types.TipSet, candidates tasks.ActorStateChangeDiff) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ProcessActors")
 	defer span.End()
@@ -60,14 +83,19 @@ func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, execute
 	ll := log.With("height", int64(current.Height()))
 	ll.Debug("processing actor state changes")
 
+	if len(actors) == 0 {
+		ll.Debug("no actor state changes found")
+		return model.PersistableList{}, report, nil
+	}
+
+	if t.exceedsActorChangeLimit(actors) {
+		err := fmt.Errorf("task skipped - max limit for handling actor state changes")
+		return nil, report, err
+	}
+
 	data := make(model.PersistableList, 0, len(actors))
 	errorsDetected := make([]*ActorStateError, 0, len(actors))
 	skippedActors := 0
-
-	if len(actors) == 0 {
-		ll.Debug("no actor state changes found")
-		return data, report, nil
-	}
 
 	start := time.Now()
 	ll.Debug("found actor state changes", "count", len(actors))

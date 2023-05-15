@@ -312,7 +312,6 @@ func (sp *StateProcessor) startTipSets(ctx context.Context, current, executed *t
 // startActor starts all ActorProcessor's in parallel, their results are emitted on the `results` channel.
 // A list containing all executed task names is returned.
 func (sp *StateProcessor) startActor(ctx context.Context, current, executed *types.TipSet, results chan *Result) []string {
-
 	if len(sp.actorProcessors) == 0 {
 		return nil
 	}
