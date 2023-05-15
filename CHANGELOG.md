@@ -5,6 +5,25 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.16.0"></a>
+## [v0.16.0] - 2023-5-15
+
+### Feat
+* feat: add single lily node deployment (https://github.com/filecoin-project/lily/pull/1203)
+* feat: add new command: prune (https://github.com/filecoin-project/lily/pull/1198)
+* feat: add filter for actor changes (https://github.com/filecoin-project/lily/pull/1195)
+
+### Fix
+* fix: batch insert actor & actor_state data (https://github.com/filecoin-project/lily/pull/1192)
+* fix: add missing span.End() (https://github.com/filecoin-project/lily/pull/1202)
+
+### Chore
+* chore: Update the actor codes versions (https://github.com/filecoin-project/lily/pull/1193)
+* chore: publish images for every master commit (https://github.com/filecoin-project/lily/pull/1196)
+* chore: move persist duration timer to ExportResult (https://github.com/filecoin-project/lily/pull/1197)
+* chore: update go-amt-ipld (https://github.com/filecoin-project/lily/pull/1199)
+* chore: update go-hamt-ipld (https://github.com/filecoin-project/lily/pull/1200)
+
 <a name="v0.15.1"></a>
 ## [v0.15.1] - 2023-4-25
 
