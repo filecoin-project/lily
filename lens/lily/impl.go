@@ -15,6 +15,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/lotus/node/impl/common"
 	"github.com/filecoin-project/lotus/node/impl/full"
@@ -55,6 +56,7 @@ type LilyNodeAPI struct {
 	full.ChainAPI
 	full.StateAPI
 	full.SyncAPI
+	full.EthModuleAPI
 	common.CommonAPI
 	Events    *events.Events
 	Scheduler *schedule.Scheduler
@@ -551,6 +553,10 @@ func (m *LilyNodeAPI) GetMessageExecutionsForTipSet(ctx context.Context, next *t
 // ComputeBaseFee calculates the base-fee of the specified tipset.
 func (m *LilyNodeAPI) ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi.TokenAmount, error) {
 	return m.ChainAPI.Chain.ComputeBaseFee(ctx, ts)
+}
+
+func (m *LilyNodeAPI) EthGetBlockByHash(ctx context.Context, blkHash ethtypes.EthHash, fullTxInfo bool) (ethtypes.EthBlock, error) {
+	return m.EthModuleAPI.EthGetBlockByHash(ctx, blkHash, fullTxInfo)
 }
 
 // MessagesForTipSetBlocks returns messages stored in the blocks of the specified tipset, messages may be duplicated

@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/api/v0api"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -49,20 +50,21 @@ type LilyAPIStruct struct {
 
 		SyncState func(ctx context.Context) (*api.SyncState, error) `perm:"read"`
 
-		ChainHead                 func(context.Context) (*types.TipSet, error)                                  `perm:"read"`
-		ChainGetBlock             func(context.Context, cid.Cid) (*types.BlockHeader, error)                    `perm:"read"`
-		ChainReadObj              func(context.Context, cid.Cid) ([]byte, error)                                `perm:"read"`
-		ChainStatObj              func(context.Context, cid.Cid, cid.Cid) (api.ObjStat, error)                  `perm:"read"`
-		ChainGetTipSet            func(context.Context, types.TipSetKey) (*types.TipSet, error)                 `perm:"read"`
-		ChainGetTipSetByHeight    func(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error) `perm:"read"`
-		ChainGetBlockMessages     func(context.Context, cid.Cid) (*api.BlockMessages, error)                    `perm:"read"`
-		ChainGetParentReceipts    func(context.Context, cid.Cid) ([]*types.MessageReceipt, error)               `perm:"read"`
-		ChainGetParentMessages    func(context.Context, cid.Cid) ([]api.Message, error)                         `perm:"read"`
-		ChainGetTipSetAfterHeight func(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error) `perm:"read"`
-		ChainSetHead              func(context.Context, types.TipSetKey) error                                  `perm:"read"`
-		ChainGetGenesis           func(context.Context) (*types.TipSet, error)                                  `perm:"read"`
-		ChainPrune                func(ctx context.Context, opts api.PruneOpts) error                           `perm:"read"`
-		ChainHotGC                func(ctx context.Context, opts api.HotGCOpts) error                           `perm:"read"`
+		ChainHead                 func(context.Context) (*types.TipSet, error)                                                    `perm:"read"`
+		ChainGetBlock             func(context.Context, cid.Cid) (*types.BlockHeader, error)                                      `perm:"read"`
+		ChainReadObj              func(context.Context, cid.Cid) ([]byte, error)                                                  `perm:"read"`
+		ChainStatObj              func(context.Context, cid.Cid, cid.Cid) (api.ObjStat, error)                                    `perm:"read"`
+		ChainGetTipSet            func(context.Context, types.TipSetKey) (*types.TipSet, error)                                   `perm:"read"`
+		ChainGetTipSetByHeight    func(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error)                   `perm:"read"`
+		ChainGetBlockMessages     func(context.Context, cid.Cid) (*api.BlockMessages, error)                                      `perm:"read"`
+		ChainGetParentReceipts    func(context.Context, cid.Cid) ([]*types.MessageReceipt, error)                                 `perm:"read"`
+		ChainGetParentMessages    func(context.Context, cid.Cid) ([]api.Message, error)                                           `perm:"read"`
+		ChainGetTipSetAfterHeight func(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error)                   `perm:"read"`
+		ChainSetHead              func(context.Context, types.TipSetKey) error                                                    `perm:"read"`
+		ChainGetGenesis           func(context.Context) (*types.TipSet, error)                                                    `perm:"read"`
+		ChainPrune                func(ctx context.Context, opts api.PruneOpts) error                                             `perm:"read"`
+		ChainHotGC                func(ctx context.Context, opts api.HotGCOpts) error                                             `perm:"read"`
+		EthGetBlockByHash         func(ctx context.Context, blkHash ethtypes.EthHash, fullTxInfo bool) (ethtypes.EthBlock, error) `perm:"read"`
 
 		LogList          func(context.Context) ([]string, error)     `perm:"read"`
 		LogSetLevel      func(context.Context, string, string) error `perm:"read"`
@@ -267,4 +269,8 @@ func (s *LilyAPIStruct) LilyWalkNotify(ctx context.Context, cfg *LilyWalkNotifyC
 
 func (s *LilyAPIStruct) LilyGapFillNotify(ctx context.Context, cfg *LilyGapFillNotifyConfig) (*schedule.JobSubmitResult, error) {
 	return s.Internal.LilyGapFillNotify(ctx, cfg)
+}
+
+func (s *LilyAPIStruct) EthGetBlockByHash(ctx context.Context, blkHash ethtypes.EthHash, fullTxInfo bool) (ethtypes.EthBlock, error) {
+	return s.Internal.EthGetBlockByHash(ctx, blkHash, fullTxInfo)
 }

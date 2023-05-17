@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	"github.com/ipfs/go-cid"
@@ -21,6 +22,7 @@ type API interface {
 	ChainAPI
 	StateAPI
 	VMAPI
+	EthModuleAPI
 
 	GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*MessageExecution, error)
 }
@@ -72,6 +74,10 @@ type ShouldBurnFn func(ctx context.Context, msg *types.Message, errcode exitcode
 
 type VMAPI interface {
 	BurnFundsFn(ctx context.Context, ts *types.TipSet) (ShouldBurnFn, error)
+}
+
+type EthModuleAPI interface {
+	EthGetBlockByHash(ctx context.Context, blkHash ethtypes.EthHash, fullTxInfo bool) (ethtypes.EthBlock, error)
 }
 
 type MessageExecution struct {
