@@ -94,6 +94,7 @@ var Models = []interface{}{
 	(*verifreg.VerifiedRegistryClaim)(nil),
 
 	(*fevm.FEVMActorStats)(nil),
+	(*fevm.FEVMBlockHeader)(nil),
 }
 
 var log = logging.Logger("lily/storage")
