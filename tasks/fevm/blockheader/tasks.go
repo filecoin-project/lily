@@ -47,19 +47,19 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 	cid, err := executed.Key().Cid()
 	if err != nil {
-		log.Errorf("Error at getting cid")
+		log.Errorf("Error at getting cid: [%v] err: %v", cid, err)
 		return nil, report, err
 	}
 
 	hash, err := ethtypes.EthHashFromCid(cid)
 	if err != nil {
-		log.Errorf("Error at finding hash")
+		log.Errorf("Error at finding hash: [%v] err: %v", hash, err)
 		return nil, report, err
 	}
 
 	ethBlock, err := p.node.EthGetBlockByHash(ctx, hash, false)
 	if err != nil {
-		log.Errorf("EthGetBlockByHash[hash: %v] err: %v", hash.String(), err)
+		log.Errorf("EthGetBlockByHash: [hash: %v] err: %v", hash.String(), err)
 		return nil, report, err
 	}
 
@@ -76,11 +76,11 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		StateRoot:        ethBlock.StateRoot.String(),
 		TransactionsRoot: ethBlock.TransactionsRoot.String(),
 		ReceiptsRoot:     ethBlock.ReceiptsRoot.String(),
-		Difficulty:       int64(ethBlock.Difficulty),
-		Number:           int64(ethBlock.Number),
-		GasLimit:         int64(ethBlock.GasLimit),
-		GasUsed:          int64(ethBlock.GasUsed),
-		Timestamp:        int64(ethBlock.Timestamp),
+		Difficulty:       uint64(ethBlock.Difficulty),
+		Number:           uint64(ethBlock.Number),
+		GasLimit:         uint64(ethBlock.GasLimit),
+		GasUsed:          uint64(ethBlock.GasUsed),
+		Timestamp:        uint64(ethBlock.Timestamp),
 		ExtraData:        string(ethBlock.Extradata),
 		MixHash:          ethBlock.MixHash.String(),
 		Nonce:            ethBlock.Nonce.String(),

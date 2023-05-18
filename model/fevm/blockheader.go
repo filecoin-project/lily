@@ -27,11 +27,11 @@ type FEVMBlockHeader struct {
 
 	TransactionsRoot string `pg:",notnull"`
 	ReceiptsRoot     string `pg:",notnull"`
-	Difficulty       int64  `pg:",use_zero"`
-	Number           int64  `pg:",use_zero"`
-	GasLimit         int64  `pg:",use_zero"`
-	GasUsed          int64  `pg:",use_zero"`
-	Timestamp        int64  `pg:",use_zero"`
+	Difficulty       uint64 `pg:",use_zero"`
+	Number           uint64 `pg:",use_zero"`
+	GasLimit         uint64 `pg:",use_zero"`
+	GasUsed          uint64 `pg:",use_zero"`
+	Timestamp        uint64 `pg:",use_zero"`
 	ExtraData        string `pg:",notnull"`
 	MixHash          string `pg:",notnull"`
 	Nonce            string `pg:",notnull"`
