@@ -114,6 +114,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			GasUsed:           uint64(receipt.GasUsed),
 			EffectiveGasPrice: receipt.EffectiveGasPrice.Int64(),
 			LogsBloom:         hex.EncodeToString(receipt.LogsBloom),
+			Message:           message.Cid.String(),
 		}
 
 		b, err := json.Marshal(receipt.Logs)

@@ -19,6 +19,7 @@ func init() {
 		gas_used             BIGINT,
 		effective_gas_price  BIGINT,
 		logs_bloom           TEXT,
+		message              TEXT,
 		PRIMARY KEY(height, transaction_hash)
 	);
 `,

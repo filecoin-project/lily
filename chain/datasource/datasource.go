@@ -200,9 +200,8 @@ func (t *DataSource) Actor(ctx context.Context, addr address.Address, tsk types.
 	if err != nil {
 		return nil, err
 	}
-	value, found := t.tsBlkMsgRecCache.Get(key)
+	value, found := t.actorCache.Get(key)
 	if found {
-		log.Infof("Hit the actor cache!")
 		metrics.RecordInc(ctx, metrics.DataSourceActorCacheHit)
 		return value.(*types.Actor), nil
 	}

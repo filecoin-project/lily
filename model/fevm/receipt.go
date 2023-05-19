@@ -15,6 +15,9 @@ type FEVMReceipt struct {
 	// Height message was executed at.
 	Height int64 `pg:",pk,notnull,use_zero"`
 
+	// Message CID
+	Message string `pg:",use_zero"`
+
 	TransactionHash   string `pg:",notnull"`
 	TransactionIndex  uint64 `pg:",use_zero"`
 	BlockHash         string `pg:",notnull"`
