@@ -46,6 +46,7 @@ const (
 	VerifiedRegistryClaim          = "verified_registry_claim"
 	FEVMActorStats                 = "fevm_actor_stats"
 	FEVMBlockHeader                = "fevm_block_header"
+	FEVMReceipt                    = "fevm_receipt"
 )
 
 var AllTableTasks = []string{
@@ -93,6 +94,7 @@ var AllTableTasks = []string{
 	VerifiedRegistryClaim,
 	FEVMActorStats,
 	FEVMBlockHeader,
+	FEVMReceipt,
 }
 
 var TableLookup = map[string]struct{}{
@@ -140,6 +142,7 @@ var TableLookup = map[string]struct{}{
 	VerifiedRegistryClaim:          {},
 	FEVMActorStats:                 {},
 	FEVMBlockHeader:                {},
+	FEVMReceipt:                    {},
 }
 
 var TableComment = map[string]string{
@@ -187,6 +190,7 @@ var TableComment = map[string]string{
 	VerifiedRegistryClaim:          ``,
 	FEVMActorStats:                 ``,
 	FEVMBlockHeader:                ``,
+	FEVMReceipt:                    ``,
 }
 
 var TableFieldComments = map[string]map[string]string{
@@ -291,4 +295,5 @@ var TableFieldComments = map[string]map[string]string{
 	VerifiedRegistryClaim:          {},
 	FEVMActorStats:                 {},
 	FEVMBlockHeader:                {},
+	FEVMReceipt:                    {},
 }

@@ -148,8 +148,16 @@ func (t *DataSource) TipSetBlockMessages(ctx context.Context, ts *types.TipSet) 
 	return t.node.MessagesForTipSetBlocks(ctx, ts)
 }
 
+func (t *DataSource) ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error) {
+	return t.node.ChainGetMessagesInTipset(ctx, tsk)
+}
+
 func (t *DataSource) EthGetBlockByHash(ctx context.Context, blkHash ethtypes.EthHash, fullTxInfo bool) (ethtypes.EthBlock, error) {
 	return t.node.EthGetBlockByHash(ctx, blkHash, fullTxInfo)
+}
+
+func (t *DataSource) EthGetTransactionReceipt(ctx context.Context, txHash ethtypes.EthHash) (*api.EthTxReceipt, error) {
+	return t.node.EthGetTransactionReceipt(ctx, txHash)
 }
 
 // TipSetMessageReceipts returns the blocks and messages in `pts` and their corresponding receipts from `ts` matching block order in tipset (`pts`).
