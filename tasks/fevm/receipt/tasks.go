@@ -3,6 +3,7 @@ package fevmreceipt
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/types"
 
@@ -56,7 +57,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		log.Errorf("Error at getting messages. ts: %v, height: %v, err: %v", executed.String(), executed.Height(), err)
 		return nil, report, err
 	}
-
+	errs := []error{}
 	out := make(fevm.FEVMReceiptList, 0)
 	for _, message := range messages {
 		if message.Message == nil {
@@ -66,7 +67,8 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		act, err := p.node.Actor(ctx, message.Message.To, executed.Key())
 		if err != nil {
 			log.Errorf("Error at getting actor. address: %v, err: %v", message.Message.To, err)
-			return nil, report, err
+			errs = append(errs, err)
+			continue
 		}
 		if !builtin.IsEvmActor(act.Code) {
 			continue
@@ -75,13 +77,15 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		hash, err := ethtypes.EthHashFromCid(message.Cid)
 		if err != nil {
 			log.Errorf("Error at finding hash: [cid: %v] err: %v", message.Cid, err)
-			return nil, report, err
+			errs = append(errs, err)
+			continue
 		}
 
 		receipt, err := p.node.EthGetTransactionReceipt(ctx, hash)
 		if err != nil {
 			log.Errorf("Error at getting receipt: [hash: %v] err: %v", hash, err)
-			return nil, report, err
+			errs = append(errs, err)
+			continue
 		}
 
 		if receipt == nil {
@@ -115,5 +119,10 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		out = append(out, receiptObj)
 
 	}
-	return model.PersistableList{out}, report, nil
+	if len(errs) > 0 {
+		err = fmt.Errorf("%v", errs)
+	} else {
+		err = nil
+	}
+	return model.PersistableList{out}, report, err
 }

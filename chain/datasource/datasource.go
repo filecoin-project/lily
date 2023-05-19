@@ -54,9 +54,8 @@ func getCacheSizeFromEnv(env string, defaultValue int) int {
 		v, err := strconv.ParseInt(s, 10, 64)
 		if err == nil {
 			return int(v)
-		} else {
-			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, env, defaultValue, err)
 		}
+		log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, env, defaultValue, err)
 	}
 	return defaultValue
 }
@@ -189,6 +188,7 @@ func (t *DataSource) Store() adt.Store {
 }
 
 func (t *DataSource) Actor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error) {
+	metrics.RecordInc(ctx, metrics.DataSourceActorCacheRead)
 	ctx, span := otel.Tracer("").Start(ctx, "DataSource.Actor")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.String("tipset", tsk.String()))
@@ -203,12 +203,12 @@ func (t *DataSource) Actor(ctx context.Context, addr address.Address, tsk types.
 	value, found := t.tsBlkMsgRecCache.Get(key)
 	if found {
 		log.Infof("Hit the actor cache!")
+		metrics.RecordInc(ctx, metrics.DataSourceActorCacheHit)
 		return value.(*types.Actor), nil
 	}
 
 	act, err := t.node.StateGetActor(ctx, addr, tsk)
 	if err == nil {
-		log.Infof("Save the actor cache!")
 		t.actorCache.Add(key, act)
 	}
 

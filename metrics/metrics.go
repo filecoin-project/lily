@@ -63,6 +63,8 @@ var (
 	DataSourceMessageExecutionRead      = stats.Int64("data_source_message_execution_read", "Number of reads for message executions", stats.UnitDimensionless)
 	DataSourceMessageExecutionCacheHit  = stats.Int64("data_source_message_execution_cache_hit", "Number of cache hits for message executions", stats.UnitDimensionless)
 	DataSourceActorStateChangesDuration = stats.Float64("data_source_actor_state_change_ms", "Time take to collect actors whose state changed", stats.UnitMilliseconds)
+	DataSourceActorCacheRead            = stats.Int64("data_source_actor_read", "Number of reads for message executions", stats.UnitDimensionless)
+	DataSourceActorCacheHit             = stats.Int64("data_source_actor_cache_hit", "Number of cache hits for message executions", stats.UnitDimensionless)
 
 	// Distributed Indexer
 
