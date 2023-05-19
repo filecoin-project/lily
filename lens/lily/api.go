@@ -8,6 +8,7 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 	"github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p/core/peer"
 
@@ -40,20 +41,21 @@ type LilyAPI interface {
 	// SyncState returns the current status of the chain sync system.
 	SyncState(context.Context) (*api.SyncState, error) //perm:read
 
-	ChainHead(context.Context) (*types.TipSet, error)                                                  //perm:read
-	ChainGetBlock(context.Context, cid.Cid) (*types.BlockHeader, error)                                //perm:read
-	ChainReadObj(context.Context, cid.Cid) ([]byte, error)                                             //perm:read
-	ChainStatObj(context.Context, cid.Cid, cid.Cid) (api.ObjStat, error)                               //perm:read
-	ChainGetTipSet(context.Context, types.TipSetKey) (*types.TipSet, error)                            //perm:read
-	ChainGetTipSetByHeight(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error)    //perm:read
-	ChainGetTipSetAfterHeight(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error) //perm:read
-	ChainGetBlockMessages(context.Context, cid.Cid) (*api.BlockMessages, error)                        //perm:read
-	ChainGetParentReceipts(context.Context, cid.Cid) ([]*types.MessageReceipt, error)                  //perm:read
-	ChainGetParentMessages(context.Context, cid.Cid) ([]api.Message, error)                            //perm:read
-	ChainSetHead(context.Context, types.TipSetKey) error                                               //perm:read
-	ChainGetGenesis(context.Context) (*types.TipSet, error)                                            //perm:read
-	ChainPrune(ctx context.Context, opts api.PruneOpts) error                                          //perm:read
-	ChainHotGC(ctx context.Context, opts api.HotGCOpts) error                                          //perm:read
+	ChainHead(context.Context) (*types.TipSet, error)                                                            //perm:read
+	ChainGetBlock(context.Context, cid.Cid) (*types.BlockHeader, error)                                          //perm:read
+	ChainReadObj(context.Context, cid.Cid) ([]byte, error)                                                       //perm:read
+	ChainStatObj(context.Context, cid.Cid, cid.Cid) (api.ObjStat, error)                                         //perm:read
+	ChainGetTipSet(context.Context, types.TipSetKey) (*types.TipSet, error)                                      //perm:read
+	ChainGetTipSetByHeight(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error)              //perm:read
+	ChainGetTipSetAfterHeight(context.Context, abi.ChainEpoch, types.TipSetKey) (*types.TipSet, error)           //perm:read
+	ChainGetBlockMessages(context.Context, cid.Cid) (*api.BlockMessages, error)                                  //perm:read
+	ChainGetParentReceipts(context.Context, cid.Cid) ([]*types.MessageReceipt, error)                            //perm:read
+	ChainGetParentMessages(context.Context, cid.Cid) ([]api.Message, error)                                      //perm:read
+	ChainSetHead(context.Context, types.TipSetKey) error                                                         //perm:read
+	ChainGetGenesis(context.Context) (*types.TipSet, error)                                                      //perm:read
+	ChainPrune(ctx context.Context, opts api.PruneOpts) error                                                    //perm:read
+	ChainHotGC(ctx context.Context, opts api.HotGCOpts) error                                                    //perm:read
+	EthGetBlockByHash(ctx context.Context, blkHash ethtypes.EthHash, fullTxInfo bool) (ethtypes.EthBlock, error) //perm:read
 
 	// trigger graceful shutdown
 	Shutdown(context.Context) error
