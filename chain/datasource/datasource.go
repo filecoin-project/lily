@@ -40,51 +40,33 @@ var (
 	executedTsCacheSize           int
 	diffPreCommitCacheSize        int
 	diffSectorCacheSize           int
+	actorCacheSize                int
 
 	tipsetMessageReceiptSizeEnv = "LILY_TIPSET_MSG_RECEIPT_CACHE_SIZE"
 	executedTsCacheSizeEnv      = "LILY_EXECUTED_TS_CACHE_SIZE"
 	diffPreCommitCacheSizeEnv   = "LILY_DIFF_PRECOMMIT_CACHE_SIZE"
 	diffSectorCacheSizeEnv      = "LILY_DIFF_SECTORS_CACHE_SIZE"
+	actorCacheSizeEnv           = "LILY_ACTOR_CACHE_SIZE"
 )
 
-func init() {
-	tipsetMessageReceiptCacheSize = 4
-	executedTsCacheSize = 4
-	diffPreCommitCacheSize = 500
-	diffSectorCacheSize = 500
-	if s := os.Getenv(tipsetMessageReceiptSizeEnv); s != "" {
+func getCacheSizeFromEnv(env string, defaultValue int) int {
+	if s := os.Getenv(env); s != "" {
 		v, err := strconv.ParseInt(s, 10, 64)
 		if err == nil {
-			tipsetMessageReceiptCacheSize = int(v)
+			return int(v)
 		} else {
-			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, tipsetMessageReceiptSizeEnv, tipsetMessageReceiptCacheSize, err)
+			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, env, defaultValue, err)
 		}
 	}
-	if s := os.Getenv(executedTsCacheSizeEnv); s != "" {
-		v, err := strconv.ParseInt(s, 10, 64)
-		if err == nil {
-			executedTsCacheSize = int(v)
-		} else {
-			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, executedTsCacheSizeEnv, executedTsCacheSize, err)
-		}
-	}
-	if s := os.Getenv(diffPreCommitCacheSizeEnv); s != "" {
-		v, err := strconv.ParseInt(s, 10, 64)
-		if err == nil {
-			diffPreCommitCacheSize = int(v)
-		} else {
-			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, diffPreCommitCacheSizeEnv, diffPreCommitCacheSize, err)
-		}
-	}
-	if s := os.Getenv(diffSectorCacheSizeEnv); s != "" {
-		v, err := strconv.ParseInt(s, 10, 64)
-		if err == nil {
-			diffSectorCacheSize = int(v)
-		} else {
-			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, diffSectorCacheSizeEnv, diffSectorCacheSize, err)
-		}
-	}
+	return defaultValue
+}
 
+func init() {
+	tipsetMessageReceiptCacheSize = getCacheSizeFromEnv(tipsetMessageReceiptSizeEnv, 4)
+	executedTsCacheSize = getCacheSizeFromEnv(executedTsCacheSizeEnv, 4)
+	diffPreCommitCacheSize = getCacheSizeFromEnv(diffPreCommitCacheSizeEnv, 500)
+	diffSectorCacheSize = getCacheSizeFromEnv(diffSectorCacheSizeEnv, 500)
+	actorCacheSize = getCacheSizeFromEnv(actorCacheSizeEnv, 1000)
 }
 
 var _ tasks.DataSource = (*DataSource)(nil)
@@ -117,6 +99,11 @@ func NewDataSource(node lens.API) (*DataSource, error) {
 		return nil, err
 	}
 
+	t.actorCache, err = lru.New(actorCacheSize)
+	if err != nil {
+		return nil, err
+	}
+
 	return t, nil
 }
 
@@ -134,6 +121,8 @@ type DataSource struct {
 
 	diffPreCommitCache *lru.Cache
 	diffPreCommitGroup singleflight.Group
+
+	actorCache *lru.Cache
 }
 
 func (t *DataSource) MessageReceiptEvents(ctx context.Context, root cid.Cid) ([]types.Event, error) {
@@ -206,7 +195,24 @@ func (t *DataSource) Actor(ctx context.Context, addr address.Address, tsk types.
 		span.SetAttributes(attribute.String("address", addr.String()))
 	}
 	defer span.End()
-	return t.node.StateGetActor(ctx, addr, tsk)
+
+	key, err := asKey(addr, tsk)
+	if err != nil {
+		return nil, err
+	}
+	value, found := t.tsBlkMsgRecCache.Get(key)
+	if found {
+		log.Infof("Hit the actor cache!")
+		return value.(*types.Actor), nil
+	}
+
+	act, err := t.node.StateGetActor(ctx, addr, tsk)
+	if err == nil {
+		log.Infof("Save the actor cache!")
+		t.actorCache.Add(key, act)
+	}
+
+	return act, err
 }
 
 func (t *DataSource) MinerPower(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.MinerPower, error) {
