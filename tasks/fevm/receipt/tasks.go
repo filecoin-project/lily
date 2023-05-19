@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/filecoin-project/go-address"
+
 	"github.com/filecoin-project/lotus/chain/types"
 
 	"encoding/json"
@@ -32,6 +34,20 @@ func NewTask(node tasks.DataSource) *Task {
 	return &Task{
 		node: node,
 	}
+}
+
+func (p *Task) isSentToEVMAddress(ctx context.Context, addr address.Address, tsk types.TipSetKey) bool {
+	act, err := p.node.Actor(ctx, addr, tsk)
+	if err != nil {
+		// If actor not found, then this is a placeholder address
+		if addr.String()[:5] == "f410f" {
+			log.Infof("Sent to Placeholder address: %v", addr)
+			return true
+		}
+		log.Errorf("Error at getting actor. address: %v, err: %v", addr, err)
+		return false
+	}
+	return builtin.IsEvmActor(act.Code)
 }
 
 func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, executed *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
@@ -64,13 +80,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			continue
 		}
 
-		act, err := p.node.Actor(ctx, message.Message.To, executed.Key())
-		if err != nil {
-			log.Errorf("Error at getting actor. address: %v, err: %v", message.Message.To, err)
-			errs = append(errs, err)
-			continue
-		}
-		if !builtin.IsEvmActor(act.Code) {
+		if !p.isSentToEVMAddress(ctx, message.Message.To, executed.Key()) {
 			continue
 		}
 
@@ -119,10 +129,12 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		out = append(out, receiptObj)
 
 	}
+
 	if len(errs) > 0 {
 		err = fmt.Errorf("%v", errs)
 	} else {
 		err = nil
 	}
+
 	return model.PersistableList{out}, report, err
 }
