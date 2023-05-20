@@ -196,18 +196,17 @@ func (t *DataSource) Actor(ctx context.Context, addr address.Address, tsk types.
 	}
 	defer span.End()
 
-	key, err := asKey(addr, tsk)
-	if err != nil {
-		return nil, err
-	}
-	value, found := t.actorCache.Get(key)
-	if found {
-		metrics.RecordInc(ctx, metrics.DataSourceActorCacheHit)
-		return value.(*types.Actor), nil
+	key, keyErr := asKey(addr, tsk)
+	if keyErr == nil {
+		value, found := t.actorCache.Get(key)
+		if found {
+			metrics.RecordInc(ctx, metrics.DataSourceActorCacheHit)
+			return value.(*types.Actor), nil
+		}
 	}
 
 	act, err := t.node.StateGetActor(ctx, addr, tsk)
-	if err == nil {
+	if err == nil && keyErr == nil {
 		t.actorCache.Add(key, act)
 	}
 

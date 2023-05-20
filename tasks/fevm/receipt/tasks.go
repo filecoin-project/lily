@@ -39,9 +39,9 @@ func NewTask(node tasks.DataSource) *Task {
 func (p *Task) isSentToEVMAddress(ctx context.Context, addr address.Address, tsk types.TipSetKey) bool {
 	act, err := p.node.Actor(ctx, addr, tsk)
 	if err != nil {
-		// If actor not found, then this is a placeholder address
-		if addr.String()[:5] == "f410f" {
-			log.Infof("Sent to Placeholder address: %v", addr)
+		// If actor not found, check if it's a placeholder address.
+		if addr.Protocol() == address.Delegated {
+			log.Debugf("Sent to Placeholder address: %v", addr)
 			return true
 		}
 		log.Errorf("Error at getting actor. address: %v, err: %v", addr, err)
