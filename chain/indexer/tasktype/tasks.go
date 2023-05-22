@@ -94,6 +94,7 @@ var TaskLookup = map[string][]string{
 	FEVMTask: {
 		FEVMActorStats,
 		FEVMBlockHeader,
+		FEVMReceipt,
 	},
 }
 

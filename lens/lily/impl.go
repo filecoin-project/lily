@@ -559,6 +559,14 @@ func (m *LilyNodeAPI) EthGetBlockByHash(ctx context.Context, blkHash ethtypes.Et
 	return m.EthModuleAPI.EthGetBlockByHash(ctx, blkHash, fullTxInfo)
 }
 
+func (m *LilyNodeAPI) EthGetTransactionReceipt(ctx context.Context, txHash ethtypes.EthHash) (*api.EthTxReceipt, error) {
+	return m.EthModuleAPI.EthGetTransactionReceipt(ctx, txHash)
+}
+
+func (m *LilyNodeAPI) ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error) {
+	return m.ChainAPI.ChainGetMessagesInTipset(ctx, tsk)
+}
+
 // MessagesForTipSetBlocks returns messages stored in the blocks of the specified tipset, messages may be duplicated
 // across the returned set of BlockMessages.
 func (m *LilyNodeAPI) MessagesForTipSetBlocks(ctx context.Context, ts *types.TipSet) ([]*lens.BlockMessages, error) {

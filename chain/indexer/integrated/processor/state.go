@@ -60,6 +60,7 @@ import (
 
 	// fevm task
 	fevmblockheadertask "github.com/filecoin-project/lily/tasks/fevm/blockheader"
+	fevmreceipttask "github.com/filecoin-project/lily/tasks/fevm/receipt"
 	fevmactorstatstask "github.com/filecoin-project/lily/tasks/fevmactorstats"
 
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
@@ -644,6 +645,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			out.TipsetProcessors[t] = fevmactorstatstask.NewTask(api)
 		case tasktype.FEVMBlockHeader:
 			out.TipsetsProcessors[t] = fevmblockheadertask.NewTask(api)
+		case tasktype.FEVMReceipt:
+			out.TipsetsProcessors[t] = fevmreceipttask.NewTask(api)
 
 		case BuiltinTaskName:
 			out.ReportProcessors[t] = indexertask.NewTask(api)

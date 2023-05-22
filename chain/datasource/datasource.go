@@ -40,51 +40,32 @@ var (
 	executedTsCacheSize           int
 	diffPreCommitCacheSize        int
 	diffSectorCacheSize           int
+	actorCacheSize                int
 
 	tipsetMessageReceiptSizeEnv = "LILY_TIPSET_MSG_RECEIPT_CACHE_SIZE"
 	executedTsCacheSizeEnv      = "LILY_EXECUTED_TS_CACHE_SIZE"
 	diffPreCommitCacheSizeEnv   = "LILY_DIFF_PRECOMMIT_CACHE_SIZE"
 	diffSectorCacheSizeEnv      = "LILY_DIFF_SECTORS_CACHE_SIZE"
+	actorCacheSizeEnv           = "LILY_ACTOR_CACHE_SIZE"
 )
 
-func init() {
-	tipsetMessageReceiptCacheSize = 4
-	executedTsCacheSize = 4
-	diffPreCommitCacheSize = 500
-	diffSectorCacheSize = 500
-	if s := os.Getenv(tipsetMessageReceiptSizeEnv); s != "" {
+func getCacheSizeFromEnv(env string, defaultValue int) int {
+	if s := os.Getenv(env); s != "" {
 		v, err := strconv.ParseInt(s, 10, 64)
 		if err == nil {
-			tipsetMessageReceiptCacheSize = int(v)
-		} else {
-			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, tipsetMessageReceiptSizeEnv, tipsetMessageReceiptCacheSize, err)
+			return int(v)
 		}
+		log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, env, defaultValue, err)
 	}
-	if s := os.Getenv(executedTsCacheSizeEnv); s != "" {
-		v, err := strconv.ParseInt(s, 10, 64)
-		if err == nil {
-			executedTsCacheSize = int(v)
-		} else {
-			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, executedTsCacheSizeEnv, executedTsCacheSize, err)
-		}
-	}
-	if s := os.Getenv(diffPreCommitCacheSizeEnv); s != "" {
-		v, err := strconv.ParseInt(s, 10, 64)
-		if err == nil {
-			diffPreCommitCacheSize = int(v)
-		} else {
-			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, diffPreCommitCacheSizeEnv, diffPreCommitCacheSize, err)
-		}
-	}
-	if s := os.Getenv(diffSectorCacheSizeEnv); s != "" {
-		v, err := strconv.ParseInt(s, 10, 64)
-		if err == nil {
-			diffSectorCacheSize = int(v)
-		} else {
-			log.Warnf("invalid value (%s) for %s defaulting to %d: %s", s, diffSectorCacheSizeEnv, diffSectorCacheSize, err)
-		}
-	}
+	return defaultValue
+}
 
+func init() {
+	tipsetMessageReceiptCacheSize = getCacheSizeFromEnv(tipsetMessageReceiptSizeEnv, 4)
+	executedTsCacheSize = getCacheSizeFromEnv(executedTsCacheSizeEnv, 4)
+	diffPreCommitCacheSize = getCacheSizeFromEnv(diffPreCommitCacheSizeEnv, 500)
+	diffSectorCacheSize = getCacheSizeFromEnv(diffSectorCacheSizeEnv, 500)
+	actorCacheSize = getCacheSizeFromEnv(actorCacheSizeEnv, 1000)
 }
 
 var _ tasks.DataSource = (*DataSource)(nil)
@@ -117,6 +98,11 @@ func NewDataSource(node lens.API) (*DataSource, error) {
 		return nil, err
 	}
 
+	t.actorCache, err = lru.New(actorCacheSize)
+	if err != nil {
+		return nil, err
+	}
+
 	return t, nil
 }
 
@@ -134,6 +120,8 @@ type DataSource struct {
 
 	diffPreCommitCache *lru.Cache
 	diffPreCommitGroup singleflight.Group
+
+	actorCache *lru.Cache
 }
 
 func (t *DataSource) MessageReceiptEvents(ctx context.Context, root cid.Cid) ([]types.Event, error) {
@@ -148,8 +136,16 @@ func (t *DataSource) TipSetBlockMessages(ctx context.Context, ts *types.TipSet) 
 	return t.node.MessagesForTipSetBlocks(ctx, ts)
 }
 
+func (t *DataSource) ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error) {
+	return t.node.ChainGetMessagesInTipset(ctx, tsk)
+}
+
 func (t *DataSource) EthGetBlockByHash(ctx context.Context, blkHash ethtypes.EthHash, fullTxInfo bool) (ethtypes.EthBlock, error) {
 	return t.node.EthGetBlockByHash(ctx, blkHash, fullTxInfo)
+}
+
+func (t *DataSource) EthGetTransactionReceipt(ctx context.Context, txHash ethtypes.EthHash) (*api.EthTxReceipt, error) {
+	return t.node.EthGetTransactionReceipt(ctx, txHash)
 }
 
 // TipSetMessageReceipts returns the blocks and messages in `pts` and their corresponding receipts from `ts` matching block order in tipset (`pts`).
@@ -192,13 +188,29 @@ func (t *DataSource) Store() adt.Store {
 }
 
 func (t *DataSource) Actor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error) {
+	metrics.RecordInc(ctx, metrics.DataSourceActorCacheRead)
 	ctx, span := otel.Tracer("").Start(ctx, "DataSource.Actor")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.String("tipset", tsk.String()))
 		span.SetAttributes(attribute.String("address", addr.String()))
 	}
 	defer span.End()
-	return t.node.StateGetActor(ctx, addr, tsk)
+
+	key, keyErr := asKey(addr, tsk)
+	if keyErr == nil {
+		value, found := t.actorCache.Get(key)
+		if found {
+			metrics.RecordInc(ctx, metrics.DataSourceActorCacheHit)
+			return value.(*types.Actor), nil
+		}
+	}
+
+	act, err := t.node.StateGetActor(ctx, addr, tsk)
+	if err == nil && keyErr == nil {
+		t.actorCache.Add(key, act)
+	}
+
+	return act, err
 }
 
 func (t *DataSource) MinerPower(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.MinerPower, error) {

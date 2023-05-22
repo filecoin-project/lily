@@ -71,4 +71,6 @@ type DataSource interface {
 	ShouldBurnFn(ctx context.Context, ts *types.TipSet) (lens.ShouldBurnFn, error)
 
 	EthGetBlockByHash(ctx context.Context, blkHash ethtypes.EthHash, fullTxInfo bool) (ethtypes.EthBlock, error)
+	EthGetTransactionReceipt(ctx context.Context, txHash ethtypes.EthHash) (*api.EthTxReceipt, error)
+	ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error)
 }

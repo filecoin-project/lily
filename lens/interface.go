@@ -45,6 +45,7 @@ type ChainAPI interface {
 
 	ChainGetBlockMessages(ctx context.Context, msg cid.Cid) (*api.BlockMessages, error)
 	ChainGetParentMessages(ctx context.Context, blockCid cid.Cid) ([]api.Message, error)
+	ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error)
 
 	ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi.TokenAmount, error)
 
@@ -78,6 +79,7 @@ type VMAPI interface {
 
 type EthModuleAPI interface {
 	EthGetBlockByHash(ctx context.Context, blkHash ethtypes.EthHash, fullTxInfo bool) (ethtypes.EthBlock, error)
+	EthGetTransactionReceipt(ctx context.Context, txHash ethtypes.EthHash) (*api.EthTxReceipt, error)
 }
 
 type MessageExecution struct {

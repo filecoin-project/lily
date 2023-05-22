@@ -56,6 +56,8 @@ type LilyAPI interface {
 	ChainPrune(ctx context.Context, opts api.PruneOpts) error                                                    //perm:read
 	ChainHotGC(ctx context.Context, opts api.HotGCOpts) error                                                    //perm:read
 	EthGetBlockByHash(ctx context.Context, blkHash ethtypes.EthHash, fullTxInfo bool) (ethtypes.EthBlock, error) //perm:read
+	EthGetTransactionReceipt(ctx context.Context, txHash ethtypes.EthHash) (*api.EthTxReceipt, error)            //perm:read
+	ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error)                    //perm:read
 
 	// trigger graceful shutdown
 	Shutdown(context.Context) error
