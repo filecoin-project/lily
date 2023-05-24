@@ -56,7 +56,7 @@ func TestWalker(t *testing.T) {
 
 	t.Logf("initializing indexer")
 	reporter := &schedule.Reporter{}
-	idx := NewWalker(im, nodeAPI, t.Name(), []string{tasktype.BlocksTask}, 0, int64(head.Height()), reporter)
+	idx := NewWalker(im, nodeAPI, t.Name(), []string{tasktype.BlocksTask}, 0, int64(head.Height()), reporter, false)
 
 	t.Logf("indexing chain")
 	err = idx.WalkChain(ctx, nodeAPI, head)

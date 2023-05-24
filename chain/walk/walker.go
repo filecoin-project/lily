@@ -17,28 +17,30 @@ import (
 
 var log = logging.Logger("lily/chain/walk")
 
-func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, minHeight, maxHeight int64, r *schedule.Reporter) *Walker {
+func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, minHeight, maxHeight int64, r *schedule.Reporter, stopOnFatalError bool) *Walker {
 	return &Walker{
-		node:      node,
-		obs:       obs,
-		name:      name,
-		tasks:     tasks,
-		minHeight: minHeight,
-		maxHeight: maxHeight,
-		report:    r,
+		node:             node,
+		obs:              obs,
+		name:             name,
+		tasks:            tasks,
+		minHeight:        minHeight,
+		maxHeight:        maxHeight,
+		report:           r,
+		stopOnFatalError: stopOnFatalError,
 	}
 }
 
 // Walker is a job that indexes blocks by walking the chain history.
 type Walker struct {
-	node      lens.API
-	obs       indexer.Indexer
-	name      string
-	tasks     []string
-	minHeight int64 // limit persisting to tipsets equal to or above this height
-	maxHeight int64 // limit persisting to tipsets equal to or below this height}
-	done      chan struct{}
-	report    *schedule.Reporter
+	node             lens.API
+	obs              indexer.Indexer
+	name             string
+	tasks            []string
+	minHeight        int64 // limit persisting to tipsets equal to or above this height
+	maxHeight        int64 // limit persisting to tipsets equal to or below this height}
+	done             chan struct{}
+	report           *schedule.Reporter
+	stopOnFatalError bool
 }
 
 // Run starts walking the chain history and continues until the context is done or
@@ -102,7 +104,10 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 		c.report.UpdateCurrentHeight(int64(ts.Height()))
 		if success, err := c.obs.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Walk), indexer.WithTasks(c.tasks)); err != nil {
 			span.RecordError(err)
-			return fmt.Errorf("notify tipset: %w", err)
+			log.Errorf("notify tipset: %w", err)
+			if c.stopOnFatalError {
+				return err
+			}
 		} else if !success {
 			log.Errorw("walk incomplete", "height", ts.Height(), "tipset", ts.Key().String(), "reporter", c.name)
 		}
