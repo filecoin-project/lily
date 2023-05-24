@@ -94,6 +94,7 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 	defer span.End()
 
 	var err error
+	errs := []error{}
 	for int64(ts.Height()) >= c.minHeight && ts.Height() != 0 {
 		select {
 		case <-ctx.Done():
@@ -105,6 +106,10 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 		if success, err := c.obs.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Walk), indexer.WithTasks(c.tasks)); err != nil {
 			span.RecordError(err)
 			log.Errorf("notify tipset: %w", err)
+			// collect error
+			errs = append(errs, err)
+
+			// return an error only if the "stopOnFatalError" flag is set to true.
 			if c.stopOnFatalError {
 				return err
 			}
@@ -118,6 +123,10 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 			span.RecordError(err)
 			return fmt.Errorf("get tipset: %w", err)
 		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("errors: %v", errs)
 	}
 
 	return nil
