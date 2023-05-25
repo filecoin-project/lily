@@ -95,7 +95,7 @@ type LilyJobConfig struct {
 	// RestartOnCompletion when true will restart the job when it completes.
 	RestartOnCompletion bool
 	// RestartOnCompletion when true will restart the job when it completes.
-	StopOnFatalError bool
+	StopOnError bool
 	// RestartDelay configures how long to wait before restarting the job.
 	RestartDelay time.Duration
 	// Storage is the name of the storage system the job will use, may be empty.

@@ -17,30 +17,30 @@ import (
 
 var log = logging.Logger("lily/chain/walk")
 
-func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, minHeight, maxHeight int64, r *schedule.Reporter, stopOnFatalError bool) *Walker {
+func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, minHeight, maxHeight int64, r *schedule.Reporter, stopOnError bool) *Walker {
 	return &Walker{
-		node:             node,
-		obs:              obs,
-		name:             name,
-		tasks:            tasks,
-		minHeight:        minHeight,
-		maxHeight:        maxHeight,
-		report:           r,
-		stopOnFatalError: stopOnFatalError,
+		node:        node,
+		obs:         obs,
+		name:        name,
+		tasks:       tasks,
+		minHeight:   minHeight,
+		maxHeight:   maxHeight,
+		report:      r,
+		stopOnError: stopOnError,
 	}
 }
 
 // Walker is a job that indexes blocks by walking the chain history.
 type Walker struct {
-	node             lens.API
-	obs              indexer.Indexer
-	name             string
-	tasks            []string
-	minHeight        int64 // limit persisting to tipsets equal to or above this height
-	maxHeight        int64 // limit persisting to tipsets equal to or below this height}
-	done             chan struct{}
-	report           *schedule.Reporter
-	stopOnFatalError bool
+	node        lens.API
+	obs         indexer.Indexer
+	name        string
+	tasks       []string
+	minHeight   int64 // limit persisting to tipsets equal to or above this height
+	maxHeight   int64 // limit persisting to tipsets equal to or below this height}
+	done        chan struct{}
+	report      *schedule.Reporter
+	stopOnError bool
 }
 
 // Run starts walking the chain history and continues until the context is done or
@@ -105,12 +105,13 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 		c.report.UpdateCurrentHeight(int64(ts.Height()))
 		if success, err := c.obs.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Walk), indexer.WithTasks(c.tasks)); err != nil {
 			span.RecordError(err)
-			log.Errorf("notify tipset: %w", err)
+			err := fmt.Errorf("index tipset, height: %v, error: %v", ts.Height().String(), err)
+			log.Errorf("%v", err)
 			// collect error
 			errs = append(errs, err)
 
-			// return an error only if the "stopOnFatalError" flag is set to true.
-			if c.stopOnFatalError {
+			// return an error only if the "stopOnError" flag is set to true.
+			if c.stopOnError {
 				return err
 			}
 		} else if !success {
