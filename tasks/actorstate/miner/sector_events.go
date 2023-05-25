@@ -133,6 +133,20 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 	return sectorEventModel, nil
 }
 
+func (SectorEventsExtractor) Transform(ctx context.Context, data model.PersistableList) (model.PersistableList, error) {
+	persistableList := make(minermodel.MinerSectorEventList, 0, len(data))
+	for _, d := range data {
+		ml, ok := d.(*minermodel.MinerSectorEventList)
+		if !ok {
+			return nil, fmt.Errorf("expected MinerSectorEventList type but got: %T", d)
+		}
+		for _, m := range *ml {
+			persistableList = append(persistableList, m)
+		}
+	}
+	return model.PersistableList{persistableList}, nil
+}
+
 // ExtractSectorEvents transforms sectorChanges, preCommitChanges, and sectorStateChanges to a MinerSectorEventList.
 func ExtractSectorEvents(extState extraction.State, sectorChanges *miner.SectorChanges, preCommitChanges *miner.PreCommitChanges, sectorStateChanges *SectorStateEvents) (minermodel.MinerSectorEventList, error) {
 	sectorStateEvents, err := ExtractMinerSectorStateEvents(extState, sectorStateChanges)

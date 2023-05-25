@@ -29,7 +29,7 @@ func (ds *MarketDealState) Persist(ctx context.Context, s model.StorageBatch, ve
 type MarketDealStates []*MarketDealState
 
 func (dss MarketDealStates) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := otel.Tracer("").Start(ctx, "MarketDealStates.PersistWithTx")
+	ctx, span := otel.Tracer("").Start(ctx, "MarketDealStates.Persist")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.Int("count", len(dss)))
 	}

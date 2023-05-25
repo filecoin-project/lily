@@ -76,3 +76,15 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 
 	return sectorModel, nil
 }
+
+func (V7SectorInfoExtractor) Transform(ctx context.Context, data model.PersistableList) (model.PersistableList, error) {
+	persistableList := make(minermodel.MinerSectorInfoV7List, 0, len(data))
+	for _, d := range data {
+		a, ok := d.(*minermodel.MinerSectorInfoV7)
+		if !ok {
+			return nil, fmt.Errorf("expected MinerSectorInfoV7 type but got: %T", d)
+		}
+		persistableList = append(persistableList, a)
+	}
+	return model.PersistableList{persistableList}, nil
+}

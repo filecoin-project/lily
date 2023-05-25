@@ -79,7 +79,7 @@ func (cp *ChainPower) AsVersion(version model.Version) (interface{}, bool) {
 }
 
 func (cp *ChainPower) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := otel.Tracer("").Start(ctx, "ChainPower.PersistWithTx")
+	ctx, span := otel.Tracer("").Start(ctx, "ChainPower.Persist")
 	defer span.End()
 
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_powers"))
@@ -96,10 +96,8 @@ func (cp *ChainPower) Persist(ctx context.Context, s model.StorageBatch, version
 // ChainPowerList is a slice of ChainPowers for batch insertion.
 type ChainPowerList []*ChainPower
 
-// PersistWithTx makes a batch insertion of the list using the given
-// transaction.
 func (cpl ChainPowerList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := otel.Tracer("").Start(ctx, "ChainPowerList.PersistWithTx")
+	ctx, span := otel.Tracer("").Start(ctx, "ChainPowerList.Persist")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.Int("count", len(cpl)))
 	}
