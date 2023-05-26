@@ -21,6 +21,7 @@ type runOpts struct {
 
 	RestartCompletion bool
 	RestartFailure    bool
+	StopOnError       bool
 }
 
 func (r runOpts) ParseJobConfig(kind string) lily.LilyJobConfig {
@@ -35,6 +36,7 @@ func (r runOpts) ParseJobConfig(kind string) lily.LilyJobConfig {
 		RestartOnFailure:    RunFlags.RestartFailure,
 		RestartOnCompletion: RunFlags.RestartCompletion,
 		RestartDelay:        RunFlags.RestartDelay,
+		StopOnError:         RunFlags.StopOnError,
 	}
 }
 
@@ -94,6 +96,14 @@ var RunRestartFailure = &cli.BoolFlag{
 	EnvVars:     []string{"LILY_JOB_RESTART_FAILURE"},
 	Value:       false,
 	Destination: &RunFlags.RestartFailure,
+}
+
+var StopOnError = &cli.BoolFlag{
+	Name:        "stop-on-error",
+	Usage:       "Stop the job if it encounters an error.",
+	EnvVars:     []string{"LILY_JOB_STOP_ON_ERROR"},
+	Value:       false,
+	Destination: &RunFlags.StopOnError,
 }
 
 type notifyOps struct {

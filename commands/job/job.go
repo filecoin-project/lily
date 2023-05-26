@@ -35,6 +35,7 @@ var JobRunCmd = &cli.Command{
 		RunRestartDelayFlag,
 		RunRestartFailure,
 		RunRestartCompletion,
+		StopOnError,
 	},
 	Subcommands: []*cli.Command{
 		WalkCmd,

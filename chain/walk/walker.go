@@ -17,28 +17,30 @@ import (
 
 var log = logging.Logger("lily/chain/walk")
 
-func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, minHeight, maxHeight int64, r *schedule.Reporter) *Walker {
+func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, minHeight, maxHeight int64, r *schedule.Reporter, stopOnError bool) *Walker {
 	return &Walker{
-		node:      node,
-		obs:       obs,
-		name:      name,
-		tasks:     tasks,
-		minHeight: minHeight,
-		maxHeight: maxHeight,
-		report:    r,
+		node:        node,
+		obs:         obs,
+		name:        name,
+		tasks:       tasks,
+		minHeight:   minHeight,
+		maxHeight:   maxHeight,
+		report:      r,
+		stopOnError: stopOnError,
 	}
 }
 
 // Walker is a job that indexes blocks by walking the chain history.
 type Walker struct {
-	node      lens.API
-	obs       indexer.Indexer
-	name      string
-	tasks     []string
-	minHeight int64 // limit persisting to tipsets equal to or above this height
-	maxHeight int64 // limit persisting to tipsets equal to or below this height}
-	done      chan struct{}
-	report    *schedule.Reporter
+	node        lens.API
+	obs         indexer.Indexer
+	name        string
+	tasks       []string
+	minHeight   int64 // limit persisting to tipsets equal to or above this height
+	maxHeight   int64 // limit persisting to tipsets equal to or below this height}
+	done        chan struct{}
+	report      *schedule.Reporter
+	stopOnError bool
 }
 
 // Run starts walking the chain history and continues until the context is done or
@@ -92,6 +94,7 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 	defer span.End()
 
 	var err error
+	errs := []error{}
 	for int64(ts.Height()) >= c.minHeight && ts.Height() != 0 {
 		select {
 		case <-ctx.Done():
@@ -102,7 +105,15 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 		c.report.UpdateCurrentHeight(int64(ts.Height()))
 		if success, err := c.obs.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Walk), indexer.WithTasks(c.tasks)); err != nil {
 			span.RecordError(err)
-			return fmt.Errorf("notify tipset: %w", err)
+			err := fmt.Errorf("index tipset, height: %v, error: %v", ts.Height().String(), err)
+			log.Errorf("%v", err)
+			// collect error
+			errs = append(errs, err)
+
+			// return an error only if the "stopOnError" flag is set to true.
+			if c.stopOnError {
+				return err
+			}
 		} else if !success {
 			log.Errorw("walk incomplete", "height", ts.Height(), "tipset", ts.Key().String(), "reporter", c.name)
 		}
@@ -113,6 +124,10 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 			span.RecordError(err)
 			return fmt.Errorf("get tipset: %w", err)
 		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("errors: %v", errs)
 	}
 
 	return nil
