@@ -559,6 +559,10 @@ func (m *LilyNodeAPI) EthGetBlockByHash(ctx context.Context, blkHash ethtypes.Et
 	return m.EthModuleAPI.EthGetBlockByHash(ctx, blkHash, fullTxInfo)
 }
 
+func (m *LilyNodeAPI) EthGetTransactionByHash(ctx context.Context, txHash *ethtypes.EthHash) (*ethtypes.EthTx, error) {
+	return m.EthModuleAPI.EthGetTransactionByHash(ctx, txHash)
+}
+
 func (m *LilyNodeAPI) EthGetTransactionReceipt(ctx context.Context, txHash ethtypes.EthHash) (*api.EthTxReceipt, error) {
 	return m.EthModuleAPI.EthGetTransactionReceipt(ctx, txHash)
 }
