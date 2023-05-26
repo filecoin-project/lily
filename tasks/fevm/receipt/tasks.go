@@ -5,8 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/filecoin-project/go-address"
-
 	"github.com/filecoin-project/lotus/chain/types"
 
 	"encoding/json"
@@ -15,10 +13,10 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
-	"github.com/filecoin-project/lotus/chain/actors/builtin"
 
 	"github.com/filecoin-project/lily/model/fevm"
 	"github.com/filecoin-project/lotus/chain/types/ethtypes"
@@ -34,20 +32,6 @@ func NewTask(node tasks.DataSource) *Task {
 	return &Task{
 		node: node,
 	}
-}
-
-func (p *Task) isSentToEVMAddress(ctx context.Context, addr address.Address, tsk types.TipSetKey) bool {
-	act, err := p.node.Actor(ctx, addr, tsk)
-	if err != nil {
-		// If actor not found, check if it's a placeholder address.
-		if addr.Protocol() == address.Delegated {
-			log.Debugf("Sent to Placeholder address: %v", addr)
-			return true
-		}
-		log.Errorf("Error at getting actor. address: %v, err: %v", addr, err)
-		return false
-	}
-	return builtin.IsEvmActor(act.Code)
 }
 
 func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, executed *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
@@ -79,8 +63,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if message.Message == nil {
 			continue
 		}
-
-		if !p.isSentToEVMAddress(ctx, message.Message.To, executed.Key()) {
+		if !util.IsSentToEVMAddress(ctx, p.node, message.Message.To, executed.Key()) {
 			continue
 		}
 
