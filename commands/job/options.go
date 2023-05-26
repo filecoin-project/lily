@@ -100,7 +100,7 @@ var RunRestartFailure = &cli.BoolFlag{
 
 var StopOnError = &cli.BoolFlag{
 	Name:        "stop-on-error",
-	Usage:       "Stop the job if it get error.",
+	Usage:       "Stop the job if it encounters an error.",
 	EnvVars:     []string{"LILY_JOB_STOP_ON_ERROR"},
 	Value:       false,
 	Destination: &RunFlags.StopOnError,
