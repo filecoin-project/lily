@@ -23,7 +23,7 @@ func init() {
 		v                    TEXT,
 		r                    TEXT,
 		s                    TEXT,
-		access_list          TEXT[],
+		access_list          jsonb,
 		PRIMARY KEY(height, hash)
 	);
 `,

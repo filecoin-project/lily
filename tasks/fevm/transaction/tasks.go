@@ -2,6 +2,7 @@ package fevmtransaction
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/types"
@@ -117,7 +118,10 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			for _, access := range txn.AccessList {
 				accessStrList = append(accessStrList, access.String())
 			}
-			txnObj.AccessList = accessStrList
+			b, err := json.Marshal(accessStrList)
+			if err == nil {
+				txnObj.AccessList = string(b)
+			}
 		}
 		out = append(out, txnObj)
 	}

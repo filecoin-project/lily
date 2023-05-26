@@ -15,24 +15,24 @@ type FEVMTransaction struct {
 	// Height message was executed at.
 	Height int64 `pg:",pk,notnull,use_zero"`
 
-	Hash                 string   `pg:",notnull"`
-	ChainID              uint64   `pg:",use_zero"`
-	Nonce                uint64   `pg:",use_zero"`
-	BlockHash            string   `pg:",notnull"`
-	BlockNumber          uint64   `pg:",use_zero"`
-	TransactionIndex     uint64   `pg:",use_zero"`
-	From                 string   `pg:",notnull"`
-	To                   string   `pg:",notnull"`
-	Value                string   `pg:",notnull"`
-	Type                 uint64   `pg:",use_zero"`
-	Input                string   `pg:",notnull"`
-	Gas                  uint64   `pg:",use_zero"`
-	MaxFeePerGas         string   `pg:",notnull"`
-	MaxPriorityFeePerGas string   `pg:",notnull"`
-	AccessList           []string `pg:",notnull"`
-	V                    string   `pg:",notnull"`
-	R                    string   `pg:",notnull"`
-	S                    string   `pg:",notnull"`
+	Hash                 string `pg:",pk,notnull"`
+	ChainID              uint64 `pg:",use_zero"`
+	Nonce                uint64 `pg:",use_zero"`
+	BlockHash            string `pg:",notnull"`
+	BlockNumber          uint64 `pg:",use_zero"`
+	TransactionIndex     uint64 `pg:",use_zero"`
+	From                 string `pg:",notnull"`
+	To                   string `pg:",notnull"`
+	Value                string `pg:",notnull"`
+	Type                 uint64 `pg:",use_zero"`
+	Input                string `pg:",notnull"`
+	Gas                  uint64 `pg:",use_zero"`
+	MaxFeePerGas         string `pg:",notnull"`
+	MaxPriorityFeePerGas string `pg:",notnull"`
+	AccessList           string `pg:",type:jsonb"`
+	V                    string `pg:",notnull"`
+	R                    string `pg:",notnull"`
+	S                    string `pg:",notnull"`
 }
 
 func (f *FEVMTransaction) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
