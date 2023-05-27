@@ -27,8 +27,8 @@ type FEVMTransaction struct {
 	Type                 uint64 `pg:",use_zero"`
 	Input                string `pg:",notnull"`
 	Gas                  uint64 `pg:",use_zero"`
-	MaxFeePerGas         string `pg:",notnull"`
-	MaxPriorityFeePerGas string `pg:",notnull"`
+	MaxFeePerGas         string `pg:"type:numeric,notnull"`
+	MaxPriorityFeePerGas string `pg:"type:numeric,notnull"`
 	AccessList           string `pg:",type:jsonb"`
 	V                    string `pg:",notnull"`
 	R                    string `pg:",notnull"`
