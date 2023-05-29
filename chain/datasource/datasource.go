@@ -144,6 +144,10 @@ func (t *DataSource) EthGetBlockByHash(ctx context.Context, blkHash ethtypes.Eth
 	return t.node.EthGetBlockByHash(ctx, blkHash, fullTxInfo)
 }
 
+func (t *DataSource) EthGetTransactionByHash(ctx context.Context, txHash *ethtypes.EthHash) (*ethtypes.EthTx, error) {
+	return t.node.EthGetTransactionByHash(ctx, txHash)
+}
+
 func (t *DataSource) EthGetTransactionReceipt(ctx context.Context, txHash ethtypes.EthHash) (*api.EthTxReceipt, error) {
 	return t.node.EthGetTransactionReceipt(ctx, txHash)
 }

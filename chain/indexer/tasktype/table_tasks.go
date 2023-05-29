@@ -47,6 +47,7 @@ const (
 	FEVMActorStats                 = "fevm_actor_stats"
 	FEVMBlockHeader                = "fevm_block_header"
 	FEVMReceipt                    = "fevm_receipt"
+	FEVMTransaction                = "fevm_transaction"
 )
 
 var AllTableTasks = []string{
@@ -95,6 +96,7 @@ var AllTableTasks = []string{
 	FEVMActorStats,
 	FEVMBlockHeader,
 	FEVMReceipt,
+	FEVMTransaction,
 }
 
 var TableLookup = map[string]struct{}{
@@ -143,6 +145,7 @@ var TableLookup = map[string]struct{}{
 	FEVMActorStats:                 {},
 	FEVMBlockHeader:                {},
 	FEVMReceipt:                    {},
+	FEVMTransaction:                {},
 }
 
 var TableComment = map[string]string{
@@ -191,6 +194,7 @@ var TableComment = map[string]string{
 	FEVMActorStats:                 ``,
 	FEVMBlockHeader:                ``,
 	FEVMReceipt:                    ``,
+	FEVMTransaction:                ``,
 }
 
 var TableFieldComments = map[string]map[string]string{
@@ -296,4 +300,5 @@ var TableFieldComments = map[string]map[string]string{
 	FEVMActorStats:                 {},
 	FEVMBlockHeader:                {},
 	FEVMReceipt:                    {},
+	FEVMTransaction:                {},
 }

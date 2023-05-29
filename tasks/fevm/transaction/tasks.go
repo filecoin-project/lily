@@ -1,28 +1,26 @@
-package fevmreceipt
+package fevmtransaction
 
 import (
 	"context"
-	"encoding/hex"
+	"encoding/json"
 	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/types"
-
-	"encoding/json"
 
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
 
+	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model/fevm"
 	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 )
 
-var log = logging.Logger("lily/tasks/fevmreceipt")
+var log = logging.Logger("lily/tasks/fevmtransaction")
 
 type Task struct {
 	node tasks.DataSource
@@ -42,7 +40,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			attribute.Int64("current_height", int64(current.Height())),
 			attribute.String("executed", executed.String()),
 			attribute.Int64("executed_height", int64(executed.Height())),
-			attribute.String("processor", "fevm_receipt"),
+			attribute.String("processor", "fevm_transaction"),
 		)
 	}
 	defer span.End()
@@ -58,7 +56,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		return nil, report, err
 	}
 	errs := []error{}
-	out := make(fevm.FEVMReceiptList, 0)
+	out := make(fevm.FEVMTransactionList, 0)
 	for _, message := range messages {
 		if message.Message == nil {
 			continue
@@ -74,44 +72,58 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			continue
 		}
 
-		receipt, err := p.node.EthGetTransactionReceipt(ctx, hash)
+		txn, err := p.node.EthGetTransactionByHash(ctx, &hash)
 		if err != nil {
-			log.Errorf("Error at getting receipt: [hash: %v] err: %v", hash, err)
+			log.Errorf("Error at getting transaction: [hash: %v] err: %v", hash, err)
 			errs = append(errs, err)
 			continue
 		}
 
-		if receipt == nil {
+		if txn == nil {
 			continue
 		}
 
-		receiptObj := &fevm.FEVMReceipt{
-			Height:            int64(executed.Height()),
-			TransactionHash:   receipt.TransactionHash.String(),
-			TransactionIndex:  uint64(receipt.TransactionIndex),
-			BlockHash:         receipt.BlockHash.String(),
-			BlockNumber:       uint64(receipt.BlockNumber),
-			From:              receipt.From.String(),
-			Status:            uint64(receipt.Status),
-			CumulativeGasUsed: uint64(receipt.CumulativeGasUsed),
-			GasUsed:           uint64(receipt.GasUsed),
-			EffectiveGasPrice: receipt.EffectiveGasPrice.Int64(),
-			LogsBloom:         hex.EncodeToString(receipt.LogsBloom),
-			Message:           message.Cid.String(),
+		txnObj := &fevm.FEVMTransaction{
+			Height:               int64(executed.Height()),
+			Hash:                 txn.Hash.String(),
+			ChainID:              uint64(txn.ChainID),
+			Nonce:                uint64(txn.Nonce),
+			From:                 txn.From.String(),
+			Value:                txn.Value.String(),
+			Type:                 uint64(txn.Type),
+			Input:                txn.Input.String(),
+			Gas:                  uint64(txn.Gas),
+			MaxFeePerGas:         txn.MaxFeePerGas.Int.String(),
+			MaxPriorityFeePerGas: txn.MaxPriorityFeePerGas.Int.String(),
+			V:                    txn.V.String(),
+			R:                    txn.R.String(),
+			S:                    txn.S.String(),
 		}
 
-		b, err := json.Marshal(receipt.Logs)
-		if err == nil {
-			receiptObj.Logs = string(b)
+		if txn.BlockHash != nil {
+			txnObj.BlockHash = txn.BlockHash.String()
 		}
-		if receipt.ContractAddress != nil {
-			receiptObj.ContractAddress = receipt.ContractAddress.String()
+		if txn.BlockNumber != nil {
+			txnObj.BlockNumber = uint64(*txn.BlockNumber)
 		}
-		if receipt.To != nil {
-			receiptObj.To = receipt.To.String()
+		if txn.TransactionIndex != nil {
+			txnObj.TransactionIndex = uint64(*txn.TransactionIndex)
 		}
-		out = append(out, receiptObj)
+		if txn.To != nil {
+			txnObj.To = txn.To.String()
+		}
 
+		if len(txn.AccessList) > 0 {
+			accessStrList := make([]string, 0)
+			for _, access := range txn.AccessList {
+				accessStrList = append(accessStrList, access.String())
+			}
+			b, err := json.Marshal(accessStrList)
+			if err == nil {
+				txnObj.AccessList = string(b)
+			}
+		}
+		out = append(out, txnObj)
 	}
 
 	if len(errs) > 0 {
