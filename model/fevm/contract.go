@@ -10,7 +10,7 @@ import (
 )
 
 type FEVMContract struct {
-	tableName struct{} `pg:"fevm_contract"` // nolint: structcheck
+	tableName struct{} `pg:"fevm_contracts"` // nolint: structcheck
 
 	// Height message was executed at.
 	Height int64 `pg:",pk,notnull,use_zero"`
@@ -29,7 +29,7 @@ type FEVMContract struct {
 }
 
 func (f *FEVMContract) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_contract"))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_contracts"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, f)
 }
@@ -40,7 +40,7 @@ func (f FEVMContractList) Persist(ctx context.Context, s model.StorageBatch, ver
 	if len(f) == 0 {
 		return nil
 	}
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_contract"))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_contracts"))
 	metrics.RecordCount(ctx, metrics.PersistModel, len(f))
 	return s.PersistModel(ctx, f)
 }
