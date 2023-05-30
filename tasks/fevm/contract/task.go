@@ -70,28 +70,28 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 		evmState, err := evm.Load(p.node.Store(), &actor)
 		if err != nil {
-			log.Errorf("Error at loading evm state: [actor cid: %v] err: %v", actor.Code, err)
+			log.Errorf("Error at loading evm state: [actor cid: %v] err: %v", actor.Code.String(), err)
 			errs = append(errs, err)
 			continue
 		}
 
 		ethAddress, err := ethtypes.EthAddressFromFilecoinAddress(*actor.Address)
 		if err != nil {
-			log.Errorf("Error at getting eth address: [actor cid: %v] err: %v", actor.Code, err)
+			log.Errorf("Error at getting eth address: [actor cid: %v] err: %v", actor.Code.String(), err)
 			errs = append(errs, err)
 			continue
 		}
 
 		byteCode, err := evmState.GetBytecode()
 		if err != nil {
-			log.Errorf("Error at getting byte code: [actor cid: %v] err: %v", actor.Code, err)
+			log.Errorf("Error at getting byte code: [actor cid: %v] err: %v", actor.Code.String(), err)
 			errs = append(errs, err)
 			continue
 		}
 
 		byteCodeHash, err := evmState.GetBytecodeHash()
 		if err != nil {
-			log.Errorf("Error at getting byte code hash: [actor cid: %v] err: %v", actor.Code, err)
+			log.Errorf("Error at getting byte code hash: [actor cid: %v] err: %v", actor.Code.String(), err)
 			errs = append(errs, err)
 			continue
 		}
