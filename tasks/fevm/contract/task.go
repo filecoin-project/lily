@@ -3,6 +3,7 @@ package fevmcontract
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 
 	"github.com/filecoin-project/lotus/chain/actors/builtin/evm"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -107,5 +108,11 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 	}
 
-	return model.PersistableList{out}, report, nil
+	if len(errs) > 0 {
+		err = fmt.Errorf("%v", errs)
+	} else {
+		err = nil
+	}
+
+	return model.PersistableList{out}, report, err
 }
