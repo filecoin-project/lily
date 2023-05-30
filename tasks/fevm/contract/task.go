@@ -56,6 +56,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	}
 
 	out := make(fevm.FEVMContractList, 0)
+	errs := []error{}
 	for _, change := range actorChanges {
 		actor := change.Actor
 		if actor.Address == nil {
@@ -66,24 +67,33 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			continue
 		}
 
-		log.Errorf("Get Actor Address: %v", actor.Address)
-
 		evmState, err := evm.Load(p.node.Store(), &actor)
 		if err != nil {
+			log.Errorf("Error at loading evm state: [actor cid: %v] err: %v", actor.Code, err)
+			errs = append(errs, err)
+			continue
+		}
+
+		ethAddress, err := ethtypes.EthAddressFromFilecoinAddress(*actor.Address)
+		if err != nil {
+			log.Errorf("Error at getting eth address: [actor cid: %v] err: %v", actor.Code, err)
+			errs = append(errs, err)
 			continue
 		}
 
 		byteCode, err := evmState.GetBytecode()
 		if err != nil {
-			byteCode = []byte{}
+			log.Errorf("Error at getting byte code: [actor cid: %v] err: %v", actor.Code, err)
+			errs = append(errs, err)
+			continue
 		}
 
 		byteCodeHash, err := evmState.GetBytecodeHash()
 		if err != nil {
-			byteCodeHash = [32]byte{}
+			log.Errorf("Error at getting byte code hash: [actor cid: %v] err: %v", actor.Code, err)
+			errs = append(errs, err)
+			continue
 		}
-
-		ethAddress, err := ethtypes.EthAddressFromFilecoinAddress(*actor.Address)
 
 		out = append(out, &fevm.FEVMContract{
 			Height:       int64(executed.Height()),
