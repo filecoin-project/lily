@@ -76,7 +76,7 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 			continue
 		}
 
-		if !util.IsEVMAddress(ctx, p.node, message.Message.To, ts.Key()) {
+		if !util.IsEVMAddress(ctx, p.node, message.Message.From, ts.Key()) {
 			continue
 		}
 
