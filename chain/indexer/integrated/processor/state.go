@@ -59,6 +59,7 @@ import (
 	msapprovaltask "github.com/filecoin-project/lily/tasks/msapprovals"
 
 	// fevm task
+	fevmactortask "github.com/filecoin-project/lily/tasks/fevm/actor"
 	fevmblockheadertask "github.com/filecoin-project/lily/tasks/fevm/blockheader"
 	fevmcontracttask "github.com/filecoin-project/lily/tasks/fevm/contract"
 	fevmreceipttask "github.com/filecoin-project/lily/tasks/fevm/receipt"
@@ -653,6 +654,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			out.TipsetsProcessors[t] = fevmtransactiontask.NewTask(api)
 		case tasktype.FEVMContract:
 			out.TipsetsProcessors[t] = fevmcontracttask.NewTask(api)
+		case tasktype.FEVMActor:
+			out.TipsetProcessors[t] = fevmactortask.NewTask(api)
 
 		case BuiltinTaskName:
 			out.ReportProcessors[t] = indexertask.NewTask(api)
