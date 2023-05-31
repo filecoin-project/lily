@@ -96,6 +96,7 @@ var TaskLookup = map[string][]string{
 		FEVMBlockHeader,
 		FEVMReceipt,
 		FEVMTransaction,
+		FEVMContract,
 	},
 }
 

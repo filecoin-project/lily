@@ -54,7 +54,7 @@ func TestNewProcessor(t *testing.T) {
 	require.Equal(t, t.Name(), proc.name)
 	require.Len(t, proc.actorProcessors, 24)
 	require.Len(t, proc.tipsetProcessors, 10)
-	require.Len(t, proc.tipsetsProcessors, 12)
+	require.Len(t, proc.tipsetsProcessors, 13)
 	require.Len(t, proc.builtinProcessors, 1)
 
 	require.Equal(t, gasoutput.NewTask(nil), proc.tipsetsProcessors[tasktype.GasOutputs])
