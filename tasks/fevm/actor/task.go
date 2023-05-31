@@ -71,12 +71,12 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 			continue
 		}
 
-		if !util.IsEVMAddress(ctx, p.node, message.Message.To, ts.Key()) {
+		// Only handle the evm actor creation message
+		if message.Message.To != builtintypes.EthereumAddressManagerActorAddr {
 			continue
 		}
 
-		// Only handle the evm actor creation message
-		if message.Message.To != builtintypes.EthereumAddressManagerActorAddr {
+		if !util.IsEVMAddress(ctx, p.node, message.Message.To, ts.Key()) {
 			continue
 		}
 
