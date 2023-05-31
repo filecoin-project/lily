@@ -61,7 +61,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if message.Message == nil {
 			continue
 		}
-		if !util.IsSentToEVMAddress(ctx, p.node, message.Message.To, executed.Key()) {
+		if !util.IsEVMAddress(ctx, p.node, message.Message.To, executed.Key()) {
 			continue
 		}
 

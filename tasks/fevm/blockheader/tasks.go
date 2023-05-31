@@ -67,7 +67,6 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		log.Warn("block number == 0")
 		return nil, report, err
 	}
-
 	return &fevm.FEVMBlockHeader{
 		Height:           int64(executed.Height()),
 		Hash:             hash.String(),

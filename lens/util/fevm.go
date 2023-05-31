@@ -9,7 +9,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 )
 
-func IsSentToEVMAddress(ctx context.Context, ds tasks.DataSource, addr address.Address, tsk types.TipSetKey) bool {
+func IsEVMAddress(ctx context.Context, ds tasks.DataSource, addr address.Address, tsk types.TipSetKey) bool {
 	act, err := ds.Actor(ctx, addr, tsk)
 	if err != nil {
 		// If actor not found, check if it's a placeholder address.

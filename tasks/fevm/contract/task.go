@@ -64,7 +64,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			continue
 		}
 
-		if !util.IsSentToEVMAddress(ctx, p.node, *actor.Address, executed.Key()) {
+		if !util.IsEVMAddress(ctx, p.node, *actor.Address, executed.Key()) {
 			continue
 		}
 
@@ -97,7 +97,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		}
 
 		out = append(out, &fevm.FEVMContract{
-			Height:       int64(executed.Height()),
+			Height:       int64(current.Height()),
 			ActorID:      actor.Address.String(),
 			EthAddress:   ethAddress.String(),
 			ByteCode:     hex.EncodeToString(byteCode),
