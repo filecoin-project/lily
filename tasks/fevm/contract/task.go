@@ -64,7 +64,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			continue
 		}
 
-		if !util.IsEVMAddress(ctx, p.node, *actor.Address, executed.Key()) {
+		if !util.IsEVMAddress(ctx, p.node, *actor.Address, current.Key()) {
 			continue
 		}
 
