@@ -80,9 +80,9 @@ func TestNewProcessor(t *testing.T) {
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.DeadlineInfoExtractor{})), proc.actorProcessors[tasktype.MinerCurrentDeadlineInfo])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.FeeDebtExtractor{})), proc.actorProcessors[tasktype.MinerFeeDebt])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.InfoExtractor{})), proc.actorProcessors[tasktype.MinerInfo])
-	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.LockedFundsExtractor{})), proc.actorProcessors[tasktype.MinerLockedFund])
+	require.Equal(t, actorstate.NewTaskWithTransformer(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.LockedFundsExtractor{}), minertask.LockedFundsExtractor{}), proc.actorProcessors[tasktype.MinerLockedFund])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.SectorDealsExtractor{})), proc.actorProcessors[tasktype.MinerSectorDeal])
-	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.SectorEventsExtractor{})), proc.actorProcessors[tasktype.MinerSectorEvent])
+	require.Equal(t, actorstate.NewTaskWithTransformer(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.SectorEventsExtractor{}), minertask.SectorEventsExtractor{}), proc.actorProcessors[tasktype.MinerSectorEvent])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.PoStExtractor{})), proc.actorProcessors[tasktype.MinerSectorPost])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewCustomTypedActorExtractorMap(
 		map[cid.Cid][]actorstate.ActorStateExtractor{
@@ -94,15 +94,21 @@ func TestNewProcessor(t *testing.T) {
 			miner.VersionCodes()[actorstypes.Version6]: {minertask.SectorInfoExtractor{}},
 		},
 	)), proc.actorProcessors[tasktype.MinerSectorInfoV1_6])
-	require.Equal(t, actorstate.NewTask(nil, actorstate.NewCustomTypedActorExtractorMap(
-		map[cid.Cid][]actorstate.ActorStateExtractor{
-			miner.VersionCodes()[actorstypes.Version7]:  {minertask.V7SectorInfoExtractor{}},
-			miner.VersionCodes()[actorstypes.Version8]:  {minertask.V7SectorInfoExtractor{}},
-			miner.VersionCodes()[actorstypes.Version9]:  {minertask.V7SectorInfoExtractor{}},
-			miner.VersionCodes()[actorstypes.Version10]: {minertask.V7SectorInfoExtractor{}},
-			miner.VersionCodes()[actorstypes.Version11]: {minertask.V7SectorInfoExtractor{}},
-		},
-	)), proc.actorProcessors[tasktype.MinerSectorInfoV7])
+	require.Equal(
+		t,
+		actorstate.NewTaskWithTransformer(
+			nil,
+			actorstate.NewCustomTypedActorExtractorMap(
+				map[cid.Cid][]actorstate.ActorStateExtractor{
+					miner.VersionCodes()[actorstypes.Version7]:  {minertask.V7SectorInfoExtractor{}},
+					miner.VersionCodes()[actorstypes.Version8]:  {minertask.V7SectorInfoExtractor{}},
+					miner.VersionCodes()[actorstypes.Version9]:  {minertask.V7SectorInfoExtractor{}},
+					miner.VersionCodes()[actorstypes.Version10]: {minertask.V7SectorInfoExtractor{}},
+					miner.VersionCodes()[actorstypes.Version11]: {minertask.V7SectorInfoExtractor{}},
+				}),
+			minertask.V7SectorInfoExtractor{},
+		),
+		proc.actorProcessors[tasktype.MinerSectorInfoV7])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(power.AllCodes(), powertask.ClaimedPowerExtractor{})), proc.actorProcessors[tasktype.PowerActorClaim])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(power.AllCodes(), powertask.ChainPowerExtractor{})), proc.actorProcessors[tasktype.ChainPower])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(reward.AllCodes(), rewardtask.RewardExtractor{})), proc.actorProcessors[tasktype.ChainReward])
