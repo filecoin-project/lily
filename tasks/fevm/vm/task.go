@@ -113,6 +113,8 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		vmMessageResults = make(fevm.FEVMVMMessageList, 0)
 	)
 
+	errs := []error{}
+
 	for _, parentMsg := range mex {
 		// Only handle EVM related message
 		if !util.IsEVMAddress(ctx, t.node, parentMsg.Message.From, current.Key()) && !util.IsEVMAddress(ctx, t.node, parentMsg.Message.To, current.Key()) && !(parentMsg.Message.To != builtintypes.EthereumAddressManagerActorAddr) {
@@ -121,11 +123,13 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		messageHash, err := ethtypes.EthHashFromCid(parentMsg.Cid)
 		if err != nil {
 			log.Errorf("Error at finding hash: [cid: %v] err: %v", parentMsg.Cid, err)
+			errs = append(errs, err)
 			continue
 		}
 		transaction, err := t.node.EthGetTransactionByHash(ctx, &messageHash)
 		if err != nil {
 			log.Errorf("Error at getting receipt: [hash: %v] err: %v", messageHash, err)
+			errs = append(errs, err)
 			continue
 		}
 
@@ -184,5 +188,12 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		}
 	}
 
-	return vmMessageResults, report, nil
+	var err error
+	if len(errs) > 0 {
+		err = fmt.Errorf("%v", errs)
+	} else {
+		err = nil
+	}
+
+	return vmMessageResults, report, err
 }
