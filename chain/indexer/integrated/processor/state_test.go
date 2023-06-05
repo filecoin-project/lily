@@ -63,10 +63,6 @@ func TestMakeProcessorsActors(t *testing.T) {
 				extractor: actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.InfoExtractor{}),
 			},
 			{
-				taskName:  tasktype.MinerSectorDeal,
-				extractor: actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.SectorDealsExtractor{}),
-			},
-			{
 				taskName:  tasktype.MinerSectorPost,
 				extractor: actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.PoStExtractor{}),
 			},
@@ -138,6 +134,11 @@ func TestMakeProcessorsActors(t *testing.T) {
 					},
 				),
 				transformer: minertask.PreCommitInfoExtractorV9{},
+			},
+			{
+				taskName:    tasktype.MinerSectorDeal,
+				extractor:   actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.SectorDealsExtractor{}),
+				transformer: minertask.SectorDealsExtractor{},
 			},
 		}
 		for _, tc := range testCases2 {

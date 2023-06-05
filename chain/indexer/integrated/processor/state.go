@@ -469,9 +469,14 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				minertask.PreCommitInfoExtractorV9{},
 			)
 		case tasktype.MinerSectorDeal:
-			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				mineractors.AllCodes(), minertask.SectorDealsExtractor{},
-			))
+			out.ActorProcessors[t] = actorstate.NewTaskWithTransformer(
+				api,
+				actorstate.NewTypedActorExtractorMap(
+					mineractors.AllCodes(),
+					minertask.SectorDealsExtractor{},
+				),
+				minertask.SectorDealsExtractor{},
+			)
 		case tasktype.MinerSectorEvent:
 			out.ActorProcessors[t] = actorstate.NewTaskWithTransformer(
 				api,

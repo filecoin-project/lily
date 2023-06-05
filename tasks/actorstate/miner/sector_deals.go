@@ -72,3 +72,17 @@ func ExtractSectorDealsModel(ctx context.Context, ec extraction.State) (minermod
 	}
 	return result, nil
 }
+
+func (SectorDealsExtractor) Transform(ctx context.Context, data model.PersistableList) (model.PersistableList, error) {
+	persistableList := make(minermodel.MinerSectorDealList, 0, len(data))
+	for _, d := range data {
+		ml, ok := d.(minermodel.MinerSectorDealList)
+		if !ok {
+			return nil, fmt.Errorf("expected MinerSectorDealList type but got: %T", d)
+		}
+		for _, m := range ml {
+			persistableList = append(persistableList, m)
+		}
+	}
+	return model.PersistableList{persistableList}, nil
+}
