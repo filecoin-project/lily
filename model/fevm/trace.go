@@ -23,28 +23,28 @@ type FEVMTrace struct {
 
 	// Cid of the trace.
 	TraceCid string `pg:",pk,notnull"`
-	// Filecoin Address of the sender.
-	From string `pg:",notnull"`
-	// Filecoin Address of the receiver.
-	To string `pg:",notnull"`
 	// ETH Address of the sender.
-	FromEthAddress string `pg:",notnull"`
+	From string `pg:",notnull"`
 	// ETH Address of the receiver.
-	ToEthAddress string `pg:",notnull"`
+	To string `pg:",notnull"`
+	// Filecoin Address of the sender.
+	FromFilecoinAddress string `pg:",notnull"`
+	// Filecoin Address of the receiver.
+	ToFilecoinAddress string `pg:",notnull"`
 
 	// Value attoFIL contained in message.
 	Value string `pg:"type:numeric,notnull"`
 	// Method called on To (receiver).
 	Method uint64 `pg:",notnull,use_zero"`
+	// Params contained in message encode in eth bytes.
+	ParsedMethod string `pg:",notnull"`
 	// ActorCode of To (receiver).
 	ActorCode string `pg:",notnull"`
 	// ExitCode of message execution.
 	ExitCode int64 `pg:",notnull,use_zero"`
-	// GasUsed by message.
-	GasUsed int64 `pg:",notnull,use_zero"`
-	// Params contained in message encode in base64.
+	// Params contained in message encode in eth bytes.
 	Params string `pg:",notnull"`
-	// Returns value of message receipt encode in base64.
+	// Returns value of message receipt encode in eth bytes.
 	Returns string `pg:",notnull"`
 	// Index indicating the order of the messages execution.
 	Index uint64 `pg:",notnull,use_zero"`
@@ -52,6 +52,10 @@ type FEVMTrace struct {
 	ParsedParams string `pg:",type:jsonb"`
 	// Returns value of message receipt.
 	ParsedReturns string `pg:",type:jsonb"`
+	// Params codec.
+	ParamsCodec uint64 `pg:",notnull,use_zero"`
+	// Returns codec.
+	ReturnsCodec uint64 `pg:",notnull,use_zero"`
 }
 
 func (v *FEVMTrace) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {

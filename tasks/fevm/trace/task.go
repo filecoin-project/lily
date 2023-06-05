@@ -1,4 +1,4 @@
-package fevmvm
+package fevmtrace
 
 import (
 	"context"
@@ -22,9 +22,10 @@ import (
 	"github.com/filecoin-project/lily/model/fevm"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	tasks "github.com/filecoin-project/lily/tasks"
+	builtin "github.com/filecoin-project/lotus/chain/actors/builtin"
 )
 
-var log = logging.Logger("lily/tasks/fevmvm")
+var log = logging.Logger("lily/tasks/fevmtrace")
 
 type Task struct {
 	node tasks.DataSource
@@ -150,35 +151,39 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			toEthAddress := getEthAddress(child.Message.To)
 
 			vmMsg := &fevm.FEVMTrace{
-				Height:           int64(parentMsg.Height),
-				TransactionHash:  transaction.Hash.String(),
-				MessageStateRoot: parentMsg.StateRoot.String(),
-				MessageCid:       parentMsg.Cid.String(),
-				TraceCid:         getMessageTraceCid(child.Message).String(),
-				To:               child.Message.To.String(),
-				From:             child.Message.From.String(),
-				FromEthAddress:   fromEthAddress,
-				ToEthAddress:     toEthAddress,
-				Value:            child.Message.Value.String(),
-				GasUsed:          0,
-				ExitCode:         int64(child.Receipt.ExitCode),
-				ActorCode:        toActorCode,
-				Method:           uint64(child.Message.Method),
-				Index:            child.Index,
-				Params:           base64.StdEncoding.EncodeToString(child.Message.Params),
-				Returns:          base64.StdEncoding.EncodeToString(child.Receipt.Return),
+				Height:              int64(parentMsg.Height),
+				TransactionHash:     transaction.Hash.String(),
+				MessageStateRoot:    parentMsg.StateRoot.String(),
+				MessageCid:          parentMsg.Cid.String(),
+				TraceCid:            getMessageTraceCid(child.Message).String(),
+				ToFilecoinAddress:   child.Message.To.String(),
+				FromFilecoinAddress: child.Message.From.String(),
+				From:                fromEthAddress,
+				To:                  toEthAddress,
+				Value:               child.Message.Value.String(),
+				ExitCode:            int64(child.Receipt.ExitCode),
+				ActorCode:           toActorCode,
+				Method:              uint64(child.Message.Method),
+				Index:               child.Index,
+				Params:              ethtypes.EthBytes(child.Message.Params).String(),
+				Returns:             ethtypes.EthBytes(child.Receipt.Return).String(),
+				ParamsCodec:         child.Message.ParamsCodec,
+				ReturnsCodec:        child.Receipt.ReturnCodec,
 			}
 
 			// only parse params and return of successful messages since unsuccessful messages don't return a parseable value.
 			// As an example: a message may return ErrForbidden, it will have valid params, but will not contain a
 			// parsable return value in its receipt.
 			if child.Receipt.ExitCode.IsSuccess() {
-				params, _, err := util.ParseVmMessageParams(child.Message.Params, child.Message.ParamsCodec, child.Message.Method, toCode)
-				if err == nil {
+				params, parsedMethod, err := util.ParseVmMessageParams(child.Message.Params, child.Message.ParamsCodec, child.Message.Method, toCode)
+				// in ParseVmMessageParams it will return actor name when actor not found
+				if err == nil && parsedMethod != builtin.ActorNameByCode(toCode) {
 					vmMsg.ParsedParams = params
+					vmMsg.ParsedMethod = parsedMethod
 				}
-				ret, _, err := util.ParseVmMessageReturn(child.Receipt.Return, child.Receipt.ReturnCodec, child.Message.Method, toCode)
-				if err == nil {
+				ret, parsedMethod, err := util.ParseVmMessageReturn(child.Receipt.Return, child.Receipt.ReturnCodec, child.Message.Method, toCode)
+				// in ParseVmMessageParams it will return actor name when actor not found
+				if err == nil && parsedMethod != builtin.ActorNameByCode(toCode) {
 					vmMsg.ParsedReturns = ret
 				}
 			}
