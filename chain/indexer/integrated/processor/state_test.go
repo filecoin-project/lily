@@ -424,7 +424,7 @@ func TestMakeProcessorsAllTasks(t *testing.T) {
 	proc, err := processor.MakeProcessors(nil, append(tasktype.AllTableTasks, processor.BuiltinTaskName))
 	require.NoError(t, err)
 	require.Len(t, proc.ActorProcessors, 24)
-	require.Len(t, proc.TipsetProcessors, 10)
-	require.Len(t, proc.TipsetsProcessors, 13)
+	require.Len(t, proc.TipsetProcessors, 11)
+	require.Len(t, proc.TipsetsProcessors, 12)
 	require.Len(t, proc.ReportProcessors, 1)
 }
