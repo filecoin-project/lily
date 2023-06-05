@@ -71,7 +71,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			attribute.Int64("current_height", int64(current.Height())),
 			attribute.String("executed", executed.String()),
 			attribute.Int64("executed_height", int64(executed.Height())),
-			attribute.String("processor", "fevm_vm_messages"),
+			attribute.String("processor", "fevm_trace"),
 		)
 	}
 	defer span.End()
@@ -110,7 +110,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	}
 
 	var (
-		vmMessageResults = make(fevm.FEVMVMMessageList, 0)
+		vmMessageResults = make(fevm.FEVMTraceList, 0)
 	)
 
 	errs := []error{}
@@ -128,7 +128,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		}
 		transaction, err := t.node.EthGetTransactionByHash(ctx, &messageHash)
 		if err != nil {
-			log.Errorf("Error at getting receipt: [hash: %v] err: %v", messageHash, err)
+			log.Errorf("Error at getting transaction: [hash: %v] err: %v", messageHash, err)
 			errs = append(errs, err)
 			continue
 		}
@@ -149,24 +149,24 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			fromEthAddress := getEthAddress(child.Message.From)
 			toEthAddress := getEthAddress(child.Message.To)
 
-			vmMsg := &fevm.FEVMVMMessage{
-				Height:          int64(parentMsg.Height),
-				TransactionHash: transaction.Hash.String(),
-				StateRoot:       parentMsg.StateRoot.String(),
-				Source:          parentMsg.Cid.String(),
-				Cid:             getMessageTraceCid(child.Message).String(),
-				To:              child.Message.To.String(),
-				From:            child.Message.From.String(),
-				FromEthAddress:  fromEthAddress,
-				ToEthAddress:    toEthAddress,
-				Value:           child.Message.Value.String(),
-				GasUsed:         0,
-				ExitCode:        int64(child.Receipt.ExitCode),
-				ActorCode:       toActorCode,
-				Method:          uint64(child.Message.Method),
-				Index:           child.Index,
-				Params:          base64.StdEncoding.EncodeToString(child.Message.Params),
-				Returns:         base64.StdEncoding.EncodeToString(child.Receipt.Return),
+			vmMsg := &fevm.FEVMTrace{
+				Height:           int64(parentMsg.Height),
+				TransactionHash:  transaction.Hash.String(),
+				MessageStateRoot: parentMsg.StateRoot.String(),
+				MessageCid:       parentMsg.Cid.String(),
+				TraceCid:         getMessageTraceCid(child.Message).String(),
+				To:               child.Message.To.String(),
+				From:             child.Message.From.String(),
+				FromEthAddress:   fromEthAddress,
+				ToEthAddress:     toEthAddress,
+				Value:            child.Message.Value.String(),
+				GasUsed:          0,
+				ExitCode:         int64(child.Receipt.ExitCode),
+				ActorCode:        toActorCode,
+				Method:           uint64(child.Message.Method),
+				Index:            child.Index,
+				Params:           base64.StdEncoding.EncodeToString(child.Message.Params),
+				Returns:          base64.StdEncoding.EncodeToString(child.Receipt.Return),
 			}
 
 			// only parse params and return of successful messages since unsuccessful messages don't return a parseable value.

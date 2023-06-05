@@ -9,27 +9,27 @@ import (
 	"github.com/filecoin-project/lily/model"
 )
 
-type FEVMVMMessage struct {
-	tableName struct{} `pg:"fevm_vm_messages"` // nolint: structcheck
+type FEVMTrace struct {
+	tableName struct{} `pg:"fevm_traces"` // nolint: structcheck
 
 	// Height message was executed at.
 	Height int64 `pg:",pk,notnull,use_zero"`
 	// StateRoot message was applied to.
-	StateRoot string `pg:",pk,notnull"`
+	MessageStateRoot string `pg:",pk,notnull"`
 	// On-chain message triggering the message.
-	Source string `pg:",pk,notnull"`
+	MessageCid string `pg:",pk,notnull"`
 	// On-chain message ETH transaction hash
 	TransactionHash string `pg:",notnull"`
 
-	// Cid of the message.
-	Cid string `pg:",pk,notnull"`
-	// From sender of message.
+	// Cid of the trace.
+	TraceCid string `pg:",pk,notnull"`
+	// Filecoin Address of the sender.
 	From string `pg:",notnull"`
-	// To receiver of message.
+	// Filecoin Address of the receiver.
 	To string `pg:",notnull"`
-	// From sender of message in ETH address.
+	// ETH Address of the sender.
 	FromEthAddress string `pg:",notnull"`
-	// To receiver of message in ETH address.
+	// ETH Address of the receiver.
 	ToEthAddress string `pg:",notnull"`
 
 	// Value attoFIL contained in message.
@@ -54,19 +54,19 @@ type FEVMVMMessage struct {
 	ParsedReturns string `pg:",type:jsonb"`
 }
 
-func (v *FEVMVMMessage) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_vm_messages"))
+func (v *FEVMTrace) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_traces"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, v)
 }
 
-type FEVMVMMessageList []*FEVMVMMessage
+type FEVMTraceList []*FEVMTrace
 
-func (vl FEVMVMMessageList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (vl FEVMTraceList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(vl) == 0 {
 		return nil
 	}
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_vm_messages"))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_traces"))
 	metrics.RecordCount(ctx, metrics.PersistModel, len(vl))
 	return s.PersistModel(ctx, vl)
 }
