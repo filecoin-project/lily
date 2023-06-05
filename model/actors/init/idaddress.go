@@ -66,7 +66,7 @@ func (ia *IDAddress) Persist(ctx context.Context, s model.StorageBatch, version 
 type IDAddressList []*IDAddress
 
 func (ias IDAddressList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, span := otel.Tracer("").Start(ctx, "IDAddressList.PersistWithTx")
+	ctx, span := otel.Tracer("").Start(ctx, "IDAddressList.Persist")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.Int("count", len(ias)))
 	}

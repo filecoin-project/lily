@@ -63,10 +63,6 @@ func TestMakeProcessorsActors(t *testing.T) {
 				extractor: actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.InfoExtractor{}),
 			},
 			{
-				taskName:  tasktype.MinerLockedFund,
-				extractor: actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.LockedFundsExtractor{}),
-			},
-			{
 				taskName: tasktype.MinerPreCommitInfo,
 				extractor: actorstate.NewCustomTypedActorExtractorMap(
 					map[cid.Cid][]actorstate.ActorStateExtractor{
@@ -89,10 +85,6 @@ func TestMakeProcessorsActors(t *testing.T) {
 				extractor: actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.SectorDealsExtractor{}),
 			},
 			{
-				taskName:  tasktype.MinerSectorEvent,
-				extractor: actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.SectorEventsExtractor{}),
-			},
-			{
 				taskName:  tasktype.MinerSectorPost,
 				extractor: actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.PoStExtractor{}),
 			},
@@ -109,6 +101,30 @@ func TestMakeProcessorsActors(t *testing.T) {
 					},
 				),
 			},
+		}
+		for _, tc := range testCases {
+			t.Run(tc.taskName, func(t *testing.T) {
+				proc, err := processor.MakeProcessors(nil, []string{tc.taskName})
+				require.NoError(t, err)
+				require.Len(t, proc.ActorProcessors, 1)
+				require.Equal(t, actorstate.NewTask(nil, tc.extractor), proc.ActorProcessors[tc.taskName])
+			})
+		}
+		testCases2 := []struct {
+			taskName    string
+			extractor   actorstate.ActorExtractorMap
+			transformer actorstate.ActorDataTransformer
+		}{
+			{
+				taskName:    tasktype.MinerLockedFund,
+				extractor:   actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.LockedFundsExtractor{}),
+				transformer: minertask.LockedFundsExtractor{},
+			},
+			{
+				taskName:    tasktype.MinerSectorEvent,
+				extractor:   actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.SectorEventsExtractor{}),
+				transformer: minertask.SectorEventsExtractor{},
+			},
 			{
 				taskName: tasktype.MinerSectorInfoV7,
 				extractor: actorstate.NewCustomTypedActorExtractorMap(
@@ -120,14 +136,15 @@ func TestMakeProcessorsActors(t *testing.T) {
 						miner.VersionCodes()[actorstypes.Version11]: {minertask.V7SectorInfoExtractor{}},
 					},
 				),
+				transformer: minertask.V7SectorInfoExtractor{},
 			},
 		}
-		for _, tc := range testCases {
+		for _, tc := range testCases2 {
 			t.Run(tc.taskName, func(t *testing.T) {
 				proc, err := processor.MakeProcessors(nil, []string{tc.taskName})
 				require.NoError(t, err)
 				require.Len(t, proc.ActorProcessors, 1)
-				require.Equal(t, actorstate.NewTask(nil, tc.extractor), proc.ActorProcessors[tc.taskName])
+				require.Equal(t, actorstate.NewTaskWithTransformer(nil, tc.extractor, tc.transformer), proc.ActorProcessors[tc.taskName])
 			})
 		}
 	})

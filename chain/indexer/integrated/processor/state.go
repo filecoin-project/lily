@@ -441,9 +441,13 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				mineractors.AllCodes(), minertask.InfoExtractor{},
 			))
 		case tasktype.MinerLockedFund:
-			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				mineractors.AllCodes(), minertask.LockedFundsExtractor{},
-			))
+			out.ActorProcessors[t] = actorstate.NewTaskWithTransformer(
+				api,
+				actorstate.NewTypedActorExtractorMap(
+					mineractors.AllCodes(), minertask.LockedFundsExtractor{},
+				),
+				minertask.LockedFundsExtractor{},
+			)
 		case tasktype.MinerPreCommitInfo:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
 				map[cid.Cid][]actorstate.ActorStateExtractor{
@@ -465,9 +469,13 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				mineractors.AllCodes(), minertask.SectorDealsExtractor{},
 			))
 		case tasktype.MinerSectorEvent:
-			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
-				mineractors.AllCodes(), minertask.SectorEventsExtractor{},
-			))
+			out.ActorProcessors[t] = actorstate.NewTaskWithTransformer(
+				api,
+				actorstate.NewTypedActorExtractorMap(
+					mineractors.AllCodes(), minertask.SectorEventsExtractor{},
+				),
+				minertask.SectorEventsExtractor{},
+			)
 		case tasktype.MinerSectorPost:
 			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
 				mineractors.AllCodes(), minertask.PoStExtractor{},
@@ -484,15 +492,19 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				},
 			))
 		case tasktype.MinerSectorInfoV7:
-			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewCustomTypedActorExtractorMap(
-				map[cid.Cid][]actorstate.ActorStateExtractor{
-					mineractors.VersionCodes()[actorstypes.Version7]:  {minertask.V7SectorInfoExtractor{}},
-					mineractors.VersionCodes()[actorstypes.Version8]:  {minertask.V7SectorInfoExtractor{}},
-					mineractors.VersionCodes()[actorstypes.Version9]:  {minertask.V7SectorInfoExtractor{}},
-					mineractors.VersionCodes()[actorstypes.Version10]: {minertask.V7SectorInfoExtractor{}},
-					mineractors.VersionCodes()[actorstypes.Version11]: {minertask.V7SectorInfoExtractor{}},
-				},
-			))
+			out.ActorProcessors[t] = actorstate.NewTaskWithTransformer(
+				api,
+				actorstate.NewCustomTypedActorExtractorMap(
+					map[cid.Cid][]actorstate.ActorStateExtractor{
+						mineractors.VersionCodes()[actorstypes.Version7]:  {minertask.V7SectorInfoExtractor{}},
+						mineractors.VersionCodes()[actorstypes.Version8]:  {minertask.V7SectorInfoExtractor{}},
+						mineractors.VersionCodes()[actorstypes.Version9]:  {minertask.V7SectorInfoExtractor{}},
+						mineractors.VersionCodes()[actorstypes.Version10]: {minertask.V7SectorInfoExtractor{}},
+						mineractors.VersionCodes()[actorstypes.Version11]: {minertask.V7SectorInfoExtractor{}},
+					},
+				),
+				minertask.V7SectorInfoExtractor{},
+			)
 
 			//
 			// Power
