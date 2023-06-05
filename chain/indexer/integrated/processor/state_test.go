@@ -63,24 +63,6 @@ func TestMakeProcessorsActors(t *testing.T) {
 				extractor: actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.InfoExtractor{}),
 			},
 			{
-				taskName: tasktype.MinerPreCommitInfo,
-				extractor: actorstate.NewCustomTypedActorExtractorMap(
-					map[cid.Cid][]actorstate.ActorStateExtractor{
-						miner.VersionCodes()[actorstypes.Version0]:  {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actorstypes.Version2]:  {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actorstypes.Version3]:  {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actorstypes.Version4]:  {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actorstypes.Version5]:  {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actorstypes.Version6]:  {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actorstypes.Version7]:  {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actorstypes.Version8]:  {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actorstypes.Version9]:  {minertask.PreCommitInfoExtractorV9{}},
-						miner.VersionCodes()[actorstypes.Version10]: {minertask.PreCommitInfoExtractorV9{}},
-						miner.VersionCodes()[actorstypes.Version11]: {minertask.PreCommitInfoExtractorV9{}},
-					},
-				),
-			},
-			{
 				taskName:  tasktype.MinerSectorDeal,
 				extractor: actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.SectorDealsExtractor{}),
 			},
@@ -137,6 +119,25 @@ func TestMakeProcessorsActors(t *testing.T) {
 					},
 				),
 				transformer: minertask.V7SectorInfoExtractor{},
+			},
+			{
+				taskName: tasktype.MinerPreCommitInfo,
+				extractor: actorstate.NewCustomTypedActorExtractorMap(
+					map[cid.Cid][]actorstate.ActorStateExtractor{
+						miner.VersionCodes()[actorstypes.Version0]:  {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version2]:  {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version3]:  {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version4]:  {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version5]:  {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version6]:  {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version7]:  {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version8]:  {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version9]:  {minertask.PreCommitInfoExtractorV9{}},
+						miner.VersionCodes()[actorstypes.Version10]: {minertask.PreCommitInfoExtractorV9{}},
+						miner.VersionCodes()[actorstypes.Version11]: {minertask.PreCommitInfoExtractorV9{}},
+					},
+				),
+				transformer: minertask.PreCommitInfoExtractorV9{},
 			},
 		}
 		for _, tc := range testCases2 {
