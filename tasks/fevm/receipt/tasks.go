@@ -34,27 +34,25 @@ func NewTask(node tasks.DataSource) *Task {
 	}
 }
 
-func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, executed *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ProcessTipSets")
 	if span.IsRecording() {
 		span.SetAttributes(
-			attribute.String("current", current.String()),
-			attribute.Int64("current_height", int64(current.Height())),
-			attribute.String("executed", executed.String()),
-			attribute.Int64("executed_height", int64(executed.Height())),
+			attribute.String("current", ts.String()),
+			attribute.Int64("current_height", int64(ts.Height())),
 			attribute.String("processor", "fevm_receipt"),
 		)
 	}
 	defer span.End()
 
 	report := &visormodel.ProcessingReport{
-		Height:    int64(current.Height()),
-		StateRoot: current.ParentState().String(),
+		Height:    int64(ts.Height()),
+		StateRoot: ts.ParentState().String(),
 	}
 
-	messages, err := p.node.ChainGetMessagesInTipset(ctx, executed.Key())
+	messages, err := p.node.ChainGetMessagesInTipset(ctx, ts.Key())
 	if err != nil {
-		log.Errorf("Error at getting messages. ts: %v, height: %v, err: %v", executed.String(), executed.Height(), err)
+		log.Errorf("Error at getting messages. ts: %v, height: %v, err: %v", ts.String(), ts.Height(), err)
 		return nil, report, err
 	}
 	errs := []error{}
@@ -63,7 +61,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if message.Message == nil {
 			continue
 		}
-		if !util.IsEVMAddress(ctx, p.node, message.Message.To, executed.Key()) {
+		if !util.IsEVMAddress(ctx, p.node, message.Message.To, ts.Key()) {
 			continue
 		}
 
@@ -86,7 +84,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		}
 
 		receiptObj := &fevm.FEVMReceipt{
-			Height:            int64(executed.Height()),
+			Height:            int64(ts.Height()),
 			TransactionHash:   receipt.TransactionHash.String(),
 			TransactionIndex:  uint64(receipt.TransactionIndex),
 			BlockHash:         receipt.BlockHash.String(),

@@ -28,7 +28,7 @@ func NewTask(node tasks.DataSource) *Task {
 }
 
 func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "ProcessTipSets")
+	ctx, span := otel.Tracer("").Start(ctx, "ProcessTipSet")
 	if span.IsRecording() {
 		span.SetAttributes(
 			attribute.String("current", ts.String()),

@@ -660,7 +660,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 		case tasktype.FEVMBlockHeader:
 			out.TipsetProcessors[t] = fevmblockheadertask.NewTask(api)
 		case tasktype.FEVMReceipt:
-			out.TipsetsProcessors[t] = fevmreceipttask.NewTask(api)
+			out.TipsetProcessors[t] = fevmreceipttask.NewTask(api)
 		case tasktype.FEVMTransaction:
 			out.TipsetsProcessors[t] = fevmtransactiontask.NewTask(api)
 		case tasktype.FEVMContract:
