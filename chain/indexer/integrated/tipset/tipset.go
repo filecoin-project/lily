@@ -145,7 +145,6 @@ func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Re
 				if res.Error != nil {
 					llt.Errorw("task returned with error", "error", res.Error.Error())
 					errCh <- res.Error
-					return
 				}
 				// processor is complete if we receive a result
 				executingTasks[res.Task] = true
