@@ -81,7 +81,7 @@ func TestNewProcessor(t *testing.T) {
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.FeeDebtExtractor{})), proc.actorProcessors[tasktype.MinerFeeDebt])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.InfoExtractor{})), proc.actorProcessors[tasktype.MinerInfo])
 	require.Equal(t, actorstate.NewTaskWithTransformer(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.LockedFundsExtractor{}), minertask.LockedFundsExtractor{}), proc.actorProcessors[tasktype.MinerLockedFund])
-	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.SectorDealsExtractor{})), proc.actorProcessors[tasktype.MinerSectorDeal])
+	require.Equal(t, actorstate.NewTaskWithTransformer(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.SectorDealsExtractor{}), minertask.SectorDealsExtractor{}), proc.actorProcessors[tasktype.MinerSectorDeal])
 	require.Equal(t, actorstate.NewTaskWithTransformer(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.SectorEventsExtractor{}), minertask.SectorEventsExtractor{}), proc.actorProcessors[tasktype.MinerSectorEvent])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewTypedActorExtractorMap(miner.AllCodes(), minertask.PoStExtractor{})), proc.actorProcessors[tasktype.MinerSectorPost])
 	require.Equal(t, actorstate.NewTask(nil, actorstate.NewCustomTypedActorExtractorMap(
