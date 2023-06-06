@@ -22,6 +22,7 @@ import (
 	"github.com/filecoin-project/lotus/storage/sealer/ffiwrapper"
 	"github.com/mitchellh/go-homedir"
 
+	"github.com/filecoin-project/lotus/chain/types"
 	"golang.org/x/xerrors"
 	"gopkg.in/cheggaaa/pb.v1"
 )
@@ -92,7 +93,7 @@ func ImportFromFsFile(ctx context.Context, r repo.Repo, fs fs.File, snapshot boo
 	return nil
 }
 
-func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) (err error) {
+func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool, backfillTipsetkeyRange int) (err error) {
 	var rd io.Reader
 	var l int64
 	if strings.HasPrefix(fname, "http://") || strings.HasPrefix(fname, "https://") {
@@ -189,6 +190,13 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 		return fmt.Errorf("importing chain failed: %w", err)
 	}
 
+	// The cst.Import function will only backfill 1800 epochs of tipsetkey,
+	// Hence, the function is to backfill more epochs covered by the snapshot.
+	err = backfillTipsetKey(ctx, ts, cst, backfillTipsetkeyRange)
+	if err != nil {
+		log.Errorf("backfill tipsetkey failed: %w", err)
+	}
+
 	if err := cst.FlushValidationCache(ctx); err != nil {
 		return fmt.Errorf("flushing validation cache failed: %w", err)
 	}
@@ -221,4 +229,22 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 	}
 
 	return nil
+}
+
+func backfillTipsetKey(ctx context.Context, root *types.TipSet, cs *store.ChainStore, backfillRange int) (err error) {
+	ts := root
+	log.Infof("backfilling the tipsetkey into chainstore, attempt to backfill the last %v epochs starting from the head.", backfillRange)
+	for i := 0; i < backfillRange; i++ {
+		err = cs.PersistTipset(ctx, ts)
+		if err != nil {
+			return
+		}
+		parentTsKey := ts.Parents()
+		ts, err = cs.LoadTipSet(ctx, parentTsKey)
+		if ts == nil || err != nil {
+			log.Infof("Only able to load the last %d tipsets", i)
+			break
+		}
+	}
+	return
 }
