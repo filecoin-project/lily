@@ -190,7 +190,10 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool, 
 		return fmt.Errorf("importing chain failed: %w", err)
 	}
 
-	err = backfillMoreEpochsForTipsetKey(ctx, ts, cst, backfillTipsetkeyRange)
+	// The cst.Import function will only backfill 1800 epochs of tipsetkey,
+	// as determined by the value specified in TipsetkeyBackfillRange.
+	// Hence, the function is to backfill more epochs covered by the snapshot.
+	err = backfillTipsetKey(ctx, ts, cst, backfillTipsetkeyRange)
 	if err != nil {
 		log.Errorf("backfill tipset key failed: %w", err)
 	}
@@ -229,7 +232,7 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool, 
 	return nil
 }
 
-func backfillMoreEpochsForTipsetKey(ctx context.Context, root *types.TipSet, cs *store.ChainStore, backfillRange int) (err error) {
+func backfillTipsetKey(ctx context.Context, root *types.TipSet, cs *store.ChainStore, backfillRange int) (err error) {
 	ts := root
 	log.Infof("backfilling the tipsetkey into chainstore, attempt to backfill the last %v epochs starting from the head.", backfillRange)
 	for i := 0; i < backfillRange; i++ {

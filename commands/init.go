@@ -50,7 +50,7 @@ var InitCmd = &cli.Command{
 			Name:        "backfill-tipsetkey-range",
 			Usage:       "Determine the extent of backfilling from the head.",
 			EnvVars:     []string{"LILY_BACKFILL_TIPSETKEY_RANGE"},
-			Value:       1800,
+			Value:       3600,
 			Destination: &initFlags.backfillTipsetKeyRange,
 		},
 	},
