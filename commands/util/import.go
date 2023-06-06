@@ -235,7 +235,7 @@ func backfillMoreEpochsForTipsetKey(ctx context.Context, root *types.TipSet, cs 
 	for i := 0; i < backfillRange; i++ {
 		err = cs.PersistTipset(ctx, ts)
 		if err != nil {
-			return err
+			return
 		}
 		parentTsKey := ts.Parents()
 		ts, err = cs.LoadTipSet(ctx, parentTsKey)
@@ -244,6 +244,5 @@ func backfillMoreEpochsForTipsetKey(ctx context.Context, root *types.TipSet, cs 
 			break
 		}
 	}
-
 	return
 }
