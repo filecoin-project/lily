@@ -53,7 +53,8 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 	actorChanges, err := p.node.ActorStateChanges(ctx, current, executed)
 	if err != nil {
-		return nil, report, err
+		report.ErrorsDetected = err
+		return nil, report, nil
 	}
 
 	out := make(fevm.FEVMContractList, 0)
@@ -109,10 +110,8 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	}
 
 	if len(errs) > 0 {
-		err = fmt.Errorf("%v", errs)
-	} else {
-		err = nil
+		report.ErrorsDetected = fmt.Errorf("%v", errs)
 	}
 
-	return model.PersistableList{out}, report, err
+	return model.PersistableList{out}, report, nil
 }
