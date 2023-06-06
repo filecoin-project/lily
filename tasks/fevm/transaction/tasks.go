@@ -53,7 +53,8 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	messages, err := p.node.ChainGetMessagesInTipset(ctx, executed.Key())
 	if err != nil {
 		log.Errorf("Error at getting messages. ts: %v, height: %v, err: %v", executed.String(), executed.Height(), err)
-		return nil, report, err
+		report.ErrorsDetected = err
+		return nil, report, nil
 	}
 	errs := []error{}
 	out := make(fevm.FEVMTransactionList, 0)
@@ -127,10 +128,8 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	}
 
 	if len(errs) > 0 {
-		err = fmt.Errorf("%v", errs)
-	} else {
-		err = nil
+		report.ErrorsDetected = fmt.Errorf("%v", errs)
 	}
 
-	return model.PersistableList{out}, report, err
+	return model.PersistableList{out}, report, nil
 }

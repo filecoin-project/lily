@@ -48,24 +48,27 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	cid, err := executed.Key().Cid()
 	if err != nil {
 		log.Errorf("Error at getting cid: [%v] err: %v", cid, err)
-		return nil, report, err
+		report.ErrorsDetected = err
+		return nil, report, nil
 	}
 
 	hash, err := ethtypes.EthHashFromCid(cid)
 	if err != nil {
 		log.Errorf("Error at finding hash: [%v] err: %v", hash, err)
-		return nil, report, err
+		report.ErrorsDetected = err
+		return nil, report, nil
 	}
 
 	ethBlock, err := p.node.EthGetBlockByHash(ctx, hash, false)
 	if err != nil {
 		log.Errorf("EthGetBlockByHash: [hash: %v] err: %v", hash.String(), err)
-		return nil, report, err
+		report.ErrorsDetected = err
+		return nil, report, nil
 	}
 
 	if ethBlock.Number == 0 {
 		log.Warn("block number == 0")
-		return nil, report, err
+		return nil, report, nil
 	}
 	return &fevm.FEVMBlockHeader{
 		Height:           int64(executed.Height()),
