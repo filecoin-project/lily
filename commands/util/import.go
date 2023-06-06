@@ -231,7 +231,7 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool, 
 
 func backfillMoreEpochsForTipsetKey(ctx context.Context, root *types.TipSet, cs *store.ChainStore, backfillRange int) (err error) {
 	ts := root
-	log.Infof("start to backfill the tipsetkey, try to backfill the last %v epoch from head", backfillRange)
+	log.Infof("backfilling the tipsetkey into chainstore, attempt to backfill the last %v epochs starting from the head.", backfillRange)
 	for i := 0; i < backfillRange; i++ {
 		err = cs.PersistTipset(ctx, ts)
 		if err != nil {

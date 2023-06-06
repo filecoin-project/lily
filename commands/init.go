@@ -48,7 +48,7 @@ var InitCmd = &cli.Command{
 		},
 		&cli.IntFlag{
 			Name:        "backfill-tipsetkey-range",
-			Usage:       "Backfill the tipset key into chainstore.",
+			Usage:       "Determine the extent of backfilling from the head.",
 			EnvVars:     []string{"LILY_BACKFILL_TIPSETKEY_RANGE"},
 			Value:       1800,
 			Destination: &initFlags.backfillTipsetKeyRange,
