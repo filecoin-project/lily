@@ -22,6 +22,7 @@ import (
 	"github.com/filecoin-project/lotus/storage/sealer/ffiwrapper"
 	"github.com/mitchellh/go-homedir"
 
+	"github.com/filecoin-project/lotus/chain/types"
 	"golang.org/x/xerrors"
 	"gopkg.in/cheggaaa/pb.v1"
 )
@@ -189,6 +190,11 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 		return fmt.Errorf("importing chain failed: %w", err)
 	}
 
+	err = backfillMoreEpochsForTipsetKey(ctx, ts, cst)
+	if err != nil {
+		log.Errorf("backfill tipset key failed: %w", err)
+	}
+
 	if err := cst.FlushValidationCache(ctx); err != nil {
 		return fmt.Errorf("flushing validation cache failed: %w", err)
 	}
@@ -221,4 +227,23 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 	}
 
 	return nil
+}
+
+func backfillMoreEpochsForTipsetKey(ctx context.Context, root *types.TipSet, cs *store.ChainStore) (err error) {
+	ts := root
+	log.Infof("start to backfill the tipsetkey")
+	for i := 0; i < 3000; i++ {
+		err = cs.PersistTipset(ctx, ts)
+		if err != nil {
+			return err
+		}
+		parentTsKey := ts.Parents()
+		ts, err = cs.LoadTipSet(ctx, parentTsKey)
+		if ts == nil || err != nil {
+			log.Infof("Only able to load the last %d tipsets", i)
+			break
+		}
+	}
+
+	return
 }
