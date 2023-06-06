@@ -17,9 +17,10 @@ import (
 )
 
 var initFlags struct {
-	repo           string
-	config         string
-	importSnapshot string
+	repo                   string
+	config                 string
+	importSnapshot         string
+	backfillTipsetKeyRange int
 }
 
 var InitCmd = &cli.Command{
@@ -44,6 +45,13 @@ var InitCmd = &cli.Command{
 			Usage:       "Import chain state from a given chain export file or url.",
 			EnvVars:     []string{"LILY_SNAPSHOT"},
 			Destination: &initFlags.importSnapshot,
+		},
+		&cli.IntFlag{
+			Name:        "backfill-tipsetkey-range",
+			Usage:       "Backfill the tipset key into chainstore.",
+			EnvVars:     []string{"LILY_BACKFILL_TIPSETKEY_RANGE"},
+			Value:       1800,
+			Destination: &initFlags.backfillTipsetKeyRange,
 		},
 	},
 	Action: func(c *cli.Context) error {
@@ -80,7 +88,7 @@ var InitCmd = &cli.Command{
 		}
 
 		if initFlags.importSnapshot != "" {
-			if err := util.ImportChain(ctx, r, initFlags.importSnapshot, true); err != nil {
+			if err := util.ImportChain(ctx, r, initFlags.importSnapshot, true, initFlags.backfillTipsetKeyRange); err != nil {
 				return err
 			}
 		}

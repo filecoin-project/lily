@@ -93,7 +93,7 @@ func ImportFromFsFile(ctx context.Context, r repo.Repo, fs fs.File, snapshot boo
 	return nil
 }
 
-func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) (err error) {
+func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool, backfillTipsetkeyRange int) (err error) {
 	var rd io.Reader
 	var l int64
 	if strings.HasPrefix(fname, "http://") || strings.HasPrefix(fname, "https://") {
@@ -190,7 +190,7 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 		return fmt.Errorf("importing chain failed: %w", err)
 	}
 
-	err = backfillMoreEpochsForTipsetKey(ctx, ts, cst)
+	err = backfillMoreEpochsForTipsetKey(ctx, ts, cst, backfillTipsetkeyRange)
 	if err != nil {
 		log.Errorf("backfill tipset key failed: %w", err)
 	}
@@ -229,10 +229,10 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool) 
 	return nil
 }
 
-func backfillMoreEpochsForTipsetKey(ctx context.Context, root *types.TipSet, cs *store.ChainStore) (err error) {
+func backfillMoreEpochsForTipsetKey(ctx context.Context, root *types.TipSet, cs *store.ChainStore, backfillRange int) (err error) {
 	ts := root
-	log.Infof("start to backfill the tipsetkey")
-	for i := 0; i < 3000; i++ {
+	log.Infof("start to backfill the tipsetkey, try to backfill the last %v epoch from head", backfillRange)
+	for i := 0; i < backfillRange; i++ {
 		err = cs.PersistTipset(ctx, ts)
 		if err != nil {
 			return err
