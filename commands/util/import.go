@@ -191,7 +191,6 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool, 
 	}
 
 	// The cst.Import function will only backfill 1800 epochs of tipsetkey,
-	// as determined by the value specified in TipsetkeyBackfillRange.
 	// Hence, the function is to backfill more epochs covered by the snapshot.
 	err = backfillTipsetKey(ctx, ts, cst, backfillTipsetkeyRange)
 	if err != nil {
