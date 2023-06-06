@@ -195,7 +195,7 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool, 
 	// Hence, the function is to backfill more epochs covered by the snapshot.
 	err = backfillTipsetKey(ctx, ts, cst, backfillTipsetkeyRange)
 	if err != nil {
-		log.Errorf("backfill tipset key failed: %w", err)
+		log.Errorf("backfill tipsetkey failed: %w", err)
 	}
 
 	if err := cst.FlushValidationCache(ctx); err != nil {
