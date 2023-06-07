@@ -50,6 +50,12 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		StateRoot: current.ParentState().String(),
 	}
 
+	getActorCode, err := util.MakeGetActorCodeFunc(ctx, p.node.Store(), current, executed)
+	if err != nil {
+		report.ErrorsDetected = err
+		return nil, report, nil
+	}
+
 	messages, err := p.node.ChainGetMessagesInTipset(ctx, current.Key())
 	if err != nil {
 		log.Errorf("Error at getting messages. ts: %v, height: %v, err: %v", current.String(), current.Height(), err)
@@ -123,6 +129,16 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			if err == nil {
 				txnObj.AccessList = string(b)
 			}
+		}
+
+		// try to parse the input value
+		toCode, _ := getActorCode(ctx, message.Message.To)
+		parsedInput, parsedMethod, err := util.ParseParams(message.Message.Params, message.Message.Method, toCode)
+		// If the method is not found, the function will directly return the method as a string
+		if err == nil && parsedMethod != message.Message.Method.String() {
+			txnObj.ParsedInput = parsedInput
+		} else if err != nil {
+			log.Errorf("Try to parse the input: %v", err)
 		}
 		out = append(out, txnObj)
 	}
