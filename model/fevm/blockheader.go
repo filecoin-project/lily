@@ -10,7 +10,7 @@ import (
 )
 
 type FEVMBlockHeader struct {
-	tableName struct{} `pg:"fevm_block_header"` // nolint: structcheck
+	tableName struct{} `pg:"fevm_block_headers"` // nolint: structcheck
 
 	// Height message was executed at.
 	Height int64 `pg:",pk,notnull,use_zero"`
@@ -41,7 +41,7 @@ type FEVMBlockHeader struct {
 }
 
 func (f *FEVMBlockHeader) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_block_header"))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_block_headers"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, f)
 }
@@ -52,7 +52,7 @@ func (f FEVMBlockHeaderList) Persist(ctx context.Context, s model.StorageBatch, 
 	if len(f) == 0 {
 		return nil
 	}
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_block_header"))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_block_headers"))
 	metrics.RecordCount(ctx, metrics.PersistModel, len(f))
 	return s.PersistModel(ctx, f)
 }
