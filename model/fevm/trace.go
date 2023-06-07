@@ -58,19 +58,19 @@ type FEVMTrace struct {
 	ReturnsCodec uint64 `pg:",notnull,use_zero"`
 }
 
-func (v *FEVMTrace) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f *FEVMTrace) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_traces"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
-	return s.PersistModel(ctx, v)
+	return s.PersistModel(ctx, f)
 }
 
 type FEVMTraceList []*FEVMTrace
 
-func (vl FEVMTraceList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	if len(vl) == 0 {
+func (f FEVMTraceList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+	if len(f) == 0 {
 		return nil
 	}
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_traces"))
-	metrics.RecordCount(ctx, metrics.PersistModel, len(vl))
-	return s.PersistModel(ctx, vl)
+	metrics.RecordCount(ctx, metrics.PersistModel, len(f))
+	return s.PersistModel(ctx, f)
 }
