@@ -45,7 +45,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		StateRoot: current.ParentState().String(),
 	}
 
-	cid, err := executed.Key().Cid()
+	cid, err := current.Key().Cid()
 	if err != nil {
 		log.Errorf("Error at getting cid: [%v] err: %v", cid, err)
 		report.ErrorsDetected = err
@@ -71,7 +71,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		return nil, report, nil
 	}
 	return &fevm.FEVMBlockHeader{
-		Height:           int64(executed.Height()),
+		Height:           int64(current.Height()),
 		Hash:             hash.String(),
 		ParentHash:       ethBlock.ParentHash.String(),
 		Miner:            ethBlock.Miner.String(),
