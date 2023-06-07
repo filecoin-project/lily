@@ -97,6 +97,7 @@ var TaskLookup = map[string][]string{
 		FEVMReceipt,
 		FEVMTransaction,
 		FEVMContract,
+		FEVMTrace,
 	},
 }
 
