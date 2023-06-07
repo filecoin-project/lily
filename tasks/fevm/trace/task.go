@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 	"github.com/ipfs/go-cid"
@@ -42,13 +41,6 @@ func getMessageTraceCid(message types.MessageTrace) cid.Cid {
 		Value:  message.Value,
 		Method: message.Method,
 		Params: message.Params,
-		// these fields were deprecated
-		// in https://github.com/filecoin-project/lotus/commit/dbbcf4b2ee9626796e23a096c66e67ff350810e4
-		Version:    0,
-		GasLimit:   0,
-		Nonce:      0,
-		GasFeeCap:  abi.NewTokenAmount(0),
-		GasPremium: abi.NewTokenAmount(0),
 	}
 
 	return childMsg.Cid()
