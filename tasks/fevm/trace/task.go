@@ -103,7 +103,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	}
 
 	var (
-		vmMessageResults = make(fevm.FEVMTraceList, 0)
+		traceResults = make(fevm.FEVMTraceList, 0)
 	)
 
 	errs := []error{}
@@ -142,7 +142,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			fromEthAddress := getEthAddress(child.Message.From)
 			toEthAddress := getEthAddress(child.Message.To)
 
-			vmMsg := &fevm.FEVMTrace{
+			traceObj := &fevm.FEVMTrace{
 				Height:              int64(parentMsg.Height),
 				TransactionHash:     transaction.Hash.String(),
 				MessageStateRoot:    parentMsg.StateRoot.String(),
@@ -170,27 +170,24 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				params, parsedMethod, err := util.ParseVmMessageParams(child.Message.Params, child.Message.ParamsCodec, child.Message.Method, toCode)
 				// in ParseVmMessageParams it will return actor name when actor not found
 				if err == nil && parsedMethod != builtin.ActorNameByCode(toCode) {
-					vmMsg.ParsedParams = params
-					vmMsg.ParsedMethod = parsedMethod
+					traceObj.ParsedParams = params
+					traceObj.ParsedMethod = parsedMethod
 				}
 				ret, parsedMethod, err := util.ParseVmMessageReturn(child.Receipt.Return, child.Receipt.ReturnCodec, child.Message.Method, toCode)
 				// in ParseVmMessageParams it will return actor name when actor not found
 				if err == nil && parsedMethod != builtin.ActorNameByCode(toCode) {
-					vmMsg.ParsedReturns = ret
+					traceObj.ParsedReturns = ret
 				}
 			}
 
 			// append message to results
-			vmMessageResults = append(vmMessageResults, vmMsg)
+			traceResults = append(traceResults, traceObj)
 		}
 	}
 
-	var err error
 	if len(errs) > 0 {
-		err = fmt.Errorf("%v", errs)
-	} else {
-		err = nil
+		report.ErrorsDetected = fmt.Errorf("%v", errs)
 	}
 
-	return vmMessageResults, report, err
+	return traceResults, report, nil
 }
