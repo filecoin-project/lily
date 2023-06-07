@@ -50,9 +50,9 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		StateRoot: current.ParentState().String(),
 	}
 
-	messages, err := p.node.ChainGetMessagesInTipset(ctx, executed.Key())
+	messages, err := p.node.ChainGetMessagesInTipset(ctx, current.Key())
 	if err != nil {
-		log.Errorf("Error at getting messages. ts: %v, height: %v, err: %v", executed.String(), executed.Height(), err)
+		log.Errorf("Error at getting messages. ts: %v, height: %v, err: %v", current.String(), current.Height(), err)
 		report.ErrorsDetected = err
 		return nil, report, nil
 	}
@@ -62,7 +62,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if message.Message == nil {
 			continue
 		}
-		if !util.IsEVMAddress(ctx, p.node, message.Message.To, executed.Key()) {
+		if !util.IsEVMAddress(ctx, p.node, message.Message.To, current.Key()) {
 			continue
 		}
 
@@ -85,7 +85,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		}
 
 		txnObj := &fevm.FEVMTransaction{
-			Height:               int64(executed.Height()),
+			Height:               int64(current.Height()),
 			Hash:                 txn.Hash.String(),
 			ChainID:              uint64(txn.ChainID),
 			Nonce:                uint64(txn.Nonce),
