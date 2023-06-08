@@ -2,8 +2,8 @@ package fevmtrace
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
+	"sync"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -49,11 +49,105 @@ func getMessageTraceCid(message types.MessageTrace) cid.Cid {
 func getEthAddress(addr address.Address) string {
 	to, err := ethtypes.EthAddressFromFilecoinAddress(addr)
 	if err != nil {
-		log.Warnf("Error at getting eth address: [message address: %v] err: %v", addr.String(), err)
 		return ""
 	}
 
 	return to.String()
+}
+
+func (t *Task) handleMessageExecutions(ctx context.Context, current *types.TipSet, parentMsg *lens.MessageExecution, getActorCode func(ctx context.Context, a address.Address) (cid.Cid, bool), ch chan<- []fevm.FEVMTrace, wg *sync.WaitGroup, pool chan struct{}) {
+	defer wg.Done()
+	<-pool
+
+	errs := []error{}
+	var (
+		traceResults = make([]fevm.FEVMTrace, 0)
+	)
+
+	// Only handle EVM related message
+	if !util.IsEVMAddress(ctx, t.node, parentMsg.Message.From, current.Key()) && !util.IsEVMAddress(ctx, t.node, parentMsg.Message.To, current.Key()) && !(parentMsg.Message.To != builtintypes.EthereumAddressManagerActorAddr) {
+		ch <- traceResults
+		pool <- struct{}{}
+		return
+	}
+	messageHash, err := ethtypes.EthHashFromCid(parentMsg.Cid)
+	if err != nil {
+		log.Errorf("Error at finding hash: [cid: %v] err: %v", parentMsg.Cid, err)
+		errs = append(errs, err)
+		ch <- traceResults
+		pool <- struct{}{}
+		return
+	}
+	ctx, ethSpan := otel.Tracer("").Start(ctx, "GetTransaction")
+	transaction, err := t.node.EthGetTransactionByHash(ctx, &messageHash)
+	ethSpan.End()
+	if err != nil {
+		log.Errorf("Error at getting transaction: [hash: %v] err: %v", messageHash, err)
+		errs = append(errs, err)
+		ch <- traceResults
+		pool <- struct{}{}
+		return
+	}
+
+	if transaction == nil {
+		ch <- traceResults
+		pool <- struct{}{}
+		return
+	}
+
+	for _, child := range util.GetChildMessagesOf(parentMsg) {
+		toCode, _ := getActorCode(ctx, child.Message.To)
+
+		toActorCode := "<Unknown>"
+		if !toCode.Equals(cid.Undef) {
+			toActorCode = toCode.String()
+		}
+		fromEthAddress := getEthAddress(child.Message.From)
+		toEthAddress := getEthAddress(child.Message.To)
+
+		traceObj := fevm.FEVMTrace{
+			Height:              int64(parentMsg.Height),
+			TransactionHash:     transaction.Hash.String(),
+			MessageStateRoot:    parentMsg.StateRoot.String(),
+			MessageCid:          parentMsg.Cid.String(),
+			TraceCid:            getMessageTraceCid(child.Message).String(),
+			ToFilecoinAddress:   child.Message.To.String(),
+			FromFilecoinAddress: child.Message.From.String(),
+			From:                fromEthAddress,
+			To:                  toEthAddress,
+			Value:               child.Message.Value.String(),
+			ExitCode:            int64(child.Receipt.ExitCode),
+			ActorCode:           toActorCode,
+			Method:              uint64(child.Message.Method),
+			Index:               child.Index,
+			Params:              ethtypes.EthBytes(child.Message.Params).String(),
+			Returns:             ethtypes.EthBytes(child.Receipt.Return).String(),
+			ParamsCodec:         child.Message.ParamsCodec,
+			ReturnsCodec:        child.Receipt.ReturnCodec,
+		}
+
+		// only parse params and return of successful messages since unsuccessful messages don't return a parseable value.
+		// As an example: a message may return ErrForbidden, it will have valid params, but will not contain a
+		// parsable return value in its receipt.
+		if child.Receipt.ExitCode.IsSuccess() {
+			params, parsedMethod, err := util.ParseVmMessageParams(child.Message.Params, child.Message.ParamsCodec, child.Message.Method, toCode)
+			// in ParseVmMessageParams it will return actor name when actor not found
+			if err == nil && parsedMethod != builtin.ActorNameByCode(toCode) {
+				traceObj.ParsedParams = params
+				traceObj.ParsedMethod = parsedMethod
+			}
+			ret, parsedMethod, err := util.ParseVmMessageReturn(child.Receipt.Return, child.Receipt.ReturnCodec, child.Message.Method, toCode)
+			// in ParseVmMessageParams it will return actor name when actor not found
+			if err == nil && parsedMethod != builtin.ActorNameByCode(toCode) {
+				traceObj.ParsedReturns = ret
+			}
+		}
+
+		traceResults = append(traceResults, traceObj)
+	}
+	ch <- traceResults
+	pool <- struct{}{}
+
 }
 
 func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, executed *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
@@ -106,87 +200,32 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		traceResults = make(fevm.FEVMTraceList, 0)
 	)
 
-	errs := []error{}
-
-	for _, parentMsg := range mex {
-		// Only handle EVM related message
-		if !util.IsEVMAddress(ctx, t.node, parentMsg.Message.From, current.Key()) && !util.IsEVMAddress(ctx, t.node, parentMsg.Message.To, current.Key()) && !(parentMsg.Message.To != builtintypes.EthereumAddressManagerActorAddr) {
-			continue
-		}
-		messageHash, err := ethtypes.EthHashFromCid(parentMsg.Cid)
-		if err != nil {
-			log.Errorf("Error at finding hash: [cid: %v] err: %v", parentMsg.Cid, err)
-			errs = append(errs, err)
-			continue
-		}
-		transaction, err := t.node.EthGetTransactionByHash(ctx, &messageHash)
-		if err != nil {
-			log.Errorf("Error at getting transaction: [hash: %v] err: %v", messageHash, err)
-			errs = append(errs, err)
-			continue
-		}
-
-		if transaction == nil {
-			continue
-		}
-
-		log.Infof("message: %v, %v", parentMsg.Cid, base64.StdEncoding.EncodeToString(parentMsg.Message.Params))
-
-		for _, child := range util.GetChildMessagesOf(parentMsg) {
-			toCode, _ := getActorCode(ctx, child.Message.To)
-
-			toActorCode := "<Unknown>"
-			if !toCode.Equals(cid.Undef) {
-				toActorCode = toCode.String()
-			}
-			fromEthAddress := getEthAddress(child.Message.From)
-			toEthAddress := getEthAddress(child.Message.To)
-
-			traceObj := &fevm.FEVMTrace{
-				Height:              int64(parentMsg.Height),
-				TransactionHash:     transaction.Hash.String(),
-				MessageStateRoot:    parentMsg.StateRoot.String(),
-				MessageCid:          parentMsg.Cid.String(),
-				TraceCid:            getMessageTraceCid(child.Message).String(),
-				ToFilecoinAddress:   child.Message.To.String(),
-				FromFilecoinAddress: child.Message.From.String(),
-				From:                fromEthAddress,
-				To:                  toEthAddress,
-				Value:               child.Message.Value.String(),
-				ExitCode:            int64(child.Receipt.ExitCode),
-				ActorCode:           toActorCode,
-				Method:              uint64(child.Message.Method),
-				Index:               child.Index,
-				Params:              ethtypes.EthBytes(child.Message.Params).String(),
-				Returns:             ethtypes.EthBytes(child.Receipt.Return).String(),
-				ParamsCodec:         child.Message.ParamsCodec,
-				ReturnsCodec:        child.Receipt.ReturnCodec,
-			}
-
-			// only parse params and return of successful messages since unsuccessful messages don't return a parseable value.
-			// As an example: a message may return ErrForbidden, it will have valid params, but will not contain a
-			// parsable return value in its receipt.
-			if child.Receipt.ExitCode.IsSuccess() {
-				params, parsedMethod, err := util.ParseVmMessageParams(child.Message.Params, child.Message.ParamsCodec, child.Message.Method, toCode)
-				// in ParseVmMessageParams it will return actor name when actor not found
-				if err == nil && parsedMethod != builtin.ActorNameByCode(toCode) {
-					traceObj.ParsedParams = params
-					traceObj.ParsedMethod = parsedMethod
-				}
-				ret, parsedMethod, err := util.ParseVmMessageReturn(child.Receipt.Return, child.Receipt.ReturnCodec, child.Message.Method, toCode)
-				// in ParseVmMessageParams it will return actor name when actor not found
-				if err == nil && parsedMethod != builtin.ActorNameByCode(toCode) {
-					traceObj.ParsedReturns = ret
-				}
-			}
-
-			// append message to results
-			traceResults = append(traceResults, traceObj)
-		}
+	limit := 10
+	resultChan := make(chan []fevm.FEVMTrace, len(mex))
+	pool := make(chan struct{}, limit)
+	for i := 0; i < limit; i++ {
+		pool <- struct{}{}
 	}
 
-	if len(errs) > 0 {
-		report.ErrorsDetected = fmt.Errorf("%v", errs)
+	var wg sync.WaitGroup
+	wg.Add(len(mex))
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	for _, parentMsg := range mex {
+		go t.handleMessageExecutions(ctx, current, parentMsg, getActorCode, resultChan, &wg, pool)
+	}
+
+	var mutex sync.Mutex
+
+	for result := range resultChan {
+		mutex.Lock()
+		for _, r := range result {
+			traceResults = append(traceResults, &r)
+		}
+		mutex.Unlock()
 	}
 
 	return traceResults, report, nil
