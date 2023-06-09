@@ -109,7 +109,9 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 	for _, parentMsg := range mex {
 		// Only handle EVM related message
-		if !util.IsEVMAddress(ctx, t.node, parentMsg.Message.From, current.Key()) && !util.IsEVMAddress(ctx, t.node, parentMsg.Message.To, current.Key()) && (parentMsg.Message.To != builtintypes.EthereumAddressManagerActorAddr) {
+		if !util.IsEVMAddress(ctx, t.node, parentMsg.Message.From, current.Key()) &&
+			!util.IsEVMAddress(ctx, t.node, parentMsg.Message.To, current.Key()) &&
+			parentMsg.Message.To != builtintypes.EthereumAddressManagerActorAddr {
 			continue
 		}
 		transactionHash, err := ethtypes.EthHashFromCid(parentMsg.Cid)
