@@ -2,7 +2,6 @@ package fevmtrace
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 
 	"github.com/filecoin-project/go-address"
@@ -110,28 +109,17 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 	for _, parentMsg := range mex {
 		// Only handle EVM related message
-		if !util.IsEVMAddress(ctx, t.node, parentMsg.Message.From, current.Key()) && !util.IsEVMAddress(ctx, t.node, parentMsg.Message.To, current.Key()) && !(parentMsg.Message.To != builtintypes.EthereumAddressManagerActorAddr) {
+		if !util.IsEVMAddress(ctx, t.node, parentMsg.Message.From, current.Key()) &&
+			!util.IsEVMAddress(ctx, t.node, parentMsg.Message.To, current.Key()) &&
+			parentMsg.Message.To != builtintypes.EthereumAddressManagerActorAddr {
 			continue
 		}
-		messageHash, err := ethtypes.EthHashFromCid(parentMsg.Cid)
+		transactionHash, err := ethtypes.EthHashFromCid(parentMsg.Cid)
 		if err != nil {
 			log.Errorf("Error at finding hash: [cid: %v] err: %v", parentMsg.Cid, err)
 			errs = append(errs, err)
 			continue
 		}
-		transaction, err := t.node.EthGetTransactionByHash(ctx, &messageHash)
-		if err != nil {
-			log.Errorf("Error at getting transaction: [hash: %v] err: %v", messageHash, err)
-			errs = append(errs, err)
-			continue
-		}
-
-		if transaction == nil {
-			continue
-		}
-
-		log.Infof("message: %v, %v", parentMsg.Cid, base64.StdEncoding.EncodeToString(parentMsg.Message.Params))
-
 		for _, child := range util.GetChildMessagesOf(parentMsg) {
 			toCode, _ := getActorCode(ctx, child.Message.To)
 
@@ -144,7 +132,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 			traceObj := &fevm.FEVMTrace{
 				Height:              int64(parentMsg.Height),
-				TransactionHash:     transaction.Hash.String(),
+				TransactionHash:     transactionHash.String(),
 				MessageStateRoot:    parentMsg.StateRoot.String(),
 				MessageCid:          parentMsg.Cid.String(),
 				TraceCid:            getMessageTraceCid(child.Message).String(),
