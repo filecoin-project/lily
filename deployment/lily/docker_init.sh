@@ -34,7 +34,7 @@ sleep 10
 
 lily sync wait
 
-tasks="actor_state,chain_power,miner_sector_event,market_deal_state,receipt,message,actor,miner_pre_commit_info,miner_sector_infos,miner_sector_infos_v7,miner_locked_fund,miner_fee_debt,parsed_message,block_message,derived_gas_outputs,block_parent,market_deal_proposal,internal_parsed_messages,internal_messages,block_header,miner_sector_deal,chain_consensus,chain_reward,chain_economics,miner_info,power_actor_claim,message_gas_economy,multisig_approvals,id_addresses,vm_messages,actor_events,fevm_actor_stats"
+tasks="actor_state,chain_power,miner_sector_event,market_deal_state,receipt,message,actor,miner_pre_commit_info,miner_sector_infos,miner_sector_infos_v7,miner_locked_fund,miner_fee_debt,parsed_message,block_message,derived_gas_outputs,block_parent,market_deal_proposal,internal_parsed_messages,internal_messages,block_header,miner_sector_deal,chain_consensus,chain_reward,chain_economics,miner_info,power_actor_claim,message_gas_economy,multisig_approvals,id_addresses,vm_messages,actor_events,fevm_actor_stats,fevm_block_header,fevm_receipt,fevm_transaction,fevm_contract,fevm_trace"
 lily job run --tasks=${tasks} --storage="Database1" watch --confidence=5
 
 lily job run --tasks="peeragents" --storage="Database1" survey  --interval="24h"

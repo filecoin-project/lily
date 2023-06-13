@@ -4,6 +4,10 @@ func init() {
 	patches.Register(
 		27,
 		`
+{{- if and .SchemaName (ne .SchemaName "public") }}
+SET search_path TO {{ .SchemaName }},public;
+{{- end }}
+
  CREATE TABLE IF NOT EXISTS {{ .SchemaName | default "public"}}.fevm_traces (
     height BIGINT NOT NULL,
     message_state_root TEXT,
