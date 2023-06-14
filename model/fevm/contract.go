@@ -16,7 +16,7 @@ type FEVMContract struct {
 	Height int64 `pg:",pk,notnull,use_zero"`
 	// Actor address.
 	ActorID string `pg:",notnull"`
-	// Actor Address in ETH
+	// Actor Address in ETH.
 	EthAddress string `pg:",notnull"`
 	// Contract Bytecode.
 	ByteCode string `pg:",notnull"`
