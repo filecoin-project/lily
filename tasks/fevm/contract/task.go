@@ -105,6 +105,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			ByteCodeHash: hex.EncodeToString(byteCodeHash[:]),
 			Balance:      actor.Balance.String(),
 			Nonce:        actor.Nonce,
+			ChangeType:   change.ChangeType.String(),
 		})
 
 	}

@@ -12,20 +12,22 @@ import (
 type FEVMContract struct {
 	tableName struct{} `pg:"fevm_contracts"` // nolint: structcheck
 
-	// Height message was executed at.
+	// Epoch at which this contract was changed or added.
 	Height int64 `pg:",pk,notnull,use_zero"`
-
 	// Actor address.
 	ActorID string `pg:",notnull"`
-
 	// Actor Address in ETH
 	EthAddress string `pg:",notnull"`
-
-	ByteCode     string `pg:",notnull"`
+	// Contract Bytecode
+	ByteCode string `pg:",notnull"`
+	// Contract Bytecode in hash by Keccak256.
 	ByteCodeHash string `pg:",notnull"`
-
+	// Balance of contract in attoFIL.
 	Balance string `pg:"type:numeric,notnull"`
-	Nonce   uint64 `pg:",use_zero"`
+	// The next Actor nonce that is expected to appear on chain.
+	Nonce uint64 `pg:",use_zero"`
+	// Change Type: Add, Remove, Modify and Unknown
+	ChangeType string `pg:",notnull"`
 }
 
 func (f *FEVMContract) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
