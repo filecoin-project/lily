@@ -14,18 +14,18 @@ type FEVMContract struct {
 
 	// Height message was executed at.
 	Height int64 `pg:",pk,notnull,use_zero"`
-
 	// Actor address.
 	ActorID string `pg:",notnull"`
-
 	// Actor Address in ETH
 	EthAddress string `pg:",notnull"`
-
-	ByteCode     string `pg:",notnull"`
+	// Contract Bytecode.
+	ByteCode string `pg:",notnull"`
+	// Contract Bytecode is encoded in hash by Keccak256.
 	ByteCodeHash string `pg:",notnull"`
-
+	// Balance of EVM actor in attoFIL.
 	Balance string `pg:"type:numeric,notnull"`
-	Nonce   uint64 `pg:",use_zero"`
+	// The next actor nonce that is expected to appear on chain.
+	Nonce uint64 `pg:",use_zero"`
 }
 
 func (f *FEVMContract) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {

@@ -14,30 +14,37 @@ type FEVMBlockHeader struct {
 
 	// Height message was executed at.
 	Height int64 `pg:",pk,notnull,use_zero"`
-
 	// ETH Hash
 	Hash string `pg:",notnull"`
-
 	// Parent Block ETH Hash
 	ParentHash string `pg:",notnull"`
-
+	// ETH Address of the miner who mined this block.
 	Miner string `pg:",notnull"`
-
+	// Block state root ETH hash.
 	StateRoot string `pg:",notnull"`
-
+	// Set to a hardcoded value which is used by some clients to determine if has no transactions.
 	TransactionsRoot string `pg:",notnull"`
-	ReceiptsRoot     string `pg:",notnull"`
-	Difficulty       uint64 `pg:",use_zero"`
-	Number           uint64 `pg:",use_zero"`
-	GasLimit         uint64 `pg:",use_zero"`
-	GasUsed          uint64 `pg:",use_zero"`
-	Timestamp        uint64 `pg:",use_zero"`
-	ExtraData        string `pg:",notnull"`
-	MixHash          string `pg:",notnull"`
-	Nonce            string `pg:",notnull"`
-	BaseFeePerGas    string `pg:",notnull"`
-	Size             uint64 `pg:",use_zero"`
-	Sha3Uncles       string `pg:",notnull"`
+	// Hash of the transaction receipts trie.
+	ReceiptsRoot string `pg:",notnull"`
+	// ETH mining difficulty.
+	Difficulty uint64 `pg:",use_zero"`
+	// The number of the current block.
+	Number uint64 `pg:",use_zero"`
+	// Maximum gas allowed in this block.
+	GasLimit uint64 `pg:",use_zero"`
+	// The actual amount of gas used in this block.
+	GasUsed uint64 `pg:",use_zero"`
+	// The block time.
+	Timestamp uint64 `pg:",use_zero"`
+	// Arbitrary additional data as raw bytes.
+	ExtraData string `pg:",notnull"`
+	MixHash   string `pg:",notnull"`
+	Nonce     string `pg:",notnull"`
+	// The base fee value.
+	BaseFeePerGas string `pg:",notnull"`
+	// Block size.
+	Size       uint64 `pg:",use_zero"`
+	Sha3Uncles string `pg:",notnull"`
 }
 
 func (f *FEVMBlockHeader) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
