@@ -36,7 +36,7 @@ type FEVMTrace struct {
 	Value string `pg:"type:numeric,notnull"`
 	// Method called on To (receiver).
 	Method uint64 `pg:",notnull,use_zero"`
-	// Params contained in message encode in eth bytes.
+	// Method in readable name.
 	ParsedMethod string `pg:",notnull"`
 	// ActorCode of To (receiver).
 	ActorCode string `pg:",notnull"`

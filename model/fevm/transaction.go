@@ -14,25 +14,41 @@ type FEVMTransaction struct {
 
 	// Height message was executed at.
 	Height int64 `pg:",pk,notnull,use_zero"`
-
-	Hash                 string `pg:",pk,notnull"`
-	ChainID              uint64 `pg:",use_zero"`
-	Nonce                uint64 `pg:",use_zero"`
-	BlockHash            string `pg:",notnull"`
-	BlockNumber          uint64 `pg:",use_zero"`
-	TransactionIndex     uint64 `pg:",use_zero"`
-	From                 string `pg:",notnull"`
-	To                   string `pg:",notnull"`
-	Value                string `pg:",notnull"`
-	Type                 uint64 `pg:",use_zero"`
-	Input                string `pg:",notnull"`
-	Gas                  uint64 `pg:",use_zero"`
-	MaxFeePerGas         string `pg:"type:numeric,notnull"`
+	// Hash of transaction.
+	Hash string `pg:",pk,notnull"`
+	// EVM network id.
+	ChainID uint64 `pg:",use_zero"`
+	// A sequentially incrementing counter which indicates the transaction number from the account.
+	Nonce uint64 `pg:",use_zero"`
+	// Hash of the block where this transaction was in.
+	BlockHash string `pg:",notnull"`
+	// Block number where this transaction was in.
+	BlockNumber uint64 `pg:",use_zero"`
+	// Integer of the transactions index position in the block.
+	TransactionIndex uint64 `pg:",use_zero"`
+	// ETH Address of the sender.
+	From string `pg:",notnull"`
+	// ETH Address of the receiver.
+	To string `pg:",notnull"`
+	// Amount of FIL to transfer from sender to recipient.
+	Value string `pg:",notnull"`
+	// Type of transactions.
+	Type uint64 `pg:",use_zero"`
+	// The data sent along with the transaction.
+	Input string `pg:",notnull"`
+	// Gas provided by the sender.
+	Gas uint64 `pg:",use_zero"`
+	// The maximum fee per unit of gas willing to be paid for the transaction.
+	MaxFeePerGas string `pg:"type:numeric,notnull"`
+	// The maximum price of the consumed gas to be included as a tip to the validator.
 	MaxPriorityFeePerGas string `pg:"type:numeric,notnull"`
 	AccessList           string `pg:",type:jsonb"`
-	V                    string `pg:",notnull"`
-	R                    string `pg:",notnull"`
-	S                    string `pg:",notnull"`
+	// Transaction’s signature. Recovery Identifier.
+	V string `pg:",notnull"`
+	// Transaction’s signature. Outputs of an ECDSA signature.
+	R string `pg:",notnull"`
+	// Transaction’s signature. Outputs of an ECDSA signature.
+	S string `pg:",notnull"`
 }
 
 func (f *FEVMTransaction) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {

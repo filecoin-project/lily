@@ -14,23 +14,34 @@ type FEVMReceipt struct {
 
 	// Height message was executed at.
 	Height int64 `pg:",pk,notnull,use_zero"`
-
 	// Message CID
 	Message string `pg:",use_zero"`
-
-	TransactionHash   string `pg:",notnull"`
-	TransactionIndex  uint64 `pg:",use_zero"`
-	BlockHash         string `pg:",notnull"`
-	BlockNumber       uint64 `pg:",use_zero"`
-	From              string `pg:",notnull"`
-	To                string `pg:",notnull"`
-	ContractAddress   string `pg:",notnull"`
-	Status            uint64 `pg:",use_zero"`
+	// Hash of transaction.
+	TransactionHash string `pg:",notnull"`
+	// Integer of the transactions index position in the block.
+	TransactionIndex uint64 `pg:",use_zero"`
+	// Hash of the block where this transaction was in.
+	BlockHash string `pg:",notnull"`
+	// Block number where this transaction was in.
+	BlockNumber uint64 `pg:",use_zero"`
+	// ETH Address of the sender.
+	From string `pg:",notnull"`
+	// ETH Address of the receiver.
+	To string `pg:",notnull"`
+	// The contract address created, if the transaction was a contract creation, otherwise null.
+	ContractAddress string `pg:",notnull"`
+	// 0 indicates transaction failure , 1 indicates transaction succeeded.
+	Status uint64 `pg:",use_zero"`
+	// The total amount of gas used when this transaction was executed in the block.
 	CumulativeGasUsed uint64 `pg:",use_zero"`
-	GasUsed           uint64 `pg:",use_zero"`
-	EffectiveGasPrice int64  `pg:",use_zero"`
-	LogsBloom         string `pg:",notnull"`
-	Logs              string `pg:",type:jsonb"`
+	// The actual amount of gas used in this block.
+	GasUsed uint64 `pg:",use_zero"`
+	// The actual value per gas deducted from the senders account.
+	EffectiveGasPrice int64 `pg:",use_zero"`
+	// Includes the bloom filter representation of the logs
+	LogsBloom string `pg:",notnull"`
+	// Array of log objects, which this transaction generated.
+	Logs string `pg:",type:jsonb"`
 }
 
 func (f *FEVMReceipt) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
