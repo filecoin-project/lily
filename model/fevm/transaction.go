@@ -31,7 +31,7 @@ type FEVMTransaction struct {
 	// ETH Address of the receiver.
 	To string `pg:",notnull"`
 	// Amount of FIL to transfer from sender to recipient.
-	Value string `pg:"type:numeric,notnull"`
+	Value string `pg:"type:notnull"`
 	// Type of transactions.
 	Type uint64 `pg:",use_zero"`
 	// The data sent along with the transaction.
