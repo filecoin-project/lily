@@ -90,7 +90,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			ChainID:              uint64(txn.ChainID),
 			Nonce:                uint64(txn.Nonce),
 			From:                 txn.From.String(),
-			Value:                txn.Value.String(),
+			Value:                txn.Value.Int.String(),
 			Type:                 uint64(txn.Type),
 			Input:                txn.Input.String(),
 			Gas:                  uint64(txn.Gas),
