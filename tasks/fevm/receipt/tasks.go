@@ -18,6 +18,7 @@ import (
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
 
+	builtintypes "github.com/filecoin-project/go-state-types/builtin"
 	"github.com/filecoin-project/lily/model/fevm"
 	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 )
@@ -64,7 +65,9 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if message.Message == nil {
 			continue
 		}
-		if !util.IsEVMAddress(ctx, p.node, message.Message.To, current.Key()) {
+		if !util.IsEVMAddress(ctx, p.node, message.Message.From, current.Key()) &&
+			!util.IsEVMAddress(ctx, p.node, message.Message.To, current.Key()) &&
+			message.Message.To != builtintypes.EthereumAddressManagerActorAddr {
 			continue
 		}
 
