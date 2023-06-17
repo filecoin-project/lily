@@ -62,7 +62,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if message.Message == nil {
 			continue
 		}
-		if !util.IsEVMRelatedMessage(ctx, p.node, message.Message, current.Key()) {
+		if !util.IsEVMMessage(ctx, p.node, message.Message, current.Key()) {
 			continue
 		}
 

@@ -23,7 +23,7 @@ func IsEVMAddress(ctx context.Context, ds tasks.DataSource, addr address.Address
 	return builtin.IsEvmActor(act.Code)
 }
 
-func IsEVMRelatedMessage(ctx context.Context, ds tasks.DataSource, message *types.Message, tsk types.TipSetKey) bool {
+func IsEVMMessage(ctx context.Context, ds tasks.DataSource, message *types.Message, tsk types.TipSetKey) bool {
 	if IsEVMAddress(ctx, ds, message.From, tsk) {
 		return true
 	}

@@ -108,7 +108,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 	for _, parentMsg := range mex {
 		// Only handle EVM related message
-		if !util.IsEVMRelatedMessage(ctx, t.node, parentMsg.Message, current.Key()) {
+		if !util.IsEVMMessage(ctx, t.node, parentMsg.Message, current.Key()) {
 			continue
 		}
 		transactionHash, err := ethtypes.EthHashFromCid(parentMsg.Cid)
