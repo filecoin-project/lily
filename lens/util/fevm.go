@@ -22,3 +22,19 @@ func IsEVMAddress(ctx context.Context, ds tasks.DataSource, addr address.Address
 	}
 	return builtin.IsEvmActor(act.Code)
 }
+
+func IsEVMMessage(ctx context.Context, ds tasks.DataSource, message *types.Message, tsk types.TipSetKey) bool {
+	if IsEVMAddress(ctx, ds, message.From, tsk) {
+		return true
+	}
+
+	if IsEVMAddress(ctx, ds, message.To, tsk) {
+		return true
+	}
+
+	if message.To == builtin.EthereumAddressManagerActorAddr {
+		return true
+	}
+
+	return false
+}

@@ -62,7 +62,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if message.Message == nil {
 			continue
 		}
-		if !util.IsEVMAddress(ctx, p.node, message.Message.To, current.Key()) {
+		if !util.IsEVMMessage(ctx, p.node, message.Message, current.Key()) {
 			continue
 		}
 
@@ -90,7 +90,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			ChainID:              uint64(txn.ChainID),
 			Nonce:                uint64(txn.Nonce),
 			From:                 txn.From.String(),
-			Value:                txn.Value.String(),
+			Value:                txn.Value.Int.String(),
 			Type:                 uint64(txn.Type),
 			Input:                txn.Input.String(),
 			Gas:                  uint64(txn.Gas),

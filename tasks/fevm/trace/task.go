@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/sync/errgroup"
 
-	builtintypes "github.com/filecoin-project/go-state-types/builtin"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model"
@@ -109,9 +108,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 	for _, parentMsg := range mex {
 		// Only handle EVM related message
-		if !util.IsEVMAddress(ctx, t.node, parentMsg.Message.From, current.Key()) &&
-			!util.IsEVMAddress(ctx, t.node, parentMsg.Message.To, current.Key()) &&
-			parentMsg.Message.To != builtintypes.EthereumAddressManagerActorAddr {
+		if !util.IsEVMMessage(ctx, t.node, parentMsg.Message, current.Key()) {
 			continue
 		}
 		transactionHash, err := ethtypes.EthHashFromCid(parentMsg.Cid)
