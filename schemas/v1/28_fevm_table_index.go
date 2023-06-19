@@ -6,7 +6,6 @@ func init() {
 		`
 -- fevm_block_headers
 CREATE INDEX IF NOT EXISTS fevm_block_headers_height_idx ON {{ .SchemaName | default "public"}}.fevm_block_headers USING BTREE (height);
-CREATE INDEX IF NOT EXISTS fevm_block_headers_hash_idx ON {{ .SchemaName | default "public"}}.fevm_block_headers USING HASH (hash);
 
 -- fevm_receipts
 CREATE INDEX IF NOT EXISTS fevm_receipts_height_idx ON {{ .SchemaName | default "public"}}.fevm_receipts USING BTREE (height);
