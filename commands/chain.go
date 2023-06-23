@@ -321,7 +321,7 @@ var ChainStateInspect = &cli.Command{
 	},
 }
 
-var ChainStateComputeRange = &cli.Command{
+var ChainStateCompute = &cli.Command{
 	Name:  "state-compute",
 	Usage: "Generates the state at epoch `N`",
 	Flags: []cli.Flag{
@@ -354,7 +354,7 @@ var ChainStateComputeRange = &cli.Command{
 	},
 }
 
-var ChainStateCompute = &cli.Command{
+var ChainStateComputeRange = &cli.Command{
 	Name:  "state-compute-range",
 	Usage: "Generates the state from epoch `FROM` to epoch `TO`",
 	Flags: []cli.Flag{
