@@ -90,7 +90,8 @@ func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, execute
 
 	if t.exceedsActorChangeLimit(actors) {
 		err := fmt.Errorf("task skipped - max limit for handling actor state changes")
-		return nil, report, err
+		report.ErrorsDetected = err
+		return nil, report, nil
 	}
 
 	data := make(model.PersistableList, 0, len(actors))
