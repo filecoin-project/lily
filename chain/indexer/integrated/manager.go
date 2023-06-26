@@ -2,6 +2,7 @@ package integrated
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/filecoin-project/lotus/chain/types"
@@ -141,9 +142,13 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 	})
 
 	grp.Go(func() error {
+		fatals := []error{}
 		for fatal := range taskErrors {
 			success.Store(false)
-			return fatal
+			fatals = append(fatals, fatal)
+		}
+		if len(fatals) > 0 {
+			return fmt.Errorf("%v", fatals)
 		}
 		return nil
 	})
