@@ -562,3 +562,72 @@ func TestManagerFatalErrorAndResultStatusOk(t *testing.T) {
 	require.Error(t, err)
 	require.False(t, success)
 }
+
+func TestManagerMultiFatalErrorsAndResultStatusOk(t *testing.T) {
+	ctx := context.Background()
+
+	// mock index builder and mock indexer
+	mIdxBuilder := new(test.MockIndexBuilder)
+	mIdx := new(test.MockIndexer)
+	mIdxBuilder.MockIndexer = mIdx
+
+	// fake storage and mock exporter
+	fStorage := new(test.FakeStorage)
+	mExporter := new(test.MockExporter)
+
+	// create new index manager with mocks values
+	manager, err := NewManager(fStorage, mIdxBuilder, WithExporter(mExporter))
+	require.NoError(t, err)
+
+	// a fake tipset to index
+	tsHeight := int64(1)
+	ts1 := testutil.MustFakeTipSet(t, tsHeight)
+
+	// results channel and error channel MockIndexer will return.
+	resChan := make(chan *tipset.Result, 1)
+	errChan := make(chan error, 2)
+
+	// expect index manager to pass MockedIndexer anything (ctx) and the tipset, returning the channels created above.
+	mIdxBuilder.MockIndexer.On("TipSet", mock.Anything, ts1).Return(resChan, errChan, nil)
+
+	// create some fake data and a processing report
+	data := &test.FakePersistable{}
+	report := visormodel.ProcessingReportList{
+		&visormodel.ProcessingReport{
+			Height:      tsHeight,
+			StateRoot:   "stateroot",
+			Reporter:    t.Name(),
+			Task:        "task",
+			StartedAt:   time.Unix(0, 0),
+			CompletedAt: time.Unix(0, 0),
+			// status of OK means indexing was successful
+			Status:            visormodel.ProcessingStatusOK,
+			StatusInformation: "",
+			ErrorsDetected:    nil,
+		},
+	}
+	// send report to index manager and close the channel to signal MockIndexer is done indexing data.
+	resChan <- &tipset.Result{
+		Name:   t.Name(),
+		Data:   data,
+		Report: report,
+	}
+
+	// send a fatal error to the index manager
+	errChan <- fmt.Errorf("fatal error one")
+	errChan <- fmt.Errorf("fatal error two")
+	close(resChan)
+	close(errChan)
+
+	// mock exporter expects to receieve a result with data and report
+	mExporter.On("ExportResult", mock.Anything, fStorage, int64(ts1.Height()), []*indexer.ModelResult{
+		{
+			Name:  t.Name(),
+			Model: model.PersistableList{report, data},
+		},
+	}).Return(nil)
+
+	success, err := manager.TipSet(ctx, ts1)
+	require.Error(t, err)
+	require.False(t, success)
+}

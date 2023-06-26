@@ -101,7 +101,7 @@ func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Re
 
 	var (
 		outCh = make(chan *Result, len(stateResults))
-		errCh = make(chan error, 1)
+		errCh = make(chan error, len(stateResults))
 	)
 	go func() {
 		defer func() {
