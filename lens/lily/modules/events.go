@@ -16,5 +16,5 @@ func NewEvents(mctx helpers.MetricsCtx, lc fx.Lifecycle, chainAPI full.ChainModu
 		StateModuleAPI: stateAPI,
 	}
 
-	return events.NewEventsWithConfidence(mctx, api, 10)
+	return events.NewEvents(mctx, api)
 }
