@@ -97,6 +97,15 @@ lily:
 	go build $(GOFLAGS) -o lily -mod=readonly .
 BINS+=lily
 
+ifeq ($(shell uname -s), Darwin)
+export CGO_ENABLED=1
+    ifeq ($(shell uname -m), arm64)
+export GOARCH=arm64
+export LIBRARY_PATH=/opt/homebrew/lib
+export FFI_BUILD_FROM_SOURCE=1
+    endif
+endif
+
 .PHONY: clean
 clean:
 	rm -rf $(CLEAN) $(BINS)
