@@ -119,7 +119,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		}
 		for _, child := range util.GetChildMessagesOf(parentMsg) {
 			fromCode, _ := getActorCode(ctx, child.Message.From)
-			fromActorCode := "<Unknown>"
+			var fromActorCode string
 			if !fromCode.Equals(cid.Undef) {
 				fromActorCode, _, err = util.ActorNameAndFamilyFromCode(fromCode)
 				if err != nil {
@@ -129,7 +129,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 			toCode, _ := getActorCode(ctx, child.Message.To)
 			actorCode := "<Unknown>"
-			toActorCode := "<Unknown>"
+			var toActorCode string
 			if !toCode.Equals(cid.Undef) {
 				actorCode = toCode.String()
 				toActorCode, _, err = util.ActorNameAndFamilyFromCode(toCode)
