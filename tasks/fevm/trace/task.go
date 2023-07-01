@@ -118,11 +118,24 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			continue
 		}
 		for _, child := range util.GetChildMessagesOf(parentMsg) {
-			toCode, _ := getActorCode(ctx, child.Message.To)
+			fromCode, _ := getActorCode(ctx, child.Message.From)
+			fromActorCode := "<Unknown>"
+			if !fromCode.Equals(cid.Undef) {
+				fromActorCode, _, err = util.ActorNameAndFamilyFromCode(fromCode)
+				if err != nil {
+					errs = append(errs, err)
+				}
+			}
 
+			toCode, _ := getActorCode(ctx, child.Message.To)
+			actorCode := "<Unknown>"
 			toActorCode := "<Unknown>"
 			if !toCode.Equals(cid.Undef) {
-				toActorCode = toCode.String()
+				actorCode = toCode.String()
+				toActorCode, _, err = util.ActorNameAndFamilyFromCode(toCode)
+				if err != nil {
+					errs = append(errs, err)
+				}
 			}
 			fromEthAddress := getEthAddress(child.Message.From)
 			toEthAddress := getEthAddress(child.Message.To)
@@ -139,13 +152,15 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				To:                  toEthAddress,
 				Value:               child.Message.Value.String(),
 				ExitCode:            int64(child.Receipt.ExitCode),
-				ActorCode:           toActorCode,
+				ActorCode:           actorCode,
 				Method:              uint64(child.Message.Method),
 				Index:               child.Index,
 				Params:              ethtypes.EthBytes(child.Message.Params).String(),
 				Returns:             ethtypes.EthBytes(child.Receipt.Return).String(),
 				ParamsCodec:         child.Message.ParamsCodec,
 				ReturnsCodec:        child.Receipt.ReturnCodec,
+				ToActorCode:         toActorCode,
+				FromActorCode:       fromActorCode,
 			}
 
 			// only parse params and return of successful messages since unsuccessful messages don't return a parseable value.
