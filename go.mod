@@ -26,7 +26,7 @@ require (
 	github.com/go-pg/migrations/v8 v8.0.1
 	github.com/go-pg/pg/v10 v10.10.6
 	github.com/hashicorp/golang-lru v0.6.0
-	github.com/ipfs/go-block-format v0.1.2 // indirect
+	github.com/ipfs/go-block-format v0.1.2
 	github.com/ipfs/go-cid v0.4.1
 	github.com/ipfs/go-fs-lock v0.0.7
 	github.com/ipfs/go-ipfs-blockstore v1.3.0
@@ -67,7 +67,6 @@ require (
 	github.com/hibiken/asynq v0.23.0
 	github.com/hibiken/asynq/x v0.0.0-20220413130846-5c723f597e01
 	github.com/ipfs/go-ipld-format v0.4.0
-	github.com/ipfs/go-libipfs v0.7.0
 	github.com/jedib0t/go-pretty/v6 v6.2.7
 	github.com/libp2p/go-libp2p v0.27.5
 	github.com/multiformats/go-varint v0.0.7
@@ -202,6 +201,7 @@ require (
 	github.com/ipfs/go-ipfs-util v0.0.2 // indirect
 	github.com/ipfs/go-ipld-legacy v0.1.1 // indirect
 	github.com/ipfs/go-ipns v0.3.0 // indirect
+	github.com/ipfs/go-libipfs v0.7.0 // indirect
 	github.com/ipfs/go-log v1.0.5 // indirect
 	github.com/ipfs/go-merkledag v0.10.0 // indirect
 	github.com/ipfs/go-metrics-interface v0.0.1 // indirect
