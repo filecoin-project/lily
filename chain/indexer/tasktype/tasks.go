@@ -38,6 +38,7 @@ var TaskLookup = map[string][]string{
 		MinerSectorInfoV1_6,
 		MinerSectorPost,
 		MinerPreCommitInfo,
+		MinerPreCommitInfoV1_8,
 		MinerSectorEvent,
 		MinerCurrentDeadlineInfo,
 		MinerFeeDebt,

@@ -52,7 +52,7 @@ func TestNewProcessor(t *testing.T) {
 	proc, err := New(nil, t.Name(), tasktype.AllTableTasks)
 	require.NoError(t, err)
 	require.Equal(t, t.Name(), proc.name)
-	require.Len(t, proc.actorProcessors, 24)
+	require.Len(t, proc.actorProcessors, 25)
 	require.Len(t, proc.tipsetProcessors, 10)
 	require.Len(t, proc.tipsetsProcessors, 14)
 	require.Len(t, proc.builtinProcessors, 1)
@@ -122,14 +122,6 @@ func TestNewProcessor(t *testing.T) {
 		nil,
 		actorstate.NewCustomTypedActorExtractorMap(
 			map[cid.Cid][]actorstate.ActorStateExtractor{
-				miner.VersionCodes()[actorstypes.Version0]:  {minertask.PreCommitInfoExtractorV8{}},
-				miner.VersionCodes()[actorstypes.Version2]:  {minertask.PreCommitInfoExtractorV8{}},
-				miner.VersionCodes()[actorstypes.Version3]:  {minertask.PreCommitInfoExtractorV8{}},
-				miner.VersionCodes()[actorstypes.Version4]:  {minertask.PreCommitInfoExtractorV8{}},
-				miner.VersionCodes()[actorstypes.Version5]:  {minertask.PreCommitInfoExtractorV8{}},
-				miner.VersionCodes()[actorstypes.Version6]:  {minertask.PreCommitInfoExtractorV8{}},
-				miner.VersionCodes()[actorstypes.Version7]:  {minertask.PreCommitInfoExtractorV8{}},
-				miner.VersionCodes()[actorstypes.Version8]:  {minertask.PreCommitInfoExtractorV8{}},
 				miner.VersionCodes()[actorstypes.Version9]:  {minertask.PreCommitInfoExtractorV9{}},
 				miner.VersionCodes()[actorstypes.Version10]: {minertask.PreCommitInfoExtractorV9{}},
 				miner.VersionCodes()[actorstypes.Version11]: {minertask.PreCommitInfoExtractorV9{}},

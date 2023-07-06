@@ -49,6 +49,7 @@ var Models = []interface{}{
 	(*miner.MinerSectorInfoV1_6)(nil),
 	(*miner.MinerSectorPost)(nil),
 	(*miner.MinerPreCommitInfo)(nil),
+	(*miner.MinerPreCommitInfoV9)(nil),
 	(*miner.MinerSectorEvent)(nil),
 	(*miner.MinerCurrentDeadlineInfo)(nil),
 	(*miner.MinerFeeDebt)(nil),
@@ -352,10 +353,13 @@ func verifyModel(ctx context.Context, db *pg.DB, schemaName string, m *orm.Table
 		}
 
 		// Some common aliases
-		if datatype == "timestamp with time zone" {
+		switch datatype {
+		case "timestamp with time zone":
+			fallthrough
+		case "timestamp without time zone":
 			datatype = "timestamptz"
-		} else if datatype == "timestamp without time zone" {
-			datatype = "timestamp"
+		case "ARRAY":
+			datatype = "bigint[]"
 		}
 
 		if datatype != fld.SQLType {
