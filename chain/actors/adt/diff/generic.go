@@ -33,6 +33,21 @@ type ArrayDiffer interface {
 func CompareArray(preArr, curArr adt.Array, out ArrayDiffer) error {
 	notNew := make(map[int64]struct{}, curArr.Length())
 	prevVal := new(typegen.Deferred)
+
+	preArrRoot, err := preArr.Root()
+	if err != nil {
+		return err
+	}
+
+	curArrRoot, err := curArr.Root()
+	if err != nil {
+		return err
+	}
+
+	if preArrRoot.Equals(curArrRoot) {
+		return nil
+	}
+
 	if err := preArr.ForEach(prevVal, func(i int64) error {
 		curVal := new(typegen.Deferred)
 		found, err := curArr.Get(uint64(i), curVal)
