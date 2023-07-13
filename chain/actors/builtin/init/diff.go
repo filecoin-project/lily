@@ -37,7 +37,17 @@ func DiffAddressMap(ctx context.Context, store adt.Store, pre, cur State) (*Addr
 
 	mapDiffer := NewAddressMapDiffer(pre, cur)
 
-	if pre.Code().Equals(cur.Code()) {
+	premR, err := prem.Root()
+	if err != nil {
+		return nil, err
+	}
+
+	curmR, err := curm.Root()
+	if err != nil {
+		return nil, err
+	}
+
+	if premR.Equals(curmR) {
 		return mapDiffer.Results, nil
 	}
 
