@@ -50,8 +50,6 @@ func ParseVmMessageParams(params []byte, paramsCodec uint64, method abi.MethodNu
 		if err != nil {
 			return "", "", err
 		}
-		err = fmt.Errorf("unknown method %d with codec %d for actorCode %s name %s", method, paramsCodec, actCode, builtin.ActorNameByCode(actCode))
-		log.Warnw("parsing vm message params", "error", err)
 		return string(paramj), builtin.ActorNameByCode(actCode), nil
 	}
 	// If the codec is 0, the parameters/return value are "empty".
@@ -76,8 +74,6 @@ func ParseVmMessageReturn(ret []byte, retCodec uint64, method abi.MethodNum, act
 		if err != nil {
 			return "", "", err
 		}
-		err = fmt.Errorf("unknown method %d with codec %d for actorCode %s name %s", method, retCodec, actCode, builtin.ActorNameByCode(actCode))
-		log.Warnw("parsing vm message return", "error", err)
 		return string(retJ), builtin.ActorNameByCode(actCode), nil
 	}
 	// If the codec is 0, the parameters/return value are "empty".
@@ -102,8 +98,6 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (_ string
 		if err != nil {
 			return "", "", err
 		}
-		err = fmt.Errorf("unknown method %d for actorCode %s name %s", method, actCode, builtin.ActorNameByCode(actCode))
-		log.Warnw("parsing vm message params", "error", err)
 		return string(paramj), method.String(), nil
 	}
 
