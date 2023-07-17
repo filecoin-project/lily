@@ -31,40 +31,26 @@ type ArrayDiffer interface {
 //
 // If `preArr` and `curArr` are both backed by /v3/AMTs with the same bitwidth use the more efficient Amt method.
 func CompareArray(preArr, curArr adt.Array, out ArrayDiffer) error {
-	notNew := make(map[int64]struct{}, curArr.Length())
-	prevVal := new(typegen.Deferred)
-
-	if err := preArr.ForEach(prevVal, func(i int64) error {
-		curVal := new(typegen.Deferred)
-		found, err := curArr.Get(uint64(i), curVal)
+	curVal := new(typegen.Deferred)
+	return curArr.ForEach(curVal, func(i int64) error {
+		preVal := new(typegen.Deferred)
+		found, err := preArr.Get(uint64(i), preVal)
 		if err != nil {
 			return err
 		}
+
 		if !found {
-			if err := out.Remove(uint64(i), prevVal); err != nil {
-				return err
-			}
-			return nil
+			return out.Add(uint64(i), curVal)
 		}
 
 		// no modification
-		if !bytes.Equal(prevVal.Raw, curVal.Raw) {
-			if err := out.Modify(uint64(i), prevVal, curVal); err != nil {
+		if !bytes.Equal(preVal.Raw, curVal.Raw) {
+			if err := out.Modify(uint64(i), preVal, curVal); err != nil {
 				return err
 			}
 		}
-		notNew[i] = struct{}{}
-		return nil
-	}); err != nil {
-		return err
-	}
 
-	curVal := new(typegen.Deferred)
-	return curArr.ForEach(curVal, func(i int64) error {
-		if _, ok := notNew[i]; ok {
-			return nil
-		}
-		return out.Add(uint64(i), curVal)
+		return nil
 	})
 }
 
