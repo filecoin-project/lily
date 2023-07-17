@@ -22,6 +22,8 @@ import (
 	"github.com/filecoin-project/lotus/storage/sealer/ffiwrapper"
 	"github.com/mitchellh/go-homedir"
 
+	"github.com/filecoin-project/lotus/chain/index"
+
 	"github.com/filecoin-project/lotus/chain/types"
 	"golang.org/x/xerrors"
 	"gopkg.in/cheggaaa/pb.v1"
@@ -73,7 +75,7 @@ func ImportFromFsFile(ctx context.Context, r repo.Repo, fs fs.File, snapshot boo
 		return err
 	}
 
-	stm, err := stmgr.NewStateManager(cst, consensus.NewTipSetExecutor(filcns.RewardFunc), vm.Syscalls(ffiwrapper.ProofVerifier), filcns.DefaultUpgradeSchedule(), nil, mds)
+	stm, err := stmgr.NewStateManager(cst, consensus.NewTipSetExecutor(filcns.RewardFunc), vm.Syscalls(ffiwrapper.ProofVerifier), filcns.DefaultUpgradeSchedule(), nil, mds, index.DummyMsgIndex)
 	if err != nil {
 		return err
 	}
@@ -211,7 +213,7 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool, 
 		return err
 	}
 
-	stm, err := stmgr.NewStateManager(cst, consensus.NewTipSetExecutor(filcns.RewardFunc), vm.Syscalls(ffiwrapper.ProofVerifier), filcns.DefaultUpgradeSchedule(), nil, mds)
+	stm, err := stmgr.NewStateManager(cst, consensus.NewTipSetExecutor(filcns.RewardFunc), vm.Syscalls(ffiwrapper.ProofVerifier), filcns.DefaultUpgradeSchedule(), nil, mds, index.DummyMsgIndex)
 	if err != nil {
 		return err
 	}
@@ -234,8 +236,9 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool, 
 func backfillTipsetKey(ctx context.Context, root *types.TipSet, cs *store.ChainStore, backfillRange int) (err error) {
 	ts := root
 	log.Infof("backfilling the tipsetkey into chainstore, attempt to backfill the last %v epochs starting from the head.", backfillRange)
+	tssToPersist := make([]*types.TipSet, 0, backfillRange)
 	for i := 0; i < backfillRange; i++ {
-		err = cs.PersistTipset(ctx, ts)
+		tssToPersist = append(tssToPersist, ts)
 		if err != nil {
 			return
 		}
@@ -246,5 +249,7 @@ func backfillTipsetKey(ctx context.Context, root *types.TipSet, cs *store.ChainS
 			break
 		}
 	}
+
+	err = cs.PersistTipsets(ctx, tssToPersist)
 	return
 }
