@@ -449,19 +449,28 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				),
 				minertask.LockedFundsExtractor{},
 			)
+		case tasktype.MinerPreCommitInfoV1_8:
+			out.ActorProcessors[t] = actorstate.NewTaskWithTransformer(
+				api,
+				actorstate.NewCustomTypedActorExtractorMap(
+					map[cid.Cid][]actorstate.ActorStateExtractor{
+						mineractors.VersionCodes()[actorstypes.Version0]: {minertask.PreCommitInfoExtractorV8{}},
+						mineractors.VersionCodes()[actorstypes.Version2]: {minertask.PreCommitInfoExtractorV8{}},
+						mineractors.VersionCodes()[actorstypes.Version3]: {minertask.PreCommitInfoExtractorV8{}},
+						mineractors.VersionCodes()[actorstypes.Version4]: {minertask.PreCommitInfoExtractorV8{}},
+						mineractors.VersionCodes()[actorstypes.Version5]: {minertask.PreCommitInfoExtractorV8{}},
+						mineractors.VersionCodes()[actorstypes.Version6]: {minertask.PreCommitInfoExtractorV8{}},
+						mineractors.VersionCodes()[actorstypes.Version7]: {minertask.PreCommitInfoExtractorV8{}},
+						mineractors.VersionCodes()[actorstypes.Version8]: {minertask.PreCommitInfoExtractorV8{}},
+					},
+				),
+				minertask.PreCommitInfoExtractorV8{},
+			)
 		case tasktype.MinerPreCommitInfo:
 			out.ActorProcessors[t] = actorstate.NewTaskWithTransformer(
 				api,
 				actorstate.NewCustomTypedActorExtractorMap(
 					map[cid.Cid][]actorstate.ActorStateExtractor{
-						mineractors.VersionCodes()[actorstypes.Version0]:  {minertask.PreCommitInfoExtractorV8{}},
-						mineractors.VersionCodes()[actorstypes.Version2]:  {minertask.PreCommitInfoExtractorV8{}},
-						mineractors.VersionCodes()[actorstypes.Version3]:  {minertask.PreCommitInfoExtractorV8{}},
-						mineractors.VersionCodes()[actorstypes.Version4]:  {minertask.PreCommitInfoExtractorV8{}},
-						mineractors.VersionCodes()[actorstypes.Version5]:  {minertask.PreCommitInfoExtractorV8{}},
-						mineractors.VersionCodes()[actorstypes.Version6]:  {minertask.PreCommitInfoExtractorV8{}},
-						mineractors.VersionCodes()[actorstypes.Version7]:  {minertask.PreCommitInfoExtractorV8{}},
-						mineractors.VersionCodes()[actorstypes.Version8]:  {minertask.PreCommitInfoExtractorV8{}},
 						mineractors.VersionCodes()[actorstypes.Version9]:  {minertask.PreCommitInfoExtractorV9{}},
 						mineractors.VersionCodes()[actorstypes.Version10]: {minertask.PreCommitInfoExtractorV9{}},
 						mineractors.VersionCodes()[actorstypes.Version11]: {minertask.PreCommitInfoExtractorV9{}},

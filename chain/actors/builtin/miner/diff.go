@@ -153,6 +153,20 @@ func DiffSectors(ctx context.Context, store adt.Store, pre, cur State) (*SectorC
 	preBw := pre.SectorsAmtBitwidth()
 	curBw := cur.SectorsAmtBitwidth()
 	diffContainer := NewSectorDiffContainer(pre, cur)
+
+	presR, err := pres.Root()
+	if err != nil {
+		return nil, err
+	}
+	cursR, err := curs.Root()
+	if err != nil {
+		return nil, err
+	}
+
+	if presR.Equals(cursR) {
+		return diffContainer.Results, nil
+	}
+
 	if ArrayRequiresLegacyDiffing(pre, cur, preBw, curBw) {
 		if span.IsRecording() {
 			span.SetAttributes(attribute.String("diff", "slow"))

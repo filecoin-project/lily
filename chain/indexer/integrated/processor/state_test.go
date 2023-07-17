@@ -117,17 +117,25 @@ func TestMakeProcessorsActors(t *testing.T) {
 				transformer: minertask.V7SectorInfoExtractor{},
 			},
 			{
+				taskName: tasktype.MinerPreCommitInfoV1_8,
+				extractor: actorstate.NewCustomTypedActorExtractorMap(
+					map[cid.Cid][]actorstate.ActorStateExtractor{
+						miner.VersionCodes()[actorstypes.Version0]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version2]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version3]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version4]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version5]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version6]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version7]: {minertask.PreCommitInfoExtractorV8{}},
+						miner.VersionCodes()[actorstypes.Version8]: {minertask.PreCommitInfoExtractorV8{}},
+					},
+				),
+				transformer: minertask.PreCommitInfoExtractorV8{},
+			},
+			{
 				taskName: tasktype.MinerPreCommitInfo,
 				extractor: actorstate.NewCustomTypedActorExtractorMap(
 					map[cid.Cid][]actorstate.ActorStateExtractor{
-						miner.VersionCodes()[actorstypes.Version0]:  {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actorstypes.Version2]:  {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actorstypes.Version3]:  {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actorstypes.Version4]:  {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actorstypes.Version5]:  {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actorstypes.Version6]:  {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actorstypes.Version7]:  {minertask.PreCommitInfoExtractorV8{}},
-						miner.VersionCodes()[actorstypes.Version8]:  {minertask.PreCommitInfoExtractorV8{}},
 						miner.VersionCodes()[actorstypes.Version9]:  {minertask.PreCommitInfoExtractorV9{}},
 						miner.VersionCodes()[actorstypes.Version10]: {minertask.PreCommitInfoExtractorV9{}},
 						miner.VersionCodes()[actorstypes.Version11]: {minertask.PreCommitInfoExtractorV9{}},
@@ -425,7 +433,7 @@ func TestMakeProcessorsAllTasks(t *testing.T) {
 	// If this test fails it indicates a new processor and/or task name was added and test should be created for it in one of the above test cases.
 	proc, err := processor.MakeProcessors(nil, append(tasktype.AllTableTasks, processor.BuiltinTaskName))
 	require.NoError(t, err)
-	require.Len(t, proc.ActorProcessors, 24)
+	require.Len(t, proc.ActorProcessors, 25)
 	require.Len(t, proc.TipsetProcessors, 10)
 	require.Len(t, proc.TipsetsProcessors, 14)
 	require.Len(t, proc.ReportProcessors, 1)

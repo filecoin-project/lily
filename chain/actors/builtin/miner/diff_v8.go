@@ -28,7 +28,21 @@ func DiffPreCommitsV8(ctx context.Context, store adt.Store, pre, cur State) (*Pr
 		return nil, err
 	}
 
+	prepR, err := prep.Root()
+	if err != nil {
+		return nil, err
+	}
+
+	curpR, err := curp.Root()
+	if err != nil {
+		return nil, err
+	}
+
 	diffContainer := NewPreCommitDiffContainerV8(pre, cur)
+	if prepR.Equals(curpR) {
+		return diffContainer.Results, nil
+	}
+
 	if MapRequiresLegacyDiffing(pre, cur,
 		&adt.MapOpts{
 			Bitwidth: pre.SectorsAmtBitwidth(),

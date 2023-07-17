@@ -36,6 +36,21 @@ func DiffAddressMap(ctx context.Context, store adt.Store, pre, cur State) (*Addr
 	}
 
 	mapDiffer := NewAddressMapDiffer(pre, cur)
+
+	premR, err := prem.Root()
+	if err != nil {
+		return nil, err
+	}
+
+	curmR, err := curm.Root()
+	if err != nil {
+		return nil, err
+	}
+
+	if premR.Equals(curmR) {
+		return mapDiffer.Results, nil
+	}
+
 	if requiresLegacyDiffing(pre, cur,
 		&adt.MapOpts{
 			Bitwidth: pre.AddressMapBitWidth(),
@@ -45,7 +60,7 @@ func DiffAddressMap(ctx context.Context, store adt.Store, pre, cur State) (*Addr
 			Bitwidth: cur.AddressMapBitWidth(),
 			HashFunc: cur.AddressMapHashFunction(),
 		}) {
-		log.Warnw("actor HAMT opts differ, running slower generic map diff", "preCID", pre.Code(), "curCID", cur.Code())
+		log.Warnw("actor HAMT opts differ, running slower generic map diff ", "preCID ", pre.Code(), "curCID ", cur.Code())
 		if err := diff.CompareMap(prem, curm, mapDiffer); err != nil {
 			return nil, err
 		}

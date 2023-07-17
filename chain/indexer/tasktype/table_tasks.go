@@ -12,6 +12,7 @@ const (
 	MinerSectorInfoV1_6            = "miner_sector_infos"
 	MinerSectorPost                = "miner_sector_post"
 	MinerPreCommitInfo             = "miner_pre_commit_info"
+	MinerPreCommitInfoV1_8		   = "miner_pre_commit_info_v8"
 	MinerSectorEvent               = "miner_sector_event"
 	MinerCurrentDeadlineInfo       = "miner_current_deadline_info"
 	MinerFeeDebt                   = "miner_fee_debt"
@@ -63,6 +64,7 @@ var AllTableTasks = []string{
 	MinerSectorInfoV1_6,
 	MinerSectorPost,
 	MinerPreCommitInfo,
+	MinerPreCommitInfoV1_8,
 	MinerSectorEvent,
 	MinerCurrentDeadlineInfo,
 	MinerFeeDebt,
@@ -114,6 +116,7 @@ var TableLookup = map[string]struct{}{
 	MinerSectorInfoV1_6:            {},
 	MinerSectorPost:                {},
 	MinerPreCommitInfo:             {},
+	MinerPreCommitInfoV1_8:			{},
 	MinerSectorEvent:               {},
 	MinerCurrentDeadlineInfo:       {},
 	MinerFeeDebt:                   {},
@@ -165,6 +168,7 @@ var TableComment = map[string]string{
 	MinerSectorInfoV1_6:            `MinerSectorInfoV1_6 is exported from the miner actor iff the actor code is less than v7. The table keeps its original name since that's a requirement to support lily backfills`,
 	MinerSectorPost:                ``,
 	MinerPreCommitInfo:             ``,
+	MinerPreCommitInfoV1_8:			`MinerPreCommitInfo using actors v1 to v8.`,
 	MinerSectorEvent:               ``,
 	MinerCurrentDeadlineInfo:       ``,
 	MinerFeeDebt:                   ``,
@@ -221,6 +225,7 @@ var TableFieldComments = map[string]map[string]string{
 	MinerSectorInfoV1_6:      {},
 	MinerSectorPost:          {},
 	MinerPreCommitInfo:       {},
+	MinerPreCommitInfoV1_8:	  {},
 	MinerSectorEvent:         {},
 	MinerCurrentDeadlineInfo: {},
 	MinerFeeDebt:             {},

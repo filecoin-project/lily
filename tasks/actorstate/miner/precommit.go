@@ -68,3 +68,17 @@ func (PreCommitInfoExtractorV8) Extract(ctx context.Context, a actorstate.ActorI
 
 	return preCommitModel, nil
 }
+
+func (PreCommitInfoExtractorV8) Transform(ctx context.Context, data model.PersistableList) (model.PersistableList, error) {
+	persistableList := make(minermodel.MinerPreCommitInfoList, 0, len(data))
+	for _, d := range data {
+		ml, ok := d.(minermodel.MinerPreCommitInfoList)
+		if !ok {
+			return nil, fmt.Errorf("expected MinerPreCommitInfoList type but got: %T", d)
+		}
+		for _, m := range ml {
+			persistableList = append(persistableList, m)
+		}
+	}
+	return model.PersistableList{persistableList}, nil
+}

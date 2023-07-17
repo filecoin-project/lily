@@ -29,7 +29,7 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 		{
 			taskAlias: tasktype.ActorStatesMinerTask,
 			tasks: []string{tasktype.MinerSectorDeal, tasktype.MinerSectorInfoV7, tasktype.MinerSectorInfoV1_6,
-				tasktype.MinerSectorPost, tasktype.MinerPreCommitInfo, tasktype.MinerSectorEvent,
+				tasktype.MinerSectorPost, tasktype.MinerPreCommitInfo, tasktype.MinerPreCommitInfoV1_8, tasktype.MinerSectorEvent,
 				tasktype.MinerCurrentDeadlineInfo, tasktype.MinerFeeDebt, tasktype.MinerLockedFund, tasktype.MinerInfo,
 				tasktype.MinerBeneficiary},
 		},
@@ -101,7 +101,7 @@ func TestMakeAllTaskAliasNames(t *testing.T) {
 }
 
 func TestMakeAllTaskNames(t *testing.T) {
-	const TotalTableTasks = 48
+	const TotalTableTasks = 49
 	actual, err := tasktype.MakeTaskNames(tasktype.AllTableTasks)
 	require.NoError(t, err)
 	// if this test fails it means a new task name was added, update the above test
