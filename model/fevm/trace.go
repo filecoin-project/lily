@@ -57,9 +57,9 @@ type FEVMTrace struct {
 	// Returns codec.
 	ReturnsCodec uint64 `pg:",notnull,use_zero"`
 	// Human-readable identifier of receiver (To).
-	ToActorCode string `pg:",notnull"`
+	ToActorName string `pg:",notnull"`
 	// Human-readable identifier of sender (From).
-	FromActorCode string `pg:",notnull"`
+	FromActorName string `pg:",notnull"`
 }
 
 func (f *FEVMTrace) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {

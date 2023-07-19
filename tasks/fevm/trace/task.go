@@ -159,8 +159,8 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				Returns:             ethtypes.EthBytes(child.Receipt.Return).String(),
 				ParamsCodec:         child.Message.ParamsCodec,
 				ReturnsCodec:        child.Receipt.ReturnCodec,
-				ToActorCode:         toActorCode,
-				FromActorCode:       fromActorCode,
+				ToActorName:         toActorCode,
+				FromActorName:       fromActorCode,
 			}
 
 			// only parse params and return of successful messages since unsuccessful messages don't return a parseable value.

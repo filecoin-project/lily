@@ -5,13 +5,13 @@ func init() {
 		28,
 		`
 	ALTER TABLE {{ .SchemaName | default "public"}}.fevm_traces
-		ADD COLUMN IF NOT EXISTS "to_actor_code" text NOT NULL;
+		ADD COLUMN IF NOT EXISTS "to_actor_name" text NOT NULL;
 	
 	ALTER TABLE {{ .SchemaName | default "public"}}.fevm_traces
-		ADD COLUMN IF NOT EXISTS "from_actor_code" text NOT NULL;
+		ADD COLUMN IF NOT EXISTS "from_actor_name" text NOT NULL;
 	
-	COMMENT ON COLUMN {{ .SchemaName | default "public"}}.fevm_traces.to_actor_code IS 'Fully-versioned human-readable identifier of receiver (To).';
-	COMMENT ON COLUMN {{ .SchemaName | default "public"}}.fevm_traces.from_actor_code IS 'Fully-versioned human-readable identifier of receiver (From).';
+	COMMENT ON COLUMN {{ .SchemaName | default "public"}}.fevm_traces.to_actor_name IS 'Fully-versioned human-readable identifier of receiver (To).';
+	COMMENT ON COLUMN {{ .SchemaName | default "public"}}.fevm_traces.from_actor_name IS 'Fully-versioned human-readable identifier of receiver (From).';
 `,
 	)
 }
