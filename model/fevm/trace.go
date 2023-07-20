@@ -38,7 +38,7 @@ type FEVMTrace struct {
 	Method uint64 `pg:",notnull,use_zero"`
 	// Method in readable name.
 	ParsedMethod string `pg:",notnull"`
-	// ActorCode of To (receiver).
+	// ActorCode of To (receiver) as a CID.
 	ActorCode string `pg:",notnull"`
 	// ExitCode of message execution.
 	ExitCode int64 `pg:",notnull,use_zero"`
@@ -56,6 +56,10 @@ type FEVMTrace struct {
 	ParamsCodec uint64 `pg:",notnull,use_zero"`
 	// Returns codec.
 	ReturnsCodec uint64 `pg:",notnull,use_zero"`
+	// Human-readable identifier of receiver (To).
+	ToActorName string `pg:",notnull"`
+	// Human-readable identifier of sender (From).
+	FromActorName string `pg:",notnull"`
 }
 
 func (f *FEVMTrace) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
