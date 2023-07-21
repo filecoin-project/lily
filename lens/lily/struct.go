@@ -3,6 +3,7 @@ package lily
 import (
 	"context"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/api/v0api"
@@ -68,6 +69,7 @@ type LilyAPIStruct struct {
 		EthGetTransactionReceipt  func(ctx context.Context, txHash ethtypes.EthHash) (*api.EthTxReceipt, error)                   `perm:"read"`
 		ChainGetMessagesInTipset  func(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error)                           `perm:"read"`
 		EthGetTransactionByHash   func(ctx context.Context, txHash *ethtypes.EthHash) (*ethtypes.EthTx, error)                    `perm:"read"`
+		StateListActors           func(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error)                       `perm:"read"`
 
 		LogList          func(context.Context) ([]string, error)     `perm:"read"`
 		LogSetLevel      func(context.Context, string, string) error `perm:"read"`
@@ -284,6 +286,10 @@ func (s *LilyAPIStruct) EthGetTransactionReceipt(ctx context.Context, txHash eth
 
 func (s *LilyAPIStruct) ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error) {
 	return s.Internal.ChainGetMessagesInTipset(ctx, tsk)
+}
+
+func (s *LilyAPIStruct) StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error) {
+	return s.Internal.StateListActors(ctx, tsk)
 }
 
 func (s *LilyAPIStruct) EthGetTransactionByHash(ctx context.Context, txHash *ethtypes.EthHash) (*ethtypes.EthTx, error) {

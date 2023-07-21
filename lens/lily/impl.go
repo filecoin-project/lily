@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/exitcode"
 	network2 "github.com/filecoin-project/go-state-types/network"
@@ -569,6 +570,10 @@ func (m *LilyNodeAPI) EthGetTransactionReceipt(ctx context.Context, txHash ethty
 
 func (m *LilyNodeAPI) ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error) {
 	return m.ChainAPI.ChainGetMessagesInTipset(ctx, tsk)
+}
+
+func (m *LilyNodeAPI) StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error) {
+	return m.StateAPI.StateListActors(ctx, tsk)
 }
 
 // MessagesForTipSetBlocks returns messages stored in the blocks of the specified tipset, messages may be duplicated

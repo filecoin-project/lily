@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-jsonrpc/auth"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
@@ -59,6 +60,7 @@ type LilyAPI interface {
 	EthGetTransactionReceipt(ctx context.Context, txHash ethtypes.EthHash) (*api.EthTxReceipt, error)            //perm:read
 	ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error)                    //perm:read
 	EthGetTransactionByHash(ctx context.Context, txHash *ethtypes.EthHash) (*ethtypes.EthTx, error)              //perm:read
+	StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error)                         //perm:read
 
 	// trigger graceful shutdown
 	Shutdown(context.Context) error

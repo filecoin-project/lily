@@ -136,6 +136,10 @@ func (t *DataSource) TipSetBlockMessages(ctx context.Context, ts *types.TipSet) 
 	return t.node.MessagesForTipSetBlocks(ctx, ts)
 }
 
+func (t *DataSource) StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error) {
+	return t.node.StateListActors(ctx, tsk)
+}
+
 func (t *DataSource) ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error) {
 	return t.node.ChainGetMessagesInTipset(ctx, tsk)
 }
