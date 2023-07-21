@@ -30,6 +30,7 @@ import (
 	"github.com/filecoin-project/lily/model/fevm"
 	"github.com/filecoin-project/lily/model/messages"
 	"github.com/filecoin-project/lily/model/msapprovals"
+	"github.com/filecoin-project/lily/model/snapshots"
 	"github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/schemas"
 )
@@ -100,6 +101,7 @@ var Models = []interface{}{
 	(*fevm.FEVMTransaction)(nil),
 	(*fevm.FEVMContract)(nil),
 	(*fevm.FEVMTrace)(nil),
+	(*snapshots.FEVMAcotrSnapshot)(nil),
 }
 
 var log = logging.Logger("lily/storage")
