@@ -24,6 +24,8 @@ type FEVMAcotrSnapshot struct {
 	ByteCodeHash string `pg:",notnull"`
 	// Balance of EVM actor in attoFIL.
 	Balance string `pg:"type:numeric,notnull"`
+	// The next actor nonce that is expected to appear on chain.
+	Nonce uint64 `pg:",use_zero"`
 }
 
 func (f *FEVMAcotrSnapshot) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {

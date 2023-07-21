@@ -62,6 +62,9 @@ func (p *Task) ProcessHourlySnapshotDump(ctx context.Context, current *types.Tip
 	errs := []error{}
 	for _, address := range addressArr {
 		actor, err := p.node.Actor(ctx, address, current.Key())
+		if err != nil {
+			continue
+		}
 		if actor.Address == nil {
 			continue
 		}
