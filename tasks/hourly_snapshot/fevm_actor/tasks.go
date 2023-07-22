@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/filecoin-project/lotus/chain/actors/builtin/evm"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/types/ethtypes"
@@ -33,7 +34,7 @@ func NewTask(node tasks.DataSource) *Task {
 	}
 }
 
-func (p *Task) ProcessHourlySnapshotDump(ctx context.Context, current *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
+func (p *Task) ProcessHourlySnapshotDump(ctx context.Context, current *types.TipSet, actors tasks.ActorStatesByType) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ProcessHourlySnapshotDump")
 	if span.IsRecording() {
 		span.SetAttributes(
@@ -49,22 +50,11 @@ func (p *Task) ProcessHourlySnapshotDump(ctx context.Context, current *types.Tip
 		StateRoot: current.ParentState().String(),
 	}
 
-	addressArr, err := p.node.StateListActors(ctx, current.Key())
-	if err != nil {
-		log.Errorf("%v", err)
-		report.ErrorsDetected = err
-		return nil, report, nil
-	}
-
-	log.Errorf("Size of Actors: %v", len(addressArr))
+	log.Errorf("Size of Actors: %v", len(actors[manifest.EvmKey]))
 
 	out := make(snapshots.FEVMActorSnapshotList, 0)
 	errs := []error{}
-	for _, address := range addressArr {
-		actor, err := p.node.Actor(ctx, address, current.Key())
-		if err != nil {
-			continue
-		}
+	for _, actor := range actors[manifest.EvmKey] {
 		if actor.Address == nil {
 			continue
 		}
@@ -103,7 +93,7 @@ func (p *Task) ProcessHourlySnapshotDump(ctx context.Context, current *types.Tip
 
 		out = append(out, &snapshots.FEVMAcotrSnapshot{
 			Height:       int64(current.Height()),
-			ActorID:      address.String(),
+			ActorID:      actor.Address.String(),
 			EthAddress:   ethAddress.String(),
 			ByteCode:     hex.EncodeToString(byteCode),
 			ByteCodeHash: hex.EncodeToString(byteCodeHash[:]),

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -73,6 +74,8 @@ import (
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
+
+	builtin "github.com/filecoin-project/lotus/chain/actors/builtin"
 )
 
 type TipSetProcessor interface {
@@ -86,7 +89,7 @@ type HourlySnapshotDumpProcessor interface {
 	// ProcessTipSet processes a tipset. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
 	// Implementations of this interface must abort processing when their context is canceled.
-	ProcessHourlySnapshotDump(ctx context.Context, current *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
+	ProcessHourlySnapshotDump(ctx context.Context, current *types.TipSet, actors tasks.ActorStatesByType) (model.Persistable, *visormodel.ProcessingReport, error)
 }
 
 type TipSetsProcessor interface {
@@ -422,6 +425,22 @@ func (sp *StateProcessor) startHourlySnapshotDump(ctx context.Context, current *
 		return taskNames
 	}
 
+	actors := make(map[string][]*types.ActorV5)
+	addrssArr, _ := sp.api.StateListActors(ctx, current.Key())
+
+	for _, address := range addrssArr {
+		actor, err := sp.api.Actor(ctx, address, current.Key())
+		if err != nil {
+			continue
+		}
+
+		if builtin.IsEvmActor(actor.Code) {
+			actors[manifest.EvmKey] = append(actors[manifest.EvmKey], actor)
+		} else if builtin.IsStorageMinerActor(actor.Code) {
+			actors[manifest.MinerKey] = append(actors[manifest.MinerKey], actor)
+		}
+	}
+
 	for taskName, proc := range sp.hourlySnapshotDumpProcessors {
 		name := taskName
 		p := proc
@@ -441,7 +460,7 @@ func (sp *StateProcessor) startHourlySnapshotDump(ctx context.Context, current *
 				sp.pwg.Done()
 			}()
 
-			data, report, err := p.ProcessHourlySnapshotDump(ctx, current)
+			data, report, err := p.ProcessHourlySnapshotDump(ctx, current, actors)
 			if err != nil {
 				stats.Record(ctx, metrics.ProcessingFailure.M(1))
 				results <- &Result{
