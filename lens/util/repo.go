@@ -146,7 +146,7 @@ func ParseReturn(ret []byte, method abi.MethodNum, actCode cid.Cid) (_ string, _
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("ParseReturn recovered from panic: %+v", r)
+			log.Errorf("ParseReturn recovered from panic: %+v", r)
 		}
 	}()
 
