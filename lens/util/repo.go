@@ -110,7 +110,7 @@ func ParseParams(params []byte, method abi.MethodNum, actCode cid.Cid) (_ string
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("method %s ActorName %s ParseParams recovered from panic: %+v", m.Name, builtin.ActorNameByCode(actCode), r)
+			log.Errorf("method %s ActorName %s ParseParams recovered from panic: %+v", m.Name, builtin.ActorNameByCode(actCode), r)
 		}
 	}()
 
@@ -146,7 +146,7 @@ func ParseReturn(ret []byte, method abi.MethodNum, actCode cid.Cid) (_ string, _
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("ParseReturn recovered from panic: %+v", r)
+			log.Errorf("ParseReturn recovered from panic: %+v", r)
 		}
 	}()
 
