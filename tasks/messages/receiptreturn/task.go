@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model"
 	messagemodel "github.com/filecoin-project/lily/model/messages"
 	visormodel "github.com/filecoin-project/lily/model/visor"
@@ -51,8 +50,6 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		return nil, report, nil
 	}
 
-	getActorCode, makeActorCodeRuncErr := util.MakeGetActorCodeFunc(ctx, t.node.Store(), current, executed)
-
 	var (
 		receiptResults = make(messagemodel.ReceiptReturnList, 0, len(blkMsgRect))
 		errorsDetected = make([]*messages.MessageError, 0, len(blkMsgRect))
@@ -86,16 +83,6 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				Return:  rec.Return,
 			}
 
-			toCode, found := getActorCode(ctx, msg.VMMessage().To)
-			if !found {
-				continue
-			}
-			if rec.ExitCode.IsSuccess() && makeActorCodeRuncErr == nil {
-				parsedReturn, _, err := util.ParseReturn(rec.Return, msg.VMMessage().Method, toCode)
-				if err == nil {
-					rcpt.ParsedReturn = parsedReturn
-				}
-			}
 			receiptResults = append(receiptResults, rcpt)
 		}
 
