@@ -18,6 +18,10 @@ type Receipt struct {
 	Idx      int   `pg:",use_zero"`
 	ExitCode int64 `pg:",use_zero"`
 	GasUsed  int64 `pg:",use_zero"`
+
+	Return []byte
+	// Result returned from executing a message parsed and serialized as a JSON object.
+	ParsedReturn string `pg:",type:jsonb"`
 }
 
 func (r *Receipt) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
