@@ -7,7 +7,7 @@ func init() {
 	ALTER TABLE {{ .SchemaName | default "public"}}.receipt_returns
 		ADD COLUMN IF NOT EXISTS "parsed_return" JSONB;
 	
-	COMMENT ON COLUMN {{ .SchemaName | default "public"}}.fevm_traces.from_actor_name IS 'Fully-versioned human-readable identifier of receiver (From).';
+	COMMENT ON COLUMN {{ .SchemaName | default "public"}}.receipt_returns.parsed_return IS 'Result returned from executing a message parsed and serialized as a JSON object.';
 `,
 	)
 }

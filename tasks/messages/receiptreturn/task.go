@@ -51,7 +51,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		return nil, report, nil
 	}
 
-	getActorCode, err := util.MakeGetActorCodeFunc(ctx, t.node.Store(), current, executed)
+	getActorCode, makeActorCodeRuncErr := util.MakeGetActorCodeFunc(ctx, t.node.Store(), current, executed)
 
 	var (
 		receiptResults = make(messagemodel.ReceiptReturnList, 0, len(blkMsgRect))
@@ -90,7 +90,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			if !found {
 				continue
 			}
-			if rec.ExitCode.IsSuccess() {
+			if rec.ExitCode.IsSuccess() && makeActorCodeRuncErr == nil {
 				parsedReturn, _, err := util.ParseReturn(rec.Return, msg.VMMessage().Method, toCode)
 				if err == nil {
 					rcpt.ParsedReturn = parsedReturn
