@@ -5,11 +5,10 @@ func init() {
 		29,
 		`
 	ALTER TABLE {{ .SchemaName | default "public"}}.receipts
-		ADD COLUMN IF NOT EXISTS "parsed_return" JSONB;
+		ADD COLUMN IF NOT EXISTS "return" bytea;
 
 	ALTER TABLE {{ .SchemaName | default "public"}}.receipts
-		ADD COLUMN IF NOT EXISTS "return" bytea;
-	
+		ADD COLUMN IF NOT EXISTS "parsed_return" JSONB;
 `,
 	)
 }
