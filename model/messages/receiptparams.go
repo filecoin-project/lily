@@ -13,8 +13,6 @@ type ReceiptReturn struct {
 	tableName struct{} `pg:"receipt_returns"` // nolint: structcheck
 	Message   string   `pg:",pk,notnull"`
 	Return    []byte
-	// Result returned from executing a message parsed and serialized as a JSON object.
-	ParsedReturn string `pg:",type:jsonb"`
 }
 
 func (m *ReceiptReturn) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {

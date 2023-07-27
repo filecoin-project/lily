@@ -82,7 +82,6 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				Message: msg.Cid().String(),
 				Return:  rec.Return,
 			}
-
 			receiptResults = append(receiptResults, rcpt)
 		}
 
