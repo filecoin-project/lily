@@ -230,6 +230,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		watch.WithConfidence(cfg.Confidence),
 		watch.WithConcurrentWorkers(cfg.Workers),
 		watch.WithBufferSize(cfg.BufferSize),
+		watch.WithInterval(cfg.Interval),
 	)
 	jobConfig := &schedule.JobConfig{
 		Name: cfg.JobConfig.Name,
@@ -240,6 +241,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 			"confidence": strconv.Itoa(cfg.Confidence),
 			"worker":     strconv.Itoa(cfg.Workers),
 			"buffer":     strconv.Itoa(cfg.BufferSize),
+			"interval":   strconv.Itoa(cfg.Interval),
 		},
 		Tasks:               cfg.JobConfig.Tasks,
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,

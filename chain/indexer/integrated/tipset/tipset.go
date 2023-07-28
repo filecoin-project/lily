@@ -30,6 +30,7 @@ type TipSetIndexer struct {
 	name      string
 	node      taskapi.DataSource
 	taskNames []string
+	Interval  int
 
 	processor *processor.StateProcessor
 }
@@ -91,7 +92,7 @@ func (ti *TipSetIndexer) TipSet(ctx context.Context, ts *types.TipSet) (chan *Re
 	}
 
 	log.Infow("index", "reporter", ti.name, "current", current.Height(), "executed", executed.Height())
-	stateResults, taskNames := ti.processor.State(ctx, current, executed)
+	stateResults, taskNames := ti.processor.State(ctx, current, executed, ti.Interval)
 
 	// build list of executing tasks, used below to label incomplete tasks as skipped.
 	executingTasks := make(map[string]bool, len(taskNames))

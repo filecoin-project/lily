@@ -111,6 +111,7 @@ type LilyWatchConfig struct {
 	BufferSize int // number of tipsets to buffer from notifier service
 	Confidence int
 	Workers    int // number of indexing jobs that can run in parallel
+	Interval   int
 }
 
 type LilyWatchNotifyConfig struct {

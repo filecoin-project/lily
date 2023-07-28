@@ -26,11 +26,13 @@ type OptionType int
 const (
 	IndexTypeOpt OptionType = iota
 	TasksOpt
+	IntervalOpt
 )
 
 type (
 	indexTypeOption int
 	tasksTypeOption []string
+	intervalOption  int
 )
 
 // WithTasks returns and Option that specifies the tasks to be indexed.
@@ -80,10 +82,19 @@ func (o indexTypeOption) String() string     { return fmt.Sprintf("IndexerType(%
 func (o indexTypeOption) Type() OptionType   { return IndexTypeOpt }
 func (o indexTypeOption) Value() interface{} { return IndexerType(o) }
 
+func WithInterval(interval int) Option {
+	return intervalOption(interval)
+}
+
+func (o intervalOption) String() string     { return fmt.Sprintf("Interval: ", o) }
+func (o intervalOption) Type() OptionType   { return IntervalOpt }
+func (o intervalOption) Value() interface{} { return o }
+
 // IndexerOptions are used by implementations of the Indexer interface for configuration.
 type IndexerOptions struct {
 	IndexType IndexerType
 	Tasks     []string
+	Interval  int
 }
 
 // ConstructOptions returns an IndexerOptions struct that may be used to configured implementations of the Indexer interface.
@@ -101,6 +112,8 @@ func ConstructOptions(opts ...Option) (IndexerOptions, error) {
 			if len(res.Tasks) == 0 {
 				return IndexerOptions{}, fmt.Errorf("tasks options cannot be empty")
 			}
+		case intervalOption:
+			res.Interval = int(o)
 		default:
 		}
 	}

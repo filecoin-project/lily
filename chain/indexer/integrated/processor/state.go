@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/filecoin-project/go-state-types/abi"
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -166,7 +167,7 @@ type Result struct {
 // emits results of the state extraction closing when processing is completed. It is the responsibility of the processors
 // to abort if its context is canceled.
 // A list of all tasks executing is returned.
-func (sp *StateProcessor) State(ctx context.Context, current, executed *types.TipSet) (chan *Result, []string) {
+func (sp *StateProcessor) State(ctx context.Context, current, executed *types.TipSet, interval int) (chan *Result, []string) {
 	ctx, span := otel.Tracer("").Start(ctx, "StateProcessor.State")
 
 	num := len(sp.tipsetProcessors) + len(sp.actorProcessors) + len(sp.tipsetsProcessors) + len(sp.builtinProcessors) + len(sp.periodicStateDumpProcessors)
@@ -177,7 +178,7 @@ func (sp *StateProcessor) State(ctx context.Context, current, executed *types.Ti
 	taskNames = append(taskNames, sp.startTipSet(ctx, current, results)...)
 	taskNames = append(taskNames, sp.startTipSets(ctx, current, executed, results)...)
 	taskNames = append(taskNames, sp.startActor(ctx, current, executed, results)...)
-	taskNames = append(taskNames, sp.startHourlySnapshotDump(ctx, current, results)...)
+	taskNames = append(taskNames, sp.startPeriodicStateDump(ctx, current, interval, results)...)
 
 	go func() {
 		sp.pwg.Wait()
@@ -414,12 +415,13 @@ func (sp *StateProcessor) startActor(ctx context.Context, current, executed *typ
 	return taskNames
 }
 
-// startTipSets starts all TipSetsProcessor's in parallel, their results are emitted on the `results` channel.
+// startPeriodicStateDump starts all TipSetsProcessor's in parallel, their results are emitted on the `results` channel.
 // A list containing all executed task names is returned.
-func (sp *StateProcessor) startHourlySnapshotDump(ctx context.Context, current *types.TipSet, results chan *Result) []string {
+func (sp *StateProcessor) startPeriodicStateDump(ctx context.Context, current *types.TipSet, interval int, results chan *Result) []string {
 	start := time.Now()
 	var taskNames []string
-	if current.Height()%120 != 0 && false {
+
+	if current.Height()%abi.ChainEpoch(interval) != 0 && false {
 		logger := log.With("processor", "HourlySnapshotDump")
 		logger.Infow("Skip this epoch", current.Height())
 		return taskNames
