@@ -34,8 +34,8 @@ func NewTask(node tasks.DataSource) *Task {
 	}
 }
 
-func (p *Task) ProcessHourlySnapshotDump(ctx context.Context, current *types.TipSet, actors tasks.ActorStatesByType) (model.Persistable, *visormodel.ProcessingReport, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "ProcessHourlySnapshotDump")
+func (p *Task) ProcessPeriodicStateDump(ctx context.Context, current *types.TipSet, actors tasks.ActorStatesByType) (model.Persistable, *visormodel.ProcessingReport, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "ProcessPeriodicStateDump")
 	if span.IsRecording() {
 		span.SetAttributes(
 			attribute.String("current", current.String()),

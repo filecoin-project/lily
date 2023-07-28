@@ -85,11 +85,11 @@ type TipSetProcessor interface {
 	ProcessTipSet(ctx context.Context, current *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
 }
 
-type HourlySnapshotDumpProcessor interface {
+type PeriodicStateDumpProcessor interface {
 	// ProcessTipSet processes a tipset. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
 	// Implementations of this interface must abort processing when their context is canceled.
-	ProcessHourlySnapshotDump(ctx context.Context, current *types.TipSet, actors tasks.ActorStatesByType) (model.Persistable, *visormodel.ProcessingReport, error)
+	ProcessPeriodicStateDump(ctx context.Context, current *types.TipSet, actors tasks.ActorStatesByType) (model.Persistable, *visormodel.ProcessingReport, error)
 }
 
 type TipSetsProcessor interface {
@@ -124,22 +124,22 @@ func New(api tasks.DataSource, name string, taskNames []string) (*StateProcessor
 		return nil, err
 	}
 	return &StateProcessor{
-		builtinProcessors:            processors.ReportProcessors,
-		tipsetProcessors:             processors.TipsetProcessors,
-		tipsetsProcessors:            processors.TipsetsProcessors,
-		actorProcessors:              processors.ActorProcessors,
-		hourlySnapshotDumpProcessors: processors.HourlySnapshotDumpProcessors,
-		api:                          api,
-		name:                         name,
+		builtinProcessors:           processors.ReportProcessors,
+		tipsetProcessors:            processors.TipsetProcessors,
+		tipsetsProcessors:           processors.TipsetsProcessors,
+		actorProcessors:             processors.ActorProcessors,
+		periodicStateDumpProcessors: processors.PeriodicStateDumpProcessors,
+		api:                         api,
+		name:                        name,
 	}, nil
 }
 
 type StateProcessor struct {
-	builtinProcessors            map[string]ReportProcessor
-	tipsetProcessors             map[string]TipSetProcessor
-	tipsetsProcessors            map[string]TipSetsProcessor
-	actorProcessors              map[string]ActorProcessor
-	hourlySnapshotDumpProcessors map[string]HourlySnapshotDumpProcessor
+	builtinProcessors           map[string]ReportProcessor
+	tipsetProcessors            map[string]TipSetProcessor
+	tipsetsProcessors           map[string]TipSetsProcessor
+	actorProcessors             map[string]ActorProcessor
+	periodicStateDumpProcessors map[string]PeriodicStateDumpProcessor
 
 	// api used by tasks
 	api tasks.DataSource
@@ -169,7 +169,7 @@ type Result struct {
 func (sp *StateProcessor) State(ctx context.Context, current, executed *types.TipSet) (chan *Result, []string) {
 	ctx, span := otel.Tracer("").Start(ctx, "StateProcessor.State")
 
-	num := len(sp.tipsetProcessors) + len(sp.actorProcessors) + len(sp.tipsetsProcessors) + len(sp.builtinProcessors) + len(sp.hourlySnapshotDumpProcessors)
+	num := len(sp.tipsetProcessors) + len(sp.actorProcessors) + len(sp.tipsetsProcessors) + len(sp.builtinProcessors) + len(sp.periodicStateDumpProcessors)
 	results := make(chan *Result, num)
 	taskNames := make([]string, 0, num)
 
@@ -441,7 +441,7 @@ func (sp *StateProcessor) startHourlySnapshotDump(ctx context.Context, current *
 		}
 	}
 
-	for taskName, proc := range sp.hourlySnapshotDumpProcessors {
+	for taskName, proc := range sp.periodicStateDumpProcessors {
 		name := taskName
 		p := proc
 		taskNames = append(taskNames, name)
@@ -460,7 +460,7 @@ func (sp *StateProcessor) startHourlySnapshotDump(ctx context.Context, current *
 				sp.pwg.Done()
 			}()
 
-			data, report, err := p.ProcessHourlySnapshotDump(ctx, current, actors)
+			data, report, err := p.ProcessPeriodicStateDump(ctx, current, actors)
 			if err != nil {
 				stats.Record(ctx, metrics.ProcessingFailure.M(1))
 				results <- &Result{
@@ -485,20 +485,20 @@ func (sp *StateProcessor) startHourlySnapshotDump(ctx context.Context, current *
 }
 
 type IndexerProcessors struct {
-	TipsetProcessors             map[string]TipSetProcessor
-	TipsetsProcessors            map[string]TipSetsProcessor
-	ActorProcessors              map[string]ActorProcessor
-	ReportProcessors             map[string]ReportProcessor
-	HourlySnapshotDumpProcessors map[string]HourlySnapshotDumpProcessor
+	TipsetProcessors            map[string]TipSetProcessor
+	TipsetsProcessors           map[string]TipSetsProcessor
+	ActorProcessors             map[string]ActorProcessor
+	ReportProcessors            map[string]ReportProcessor
+	PeriodicStateDumpProcessors map[string]PeriodicStateDumpProcessor
 }
 
 func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProcessors, error) {
 	out := &IndexerProcessors{
-		TipsetProcessors:             make(map[string]TipSetProcessor),
-		TipsetsProcessors:            make(map[string]TipSetsProcessor),
-		ActorProcessors:              make(map[string]ActorProcessor),
-		ReportProcessors:             make(map[string]ReportProcessor),
-		HourlySnapshotDumpProcessors: make(map[string]HourlySnapshotDumpProcessor),
+		TipsetProcessors:            make(map[string]TipSetProcessor),
+		TipsetsProcessors:           make(map[string]TipSetsProcessor),
+		ActorProcessors:             make(map[string]ActorProcessor),
+		ReportProcessors:            make(map[string]ReportProcessor),
+		PeriodicStateDumpProcessors: make(map[string]PeriodicStateDumpProcessor),
 	}
 	for _, t := range indexerTasks {
 		switch t {
@@ -780,7 +780,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			//
 
 		case tasktype.FEVMActorSnapshot:
-			out.HourlySnapshotDumpProcessors[t] = snapshotfevmactortask.NewTask(api)
+			out.PeriodicStateDumpProcessors[t] = snapshotfevmactortask.NewTask(api)
 
 		case BuiltinTaskName:
 			out.ReportProcessors[t] = indexertask.NewTask(api)
