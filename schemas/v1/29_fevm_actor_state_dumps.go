@@ -2,7 +2,7 @@ package v1
 
 func init() {
 	patches.Register(
-		29,
+		30,
 		`
 	CREATE TABLE IF NOT EXISTS {{ .SchemaName | default "public"}}.fevm_actor_state_dumps  (
 	    height               BIGINT NOT NULL,
