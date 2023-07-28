@@ -15,11 +15,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/filecoin-project/lily/model"
-	"github.com/filecoin-project/lily/model/snapshots"
+	"github.com/filecoin-project/lily/model/statedumps"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
-
-	"github.com/filecoin-project/lily/lens/util"
 )
 
 var log = logging.Logger("lily/tasks/fevmactorstatedump")
@@ -50,16 +48,12 @@ func (p *Task) ProcessPeriodicStateDump(ctx context.Context, current *types.TipS
 		StateRoot: current.ParentState().String(),
 	}
 
-	log.Errorf("Size of Actors: %v", len(actors[manifest.EvmKey]))
+	log.Infof("Size of EVM Actors: %v", len(actors[manifest.EvmKey]))
 
-	out := make(snapshots.FEVMActorStateDumpList, 0)
+	out := make(statedumps.FEVMActorStateDumpList, 0)
 	errs := []error{}
 	for _, actor := range actors[manifest.EvmKey] {
 		if actor.Address == nil {
-			continue
-		}
-
-		if !util.IsEVMAddress(ctx, p.node, *actor.Address, current.Key()) {
 			continue
 		}
 
@@ -91,13 +85,14 @@ func (p *Task) ProcessPeriodicStateDump(ctx context.Context, current *types.TipS
 			continue
 		}
 
-		out = append(out, &snapshots.FEVMAcotrSnapshot{
+		out = append(out, &statedumps.FEVMAcotrStateDump{
 			Height:       int64(current.Height()),
 			ActorID:      actor.Address.String(),
 			EthAddress:   ethAddress.String(),
 			ByteCode:     hex.EncodeToString(byteCode),
 			ByteCodeHash: hex.EncodeToString(byteCodeHash[:]),
 			Balance:      actor.Balance.String(),
+			Nonce:        actor.Nonce,
 		})
 
 	}

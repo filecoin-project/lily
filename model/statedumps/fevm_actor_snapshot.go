@@ -1,4 +1,4 @@
-package snapshots
+package statedumps
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/filecoin-project/lily/model"
 )
 
-type FEVMAcotrSnapshot struct {
+type FEVMAcotrStateDump struct {
 	tableName struct{} `pg:"fevm_actor_state_dumps"` // nolint: structcheck
 
 	// Height message was executed at.
@@ -28,13 +28,13 @@ type FEVMAcotrSnapshot struct {
 	Nonce uint64 `pg:",use_zero"`
 }
 
-func (f *FEVMAcotrSnapshot) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f *FEVMAcotrStateDump) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_actor_state_dumps"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, f)
 }
 
-type FEVMActorStateDumpList []*FEVMAcotrSnapshot
+type FEVMActorStateDumpList []*FEVMAcotrStateDump
 
 func (f FEVMActorStateDumpList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(f) == 0 {

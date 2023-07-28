@@ -421,8 +421,8 @@ func (sp *StateProcessor) startPeriodicStateDump(ctx context.Context, current *t
 	start := time.Now()
 	var taskNames []string
 
-	if interval > 0 && current.Height()%abi.ChainEpoch(interval) != 0 && false {
-		logger := log.With("processor", "HourlySnapshotDump")
+	if interval > 0 && current.Height()%abi.ChainEpoch(interval) != 0 {
+		logger := log.With("processor", "PeriodicStateDump")
 		logger.Infow("Skip this epoch", current.Height())
 		return taskNames
 	}
@@ -435,7 +435,6 @@ func (sp *StateProcessor) startPeriodicStateDump(ctx context.Context, current *t
 		if err != nil {
 			continue
 		}
-
 		if builtin.IsEvmActor(actor.Code) {
 			actors[manifest.EvmKey] = append(actors[manifest.EvmKey], actor)
 		} else if builtin.IsStorageMinerActor(actor.Code) {
@@ -456,7 +455,7 @@ func (sp *StateProcessor) startPeriodicStateDump(ctx context.Context, current *t
 			defer stop()
 
 			pl := log.With("task", name, "height", current.Height(), "reporter", sp.name)
-			pl.Infow("HourlySnapshotDump processor started")
+			pl.Infow("PeriodicStateDump processor started")
 			defer func() {
 				pl.Infow("processor ended", "duration", time.Since(start))
 				sp.pwg.Done()
