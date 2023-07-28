@@ -1,4 +1,4 @@
-package fevmactorsnapshot
+package fevmactorstatedump
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 	"github.com/filecoin-project/lily/lens/util"
 )
 
-var log = logging.Logger("lily/tasks/fevmactorsnapshot")
+var log = logging.Logger("lily/tasks/fevmactorstatedump")
 
 type Task struct {
 	node tasks.DataSource
@@ -40,7 +40,7 @@ func (p *Task) ProcessPeriodicStateDump(ctx context.Context, current *types.TipS
 		span.SetAttributes(
 			attribute.String("current", current.String()),
 			attribute.Int64("current_height", int64(current.Height())),
-			attribute.String("processor", "fevm_actor_snapshot"),
+			attribute.String("processor", "fevm_actor_state_dump"),
 		)
 	}
 	defer span.End()
@@ -52,7 +52,7 @@ func (p *Task) ProcessPeriodicStateDump(ctx context.Context, current *types.TipS
 
 	log.Errorf("Size of Actors: %v", len(actors[manifest.EvmKey]))
 
-	out := make(snapshots.FEVMActorSnapshotList, 0)
+	out := make(snapshots.FEVMActorStateDumpList, 0)
 	errs := []error{}
 	for _, actor := range actors[manifest.EvmKey] {
 		if actor.Address == nil {

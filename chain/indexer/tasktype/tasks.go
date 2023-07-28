@@ -102,7 +102,7 @@ var TaskLookup = map[string][]string{
 		FEVMTrace,
 	},
 	Snapshot: {
-		FEVMActorSnapshot,
+		FEVMActorStateDump,
 	},
 }
 

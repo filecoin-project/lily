@@ -68,7 +68,7 @@ import (
 	fevmactorstatstask "github.com/filecoin-project/lily/tasks/fevmactorstats"
 
 	// snapshot
-	snapshotfevmactortask "github.com/filecoin-project/lily/tasks/hourly_snapshot/fevm_actor"
+	statedumpfevmactortask "github.com/filecoin-project/lily/tasks/periodic_state_dump/fevm_actor"
 
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/metrics"
@@ -779,8 +779,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			// Hourly Snapshot
 			//
 
-		case tasktype.FEVMActorSnapshot:
-			out.PeriodicStateDumpProcessors[t] = snapshotfevmactortask.NewTask(api)
+		case tasktype.FEVMActorStateDump:
+			out.PeriodicStateDumpProcessors[t] = statedumpfevmactortask.NewTask(api)
 
 		case BuiltinTaskName:
 			out.ReportProcessors[t] = indexertask.NewTask(api)

@@ -10,7 +10,7 @@ import (
 )
 
 type FEVMAcotrSnapshot struct {
-	tableName struct{} `pg:"fevm_actor_snapshots"` // nolint: structcheck
+	tableName struct{} `pg:"fevm_actor_state_dumps"` // nolint: structcheck
 
 	// Height message was executed at.
 	Height int64 `pg:",pk,notnull,use_zero"`
@@ -29,18 +29,18 @@ type FEVMAcotrSnapshot struct {
 }
 
 func (f *FEVMAcotrSnapshot) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_actor_snapshots"))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_actor_state_dumps"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, f)
 }
 
-type FEVMActorSnapshotList []*FEVMAcotrSnapshot
+type FEVMActorStateDumpList []*FEVMAcotrSnapshot
 
-func (f FEVMActorSnapshotList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f FEVMActorStateDumpList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(f) == 0 {
 		return nil
 	}
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_actor_snapshots"))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_actor_state_dumps"))
 	metrics.RecordCount(ctx, metrics.PersistModel, len(f))
 	return s.PersistModel(ctx, f)
 }
