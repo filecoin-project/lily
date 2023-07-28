@@ -421,7 +421,7 @@ func (sp *StateProcessor) startPeriodicStateDump(ctx context.Context, current *t
 	start := time.Now()
 	var taskNames []string
 
-	if current.Height()%abi.ChainEpoch(interval) != 0 && false {
+	if interval > 0 && current.Height()%abi.ChainEpoch(interval) != 0 && false {
 		logger := log.With("processor", "HourlySnapshotDump")
 		logger.Infow("Skip this epoch", current.Height())
 		return taskNames

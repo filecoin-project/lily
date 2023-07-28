@@ -86,7 +86,7 @@ func WithInterval(interval int) Option {
 	return intervalOption(interval)
 }
 
-func (o intervalOption) String() string     { return fmt.Sprintf("Interval: ", o) }
+func (o intervalOption) String() string     { return fmt.Sprintf("Interval: %d", o) }
 func (o intervalOption) Type() OptionType   { return IntervalOpt }
 func (o intervalOption) Value() interface{} { return o }
 
