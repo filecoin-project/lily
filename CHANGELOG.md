@@ -5,6 +5,65 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.17.0"></a>
+## [v0.17.0] - 2023-8-1
+
+## DATABASE MIGRATION
+This release includes a migration which must be applied before deploying against an existing database.
+* [1.22](https://github.com/filecoin-project/lily/blob/master/schemas/v1/22_fevm_block_header.go)
+* [1.23](https://github.com/filecoin-project/lily/blob/master/schemas/v1/23_fevm_receipt.go)
+* [1.24](https://github.com/filecoin-project/lily/blob/master/schemas/v1/24_fevm_transaction.go)
+* [1.25](https://github.com/filecoin-project/lily/blob/master/schemas/v1/25_fevm_contract.go)
+* [1.26](https://github.com/filecoin-project/lily/blob/master/schemas/v1/26_fevm_rename_table.go)
+* [1.27](https://github.com/filecoin-project/lily/blob/master/schemas/v1/27_fevm_traces.go)
+* [1.28](https://github.com/filecoin-project/lily/blob/master/schemas/v1/28_add_actor_names_to_fevm_traces.go)
+* [1.29](https://github.com/filecoin-project/lily/blob/master/schemas/v1/29_add_parsed_return_to_receipt_returns.go)
+
+### Feat
+* feat: add new task: fevm_block_header (https://github.com/filecoin-project/lily/pull/1207)
+  * requires migration [1.22](https://github.com/filecoin-project/lily/blob/master/schemas/v1/22_fevm_block_header.go)
+* feat: add new task for fevm receipt (https://github.com/filecoin-project/lily/pull/1208)
+  * requires migration [1.23](https://github.com/filecoin-project/lily/blob/master/schemas/v1/23_fevm_receipt.go)
+* feat: add new option for walk config (https://github.com/filecoin-project/lily/pull/1212)
+* feat: add new task: fevm_transaction (https://github.com/filecoin-project/lily/pull/1213)
+  * requires migration [1.24](https://github.com/filecoin-project/lily/blob/master/schemas/v1/24_fevm_transaction.go)
+* feat: add new task fevm contract (https://github.com/filecoin-project/lily/pull/1214)
+  * requires migration [1.25](https://github.com/filecoin-project/lily/blob/master/schemas/v1/25_fevm_contract.go)
+* feat: add new task for fevm trace (https://github.com/filecoin-project/lily/pull/1217)
+  * requires migration [1.27](https://github.com/filecoin-project/lily/blob/master/schemas/v1/27_fevm_traces.go)
+* feat: add more description for fevm models (https://github.com/filecoin-project/lily/pull/1231)
+* feat: change the logging condition for parsing internal message (https://github.com/filecoin-project/lily/pull/1243)
+* feat: add human readable actor codes in fevm_traces (https://github.com/filecoin-project/lily/pull/1240)
+  * requires migration [1.28](https://github.com/filecoin-project/lily/blob/master/schemas/v1/28_add_actor_names_to_fevm_traces.go)
+* feat: change the splitstore setting in config and replace returning error with  logging error in parsing vm_message ( https://github.com/filecoin-project/lily/pull/1246)
+* feat: add new columns for receipts table (https://github.com/filecoin-project/lily/pull/1248)
+  * requires migration [1.29](https://github.com/filecoin-project/lily/blob/master/schemas/v1/29_add_parsed_return_to_receipt_returns.go)
+  
+### Fix
+* fix: CodeCID should be at end of model (https://github.com/filecoin-project/lily/pull/1205)
+* fix: batch insert for locked_funds, sector_events and sector_info_v7 (https://github.com/filecoin-project/lily/pull/1216)
+* fix: batch insert miner_pre_commit_info (https://github.com/filecoin-project/lily/pull/1220)
+* fix: run more backfill tipsetkey during import chain (https://github.com/filecoin-project/lily/pull/1222)
+* fix: keep running the whole tipset task without cancel (https://github.com/filecoin-project/lily/pull/1219)
+* fix: rename the fevm related table (https://github.com/filecoin-project/lily/pull/1218)
+  * requires migration [1.26](https://github.com/filecoin-project/lily/blob/master/schemas/v1/26_fevm_rename_table.go)
+* fix: align the task height (https://github.com/filecoin-project/lily/pull/1225)
+* fix: logic error and remove useless function call (https://github.com/filecoin-project/lily/pull/1227)
+* fix: fix the logic and data type in fevm tasks (https://github.com/filecoin-project/lily/pull/1232)
+* fix: refine error handling for skipping actor limit (https://github.com/filecoin-project/lily/pull/1237)
+* fix: var names for chain commands (https://github.com/filecoin-project/lily/pull/1236)
+* fix: resize error channel (https://github.com/filecoin-project/lily/pull/1238)
+* fix: add Transform implementation for PreCommitInfoExtractorV8 (https://github.com/filecoin-project/lily/pull/1242)
+
+### Chore
+* chore: batch insert miner_sector_deal (https://github.com/filecoin-project/lily/pull/1221)
+* chore: add fevm supported tasks and refine the migration script (https://github.com/filecoin-project/lily/pull/1228)
+* chore(deps): bump actions/checkout from 2 to 3 (https://github.com/filecoin-project/lily/pull/1230)
+* chore(deps): bump github/codeql-action from 1 to 2 (https://github.com/filecoin-project/lily/pull/1229)
+* chore: do not require mac users to preset env vars (https://github.com/filecoin-project/lily/pull/1239)
+* chore: update the lotus version to 1.23.2 (https://github.com/filecoin-project/lily/pull/1241)
+
+
 <a name="v0.16.0"></a>
 ## [v0.16.0] - 2023-5-15
 
@@ -23,7 +82,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 * chore: move persist duration timer to ExportResult (https://github.com/filecoin-project/lily/pull/1197)
 * chore: update go-amt-ipld (https://github.com/filecoin-project/lily/pull/1199)
 * chore: update go-hamt-ipld (https://github.com/filecoin-project/lily/pull/1200)
-
+  
 <a name="v0.15.1"></a>
 ## [v0.15.1] - 2023-4-25
 
