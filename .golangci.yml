@@ -42,6 +42,10 @@ issues:
         - misspell
 
 linters-settings:
+  revive:
+    rules:
+      - name: unused-parameter
+        disable: true
   goconst:
     min-occurrences: 6
   misspell:
