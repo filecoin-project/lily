@@ -10,7 +10,7 @@ import (
 )
 
 type ActorEvent struct {
-	tableName struct{} `pg:"actor_events"`
+	tableName struct{} `pg:"actor_events"` // nolint: structcheck
 
 	Height     int64  `pg:",pk,notnull,use_zero"`
 	StateRoot  string `pg:",pk,notnull"`

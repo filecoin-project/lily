@@ -30,7 +30,7 @@ var WaitAPICmd = &cli.Command{
 		}
 
 		for {
-			err := checkAPI(ctx, ClientAPIFlags.APIAddr, ClientAPIFlags.APIToken)
+			err := checkAPI(ctx, ClientAPIFlags.APIToken)
 			if err == nil {
 				return nil
 			}
@@ -47,7 +47,7 @@ var WaitAPICmd = &cli.Command{
 	},
 }
 
-func checkAPI(ctx context.Context, addrStr string, token string) error {
+func checkAPI(ctx context.Context, token string) error {
 	lapi, closer, err := GetAPI(ctx)
 	if err != nil {
 		return err
