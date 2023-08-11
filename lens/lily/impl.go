@@ -331,7 +331,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,
-		Job:                 walk.NewWalker(idx, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To, reporter, cfg.JobConfig.StopOnError),
+		Job:                 walk.NewWalker(idx, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To, reporter, cfg.JobConfig.StopOnError, cfg.Interval),
 		Reporter:            reporter,
 	}
 
@@ -359,7 +359,7 @@ func (m *LilyNodeAPI) LilyWalkNotify(_ context.Context, cfg *LilyWalkNotifyConfi
 		RestartOnFailure:    cfg.WalkConfig.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.WalkConfig.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.WalkConfig.JobConfig.RestartDelay,
-		Job:                 walk.NewWalker(idx, m, cfg.WalkConfig.JobConfig.Name, cfg.WalkConfig.JobConfig.Tasks, cfg.WalkConfig.From, cfg.WalkConfig.To, reporter, cfg.WalkConfig.JobConfig.StopOnError),
+		Job:                 walk.NewWalker(idx, m, cfg.WalkConfig.JobConfig.Name, cfg.WalkConfig.JobConfig.Tasks, cfg.WalkConfig.From, cfg.WalkConfig.To, reporter, cfg.WalkConfig.JobConfig.StopOnError, cfg.WalkConfig.Interval),
 		Reporter:            reporter,
 	}
 	res := m.Scheduler.Submit(jobConfig)

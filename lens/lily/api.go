@@ -125,8 +125,9 @@ type LilyWatchNotifyConfig struct {
 type LilyWalkConfig struct {
 	JobConfig LilyJobConfig
 
-	From int64
-	To   int64
+	From     int64
+	To       int64
+	Interval int
 }
 
 type LilyWalkNotifyConfig struct {

@@ -17,7 +17,7 @@ import (
 
 var log = logging.Logger("lily/chain/walk")
 
-func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, minHeight, maxHeight int64, r *schedule.Reporter, stopOnError bool) *Walker {
+func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, minHeight, maxHeight int64, r *schedule.Reporter, stopOnError bool, interval int) *Walker {
 	return &Walker{
 		node:        node,
 		obs:         obs,
@@ -27,6 +27,7 @@ func NewWalker(obs indexer.Indexer, node lens.API, name string, tasks []string, 
 		maxHeight:   maxHeight,
 		report:      r,
 		stopOnError: stopOnError,
+		interval:    interval,
 	}
 }
 
@@ -41,6 +42,7 @@ type Walker struct {
 	done        chan struct{}
 	report      *schedule.Reporter
 	stopOnError bool
+	interval    int
 }
 
 // Run starts walking the chain history and continues until the context is done or
@@ -103,7 +105,7 @@ func (c *Walker) WalkChain(ctx context.Context, node lens.API, ts *types.TipSet)
 		}
 		log.Infow("walk tipset", "height", ts.Height(), "reporter", c.name)
 		c.report.UpdateCurrentHeight(int64(ts.Height()))
-		if success, err := c.obs.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Walk), indexer.WithTasks(c.tasks)); err != nil {
+		if success, err := c.obs.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Walk), indexer.WithTasks(c.tasks), indexer.WithInterval(c.interval)); err != nil {
 			span.RecordError(err)
 			err := fmt.Errorf("index tipset, height: %v, error: %v", ts.Height().String(), err)
 			log.Errorf("%v", err)
