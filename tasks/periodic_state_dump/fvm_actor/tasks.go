@@ -1,4 +1,4 @@
-package fevmactorstatedump
+package fvmactorstatedump
 
 import (
 	"context"
@@ -14,13 +14,14 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/statedumps"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
 )
 
-var log = logging.Logger("lily/tasks/fevmactorstatedump")
+var log = logging.Logger("lily/tasks/fvmactorstatedump")
 
 type Task struct {
 	node tasks.DataSource
@@ -48,9 +49,9 @@ func (p *Task) ProcessPeriodicStateDump(ctx context.Context, current *types.TipS
 		StateRoot: current.ParentState().String(),
 	}
 
-	log.Infof("Size of EVM Actors: %v", len(actors[manifest.EvmKey]))
+	log.Infof("Size of FVM related Actors: %v", len(actors[manifest.EvmKey])+len(actors[manifest.EthAccountKey])+len(actors[manifest.PlaceholderKey]))
 
-	out := make(statedumps.FEVMActorStateDumpList, 0)
+	out := make(statedumps.FVMActorStateDumpList, 0)
 	errs := []error{}
 	for _, actor := range actors[manifest.EvmKey] {
 		if actor.Address == nil {
@@ -84,10 +85,10 @@ func (p *Task) ProcessPeriodicStateDump(ctx context.Context, current *types.TipS
 			errs = append(errs, err)
 			continue
 		}
-
-		out = append(out, &statedumps.FEVMAcotrStateDump{
+		out = append(out, &statedumps.FVMActorStateDump{
 			Height:       int64(current.Height()),
 			ActorID:      actor.Address.String(),
+			ActorName:    builtin.ActorNameByCode(actor.Code),
 			EthAddress:   ethAddress.String(),
 			ByteCode:     hex.EncodeToString(byteCode),
 			ByteCodeHash: hex.EncodeToString(byteCodeHash[:]),
@@ -95,6 +96,16 @@ func (p *Task) ProcessPeriodicStateDump(ctx context.Context, current *types.TipS
 			Nonce:        actor.Nonce,
 		})
 
+	}
+
+	for _, actor := range append(actors[manifest.EthAccountKey], actors[manifest.PlaceholderKey]...) {
+		out = append(out, &statedumps.FVMActorStateDump{
+			Height:    int64(current.Height()),
+			ActorID:   actor.Address.String(),
+			ActorName: builtin.ActorNameByCode(actor.Code),
+			Balance:   actor.Balance.String(),
+			Nonce:     actor.Nonce,
+		})
 	}
 
 	if len(errs) > 0 {

@@ -9,8 +9,8 @@ import (
 	"github.com/filecoin-project/lily/model"
 )
 
-type FEVMAcotrStateDump struct {
-	tableName struct{} `pg:"fevm_actor_state_dumps"` // nolint: structcheck
+type FVMActorStateDump struct {
+	tableName struct{} `pg:"fvm_actor_state_dumps"` // nolint: structcheck
 
 	// Height message was executed at.
 	Height int64 `pg:",pk,notnull,use_zero"`
@@ -26,21 +26,23 @@ type FEVMAcotrStateDump struct {
 	Balance string `pg:"type:numeric,notnull"`
 	// The next actor nonce that is expected to appear on chain.
 	Nonce uint64 `pg:",use_zero"`
+	// Actor Name
+	ActorName string `pg:",notnull"`
 }
 
-func (f *FEVMAcotrStateDump) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_actor_state_dumps"))
+func (f *FVMActorStateDump) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fvm_actor_state_dumps"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, f)
 }
 
-type FEVMActorStateDumpList []*FEVMAcotrStateDump
+type FVMActorStateDumpList []*FVMActorStateDump
 
-func (f FEVMActorStateDumpList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f FVMActorStateDumpList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	if len(f) == 0 {
 		return nil
 	}
-	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_actor_state_dumps"))
+	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fvm_actor_state_dumps"))
 	metrics.RecordCount(ctx, metrics.PersistModel, len(f))
 	return s.PersistModel(ctx, f)
 }

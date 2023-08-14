@@ -13,7 +13,7 @@ import (
 )
 
 type walkOps struct {
-	interval int
+	interval int `zap:"interval"`
 }
 
 var walkFlags walkOps

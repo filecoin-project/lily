@@ -69,7 +69,7 @@ import (
 	fevmactorstatstask "github.com/filecoin-project/lily/tasks/fevmactorstats"
 
 	// snapshot
-	statedumpfevmactortask "github.com/filecoin-project/lily/tasks/periodic_state_dump/fevm_actor"
+	statedumpfvmactortask "github.com/filecoin-project/lily/tasks/periodic_state_dump/fvm_actor"
 
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/metrics"
@@ -435,10 +435,14 @@ func (sp *StateProcessor) startPeriodicStateDump(ctx context.Context, current *t
 		if err != nil {
 			continue
 		}
+
+		// EVM Actor
 		if builtin.IsEvmActor(actor.Code) {
 			actors[manifest.EvmKey] = append(actors[manifest.EvmKey], actor)
-		} else if builtin.IsStorageMinerActor(actor.Code) {
-			actors[manifest.MinerKey] = append(actors[manifest.MinerKey], actor)
+		} else if builtin.IsEthAccountActor(actor.Code) {
+			actors[manifest.EthAccountKey] = append(actors[manifest.EthAccountKey], actor)
+		} else if builtin.IsPlaceholderActor(actor.Code) {
+			actors[manifest.PlaceholderKey] = append(actors[manifest.PlaceholderKey], actor)
 		}
 	}
 
@@ -780,8 +784,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			// Hourly Snapshot
 			//
 
-		case tasktype.FEVMActorStateDump:
-			out.PeriodicStateDumpProcessors[t] = statedumpfevmactortask.NewTask(api)
+		case tasktype.FVMActorStateDump:
+			out.PeriodicStateDumpProcessors[t] = statedumpfvmactortask.NewTask(api)
 
 		case BuiltinTaskName:
 			out.ReportProcessors[t] = indexertask.NewTask(api)
