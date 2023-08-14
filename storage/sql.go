@@ -101,7 +101,7 @@ var Models = []interface{}{
 	(*fevm.FEVMTransaction)(nil),
 	(*fevm.FEVMContract)(nil),
 	(*fevm.FEVMTrace)(nil),
-	(*statedumps.FVMActorStateDump)(nil),
+	(*statedumps.FVMActorDump)(nil),
 }
 
 var log = logging.Logger("lily/storage")

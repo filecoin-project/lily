@@ -1,4 +1,4 @@
-package fvmactorstatedump
+package fvmactordump
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"github.com/filecoin-project/lily/tasks"
 )
 
-var log = logging.Logger("lily/tasks/fvmactorstatedump")
+var log = logging.Logger("lily/tasks/fvmactordump")
 
 type Task struct {
 	node tasks.DataSource
@@ -51,7 +51,7 @@ func (p *Task) ProcessPeriodicStateDump(ctx context.Context, current *types.TipS
 
 	log.Infof("Size of FVM related Actors: %v", len(actors[manifest.EvmKey])+len(actors[manifest.EthAccountKey])+len(actors[manifest.PlaceholderKey]))
 
-	out := make(statedumps.FVMActorStateDumpList, 0)
+	out := make(statedumps.FVMActorDumpList, 0)
 	errs := []error{}
 	for _, actor := range actors[manifest.EvmKey] {
 		if actor.Address == nil {
@@ -85,7 +85,7 @@ func (p *Task) ProcessPeriodicStateDump(ctx context.Context, current *types.TipS
 			errs = append(errs, err)
 			continue
 		}
-		out = append(out, &statedumps.FVMActorStateDump{
+		out = append(out, &statedumps.FVMActorDump{
 			Height:       int64(current.Height()),
 			ActorID:      actor.Address.String(),
 			ActorName:    builtin.ActorNameByCode(actor.Code),
@@ -99,7 +99,7 @@ func (p *Task) ProcessPeriodicStateDump(ctx context.Context, current *types.TipS
 	}
 
 	for _, actor := range append(actors[manifest.EthAccountKey], actors[manifest.PlaceholderKey]...) {
-		out = append(out, &statedumps.FVMActorStateDump{
+		out = append(out, &statedumps.FVMActorDump{
 			Height:    int64(current.Height()),
 			ActorID:   actor.Address.String(),
 			ActorName: builtin.ActorNameByCode(actor.Code),
