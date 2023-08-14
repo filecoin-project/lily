@@ -12,6 +12,7 @@ func init() {
 		byte_code_hash       TEXT,
 		balance              NUMERIC,
 		nonce                BIGINT,
+		actor_name           TEXT,
 		PRIMARY KEY(height, actor_id, nonce)
 	);
 	CREATE INDEX fvm_actor_state_dumps_actor_id_idx ON {{ .SchemaName | default "public"}}.fvm_actor_state_dumps USING hash (actor_id);
