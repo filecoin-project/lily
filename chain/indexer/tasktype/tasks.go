@@ -102,7 +102,7 @@ var TaskLookup = map[string][]string{
 		FEVMTrace,
 	},
 	ActorDump: {
-		FVMActorDump,
+		FEVMActorDump,
 	},
 }
 

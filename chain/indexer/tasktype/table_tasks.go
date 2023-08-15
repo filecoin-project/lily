@@ -53,7 +53,7 @@ const (
 	FEVMTrace                      = "fevm_trace"
 
 	// New task types
-	FVMActorDump = "fvm_actor_dump"
+	FEVMActorDump = "fevm_actor_dump"
 )
 
 var AllTableTasks = []string{
@@ -106,7 +106,7 @@ var AllTableTasks = []string{
 	FEVMTransaction,
 	FEVMContract,
 	FEVMTrace,
-	FVMActorDump,
+	FEVMActorDump,
 }
 
 var TableLookup = map[string]struct{}{
@@ -159,7 +159,7 @@ var TableLookup = map[string]struct{}{
 	FEVMTransaction:                {},
 	FEVMContract:                   {},
 	FEVMTrace:                      {},
-	FVMActorDump:              {},
+	FEVMActorDump:                  {},
 }
 
 var TableComment = map[string]string{
@@ -212,7 +212,7 @@ var TableComment = map[string]string{
 	FEVMTransaction:                ``,
 	FEVMContract:                   ``,
 	FEVMTrace:                      ``,
-	FVMActorDump:              ``,
+	FEVMActorDump:                  ``,
 }
 
 var TableFieldComments = map[string]map[string]string{
@@ -322,5 +322,5 @@ var TableFieldComments = map[string]map[string]string{
 	FEVMTransaction:                {},
 	FEVMContract:                   {},
 	FEVMTrace:                      {},
-	FVMActorDump:              {},
+	FEVMActorDump:                  {},
 }

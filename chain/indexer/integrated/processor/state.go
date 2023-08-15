@@ -69,7 +69,7 @@ import (
 	fevmactorstatstask "github.com/filecoin-project/lily/tasks/fevmactorstats"
 
 	// actor dump
-	fvmactordumptask "github.com/filecoin-project/lily/tasks/periodic_actor_dump/fvm_actor"
+	fevmactordumptask "github.com/filecoin-project/lily/tasks/periodic_actor_dump/fevm_actor"
 
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/metrics"
@@ -783,8 +783,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			//
 			// Dump
 			//
-		case tasktype.FVMActorDump:
-			out.PeriodicStateDumpProcessors[t] = fvmactordumptask.NewTask(api)
+		case tasktype.FEVMActorDump:
+			out.PeriodicStateDumpProcessors[t] = fevmactordumptask.NewTask(api)
 
 		case BuiltinTaskName:
 			out.ReportProcessors[t] = indexertask.NewTask(api)

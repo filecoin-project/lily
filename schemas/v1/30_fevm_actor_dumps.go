@@ -4,7 +4,7 @@ func init() {
 	patches.Register(
 		30,
 		`
-	CREATE TABLE IF NOT EXISTS {{ .SchemaName | default "public"}}.fvm_actor_dumps  (
+	CREATE TABLE IF NOT EXISTS {{ .SchemaName | default "public"}}.fevm_actor_dumps  (
 	    height               BIGINT NOT NULL,
 		actor_id             TEXT,
 		eth_address          TEXT,
@@ -15,8 +15,8 @@ func init() {
 		actor_name           TEXT,
 		PRIMARY KEY(height, actor_id, nonce)
 	);
-	CREATE INDEX fvm_actor_dumps_actor_id_idx ON {{ .SchemaName | default "public"}}.fvm_actor_dumps USING hash (actor_id);
-	CREATE INDEX fvm_actor_dumps_eth_address_idx ON {{ .SchemaName | default "public"}}.fvm_actor_dumps USING hash (eth_address);
+	CREATE INDEX fevm_actor_dumps_actor_id_idx ON {{ .SchemaName | default "public"}}.fevm_actor_dumps USING hash (actor_id);
+	CREATE INDEX fevm_actor_dumps_eth_address_idx ON {{ .SchemaName | default "public"}}.fevm_actor_dumps USING hash (eth_address);
 `,
 	)
 }
