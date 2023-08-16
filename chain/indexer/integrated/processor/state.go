@@ -86,11 +86,11 @@ type TipSetProcessor interface {
 	ProcessTipSet(ctx context.Context, current *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
 }
 
-type PeriodicStateDumpProcessor interface {
+type PeriodicActorDumpProcessor interface {
 	// ProcessTipSet processes a tipset. If error is non-nil then the processor encountered a fatal error.
 	// Any data returned must be accompanied by a processing report.
 	// Implementations of this interface must abort processing when their context is canceled.
-	ProcessPeriodicStateDump(ctx context.Context, current *types.TipSet, actors tasks.ActorStatesByType) (model.Persistable, *visormodel.ProcessingReport, error)
+	ProcessPeriodicActorDump(ctx context.Context, current *types.TipSet, actors tasks.ActorStatesByType) (model.Persistable, *visormodel.ProcessingReport, error)
 }
 
 type TipSetsProcessor interface {
@@ -129,7 +129,7 @@ func New(api tasks.DataSource, name string, taskNames []string) (*StateProcessor
 		tipsetProcessors:            processors.TipsetProcessors,
 		tipsetsProcessors:           processors.TipsetsProcessors,
 		actorProcessors:             processors.ActorProcessors,
-		periodicStateDumpProcessors: processors.PeriodicStateDumpProcessors,
+		periodicActorDumpProcessors: processors.PeriodicActorDumpProcessors,
 		api:                         api,
 		name:                        name,
 	}, nil
@@ -140,7 +140,7 @@ type StateProcessor struct {
 	tipsetProcessors            map[string]TipSetProcessor
 	tipsetsProcessors           map[string]TipSetsProcessor
 	actorProcessors             map[string]ActorProcessor
-	periodicStateDumpProcessors map[string]PeriodicStateDumpProcessor
+	periodicActorDumpProcessors map[string]PeriodicActorDumpProcessor
 
 	// api used by tasks
 	api tasks.DataSource
@@ -170,7 +170,7 @@ type Result struct {
 func (sp *StateProcessor) State(ctx context.Context, current, executed *types.TipSet, interval int) (chan *Result, []string) {
 	ctx, span := otel.Tracer("").Start(ctx, "StateProcessor.State")
 
-	num := len(sp.tipsetProcessors) + len(sp.actorProcessors) + len(sp.tipsetsProcessors) + len(sp.builtinProcessors) + len(sp.periodicStateDumpProcessors)
+	num := len(sp.tipsetProcessors) + len(sp.actorProcessors) + len(sp.tipsetsProcessors) + len(sp.builtinProcessors) + len(sp.periodicActorDumpProcessors)
 	results := make(chan *Result, num)
 	taskNames := make([]string, 0, num)
 
@@ -178,7 +178,7 @@ func (sp *StateProcessor) State(ctx context.Context, current, executed *types.Ti
 	taskNames = append(taskNames, sp.startTipSet(ctx, current, results)...)
 	taskNames = append(taskNames, sp.startTipSets(ctx, current, executed, results)...)
 	taskNames = append(taskNames, sp.startActor(ctx, current, executed, results)...)
-	taskNames = append(taskNames, sp.startPeriodicStateDump(ctx, current, interval, results)...)
+	taskNames = append(taskNames, sp.startPeriodicActorDump(ctx, current, interval, results)...)
 
 	go func() {
 		sp.pwg.Wait()
@@ -415,14 +415,14 @@ func (sp *StateProcessor) startActor(ctx context.Context, current, executed *typ
 	return taskNames
 }
 
-// startPeriodicStateDump starts all TipSetsProcessor's in parallel, their results are emitted on the `results` channel.
+// startPeriodicActorDump starts all TipSetsProcessor's in parallel, their results are emitted on the `results` channel.
 // A list containing all executed task names is returned.
-func (sp *StateProcessor) startPeriodicStateDump(ctx context.Context, current *types.TipSet, interval int, results chan *Result) []string {
+func (sp *StateProcessor) startPeriodicActorDump(ctx context.Context, current *types.TipSet, interval int, results chan *Result) []string {
 	start := time.Now()
 	var taskNames []string
 
 	if interval > 0 && current.Height()%abi.ChainEpoch(interval) != 0 {
-		logger := log.With("processor", "PeriodicStateDump")
+		logger := log.With("processor", "PeriodicActorDump")
 		logger.Infow("Skip this epoch", current.Height())
 		return taskNames
 	}
@@ -446,7 +446,7 @@ func (sp *StateProcessor) startPeriodicStateDump(ctx context.Context, current *t
 		}
 	}
 
-	for taskName, proc := range sp.periodicStateDumpProcessors {
+	for taskName, proc := range sp.periodicActorDumpProcessors {
 		name := taskName
 		p := proc
 		taskNames = append(taskNames, name)
@@ -459,13 +459,13 @@ func (sp *StateProcessor) startPeriodicStateDump(ctx context.Context, current *t
 			defer stop()
 
 			pl := log.With("task", name, "height", current.Height(), "reporter", sp.name)
-			pl.Infow("PeriodicStateDump processor started")
+			pl.Infow("PeriodicActorDump processor started")
 			defer func() {
 				pl.Infow("processor ended", "duration", time.Since(start))
 				sp.pwg.Done()
 			}()
 
-			data, report, err := p.ProcessPeriodicStateDump(ctx, current, actors)
+			data, report, err := p.ProcessPeriodicActorDump(ctx, current, actors)
 			if err != nil {
 				stats.Record(ctx, metrics.ProcessingFailure.M(1))
 				results <- &Result{
@@ -494,7 +494,7 @@ type IndexerProcessors struct {
 	TipsetsProcessors           map[string]TipSetsProcessor
 	ActorProcessors             map[string]ActorProcessor
 	ReportProcessors            map[string]ReportProcessor
-	PeriodicStateDumpProcessors map[string]PeriodicStateDumpProcessor
+	PeriodicActorDumpProcessors map[string]PeriodicActorDumpProcessor
 }
 
 func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProcessors, error) {
@@ -503,7 +503,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 		TipsetsProcessors:           make(map[string]TipSetsProcessor),
 		ActorProcessors:             make(map[string]ActorProcessor),
 		ReportProcessors:            make(map[string]ReportProcessor),
-		PeriodicStateDumpProcessors: make(map[string]PeriodicStateDumpProcessor),
+		PeriodicActorDumpProcessors: make(map[string]PeriodicActorDumpProcessor),
 	}
 	for _, t := range indexerTasks {
 		switch t {
@@ -784,7 +784,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			// Dump
 			//
 		case tasktype.FEVMActorDump:
-			out.PeriodicStateDumpProcessors[t] = fevmactordumptask.NewTask(api)
+			out.PeriodicActorDumpProcessors[t] = fevmactordumptask.NewTask(api)
 
 		case BuiltinTaskName:
 			out.ReportProcessors[t] = indexertask.NewTask(api)

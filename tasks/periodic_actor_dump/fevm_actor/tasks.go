@@ -16,7 +16,7 @@ import (
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/model"
-	"github.com/filecoin-project/lily/model/statedumps"
+	"github.com/filecoin-project/lily/model/actordumps"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
 )
@@ -33,8 +33,8 @@ func NewTask(node tasks.DataSource) *Task {
 	}
 }
 
-func (p *Task) ProcessPeriodicStateDump(ctx context.Context, current *types.TipSet, actors tasks.ActorStatesByType) (model.Persistable, *visormodel.ProcessingReport, error) {
-	_, span := otel.Tracer("").Start(ctx, "ProcessPeriodicStateDump")
+func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipSet, actors tasks.ActorStatesByType) (model.Persistable, *visormodel.ProcessingReport, error) {
+	_, span := otel.Tracer("").Start(ctx, "ProcessPeriodicActorDump")
 	if span.IsRecording() {
 		span.SetAttributes(
 			attribute.String("current", current.String()),
@@ -51,7 +51,7 @@ func (p *Task) ProcessPeriodicStateDump(ctx context.Context, current *types.TipS
 
 	log.Infof("Size of FVM related Actors: %v", len(actors[manifest.EvmKey])+len(actors[manifest.EthAccountKey])+len(actors[manifest.PlaceholderKey]))
 
-	out := make(statedumps.FEVMActorDumpList, 0)
+	out := make(actordumps.FEVMActorDumpList, 0)
 	errs := []error{}
 	for _, actor := range actors[manifest.EvmKey] {
 		if actor.Address == nil {
@@ -85,7 +85,7 @@ func (p *Task) ProcessPeriodicStateDump(ctx context.Context, current *types.TipS
 			errs = append(errs, err)
 			continue
 		}
-		out = append(out, &statedumps.FEVMActorDump{
+		out = append(out, &actordumps.FEVMActorDump{
 			Height:       int64(current.Height()),
 			ActorID:      actor.Address.String(),
 			ActorName:    builtin.ActorNameByCode(actor.Code),
@@ -99,12 +99,14 @@ func (p *Task) ProcessPeriodicStateDump(ctx context.Context, current *types.TipS
 	}
 
 	for _, actor := range append(actors[manifest.EthAccountKey], actors[manifest.PlaceholderKey]...) {
-		out = append(out, &statedumps.FEVMActorDump{
-			Height:    int64(current.Height()),
-			ActorID:   actor.Address.String(),
-			ActorName: builtin.ActorNameByCode(actor.Code),
-			Balance:   actor.Balance.String(),
-			Nonce:     actor.Nonce,
+		ethAddress, _ := ethtypes.EthAddressFromFilecoinAddress(*actor.Address)
+		out = append(out, &actordumps.FEVMActorDump{
+			Height:     int64(current.Height()),
+			ActorID:    actor.Address.String(),
+			ActorName:  builtin.ActorNameByCode(actor.Code),
+			EthAddress: ethAddress.String(),
+			Balance:    actor.Balance.String(),
+			Nonce:      actor.Nonce,
 		})
 	}
 

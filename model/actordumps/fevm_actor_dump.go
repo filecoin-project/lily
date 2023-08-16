@@ -1,4 +1,4 @@
-package statedumps
+package actordumps
 
 import (
 	"context"
