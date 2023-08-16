@@ -24,6 +24,10 @@ func (t *MockIndexBuilder) WithTasks(tasks []string) tipset.IndexerBuilder {
 	return t
 }
 
+func (t *MockIndexBuilder) WithInterval(interval int) tipset.IndexerBuilder {
+	return t
+}
+
 func (t *MockIndexBuilder) Build() (tipset.Indexer, error) {
 	return t.MockIndexer, nil
 }

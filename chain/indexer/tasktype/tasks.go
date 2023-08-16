@@ -18,6 +18,7 @@ const (
 	ImplicitMessageTask     = "implicitmessage"     // task that extract implicitly executed messages: cron tick and block reward.
 	ChainConsensusTask      = "consensus"
 	FEVMTask                = "fevm"
+	ActorDump               = "actordump"
 )
 
 var TaskLookup = map[string][]string{
@@ -99,6 +100,9 @@ var TaskLookup = map[string][]string{
 		FEVMTransaction,
 		FEVMContract,
 		FEVMTrace,
+	},
+	ActorDump: {
+		FEVMActorDump,
 	},
 }
 

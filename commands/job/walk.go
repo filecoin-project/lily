@@ -12,6 +12,19 @@ import (
 	"github.com/filecoin-project/lily/lens/lily"
 )
 
+type walkOps struct {
+	interval int `zap:"interval"`
+}
+
+var walkFlags walkOps
+
+var WalkIntervalFlag = &cli.IntFlag{
+	Name:        "interval",
+	Usage:       "The interval for specific task",
+	Value:       120,
+	Destination: &walkFlags.interval,
+}
+
 var WalkCmd = &cli.Command{
 	Name:  "walk",
 	Usage: "walk and index a range of the filecoin blockchain.",
@@ -27,6 +40,7 @@ The status of each epoch and its set of tasks can be observed in the visor_proce
 	Flags: []cli.Flag{
 		RangeFromFlag,
 		RangeToFlag,
+		WalkIntervalFlag,
 	},
 	Subcommands: []*cli.Command{
 		WalkNotifyCmd,
@@ -55,6 +69,7 @@ The status of each epoch and its set of tasks can be observed in the visor_proce
 			JobConfig: RunFlags.ParseJobConfig("walk"),
 			From:      rangeFlags.from,
 			To:        rangeFlags.to,
+			Interval:  walkFlags.interval,
 		}
 
 		res, err := api.LilyWalk(ctx, cfg)

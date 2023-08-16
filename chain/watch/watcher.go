@@ -37,6 +37,12 @@ func WithTasks(tasks ...string) WatcherOpt {
 	}
 }
 
+func WithInterval(interval int) WatcherOpt {
+	return func(w *Watcher) {
+		w.interval = interval
+	}
+}
+
 func WithConfidence(c int) WatcherOpt {
 	return func(w *Watcher) {
 		w.confidence = c
@@ -66,6 +72,7 @@ type Watcher struct {
 	bufferSize int // size of the buffer for incoming tipset notifications.
 	poolSize   int
 	tasks      []string
+	interval   int
 
 	// created internally
 	done       chan struct{}
@@ -88,6 +95,7 @@ var (
 	WatcherDefaultConfidence        = 1
 	WatcherDefaultConcurrentWorkers = 1
 	WatcherDefaultTasks             = tasktype.AllTableTasks
+	WatcherDefaultInterval          = 1
 )
 
 // NewWatcher creates a new Watcher. confidence sets the number of tipsets that will be held
@@ -103,6 +111,7 @@ func NewWatcher(api WatcherAPI, indexer indexer.Indexer, name string, r *schedul
 		confidence: WatcherDefaultConfidence,
 		poolSize:   WatcherDefaultConcurrentWorkers,
 		tasks:      WatcherDefaultTasks,
+		interval:   WatcherDefaultInterval,
 		report:     r,
 	}
 
@@ -248,7 +257,7 @@ func (c *Watcher) indexTipSetAsync(ctx context.Context, ts *types.TipSet) error 
 		}()
 
 		ts := ts
-		success, err := c.indexer.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Watch), indexer.WithTasks(c.tasks))
+		success, err := c.indexer.TipSet(ctx, ts, indexer.WithIndexerType(indexer.Watch), indexer.WithTasks(c.tasks), indexer.WithInterval(c.interval))
 		if err != nil {
 			log.Errorw("watcher suffered fatal error", "error", err, "height", ts.Height(), "tipset", ts.Key().String(), "reporter", c.name)
 			c.setFatalError(err)

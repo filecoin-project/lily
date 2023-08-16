@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/exitcode"
 	network2 "github.com/filecoin-project/go-state-types/network"
@@ -229,6 +230,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 		watch.WithConfidence(cfg.Confidence),
 		watch.WithConcurrentWorkers(cfg.Workers),
 		watch.WithBufferSize(cfg.BufferSize),
+		watch.WithInterval(cfg.Interval),
 	)
 	jobConfig := &schedule.JobConfig{
 		Name: cfg.JobConfig.Name,
@@ -239,6 +241,7 @@ func (m *LilyNodeAPI) LilyWatch(_ context.Context, cfg *LilyWatchConfig) (*sched
 			"confidence": strconv.Itoa(cfg.Confidence),
 			"worker":     strconv.Itoa(cfg.Workers),
 			"buffer":     strconv.Itoa(cfg.BufferSize),
+			"interval":   strconv.Itoa(cfg.Interval),
 		},
 		Tasks:               cfg.JobConfig.Tasks,
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
@@ -328,7 +331,7 @@ func (m *LilyNodeAPI) LilyWalk(_ context.Context, cfg *LilyWalkConfig) (*schedul
 		RestartOnFailure:    cfg.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.JobConfig.RestartDelay,
-		Job:                 walk.NewWalker(idx, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To, reporter, cfg.JobConfig.StopOnError),
+		Job:                 walk.NewWalker(idx, m, cfg.JobConfig.Name, cfg.JobConfig.Tasks, cfg.From, cfg.To, reporter, cfg.JobConfig.StopOnError, cfg.Interval),
 		Reporter:            reporter,
 	}
 
@@ -356,7 +359,7 @@ func (m *LilyNodeAPI) LilyWalkNotify(_ context.Context, cfg *LilyWalkNotifyConfi
 		RestartOnFailure:    cfg.WalkConfig.JobConfig.RestartOnFailure,
 		RestartOnCompletion: cfg.WalkConfig.JobConfig.RestartOnCompletion,
 		RestartDelay:        cfg.WalkConfig.JobConfig.RestartDelay,
-		Job:                 walk.NewWalker(idx, m, cfg.WalkConfig.JobConfig.Name, cfg.WalkConfig.JobConfig.Tasks, cfg.WalkConfig.From, cfg.WalkConfig.To, reporter, cfg.WalkConfig.JobConfig.StopOnError),
+		Job:                 walk.NewWalker(idx, m, cfg.WalkConfig.JobConfig.Name, cfg.WalkConfig.JobConfig.Tasks, cfg.WalkConfig.From, cfg.WalkConfig.To, reporter, cfg.WalkConfig.JobConfig.StopOnError, cfg.WalkConfig.Interval),
 		Reporter:            reporter,
 	}
 	res := m.Scheduler.Submit(jobConfig)
@@ -569,6 +572,10 @@ func (m *LilyNodeAPI) EthGetTransactionReceipt(ctx context.Context, txHash ethty
 
 func (m *LilyNodeAPI) ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error) {
 	return m.ChainAPI.ChainGetMessagesInTipset(ctx, tsk)
+}
+
+func (m *LilyNodeAPI) StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error) {
+	return m.StateAPI.StateListActors(ctx, tsk)
 }
 
 // MessagesForTipSetBlocks returns messages stored in the blocks of the specified tipset, messages may be duplicated

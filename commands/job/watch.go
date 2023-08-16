@@ -17,6 +17,7 @@ type watchOps struct {
 	confidence int
 	workers    int
 	bufferSize int
+	interval   int
 }
 
 var watchFlags watchOps
@@ -27,6 +28,13 @@ var WatchConfidenceFlag = &cli.IntFlag{
 	EnvVars:     []string{"LILY_CONFIDENCE"},
 	Value:       2,
 	Destination: &watchFlags.confidence,
+}
+
+var WatchIntervalFlag = &cli.IntFlag{
+	Name:        "interval",
+	Usage:       "The interval for specific task",
+	Value:       120,
+	Destination: &watchFlags.interval,
 }
 var WatchWorkersFlag = &cli.IntFlag{
 	Name:        "workers",
@@ -87,6 +95,7 @@ watches the chain head and only indexes a tipset after observing 10 subsequent t
 		WatchConfidenceFlag,
 		WatchWorkersFlag,
 		WatchBufferSizeFlag,
+		WatchIntervalFlag,
 	},
 	Before: func(cctx *cli.Context) error {
 		tasks := RunFlags.Tasks.Value()
@@ -117,6 +126,7 @@ watches the chain head and only indexes a tipset after observing 10 subsequent t
 			BufferSize: watchFlags.bufferSize,
 			Confidence: watchFlags.confidence,
 			Workers:    watchFlags.workers,
+			Interval:   watchFlags.interval,
 		}
 
 		res, err = api.LilyWatch(ctx, cfg)

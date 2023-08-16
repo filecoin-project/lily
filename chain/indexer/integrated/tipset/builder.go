@@ -10,6 +10,7 @@ import (
 
 type IndexerBuilder interface {
 	WithTasks(tasks []string) IndexerBuilder
+	WithInterval(interval int) IndexerBuilder
 	Build() (Indexer, error)
 	Name() string
 }
@@ -41,6 +42,13 @@ func (b *Builder) add(cb func(ti *TipSetIndexer)) {
 func (b *Builder) WithTasks(tasks []string) IndexerBuilder {
 	b.add(func(ti *TipSetIndexer) {
 		ti.taskNames = tasks
+	})
+	return b
+}
+
+func (b *Builder) WithInterval(interval int) IndexerBuilder {
+	b.add(func(ti *TipSetIndexer) {
+		ti.Interval = interval
 	})
 	return b
 }

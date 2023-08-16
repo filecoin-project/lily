@@ -94,7 +94,7 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 	}
 	defer cancel()
 
-	idxer, err := i.indexBuilder.WithTasks(opts.Tasks).Build()
+	idxer, err := i.indexBuilder.WithTasks(opts.Tasks).WithInterval(opts.Interval).Build()
 	if err != nil {
 		return false, err
 	}

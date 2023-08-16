@@ -15,6 +15,7 @@ import (
 	"github.com/raulk/clock"
 
 	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/model/actordumps"
 	"github.com/filecoin-project/lily/model/actors/common"
 	"github.com/filecoin-project/lily/model/actors/datacap"
 	init_ "github.com/filecoin-project/lily/model/actors/init"
@@ -100,6 +101,7 @@ var Models = []interface{}{
 	(*fevm.FEVMTransaction)(nil),
 	(*fevm.FEVMContract)(nil),
 	(*fevm.FEVMTrace)(nil),
+	(*actordumps.FEVMActorDump)(nil),
 }
 
 var log = logging.Logger("lily/storage")

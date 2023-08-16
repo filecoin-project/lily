@@ -6,7 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/filecoin-project/go-state-types/abi"
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -66,10 +68,15 @@ import (
 	fevmtransactiontask "github.com/filecoin-project/lily/tasks/fevm/transaction"
 	fevmactorstatstask "github.com/filecoin-project/lily/tasks/fevmactorstats"
 
+	// actor dump
+	fevmactordumptask "github.com/filecoin-project/lily/tasks/periodic_actor_dump/fevm_actor"
+
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
+
+	builtin "github.com/filecoin-project/lotus/chain/actors/builtin"
 )
 
 type TipSetProcessor interface {
@@ -77,6 +84,13 @@ type TipSetProcessor interface {
 	// Any data returned must be accompanied by a processing report.
 	// Implementations of this interface must abort processing when their context is canceled.
 	ProcessTipSet(ctx context.Context, current *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error)
+}
+
+type PeriodicActorDumpProcessor interface {
+	// ProcessTipSet processes a tipset. If error is non-nil then the processor encountered a fatal error.
+	// Any data returned must be accompanied by a processing report.
+	// Implementations of this interface must abort processing when their context is canceled.
+	ProcessPeriodicActorDump(ctx context.Context, current *types.TipSet, actors tasks.ActorStatesByType) (model.Persistable, *visormodel.ProcessingReport, error)
 }
 
 type TipSetsProcessor interface {
@@ -111,20 +125,22 @@ func New(api tasks.DataSource, name string, taskNames []string) (*StateProcessor
 		return nil, err
 	}
 	return &StateProcessor{
-		builtinProcessors: processors.ReportProcessors,
-		tipsetProcessors:  processors.TipsetProcessors,
-		tipsetsProcessors: processors.TipsetsProcessors,
-		actorProcessors:   processors.ActorProcessors,
-		api:               api,
-		name:              name,
+		builtinProcessors:           processors.ReportProcessors,
+		tipsetProcessors:            processors.TipsetProcessors,
+		tipsetsProcessors:           processors.TipsetsProcessors,
+		actorProcessors:             processors.ActorProcessors,
+		periodicActorDumpProcessors: processors.PeriodicActorDumpProcessors,
+		api:                         api,
+		name:                        name,
 	}, nil
 }
 
 type StateProcessor struct {
-	builtinProcessors map[string]ReportProcessor
-	tipsetProcessors  map[string]TipSetProcessor
-	tipsetsProcessors map[string]TipSetsProcessor
-	actorProcessors   map[string]ActorProcessor
+	builtinProcessors           map[string]ReportProcessor
+	tipsetProcessors            map[string]TipSetProcessor
+	tipsetsProcessors           map[string]TipSetsProcessor
+	actorProcessors             map[string]ActorProcessor
+	periodicActorDumpProcessors map[string]PeriodicActorDumpProcessor
 
 	// api used by tasks
 	api tasks.DataSource
@@ -151,10 +167,10 @@ type Result struct {
 // emits results of the state extraction closing when processing is completed. It is the responsibility of the processors
 // to abort if its context is canceled.
 // A list of all tasks executing is returned.
-func (sp *StateProcessor) State(ctx context.Context, current, executed *types.TipSet) (chan *Result, []string) {
+func (sp *StateProcessor) State(ctx context.Context, current, executed *types.TipSet, interval int) (chan *Result, []string) {
 	ctx, span := otel.Tracer("").Start(ctx, "StateProcessor.State")
 
-	num := len(sp.tipsetProcessors) + len(sp.actorProcessors) + len(sp.tipsetsProcessors) + len(sp.builtinProcessors)
+	num := len(sp.tipsetProcessors) + len(sp.actorProcessors) + len(sp.tipsetsProcessors) + len(sp.builtinProcessors) + len(sp.periodicActorDumpProcessors)
 	results := make(chan *Result, num)
 	taskNames := make([]string, 0, num)
 
@@ -162,6 +178,7 @@ func (sp *StateProcessor) State(ctx context.Context, current, executed *types.Ti
 	taskNames = append(taskNames, sp.startTipSet(ctx, current, results)...)
 	taskNames = append(taskNames, sp.startTipSets(ctx, current, executed, results)...)
 	taskNames = append(taskNames, sp.startActor(ctx, current, executed, results)...)
+	taskNames = append(taskNames, sp.startPeriodicActorDump(ctx, current, interval, results)...)
 
 	go func() {
 		sp.pwg.Wait()
@@ -398,19 +415,95 @@ func (sp *StateProcessor) startActor(ctx context.Context, current, executed *typ
 	return taskNames
 }
 
+// startPeriodicActorDump starts all TipSetsProcessor's in parallel, their results are emitted on the `results` channel.
+// A list containing all executed task names is returned.
+func (sp *StateProcessor) startPeriodicActorDump(ctx context.Context, current *types.TipSet, interval int, results chan *Result) []string {
+	start := time.Now()
+	var taskNames []string
+
+	if interval > 0 && current.Height()%abi.ChainEpoch(interval) != 0 {
+		logger := log.With("processor", "PeriodicActorDump")
+		logger.Infow("Skip this epoch", current.Height())
+		return taskNames
+	}
+
+	actors := make(map[string][]*types.ActorV5)
+	addrssArr, _ := sp.api.StateListActors(ctx, current.Key())
+
+	for _, address := range addrssArr {
+		actor, err := sp.api.Actor(ctx, address, current.Key())
+		if err != nil {
+			continue
+		}
+
+		// EVM Actor
+		if builtin.IsEvmActor(actor.Code) {
+			actors[manifest.EvmKey] = append(actors[manifest.EvmKey], actor)
+		} else if builtin.IsEthAccountActor(actor.Code) {
+			actors[manifest.EthAccountKey] = append(actors[manifest.EthAccountKey], actor)
+		} else if builtin.IsPlaceholderActor(actor.Code) {
+			actors[manifest.PlaceholderKey] = append(actors[manifest.PlaceholderKey], actor)
+		}
+	}
+
+	for taskName, proc := range sp.periodicActorDumpProcessors {
+		name := taskName
+		p := proc
+		taskNames = append(taskNames, name)
+
+		sp.pwg.Add(1)
+		go func() {
+			ctx, _ = tag.New(ctx, tag.Upsert(metrics.TaskType, name))
+			stats.Record(ctx, metrics.TipsetHeight.M(int64(current.Height())))
+			stop := metrics.Timer(ctx, metrics.ProcessingDuration)
+			defer stop()
+
+			pl := log.With("task", name, "height", current.Height(), "reporter", sp.name)
+			pl.Infow("PeriodicActorDump processor started")
+			defer func() {
+				pl.Infow("processor ended", "duration", time.Since(start))
+				sp.pwg.Done()
+			}()
+
+			data, report, err := p.ProcessPeriodicActorDump(ctx, current, actors)
+			if err != nil {
+				stats.Record(ctx, metrics.ProcessingFailure.M(1))
+				results <- &Result{
+					Task:        name,
+					Error:       err,
+					StartedAt:   start,
+					CompletedAt: time.Now(),
+				}
+				pl.Errorw("processor error", "error", err)
+				return
+			}
+			results <- &Result{
+				Task:        name,
+				Report:      visormodel.ProcessingReportList{report},
+				Data:        data,
+				StartedAt:   start,
+				CompletedAt: time.Now(),
+			}
+		}()
+	}
+	return taskNames
+}
+
 type IndexerProcessors struct {
-	TipsetProcessors  map[string]TipSetProcessor
-	TipsetsProcessors map[string]TipSetsProcessor
-	ActorProcessors   map[string]ActorProcessor
-	ReportProcessors  map[string]ReportProcessor
+	TipsetProcessors            map[string]TipSetProcessor
+	TipsetsProcessors           map[string]TipSetsProcessor
+	ActorProcessors             map[string]ActorProcessor
+	ReportProcessors            map[string]ReportProcessor
+	PeriodicActorDumpProcessors map[string]PeriodicActorDumpProcessor
 }
 
 func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProcessors, error) {
 	out := &IndexerProcessors{
-		TipsetProcessors:  make(map[string]TipSetProcessor),
-		TipsetsProcessors: make(map[string]TipSetsProcessor),
-		ActorProcessors:   make(map[string]ActorProcessor),
-		ReportProcessors:  make(map[string]ReportProcessor),
+		TipsetProcessors:            make(map[string]TipSetProcessor),
+		TipsetsProcessors:           make(map[string]TipSetsProcessor),
+		ActorProcessors:             make(map[string]ActorProcessor),
+		ReportProcessors:            make(map[string]ReportProcessor),
+		PeriodicActorDumpProcessors: make(map[string]PeriodicActorDumpProcessor),
 	}
 	for _, t := range indexerTasks {
 		switch t {
@@ -686,6 +779,12 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			out.TipsetsProcessors[t] = fevmcontracttask.NewTask(api)
 		case tasktype.FEVMTrace:
 			out.TipsetsProcessors[t] = fevmtracetask.NewTask(api)
+
+			//
+			// Dump
+			//
+		case tasktype.FEVMActorDump:
+			out.PeriodicActorDumpProcessors[t] = fevmactordumptask.NewTask(api)
 
 		case BuiltinTaskName:
 			out.ReportProcessors[t] = indexertask.NewTask(api)

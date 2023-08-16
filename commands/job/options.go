@@ -22,6 +22,7 @@ type runOpts struct {
 	RestartCompletion bool
 	RestartFailure    bool
 	StopOnError       bool
+	Interval          int
 }
 
 func (r runOpts) ParseJobConfig(kind string) lily.LilyJobConfig {
@@ -150,4 +151,11 @@ var RangeToFlag = &cli.Int64Flag{
 	EnvVars:     []string{"LILY_TO"},
 	Destination: &rangeFlags.to,
 	Required:    true,
+}
+
+var IntervalFlag = &cli.IntFlag{
+	Name:        "interval",
+	Usage:       "The interval for specific task",
+	Value:       120,
+	Destination: &watchFlags.interval,
 }

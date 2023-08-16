@@ -46,6 +46,8 @@ type ActorStateChange struct {
 
 type ActorStateChangeDiff map[address.Address]ActorStateChange
 
+type ActorStatesByType map[string][]*types.ActorV5
+
 type DataSource interface {
 	TipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error)
 	Actor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error)
@@ -74,4 +76,5 @@ type DataSource interface {
 	EthGetTransactionReceipt(ctx context.Context, txHash ethtypes.EthHash) (*api.EthTxReceipt, error)
 	ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error)
 	EthGetTransactionByHash(ctx context.Context, txHash *ethtypes.EthHash) (*ethtypes.EthTx, error)
+	StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error)
 }
