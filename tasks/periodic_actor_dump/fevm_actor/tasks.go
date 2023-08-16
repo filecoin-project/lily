@@ -99,7 +99,12 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 	}
 
 	for _, actor := range append(actors[manifest.EthAccountKey], actors[manifest.PlaceholderKey]...) {
-		ethAddress, _ := ethtypes.EthAddressFromFilecoinAddress(*actor.Address)
+		ethAddress, err := ethtypes.EthAddressFromFilecoinAddress(*actor.Address)
+		if err != nil {
+			log.Errorf("Error at getting eth address: [actor cid: %v] err: %v", actor.Code.String(), err)
+			errs = append(errs, err)
+			continue
+		}
 		out = append(out, &actordumps.FEVMActorDump{
 			Height:     int64(current.Height()),
 			ActorID:    actor.Address.String(),
