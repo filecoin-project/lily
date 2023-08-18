@@ -54,6 +54,14 @@ func getEthAddress(addr address.Address) string {
 	return to.String()
 }
 
+func (t *Task) getActorAddress(ctx context.Context, address address.Address, tsk types.TipSetKey) address.Address {
+	actor, _ := t.node.Actor(ctx, address, tsk)
+	if actor.Address != nil {
+		return *actor.Address
+	}
+	return address
+}
+
 func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, executed *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ProcessTipSets")
 	if span.IsRecording() {
@@ -138,18 +146,9 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				}
 			}
 
-			// Get Address
-			toActor, _ := t.node.Actor(ctx, child.Message.To, current.Key())
-			toAddress := child.Message.To
-			if toActor.Address != nil {
-				toAddress = *toActor.Address
-			}
-
-			fromActor, _ := t.node.Actor(ctx, child.Message.From, current.Key())
-			fromAddress := child.Message.From
-			if fromActor.Address != nil {
-				fromAddress = *fromActor.Address
-			}
+			// Get Actor Address
+			toAddress := t.getActorAddress(ctx, child.Message.To, current.Key())
+			fromAddress := t.getActorAddress(ctx, child.Message.From, current.Key())
 
 			traceObj := &fevm.FEVMTrace{
 				Height:              int64(parentMsg.Height),
