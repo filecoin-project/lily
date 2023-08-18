@@ -137,8 +137,20 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 					errs = append(errs, err)
 				}
 			}
-			fromEthAddress := getEthAddress(child.Message.From)
-			toEthAddress := getEthAddress(child.Message.To)
+
+			// Get Address
+			toActor, _ := t.node.Actor(ctx, child.Message.To, current.Key())
+			toAddress := child.Message.To
+			if toActor.Address != nil {
+				toAddress = *toActor.Address
+			}
+
+			fromActor, _ := t.node.Actor(ctx, child.Message.From, current.Key())
+			fromAddress := child.Message.From
+			if fromActor.Address != nil {
+				fromAddress = *fromActor.Address
+			}
+			fromEthAddress := getEthAddress(fromAddress)
 
 			traceObj := &fevm.FEVMTrace{
 				Height:              int64(parentMsg.Height),
@@ -146,10 +158,10 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				MessageStateRoot:    parentMsg.StateRoot.String(),
 				MessageCid:          parentMsg.Cid.String(),
 				TraceCid:            getMessageTraceCid(child.Message).String(),
-				ToFilecoinAddress:   child.Message.To.String(),
-				FromFilecoinAddress: child.Message.From.String(),
+				FromFilecoinAddress: fromAddress.String(),
+				ToFilecoinAddress:   toAddress.String(),
 				From:                fromEthAddress,
-				To:                  toEthAddress,
+				To:                  getEthAddress(toAddress),
 				Value:               child.Message.Value.String(),
 				ExitCode:            int64(child.Receipt.ExitCode),
 				ActorCode:           actorCode,
