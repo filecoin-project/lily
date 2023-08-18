@@ -150,7 +150,6 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			if fromActor.Address != nil {
 				fromAddress = *fromActor.Address
 			}
-			fromEthAddress := getEthAddress(fromAddress)
 
 			traceObj := &fevm.FEVMTrace{
 				Height:              int64(parentMsg.Height),
@@ -160,7 +159,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				TraceCid:            getMessageTraceCid(child.Message).String(),
 				FromFilecoinAddress: fromAddress.String(),
 				ToFilecoinAddress:   toAddress.String(),
-				From:                fromEthAddress,
+				From:                getEthAddress(fromAddress),
 				To:                  getEthAddress(toAddress),
 				Value:               child.Message.Value.String(),
 				ExitCode:            int64(child.Receipt.ExitCode),
