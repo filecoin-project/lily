@@ -54,6 +54,14 @@ func getEthAddress(addr address.Address) string {
 	return to.String()
 }
 
+func (t *Task) getActorAddress(ctx context.Context, address address.Address, tsk types.TipSetKey) address.Address {
+	actor, _ := t.node.Actor(ctx, address, tsk)
+	if actor.Address != nil {
+		return *actor.Address
+	}
+	return address
+}
+
 func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, executed *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ProcessTipSets")
 	if span.IsRecording() {
@@ -137,8 +145,10 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 					errs = append(errs, err)
 				}
 			}
-			fromEthAddress := getEthAddress(child.Message.From)
-			toEthAddress := getEthAddress(child.Message.To)
+
+			// Get Actor Address
+			toAddress := t.getActorAddress(ctx, child.Message.To, current.Key())
+			fromAddress := t.getActorAddress(ctx, child.Message.From, current.Key())
 
 			traceObj := &fevm.FEVMTrace{
 				Height:              int64(parentMsg.Height),
@@ -146,10 +156,10 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				MessageStateRoot:    parentMsg.StateRoot.String(),
 				MessageCid:          parentMsg.Cid.String(),
 				TraceCid:            getMessageTraceCid(child.Message).String(),
-				ToFilecoinAddress:   child.Message.To.String(),
-				FromFilecoinAddress: child.Message.From.String(),
-				From:                fromEthAddress,
-				To:                  toEthAddress,
+				FromFilecoinAddress: fromAddress.String(),
+				ToFilecoinAddress:   toAddress.String(),
+				From:                getEthAddress(fromAddress),
+				To:                  getEthAddress(toAddress),
 				Value:               child.Message.Value.String(),
 				ExitCode:            int64(child.Receipt.ExitCode),
 				ActorCode:           actorCode,
