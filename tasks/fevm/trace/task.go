@@ -55,8 +55,12 @@ func getEthAddress(addr address.Address) string {
 }
 
 func (t *Task) getActorAddress(ctx context.Context, address address.Address, tsk types.TipSetKey) address.Address {
-	actor, _ := t.node.Actor(ctx, address, tsk)
-	if actor.Address != nil {
+	actor, err := t.node.Actor(ctx, address, tsk)
+	if err != nil {
+		log.Errorf("Error at getting actor: [actor address: %v] [tipset: %v]", address, tsk)
+		return address
+	}
+	if actor != nil && actor.Address != nil {
 		return *actor.Address
 	}
 	return address
