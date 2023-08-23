@@ -20,10 +20,10 @@ func init() {
 		gas                  BIGINT,
 		max_fee_per_gas      numeric,
 		max_priority_fee_per_gas numeric,
+		access_list          jsonb,
 		v                    TEXT,
 		r                    TEXT,
 		s                    TEXT,
-		access_list          jsonb,
 		PRIMARY KEY(height, hash)
 	);
 `,

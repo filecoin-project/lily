@@ -62,6 +62,15 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if message.Message == nil {
 			continue
 		}
+		fromActorInfo, err := p.node.ActorInfo(ctx, message.Message.From, current.Key())
+		if err != nil {
+			continue
+		}
+		toActorInfo, err := p.node.ActorInfo(ctx, message.Message.To, current.Key())
+		if err != nil {
+			continue
+		}
+
 		if !util.IsEVMMessage(ctx, p.node, message.Message, current.Key()) {
 			continue
 		}
@@ -99,6 +108,11 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			V:                    txn.V.String(),
 			R:                    txn.R.String(),
 			S:                    txn.S.String(),
+			FromFilecoinAddress:  fromActorInfo.Actor.Address.String(),
+			ToFilecoinAddress:    toActorInfo.Actor.Address.String(),
+			FromActorName:        fromActorInfo.ActorName,
+			ToActorName:          toActorInfo.ActorName,
+			MessageCid:           message.Cid.String(),
 		}
 
 		if txn.BlockHash != nil {

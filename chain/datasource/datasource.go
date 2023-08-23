@@ -31,6 +31,7 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/tasks"
 )
@@ -219,6 +220,40 @@ func (t *DataSource) Actor(ctx context.Context, addr address.Address, tsk types.
 	}
 
 	return act, err
+}
+
+func (t *DataSource) ActorInfo(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*tasks.ActorInfo, error) {
+	metrics.RecordInc(ctx, metrics.DataSourceActorCacheRead)
+	ctx, span := otel.Tracer("").Start(ctx, "DataSource.ActorInfo")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.String("tipset", tsk.String()))
+		span.SetAttributes(attribute.String("address", addr.String()))
+	}
+	defer span.End()
+
+	key, keyErr := asKey(addr, tsk)
+	key = "ActorInfo" + key
+	if keyErr == nil {
+		value, found := t.actorCache.Get(key)
+		if found {
+			metrics.RecordInc(ctx, metrics.DataSourceActorCacheHit)
+			return value.(*tasks.ActorInfo), nil
+		}
+	}
+
+	act, err := t.node.StateGetActor(ctx, addr, tsk)
+	actorInfo := tasks.ActorInfo{}
+	if err == nil && keyErr == nil {
+		actorInfo.Actor = act
+		actorName, actorFamily, err := util.ActorNameAndFamilyFromCode(act.Code)
+		if err == nil {
+			actorInfo.ActorFamily = actorFamily
+			actorInfo.ActorName = actorName
+		}
+		t.actorCache.Add(key, &actorInfo)
+	}
+
+	return &actorInfo, err
 }
 
 func (t *DataSource) MinerPower(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.MinerPower, error) {
