@@ -109,9 +109,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			R:                    txn.R.String(),
 			S:                    txn.S.String(),
 			FromFilecoinAddress:  fromActorInfo.Actor.Address.String(),
-			ToFilecoinAddress:    toActorInfo.Actor.Address.String(),
 			FromActorName:        fromActorInfo.ActorName,
-			ToActorName:          toActorInfo.ActorName,
 			MessageCid:           message.Cid.String(),
 		}
 
@@ -126,6 +124,8 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		}
 		if txn.To != nil {
 			txnObj.To = txn.To.String()
+			txnObj.ToFilecoinAddress = toActorInfo.Actor.Address.String()
+			txnObj.ToActorName = toActorInfo.ActorName
 		}
 
 		if len(txn.AccessList) > 0 {

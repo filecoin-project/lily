@@ -54,10 +54,10 @@ type FEVMTransaction struct {
 	// Filecoin Address of the receiver.
 	ToFilecoinAddress string `pg:",notnull"`
 	// Human-readable identifier of receiver (To).
-	ToActorName string `pg:",notnull"`
-	// Human-readable identifier of sender (From).
 	FromActorName string `pg:",notnull"`
 	// On-chain message triggering the message.
+	ToActorName string `pg:",notnull"`
+	// Human-readable identifier of sender (From).
 	MessageCid string `pg:",pk,notnull"`
 }
 
