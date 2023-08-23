@@ -232,7 +232,7 @@ func (t *DataSource) ActorInfo(ctx context.Context, addr address.Address, tsk ty
 	defer span.End()
 
 	key, keyErr := asKey(addr, tsk)
-	key = "ActorInfo" + key
+	key = "ActorInfo:" + key
 	if keyErr == nil {
 		value, found := t.actorCache.Get(key)
 		if found {
@@ -241,15 +241,19 @@ func (t *DataSource) ActorInfo(ctx context.Context, addr address.Address, tsk ty
 		}
 	}
 
-	act, err := t.node.StateGetActor(ctx, addr, tsk)
+	act, err := t.Actor(ctx, addr, tsk)
 	actorInfo := tasks.ActorInfo{}
-	if err == nil && keyErr == nil {
+	if err == nil {
 		actorInfo.Actor = act
 		actorName, actorFamily, err := util.ActorNameAndFamilyFromCode(act.Code)
 		if err == nil {
 			actorInfo.ActorFamily = actorFamily
 			actorInfo.ActorName = actorName
 		}
+	}
+
+	// Save the ActorInfo into cache
+	if err == nil && keyErr == nil {
 		t.actorCache.Add(key, &actorInfo)
 	}
 
