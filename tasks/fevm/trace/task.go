@@ -55,8 +55,8 @@ func getEthAddress(addr address.Address) string {
 }
 
 func (t *Task) getActorAddress(ctx context.Context, address address.Address, tsk types.TipSetKey) address.Address {
-	actor, _ := t.node.Actor(ctx, address, tsk)
-	if actor.Address != nil {
+	actor, err := t.node.Actor(ctx, address, tsk)
+	if err == nil && actor != nil && actor.Address != nil {
 		return *actor.Address
 	}
 	return address
@@ -119,12 +119,25 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if !util.IsEVMMessage(ctx, t.node, parentMsg.Message, current.Key()) {
 			continue
 		}
-		transactionHash, err := ethtypes.EthHashFromCid(parentMsg.Cid)
+		messageHash, err := ethtypes.EthHashFromCid(parentMsg.Cid)
 		if err != nil {
 			log.Errorf("Error at finding hash: [cid: %v] err: %v", parentMsg.Cid, err)
 			errs = append(errs, err)
 			continue
 		}
+		txn, err := t.node.EthGetTransactionByHash(ctx, &messageHash)
+		if err != nil {
+			log.Errorf("Error at getting transaction: [hash: %v] err: %v", messageHash, err)
+			errs = append(errs, err)
+			continue
+		}
+
+		if txn == nil {
+			log.Errorf("transaction: [hash: %v] is null", messageHash)
+			continue
+		}
+		transactionHash := txn.Hash.String()
+
 		for _, child := range util.GetChildMessagesOf(parentMsg) {
 			fromCode, _ := getActorCode(ctx, child.Message.From)
 			var fromActorCode string
@@ -152,7 +165,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 			traceObj := &fevm.FEVMTrace{
 				Height:              int64(parentMsg.Height),
-				TransactionHash:     transactionHash.String(),
+				TransactionHash:     transactionHash,
 				MessageStateRoot:    parentMsg.StateRoot.String(),
 				MessageCid:          parentMsg.Cid.String(),
 				TraceCid:            getMessageTraceCid(child.Message).String(),
