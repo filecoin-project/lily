@@ -421,6 +421,10 @@ func (sp *StateProcessor) startPeriodicActorDump(ctx context.Context, current *t
 	start := time.Now()
 	var taskNames []string
 
+	if len(sp.periodicActorDumpProcessors) == 0 {
+		return taskNames
+	}
+
 	if interval > 0 && current.Height()%abi.ChainEpoch(interval) != 0 {
 		logger := log.With("processor", "PeriodicActorDump")
 		logger.Infow("Skip this epoch", current.Height())
