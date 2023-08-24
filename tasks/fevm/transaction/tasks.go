@@ -66,10 +66,6 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if err != nil {
 			continue
 		}
-		toActorInfo, err := p.node.ActorInfo(ctx, message.Message.To, current.Key())
-		if err != nil {
-			continue
-		}
 
 		if !util.IsEVMMessage(ctx, p.node, message.Message, current.Key()) {
 			continue
@@ -122,10 +118,17 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if txn.TransactionIndex != nil {
 			txnObj.TransactionIndex = uint64(*txn.TransactionIndex)
 		}
+
+		// Sometime the the "To" field could be nil
 		if txn.To != nil {
 			txnObj.To = txn.To.String()
-			txnObj.ToFilecoinAddress = toActorInfo.Actor.Address.String()
-			txnObj.ToActorName = toActorInfo.ActorName
+
+			// Get the Actor from ActorInfo
+			toActorInfo, err := p.node.ActorInfo(ctx, message.Message.To, current.Key())
+			if err == nil && toActorInfo.Actor != nil && toActorInfo.Actor.Address != nil {
+				txnObj.ToActorName = toActorInfo.ActorName
+				txnObj.ToFilecoinAddress = toActorInfo.Actor.Address.String()
+			}
 		}
 
 		if len(txn.AccessList) > 0 {

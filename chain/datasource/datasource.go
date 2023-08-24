@@ -42,12 +42,14 @@ var (
 	diffPreCommitCacheSize        int
 	diffSectorCacheSize           int
 	actorCacheSize                int
+	actorInfoCacheSize            int
 
 	tipsetMessageReceiptSizeEnv = "LILY_TIPSET_MSG_RECEIPT_CACHE_SIZE"
 	executedTsCacheSizeEnv      = "LILY_EXECUTED_TS_CACHE_SIZE"
 	diffPreCommitCacheSizeEnv   = "LILY_DIFF_PRECOMMIT_CACHE_SIZE"
 	diffSectorCacheSizeEnv      = "LILY_DIFF_SECTORS_CACHE_SIZE"
 	actorCacheSizeEnv           = "LILY_ACTOR_CACHE_SIZE"
+	actorInfoCacheSizeEnv       = "LILY_ACTOR_INFO_CACHE_SIZE"
 )
 
 func getCacheSizeFromEnv(env string, defaultValue int) int {
@@ -66,7 +68,8 @@ func init() {
 	executedTsCacheSize = getCacheSizeFromEnv(executedTsCacheSizeEnv, 4)
 	diffPreCommitCacheSize = getCacheSizeFromEnv(diffPreCommitCacheSizeEnv, 500)
 	diffSectorCacheSize = getCacheSizeFromEnv(diffSectorCacheSizeEnv, 500)
-	actorCacheSize = getCacheSizeFromEnv(actorCacheSizeEnv, 1000)
+	actorCacheSize = getCacheSizeFromEnv(actorCacheSizeEnv, 3000)
+	actorInfoCacheSize = getCacheSizeFromEnv(actorInfoCacheSizeEnv, 3000)
 }
 
 var _ tasks.DataSource = (*DataSource)(nil)
@@ -104,6 +107,11 @@ func NewDataSource(node lens.API) (*DataSource, error) {
 		return nil, err
 	}
 
+	t.actorInfoCache, err = lru.New(actorInfoCacheSize)
+	if err != nil {
+		return nil, err
+	}
+
 	return t, nil
 }
 
@@ -122,7 +130,8 @@ type DataSource struct {
 	diffPreCommitCache *lru.Cache
 	diffPreCommitGroup singleflight.Group
 
-	actorCache *lru.Cache
+	actorCache     *lru.Cache
+	actorInfoCache *lru.Cache
 }
 
 func (t *DataSource) MessageReceiptEvents(ctx context.Context, root cid.Cid) ([]types.Event, error) {
@@ -222,6 +231,14 @@ func (t *DataSource) Actor(ctx context.Context, addr address.Address, tsk types.
 	return act, err
 }
 
+// ActorInfo retrieves information about an actor at the given address within
+// the context of a specific tipset. It first checks a cache for the requested
+// information and returns it if available, otherwise it fetches the actor's
+// details from the statetree. The retrieved actor information is cached
+// for future access. If the actor information is successfully retrieved,
+// it includes the actor's state and relevant metadata such as family and name.
+// If the actor is not found or an error occurs during retrieval, the function
+// returns an error.
 func (t *DataSource) ActorInfo(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*tasks.ActorInfo, error) {
 	metrics.RecordInc(ctx, metrics.DataSourceActorCacheRead)
 	ctx, span := otel.Tracer("").Start(ctx, "DataSource.ActorInfo")
@@ -231,10 +248,10 @@ func (t *DataSource) ActorInfo(ctx context.Context, addr address.Address, tsk ty
 	}
 	defer span.End()
 
-	key, keyErr := asKey(addr, tsk)
-	key = "ActorInfo:" + key
+	// Includes a prefix to prevent duplication of key names in the cach
+	key, keyErr := asKey(KeyPrefix{"ActorInfo"}, addr, tsk)
 	if keyErr == nil {
-		value, found := t.actorCache.Get(key)
+		value, found := t.actorInfoCache.Get(key)
 		if found {
 			metrics.RecordInc(ctx, metrics.DataSourceActorCacheHit)
 			return value.(*tasks.ActorInfo), nil
@@ -254,7 +271,7 @@ func (t *DataSource) ActorInfo(ctx context.Context, addr address.Address, tsk ty
 
 	// Save the ActorInfo into cache
 	if err == nil && keyErr == nil {
-		t.actorCache.Add(key, &actorInfo)
+		t.actorInfoCache.Add(key, &actorInfo)
 	}
 
 	return &actorInfo, err
@@ -566,4 +583,12 @@ func asKey(strs ...fmt.Stringer) (string, error) {
 		}
 	}
 	return sb.String(), nil
+}
+
+type KeyPrefix struct {
+	Prefix string
+}
+
+func (k KeyPrefix) String() string {
+	return k.Prefix + ":"
 }
