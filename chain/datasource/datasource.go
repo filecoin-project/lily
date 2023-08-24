@@ -42,14 +42,12 @@ var (
 	diffPreCommitCacheSize        int
 	diffSectorCacheSize           int
 	actorCacheSize                int
-	actorInfoCacheSize            int
 
 	tipsetMessageReceiptSizeEnv = "LILY_TIPSET_MSG_RECEIPT_CACHE_SIZE"
 	executedTsCacheSizeEnv      = "LILY_EXECUTED_TS_CACHE_SIZE"
 	diffPreCommitCacheSizeEnv   = "LILY_DIFF_PRECOMMIT_CACHE_SIZE"
 	diffSectorCacheSizeEnv      = "LILY_DIFF_SECTORS_CACHE_SIZE"
 	actorCacheSizeEnv           = "LILY_ACTOR_CACHE_SIZE"
-	actorInfoCacheSizeEnv       = "LILY_ACTOR_INFO_CACHE_SIZE"
 )
 
 func getCacheSizeFromEnv(env string, defaultValue int) int {
@@ -68,8 +66,7 @@ func init() {
 	executedTsCacheSize = getCacheSizeFromEnv(executedTsCacheSizeEnv, 4)
 	diffPreCommitCacheSize = getCacheSizeFromEnv(diffPreCommitCacheSizeEnv, 500)
 	diffSectorCacheSize = getCacheSizeFromEnv(diffSectorCacheSizeEnv, 500)
-	actorCacheSize = getCacheSizeFromEnv(actorCacheSizeEnv, 3000)
-	actorInfoCacheSize = getCacheSizeFromEnv(actorInfoCacheSizeEnv, 3000)
+	actorCacheSize = getCacheSizeFromEnv(actorCacheSizeEnv, 5000)
 }
 
 var _ tasks.DataSource = (*DataSource)(nil)
@@ -107,11 +104,6 @@ func NewDataSource(node lens.API) (*DataSource, error) {
 		return nil, err
 	}
 
-	t.actorInfoCache, err = lru.New(actorInfoCacheSize)
-	if err != nil {
-		return nil, err
-	}
-
 	return t, nil
 }
 
@@ -130,8 +122,7 @@ type DataSource struct {
 	diffPreCommitCache *lru.Cache
 	diffPreCommitGroup singleflight.Group
 
-	actorCache     *lru.Cache
-	actorInfoCache *lru.Cache
+	actorCache *lru.Cache
 }
 
 func (t *DataSource) MessageReceiptEvents(ctx context.Context, root cid.Cid) ([]types.Event, error) {
@@ -248,10 +239,10 @@ func (t *DataSource) ActorInfo(ctx context.Context, addr address.Address, tsk ty
 	}
 	defer span.End()
 
-	// Includes a prefix to prevent duplication of key names in the cach
+	// Includes a prefix to prevent duplication of key names in the cache
 	key, keyErr := asKey(KeyPrefix{"ActorInfo"}, addr, tsk)
 	if keyErr == nil {
-		value, found := t.actorInfoCache.Get(key)
+		value, found := t.actorCache.Get(key)
 		if found {
 			metrics.RecordInc(ctx, metrics.DataSourceActorCacheHit)
 			return value.(*tasks.ActorInfo), nil
@@ -274,7 +265,7 @@ func (t *DataSource) ActorInfo(ctx context.Context, addr address.Address, tsk ty
 
 	// Save the ActorInfo into cache
 	if err == nil && keyErr == nil {
-		t.actorInfoCache.Add(key, &actorInfo)
+		t.actorCache.Add(key, &actorInfo)
 	}
 
 	return &actorInfo, err
