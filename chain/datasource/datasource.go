@@ -261,6 +261,9 @@ func (t *DataSource) ActorInfo(ctx context.Context, addr address.Address, tsk ty
 	act, err := t.Actor(ctx, addr, tsk)
 	actorInfo := tasks.ActorInfo{}
 	if err == nil {
+		if act.Address == nil {
+			act.Address = &addr
+		}
 		actorInfo.Actor = act
 		actorName, actorFamily, err := util.ActorNameAndFamilyFromCode(act.Code)
 		if err == nil {
