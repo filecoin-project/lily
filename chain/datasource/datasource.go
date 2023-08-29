@@ -31,6 +31,7 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/lens"
+	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/tasks"
 )
@@ -65,7 +66,7 @@ func init() {
 	executedTsCacheSize = getCacheSizeFromEnv(executedTsCacheSizeEnv, 4)
 	diffPreCommitCacheSize = getCacheSizeFromEnv(diffPreCommitCacheSizeEnv, 500)
 	diffSectorCacheSize = getCacheSizeFromEnv(diffSectorCacheSizeEnv, 500)
-	actorCacheSize = getCacheSizeFromEnv(actorCacheSizeEnv, 1000)
+	actorCacheSize = getCacheSizeFromEnv(actorCacheSizeEnv, 5000)
 }
 
 var _ tasks.DataSource = (*DataSource)(nil)
@@ -219,6 +220,55 @@ func (t *DataSource) Actor(ctx context.Context, addr address.Address, tsk types.
 	}
 
 	return act, err
+}
+
+// ActorInfo retrieves information about an actor at the given address within
+// the context of a specific tipset. It first checks a cache for the requested
+// information and returns it if available, otherwise it fetches the actor's
+// details from the statetree. The retrieved actor information is cached
+// for future access. If the actor information is successfully retrieved,
+// it includes the actor's state and relevant metadata such as family and name.
+// If the actor is not found or an error occurs during retrieval, the function
+// returns an error.
+func (t *DataSource) ActorInfo(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*tasks.ActorInfo, error) {
+	metrics.RecordInc(ctx, metrics.DataSourceActorCacheRead)
+	ctx, span := otel.Tracer("").Start(ctx, "DataSource.ActorInfo")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.String("tipset", tsk.String()))
+		span.SetAttributes(attribute.String("address", addr.String()))
+	}
+	defer span.End()
+
+	// Includes a prefix to prevent duplication of key names in the cache
+	key, keyErr := asKey(KeyPrefix{"ActorInfo"}, addr, tsk)
+	if keyErr == nil {
+		value, found := t.actorCache.Get(key)
+		if found {
+			metrics.RecordInc(ctx, metrics.DataSourceActorCacheHit)
+			return value.(*tasks.ActorInfo), nil
+		}
+	}
+
+	act, err := t.Actor(ctx, addr, tsk)
+	actorInfo := tasks.ActorInfo{}
+	if err == nil {
+		if act.Address == nil {
+			act.Address = &addr
+		}
+		actorInfo.Actor = act
+		actorName, actorFamily, err := util.ActorNameAndFamilyFromCode(act.Code)
+		if err == nil {
+			actorInfo.ActorFamily = actorFamily
+			actorInfo.ActorName = actorName
+		}
+	}
+
+	// Save the ActorInfo into cache
+	if err == nil && keyErr == nil {
+		t.actorCache.Add(key, &actorInfo)
+	}
+
+	return &actorInfo, err
 }
 
 func (t *DataSource) MinerPower(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.MinerPower, error) {
@@ -527,4 +577,12 @@ func asKey(strs ...fmt.Stringer) (string, error) {
 		}
 	}
 	return sb.String(), nil
+}
+
+type KeyPrefix struct {
+	Prefix string
+}
+
+func (k KeyPrefix) String() string {
+	return k.Prefix + ":"
 }

@@ -48,10 +48,17 @@ type ActorStateChangeDiff map[address.Address]ActorStateChange
 
 type ActorStatesByType map[string][]*types.ActorV5
 
+type ActorInfo struct {
+	Actor       *types.Actor
+	ActorName   string
+	ActorFamily string
+}
+
 type DataSource interface {
 	TipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error)
 	Actor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error)
 	ActorState(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.ActorState, error)
+	ActorInfo(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*ActorInfo, error)
 	CirculatingSupply(ctx context.Context, ts *types.TipSet) (api.CirculatingSupply, error)
 	MinerPower(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.MinerPower, error)
 	ActorStateChanges(ctx context.Context, ts, pts *types.TipSet) (ActorStateChangeDiff, error)
