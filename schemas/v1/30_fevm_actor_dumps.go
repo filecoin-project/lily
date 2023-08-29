@@ -15,8 +15,8 @@ func init() {
 		actor_name           TEXT,
 		PRIMARY KEY(height, actor_id, nonce)
 	);
-	CREATE INDEX fevm_actor_dumps_actor_id_idx ON {{ .SchemaName | default "public"}}.fevm_actor_dumps USING hash (actor_id);
-	CREATE INDEX fevm_actor_dumps_eth_address_idx ON {{ .SchemaName | default "public"}}.fevm_actor_dumps USING hash (eth_address);
+	CREATE INDEX IF NOT EXISTS fevm_actor_dumps_actor_id_idx ON {{ .SchemaName | default "public"}}.fevm_actor_dumps USING hash (actor_id);
+	CREATE INDEX IF NOT EXISTS fevm_actor_dumps_eth_address_idx ON {{ .SchemaName | default "public"}}.fevm_actor_dumps USING hash (eth_address);
 `,
 	)
 }

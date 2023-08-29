@@ -15,14 +15,14 @@ type FEVMTrace struct {
 	// Height message was executed at.
 	Height int64 `pg:",pk,notnull,use_zero"`
 	// StateRoot message was applied to.
-	MessageStateRoot string `pg:",pk,notnull"`
+	MessageStateRoot string `pg:",notnull"`
 	// On-chain message triggering the message.
 	MessageCid string `pg:",pk,notnull"`
 	// On-chain message ETH transaction hash
 	TransactionHash string `pg:",notnull"`
 
 	// Cid of the trace.
-	TraceCid string `pg:",pk,notnull"`
+	TraceCid string `pg:",notnull"`
 	// ETH Address of the sender.
 	From string `pg:",notnull"`
 	// ETH Address of the receiver.
@@ -47,7 +47,7 @@ type FEVMTrace struct {
 	// Returns value of message receipt encode in eth bytes.
 	Returns string `pg:",notnull"`
 	// Index indicating the order of the messages execution.
-	Index uint64 `pg:",notnull,use_zero"`
+	Index uint64 `pg:",pk,notnull,use_zero"`
 	// Params contained in message.
 	ParsedParams string `pg:",type:jsonb"`
 	// Returns value of message receipt.
