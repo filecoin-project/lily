@@ -5,6 +5,34 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.17.1"></a>
+## [v0.17.1] - 2023-8-30
+
+## DATABASE MIGRATION
+This release includes a migration which must be applied before deploying against an existing database.
+* [1.30](https://github.com/filecoin-project/lily/blob/master/schemas/v1/30_fevm_actor_dumps.go)
+* [1.31](https://github.com/filecoin-project/lily/blob/master/schemas/v1/31_add_message_and_address_and_actor_names_to_fevm_transcation.go)
+* [1.32](https://github.com/filecoin-project/lily/blob/master/schemas/v1/32_change_the_fevm_trace_pkey.go)
+
+  
+### Feat
+* feat: add actor dump processor and task (https://github.com/filecoin-project/lily/pull/1245)
+  * requires migration [1.30](https://github.com/filecoin-project/lily/blob/master/schemas/v1/30_fevm_actor_dumps.go)
+* feat: add new config to prefect service (https://github.com/filecoin-project/lily/pull/1257)
+* feat: add more fields in fevm transaction (https://github.com/filecoin-project/lily/pull/1255)
+  * requires migration [1.31](https://github.com/filecoin-project/lily/blob/master/schemas/v1/31_add_message_and_address_and_actor_names_to_fevm_transcation.go)
+
+  
+### Fix
+* fix: align the eth address in fevm trace (https://github.com/filecoin-project/lily/pull/1253)
+* fix: transaction hash in fevm trace (https://github.com/filecoin-project/lily/pull/1254)
+* fix: skip StateListActors if there is no actor dump processor (https://github.com/filecoin-project/lily/pull/1256)
+
+### Chore
+* chore: Change the pkey of fevm_traces and refine the previous migration script (https://github.com/filecoin-project/lily/pull/1259)
+  * requires migration [1.32](https://github.com/filecoin-project/lily/blob/master/schemas/v1/32_change_the_fevm_trace_pkey.go)
+
+
 <a name="v0.17.0"></a>
 ## [v0.17.0] - 2023-8-1
 
