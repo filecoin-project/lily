@@ -2,7 +2,7 @@ package v1
 
 func init() {
 	patches.Register(
-		28,
+		33,
 		`
 -- fevm_block_headers
 CREATE INDEX IF NOT EXISTS fevm_block_headers_height_idx ON {{ .SchemaName | default "public"}}.fevm_block_headers USING BTREE (height);
