@@ -24,7 +24,7 @@ type DataCapBalance struct {
 	DataCap string `pg:",notnull,type:numeric"`
 }
 
-func (d *DataCapBalance) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (d *DataCapBalance) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "data_cap_balances"))
 
 	return s.PersistModel(ctx, d)
@@ -32,7 +32,7 @@ func (d *DataCapBalance) Persist(ctx context.Context, s model.StorageBatch, vers
 
 type DataCapBalanceList []*DataCapBalance
 
-func (d DataCapBalanceList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (d DataCapBalanceList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "data_cap_balances"))
 
 	if len(d) == 0 {

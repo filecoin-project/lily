@@ -23,7 +23,7 @@ var log = logging.Logger("lily/lens")
 
 var ErrExecutionTraceNotFound = fmt.Errorf("failed to find execution trace")
 
-func StateManager(lmctx helpers.MetricsCtx, lc fx.Lifecycle, cs *store.ChainStore, exec stmgr.Executor, sys vm.SyscallBuilder, us stmgr.UpgradeSchedule, bs beacon.Schedule, em stmgr.ExecMonitor, metadataDs dtypes.MetadataDS, msgIndex index.MsgIndex) (*stmgr.StateManager, error) {
+func StateManager(_ helpers.MetricsCtx, lc fx.Lifecycle, cs *store.ChainStore, exec stmgr.Executor, sys vm.SyscallBuilder, us stmgr.UpgradeSchedule, bs beacon.Schedule, em stmgr.ExecMonitor, metadataDs dtypes.MetadataDS, msgIndex index.MsgIndex) (*stmgr.StateManager, error) {
 	sm, err := stmgr.NewStateManagerWithUpgradeScheduleAndMonitor(cs, exec, sys, us, bs, em, metadataDs, msgIndex)
 	if err != nil {
 		return nil, err

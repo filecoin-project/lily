@@ -255,7 +255,7 @@ func (r *RawActorExtractorMap) Register(ase ActorStateExtractor) {
 	r.extractors = append(r.extractors, ase)
 }
 
-func (r *RawActorExtractorMap) Allow(code cid.Cid) bool {
+func (r *RawActorExtractorMap) Allow(_ cid.Cid) bool {
 	return true
 }
 
