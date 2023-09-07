@@ -15,7 +15,7 @@ type ReceiptReturn struct {
 	Return    []byte
 }
 
-func (m *ReceiptReturn) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (m *ReceiptReturn) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "receipt_return"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, m)
@@ -23,7 +23,7 @@ func (m *ReceiptReturn) Persist(ctx context.Context, s model.StorageBatch, versi
 
 type ReceiptReturnList []*ReceiptReturn
 
-func (rl ReceiptReturnList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (rl ReceiptReturnList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "receipt_return"))
 	metrics.RecordCount(ctx, metrics.PersistModel, len(rl))
 	return s.PersistModel(ctx, rl)

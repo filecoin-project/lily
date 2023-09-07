@@ -53,7 +53,7 @@ type MarketDealProposal struct {
 	IsString bool
 }
 
-func (dp *MarketDealProposal) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (dp *MarketDealProposal) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "market_deal_proposals"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, dp)
@@ -61,7 +61,7 @@ func (dp *MarketDealProposal) Persist(ctx context.Context, s model.StorageBatch,
 
 type MarketDealProposals []*MarketDealProposal
 
-func (dps MarketDealProposals) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (dps MarketDealProposals) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, span := otel.Tracer("").Start(ctx, "MarketDealProposals.Persist")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.Int("count", len(dps)))

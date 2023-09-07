@@ -12,6 +12,7 @@ var _ model.Storage = (*NullStorage)(nil)
 type NullStorage struct {
 }
 
+//revive:disable
 func (*NullStorage) PersistBatch(ctx context.Context, p ...model.Persistable) error {
 	return nil
 }

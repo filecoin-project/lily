@@ -24,7 +24,7 @@ type GapReport struct {
 	ReportedAt time.Time `pg:",use_zero"`
 }
 
-func (p *GapReport) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (p *GapReport) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "visor_gap_reports"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, p)
@@ -32,7 +32,7 @@ func (p *GapReport) Persist(ctx context.Context, s model.StorageBatch, version m
 
 type GapReportList []*GapReport
 
-func (pl GapReportList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (pl GapReportList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(pl) == 0 {
 		return nil
 	}

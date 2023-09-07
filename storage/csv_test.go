@@ -22,6 +22,7 @@ type TestModel struct {
 	Message string `pg:",pk,notnull"`
 }
 
+//revive:disable
 func (tm *TestModel) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
 	return s.PersistModel(ctx, tm)
 }

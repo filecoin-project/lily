@@ -17,7 +17,7 @@ type BlockParent struct {
 	Parent string `pg:",notnull"`
 }
 
-func (bp *BlockParent) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (bp *BlockParent) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "block_parents"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, bp)
@@ -37,7 +37,7 @@ func NewBlockParents(header *types.BlockHeader) BlockParents {
 	return out
 }
 
-func (bps BlockParents) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (bps BlockParents) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(bps) == 0 {
 		return nil
 	}

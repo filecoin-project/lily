@@ -24,7 +24,7 @@ type ActorEvent struct {
 	Value   []byte `pg:",notnull"`
 }
 
-func (a *ActorEvent) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (a *ActorEvent) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_events"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, a)
@@ -32,7 +32,7 @@ func (a *ActorEvent) Persist(ctx context.Context, s model.StorageBatch, version 
 
 type ActorEventList []*ActorEvent
 
-func (al ActorEventList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (al ActorEventList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(al) == 0 {
 		return nil
 	}

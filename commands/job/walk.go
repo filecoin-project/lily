@@ -79,11 +79,9 @@ The status of each epoch and its set of tasks can be observed in the visor_proce
 			return err
 		}
 
-		if err := commands.PrintNewJob(os.Stdout, res); err != nil {
-			return err
-		}
+		err = commands.PrintNewJob(os.Stdout, res)
 
-		return nil
+		return err
 	},
 }
 

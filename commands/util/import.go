@@ -88,11 +88,8 @@ func ImportFromFsFile(ctx context.Context, r repo.Repo, fs fs.File, snapshot boo
 	}
 
 	log.Infof("accepting %s as new head", ts.Cids())
-	if err := cst.ForceHeadSilent(ctx, ts); err != nil {
-		return err
-	}
-
-	return nil
+	err = cst.ForceHeadSilent(ctx, ts)
+	return err
 }
 
 func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool, backfillTipsetkeyRange int) (err error) {
@@ -226,11 +223,8 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool, 
 	}
 
 	log.Infof("accepting %s as new head", ts.Cids())
-	if err := cst.ForceHeadSilent(ctx, ts); err != nil {
-		return err
-	}
-
-	return nil
+	err = cst.ForceHeadSilent(ctx, ts)
+	return err
 }
 
 func backfillTipsetKey(ctx context.Context, root *types.TipSet, cs *store.ChainStore, backfillRange int) (err error) {

@@ -28,7 +28,7 @@ type FEVMContract struct {
 	Nonce uint64 `pg:",use_zero"`
 }
 
-func (f *FEVMContract) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f *FEVMContract) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_contracts"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, f)
@@ -36,7 +36,7 @@ func (f *FEVMContract) Persist(ctx context.Context, s model.StorageBatch, versio
 
 type FEVMContractList []*FEVMContract
 
-func (f FEVMContractList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f FEVMContractList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(f) == 0 {
 		return nil
 	}

@@ -31,7 +31,7 @@ type MinerProtocol struct {
 	Protocols []string
 }
 
-func (m *MinerProtocol) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (m *MinerProtocol) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "surveyed_miner_protocols"))
 
 	return s.PersistModel(ctx, m)
@@ -39,7 +39,7 @@ func (m *MinerProtocol) Persist(ctx context.Context, s model.StorageBatch, versi
 
 type MinerProtocolList []*MinerProtocol
 
-func (m MinerProtocolList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (m MinerProtocolList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(m) == 0 {
 		return nil
 	}

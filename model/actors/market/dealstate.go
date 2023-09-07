@@ -20,7 +20,7 @@ type MarketDealState struct {
 	StateRoot string `pg:",notnull"`
 }
 
-func (ds *MarketDealState) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (ds *MarketDealState) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "market_deal_states"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, ds)
@@ -28,7 +28,7 @@ func (ds *MarketDealState) Persist(ctx context.Context, s model.StorageBatch, ve
 
 type MarketDealStates []*MarketDealState
 
-func (dss MarketDealStates) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (dss MarketDealStates) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, span := otel.Tracer("").Start(ctx, "MarketDealStates.Persist")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.Int("count", len(dss)))

@@ -37,6 +37,7 @@ func Gen() error {
 		return err
 	}
 
+	//revive:disable
 	if err := generateBuiltin("chain/actors/builtin/builtin.go"); err != nil {
 		return err
 	}

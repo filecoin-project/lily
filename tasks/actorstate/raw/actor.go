@@ -66,7 +66,7 @@ func (RawActorExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, no
 	}, nil
 }
 
-func (RawActorExtractor) Transform(ctx context.Context, data model.PersistableList) (model.PersistableList, error) {
+func (RawActorExtractor) Transform(_ context.Context, data model.PersistableList) (model.PersistableList, error) {
 	actorList := make(commonmodel.ActorList, 0, len(data))
 	for _, d := range data {
 		a, ok := d.(*commonmodel.Actor)

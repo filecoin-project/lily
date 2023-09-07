@@ -32,7 +32,7 @@ type PeerAgent struct {
 	Count int64 `pg:",use_zero,notnull"`
 }
 
-func (p *PeerAgent) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (p *PeerAgent) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "surveyed_peer_agents"))
 
 	return s.PersistModel(ctx, p)
@@ -40,7 +40,7 @@ func (p *PeerAgent) Persist(ctx context.Context, s model.StorageBatch, version m
 
 type PeerAgentList []*PeerAgent
 
-func (l PeerAgentList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (l PeerAgentList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(l) == 0 {
 		return nil
 	}

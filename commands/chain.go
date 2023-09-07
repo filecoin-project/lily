@@ -806,11 +806,9 @@ var ChainSetHeadCmd = &cli.Command{
 			return fmt.Errorf("must pass cids for tipset to set as head")
 		}
 
-		if err := lapi.ChainSetHead(ctx, ts.Key()); err != nil {
-			return err
-		}
+		err = lapi.ChainSetHead(ctx, ts.Key())
 
-		return nil
+		return err
 	},
 }
 

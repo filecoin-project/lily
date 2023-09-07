@@ -62,7 +62,7 @@ type FEVMTrace struct {
 	FromActorName string `pg:",notnull"`
 }
 
-func (f *FEVMTrace) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f *FEVMTrace) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_traces"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, f)
@@ -70,7 +70,7 @@ func (f *FEVMTrace) Persist(ctx context.Context, s model.StorageBatch, version m
 
 type FEVMTraceList []*FEVMTrace
 
-func (f FEVMTraceList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f FEVMTraceList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(f) == 0 {
 		return nil
 	}

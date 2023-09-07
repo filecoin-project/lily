@@ -24,7 +24,7 @@ type VerifiedRegistryClaim struct {
 	Event     string `pg:",notnull,type:verified_registry_event_type"`
 }
 
-func (v *VerifiedRegistryClaim) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (v *VerifiedRegistryClaim) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "verified_registry_claim"))
 
 	return s.PersistModel(ctx, v)
@@ -32,7 +32,7 @@ func (v *VerifiedRegistryClaim) Persist(ctx context.Context, s model.StorageBatc
 
 type VerifiedRegistryClaimList []*VerifiedRegistryClaim
 
-func (v VerifiedRegistryClaimList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (v VerifiedRegistryClaimList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(v) == 0 {
 		return nil
 	}

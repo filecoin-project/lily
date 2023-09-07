@@ -16,6 +16,7 @@ import (
 	"github.com/filecoin-project/lily/storage"
 )
 
+//revive:disable
 func Gen() error {
 	taskDir := "./chain/indexer/tasktype"
 	rf, err := os.ReadFile(filepath.Join(taskDir, "table_tasks.go.template"))

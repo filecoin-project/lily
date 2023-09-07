@@ -61,7 +61,7 @@ type BufferedExecution struct {
 	Implicit bool
 }
 
-func (b *BufferedExecMonitor) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid.Cid, msg *types.Message, ret *vm.ApplyRet, implicit bool) error {
+func (b *BufferedExecMonitor) MessageApplied(_ context.Context, ts *types.TipSet, mcid cid.Cid, msg *types.Message, ret *vm.ApplyRet, implicit bool) error {
 	execution := &BufferedExecution{
 		TipSet:   ts,
 		Mcid:     mcid,

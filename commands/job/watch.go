@@ -51,6 +51,7 @@ var WatchBufferSizeFlag = &cli.IntFlag{
 	Destination: &watchFlags.bufferSize,
 }
 
+//revive:disable
 var WatchCmd = &cli.Command{
 	Name:  "watch",
 	Usage: "watch the head of the filecoin blockchain and index each new head as it becomes available",
@@ -101,7 +102,9 @@ watches the chain head and only indexes a tipset after observing 10 subsequent t
 		tasks := RunFlags.Tasks.Value()
 		for _, taskName := range tasks {
 			if _, found := tasktype.TaskLookup[taskName]; found {
+				continue
 			} else if _, found := tasktype.TableLookup[taskName]; found {
+				continue
 			} else {
 				return fmt.Errorf("unknown task: %s", taskName)
 			}

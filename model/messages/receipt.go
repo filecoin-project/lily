@@ -24,7 +24,7 @@ type Receipt struct {
 	ParsedReturn string `pg:",type:jsonb"`
 }
 
-func (r *Receipt) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (r *Receipt) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "receipts"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, r)
@@ -32,7 +32,7 @@ func (r *Receipt) Persist(ctx context.Context, s model.StorageBatch, version mod
 
 type Receipts []*Receipt
 
-func (rs Receipts) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (rs Receipts) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(rs) == 0 {
 		return nil
 	}

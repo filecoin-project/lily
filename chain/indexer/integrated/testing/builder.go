@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/lily/model"
 )
 
+//revive:disable
 type MockIndexBuilder struct {
 	MockIndexer *MockIndexer
 	mock.Mock

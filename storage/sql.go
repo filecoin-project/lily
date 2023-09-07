@@ -119,7 +119,7 @@ var (
 
 const MaxPostgresNameLength = 64
 
-func NewDatabase(ctx context.Context, url string, poolSize int, name string, schemaName string, upsert bool) (*Database, error) {
+func NewDatabase(_ context.Context, url string, poolSize int, name string, schemaName string, upsert bool) (*Database, error) {
 	if len(name) > MaxPostgresNameLength {
 		return nil, ErrNameTooLong
 	}

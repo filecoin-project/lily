@@ -132,11 +132,8 @@ func (c *Watcher) init(ctx context.Context) error {
 	}
 
 	c.cache = cache.NewTipSetCache(c.confidence)
-	if err := c.cache.Warm(ctx, head, c.api.ChainGetTipSet); err != nil {
-		return err
-	}
-
-	return nil
+	err := c.cache.Warm(ctx, head, c.api.ChainGetTipSet)
+	return err
 }
 
 func (c *Watcher) close() {

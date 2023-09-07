@@ -47,7 +47,7 @@ type FEVMBlockHeader struct {
 	Sha3Uncles string `pg:",notnull"`
 }
 
-func (f *FEVMBlockHeader) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f *FEVMBlockHeader) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_block_headers"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, f)
@@ -55,7 +55,7 @@ func (f *FEVMBlockHeader) Persist(ctx context.Context, s model.StorageBatch, ver
 
 type FEVMBlockHeaderList []*FEVMBlockHeader
 
-func (f FEVMBlockHeaderList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f FEVMBlockHeaderList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(f) == 0 {
 		return nil
 	}

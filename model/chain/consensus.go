@@ -18,7 +18,7 @@ type ChainConsensus struct {
 	TipSet          string
 }
 
-func (c ChainConsensus) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (c ChainConsensus) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, span := otel.Tracer("").Start(ctx, "ChainConsensus.Persist")
 	defer span.End()
 
@@ -30,7 +30,7 @@ func (c ChainConsensus) Persist(ctx context.Context, s model.StorageBatch, versi
 
 type ChainConsensusList []*ChainConsensus
 
-func (c ChainConsensusList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (c ChainConsensusList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, span := otel.Tracer("").Start(ctx, "ChainConsensusList.Persist")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.Int("count", len(c)))

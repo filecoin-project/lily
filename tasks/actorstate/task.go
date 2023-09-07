@@ -247,7 +247,7 @@ type RawActorExtractorMap struct {
 	extractors []ActorStateExtractor
 }
 
-func (r *RawActorExtractorMap) GetExtractors(code cid.Cid) ([]ActorStateExtractor, bool) {
+func (r *RawActorExtractorMap) GetExtractors(_ cid.Cid) ([]ActorStateExtractor, bool) {
 	return r.extractors, true
 }
 

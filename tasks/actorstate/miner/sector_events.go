@@ -133,7 +133,7 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 	return sectorEventModel, nil
 }
 
-func (SectorEventsExtractor) Transform(ctx context.Context, data model.PersistableList) (model.PersistableList, error) {
+func (SectorEventsExtractor) Transform(_ context.Context, data model.PersistableList) (model.PersistableList, error) {
 	persistableList := make(minermodel.MinerSectorEventList, 0, len(data))
 	for _, d := range data {
 		ml, ok := d.(minermodel.MinerSectorEventList)

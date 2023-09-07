@@ -74,7 +74,7 @@ func (h *TipSetObserver) Cancel(err error) {
 	h.mu.Unlock()
 }
 
-func (h *TipSetObserver) SetCurrent(ctx context.Context, ts *types.TipSet) error {
+func (h *TipSetObserver) SetCurrent(_ context.Context, ts *types.TipSet) error {
 	h.mu.Lock()
 	if h.err != nil {
 		err := h.err
@@ -98,7 +98,7 @@ func (h *TipSetObserver) SetCurrent(ctx context.Context, ts *types.TipSet) error
 	return nil
 }
 
-func (h *TipSetObserver) Apply(ctx context.Context, from, to *types.TipSet) error {
+func (h *TipSetObserver) Apply(_ context.Context, from, to *types.TipSet) error {
 	h.mu.Lock()
 	if h.err != nil {
 		err := h.err
@@ -126,7 +126,7 @@ func (h *TipSetObserver) Apply(ctx context.Context, from, to *types.TipSet) erro
 	return nil
 }
 
-func (h *TipSetObserver) Revert(ctx context.Context, from, to *types.TipSet) error {
+func (h *TipSetObserver) Revert(_ context.Context, from, to *types.TipSet) error {
 	h.mu.Lock()
 	if h.err != nil {
 		err := h.err

@@ -73,7 +73,7 @@ func ExtractSectorDealsModel(ctx context.Context, ec extraction.State) (minermod
 	return result, nil
 }
 
-func (SectorDealsExtractor) Transform(ctx context.Context, data model.PersistableList) (model.PersistableList, error) {
+func (SectorDealsExtractor) Transform(_ context.Context, data model.PersistableList) (model.PersistableList, error) {
 	persistableList := make(minermodel.MinerSectorDealList, 0, len(data))
 	for _, d := range data {
 		ml, ok := d.(minermodel.MinerSectorDealList)

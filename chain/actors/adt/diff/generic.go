@@ -41,10 +41,8 @@ func CompareArray(preArr, curArr adt.Array, out ArrayDiffer) error {
 			return err
 		}
 		if !found {
-			if err := out.Remove(uint64(i), prevVal); err != nil {
-				return err
-			}
-			return nil
+			err := out.Remove(uint64(i), prevVal)
+			return err
 		}
 
 		// no modification
@@ -103,10 +101,8 @@ func CompareMap(preMap, curMap adt.Map, out MapDiffer) error {
 			return err
 		}
 		if !found {
-			if err := out.Remove(key, prevVal); err != nil {
-				return err
-			}
-			return nil
+			err := out.Remove(key, prevVal)
+			return err
 		}
 
 		// no modification

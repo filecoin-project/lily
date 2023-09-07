@@ -25,6 +25,7 @@ type APIWrapper struct {
 	ctx context.Context
 }
 
+//revive:disable
 func (aw *APIWrapper) BurnFundsFn(ctx context.Context, ts *types.TipSet) (lens.ShouldBurnFn, error) {
 	//TODO implement me
 	panic("implement me")

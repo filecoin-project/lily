@@ -39,7 +39,7 @@ type MinerSectorEvent struct {
 	Event string `pg:"type:miner_sector_event_type" pg:",pk,notnull"` // nolint: staticcheck
 }
 
-func (mse *MinerSectorEvent) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (mse *MinerSectorEvent) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_sector_events"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, mse)
@@ -47,7 +47,7 @@ func (mse *MinerSectorEvent) Persist(ctx context.Context, s model.StorageBatch, 
 
 type MinerSectorEventList []*MinerSectorEvent
 
-func (l MinerSectorEventList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (l MinerSectorEventList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, span := otel.Tracer("").Start(ctx, "MinerSectorEventList.Persist")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.Int("count", len(l)))
