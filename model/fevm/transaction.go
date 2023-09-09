@@ -58,7 +58,7 @@ type FEVMTransaction struct {
 	// Human-readable identifier of receiver (To).
 	ToActorName string `pg:",notnull"`
 	// On-chain message triggering the message.
-	MessageCid string `pg:",pk,notnull"`
+	MessageCid string `pg:",notnull"`
 }
 
 func (f *FEVMTransaction) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
