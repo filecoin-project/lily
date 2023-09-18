@@ -70,7 +70,7 @@ func NewfSkip(skip int, retCode exitcode.ExitCode, format string, args ...interf
 	}
 }
 
-func Fatal(message string, args ...interface{}) ActorError {
+func Fatal(message string, _ ...interface{}) ActorError {
 	return &actorError{
 		fatal: true,
 		msg:   message,

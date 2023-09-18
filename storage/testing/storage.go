@@ -62,6 +62,6 @@ func (l *LoggingQueryHook) BeforeQuery(ctx context.Context, event *pg.QueryEvent
 	return ctx, nil
 }
 
-func (l *LoggingQueryHook) AfterQuery(ctx context.Context, event *pg.QueryEvent) error {
+func (l *LoggingQueryHook) AfterQuery(_ context.Context, _ *pg.QueryEvent) error {
 	return nil
 }

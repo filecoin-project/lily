@@ -56,7 +56,7 @@ func (LockedFundsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo,
 	}, nil
 }
 
-func (LockedFundsExtractor) Transform(ctx context.Context, data model.PersistableList) (model.PersistableList, error) {
+func (LockedFundsExtractor) Transform(_ context.Context, data model.PersistableList) (model.PersistableList, error) {
 	persistableList := make(minermodel.MinerLockedFundsList, 0, len(data))
 	for _, d := range data {
 		if d == nil {

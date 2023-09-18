@@ -23,6 +23,7 @@ var (
 	maxHeight = int64(10)
 )
 
+//revive:disable
 func TestFind(t *testing.T) {
 	if testing.Short() {
 		t.Skip("short testing requested")

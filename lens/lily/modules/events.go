@@ -7,7 +7,7 @@ import (
 	"go.uber.org/fx"
 )
 
-func NewEvents(mctx helpers.MetricsCtx, lc fx.Lifecycle, chainAPI full.ChainModuleAPI, stateAPI full.StateModuleAPI) (*events.Events, error) {
+func NewEvents(mctx helpers.MetricsCtx, _ fx.Lifecycle, chainAPI full.ChainModuleAPI, stateAPI full.StateModuleAPI) (*events.Events, error) {
 	api := struct {
 		full.ChainModuleAPI
 		full.StateModuleAPI

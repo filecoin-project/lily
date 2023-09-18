@@ -63,14 +63,14 @@ func (m *MockActorStateAPI) Store() adt.Store {
 	return nil
 }
 
-func (m *MockActorStateAPI) DiffPreCommits(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.PreCommitChanges, error) {
+func (m *MockActorStateAPI) DiffPreCommits(ctx context.Context, _ address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.PreCommitChanges, error) {
 	args := m.Called(ctx, ts, pts, pre, cur)
 	tsmsgs := args.Get(0)
 	err := args.Error(1)
 	return tsmsgs.(*miner.PreCommitChanges), err
 }
 
-func (m *MockActorStateAPI) DiffPreCommitsV8(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.PreCommitChangesV8, error) {
+func (m *MockActorStateAPI) DiffPreCommitsV8(ctx context.Context, _ address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.PreCommitChangesV8, error) {
 	args := m.Called(ctx, ts, pts, pre, cur)
 	tsmsgs := args.Get(0)
 	err := args.Error(1)

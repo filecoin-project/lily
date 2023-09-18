@@ -469,17 +469,13 @@ func (m *LilyNodeAPI) LilyGapFillNotify(_ context.Context, cfg *LilyGapFillNotif
 }
 
 func (m *LilyNodeAPI) LilyJobStart(_ context.Context, ID schedule.JobID) error {
-	if err := m.Scheduler.StartJob(ID); err != nil {
-		return err
-	}
-	return nil
+	err := m.Scheduler.StartJob(ID)
+	return err
 }
 
 func (m *LilyNodeAPI) LilyJobStop(_ context.Context, ID schedule.JobID) error {
-	if err := m.Scheduler.StopJob(ID); err != nil {
-		return err
-	}
-	return nil
+	err := m.Scheduler.StopJob(ID)
+	return err
 }
 
 func (m *LilyNodeAPI) LilyJobWait(ctx context.Context, ID schedule.JobID) (*schedule.JobListResult, error) {

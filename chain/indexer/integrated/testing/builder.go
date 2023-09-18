@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/lily/model"
 )
 
+//revive:disable
 type MockIndexBuilder struct {
 	MockIndexer *MockIndexer
 	mock.Mock
@@ -20,11 +21,11 @@ func (t *MockIndexBuilder) Name() string {
 	return "mockindexbuilder"
 }
 
-func (t *MockIndexBuilder) WithTasks(tasks []string) tipset.IndexerBuilder {
+func (t *MockIndexBuilder) WithTasks(_ []string) tipset.IndexerBuilder {
 	return t
 }
 
-func (t *MockIndexBuilder) WithInterval(interval int) tipset.IndexerBuilder {
+func (t *MockIndexBuilder) WithInterval(_ int) tipset.IndexerBuilder {
 	return t
 }
 

@@ -10,7 +10,7 @@ import (
 	"github.com/filecoin-project/lily/storage"
 )
 
-func NewStorageCatalog(mctx helpers.MetricsCtx, lc fx.Lifecycle, cfg *config.Conf) (*storage.Catalog, error) {
+func NewStorageCatalog(_ helpers.MetricsCtx, _ fx.Lifecycle, cfg *config.Conf) (*storage.Catalog, error) {
 	return storage.NewCatalog(cfg.Storage)
 }
 
@@ -20,6 +20,6 @@ func LoadConf(path string) func(mctx helpers.MetricsCtx, lc fx.Lifecycle) (*conf
 	}
 }
 
-func NewQueueCatalog(mctx helpers.MetricsCtx, lc fx.Lifecycle, cfg *config.Conf) (*distributed.Catalog, error) {
+func NewQueueCatalog(_ helpers.MetricsCtx, _ fx.Lifecycle, cfg *config.Conf) (*distributed.Catalog, error) {
 	return distributed.NewCatalog(cfg.Queue)
 }

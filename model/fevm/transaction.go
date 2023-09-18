@@ -61,7 +61,7 @@ type FEVMTransaction struct {
 	MessageCid string `pg:",notnull"`
 }
 
-func (f *FEVMTransaction) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f *FEVMTransaction) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_transactions"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, f)
@@ -69,7 +69,7 @@ func (f *FEVMTransaction) Persist(ctx context.Context, s model.StorageBatch, ver
 
 type FEVMTransactionList []*FEVMTransaction
 
-func (f FEVMTransactionList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f FEVMTransactionList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(f) == 0 {
 		return nil
 	}

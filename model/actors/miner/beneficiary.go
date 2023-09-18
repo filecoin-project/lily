@@ -28,7 +28,7 @@ type MinerBeneficiary struct {
 	ApprovedByNominee     bool
 }
 
-func (m *MinerBeneficiary) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (m *MinerBeneficiary) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, span := otel.Tracer("").Start(ctx, "MinerBeneficiaryModel.Persist")
 	defer span.End()
 
@@ -39,7 +39,7 @@ func (m *MinerBeneficiary) Persist(ctx context.Context, s model.StorageBatch, ve
 
 type MinerBeneficiaryList []*MinerBeneficiary
 
-func (ml MinerBeneficiaryList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (ml MinerBeneficiaryList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, span := otel.Tracer("").Start(ctx, "MinerBeneficiaryList.Persist")
 	defer span.End()
 

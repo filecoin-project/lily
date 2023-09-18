@@ -23,7 +23,7 @@ type MinerCurrentDeadlineInfo struct {
 	FaultCutoff   int64  `pg:",notnull,use_zero"`
 }
 
-func (m *MinerCurrentDeadlineInfo) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (m *MinerCurrentDeadlineInfo) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, span := otel.Tracer("").Start(ctx, "MinerCurrentDeadlineInfo.Persist")
 	defer span.End()
 
@@ -34,7 +34,7 @@ func (m *MinerCurrentDeadlineInfo) Persist(ctx context.Context, s model.StorageB
 
 type MinerCurrentDeadlineInfoList []*MinerCurrentDeadlineInfo
 
-func (ml MinerCurrentDeadlineInfoList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (ml MinerCurrentDeadlineInfoList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, span := otel.Tracer("").Start(ctx, "MinerCurrentDeadlineInfoList.Persist")
 	defer span.End()
 

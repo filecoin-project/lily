@@ -23,7 +23,7 @@ type VerifiedRegistryVerifier struct {
 	DataCap string `pg:",notnull,type:numeric"`
 }
 
-func (v *VerifiedRegistryVerifier) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (v *VerifiedRegistryVerifier) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "verified_registry_verifier"))
 
 	return s.PersistModel(ctx, v)
@@ -31,7 +31,7 @@ func (v *VerifiedRegistryVerifier) Persist(ctx context.Context, s model.StorageB
 
 type VerifiedRegistryVerifiersList []*VerifiedRegistryVerifier
 
-func (v VerifiedRegistryVerifiersList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (v VerifiedRegistryVerifiersList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "verified_registry_verifier"))
 
 	return s.PersistModel(ctx, v)
@@ -46,7 +46,7 @@ type VerifiedRegistryVerifiedClient struct {
 	DataCap string `pg:"type:numeric,notnull"`
 }
 
-func (v *VerifiedRegistryVerifiedClient) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (v *VerifiedRegistryVerifiedClient) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "verified_registry_verified_client"))
 
 	return s.PersistModel(ctx, v)
@@ -54,7 +54,7 @@ func (v *VerifiedRegistryVerifiedClient) Persist(ctx context.Context, s model.St
 
 type VerifiedRegistryVerifiedClientsList []*VerifiedRegistryVerifiedClient
 
-func (v VerifiedRegistryVerifiedClientsList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (v VerifiedRegistryVerifiedClientsList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "verified_registry_verified_client"))
 
 	return s.PersistModel(ctx, v)

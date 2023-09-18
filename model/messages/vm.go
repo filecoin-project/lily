@@ -43,7 +43,7 @@ type VMMessage struct {
 	Index uint64 `pg:",notnull,use_zero"`
 }
 
-func (v *VMMessage) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (v *VMMessage) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "vm_messages"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, v)
@@ -51,7 +51,7 @@ func (v *VMMessage) Persist(ctx context.Context, s model.StorageBatch, version m
 
 type VMMessageList []*VMMessage
 
-func (vl VMMessageList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (vl VMMessageList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(vl) == 0 {
 		return nil
 	}

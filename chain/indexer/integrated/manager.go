@@ -134,11 +134,8 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 		}
 
 		// synchronously export extracted data and its report. If datas at this height are currently being persisted this method will block to avoid deadlocking the database.
-		if err := i.exporter.ExportResult(ctx, i.storage, int64(ts.Height()), modelResults); err != nil {
-			return err
-		}
-
-		return nil
+		err := i.exporter.ExportResult(ctx, i.storage, int64(ts.Height()), modelResults)
+		return err
 	})
 
 	grp.Go(func() error {

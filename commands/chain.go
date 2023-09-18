@@ -196,7 +196,7 @@ var ChainActorMethodsCmd = &cli.Command{
 			}
 
 			var err error
-			if results, err = printActorMethods(t, a); err != nil {
+			if results, err = printActorMethods(a); err != nil {
 				return err
 			}
 
@@ -806,11 +806,9 @@ var ChainSetHeadCmd = &cli.Command{
 			return fmt.Errorf("must pass cids for tipset to set as head")
 		}
 
-		if err := lapi.ChainSetHead(ctx, ts.Key()); err != nil {
-			return err
-		}
+		err = lapi.ChainSetHead(ctx, ts.Key())
 
-		return nil
+		return err
 	},
 }
 
@@ -954,7 +952,7 @@ func parseTipSet(ctx context.Context, api lily.LilyAPI, vals []string) (*types.T
 	return types.NewTipSet(headers)
 }
 
-func printActorMethods(t table.Writer, actorKey string) (common.ActorMethodList, error) {
+func printActorMethods(actorKey string) (common.ActorMethodList, error) {
 	var (
 		methodName           string
 		methodNumber         uint64

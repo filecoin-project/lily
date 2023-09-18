@@ -453,7 +453,7 @@ func GetActorStateChanges(ctx context.Context, store adt.Store, current, execute
 	return out, nil
 }
 
-func GetGenesisActors(ctx context.Context, store adt.Store, genesis *types.TipSet) (tasks.ActorStateChangeDiff, error) {
+func GetGenesisActors(_ context.Context, store adt.Store, genesis *types.TipSet) (tasks.ActorStateChangeDiff, error) {
 	out := map[address.Address]tasks.ActorStateChange{}
 	tree, err := state.LoadStateTree(store, genesis.ParentState())
 	if err != nil {

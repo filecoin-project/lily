@@ -15,7 +15,7 @@ type MessageParam struct {
 	Params    []byte
 }
 
-func (m *MessageParam) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (m *MessageParam) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "message_params"))
 
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
@@ -24,7 +24,7 @@ func (m *MessageParam) Persist(ctx context.Context, s model.StorageBatch, versio
 
 type MessageParamList []*MessageParam
 
-func (ml MessageParamList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (ml MessageParamList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(ml) == 0 {
 		return nil
 	}

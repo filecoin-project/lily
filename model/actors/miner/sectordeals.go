@@ -17,7 +17,7 @@ type MinerSectorDeal struct {
 	DealID   uint64 `pg:",pk,use_zero"`
 }
 
-func (ds *MinerSectorDeal) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (ds *MinerSectorDeal) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_sector_deals"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, ds)
@@ -25,7 +25,7 @@ func (ds *MinerSectorDeal) Persist(ctx context.Context, s model.StorageBatch, ve
 
 type MinerSectorDealList []*MinerSectorDeal
 
-func (ml MinerSectorDealList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (ml MinerSectorDealList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, span := otel.Tracer("").Start(ctx, "MinerSectorDealList.Persist")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.Int("count", len(ml)))

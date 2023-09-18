@@ -72,7 +72,7 @@ func (PreCommitInfoExtractorV9) Extract(ctx context.Context, a actorstate.ActorI
 	return preCommitModel, nil
 }
 
-func (PreCommitInfoExtractorV9) Transform(ctx context.Context, data model.PersistableList) (model.PersistableList, error) {
+func (PreCommitInfoExtractorV9) Transform(_ context.Context, data model.PersistableList) (model.PersistableList, error) {
 	persistableList := make(minermodel.MinerPreCommitInfoV9List, 0, len(data))
 	for _, d := range data {
 		ml, ok := d.(minermodel.MinerPreCommitInfoV9List)

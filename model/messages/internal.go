@@ -27,7 +27,7 @@ type InternalMessage struct {
 	GasUsed       int64  `pg:",use_zero"`
 }
 
-func (im *InternalMessage) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (im *InternalMessage) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "internal_messages"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, im)
@@ -35,7 +35,7 @@ func (im *InternalMessage) Persist(ctx context.Context, s model.StorageBatch, ve
 
 type InternalMessageList []*InternalMessage
 
-func (l InternalMessageList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (l InternalMessageList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(l) == 0 {
 		return nil
 	}
@@ -61,7 +61,7 @@ type InternalParsedMessage struct {
 	Params    string   `pg:",type:jsonb"`
 }
 
-func (ipm *InternalParsedMessage) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (ipm *InternalParsedMessage) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "internal_parsed_messages"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, ipm)
@@ -69,7 +69,7 @@ func (ipm *InternalParsedMessage) Persist(ctx context.Context, s model.StorageBa
 
 type InternalParsedMessageList []*InternalParsedMessage
 
-func (l InternalParsedMessageList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (l InternalParsedMessageList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(l) == 0 {
 		return nil
 	}

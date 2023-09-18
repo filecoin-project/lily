@@ -27,9 +27,8 @@ func (mtr *MessageTaskResult) Persist(ctx context.Context, s model.StorageBatch,
 	if err := mtr.MessageGasEconomy.Persist(ctx, s, version); err != nil {
 		return err
 	}
-	if err := mtr.ParsedMessages.Persist(ctx, s, version); err != nil {
-		return err
-	}
 
-	return nil
+	err := mtr.ParsedMessages.Persist(ctx, s, version)
+
+	return err
 }

@@ -32,12 +32,12 @@ func (InfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node a
 		return nil, fmt.Errorf("creating miner state extraction context: %w", err)
 	}
 
-	if !ec.HasPreviousState() {
-		// means this miner was created in this tipset or genesis special case
-	} else if changed, err := ec.CurrState.MinerInfoChanged(ec.PrevState); err != nil {
-		return nil, err
-	} else if !changed {
-		return nil, nil
+	if ec.HasPreviousState() {
+		if changed, err := ec.CurrState.MinerInfoChanged(ec.PrevState); err != nil {
+			return nil, err
+		} else if !changed {
+			return nil, nil
+		}
 	}
 	// miner info has changed.
 

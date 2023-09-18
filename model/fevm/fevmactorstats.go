@@ -32,7 +32,7 @@ type FEVMActorStats struct {
 	PlaceholderCount uint64 `pg:",use_zero"`
 }
 
-func (f *FEVMActorStats) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f *FEVMActorStats) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_actor_stats"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, f)
@@ -40,7 +40,7 @@ func (f *FEVMActorStats) Persist(ctx context.Context, s model.StorageBatch, vers
 
 type FEVMActorStatsList []*FEVMActorStats
 
-func (f FEVMActorStatsList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f FEVMActorStatsList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(f) == 0 {
 		return nil
 	}

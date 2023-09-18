@@ -30,7 +30,7 @@ type FEVMActorDump struct {
 	ActorName string `pg:",notnull"`
 }
 
-func (f *FEVMActorDump) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f *FEVMActorDump) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "fevm_actor_dumps"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, f)
@@ -38,7 +38,7 @@ func (f *FEVMActorDump) Persist(ctx context.Context, s model.StorageBatch, versi
 
 type FEVMActorDumpList []*FEVMActorDump
 
-func (f FEVMActorDumpList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (f FEVMActorDumpList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(f) == 0 {
 		return nil
 	}

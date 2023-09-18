@@ -77,7 +77,7 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 	return sectorModel, nil
 }
 
-func (V7SectorInfoExtractor) Transform(ctx context.Context, data model.PersistableList) (model.PersistableList, error) {
+func (V7SectorInfoExtractor) Transform(_ context.Context, data model.PersistableList) (model.PersistableList, error) {
 	persistableList := make(minermodel.MinerSectorInfoV7List, 0, len(data))
 	for _, d := range data {
 		ml, ok := d.(minermodel.MinerSectorInfoV7List)

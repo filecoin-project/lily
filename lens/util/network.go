@@ -45,7 +45,7 @@ func NewNetwork(us stmgr.UpgradeSchedule, current network.Version) *Network {
 	}
 }
 
-func (n *Network) Version(ctx context.Context, height abi.ChainEpoch) network.Version {
+func (n *Network) Version(_ context.Context, height abi.ChainEpoch) network.Version {
 	// The epochs here are the _last_ epoch for every version, or -1 if the
 	// version is disabled.
 	for _, spec := range n.networkVersions {

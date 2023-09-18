@@ -515,7 +515,7 @@ type TestWarmer struct {
 	tss []*types.TipSet
 }
 
-func (tw *TestWarmer) GetTipSet(ctx context.Context, tsk types.TipSetKey) (*types.TipSet, error) {
+func (tw *TestWarmer) GetTipSet(_ context.Context, _ types.TipSetKey) (*types.TipSet, error) {
 	defer func() {
 		tw.idx++
 	}()

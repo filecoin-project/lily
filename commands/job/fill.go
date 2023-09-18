@@ -40,7 +40,9 @@ Constraints:
 		tasks := RunFlags.Tasks.Value()
 		for _, taskName := range tasks {
 			if _, found := tasktype.TaskLookup[taskName]; found {
+				continue
 			} else if _, found := tasktype.TableLookup[taskName]; found {
+				continue
 			} else {
 				return fmt.Errorf("unknown task: %s", taskName)
 			}

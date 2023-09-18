@@ -32,7 +32,7 @@ type DrandBlockEntrie struct {
 	Block string `pg:",notnull"`
 }
 
-func (dbe *DrandBlockEntrie) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (dbe *DrandBlockEntrie) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "drand_block_entries"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, dbe)
@@ -40,7 +40,7 @@ func (dbe *DrandBlockEntrie) Persist(ctx context.Context, s model.StorageBatch, 
 
 type DrandBlockEntries []*DrandBlockEntrie
 
-func (dbes DrandBlockEntries) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (dbes DrandBlockEntries) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(dbes) == 0 {
 		return nil
 	}

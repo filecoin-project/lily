@@ -88,7 +88,7 @@ func getDatabaseSchemaVersion(ctx context.Context, db *pg.DB, cfg schemas.Config
 }
 
 // initDatabaseSchema initializes the version tables for tracking schema version installed in the database
-func initDatabaseSchema(ctx context.Context, db *pg.DB, cfg schemas.Config) error {
+func initDatabaseSchema(_ context.Context, db *pg.DB, cfg schemas.Config) error {
 	if cfg.SchemaName != "public" {
 		_, err := db.Exec(`CREATE SCHEMA IF NOT EXISTS ?`, pg.SafeQuery(cfg.SchemaName))
 		if err != nil {
@@ -269,7 +269,7 @@ func (d *Database) MigrateSchemaTo(ctx context.Context, target model.Version) er
 	return nil
 }
 
-func checkMigrationSequence(ctx context.Context, coll *migrations.Collection, from, to int) error {
+func checkMigrationSequence(_ context.Context, coll *migrations.Collection, from, to int) error {
 	versions := map[int64]bool{}
 	ms := coll.Migrations()
 	for _, m := range ms {

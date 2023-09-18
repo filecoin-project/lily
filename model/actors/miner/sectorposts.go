@@ -20,13 +20,13 @@ type MinerSectorPost struct {
 
 type MinerSectorPostList []*MinerSectorPost
 
-func (msp *MinerSectorPost) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (msp *MinerSectorPost) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "miner_sector_posts"))
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
 	return s.PersistModel(ctx, msp)
 }
 
-func (ml MinerSectorPostList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (ml MinerSectorPostList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, span := otel.Tracer("").Start(ctx, "MinerSectorPostList.Persist")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.Int("count", len(ml)))

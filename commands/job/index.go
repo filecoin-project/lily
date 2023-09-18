@@ -38,7 +38,9 @@ The index command may be used to index a single tipset from the filecoin blockch
 		tasks := RunFlags.Tasks.Value()
 		for _, taskName := range tasks {
 			if _, found := tasktype.TaskLookup[taskName]; found {
+				continue
 			} else if _, found := tasktype.TableLookup[taskName]; found {
+				continue
 			} else {
 				return fmt.Errorf("unknown task: %s", taskName)
 			}

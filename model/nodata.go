@@ -6,7 +6,7 @@ import (
 
 type noData struct{}
 
-func (noData) Persist(ctx context.Context, s StorageBatch, version Version) error {
+func (noData) Persist(_ context.Context, _ StorageBatch, _ Version) error {
 	return nil
 }
 

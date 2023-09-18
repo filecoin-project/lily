@@ -35,7 +35,7 @@ type Actor struct {
 	CodeCID string `pg:",notnull"`
 }
 
-func (a *Actor) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (a *Actor) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if a == nil {
 		// Nothing to do
 		return nil
@@ -53,7 +53,7 @@ func (a *Actor) Persist(ctx context.Context, s model.StorageBatch, version model
 // ActorList is a slice of Actors persistable in a single batch.
 type ActorList []*Actor
 
-func (actors ActorList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (actors ActorList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, span := otel.Tracer("").Start(ctx, "ActorList.Persist")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.Int("count", len(actors)))
@@ -81,7 +81,7 @@ type ActorState struct {
 	State string `pg:",type:jsonb,notnull"`
 }
 
-func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if as == nil {
 		// Nothing to do
 		return nil
@@ -98,7 +98,7 @@ func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, version
 // ActorStateList is a list of ActorStates persistable in a single batch.
 type ActorStateList []*ActorState
 
-func (states ActorStateList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (states ActorStateList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, span := otel.Tracer("").Start(ctx, "ActorStateList.Persist")
 	if span.IsRecording() {
 		span.SetAttributes(attribute.Int("count", len(states)))
@@ -123,7 +123,7 @@ type ActorCode struct {
 
 type ActorCodeList []*ActorCode
 
-func (a *ActorCode) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (a *ActorCode) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if a == nil {
 		// Nothing to do
 		return nil
@@ -138,7 +138,7 @@ func (a *ActorCode) Persist(ctx context.Context, s model.StorageBatch, version m
 	return s.PersistModel(ctx, a)
 }
 
-func (acl ActorCodeList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (acl ActorCodeList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_codes"))
 	metrics.RecordCount(ctx, metrics.PersistModel, len(acl))
 	return s.PersistModel(ctx, acl)
@@ -152,7 +152,7 @@ type ActorMethod struct {
 
 type ActorMethodList []*ActorMethod
 
-func (a *ActorMethod) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (a *ActorMethod) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if a == nil {
 		// Nothing to do
 		return nil
@@ -167,7 +167,7 @@ func (a *ActorMethod) Persist(ctx context.Context, s model.StorageBatch, version
 	return s.PersistModel(ctx, a)
 }
 
-func (acl ActorMethodList) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (acl ActorMethodList) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "actor_methods"))
 	metrics.RecordCount(ctx, metrics.PersistModel, len(acl))
 	return s.PersistModel(ctx, acl)
