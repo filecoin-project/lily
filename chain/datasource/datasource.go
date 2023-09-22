@@ -253,7 +253,12 @@ func (t *DataSource) ActorInfo(ctx context.Context, addr address.Address, tsk ty
 	actorInfo := tasks.ActorInfo{}
 	if err == nil {
 		if act.Address == nil {
-			act.Address = &addr
+			robustAddress, err := t.node.StateLookupRobustAddress(ctx, addr, tsk)
+			if err == nil {
+				act.Address = &robustAddress
+			} else {
+				act.Address = &addr
+			}
 		}
 		actorInfo.Actor = act
 		actorName, actorFamily, err := util.ActorNameAndFamilyFromCode(act.Code)
