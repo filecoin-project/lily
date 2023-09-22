@@ -53,10 +53,6 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 	out := make(actordumps.MinerActorDumpList, 0)
 	errs := []error{}
 	for _, actor := range actors[manifest.PowerKey] {
-		if actor.Address == nil {
-			continue
-		}
-
 		powerState, err := power.Load(p.node.Store(), actor)
 		if err != nil {
 			log.Errorf("Error at loading power state: [actor cid: %v] err: %v", actor.Code.String(), err)
@@ -64,7 +60,7 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 			continue
 		}
 
-		powerState.ForEachClaim(func(miner address.Address, claim power.Claim) error {
+		err = powerState.ForEachClaim(func(miner address.Address, claim power.Claim) error {
 			minerDumpObj := &actordumps.MinerActorDump{
 				Height:          int64(current.Height()),
 				StateRoot:       current.ParentState().String(),
@@ -98,6 +94,10 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 			out = append(out, minerDumpObj)
 			return nil
 		})
+
+		if err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	if len(errs) > 0 {
