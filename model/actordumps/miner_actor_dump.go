@@ -28,8 +28,7 @@ type MinerActorDump struct {
 	ConsensusFaultedElapsed int64 `pg:",notnull,use_zero"`
 
 	PeerID           string `pg:",notnull"`
-	ControlAddresses string `pg:",jsonb"`
-	MultiAddresses   string `pg:",jsonb"`
+	ControlAddresses string `pg:",type:jsonb"`
 	Beneficiary      string `pg:",notnull"`
 
 	SectorSize     uint64 `pg:",use_zero"`

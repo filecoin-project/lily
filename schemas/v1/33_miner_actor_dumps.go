@@ -16,7 +16,6 @@ func init() {
 
 		peer_id              TEXT,
 		control_addresses    JSONB,
-		multi_addresses      JSONB,
 		beneficiary          TEXT,
 
 		sector_size          BIGINT,
