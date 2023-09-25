@@ -10,7 +10,9 @@ func init() {
 		miner_address        TEXT,
 		state_root           TEXT,
 		owner_id             TEXT,
+		owner_address        TEXT,
 		worker_id            TEXT,
+		worker_address       TEXT,
 
 		consensus_faulted_elapsed BIGINT,
 

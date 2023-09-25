@@ -32,6 +32,32 @@ func NewTask(node tasks.DataSource) *Task {
 	}
 }
 
+func (p *Task) updateAddressFromID(ctx context.Context, current *types.TipSet, minerDumpObj *actordumps.MinerActorDump) error {
+	// Owner Address
+	ownerAddr, err := address.NewFromString(minerDumpObj.OwnerID)
+	if err != nil {
+		return err
+	}
+	ownerActor, err := p.node.ActorInfo(ctx, ownerAddr, current.Key())
+	if err != nil {
+		return err
+	}
+	minerDumpObj.OwnerAddress = ownerActor.Actor.Address.String()
+
+	// Worker Address
+	workerAddr, err := address.NewFromString(minerDumpObj.WorkerID)
+	if err != nil {
+		return err
+	}
+	workerActor, err := p.node.ActorInfo(ctx, workerAddr, current.Key())
+	if err != nil {
+		return err
+	}
+	minerDumpObj.WorkerAddress = workerActor.Actor.Address.String()
+
+	return nil
+}
+
 func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipSet, actors tasks.ActorStatesByType) (model.Persistable, *visormodel.ProcessingReport, error) {
 	_, span := otel.Tracer("").Start(ctx, "ProcessPeriodicActorDump")
 	if span.IsRecording() {
@@ -72,26 +98,31 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 			// Update the minerInfo Field into dump model
 			minerActor, err := p.node.ActorInfo(ctx, miner, current.Key())
 			if err != nil {
-				return nil
+				return err
 			}
 			minerDumpObj.MinerAddress = minerActor.Actor.Address.String()
 
 			minerState, err := builtinminer.Load(p.node.Store(), minerActor.Actor)
 			if err != nil {
-				return nil
+				return err
 			}
 
 			err = minerDumpObj.UpdateMinerInfo(minerState)
 			if err != nil {
-				return nil
+				return err
 			}
 
 			err = minerDumpObj.UpdateBalanceRelated(minerActor.Actor, minerState)
 			if err != nil {
-				return nil
+				return err
 			}
 
+			err = p.updateAddressFromID(ctx, current, minerDumpObj)
+			if err != nil {
+				log.Error("Error at getting getting the actor address by actor id: %v", err)
+			}
 			out = append(out, minerDumpObj)
+
 			return nil
 		})
 

@@ -22,8 +22,10 @@ type MinerActorDump struct {
 	StateRoot    string `pg:",notnull"`
 
 	// Miner Info
-	OwnerID  string `pg:",notnull"`
-	WorkerID string `pg:",notnull"`
+	OwnerID       string `pg:",notnull"`
+	OwnerAddress  string `pg:",notnull"`
+	WorkerID      string `pg:",notnull"`
+	WorkerAddress string `pg:",notnull"`
 
 	ConsensusFaultedElapsed int64 `pg:",notnull,use_zero"`
 
