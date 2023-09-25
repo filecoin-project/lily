@@ -315,7 +315,7 @@ func (t *DataSource) SetIdRobustAddressMap(ctx context.Context, tsk types.TipSet
 
 	idRobustAddress := make(map[uint64]address.Address)
 
-	err = initState.ForEachActor(func(id abi.ActorID, addr address.Address) error {
+	_ = initState.ForEachActor(func(id abi.ActorID, addr address.Address) error {
 		idRobustAddress[uint64(id)] = addr
 		return nil
 	})
