@@ -84,4 +84,7 @@ type DataSource interface {
 	ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error)
 	EthGetTransactionByHash(ctx context.Context, txHash *ethtypes.EthHash) (*ethtypes.EthTx, error)
 	StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error)
+
+	SetIdRobustAddressMap(ctx context.Context, tsk types.TipSetKey) error
+	LookupRobustAddress(ctx context.Context, idAddr address.Address, tsk types.TipSetKey) (address.Address, error)
 }

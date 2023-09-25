@@ -464,6 +464,9 @@ func (sp *StateProcessor) startPeriodicActorDump(ctx context.Context, current *t
 		}
 	}
 
+	// Set the Map to Cache
+	sp.api.SetIdRobustAddressMap(ctx, current.Key())
+
 	for taskName, proc := range sp.periodicActorDumpProcessors {
 		name := taskName
 		p := proc
