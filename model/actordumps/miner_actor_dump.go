@@ -29,9 +29,10 @@ type MinerActorDump struct {
 
 	ConsensusFaultedElapsed int64 `pg:",notnull,use_zero"`
 
-	PeerID           string `pg:",notnull"`
-	ControlAddresses string `pg:",type:jsonb"`
-	Beneficiary      string `pg:",notnull"`
+	PeerID             string `pg:",notnull"`
+	ControlAddresses   string `pg:",type:jsonb"`
+	Beneficiary        string `pg:",notnull"`
+	BeneficiaryAddress string `pg:",notnull"`
 
 	SectorSize     uint64 `pg:",use_zero"`
 	NumLiveSectors uint64 `pg:",use_zero"`
@@ -94,7 +95,7 @@ func (m *MinerActorDump) UpdateMinerInfo(minerState miner.State) error {
 	return err
 }
 
-func (m *MinerActorDump) UpdateBalanceRelated(actor *types.ActorV5, minerState miner.State) error {
+func (m *MinerActorDump) UpdateBalanceInfo(actor *types.ActorV5, minerState miner.State) error {
 	m.Balance = actor.Balance.String()
 
 	availableBalance, err := minerState.AvailableBalance(actor.Balance)

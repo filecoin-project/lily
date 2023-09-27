@@ -55,6 +55,17 @@ func (p *Task) updateAddressFromID(ctx context.Context, current *types.TipSet, m
 	}
 	minerDumpObj.WorkerAddress = workerActor.Actor.Address.String()
 
+	// Beneficiary Address
+	beneficiaryAddr, err := address.NewFromString(minerDumpObj.Beneficiary)
+	if err != nil {
+		return err
+	}
+	beneficiaryWorkerActor, err := p.node.ActorInfo(ctx, beneficiaryAddr, current.Key())
+	if err != nil {
+		return err
+	}
+	minerDumpObj.BeneficiaryAddress = beneficiaryWorkerActor.Actor.Address.String()
+
 	return nil
 }
 
@@ -112,7 +123,7 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 				return err
 			}
 
-			err = minerDumpObj.UpdateBalanceRelated(minerActor.Actor, minerState)
+			err = minerDumpObj.UpdateBalanceInfo(minerActor.Actor, minerState)
 			if err != nil {
 				return err
 			}
