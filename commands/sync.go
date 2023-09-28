@@ -13,6 +13,10 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/config"
+	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/model/blocks"
+	"github.com/filecoin-project/lily/storage"
 
 	"github.com/filecoin-project/lily/lens/lily"
 )
@@ -241,10 +245,29 @@ func SyncWait(ctx context.Context, lapi lily.LilyAPI, watch bool) error {
 	}
 }
 
-var SyncIncomingBlockCmd = &cli.Command{
-	Name:  "orphan",
-	Usage: "Start to run incoming block",
+type syncOpts struct {
+	config  string
+	storage string
+}
 
+var syncFlags syncOpts
+
+var SyncIncomingBlockCmd = &cli.Command{
+	Name:  "blocks",
+	Usage: "Start to get incoming block",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:        "config",
+			Usage:       "Specify path of config file to use.",
+			EnvVars:     []string{"LILY_CONFIG"},
+			Destination: &syncFlags.config,
+		},
+		&cli.StringFlag{
+			Name:        "storage",
+			Usage:       "Specify the storage to use, if persisting the displayed output.",
+			Destination: &syncFlags.storage,
+		},
+	},
 	Action: func(cctx *cli.Context) error {
 		ctx := lotuscli.ReqContext(cctx)
 		lapi, closer, err := GetAPI(ctx)
@@ -253,14 +276,40 @@ var SyncIncomingBlockCmd = &cli.Command{
 		}
 		defer closer()
 
-		go cwSubBlocks(ctx, lapi)
+		// values that may be accessed if user wants to persist to Storage
+		var strg model.Storage
+
+		if syncFlags.storage != "" {
+			cfg, err := config.FromFile(syncFlags.config)
+			if err != nil {
+				return err
+			}
+
+			md := storage.Metadata{
+				JobName: syncFlags.storage,
+			}
+
+			// context for db connection
+			ctx = context.Background()
+
+			sc, err := storage.NewCatalog(cfg.Storage)
+			if err != nil {
+				return err
+			}
+			strg, err = sc.Connect(ctx, syncFlags.storage, md)
+			if err != nil {
+				return err
+			}
+		}
+
+		go getSubBlocks(ctx, lapi, strg)
 
 		<-ctx.Done()
 		return nil
 	},
 }
 
-func cwSubBlocks(ctx context.Context, lapi lily.LilyAPI) {
+func getSubBlocks(ctx context.Context, lapi lily.LilyAPI, strg model.Storage) {
 	sub, err := lapi.SyncIncomingBlocks(ctx)
 	if err != nil {
 		log.Error(err)
@@ -268,9 +317,16 @@ func cwSubBlocks(ctx context.Context, lapi lily.LilyAPI) {
 	}
 
 	for bh := range sub {
-		log.Infof("%v", bh)
-		if err != nil {
-			log.Error(err)
+		block := blocks.NewUnsyncedBlockHeader(bh)
+		if strg == nil {
+			log.Infof("Block Height: %v, Miner: %v, Cid: %v", block.Height, block.Miner, block.Cid)
+		} else {
+			result := blocks.UnsyncedBlockHeaders{}
+			result = append(result, block)
+			strg.PersistBatch(ctx, result)
+			if err != nil {
+				log.Error(err)
+			}
 		}
 	}
 }
