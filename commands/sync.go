@@ -323,9 +323,9 @@ func getSubBlocks(ctx context.Context, lapi lily.LilyAPI, strg model.Storage) {
 		} else {
 			result := blocks.UnsyncedBlockHeaders{}
 			result = append(result, block)
-			strg.PersistBatch(ctx, result)
+			err = strg.PersistBatch(ctx, result)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("Error at persisting the unsynced block headers: %v", err)
 			}
 		}
 	}
