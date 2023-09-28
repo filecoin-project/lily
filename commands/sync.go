@@ -28,6 +28,7 @@ var SyncCmd = &cli.Command{
 	Subcommands: []*cli.Command{
 		SyncStatusCmd,
 		SyncWaitCmd,
+		SyncIncomingBlockCmd,
 	},
 }
 
@@ -237,5 +238,39 @@ func SyncWait(ctx context.Context, lapi lily.LilyAPI, watch bool) error {
 		}
 
 		i++
+	}
+}
+
+var SyncIncomingBlockCmd = &cli.Command{
+	Name:  "orphan",
+	Usage: "Start to run incoming block",
+
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+		lapi, closer, err := GetAPI(ctx)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		go cwSubBlocks(ctx, lapi)
+
+		<-ctx.Done()
+		return nil
+	},
+}
+
+func cwSubBlocks(ctx context.Context, lapi lily.LilyAPI) {
+	sub, err := lapi.SyncIncomingBlocks(ctx)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	for bh := range sub {
+		log.Infof("%v", bh)
+		if err != nil {
+			log.Error(err)
+		}
 	}
 }
