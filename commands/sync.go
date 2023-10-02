@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
@@ -257,15 +260,23 @@ var syncFlags syncOpts
 
 type SyncingState struct {
 	UnsyncedBlockHeadersByEpoch map[int64][]*blocks.UnsyncedBlockHeader
+	MapMutex                    sync.Mutex
 	Confidence                  int64
 	Storage                     model.Storage
-	sync.Mutex
+	StorageMutex                sync.Mutex
 }
 
 func (ss *SyncingState) SetBlockHeaderToMap(block *blocks.UnsyncedBlockHeader) {
-	ss.Mutex.Lock()
-	defer ss.Mutex.Unlock()
+	ss.MapMutex.Lock()
+	defer ss.MapMutex.Unlock()
 	ss.UnsyncedBlockHeadersByEpoch[block.Height] = append(ss.UnsyncedBlockHeadersByEpoch[block.Height], block)
+}
+
+func (ss *SyncingState) PersistBlocks(ctx context.Context, blocks blocks.UnsyncedBlockHeaders) error {
+	ss.StorageMutex.Lock()
+	defer ss.StorageMutex.Unlock()
+
+	return ss.Storage.PersistBatch(ctx, blocks)
 }
 
 var SyncIncomingBlockCmd = &cli.Command{
@@ -299,6 +310,21 @@ var SyncIncomingBlockCmd = &cli.Command{
 		}
 		defer closer()
 
+		// Set up a context that is canceled when the command is interrupted
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		// Set up a signal handler to cancel the context
+		go func() {
+			interrupt := make(chan os.Signal, 1)
+			signal.Notify(interrupt, syscall.SIGTERM, syscall.SIGINT)
+			select {
+			case <-interrupt:
+				cancel()
+			case <-ctx.Done():
+			}
+		}()
+
 		// values that may be accessed if user wants to persist to Storage
 		var strg model.Storage
 
@@ -313,13 +339,13 @@ var SyncIncomingBlockCmd = &cli.Command{
 			}
 
 			// context for db connection
-			ctx = context.Background()
+			ctxDB := context.Background()
 
 			sc, err := storage.NewCatalog(cfg.Storage)
 			if err != nil {
 				return err
 			}
-			strg, err = sc.Connect(ctx, syncFlags.storage, md)
+			strg, err = sc.Connect(ctxDB, syncFlags.storage, md)
 			if err != nil {
 				return err
 			}
@@ -329,6 +355,8 @@ var SyncIncomingBlockCmd = &cli.Command{
 			UnsyncedBlockHeadersByEpoch: make(map[int64][]*blocks.UnsyncedBlockHeader),
 			Confidence:                  int64(syncFlags.confidence),
 			Storage:                     strg,
+			MapMutex:                    sync.Mutex{},
+			StorageMutex:                sync.Mutex{},
 		}
 
 		go detectOrphanBlocks(ctx, lapi, state)
@@ -341,7 +369,7 @@ var SyncIncomingBlockCmd = &cli.Command{
 
 func detectOrphanBlocks(ctx context.Context, lapi lily.LilyAPI, state *SyncingState) {
 	for range time.Tick(30 * time.Second) {
-		state.Mutex.Lock()
+		state.MapMutex.Lock()
 
 		// Get the latestEpoch in map
 		latestEpoch := int64(0)
@@ -382,7 +410,7 @@ func detectOrphanBlocks(ctx context.Context, lapi lily.LilyAPI, state *SyncingSt
 
 				// To do set the orphan to Storage
 				if len(orphanBlocks) > 0 && state.Storage != nil {
-					state.Storage.PersistBatch(ctx, orphanBlocks)
+					state.PersistBlocks(ctx, orphanBlocks)
 				}
 			}
 		}
@@ -391,7 +419,7 @@ func detectOrphanBlocks(ctx context.Context, lapi lily.LilyAPI, state *SyncingSt
 		for _, epoch := range oldEpoches {
 			delete(state.UnsyncedBlockHeadersByEpoch, epoch)
 		}
-		state.Mutex.Unlock()
+		state.MapMutex.Unlock()
 	}
 }
 
@@ -408,7 +436,7 @@ func getIncomingBlocks(ctx context.Context, lapi lily.LilyAPI, state *SyncingSta
 		if state.Storage == nil {
 			log.Infof("Block Height: %v, Miner: %v, Cid: %v", block.Height, block.Miner, block.Cid)
 		} else {
-			err = state.Storage.PersistBatch(ctx, blocks.UnsyncedBlockHeaders{block})
+			err = state.PersistBlocks(ctx, blocks.UnsyncedBlockHeaders{block})
 			if err != nil {
 				log.Errorf("Error at persisting the unsynced block headers: %v", err)
 			}
