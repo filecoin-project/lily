@@ -248,14 +248,16 @@ func SyncWait(ctx context.Context, lapi lily.LilyAPI, watch bool) error {
 }
 
 type syncOpts struct {
-	config  string
-	storage string
+	config     string
+	storage    string
+	confidence int
 }
 
 var syncFlags syncOpts
 
 type SyncingState struct {
 	UnsyncedBlockHeadersByEpoch map[int64][]*blocks.UnsyncedBlockHeader
+	Confidence                  int64
 	sync.Mutex
 }
 
@@ -279,6 +281,13 @@ var SyncIncomingBlockCmd = &cli.Command{
 			Name:        "storage",
 			Usage:       "Specify the storage to use, if persisting the displayed output.",
 			Destination: &syncFlags.storage,
+		},
+		&cli.IntFlag{
+			Name:        "confidence",
+			Usage:       "Sets the size of the cache used to hold tipsets for possible reversion before being committed to the database.",
+			EnvVars:     []string{"LILY_CONFIDENCE"},
+			Value:       2,
+			Destination: &syncFlags.confidence,
 		},
 	},
 	Action: func(cctx *cli.Context) error {
@@ -317,6 +326,7 @@ var SyncIncomingBlockCmd = &cli.Command{
 
 		state := &SyncingState{
 			UnsyncedBlockHeadersByEpoch: make(map[int64][]*blocks.UnsyncedBlockHeader),
+			Confidence:                  int64(syncFlags.confidence),
 		}
 
 		go detectOrphanBlocks(ctx, lapi, state)
@@ -340,10 +350,10 @@ func detectOrphanBlocks(ctx context.Context, lapi lily.LilyAPI, state *SyncingSt
 		}
 
 		// Check old tipset
-		targetEpoch := latestEpoch - 5
+		targetEpoch := latestEpoch - state.Confidence
 		oldEpoches := []int64{}
 		for epoch, unsyncedBlocks := range state.UnsyncedBlockHeadersByEpoch {
-			if epoch <= int64(targetEpoch) {
+			if epoch <= targetEpoch {
 				// Store the old tipset, we should clear it after checking
 				oldEpoches = append(oldEpoches, epoch)
 
@@ -352,8 +362,9 @@ func detectOrphanBlocks(ctx context.Context, lapi lily.LilyAPI, state *SyncingSt
 					log.Errorf("Error at getting the old tipset: %v", err)
 					continue
 				}
-				log.Infof("Get header cids: %v at Height: %v", latestEpoch, oldTs.Cids(), oldTs.Height())
+				log.Infof("Get header cids: %v at Height: %v", oldTs.Cids(), oldTs.Height())
 
+				// Verify whether the unsynced block exists within the tipset or not.
 				cidMap := make(map[string]bool)
 				for _, cid := range oldTs.Cids() {
 					cidMap[cid.String()] = true
