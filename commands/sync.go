@@ -258,6 +258,7 @@ var syncFlags syncOpts
 type SyncingState struct {
 	UnsyncedBlockHeadersByEpoch map[int64][]*blocks.UnsyncedBlockHeader
 	Confidence                  int64
+	Storage                     model.Storage
 	sync.Mutex
 }
 
@@ -327,10 +328,11 @@ var SyncIncomingBlockCmd = &cli.Command{
 		state := &SyncingState{
 			UnsyncedBlockHeadersByEpoch: make(map[int64][]*blocks.UnsyncedBlockHeader),
 			Confidence:                  int64(syncFlags.confidence),
+			Storage:                     strg,
 		}
 
 		go detectOrphanBlocks(ctx, lapi, state)
-		go getIncomingBlocks(ctx, lapi, strg, state)
+		go getIncomingBlocks(ctx, lapi, state)
 
 		<-ctx.Done()
 		return nil
@@ -369,16 +371,18 @@ func detectOrphanBlocks(ctx context.Context, lapi lily.LilyAPI, state *SyncingSt
 				for _, cid := range oldTs.Cids() {
 					cidMap[cid.String()] = true
 				}
-				orphanBlocks := []*blocks.UnsyncedBlockHeader{}
+				orphanBlocks := blocks.UnsyncedBlockHeaders{}
 				for _, block := range unsyncedBlocks {
 					if _, exists := cidMap[block.Cid]; !exists {
+						block.IsOrphan = true
 						orphanBlocks = append(orphanBlocks, block)
+						log.Errorf("Detect orphan block cid: %v at height: %v", block.Cid, block.Height)
 					}
 				}
 
 				// To do set the orphan to Storage
-				if len(orphanBlocks) > 0 {
-					log.Errorf("Get Orphan blocks: %v", orphanBlocks)
+				if len(orphanBlocks) > 0 && state.Storage != nil {
+					state.Storage.PersistBatch(ctx, orphanBlocks)
 				}
 			}
 		}
@@ -391,7 +395,7 @@ func detectOrphanBlocks(ctx context.Context, lapi lily.LilyAPI, state *SyncingSt
 	}
 }
 
-func getIncomingBlocks(ctx context.Context, lapi lily.LilyAPI, strg model.Storage, state *SyncingState) {
+func getIncomingBlocks(ctx context.Context, lapi lily.LilyAPI, state *SyncingState) {
 	incomingBlocks, err := lapi.SyncIncomingBlocks(ctx)
 	if err != nil {
 		log.Error(err)
@@ -401,12 +405,10 @@ func getIncomingBlocks(ctx context.Context, lapi lily.LilyAPI, strg model.Storag
 	for bh := range incomingBlocks {
 		block := blocks.NewUnsyncedBlockHeader(bh)
 		state.SetBlockHeaderToMap(block)
-		if strg == nil {
+		if state.Storage == nil {
 			log.Infof("Block Height: %v, Miner: %v, Cid: %v", block.Height, block.Miner, block.Cid)
 		} else {
-			result := blocks.UnsyncedBlockHeaders{}
-			result = append(result, block)
-			err = strg.PersistBatch(ctx, result)
+			err = state.Storage.PersistBatch(ctx, blocks.UnsyncedBlockHeaders{block})
 			if err != nil {
 				log.Errorf("Error at persisting the unsynced block headers: %v", err)
 			}

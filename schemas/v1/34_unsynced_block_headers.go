@@ -2,7 +2,7 @@ package v1
 
 func init() {
 	patches.Register(
-		33,
+		34,
 		`
 	CREATE TABLE IF NOT EXISTS {{ .SchemaName | default "public"}}.unsynced_block_headers (
 		height            BIGINT NOT NULL,
@@ -14,6 +14,7 @@ func init() {
 		win_count         BIGINT,
 		"timestamp"       BIGINT,
 		fork_signaling    BIGINT,
+		is_orphan         BOOLEAN,
 		PRIMARY KEY(height, cid)
 	);
 	CREATE INDEX IF NOT EXISTS unsynced_block_headers_height_idx ON {{ .SchemaName | default "public"}}.unsynced_block_headers USING btree (height DESC);

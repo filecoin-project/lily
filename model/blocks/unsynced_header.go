@@ -22,6 +22,7 @@ type UnsyncedBlockHeader struct {
 	WinCount      int64  `pg:",use_zero"`
 	Timestamp     uint64 `pg:",use_zero"`
 	ForkSignaling uint64 `pg:",use_zero"`
+	IsOrphan      bool   `pg:",notnull"`
 }
 
 func NewUnsyncedBlockHeader(bh *types.BlockHeader) *UnsyncedBlockHeader {
@@ -35,6 +36,7 @@ func NewUnsyncedBlockHeader(bh *types.BlockHeader) *UnsyncedBlockHeader {
 		WinCount:        bh.ElectionProof.WinCount,
 		Timestamp:       bh.Timestamp,
 		ForkSignaling:   bh.ForkSignaling,
+		IsOrphan:        false,
 	}
 }
 
