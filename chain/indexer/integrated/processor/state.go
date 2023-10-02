@@ -9,6 +9,7 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/manifest"
+	"github.com/filecoin-project/lotus/chain/actors"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -70,6 +71,7 @@ import (
 
 	// actor dump
 	fevmactordumptask "github.com/filecoin-project/lily/tasks/periodic_actor_dump/fevm_actor"
+	mineractordumptask "github.com/filecoin-project/lily/tasks/periodic_actor_dump/miner_actor"
 
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/metrics"
@@ -415,6 +417,15 @@ func (sp *StateProcessor) startActor(ctx context.Context, current, executed *typ
 	return taskNames
 }
 
+// isStoragePowerActor will check if the actor is storage power or not
+func isStoragePowerActor(c cid.Cid) bool {
+	name, _, ok := actors.GetActorMetaByCode(c)
+	if ok {
+		return name == manifest.PowerKey
+	}
+	return false
+}
+
 // startPeriodicActorDump starts all TipSetsProcessor's in parallel, their results are emitted on the `results` channel.
 // A list containing all executed task names is returned.
 func (sp *StateProcessor) startPeriodicActorDump(ctx context.Context, current *types.TipSet, interval int, results chan *Result) []string {
@@ -447,7 +458,16 @@ func (sp *StateProcessor) startPeriodicActorDump(ctx context.Context, current *t
 			actors[manifest.EthAccountKey] = append(actors[manifest.EthAccountKey], actor)
 		} else if builtin.IsPlaceholderActor(actor.Code) {
 			actors[manifest.PlaceholderKey] = append(actors[manifest.PlaceholderKey], actor)
+		} else if isStoragePowerActor(actor.Code) {
+			// Power Actor
+			actors[manifest.PowerKey] = append(actors[manifest.PowerKey], actor)
 		}
+	}
+
+	// Set the Map to Cache
+	err := sp.api.SetIdRobustAddressMap(ctx, current.Key())
+	if err != nil {
+		log.Errorf("Error at setting IdRobustAddressMap: %v", err)
 	}
 
 	for taskName, proc := range sp.periodicActorDumpProcessors {
@@ -789,6 +809,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			//
 		case tasktype.FEVMActorDump:
 			out.PeriodicActorDumpProcessors[t] = fevmactordumptask.NewTask(api)
+		case tasktype.MinerActorDump:
+			out.PeriodicActorDumpProcessors[t] = mineractordumptask.NewTask(api)
 
 		case BuiltinTaskName:
 			out.ReportProcessors[t] = indexertask.NewTask(api)

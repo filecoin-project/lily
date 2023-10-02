@@ -52,8 +52,9 @@ const (
 	FEVMContract                   = "fevm_contract"
 	FEVMTrace                      = "fevm_trace"
 
-	// New task types
+	// New task types: full dump
 	FEVMActorDump = "fevm_actor_dump"
+	MinerActorDump = "miner_actor_dump"
 )
 
 var AllTableTasks = []string{
@@ -107,6 +108,7 @@ var AllTableTasks = []string{
 	FEVMContract,
 	FEVMTrace,
 	FEVMActorDump,
+	MinerActorDump,
 }
 
 var TableLookup = map[string]struct{}{
@@ -160,6 +162,7 @@ var TableLookup = map[string]struct{}{
 	FEVMContract:                   {},
 	FEVMTrace:                      {},
 	FEVMActorDump:                  {},
+	MinerActorDump:                 {},
 }
 
 var TableComment = map[string]string{
@@ -213,6 +216,7 @@ var TableComment = map[string]string{
 	FEVMContract:                   ``,
 	FEVMTrace:                      ``,
 	FEVMActorDump:                  ``,
+	MinerActorDump:                 ``,
 }
 
 var TableFieldComments = map[string]map[string]string{
@@ -323,4 +327,5 @@ var TableFieldComments = map[string]map[string]string{
 	FEVMContract:                   {},
 	FEVMTrace:                      {},
 	FEVMActorDump:                  {},
+	MinerActorDump:                 {},
 }

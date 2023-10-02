@@ -103,6 +103,7 @@ var TaskLookup = map[string][]string{
 	},
 	ActorDump: {
 		FEVMActorDump,
+		MinerActorDump,
 	},
 }
 

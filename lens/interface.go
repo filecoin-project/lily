@@ -58,6 +58,7 @@ type ChainAPI interface {
 
 type StateAPI interface {
 	StateGetActor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error)
+	StateLookupRobustAddress(ctx context.Context, addr address.Address, tsk types.TipSetKey) (address.Address, error)
 	StateListActors(context.Context, types.TipSetKey) ([]address.Address, error)
 	StateChangedActors(context.Context, cid.Cid, cid.Cid) (map[string]types.Actor, error)
 

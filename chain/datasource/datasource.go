@@ -16,6 +16,7 @@ import (
 	"github.com/filecoin-project/go-state-types/builtin"
 	adt2 "github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
 	"github.com/filecoin-project/lotus/api"
+	initactor "github.com/filecoin-project/lotus/chain/actors/builtin/init"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/types/ethtypes"
@@ -42,12 +43,14 @@ var (
 	diffPreCommitCacheSize        int
 	diffSectorCacheSize           int
 	actorCacheSize                int
+	addressCacheSize              int
 
 	tipsetMessageReceiptSizeEnv = "LILY_TIPSET_MSG_RECEIPT_CACHE_SIZE"
 	executedTsCacheSizeEnv      = "LILY_EXECUTED_TS_CACHE_SIZE"
 	diffPreCommitCacheSizeEnv   = "LILY_DIFF_PRECOMMIT_CACHE_SIZE"
 	diffSectorCacheSizeEnv      = "LILY_DIFF_SECTORS_CACHE_SIZE"
 	actorCacheSizeEnv           = "LILY_ACTOR_CACHE_SIZE"
+	addressCacheSizeEnv         = "LILY_ADDRESS_CACHE_SIZE"
 )
 
 func getCacheSizeFromEnv(env string, defaultValue int) int {
@@ -67,6 +70,7 @@ func init() {
 	diffPreCommitCacheSize = getCacheSizeFromEnv(diffPreCommitCacheSizeEnv, 500)
 	diffSectorCacheSize = getCacheSizeFromEnv(diffSectorCacheSizeEnv, 500)
 	actorCacheSize = getCacheSizeFromEnv(actorCacheSizeEnv, 5000)
+	addressCacheSize = getCacheSizeFromEnv(addressCacheSizeEnv, 4)
 }
 
 var _ tasks.DataSource = (*DataSource)(nil)
@@ -104,6 +108,11 @@ func NewDataSource(node lens.API) (*DataSource, error) {
 		return nil, err
 	}
 
+	t.addressCache, err = lru.New(addressCacheSize)
+	if err != nil {
+		return nil, err
+	}
+
 	return t, nil
 }
 
@@ -122,7 +131,8 @@ type DataSource struct {
 	diffPreCommitCache *lru.Cache
 	diffPreCommitGroup singleflight.Group
 
-	actorCache *lru.Cache
+	actorCache   *lru.Cache
+	addressCache *lru.Cache
 }
 
 func (t *DataSource) MessageReceiptEvents(ctx context.Context, root cid.Cid) ([]types.Event, error) {
@@ -253,7 +263,12 @@ func (t *DataSource) ActorInfo(ctx context.Context, addr address.Address, tsk ty
 	actorInfo := tasks.ActorInfo{}
 	if err == nil {
 		if act.Address == nil {
-			act.Address = &addr
+			robustAddress, err := t.LookupRobustAddress(ctx, addr, tsk)
+			if err == nil {
+				act.Address = &robustAddress
+			} else {
+				act.Address = &addr
+			}
 		}
 		actorInfo.Actor = act
 		actorName, actorFamily, err := util.ActorNameAndFamilyFromCode(act.Code)
@@ -269,6 +284,67 @@ func (t *DataSource) ActorInfo(ctx context.Context, addr address.Address, tsk ty
 	}
 
 	return &actorInfo, err
+}
+
+func genIdAddressCacheKey(tsk types.TipSetKey) string {
+	key, keyErr := asKey(KeyPrefix{"IdRobustAddress"}, tsk)
+	if keyErr != nil {
+		return "IdRobustAddressDefaultkey"
+	}
+	return key
+}
+
+func (t *DataSource) SetIdRobustAddressMap(ctx context.Context, tsk types.TipSetKey) error {
+	ctx, span := otel.Tracer("").Start(ctx, "DataSource.SetIdAddressMap")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.String("tipset", tsk.String()))
+	}
+	defer span.End()
+
+	key := genIdAddressCacheKey(tsk)
+
+	initActor, err := t.Actor(ctx, initactor.Address, tsk)
+	if err != nil {
+		return err
+	}
+
+	initState, err := initactor.Load(t.Store(), initActor)
+	if err != nil {
+		return err
+	}
+
+	idRobustAddress := make(map[uint64]address.Address)
+
+	_ = initState.ForEachActor(func(id abi.ActorID, addr address.Address) error {
+		idRobustAddress[uint64(id)] = addr
+		return nil
+	})
+
+	t.addressCache.Add(key, idRobustAddress)
+
+	return nil
+}
+
+func (t *DataSource) LookupRobustAddress(ctx context.Context, idAddr address.Address, tsk types.TipSetKey) (address.Address, error) {
+	robustAddress := address.Undef
+
+	key := genIdAddressCacheKey(tsk)
+	value, found := t.addressCache.Get(key)
+	if found {
+		idRobustAddress := value.(map[uint64]address.Address)
+		idAddrDecoded, err := address.IDFromAddress(idAddr)
+		if err != nil {
+			return robustAddress, err
+		}
+
+		address, exists := idRobustAddress[idAddrDecoded]
+		if exists {
+			return address, nil
+		}
+	}
+
+	// Use the default way: StateLookup
+	return t.node.StateLookupRobustAddress(ctx, idAddr, tsk)
 }
 
 func (t *DataSource) MinerPower(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.MinerPower, error) {
