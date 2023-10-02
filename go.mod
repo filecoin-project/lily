@@ -89,6 +89,7 @@ require (
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/buger/goterm v1.0.3 // indirect
+	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
