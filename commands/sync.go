@@ -410,7 +410,10 @@ func detectOrphanBlocks(ctx context.Context, lapi lily.LilyAPI, state *SyncingSt
 
 				// To do set the orphan to Storage
 				if len(orphanBlocks) > 0 && state.Storage != nil {
-					state.PersistBlocks(ctx, orphanBlocks)
+					err := state.PersistBlocks(ctx, orphanBlocks)
+					if err != nil {
+						log.Errorf("Error at persisting the orphan blocks: %v", err)
+					}
 				}
 			}
 		}
