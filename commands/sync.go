@@ -4,10 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
@@ -18,10 +15,8 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
-	"github.com/filecoin-project/lily/config"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/blocks"
-	"github.com/filecoin-project/lily/storage"
 
 	"github.com/filecoin-project/lily/lens/lily"
 )
@@ -311,44 +306,12 @@ var SyncIncomingBlockCmd = &cli.Command{
 		defer closer()
 
 		// Set up a context that is canceled when the command is interrupted
-		ctx, cancel := context.WithCancel(ctx)
+		ctx, cancel := SetupContextWithCancel(ctx)
 		defer cancel()
 
-		// Set up a signal handler to cancel the context
-		go func() {
-			interrupt := make(chan os.Signal, 1)
-			signal.Notify(interrupt, syscall.SIGTERM, syscall.SIGINT)
-			select {
-			case <-interrupt:
-				cancel()
-			case <-ctx.Done():
-			}
-		}()
-
-		// values that may be accessed if user wants to persist to Storage
-		var strg model.Storage
-
-		if syncFlags.storage != "" {
-			cfg, err := config.FromFile(syncFlags.config)
-			if err != nil {
-				return err
-			}
-
-			md := storage.Metadata{
-				JobName: syncFlags.storage,
-			}
-
-			// context for db connection
-			ctxDB := context.Background()
-
-			sc, err := storage.NewCatalog(cfg.Storage)
-			if err != nil {
-				return err
-			}
-			strg, err = sc.Connect(ctxDB, syncFlags.storage, md)
-			if err != nil {
-				return err
-			}
+		strg, err := SetupStorage(syncFlags.config, syncFlags.storage)
+		if err != nil {
+			return err
 		}
 
 		state := &SyncingState{
