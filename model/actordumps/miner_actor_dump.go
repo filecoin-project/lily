@@ -11,6 +11,7 @@ import (
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 type MinerActorDump struct {
@@ -70,7 +71,13 @@ func (m *MinerActorDump) UpdateMinerInfo(minerState miner.State) error {
 		return err
 	}
 
-	m.PeerID = string(minerInfo.PeerId)
+	// PeerID is bytes
+	if minerInfo.PeerId != nil {
+		newPeerID, err := peer.IDFromBytes(minerInfo.PeerId)
+		if err == nil {
+			m.PeerID = newPeerID.String()
+		}
+	}
 	m.WorkerID = minerInfo.Worker.String()
 	m.OwnerID = minerInfo.Owner.String()
 	m.ConsensusFaultedElapsed = int64(minerInfo.ConsensusFaultElapsed)
