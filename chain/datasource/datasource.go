@@ -147,6 +147,10 @@ func (t *DataSource) TipSetBlockMessages(ctx context.Context, ts *types.TipSet) 
 	return t.node.MessagesForTipSetBlocks(ctx, ts)
 }
 
+func (t *DataSource) MessagesWithDeduplicationForTipSet(ctx context.Context, ts *types.TipSet) ([]types.ChainMsg, error) {
+	return t.node.MessagesWithDeduplicationForTipSet(ctx, ts)
+}
+
 func (t *DataSource) StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error) {
 	return t.node.StateListActors(ctx, tsk)
 }

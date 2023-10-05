@@ -70,6 +70,7 @@ type DataSource interface {
 
 	TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*lens.BlockMessageReceipts, error)
 	MessageReceiptEvents(ctx context.Context, root cid.Cid) ([]types.Event, error)
+	MessagesWithDeduplicationForTipSet(ctx context.Context, ts *types.TipSet) ([]types.ChainMsg, error)
 
 	DiffSectors(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.SectorChanges, error)
 	DiffPreCommits(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.PreCommitChanges, error)
