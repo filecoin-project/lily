@@ -51,6 +51,11 @@ func (aw *APIWrapper) TipSetMessageReceipts(ctx context.Context, ts, pts *types.
 	panic("implement me")
 }
 
+func (aw *APIWrapper) MessagesWithDeduplicationForTipSet(ctx context.Context, ts *types.TipSet) ([]types.ChainMsg, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (aw *APIWrapper) CirculatingSupply(ctx context.Context, key types.TipSetKey) (api.CirculatingSupply, error) {
 	return aw.StateVMCirculatingSupplyInternal(ctx, key)
 }
