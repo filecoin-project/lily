@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/cenkalti/backoff/v4"
+	backoff "github.com/cenkalti/backoff/v4"
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
 	"github.com/go-pg/pg/v10/types"
@@ -229,14 +229,14 @@ func connect(ctx context.Context, opt *pg.Options) (*pg.DB, error) {
 	// db.AddQueryHook(&pgext.OpenTelemetryHook{})
 
 	// Check if connection credentials are valid and PostgreSQL is up and running.
-	if operation := func() error {
+	operation := func() error {
 		if err := db.Ping(ctx); err != nil {
 			return fmt.Errorf("ping database: %w", err)
 		}
 		return nil
 	}
 	
-	retryErr := Retry(operation, NewExponentialBackoff())
+	retryErr := backoff.Retry(operation, backoff.NewExponentialBackOff())
 	if retryErr != nil {
 		return nil, fmt.Errorf("ping database retry attempt: %w", retryErr)
 	}
