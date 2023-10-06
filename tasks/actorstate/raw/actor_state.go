@@ -44,6 +44,7 @@ func (RawActorStateExtractor) Extract(ctx context.Context, a actorstate.ActorInf
 		Head:   a.Actor.Head.String(),
 		Code:   a.Actor.Code.String(),
 		State:  string(state),
+		Nonce:  a.Actor.Nonce,
 	}, nil
 }
 
