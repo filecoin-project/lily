@@ -1,0 +1,62 @@
+[API]
+  ListenAddress = "/ip4/127.0.0.1/tcp/1234/http"
+  RemoteListenAddress = ""
+  Timeout = "30s"
+
+[Backup]
+  DisableMetadataLog = false
+
+[Logging]
+
+[Libp2p]
+  ListenAddresses = ["/ip4/0.0.0.0/tcp/0", "/ip6/::/tcp/0"]
+  AnnounceAddresses = []
+  NoAnnounceAddresses = []
+  DisableNatPortMap = false
+  ConnMgrLow = 150
+  ConnMgrHigh = 180
+  ConnMgrGrace = "20s"
+
+[Pubsub]
+  Bootstrapper = false
+  RemoteTracer = "/dns4/pubsub-tracer.filecoin.io/tcp/4001/p2p/QmTd6UvR47vUidRNZ1ZKXHrAFhqTJAD27rKL9XYghEKgKX"
+
+[Client]
+  UseIpfs = false
+  IpfsOnlineMode = false
+  IpfsMAddr = ""
+  IpfsUseForRetrieval = false
+  SimultaneousTransfersForStorage = 20
+  SimultaneousTransfersForRetrieval = 20
+  OffChainRetrieval = false
+
+[Chainstore]
+  EnableSplitstore = true
+  [Chainstore.Splitstore]
+    ColdStoreType = "discard"
+    HotStoreFullGCFrequency = 3
+    HotStoreMaxSpaceTarget = 650000000000
+    HotStoreMaxSpaceThreshold = 150000000000
+
+[Fevm]
+  # EnableEthRPC enables eth_ rpc, and enables storing a mapping of eth transaction hashes to filecoin message Cids.
+  # This will also enable the RealTimeFilterAPI and HistoricFilterAPI by default, but they can be disabled by config options above.
+  #
+  # type: bool
+  # env var: LOTUS_FEVM_ENABLEETHRPC
+  EnableEthRPC = true
+
+[Storage]
+  [Storage.File]
+    [Storage.File.CSV]
+      Format = "CSV"
+      Path = "/tmp"
+      OmitHeader = false
+      FilePattern = "{table}.csv"
+  [Storage.Postgresql]
+    [Storage.Postgresql.Database1]
+      URLEnv = "LILY_STORAGE_POSTGRESQL_DB_URL"
+      ApplicationName = "lily"
+      SchemaName = "visor"
+      PoolSize = 20
+      AllowUpsert = true
