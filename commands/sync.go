@@ -4,15 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/chain/types"
 	lotuscli "github.com/filecoin-project/lotus/cli"
 	cid "github.com/ipfs/go-cid"
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/model/blocks"
 
 	"github.com/filecoin-project/lily/lens/lily"
 )
@@ -28,6 +32,7 @@ var SyncCmd = &cli.Command{
 	Subcommands: []*cli.Command{
 		SyncStatusCmd,
 		SyncWaitCmd,
+		SyncIncomingBlockCmd,
 	},
 }
 
@@ -237,5 +242,170 @@ func SyncWait(ctx context.Context, lapi lily.LilyAPI, watch bool) error {
 		}
 
 		i++
+	}
+}
+
+type syncOpts struct {
+	config     string
+	storage    string
+	confidence int
+}
+
+var syncFlags syncOpts
+
+type SyncingState struct {
+	UnsyncedBlockHeadersByEpoch map[int64][]*blocks.UnsyncedBlockHeader
+	MapMutex                    sync.Mutex
+	Confidence                  int64
+	Storage                     model.Storage
+	StorageMutex                sync.Mutex
+}
+
+func (ss *SyncingState) SetBlockHeaderToMap(block *blocks.UnsyncedBlockHeader) {
+	ss.MapMutex.Lock()
+	defer ss.MapMutex.Unlock()
+	ss.UnsyncedBlockHeadersByEpoch[block.Height] = append(ss.UnsyncedBlockHeadersByEpoch[block.Height], block)
+}
+
+func (ss *SyncingState) PersistBlocks(ctx context.Context, blocks blocks.UnsyncedBlockHeaders) error {
+	ss.StorageMutex.Lock()
+	defer ss.StorageMutex.Unlock()
+
+	return ss.Storage.PersistBatch(ctx, blocks)
+}
+
+var SyncIncomingBlockCmd = &cli.Command{
+	Name:  "blocks",
+	Usage: "Start to get incoming block",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:        "config",
+			Usage:       "Specify path of config file to use.",
+			EnvVars:     []string{"LILY_CONFIG"},
+			Destination: &syncFlags.config,
+		},
+		&cli.StringFlag{
+			Name:        "storage",
+			Usage:       "Specify the storage to use, if persisting the displayed output.",
+			Destination: &syncFlags.storage,
+		},
+		&cli.IntFlag{
+			Name:        "confidence",
+			Usage:       "Sets the size of the cache used to hold tipsets for possible reversion before being committed to the database.",
+			EnvVars:     []string{"LILY_CONFIDENCE"},
+			Value:       2,
+			Destination: &syncFlags.confidence,
+		},
+	},
+	Action: func(cctx *cli.Context) error {
+		ctx := lotuscli.ReqContext(cctx)
+		lapi, closer, err := GetAPI(ctx)
+		if err != nil {
+			return err
+		}
+		defer closer()
+
+		// Set up a context that is canceled when the command is interrupted
+		ctx, cancel := SetupContextWithCancel(ctx)
+		defer cancel()
+
+		strg, err := SetupStorage(syncFlags.config, syncFlags.storage)
+		if err != nil {
+			return err
+		}
+
+		state := &SyncingState{
+			UnsyncedBlockHeadersByEpoch: make(map[int64][]*blocks.UnsyncedBlockHeader),
+			Confidence:                  int64(syncFlags.confidence),
+			Storage:                     strg,
+			MapMutex:                    sync.Mutex{},
+			StorageMutex:                sync.Mutex{},
+		}
+
+		go detectOrphanBlocks(ctx, lapi, state)
+		go getIncomingBlocks(ctx, lapi, state)
+
+		<-ctx.Done()
+		return nil
+	},
+}
+
+func detectOrphanBlocks(ctx context.Context, lapi lily.LilyAPI, state *SyncingState) {
+	for range time.Tick(30 * time.Second) {
+		state.MapMutex.Lock()
+
+		// Get the latestEpoch in map
+		latestEpoch := int64(0)
+		for k := range state.UnsyncedBlockHeadersByEpoch {
+			if k > latestEpoch {
+				latestEpoch = k
+			}
+		}
+
+		// Check old tipset
+		targetEpoch := latestEpoch - state.Confidence
+		oldEpoches := []int64{}
+		for epoch, unsyncedBlocks := range state.UnsyncedBlockHeadersByEpoch {
+			if epoch <= targetEpoch {
+				// Store the old tipset, we should clear it after checking
+				oldEpoches = append(oldEpoches, epoch)
+
+				oldTs, err := lapi.ChainGetTipSetByHeight(ctx, abi.ChainEpoch(epoch), types.EmptyTSK)
+				if err != nil {
+					log.Errorf("Error at getting the old tipset: %v", err)
+					continue
+				}
+				log.Infof("Get header cids: %v at Height: %v", oldTs.Cids(), oldTs.Height())
+
+				// Verify whether the unsynced block exists within the tipset or not.
+				cidMap := make(map[string]bool)
+				for _, cid := range oldTs.Cids() {
+					cidMap[cid.String()] = true
+				}
+				orphanBlocks := blocks.UnsyncedBlockHeaders{}
+				for _, block := range unsyncedBlocks {
+					if _, exists := cidMap[block.Cid]; !exists {
+						block.IsOrphan = true
+						orphanBlocks = append(orphanBlocks, block)
+						log.Errorf("Detect orphan block cid: %v at height: %v", block.Cid, block.Height)
+					}
+				}
+
+				// To do set the orphan to Storage
+				if len(orphanBlocks) > 0 && state.Storage != nil {
+					err := state.PersistBlocks(ctx, orphanBlocks)
+					if err != nil {
+						log.Errorf("Error at persisting the orphan blocks: %v", err)
+					}
+				}
+			}
+		}
+
+		// Clean the map
+		for _, epoch := range oldEpoches {
+			delete(state.UnsyncedBlockHeadersByEpoch, epoch)
+		}
+		state.MapMutex.Unlock()
+	}
+}
+
+func getIncomingBlocks(ctx context.Context, lapi lily.LilyAPI, state *SyncingState) {
+	incomingBlocks, err := lapi.SyncIncomingBlocks(ctx)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	for bh := range incomingBlocks {
+		block := blocks.NewUnsyncedBlockHeader(bh)
+		state.SetBlockHeaderToMap(block)
+		if state.Storage == nil {
+			log.Infof("Block Height: %v, Miner: %v, Cid: %v", block.Height, block.Miner, block.Cid)
+		} else {
+			err = state.PersistBlocks(ctx, blocks.UnsyncedBlockHeaders{block})
+			if err != nil {
+				log.Errorf("Error at persisting the unsynced block headers: %v", err)
+			}
+		}
 	}
 }

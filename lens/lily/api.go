@@ -62,6 +62,10 @@ type LilyAPI interface {
 	EthGetTransactionByHash(ctx context.Context, txHash *ethtypes.EthHash) (*ethtypes.EthTx, error)              //perm:read
 	StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error)                         //perm:read
 
+	// SyncIncomingBlocks returns a channel streaming incoming, potentially not
+	// yet synced block headers.
+	SyncIncomingBlocks(ctx context.Context) (<-chan *types.BlockHeader, error) //perm:read
+
 	// trigger graceful shutdown
 	Shutdown(context.Context) error
 
