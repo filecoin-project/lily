@@ -49,6 +49,9 @@ func (t *Task) ProcessTipSet(ctx context.Context, current *types.TipSet) (model.
 	}
 
 	validMsgCid, err := t.node.MessagesWithDeduplicationForTipSet(ctx, current)
+	if err != nil {
+		log.Errorf("Error at getting messages with deduplication: %v", err)
+	}
 
 	log.Infof("Get the count of valid messages: %v", len(validMsgCid))
 

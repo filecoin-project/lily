@@ -594,11 +594,10 @@ func (m *LilyNodeAPI) MessagesForTipSetBlocks(ctx context.Context, ts *types.Tip
 
 func (m *LilyNodeAPI) MessagesWithDeduplicationForTipSet(ctx context.Context, ts *types.TipSet) (map[cid.Cid]types.ChainMsg, error) {
 	blkMsgs, err := m.ChainAPI.Chain.BlockMsgsForTipset(ctx, ts)
-	if err != nil {
-		return nil, err
-	}
-
 	msgMap := make(map[cid.Cid]types.ChainMsg)
+	if err != nil {
+		return msgMap, err
+	}
 	for _, blk := range blkMsgs {
 		for _, msg := range blk.BlsMessages {
 			msgMap[msg.Cid()] = msg
