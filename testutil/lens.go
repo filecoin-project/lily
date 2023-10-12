@@ -51,7 +51,7 @@ func (aw *APIWrapper) TipSetMessageReceipts(ctx context.Context, ts, pts *types.
 	panic("implement me")
 }
 
-func (aw *APIWrapper) MessagesWithDeduplicationForTipSet(ctx context.Context, ts *types.TipSet) ([]types.ChainMsg, error) {
+func (aw *APIWrapper) MessagesWithDeduplicationForTipSet(ctx context.Context, ts *types.TipSet) (map[cid.Cid]types.ChainMsg, error) {
 	//TODO implement me
 	panic("implement me")
 }

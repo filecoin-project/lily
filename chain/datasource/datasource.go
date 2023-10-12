@@ -147,7 +147,7 @@ func (t *DataSource) TipSetBlockMessages(ctx context.Context, ts *types.TipSet) 
 	return t.node.MessagesForTipSetBlocks(ctx, ts)
 }
 
-func (t *DataSource) MessagesWithDeduplicationForTipSet(ctx context.Context, ts *types.TipSet) ([]types.ChainMsg, error) {
+func (t *DataSource) MessagesWithDeduplicationForTipSet(ctx context.Context, ts *types.TipSet) (map[cid.Cid]types.ChainMsg, error) {
 	return t.node.MessagesWithDeduplicationForTipSet(ctx, ts)
 }
 

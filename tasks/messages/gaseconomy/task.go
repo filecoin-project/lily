@@ -48,16 +48,7 @@ func (t *Task) ProcessTipSet(ctx context.Context, current *types.TipSet) (model.
 		StateRoot: current.ParentState().String(),
 	}
 
-	validMsgCid := make(map[cid.Cid]bool)
-	uniqMsg, err := t.node.MessagesWithDeduplicationForTipSet(ctx, current)
-	if err != nil {
-		log.Errorf("Error at getting messages with deduplication: %v", err)
-	}
-	if uniqMsg != nil {
-		for _, msg := range uniqMsg {
-			validMsgCid[msg.Cid()] = true
-		}
-	}
+	validMsgCid, err := t.node.MessagesWithDeduplicationForTipSet(ctx, current)
 
 	log.Infof("Get the count of valid messages: %v", len(validMsgCid))
 
