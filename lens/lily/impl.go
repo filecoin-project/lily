@@ -592,6 +592,24 @@ func (m *LilyNodeAPI) MessagesForTipSetBlocks(ctx context.Context, ts *types.Tip
 	return out, nil
 }
 
+func (m *LilyNodeAPI) MessagesWithDeduplicationForTipSet(ctx context.Context, ts *types.TipSet) (map[cid.Cid]types.ChainMsg, error) {
+	blkMsgs, err := m.ChainAPI.Chain.BlockMsgsForTipset(ctx, ts)
+	msgMap := make(map[cid.Cid]types.ChainMsg)
+	if err != nil {
+		return msgMap, err
+	}
+	for _, blk := range blkMsgs {
+		for _, msg := range blk.BlsMessages {
+			msgMap[msg.Cid()] = msg
+		}
+		for _, msg := range blk.SecpkMessages {
+			msgMap[msg.Cid()] = msg
+		}
+	}
+
+	return msgMap, nil
+}
+
 // TipSetMessageReceipts returns the blocks and messages in `pts` and their corresponding receipts from `ts` matching block order in tipset (`pts`).
 func (m *LilyNodeAPI) TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*lens.BlockMessageReceipts, error) {
 	// sanity check args

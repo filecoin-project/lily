@@ -16,6 +16,8 @@ import (
 	messagemodel "github.com/filecoin-project/lily/model/messages"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
+
+	logging "github.com/ipfs/go-log/v2"
 )
 
 type Task struct {
@@ -27,6 +29,8 @@ func NewTask(node tasks.DataSource) *Task {
 		node: node,
 	}
 }
+
+var log = logging.Logger("lily/tasks/gaseconomy")
 
 func (t *Task) ProcessTipSet(ctx context.Context, current *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ProcessTipSet")
@@ -43,6 +47,13 @@ func (t *Task) ProcessTipSet(ctx context.Context, current *types.TipSet) (model.
 		Height:    int64(current.Height()),
 		StateRoot: current.ParentState().String(),
 	}
+
+	validMsgCid, err := t.node.MessagesWithDeduplicationForTipSet(ctx, current)
+	if err != nil {
+		log.Errorf("Error at getting messages with deduplication: %v", err)
+	}
+
+	log.Infof("Get the count of valid messages: %v", len(validMsgCid))
 
 	msgrec, err := t.node.TipSetBlockMessages(ctx, current)
 	if err != nil {
@@ -65,6 +76,10 @@ func (t *Task) ProcessTipSet(ctx context.Context, current *types.TipSet) (model.
 		}
 
 		for _, msg := range mr.BlsMessages {
+			if _, exists := validMsgCid[msg.Cid()]; !exists {
+				log.Errorf("Get invalid message cid: %v", msg.Cid())
+				continue
+			}
 			// calculate total gas limit of executed messages regardless of duplicates.
 			totalGasLimit += msg.GasLimit
 			if exeMsgSeen[msg.Cid()] {
@@ -76,6 +91,10 @@ func (t *Task) ProcessTipSet(ctx context.Context, current *types.TipSet) (model.
 
 		}
 		for _, msg := range mr.SecpMessages {
+			if _, exists := validMsgCid[msg.Cid()]; !exists {
+				log.Errorf("Get invalid message cid: %v", msg.Cid())
+				continue
+			}
 			// calculate total gas limit of executed messages regardless of duplicates.
 			totalGasLimit += msg.VMMessage().GasLimit
 			if exeMsgSeen[msg.Cid()] {

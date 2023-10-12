@@ -51,6 +51,7 @@ type ChainAPI interface {
 
 	MessagesForTipSetBlocks(ctx context.Context, ts *types.TipSet) ([]*BlockMessages, error)
 	TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*BlockMessageReceipts, error)
+	MessagesWithDeduplicationForTipSet(ctx context.Context, ts *types.TipSet) (map[cid.Cid]types.ChainMsg, error)
 
 	// added during hyperspace
 	ChainGetEvents(ctx context.Context, root cid.Cid) ([]types.Event, error)
