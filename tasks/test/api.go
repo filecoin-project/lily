@@ -63,7 +63,7 @@ func (m *MockActorStateAPI) Store() adt.Store {
 	return nil
 }
 
-func (m *MockActorStateAPI) LookupRobustAddress(ctx context.Context, idAddr address.Address, tsk types.TipSetKey) (address.Address, error) {
+func (m *MockActorStateAPI) LookupRobustAddress(_ context.Context, _ address.Address, _ types.TipSetKey) (address.Address, error) {
 	m.Called()
 	return address.TestAddress, nil
 }
