@@ -438,8 +438,17 @@ func (s *TxStorage) PersistModel(ctx context.Context, m interface{}) error {
 		}
 
 	}
+
+	// Prepare the conflict and upsert sql string
+	conflict := ""
+	upsert := ""
 	if s.upsert {
-		conflict, upsert := GenerateUpsertStrings(m)
+		conflict, upsert = GenerateUpsertStrings(m)
+	}
+
+	// If the upsert string is left blank, indicating that all fields serve as primary keys.
+	// In such a case, proceed with the standard insert process.
+	if s.upsert && len(upsert) > 0 {
 		if _, err := s.tx.ModelContext(ctx, m).
 			OnConflict(conflict).
 			Set(upsert).
