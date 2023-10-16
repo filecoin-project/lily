@@ -63,6 +63,11 @@ func (m *MockActorStateAPI) Store() adt.Store {
 	return nil
 }
 
+func (m *MockActorStateAPI) LookupRobustAddress(ctx context.Context, idAddr address.Address, tsk types.TipSetKey) (address.Address, error) {
+	m.Called()
+	return address.TestAddress, nil
+}
+
 func (m *MockActorStateAPI) DiffPreCommits(ctx context.Context, _ address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.PreCommitChanges, error) {
 	args := m.Called(ctx, ts, pts, pre, cur)
 	tsmsgs := args.Get(0)

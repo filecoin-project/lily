@@ -161,7 +161,6 @@ func (t *Task) startActorStateExtraction(ctx context.Context, current, executed 
 	for addr, ac := range actors {
 		addr := addr
 		ac := ac
-
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

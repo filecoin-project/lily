@@ -79,6 +79,8 @@ type ActorState struct {
 	Code string `pg:",pk,notnull"`
 	// Top level of state data as json.
 	State string `pg:",type:jsonb,notnull"`
+	// Address of actor.
+	Address string `pg:",pk,notnull"`
 }
 
 func (as *ActorState) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {

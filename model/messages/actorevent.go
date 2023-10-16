@@ -17,11 +17,12 @@ type ActorEvent struct {
 	MessageCid string `pg:",pk,notnull"`
 	EventIndex int64  `pg:",pk,notnull,use_zero"`
 
-	Emitter string `pg:",notnull"`
-	Flags   []byte `pg:",notnull"`
-	Codec   uint64 `pg:",notnull,use_zero"`
-	Key     string `pg:",notnull"`
-	Value   []byte `pg:",notnull"`
+	Emitter    string `pg:",notnull"`
+	Flags      []byte `pg:",notnull"`
+	Codec      uint64 `pg:",notnull,use_zero"`
+	Key        string `pg:",notnull"`
+	Value      []byte `pg:",notnull"`
+	EntryIndex int64  `pg:",pk,notnull,use_zero"`
 }
 
 func (a *ActorEvent) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
