@@ -160,7 +160,10 @@ func (t *Task) startActorStateExtraction(ctx context.Context, current, executed 
 	var wg sync.WaitGroup
 
 	// Setup the cache for robust address
-	t.node.SetIdRobustAddressMap(ctx, current.Key())
+	err := t.node.SetIdRobustAddressMap(ctx, current.Key())
+	if err != nil {
+		log.Errorf("Error at setting IdRobustAddressMap: %v", err)
+	}
 
 	for addr, ac := range actors {
 		addr := addr
