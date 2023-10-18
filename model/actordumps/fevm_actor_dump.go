@@ -15,7 +15,7 @@ type FEVMActorDump struct {
 	// Height message was executed at.
 	Height int64 `pg:",pk,notnull,use_zero"`
 	// Actor address.
-	ActorID string `pg:",notnull"`
+	ActorID string `pg:",pk,notnull"`
 	// Actor Address in ETH.
 	EthAddress string `pg:",notnull"`
 	// Contract Bytecode.
@@ -25,7 +25,7 @@ type FEVMActorDump struct {
 	// Balance of EVM actor in attoFIL.
 	Balance string `pg:"type:numeric,notnull"`
 	// The next actor nonce that is expected to appear on chain.
-	Nonce uint64 `pg:",use_zero"`
+	Nonce uint64 `pg:",pk,use_zero"`
 	// Actor Name
 	ActorName string `pg:",notnull"`
 }

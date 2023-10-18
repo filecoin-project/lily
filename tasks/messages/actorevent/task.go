@@ -90,7 +90,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			}
 
 			for evtIdx, event := range events {
-				for _, e := range event.Entries {
+				for entryIdx, e := range event.Entries {
 					emitter, err := address.NewIDAddress(uint64(event.Emitter))
 					if err != nil {
 						errorsDetected = append(errorsDetected, &messages.MessageError{
@@ -109,6 +109,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 						Codec:      e.Codec,
 						Key:        e.Key,
 						Value:      e.Value,
+						EntryIndex: int64(entryIdx),
 					})
 				}
 			}

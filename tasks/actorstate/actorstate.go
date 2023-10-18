@@ -67,6 +67,8 @@ type ActorStateAPI interface {
 	DiffPreCommitsV8(ctx context.Context, addr address.Address, ts, pts *types.TipSet, pre, cur miner.State) (*miner.PreCommitChangesV8, error)
 
 	MinerLoad(store adt.Store, act *types.Actor) (miner.State, error)
+
+	LookupRobustAddress(ctx context.Context, idAddr address.Address, tsk types.TipSetKey) (address.Address, error)
 }
 
 // An ActorStateExtractor extracts actor state into a persistable format

@@ -36,7 +36,7 @@ type MinerSectorEvent struct {
 	SectorID  uint64 `pg:",pk,use_zero"`
 	StateRoot string `pg:",pk,notnull"`
 
-	Event string `pg:"type:miner_sector_event_type" pg:",pk,notnull"` // nolint: staticcheck
+	Event string `pg:",pk,type:miner_sector_event_type,notnull"` // nolint: staticcheck
 }
 
 func (mse *MinerSectorEvent) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {

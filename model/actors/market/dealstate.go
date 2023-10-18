@@ -13,11 +13,11 @@ import (
 type MarketDealState struct {
 	Height           int64  `pg:",pk,notnull,use_zero"`
 	DealID           uint64 `pg:",pk,use_zero"`
-	SectorStartEpoch int64  `pg:",pk,use_zero"`
-	LastUpdateEpoch  int64  `pg:",pk,use_zero"`
-	SlashEpoch       int64  `pg:",pk,use_zero"`
+	SectorStartEpoch int64  `pg:",use_zero"`
+	LastUpdateEpoch  int64  `pg:",use_zero"`
+	SlashEpoch       int64  `pg:",use_zero"`
 
-	StateRoot string `pg:",notnull"`
+	StateRoot string `pg:",pk,notnull"`
 }
 
 func (ds *MarketDealState) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {

@@ -40,7 +40,7 @@ type VMMessage struct {
 	// Returns value of message receipt.
 	Returns string `pg:",type:jsonb"`
 	// Index indicating the order of the messages execution.
-	Index uint64 `pg:",notnull,use_zero"`
+	Index uint64 `pg:",pk,notnull,use_zero"`
 }
 
 func (v *VMMessage) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {

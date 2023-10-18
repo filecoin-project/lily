@@ -15,7 +15,7 @@ import (
 type ChainEconomics struct {
 	tableName           struct{} `pg:"chain_economics"` // nolint: structcheck
 	Height              int64    `pg:",pk,notnull,use_zero"`
-	ParentStateRoot     string   `pg:",notnull"`
+	ParentStateRoot     string   `pg:",pk,notnull"`
 	CirculatingFil      string   `pg:"type:numeric,notnull"`
 	VestedFil           string   `pg:"type:numeric,notnull"`
 	MinedFil            string   `pg:"type:numeric,notnull"`

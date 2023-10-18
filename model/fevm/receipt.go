@@ -17,7 +17,7 @@ type FEVMReceipt struct {
 	// Message CID
 	Message string `pg:",use_zero"`
 	// Hash of transaction.
-	TransactionHash string `pg:",notnull"`
+	TransactionHash string `pg:",pk,notnull"`
 	// Integer of the transactions index position in the block.
 	TransactionIndex uint64 `pg:",use_zero"`
 	// Hash of the block where this transaction was in.

@@ -29,7 +29,7 @@ type DrandBlockEntrie struct {
 	// Round is the round number of randomness used.
 	Round uint64 `pg:",pk,use_zero"`
 	// Block is the CID of the block.
-	Block string `pg:",notnull"`
+	Block string `pg:",pk,notnull"`
 }
 
 func (dbe *DrandBlockEntrie) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {

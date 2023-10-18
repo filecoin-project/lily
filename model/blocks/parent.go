@@ -14,7 +14,7 @@ import (
 type BlockParent struct {
 	Height int64  `pg:",pk,notnull,use_zero"`
 	Block  string `pg:",pk,notnull"`
-	Parent string `pg:",notnull"`
+	Parent string `pg:",pk,notnull"`
 }
 
 func (bp *BlockParent) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
