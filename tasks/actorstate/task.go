@@ -158,6 +158,10 @@ func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, execute
 
 func (t *Task) startActorStateExtraction(ctx context.Context, current, executed *types.TipSet, actors tasks.ActorStateChangeDiff, results chan *ActorStateResult) {
 	var wg sync.WaitGroup
+
+	// Setup the cache for robust address
+	t.node.SetIdRobustAddressMap(ctx, current.Key())
+
 	for addr, ac := range actors {
 		addr := addr
 		ac := ac
