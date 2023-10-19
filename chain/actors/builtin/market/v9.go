@@ -16,7 +16,7 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 
-	verifregtypes "github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
+	verifregtypes "github.com/filecoin-project/lotus/chain/actors/builtin/verifreg"
 
 	market9 "github.com/filecoin-project/go-state-types/builtin/v9/market"
 	markettypes "github.com/filecoin-project/go-state-types/builtin/v9/market"

@@ -53,7 +53,7 @@ const (
 	FEVMTrace                      = "fevm_trace"
 
 	// New task types: full dump
-	FEVMActorDump = "fevm_actor_dump"
+	FEVMActorDump  = "fevm_actor_dump"
 	MinerActorDump = "miner_actor_dump"
 )
 
