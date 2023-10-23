@@ -5,6 +5,35 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.17.2"></a>
+## [v0.17.2] - 2023-10-23
+
+## DATABASE MIGRATION
+This release includes a migration which must be applied before deploying against an existing database.
+* [1.33](https://github.com/filecoin-project/lily/blob/master/schemas/v1/33_miner_actor_dumps.go)
+* [1.34](https://github.com/filecoin-project/lily/blob/master/schemas/v1/34_unsynced_block_headers.go)
+* [1.35](https://github.com/filecoin-project/lily/blob/master/schemas/v1/35_add_pkey_for_tables.go)
+  
+### Feat
+* feat: add new actor dump: miner (https://github.com/filecoin-project/lily/pull/1264)
+  * requires migration [1.33](https://github.com/filecoin-project/lily/blob/master/schemas/v1/33_miner_actor_dumps.go)
+* feat: add new job to find out orphan block (https://github.com/filecoin-project/lily/pull/1265)
+  * requires migration [1.34](https://github.com/filecoin-project/lily/blob/master/schemas/v1/34_unsynced_block_headers.go)
+* feat: Add new function for filtering invalid message (https://github.com/filecoin-project/lily/pull/1269)
+* feat: add the cache for robust address by @Terryhung in https://github.com/filecoin-project/lily/pull/1273
+
+### Fix
+* fix: remove the typo in fevm transactions model (https://github.com/filecoin-project/lily/pull/1262)
+* fix: the peer_id encode error (https://github.com/filecoin-project/lily/pull/1268)
+* fix: align the pkey in model to real database schema (https://github.com/filecoin-project/lily/pull/1271)
+  * requires migration [1.35](https://github.com/filecoin-project/lily/blob/master/schemas/v1/35_add_pkey_for_tables.go)
+* fix: hot fix migration script (https://github.com/filecoin-project/lily/pull/1272)
+
+### Chore
+* chore: update the lotus version to 1.23.3 (https://github.com/filecoin-project/lily/pull/1251)
+* chore(deps): bump actions/checkout from 3 to 4 (https://github.com/filecoin-project/lily/pull/1263)
+
+
 <a name="v0.17.1"></a>
 ## [v0.17.1] - 2023-8-30
 
