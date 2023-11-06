@@ -235,7 +235,7 @@ func connect(ctx context.Context, opt *pg.Options) (*pg.DB, error) {
 		}
 		return nil
 	}
-	
+
 	retryErr := backoff.Retry(operation, backoff.NewExponentialBackOff())
 	if retryErr != nil {
 		return nil, fmt.Errorf("ping database retry attempt: %w", retryErr)
