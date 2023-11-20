@@ -63,6 +63,7 @@ require k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 
 require (
 	github.com/DataDog/zstd v1.4.5
+	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/filecoin-project/go-amt-ipld/v4 v4.1.1-0.20230511024927-ecc426107fac
 	github.com/hibiken/asynq v0.23.0
 	github.com/hibiken/asynq/x v0.0.0-20220413130846-5c723f597e01
