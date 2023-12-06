@@ -24,7 +24,7 @@ import (
 
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
 
-	builtin11 "github.com/filecoin-project/go-state-types/builtin"
+	builtin12 "github.com/filecoin-project/go-state-types/builtin"
 
 	verifregtypes "github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
 	lotusactors "github.com/filecoin-project/lotus/chain/actors"
@@ -37,8 +37,8 @@ import (
 )
 
 var (
-	Address = builtin11.VerifiedRegistryActorAddr
-	Methods = builtin11.MethodsVerifiedRegistry
+	Address = builtin12.VerifiedRegistryActorAddr
+	Methods = builtin12.MethodsVerifiedRegistry
 )
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
@@ -60,6 +60,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 		case actorstypes.Version11:
 			return load11(store, act.Head)
+
+		case actorstypes.Version12:
+			return load12(store, act.Head)
 
 		}
 	}
@@ -154,6 +157,7 @@ func AllCodes() []cid.Cid {
 		(&state9{}).Code(),
 		(&state10{}).Code(),
 		(&state11{}).Code(),
+		(&state12{}).Code(),
 	}
 }
 
@@ -170,6 +174,7 @@ func VersionCodes() map[actorstypes.Version]cid.Cid {
 		actorstypes.Version9:  (&state9{}).Code(),
 		actorstypes.Version10: (&state10{}).Code(),
 		actorstypes.Version11: (&state11{}).Code(),
+		actorstypes.Version12: (&state12{}).Code(),
 	}
 }
 

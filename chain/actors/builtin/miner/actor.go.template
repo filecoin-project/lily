@@ -164,7 +164,7 @@ type Partition interface {
 
 type SectorOnChainInfo = miner{{.latestVersion}}.SectorOnChainInfo
 
-func PreferredSealProofTypeFromWindowPoStType(nver network.Version, proof abi.RegisteredPoStProof) (abi.RegisteredSealProof, error) {
+func PreferredSealProofTypeFromWindowPoStType(nver network.Version, proof abi.RegisteredPoStProof, configWantSynthetic bool) (abi.RegisteredSealProof, error) {
 	// We added support for the new proofs in network version 7, and removed support for the old
 	// ones in network version 8.
 	if nver < network.Version7 {
@@ -179,6 +179,23 @@ func PreferredSealProofTypeFromWindowPoStType(nver network.Version, proof abi.Re
 			return abi.RegisteredSealProof_StackedDrg32GiBV1, nil
 		case abi.RegisteredPoStProof_StackedDrgWindow64GiBV1:
 			return abi.RegisteredSealProof_StackedDrg64GiBV1, nil
+		default:
+			return -1, xerrors.Errorf("unrecognized window post type: %d", proof)
+		}
+	}
+	
+	if nver <  network.Version21 || !configWantSynthetic {
+		switch proof {
+		case abi.RegisteredPoStProof_StackedDrgWindow2KiBV1, abi.RegisteredPoStProof_StackedDrgWindow2KiBV1_1:
+			return abi.RegisteredSealProof_StackedDrg2KiBV1_1_Feat_SyntheticPoRep, nil
+		case abi.RegisteredPoStProof_StackedDrgWindow8MiBV1, abi.RegisteredPoStProof_StackedDrgWindow8MiBV1_1:
+			return abi.RegisteredSealProof_StackedDrg8MiBV1_1_Feat_SyntheticPoRep, nil
+		case abi.RegisteredPoStProof_StackedDrgWindow512MiBV1, abi.RegisteredPoStProof_StackedDrgWindow512MiBV1_1:
+			return abi.RegisteredSealProof_StackedDrg512MiBV1_1_Feat_SyntheticPoRep, nil
+		case abi.RegisteredPoStProof_StackedDrgWindow32GiBV1, abi.RegisteredPoStProof_StackedDrgWindow32GiBV1_1:
+			return abi.RegisteredSealProof_StackedDrg32GiBV1_1_Feat_SyntheticPoRep, nil
+		case abi.RegisteredPoStProof_StackedDrgWindow64GiBV1, abi.RegisteredPoStProof_StackedDrgWindow64GiBV1_1:
+			return abi.RegisteredSealProof_StackedDrg64GiBV1_1_Feat_SyntheticPoRep, nil
 		default:
 			return -1, xerrors.Errorf("unrecognized window post type: %d", proof)
 		}
@@ -224,6 +241,34 @@ type BeneficiaryTerm = minertypes.BeneficiaryTerm
 type PendingBeneficiaryChange = minertypes.PendingBeneficiaryChange
 type SectorPreCommitOnChainInfo = minertypes.SectorPreCommitOnChainInfo
 type SectorPreCommitInfo = minertypes.SectorPreCommitInfo
+type SubmitWindowedPoStParams = minertypes.SubmitWindowedPoStParams
+type PoStPartition = minertypes.PoStPartition
+type RecoveryDeclaration = minertypes.RecoveryDeclaration
+type FaultDeclaration = minertypes.FaultDeclaration
+type DeclareFaultsRecoveredParams = minertypes.DeclareFaultsRecoveredParams
+type DeclareFaultsParams = minertypes.DeclareFaultsParams
+type ProveCommitAggregateParams = minertypes.ProveCommitAggregateParams
+type ProveCommitSectorParams = minertypes.ProveCommitSectorParams
+type ProveReplicaUpdatesParams = minertypes.ProveReplicaUpdatesParams
+type ReplicaUpdate = minertypes.ReplicaUpdate
+type PreCommitSectorBatchParams = minertypes.PreCommitSectorBatchParams
+type PreCommitSectorBatchParams2 = minertypes.PreCommitSectorBatchParams2
+type ExtendSectorExpiration2Params = minertypes.ExtendSectorExpiration2Params
+type SectorClaim = minertypes.SectorClaim
+type ExpirationExtension2 = minertypes.ExpirationExtension2
+type CompactPartitionsParams = minertypes.CompactPartitionsParams
+type WithdrawBalanceParams = minertypes.WithdrawBalanceParams
+var WPoStProvingPeriod = func() abi.ChainEpoch { return minertypes.WPoStProvingPeriod }
+var WPoStChallengeWindow = func() abi.ChainEpoch { return minertypes.WPoStChallengeWindow }
+
+const WPoStPeriodDeadlines = minertypes.WPoStPeriodDeadlines
+const WPoStChallengeLookback = minertypes.WPoStChallengeLookback
+const FaultDeclarationCutoff = minertypes.FaultDeclarationCutoff
+const MinAggregatedSectors = minertypes.MinAggregatedSectors
+const MinSectorExpiration = minertypes.MinSectorExpiration
+
+var QAPowerMax = minertypes.QAPowerMax
+
 
 type SectorExpiration struct {
 	OnTime abi.ChainEpoch

@@ -15,7 +15,7 @@ import (
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/manifest"
 
-	msig11 "github.com/filecoin-project/go-state-types/builtin/v11/multisig"
+	msig12 "github.com/filecoin-project/go-state-types/builtin/v12/multisig"
 
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 
@@ -58,6 +58,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 		case actorstypes.Version11:
 			return load11(store, act.Head)
+
+		case actorstypes.Version12:
+			return load12(store, act.Head)
 
 		}
 	}
@@ -113,19 +116,19 @@ type State interface {
 	decodeTransaction(val *cbg.Deferred) (Transaction, error)
 }
 
-type Transaction = msig11.Transaction
+type Transaction = msig12.Transaction
 
 var Methods = builtintypes.MethodsMultisig
 
 // these types are the same between v0 and v6
-type ProposalHashData = msig11.ProposalHashData
-type ProposeReturn = msig11.ProposeReturn
-type ProposeParams = msig11.ProposeParams
-type ApproveReturn = msig11.ApproveReturn
-type TxnIDParams = msig11.TxnIDParams
+type ProposalHashData = msig12.ProposalHashData
+type ProposeReturn = msig12.ProposeReturn
+type ProposeParams = msig12.ProposeParams
+type ApproveReturn = msig12.ApproveReturn
+type TxnIDParams = msig12.TxnIDParams
 
 func txnParams(id uint64, data *ProposalHashData) ([]byte, error) {
-	params := msig11.TxnIDParams{ID: msig11.TxnID(id)}
+	params := msig12.TxnIDParams{ID: msig12.TxnID(id)}
 	if data != nil {
 		if data.Requester.Protocol() != address.ID {
 			return nil, fmt.Errorf("proposer address must be an ID address, was %s", data.Requester)
@@ -160,6 +163,7 @@ func AllCodes() []cid.Cid {
 		(&state9{}).Code(),
 		(&state10{}).Code(),
 		(&state11{}).Code(),
+		(&state12{}).Code(),
 	}
 }
 
@@ -176,5 +180,6 @@ func VersionCodes() map[actorstypes.Version]cid.Cid {
 		actorstypes.Version9:  (&state9{}).Code(),
 		actorstypes.Version10: (&state10{}).Code(),
 		actorstypes.Version11: (&state11{}).Code(),
+		actorstypes.Version12: (&state12{}).Code(),
 	}
 }
