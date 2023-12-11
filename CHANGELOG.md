@@ -5,6 +5,16 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.17.3"></a>
+## [v0.17.3] - 2023-12-11
+
+### Fix
+* fix: use exponential backoff to attempt reconnect to tsdb (https://github.com/filecoin-project/lily/pull/1267)
+
+### Chore
+* chore: update the lotus to 1.25.0 (https://github.com/filecoin-project/lily/pull/1274)
+
+
 <a name="v0.17.2"></a>
 ## [v0.17.2] - 2023-10-23
 
