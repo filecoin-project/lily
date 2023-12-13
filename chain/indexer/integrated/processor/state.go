@@ -544,6 +544,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 					mineractors.VersionCodes()[actorstypes.Version9]:  {minertask.BeneficiaryExtractor{}},
 					mineractors.VersionCodes()[actorstypes.Version10]: {minertask.BeneficiaryExtractor{}},
 					mineractors.VersionCodes()[actorstypes.Version11]: {minertask.BeneficiaryExtractor{}},
+					mineractors.VersionCodes()[actorstypes.Version12]: {minertask.BeneficiaryExtractor{}},
 				},
 			))
 		case tasktype.MinerCurrentDeadlineInfo:
@@ -591,6 +592,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 						mineractors.VersionCodes()[actorstypes.Version9]:  {minertask.PreCommitInfoExtractorV9{}},
 						mineractors.VersionCodes()[actorstypes.Version10]: {minertask.PreCommitInfoExtractorV9{}},
 						mineractors.VersionCodes()[actorstypes.Version11]: {minertask.PreCommitInfoExtractorV9{}},
+						mineractors.VersionCodes()[actorstypes.Version12]: {minertask.PreCommitInfoExtractorV9{}},
 					},
 				),
 				minertask.PreCommitInfoExtractorV9{},
@@ -637,6 +639,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 						mineractors.VersionCodes()[actorstypes.Version9]:  {minertask.V7SectorInfoExtractor{}},
 						mineractors.VersionCodes()[actorstypes.Version10]: {minertask.V7SectorInfoExtractor{}},
 						mineractors.VersionCodes()[actorstypes.Version11]: {minertask.V7SectorInfoExtractor{}},
+						mineractors.VersionCodes()[actorstypes.Version12]: {minertask.V7SectorInfoExtractor{}},
 					},
 				),
 				minertask.V7SectorInfoExtractor{},
@@ -725,6 +728,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 					verifregactors.VersionCodes()[actorstypes.Version9]:  {verifregtask.ClaimExtractor{}},
 					verifregactors.VersionCodes()[actorstypes.Version10]: {verifregtask.ClaimExtractor{}},
 					verifregactors.VersionCodes()[actorstypes.Version11]: {verifregtask.ClaimExtractor{}},
+					verifregactors.VersionCodes()[actorstypes.Version12]: {verifregtask.ClaimExtractor{}},
 				},
 			))
 
