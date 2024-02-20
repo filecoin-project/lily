@@ -1,12 +1,12 @@
 package datacap
 
 import (
-	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/multiformats/go-varint"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
 

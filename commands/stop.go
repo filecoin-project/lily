@@ -1,8 +1,9 @@
 package commands
 
 import (
-	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
+
+	lotuscli "github.com/filecoin-project/lotus/cli"
 )
 
 var StopCmd = &cli.Command{

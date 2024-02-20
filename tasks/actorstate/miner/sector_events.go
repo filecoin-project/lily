@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/filecoin-project/go-bitfield"
-	actorstypes "github.com/filecoin-project/go-state-types/actors"
-	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/filecoin-project/go-bitfield"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"

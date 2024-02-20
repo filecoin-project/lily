@@ -4,17 +4,18 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lotus/chain/types"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
+	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/chain/actors/builtin/datacap"
 	"github.com/filecoin-project/lily/model"
 	datacapmodel "github.com/filecoin-project/lily/model/actors/datacap"
 	"github.com/filecoin-project/lily/tasks/actorstate"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 var log = logging.Logger("lily/tasks/datacap")

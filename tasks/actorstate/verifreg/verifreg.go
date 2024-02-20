@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
-
-	"github.com/filecoin-project/lily/tasks/actorstate"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/tasks/actorstate"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 type VerifiedRegistryExtractor struct{}

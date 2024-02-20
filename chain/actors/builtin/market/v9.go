@@ -6,21 +6,20 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/filecoin-project/go-state-types/abi"
-	actorstypes "github.com/filecoin-project/go-state-types/actors"
-	"github.com/filecoin-project/go-state-types/manifest"
-	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/lotus/chain/actors/adt"
-
-	verifregtypes "github.com/filecoin-project/lotus/chain/actors/builtin/verifreg"
-
+	"github.com/filecoin-project/go-state-types/abi"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	market9 "github.com/filecoin-project/go-state-types/builtin/v9/market"
 	markettypes "github.com/filecoin-project/go-state-types/builtin/v9/market"
 	adt9 "github.com/filecoin-project/go-state-types/builtin/v9/util/adt"
+	"github.com/filecoin-project/go-state-types/manifest"
+
+	lotusactors "github.com/filecoin-project/lotus/chain/actors"
+	"github.com/filecoin-project/lotus/chain/actors/adt"
+	verifregtypes "github.com/filecoin-project/lotus/chain/actors/builtin/verifreg"
 )
 
 var _ State = (*state9)(nil)

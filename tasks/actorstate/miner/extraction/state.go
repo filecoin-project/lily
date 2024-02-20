@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/lotus/chain/types"
-
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lily/tasks/actorstate"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 type State interface {

@@ -3,10 +3,10 @@ package power
 import (
 	"context"
 
-	"github.com/filecoin-project/go-address"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lily/chain/actors/builtin/power"
 	"github.com/filecoin-project/lily/model"
 	powermodel "github.com/filecoin-project/lily/model/actors/power"

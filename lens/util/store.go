@@ -7,8 +7,6 @@ import (
 	"reflect"
 	"sync/atomic"
 
-	"github.com/filecoin-project/lotus/blockstore"
-	"github.com/filecoin-project/specs-actors/actors/util/adt"
 	lru "github.com/hashicorp/golang-lru"
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
@@ -16,6 +14,9 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/lily/metrics"
+	"github.com/filecoin-project/specs-actors/actors/util/adt"
+
+	"github.com/filecoin-project/lotus/blockstore"
 )
 
 type CacheConfig struct {

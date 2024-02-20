@@ -3,9 +3,10 @@ package adt
 import (
 	"bytes"
 
+	"github.com/ipfs/go-cid"
+
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/cbor"
-	"github.com/ipfs/go-cid"
 )
 
 type Map interface {

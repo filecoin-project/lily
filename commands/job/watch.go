@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"os"
 
-	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/commands"
 	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lily/schedule"
+
+	lotuscli "github.com/filecoin-project/lotus/cli"
 )
 
 type watchOps struct {

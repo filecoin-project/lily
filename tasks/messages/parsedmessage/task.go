@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model"
@@ -19,6 +18,8 @@ import (
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lily/tasks/messages"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 var log = logging.Logger("lily/tasks/parsedmsg")

@@ -8,11 +8,12 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/filecoin-project/lotus/node/config"
 	"github.com/hibiken/asynq"
 	logging "github.com/ipfs/go-log/v2"
 
 	"github.com/filecoin-project/lily/chain/indexer"
+
+	"github.com/filecoin-project/lotus/node/config"
 )
 
 var log = logging.Logger("lily/config")

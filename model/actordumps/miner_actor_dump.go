@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/libp2p/go-libp2p/core/peer"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
+
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 type MinerActorDump struct {

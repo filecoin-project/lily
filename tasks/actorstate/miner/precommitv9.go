@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	"github.com/filecoin-project/lily/tasks/actorstate"

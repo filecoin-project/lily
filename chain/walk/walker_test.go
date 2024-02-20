@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	itestkit "github.com/filecoin-project/lotus/itests/kit"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,6 +18,8 @@ import (
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lily/testutil"
+
+	itestkit "github.com/filecoin-project/lotus/itests/kit"
 )
 
 func TestWalker(t *testing.T) {

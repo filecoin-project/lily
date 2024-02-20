@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/filecoin-project/lotus/chain/types"
-
 	"github.com/filecoin-project/lily/chain/indexer"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 var _ indexer.Indexer = (*TipSetIndexer)(nil)

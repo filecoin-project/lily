@@ -3,7 +3,6 @@ package queue
 import (
 	"context"
 
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -11,6 +10,8 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/distributed"
 	"github.com/filecoin-project/lily/chain/indexer/distributed/queue/tasks"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 var _ distributed.Queue = (*AsynQ)(nil)

@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	logging "github.com/ipfs/go-log/v2"
@@ -15,6 +13,10 @@ import (
 	"github.com/ipld/go-car/util"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"gopkg.in/cheggaaa/pb.v1"
+
+	"github.com/filecoin-project/go-state-types/abi"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 var log = logging.Logger("lily/chain/export")

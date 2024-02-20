@@ -10,14 +10,14 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/filecoin-project/lotus/chain/types"
-
 	"github.com/filecoin-project/lily/chain/indexer/integrated/processor"
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	taskapi "github.com/filecoin-project/lily/tasks"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 var log = logging.Logger("lily/integrated/tipset")

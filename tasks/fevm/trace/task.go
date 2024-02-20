@@ -4,22 +4,23 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/fevm"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	tasks "github.com/filecoin-project/lily/tasks"
+
 	builtin "github.com/filecoin-project/lotus/chain/actors/builtin"
+	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 )
 
 var log = logging.Logger("lily/tasks/fevmtrace")

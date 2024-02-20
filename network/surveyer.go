@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
-
-	logging "github.com/ipfs/go-log/v2"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"

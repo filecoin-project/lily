@@ -8,17 +8,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lily/chain/actors/builtin"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 // A Task processes the extraction of actor state according the allowed types in its extractor map.

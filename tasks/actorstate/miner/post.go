@@ -5,17 +5,18 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/filecoin-project/go-bitfield"
-	"github.com/filecoin-project/go-state-types/abi"
-	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
-	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
+	"github.com/filecoin-project/go-bitfield"
+	"github.com/filecoin-project/go-state-types/abi"
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	"github.com/filecoin-project/lily/tasks/actorstate"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 type PoStExtractor struct{}

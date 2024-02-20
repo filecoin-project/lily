@@ -16,11 +16,10 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/multierr"
-	"gopkg.in/cheggaaa/pb.v1"
-
 	fslock "github.com/ipfs/go-fs-lock"
 	logging "github.com/ipfs/go-log/v2"
+	"go.uber.org/multierr"
+	"gopkg.in/cheggaaa/pb.v1"
 )
 
 // Ported from github.com/filecoin-project/go-paramfetch

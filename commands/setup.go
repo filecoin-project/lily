@@ -7,13 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hibiken/asynq"
-	octrace "go.opencensus.io/trace"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/bridge/opencensus"
-
 	"contrib.go.opencensus.io/exporter/prometheus"
-	lotusmetrics "github.com/filecoin-project/lotus/metrics"
+	"github.com/hibiken/asynq"
 	asynqmetrics "github.com/hibiken/asynq/x/metrics"
 	logging "github.com/ipfs/go-log/v2"
 	metricsprom "github.com/ipfs/go-metrics-prometheus"
@@ -21,10 +16,15 @@ import (
 	prom "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"go.opencensus.io/stats/view"
+	octrace "go.opencensus.io/trace"
 	"go.opencensus.io/zpages"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/bridge/opencensus"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/version"
+
+	lotusmetrics "github.com/filecoin-project/lotus/metrics"
 )
 
 var log = logging.Logger("lily/commands")

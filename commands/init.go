@@ -4,16 +4,17 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/mitchellh/go-homedir"
+	"github.com/urfave/cli/v2"
+
 	paramfetch "github.com/filecoin-project/go-paramfetch"
+	"github.com/filecoin-project/lily/commands/util"
+	"github.com/filecoin-project/lily/config"
+
 	lotusbuild "github.com/filecoin-project/lotus/build"
 	lcli "github.com/filecoin-project/lotus/cli"
 	"github.com/filecoin-project/lotus/lib/lotuslog"
 	"github.com/filecoin-project/lotus/node/repo"
-	"github.com/mitchellh/go-homedir"
-	"github.com/urfave/cli/v2"
-
-	"github.com/filecoin-project/lily/commands/util"
-	"github.com/filecoin-project/lily/config"
 )
 
 var initFlags struct {

@@ -3,10 +3,10 @@ package processor_test
 import (
 	"testing"
 
-	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/require"
 
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/lily/chain/actors/builtin/datacap"
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"

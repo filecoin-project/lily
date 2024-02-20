@@ -3,14 +3,14 @@ package blocks
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/attribute"
-
-	"github.com/filecoin-project/lotus/chain/types"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 func NewDrandBlockEntries(header *types.BlockHeader) DrandBlockEntries {

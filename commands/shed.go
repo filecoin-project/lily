@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/urfave/cli/v2"
+
+	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 )
 
 var ShedCmd = &cli.Command{

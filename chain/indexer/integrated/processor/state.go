@@ -6,16 +6,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/filecoin-project/go-state-types/abi"
-	actorstypes "github.com/filecoin-project/go-state-types/actors"
-	"github.com/filecoin-project/go-state-types/manifest"
-	"github.com/filecoin-project/lotus/chain/actors"
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
+
+	"github.com/filecoin-project/go-state-types/abi"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
+
+	"github.com/filecoin-project/lotus/chain/actors"
+	"github.com/filecoin-project/lotus/chain/types"
 
 	// actor accessors
 	datacapactors "github.com/filecoin-project/lily/chain/actors/builtin/datacap"
@@ -70,13 +72,12 @@ import (
 	fevmactorstatstask "github.com/filecoin-project/lily/tasks/fevmactorstats"
 
 	// actor dump
-	fevmactordumptask "github.com/filecoin-project/lily/tasks/periodic_actor_dump/fevm_actor"
-	mineractordumptask "github.com/filecoin-project/lily/tasks/periodic_actor_dump/miner_actor"
-
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
+	fevmactordumptask "github.com/filecoin-project/lily/tasks/periodic_actor_dump/fevm_actor"
+	mineractordumptask "github.com/filecoin-project/lily/tasks/periodic_actor_dump/miner_actor"
 
 	builtin "github.com/filecoin-project/lotus/chain/actors/builtin"
 )

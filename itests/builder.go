@@ -6,20 +6,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/abi"
-	api2 "github.com/filecoin-project/lotus/api"
-	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/lotus/node"
 	"github.com/go-pg/pg/v10"
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/config"
 	"github.com/filecoin-project/lily/lens"
 	"github.com/filecoin-project/lily/lens/lily"
 	lutil "github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/storage"
+
+	api2 "github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/node"
 )
 
 type VectorWalkValidatorBuilder struct {

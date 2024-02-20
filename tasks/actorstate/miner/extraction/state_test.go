@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -14,6 +13,8 @@ import (
 	"github.com/filecoin-project/lily/tasks/actorstate"
 	atesting "github.com/filecoin-project/lily/tasks/test"
 	"github.com/filecoin-project/lily/testutil"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 func TestLoadMinerStatesPreviousStatePresent(t *testing.T) {

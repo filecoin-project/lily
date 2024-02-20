@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lotus/chain/types"
 	typegen "github.com/whyrusleeping/cbor-gen"
 
+	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/chain/diff"
@@ -16,6 +15,8 @@ import (
 	verifregmodel "github.com/filecoin-project/lily/model/actors/verifreg"
 	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lily/tasks/actorstate"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 type ClaimsChange struct {

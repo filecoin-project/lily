@@ -2,23 +2,20 @@
 package verifreg
 
 import (
+	"crypto/sha256"
 	"fmt"
+
+	"github.com/ipfs/go-cid"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/ipfs/go-cid"
-
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	verifreg9 "github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
+	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/filecoin-project/lily/chain/actors/adt"
-
-	"crypto/sha256"
-
 	verifreg2 "github.com/filecoin-project/specs-actors/v2/actors/builtin/verifreg"
 	adt2 "github.com/filecoin-project/specs-actors/v2/actors/util/adt"
 
-	verifreg9 "github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
-
-	actorstypes "github.com/filecoin-project/go-state-types/actors"
-	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/filecoin-project/lotus/chain/actors"
 )
 

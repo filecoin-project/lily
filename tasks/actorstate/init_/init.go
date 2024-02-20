@@ -4,17 +4,17 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/specs-actors/actors/builtin"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
+	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-state-types/abi"
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/model"
 	initmodel "github.com/filecoin-project/lily/model/actors/init"
 	"github.com/filecoin-project/lily/tasks/actorstate"
+	"github.com/filecoin-project/specs-actors/actors/builtin"
 )
 
 var log = logging.Logger("lily/tasks/init")

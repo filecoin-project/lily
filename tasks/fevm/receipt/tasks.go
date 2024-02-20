@@ -3,11 +3,8 @@ package fevmreceipt
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
-
-	"github.com/filecoin-project/lotus/chain/types"
-
 	"encoding/json"
+	"fmt"
 
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
@@ -15,10 +12,11 @@ import (
 
 	"github.com/filecoin-project/lily/lens/util"
 	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/model/fevm"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
 
-	"github.com/filecoin-project/lily/model/fevm"
+	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 )
 

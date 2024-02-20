@@ -4,37 +4,27 @@ package multisig
 import (
 	"fmt"
 
+	"github.com/ipfs/go-cid"
 	"github.com/minio/blake2b-simd"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/go-state-types/cbor"
-	"github.com/ipfs/go-cid"
-
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
-	"github.com/filecoin-project/go-state-types/manifest"
-
-	msig12 "github.com/filecoin-project/go-state-types/builtin/v12/multisig"
-
-	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
-
-	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
-
-	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
-
-	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
-
-	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
-
-	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
-
-	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
-
 	builtintypes "github.com/filecoin-project/go-state-types/builtin"
-
+	msig13 "github.com/filecoin-project/go-state-types/builtin/v13/multisig"
+	"github.com/filecoin-project/go-state-types/cbor"
+	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/filecoin-project/lily/chain/actors"
 	"github.com/filecoin-project/lily/chain/actors/adt"
+	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
+	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
+	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
+	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
+	builtin5 "github.com/filecoin-project/specs-actors/v5/actors/builtin"
+	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
+	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
+
 	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 	"github.com/filecoin-project/lotus/chain/types"
 )
@@ -61,6 +51,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 		case actorstypes.Version12:
 			return load12(store, act.Head)
+
+		case actorstypes.Version13:
+			return load13(store, act.Head)
 
 		}
 	}
@@ -116,19 +109,19 @@ type State interface {
 	decodeTransaction(val *cbg.Deferred) (Transaction, error)
 }
 
-type Transaction = msig12.Transaction
+type Transaction = msig13.Transaction
 
 var Methods = builtintypes.MethodsMultisig
 
 // these types are the same between v0 and v6
-type ProposalHashData = msig12.ProposalHashData
-type ProposeReturn = msig12.ProposeReturn
-type ProposeParams = msig12.ProposeParams
-type ApproveReturn = msig12.ApproveReturn
-type TxnIDParams = msig12.TxnIDParams
+type ProposalHashData = msig13.ProposalHashData
+type ProposeReturn = msig13.ProposeReturn
+type ProposeParams = msig13.ProposeParams
+type ApproveReturn = msig13.ApproveReturn
+type TxnIDParams = msig13.TxnIDParams
 
 func txnParams(id uint64, data *ProposalHashData) ([]byte, error) {
-	params := msig12.TxnIDParams{ID: msig12.TxnID(id)}
+	params := msig13.TxnIDParams{ID: msig13.TxnID(id)}
 	if data != nil {
 		if data.Requester.Protocol() != address.ID {
 			return nil, fmt.Errorf("proposer address must be an ID address, was %s", data.Requester)
@@ -164,6 +157,7 @@ func AllCodes() []cid.Cid {
 		(&state10{}).Code(),
 		(&state11{}).Code(),
 		(&state12{}).Code(),
+		(&state13{}).Code(),
 	}
 }
 
@@ -181,5 +175,6 @@ func VersionCodes() map[actorstypes.Version]cid.Cid {
 		actorstypes.Version10: (&state10{}).Code(),
 		actorstypes.Version11: (&state11{}).Code(),
 		actorstypes.Version12: (&state12{}).Code(),
+		actorstypes.Version13: (&state13{}).Code(),
 	}
 }

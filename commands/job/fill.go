@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/commands"
 	"github.com/filecoin-project/lily/lens/lily"
+
+	lotuscli "github.com/filecoin-project/lotus/cli"
 )
 
 var GapFillCmd = &cli.Command{

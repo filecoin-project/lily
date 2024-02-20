@@ -6,23 +6,13 @@ import (
 	"os"
 	"path/filepath"
 
-	paramfetch "github.com/filecoin-project/go-paramfetch"
-	lotusbuild "github.com/filecoin-project/lotus/build"
-	"github.com/filecoin-project/lotus/chain/events"
-	"github.com/filecoin-project/lotus/chain/stmgr"
-	lcli "github.com/filecoin-project/lotus/cli"
-	"github.com/filecoin-project/lotus/lib/lotuslog"
-	"github.com/filecoin-project/lotus/lib/peermgr"
-	"github.com/filecoin-project/lotus/node"
-	lotusmodules "github.com/filecoin-project/lotus/node/modules"
-	"github.com/filecoin-project/lotus/node/modules/dtypes"
-	"github.com/filecoin-project/lotus/node/repo"
 	"github.com/mitchellh/go-homedir"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/urfave/cli/v2"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 
+	paramfetch "github.com/filecoin-project/go-paramfetch"
 	"github.com/filecoin-project/lily/chain/indexer/distributed"
 	"github.com/filecoin-project/lily/commands/util"
 	"github.com/filecoin-project/lily/config"
@@ -33,6 +23,17 @@ import (
 	"github.com/filecoin-project/lily/schedule"
 	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lily/version"
+
+	lotusbuild "github.com/filecoin-project/lotus/build"
+	"github.com/filecoin-project/lotus/chain/events"
+	"github.com/filecoin-project/lotus/chain/stmgr"
+	lcli "github.com/filecoin-project/lotus/cli"
+	"github.com/filecoin-project/lotus/lib/lotuslog"
+	"github.com/filecoin-project/lotus/lib/peermgr"
+	"github.com/filecoin-project/lotus/node"
+	lotusmodules "github.com/filecoin-project/lotus/node/modules"
+	"github.com/filecoin-project/lotus/node/modules/dtypes"
+	"github.com/filecoin-project/lotus/node/repo"
 )
 
 var ClientAPIFlags struct {

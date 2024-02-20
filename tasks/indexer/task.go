@@ -3,12 +3,13 @@ package indexer
 import (
 	"context"
 
-	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 func NewTask(node tasks.DataSource) *Task {

@@ -3,13 +3,14 @@ package headers
 import (
 	"context"
 
-	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/blocks"
 	visormodel "github.com/filecoin-project/lily/model/visor"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 type Task struct {

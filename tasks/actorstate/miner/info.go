@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/filecoin-project/go-address"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p/core/peer"
 	maddr "github.com/multiformats/go-multiaddr"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lily/model"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"
 	"github.com/filecoin-project/lily/tasks/actorstate"

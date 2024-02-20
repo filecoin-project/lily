@@ -5,8 +5,9 @@ import (
 	"regexp"
 	"sort"
 
-	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
+
+	lotuscli "github.com/filecoin-project/lotus/cli"
 )
 
 var LogCmd = &cli.Command{

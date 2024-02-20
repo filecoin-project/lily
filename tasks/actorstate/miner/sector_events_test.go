@@ -4,13 +4,13 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/filecoin-project/go-bitfield"
-	"github.com/filecoin-project/go-state-types/abi"
-	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/go-bitfield"
+	"github.com/filecoin-project/go-state-types/abi"
+	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	minerstatemocks "github.com/filecoin-project/lily/chain/actors/builtin/miner/mocks"
 	minermodel "github.com/filecoin-project/lily/model/actors/miner"

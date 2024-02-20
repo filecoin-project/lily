@@ -3,9 +3,9 @@ package tipset
 import (
 	"context"
 
-	"github.com/filecoin-project/lotus/chain/types"
-
 	"github.com/filecoin-project/lily/tasks"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 type IndexerBuilder interface {
