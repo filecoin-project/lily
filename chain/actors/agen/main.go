@@ -186,11 +186,7 @@ func generatePolicy(policyPath string) error {
 		return err
 	}
 
-	if err := os.WriteFile(policyPath, b.Bytes(), 0666); err != nil {
-		return err
-	}
-
-	return nil
+	return os.WriteFile(policyPath, b.Bytes(), 0666)
 }
 
 func generateBuiltin(builtinPath string) error {
@@ -217,11 +213,7 @@ func generateBuiltin(builtinPath string) error {
 		return err
 	}
 
-	if err := os.WriteFile(builtinPath, b.Bytes(), 0666); err != nil {
-		return err
-	}
-
-	return nil
+	return os.WriteFile(builtinPath, b.Bytes(), 0666)
 }
 
 func generateRegistry(registryPath string) error {
@@ -247,11 +239,7 @@ func generateRegistry(registryPath string) error {
 		return err
 	}
 
-	if err := os.WriteFile(registryPath, b.Bytes(), 0666); err != nil {
-		return err
-	}
-
-	return nil
+	return os.WriteFile(registryPath, b.Bytes(), 0666)
 }
 
 func getVersionImports() map[int]string {
