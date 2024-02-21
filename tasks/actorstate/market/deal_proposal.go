@@ -62,7 +62,15 @@ func (DealProposalExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			return nil, nil
 		}
 
-		changes, err := market.DiffDealProposals(ctx, ec.Store, ec.PrevState, ec.CurrState)
+		prevProposal, err := ec.PrevState.Proposals()
+		if err != nil {
+			return nil, fmt.Errorf("load prev proposal: %w", err)
+		}
+		curProposal, err := ec.CurrState.Proposals()
+		if err != nil {
+			return nil, fmt.Errorf("load curr proposal: %w", err)
+		}
+		changes, err := market.DiffDealProposals(prevProposal, curProposal)
 		if err != nil {
 			return nil, fmt.Errorf("diffing deal proposals: %w", err)
 		}

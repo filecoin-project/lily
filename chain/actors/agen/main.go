@@ -15,19 +15,19 @@ import (
 )
 
 var actors = map[string][]int{
-	"account":  lotusactors.Versions,
-	"cron":     lotusactors.Versions,
+	// "account":  lotusactors.Versions,
+	// "cron":     lotusactors.Versions,
 	"init":     lotusactors.Versions,
 	"market":   lotusactors.Versions,
 	"miner":    lotusactors.Versions,
 	"multisig": lotusactors.Versions,
-	"paych":    lotusactors.Versions,
-	"power":    lotusactors.Versions,
-	"system":   lotusactors.Versions,
+	// "paych":    lotusactors.Versions,
+	"power": lotusactors.Versions,
+	// "system":   lotusactors.Versions,
 	"reward":   lotusactors.Versions,
 	"verifreg": lotusactors.Versions,
 	"datacap":  lotusactors.Versions[8:],
-	"evm":      lotusactors.Versions[9:],
+	// "evm":      lotusactors.Versions[9:],
 }
 
 func main() {
