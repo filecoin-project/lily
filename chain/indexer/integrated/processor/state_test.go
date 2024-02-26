@@ -119,7 +119,7 @@ func TestMakeProcessorsActors(t *testing.T) {
 				transformer: minertask.V7SectorInfoExtractor{},
 			},
 			{
-				taskName: tasktype.MinerPreCommitInfoV1_8,
+				taskName: tasktype.MinerPreCommitInfoV9,
 				extractor: actorstate.NewCustomTypedActorExtractorMap(
 					map[cid.Cid][]actorstate.ActorStateExtractor{
 						miner.VersionCodes()[actorstypes.Version0]: {minertask.PreCommitInfoExtractorV8{}},

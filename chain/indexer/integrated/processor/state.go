@@ -569,7 +569,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				),
 				minertask.LockedFundsExtractor{},
 			)
-		case tasktype.MinerPreCommitInfoV1_8:
+		case tasktype.MinerPreCommitInfoV9:
 			out.ActorProcessors[t] = actorstate.NewTaskWithTransformer(
 				api,
 				actorstate.NewCustomTypedActorExtractorMap(
