@@ -8,15 +8,16 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/filecoin-project/lotus/build"
-	"github.com/filecoin-project/lotus/chain/consensus/filcns"
-	"github.com/filecoin-project/lotus/node/repo"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/lily/commands"
 	"github.com/filecoin-project/lily/commands/job"
 	"github.com/filecoin-project/lily/version"
+
+	"github.com/filecoin-project/lotus/build"
+	"github.com/filecoin-project/lotus/chain/consensus/filcns"
+	"github.com/filecoin-project/lotus/node/repo"
 )
 
 var log = logging.Logger("lily/main")

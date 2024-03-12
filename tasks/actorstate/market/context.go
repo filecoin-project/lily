@@ -6,13 +6,13 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/filecoin-project/lotus/chain/types"
 	"golang.org/x/text/runes"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
+	market "github.com/filecoin-project/lily/chain/actors/builtin/market"
 	"github.com/filecoin-project/lily/tasks/actorstate"
 
-	market "github.com/filecoin-project/lily/chain/actors/builtin/market"
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 type MarketStateExtractionContext struct {

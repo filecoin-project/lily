@@ -6,10 +6,9 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/filecoin-project/lily/version"
-
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/storage"
+	"github.com/filecoin-project/lily/version"
 )
 
 var defaultName = "visor"

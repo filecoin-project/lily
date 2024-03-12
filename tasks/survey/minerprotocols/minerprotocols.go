@@ -7,17 +7,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/filecoin-project/go-address"
-	lapi "github.com/filecoin-project/lotus/api"
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/gammazero/workerpool"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lily/model"
 	observed "github.com/filecoin-project/lily/model/surveyed"
+
+	lapi "github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 var log = logging.Logger("lily/tasks/minerproto")

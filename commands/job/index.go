@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lotus/chain/types"
-	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/ipfs/go-cid"
 	"github.com/urfave/cli/v2"
 
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/commands"
 	"github.com/filecoin-project/lily/lens/lily"
+
+	"github.com/filecoin-project/lotus/chain/types"
+	lotuscli "github.com/filecoin-project/lotus/cli"
 )
 
 type indexOps struct {

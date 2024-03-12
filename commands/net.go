@@ -8,10 +8,11 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	lotuscli "github.com/filecoin-project/lotus/cli"
-	"github.com/filecoin-project/lotus/lib/addrutil"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/urfave/cli/v2"
+
+	lotuscli "github.com/filecoin-project/lotus/cli"
+	"github.com/filecoin-project/lotus/lib/addrutil"
 )
 
 var NetCmd = &cli.Command{

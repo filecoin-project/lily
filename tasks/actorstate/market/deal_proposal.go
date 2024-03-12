@@ -5,11 +5,11 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/filecoin-project/go-state-types/abi"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
 	"github.com/filecoin-project/lily/model"
 	marketmodel "github.com/filecoin-project/lily/model/actors/market"
@@ -62,7 +62,15 @@ func (DealProposalExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			return nil, nil
 		}
 
-		changes, err := market.DiffDealProposals(ctx, ec.Store, ec.PrevState, ec.CurrState)
+		prevProposal, err := ec.PrevState.Proposals()
+		if err != nil {
+			return nil, fmt.Errorf("load prev proposal: %w", err)
+		}
+		curProposal, err := ec.CurrState.Proposals()
+		if err != nil {
+			return nil, fmt.Errorf("load curr proposal: %w", err)
+		}
+		changes, err := market.DiffDealProposals(prevProposal, curProposal)
 		if err != nil {
 			return nil, fmt.Errorf("diffing deal proposals: %w", err)
 		}

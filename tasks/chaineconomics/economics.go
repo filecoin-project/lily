@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/filecoin-project/lotus/api"
-	"github.com/filecoin-project/lotus/chain/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/filecoin-project/lily/model"
 	chainmodel "github.com/filecoin-project/lily/model/chain"
+
+	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 type EconomicsStorage interface {

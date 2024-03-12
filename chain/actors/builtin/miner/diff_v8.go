@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/filecoin-project/go-hamt-ipld/v3"
-	"github.com/filecoin-project/go-state-types/abi"
-	miner8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/filecoin-project/go-hamt-ipld/v3"
+	"github.com/filecoin-project/go-state-types/abi"
+	miner8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/adt/diff"
 )

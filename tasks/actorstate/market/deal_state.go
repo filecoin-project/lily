@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/filecoin-project/go-state-types/abi"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
 	"github.com/filecoin-project/lily/model"
 	marketmodel "github.com/filecoin-project/lily/model/actors/market"
@@ -42,9 +42,9 @@ func (DealStateExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, n
 			out = append(out, &marketmodel.MarketDealState{
 				Height:           int64(ec.CurrTs.Height()),
 				DealID:           uint64(id),
-				SectorStartEpoch: int64(ds.SectorStartEpoch),
-				LastUpdateEpoch:  int64(ds.LastUpdatedEpoch),
-				SlashEpoch:       int64(ds.SlashEpoch),
+				SectorStartEpoch: int64(ds.SectorStartEpoch()),
+				LastUpdateEpoch:  int64(ds.LastUpdatedEpoch()),
+				SlashEpoch:       int64(ds.SlashEpoch()),
 				StateRoot:        ec.CurrTs.ParentState().String(),
 			})
 			return nil
@@ -63,7 +63,15 @@ func (DealStateExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, n
 		return nil, nil
 	}
 
-	changes, err := market.DiffDealStates(ctx, ec.Store, ec.PrevState, ec.CurrState)
+	prevState, err := ec.PrevState.States()
+	if err != nil {
+		return nil, fmt.Errorf("load prev state: %w", err)
+	}
+	curState, err := ec.CurrState.States()
+	if err != nil {
+		return nil, fmt.Errorf("load curr state: %w", err)
+	}
+	changes, err := market.DiffDealStates(prevState, curState)
 	if err != nil {
 		return nil, fmt.Errorf("diffing deal states: %w", err)
 	}
@@ -74,9 +82,9 @@ func (DealStateExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, n
 		out[idx] = &marketmodel.MarketDealState{
 			Height:           int64(ec.CurrTs.Height()),
 			DealID:           uint64(add.ID),
-			SectorStartEpoch: int64(add.Deal.SectorStartEpoch),
-			LastUpdateEpoch:  int64(add.Deal.LastUpdatedEpoch),
-			SlashEpoch:       int64(add.Deal.SlashEpoch),
+			SectorStartEpoch: int64(add.Deal.SectorStartEpoch()),
+			LastUpdateEpoch:  int64(add.Deal.LastUpdatedEpoch()),
+			SlashEpoch:       int64(add.Deal.SlashEpoch()),
 			StateRoot:        ec.CurrTs.ParentState().String(),
 		}
 		idx++
@@ -85,9 +93,9 @@ func (DealStateExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, n
 		out[idx] = &marketmodel.MarketDealState{
 			Height:           int64(ec.CurrTs.Height()),
 			DealID:           uint64(mod.ID),
-			SectorStartEpoch: int64(mod.To.SectorStartEpoch),
-			LastUpdateEpoch:  int64(mod.To.LastUpdatedEpoch),
-			SlashEpoch:       int64(mod.To.SlashEpoch),
+			SectorStartEpoch: int64(mod.To.SectorStartEpoch()),
+			LastUpdateEpoch:  int64(mod.To.LastUpdatedEpoch()),
+			SlashEpoch:       int64(mod.To.SlashEpoch()),
 			StateRoot:        ec.CurrTs.ParentState().String(),
 		}
 		idx++

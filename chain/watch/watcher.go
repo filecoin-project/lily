@@ -7,8 +7,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/filecoin-project/lotus/chain/events"
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/gammazero/workerpool"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
@@ -19,6 +17,9 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/schedule"
+
+	"github.com/filecoin-project/lotus/chain/events"
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 var log = logging.Logger("lily/chain/watch")

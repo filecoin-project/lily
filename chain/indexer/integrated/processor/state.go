@@ -6,16 +6,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/filecoin-project/go-state-types/abi"
-	actorstypes "github.com/filecoin-project/go-state-types/actors"
-	"github.com/filecoin-project/go-state-types/manifest"
-	"github.com/filecoin-project/lotus/chain/actors"
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel"
+
+	"github.com/filecoin-project/go-state-types/abi"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
+	"github.com/filecoin-project/go-state-types/manifest"
+
+	"github.com/filecoin-project/lotus/chain/actors"
+	"github.com/filecoin-project/lotus/chain/types"
 
 	// actor accessors
 	datacapactors "github.com/filecoin-project/lily/chain/actors/builtin/datacap"
@@ -70,13 +72,12 @@ import (
 	fevmactorstatstask "github.com/filecoin-project/lily/tasks/fevmactorstats"
 
 	// actor dump
-	fevmactordumptask "github.com/filecoin-project/lily/tasks/periodic_actor_dump/fevm_actor"
-	mineractordumptask "github.com/filecoin-project/lily/tasks/periodic_actor_dump/miner_actor"
-
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
+	fevmactordumptask "github.com/filecoin-project/lily/tasks/periodic_actor_dump/fevm_actor"
+	mineractordumptask "github.com/filecoin-project/lily/tasks/periodic_actor_dump/miner_actor"
 
 	builtin "github.com/filecoin-project/lotus/chain/actors/builtin"
 )
@@ -545,6 +546,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 					mineractors.VersionCodes()[actorstypes.Version10]: {minertask.BeneficiaryExtractor{}},
 					mineractors.VersionCodes()[actorstypes.Version11]: {minertask.BeneficiaryExtractor{}},
 					mineractors.VersionCodes()[actorstypes.Version12]: {minertask.BeneficiaryExtractor{}},
+					mineractors.VersionCodes()[actorstypes.Version13]: {minertask.BeneficiaryExtractor{}},
 				},
 			))
 		case tasktype.MinerCurrentDeadlineInfo:
@@ -567,7 +569,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				),
 				minertask.LockedFundsExtractor{},
 			)
-		case tasktype.MinerPreCommitInfoV1_8:
+		case tasktype.MinerPreCommitInfoV9:
 			out.ActorProcessors[t] = actorstate.NewTaskWithTransformer(
 				api,
 				actorstate.NewCustomTypedActorExtractorMap(
@@ -593,6 +595,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 						mineractors.VersionCodes()[actorstypes.Version10]: {minertask.PreCommitInfoExtractorV9{}},
 						mineractors.VersionCodes()[actorstypes.Version11]: {minertask.PreCommitInfoExtractorV9{}},
 						mineractors.VersionCodes()[actorstypes.Version12]: {minertask.PreCommitInfoExtractorV9{}},
+						mineractors.VersionCodes()[actorstypes.Version13]: {minertask.PreCommitInfoExtractorV9{}},
 					},
 				),
 				minertask.PreCommitInfoExtractorV9{},
@@ -640,6 +643,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 						mineractors.VersionCodes()[actorstypes.Version10]: {minertask.V7SectorInfoExtractor{}},
 						mineractors.VersionCodes()[actorstypes.Version11]: {minertask.V7SectorInfoExtractor{}},
 						mineractors.VersionCodes()[actorstypes.Version12]: {minertask.V7SectorInfoExtractor{}},
+						mineractors.VersionCodes()[actorstypes.Version13]: {minertask.V7SectorInfoExtractor{}},
 					},
 				),
 				minertask.V7SectorInfoExtractor{},
@@ -729,6 +733,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 					verifregactors.VersionCodes()[actorstypes.Version10]: {verifregtask.ClaimExtractor{}},
 					verifregactors.VersionCodes()[actorstypes.Version11]: {verifregtask.ClaimExtractor{}},
 					verifregactors.VersionCodes()[actorstypes.Version12]: {verifregtask.ClaimExtractor{}},
+					verifregactors.VersionCodes()[actorstypes.Version13]: {verifregtask.ClaimExtractor{}},
 				},
 			))
 

@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/go-pg/pg/v10"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
 	"github.com/filecoin-project/lily/lens/lily"
 	"github.com/filecoin-project/lily/model/actors/common"
@@ -18,6 +17,8 @@ import (
 	chain2 "github.com/filecoin-project/lily/model/chain"
 	"github.com/filecoin-project/lily/model/messages"
 	"github.com/filecoin-project/lily/storage"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 var TaskModels = map[string][]string{

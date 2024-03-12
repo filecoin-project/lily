@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/filecoin-project/lotus/node/modules/dtypes"
-	"github.com/filecoin-project/lotus/node/modules/helpers"
-	"github.com/filecoin-project/lotus/node/repo"
 	"go.uber.org/fx"
 
 	"github.com/filecoin-project/lily/lens/util"
+
+	"github.com/filecoin-project/lotus/node/modules/dtypes"
+	"github.com/filecoin-project/lotus/node/modules/helpers"
+	"github.com/filecoin-project/lotus/node/repo"
 )
 
 func CacheConfig(blockstoreCacheSize uint, statestoreCacheSize uint) func(lc fx.Lifecycle, mctx helpers.MetricsCtx) (*util.CacheConfig, error) {

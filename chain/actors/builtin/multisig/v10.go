@@ -3,25 +3,23 @@ package multisig
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lotus/chain/actors"
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
-	"github.com/filecoin-project/lily/chain/actors/adt"
-
+	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/go-state-types/abi"
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
-	"github.com/filecoin-project/go-state-types/manifest"
-
-	"crypto/sha256"
-
 	builtin10 "github.com/filecoin-project/go-state-types/builtin"
 	msig10 "github.com/filecoin-project/go-state-types/builtin/v10/multisig"
 	adt10 "github.com/filecoin-project/go-state-types/builtin/v10/util/adt"
+	"github.com/filecoin-project/go-state-types/manifest"
+	"github.com/filecoin-project/lily/chain/actors/adt"
+
+	"github.com/filecoin-project/lotus/chain/actors"
 )
 
 var _ State = (*state10)(nil)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -15,6 +14,8 @@ import (
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lily/tasks/messages"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 type Task struct {

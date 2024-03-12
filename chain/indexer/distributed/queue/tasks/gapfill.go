@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -15,6 +14,8 @@ import (
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/distributed/queue/tracing"
 	"github.com/filecoin-project/lily/storage"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 const (

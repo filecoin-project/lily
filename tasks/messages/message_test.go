@@ -7,11 +7,17 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/ipfs/go-cid"
+
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-bitfield"
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
 	minertypes "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	"github.com/filecoin-project/go-state-types/cbor"
 	"github.com/filecoin-project/go-state-types/crypto"
+	"github.com/filecoin-project/lily/chain/actors/builtin"
+	"github.com/filecoin-project/lily/lens/util"
 	market0 "github.com/filecoin-project/specs-actors/actors/builtin/market"
 	builtin3 "github.com/filecoin-project/specs-actors/v3/actors/builtin"
 	builtin4 "github.com/filecoin-project/specs-actors/v4/actors/builtin"
@@ -19,13 +25,7 @@ import (
 	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
 	paych6 "github.com/filecoin-project/specs-actors/v6/actors/builtin/paych"
 
-	"github.com/filecoin-project/lily/chain/actors/builtin"
-	"github.com/filecoin-project/lily/lens/util"
-
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/ipfs/go-cid"
 )
 
 func TestParseMessageParams(t *testing.T) {

@@ -11,22 +11,21 @@ import (
 	"strings"
 
 	"github.com/DataDog/zstd"
+	"github.com/mitchellh/go-homedir"
+	"golang.org/x/xerrors"
+	"gopkg.in/cheggaaa/pb.v1"
+
 	"github.com/filecoin-project/lotus/chain/consensus"
 	"github.com/filecoin-project/lotus/chain/consensus/filcns"
+	"github.com/filecoin-project/lotus/chain/index"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
+	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/lotus/journal"
 	"github.com/filecoin-project/lotus/journal/fsjournal"
 	"github.com/filecoin-project/lotus/node/repo"
 	"github.com/filecoin-project/lotus/storage/sealer/ffiwrapper"
-	"github.com/mitchellh/go-homedir"
-
-	"github.com/filecoin-project/lotus/chain/index"
-
-	"github.com/filecoin-project/lotus/chain/types"
-	"golang.org/x/xerrors"
-	"gopkg.in/cheggaaa/pb.v1"
 )
 
 // used for test vectors only
@@ -55,8 +54,7 @@ func ImportFromFsFile(ctx context.Context, r repo.Repo, fs fs.File, snapshot boo
 	cst := store.NewChainStore(bs, bs, mds, filcns.Weight, j)
 	defer cst.Close() //nolint:errcheck
 
-	ts, err := cst.Import(ctx, fs)
-
+	ts, _, err := cst.Import(ctx, fs)
 	if err != nil {
 		return fmt.Errorf("importing chain failed: %w", err)
 	}
@@ -182,7 +180,7 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool, 
 	}
 
 	bar.Start()
-	ts, err := cst.Import(ctx, ir)
+	ts, _, err := cst.Import(ctx, ir)
 	bar.Finish()
 
 	if err != nil {

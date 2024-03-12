@@ -3,10 +3,10 @@ package processor_test
 import (
 	"testing"
 
-	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/require"
 
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/lily/chain/actors/builtin/datacap"
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
@@ -113,12 +113,13 @@ func TestMakeProcessorsActors(t *testing.T) {
 						miner.VersionCodes()[actorstypes.Version10]: {minertask.V7SectorInfoExtractor{}},
 						miner.VersionCodes()[actorstypes.Version11]: {minertask.V7SectorInfoExtractor{}},
 						miner.VersionCodes()[actorstypes.Version12]: {minertask.V7SectorInfoExtractor{}},
+						miner.VersionCodes()[actorstypes.Version13]: {minertask.V7SectorInfoExtractor{}},
 					},
 				),
 				transformer: minertask.V7SectorInfoExtractor{},
 			},
 			{
-				taskName: tasktype.MinerPreCommitInfoV1_8,
+				taskName: tasktype.MinerPreCommitInfoV9,
 				extractor: actorstate.NewCustomTypedActorExtractorMap(
 					map[cid.Cid][]actorstate.ActorStateExtractor{
 						miner.VersionCodes()[actorstypes.Version0]: {minertask.PreCommitInfoExtractorV8{}},
@@ -141,6 +142,7 @@ func TestMakeProcessorsActors(t *testing.T) {
 						miner.VersionCodes()[actorstypes.Version10]: {minertask.PreCommitInfoExtractorV9{}},
 						miner.VersionCodes()[actorstypes.Version11]: {minertask.PreCommitInfoExtractorV9{}},
 						miner.VersionCodes()[actorstypes.Version12]: {minertask.PreCommitInfoExtractorV9{}},
+						miner.VersionCodes()[actorstypes.Version13]: {minertask.PreCommitInfoExtractorV9{}},
 					},
 				),
 				transformer: minertask.PreCommitInfoExtractorV9{},
@@ -301,6 +303,7 @@ func TestMakeProcessorsActors(t *testing.T) {
 						verifreg.VersionCodes()[actorstypes.Version10]: {verifregtask.ClaimExtractor{}},
 						verifreg.VersionCodes()[actorstypes.Version11]: {verifregtask.ClaimExtractor{}},
 						verifreg.VersionCodes()[actorstypes.Version12]: {verifregtask.ClaimExtractor{}},
+						verifreg.VersionCodes()[actorstypes.Version13]: {verifregtask.ClaimExtractor{}},
 					}),
 			},
 		}

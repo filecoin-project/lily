@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/filecoin-project/go-state-types/exitcode"
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/go-state-types/exitcode"
 	. "github.com/filecoin-project/lily/chain/actors/aerrors"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestFatalError(t *testing.T) {

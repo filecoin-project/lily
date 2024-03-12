@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	"github.com/filecoin-project/go-jsonrpc"
+	"github.com/filecoin-project/lily/lens/lily"
+
 	cliutil "github.com/filecoin-project/lotus/cli/util"
 	"github.com/filecoin-project/lotus/node"
 	"github.com/filecoin-project/lotus/node/repo"
-
-	"github.com/filecoin-project/lily/lens/lily"
 )
 
 func GetAPI(ctx context.Context) (lily.LilyAPI, jsonrpc.ClientCloser, error) {

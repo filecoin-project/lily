@@ -8,10 +8,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
-	"github.com/filecoin-project/lily/tasks/actorstate"
-
 	"github.com/filecoin-project/lily/model"
 	rewardmodel "github.com/filecoin-project/lily/model/actors/reward"
+	"github.com/filecoin-project/lily/tasks/actorstate"
 )
 
 var log = logging.Logger("lily/tasks/reward")

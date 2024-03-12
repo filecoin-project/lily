@@ -6,14 +6,15 @@ import (
 	"io"
 	"os"
 
-	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/lotus/blockstore"
-	"github.com/filecoin-project/lotus/chain/store"
-	"github.com/filecoin-project/lotus/node/repo"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/chain/export"
+
+	"github.com/filecoin-project/lotus/blockstore"
+	"github.com/filecoin-project/lotus/chain/store"
+	"github.com/filecoin-project/lotus/node/repo"
 )
 
 type chainExportOps struct {

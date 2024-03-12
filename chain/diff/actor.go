@@ -3,12 +3,13 @@ package diff
 import (
 	"context"
 
-	"github.com/filecoin-project/lotus/chain/types"
 	typegen "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lily/tasks/actorstate"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 type ActorStateLoader = func(adt.Store, *types.Actor) (interface{}, error)

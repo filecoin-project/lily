@@ -6,11 +6,12 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/filecoin-project/go-amt-ipld/v4"
-	"github.com/filecoin-project/lotus/chain/actors/adt"
 	"go.opentelemetry.io/otel"
 
+	"github.com/filecoin-project/go-amt-ipld/v4"
 	adt2 "github.com/filecoin-project/lily/chain/actors/adt"
+
+	"github.com/filecoin-project/lotus/chain/actors/adt"
 )
 
 var AmtParallelWorkerLimit int64

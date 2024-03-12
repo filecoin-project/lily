@@ -4,11 +4,12 @@ import (
 	"os"
 	"time"
 
-	lotuscli "github.com/filecoin-project/lotus/cli"
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/lily/commands"
 	"github.com/filecoin-project/lily/lens/lily"
+
+	lotuscli "github.com/filecoin-project/lotus/cli"
 )
 
 var surveyFlags struct {

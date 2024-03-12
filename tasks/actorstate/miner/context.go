@@ -6,10 +6,10 @@ import (
 
 	"go.opentelemetry.io/otel"
 
-	"github.com/filecoin-project/lotus/chain/types"
-
 	miner "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/tasks/actorstate"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 func NewMinerStateExtractionContext(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (*MinerStateExtractionContext, error) {

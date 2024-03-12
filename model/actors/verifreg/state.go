@@ -3,9 +3,10 @@ package verifreg
 import (
 	"context"
 
+	"go.opencensus.io/tag"
+
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
-	"go.opencensus.io/tag"
 )
 
 const (

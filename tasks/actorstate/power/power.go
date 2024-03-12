@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/specs-actors/v3/actors/util/adt"
 	"go.opentelemetry.io/otel"
 
 	"github.com/filecoin-project/lily/chain/actors/builtin/power"
-	"github.com/filecoin-project/lily/tasks/actorstate"
-
 	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/tasks/actorstate"
+	"github.com/filecoin-project/specs-actors/v3/actors/util/adt"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 // was services/processor/tasks/power/power.go

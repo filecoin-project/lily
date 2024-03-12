@@ -3,10 +3,10 @@ package actors
 import (
 	"bytes"
 
-	"github.com/filecoin-project/go-state-types/exitcode"
-
-	"github.com/filecoin-project/lily/chain/actors/aerrors"
 	cbg "github.com/whyrusleeping/cbor-gen"
+
+	"github.com/filecoin-project/go-state-types/exitcode"
+	"github.com/filecoin-project/lily/chain/actors/aerrors"
 )
 
 func SerializeParams(i cbg.CBORMarshaler) ([]byte, aerrors.ActorError) {

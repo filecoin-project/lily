@@ -130,10 +130,14 @@ $(toolspath)/bin/golangci-lint: $(toolspath)/go.mod
 lint: $(toolspath)/bin/golangci-lint
 	$(toolspath)/bin/golangci-lint run --concurrency 8 ./...
 
-.PHONY: actors-gen
-actors-gen:
+actors-code-gen:
+	go run ./gen/inline-gen . gen/inlinegen-data.json
 	go run ./chain/actors/agen
 	go fmt ./...
+
+actors-gen: actors-code-gen 
+	./scripts/fiximports
+.PHONY: actors-gen
 
 .PHONY: tasks-gen
 tasks-gen:

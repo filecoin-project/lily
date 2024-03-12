@@ -3,14 +3,14 @@ package verifreg
 import (
 	"fmt"
 
+	"golang.org/x/xerrors"
+
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/big"
-	"github.com/filecoin-project/specs-actors/v7/actors/builtin/verifreg"
-	"golang.org/x/xerrors"
-
 	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/specs-actors/v7/actors/builtin/verifreg"
 )
 
 // taking this as a function instead of asking the caller to call it helps reduce some of the error

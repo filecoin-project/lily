@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/filecoin-project/go-bitfield"
-	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/go-bitfield"
+	"github.com/filecoin-project/go-state-types/abi"
 	minerstate "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	minerstatemocks "github.com/filecoin-project/lily/chain/actors/builtin/miner/mocks"
 	"github.com/filecoin-project/lily/tasks/actorstate/miner"

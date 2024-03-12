@@ -12,7 +12,7 @@ const (
 	MinerSectorInfoV1_6            = "miner_sector_infos"
 	MinerSectorPost                = "miner_sector_post"
 	MinerPreCommitInfo             = "miner_pre_commit_info"
-	MinerPreCommitInfoV1_8         = "miner_pre_commit_info_v8"
+	MinerPreCommitInfoV9           = "miner_pre_commit_infos_v9"
 	MinerSectorEvent               = "miner_sector_event"
 	MinerCurrentDeadlineInfo       = "miner_current_deadline_info"
 	MinerFeeDebt                   = "miner_fee_debt"
@@ -46,15 +46,13 @@ const (
 	VerifiedRegistryVerifiedClient = "verified_registry_verified_client"
 	VerifiedRegistryClaim          = "verified_registry_claim"
 	FEVMActorStats                 = "fevm_actor_stats"
-	FEVMBlockHeader                = "fevm_block_header"
-	FEVMReceipt                    = "fevm_receipt"
-	FEVMTransaction                = "fevm_transaction"
-	FEVMContract                   = "fevm_contract"
-	FEVMTrace                      = "fevm_trace"
-
-	// New task types: full dump
-	FEVMActorDump  = "fevm_actor_dump"
-	MinerActorDump = "miner_actor_dump"
+	FEVMBlockHeader                = "fevm_block_headers"
+	FEVMReceipt                    = "fevm_receipts"
+	FEVMTransaction                = "fevm_transactions"
+	FEVMContract                   = "fevm_contracts"
+	FEVMTrace                      = "fevm_traces"
+	FEVMActorDump                  = "fevm_actor_dumps"
+	MinerActorDump                 = "miner_actor_dumps"
 )
 
 var AllTableTasks = []string{
@@ -68,7 +66,7 @@ var AllTableTasks = []string{
 	MinerSectorInfoV1_6,
 	MinerSectorPost,
 	MinerPreCommitInfo,
-	MinerPreCommitInfoV1_8,
+	MinerPreCommitInfoV9,
 	MinerSectorEvent,
 	MinerCurrentDeadlineInfo,
 	MinerFeeDebt,
@@ -122,7 +120,7 @@ var TableLookup = map[string]struct{}{
 	MinerSectorInfoV1_6:            {},
 	MinerSectorPost:                {},
 	MinerPreCommitInfo:             {},
-	MinerPreCommitInfoV1_8:         {},
+	MinerPreCommitInfoV9:           {},
 	MinerSectorEvent:               {},
 	MinerCurrentDeadlineInfo:       {},
 	MinerFeeDebt:                   {},
@@ -176,7 +174,7 @@ var TableComment = map[string]string{
 	MinerSectorInfoV1_6:            `MinerSectorInfoV1_6 is exported from the miner actor iff the actor code is less than v7. The table keeps its original name since that's a requirement to support lily backfills`,
 	MinerSectorPost:                ``,
 	MinerPreCommitInfo:             ``,
-	MinerPreCommitInfoV1_8:         `MinerPreCommitInfo using actors v1 to v8.`,
+	MinerPreCommitInfoV9:           ``,
 	MinerSectorEvent:               ``,
 	MinerCurrentDeadlineInfo:       ``,
 	MinerFeeDebt:                   ``,
@@ -235,7 +233,7 @@ var TableFieldComments = map[string]map[string]string{
 	MinerSectorInfoV1_6:      {},
 	MinerSectorPost:          {},
 	MinerPreCommitInfo:       {},
-	MinerPreCommitInfoV1_8:   {},
+	MinerPreCommitInfoV9:     {},
 	MinerSectorEvent:         {},
 	MinerCurrentDeadlineInfo: {},
 	MinerFeeDebt:             {},
@@ -259,10 +257,12 @@ var TableFieldComments = map[string]map[string]string{
 		"StoragePricePerEpoch": "The amount of FIL (in attoFIL) that will be transferred from the client to the provider every epoch this deal is active for.",
 		"UnpaddedPieceSize":    "The piece size in bytes without padding.",
 	},
-	MarketDealState:       {},
-	Message:               {},
-	BlockMessage:          {},
-	Receipt:               {},
+	MarketDealState: {},
+	Message:         {},
+	BlockMessage:    {},
+	Receipt: {
+		"ParsedReturn": "Result returned from executing a message parsed and serialized as a JSON object.",
+	},
 	MessageGasEconomy:     {},
 	ParsedMessage:         {},
 	InternalMessage:       {},
@@ -295,17 +295,20 @@ var TableFieldComments = map[string]map[string]string{
 	Actor: {
 		"Balance":   "Balance of Actor in attoFIL.",
 		"Code":      "Human-readable identifier for the type of the actor.",
+		"CodeCID":   "CID identifier for the type of the actor.",
 		"Head":      "CID of the root of the state tree for the actor.",
 		"Height":    "Epoch when this actor was created or updated.",
 		"ID":        "ID Actor address.",
 		"Nonce":     "The next Actor nonce that is expected to appear on chain.",
+		"State":     "Top level of state data as json.",
 		"StateRoot": "CID of the state root when this actor was created or changed.",
 	},
 	ActorState: {
-		"Code":   "CID identifier for the type of the actor.",
-		"Head":   "CID of the root of the state tree for the actor.",
-		"Height": "Epoch when this actor was created or updated.",
-		"State":  "Top level of state data as json.",
+		"Address": "Address of actor.",
+		"Code":    "CID identifier for the type of the actor.",
+		"Head":    "CID of the root of the state tree for the actor.",
+		"Height":  "Epoch when this actor was created or updated.",
+		"State":   "Top level of state data as json.",
 	},
 	IDAddress: {
 		"Address":   "Robust address",
@@ -320,12 +323,123 @@ var TableFieldComments = map[string]map[string]string{
 	VerifiedRegistryVerifier:       {},
 	VerifiedRegistryVerifiedClient: {},
 	VerifiedRegistryClaim:          {},
-	FEVMActorStats:                 {},
-	FEVMBlockHeader:                {},
-	FEVMReceipt:                    {},
-	FEVMTransaction:                {},
-	FEVMContract:                   {},
-	FEVMTrace:                      {},
-	FEVMActorDump:                  {},
-	MinerActorDump:                 {},
+	FEVMActorStats: {
+		"ContractBalance":     "Balance of EVM actor in attoFIL.",
+		"ContractCount":       "number of contracts",
+		"EthAccountBalance":   "Balance of Eth account actor in attoFIL.",
+		"EthAccountCount":     "number of Eth account actors",
+		"Height":              "Height message was executed at.",
+		"PlaceholderBalance":  "Balance of Placeholder Actor in attoFIL.",
+		"PlaceholderCount":    "number of placeholder actors",
+		"UniqueContractCount": "number of unique contracts",
+	},
+	FEVMBlockHeader: {
+		"BaseFeePerGas":    "The base fee value.",
+		"Difficulty":       "ETH mining difficulty.",
+		"ExtraData":        "Arbitrary additional data as raw bytes.",
+		"GasLimit":         "Maximum gas allowed in this block.",
+		"GasUsed":          "The actual amount of gas used in this block.",
+		"Hash":             "ETH Hash",
+		"Height":           "Height message was executed at.",
+		"Miner":            "ETH Address of the miner who mined this block.",
+		"Number":           "The number of the current block.",
+		"ParentHash":       "Parent Block ETH Hash",
+		"ReceiptsRoot":     "Hash of the transaction receipts trie.",
+		"Size":             "Block size.",
+		"StateRoot":        "Block state root ETH hash.",
+		"Timestamp":        "The block time.",
+		"TransactionsRoot": "Set to a hardcoded value which is used by some clients to determine if has no transactions.",
+	},
+	FEVMReceipt: {
+		"BlockHash":         "Hash of the block where this transaction was in.",
+		"BlockNumber":       "Block number where this transaction was in.",
+		"ContractAddress":   "The contract address created, if the transaction was a contract creation, otherwise null.",
+		"CumulativeGasUsed": "The total amount of gas used when this transaction was executed in the block.",
+		"EffectiveGasPrice": "The actual value per gas deducted from the senders account.",
+		"From":              "ETH Address of the sender.",
+		"GasUsed":           "The actual amount of gas used in this block.",
+		"Height":            "Height message was executed at.",
+		"Logs":              "Array of log objects, which this transaction generated.",
+		"LogsBloom":         "Includes the bloom filter representation of the logs",
+		"Message":           "Message CID",
+		"Status":            "0 indicates transaction failure , 1 indicates transaction succeeded.",
+		"To":                "ETH Address of the receiver.",
+		"TransactionHash":   "Hash of transaction.",
+		"TransactionIndex":  "Integer of the transactions index position in the block.",
+	},
+	FEVMTransaction: {
+		"BlockHash":            "Hash of the block where this transaction was in.",
+		"BlockNumber":          "Block number where this transaction was in.",
+		"ChainID":              "EVM network id.",
+		"From":                 "ETH Address of the sender.",
+		"FromActorName":        "Human-readable identifier of sender (From).",
+		"FromFilecoinAddress":  "Filecoin Address of the sender.",
+		"Gas":                  "Gas provided by the sender.",
+		"Hash":                 "Hash of transaction.",
+		"Height":               "Height message was executed at.",
+		"Input":                "The data sent along with the transaction.",
+		"MaxFeePerGas":         "The maximum fee per unit of gas willing to be paid for the transaction.",
+		"MaxPriorityFeePerGas": "The maximum price of the consumed gas to be included as a tip to the validator.",
+		"MessageCid":           "On-chain message triggering the message.",
+		"Nonce":                "A sequentially incrementing counter which indicates the transaction number from the account.",
+		"R":                    "Transaction’s signature. Outputs of an ECDSA signature.",
+		"S":                    "Transaction’s signature. Outputs of an ECDSA signature.",
+		"To":                   "ETH Address of the receiver.",
+		"ToActorName":          "Human-readable identifier of receiver (To).",
+		"ToFilecoinAddress":    "Filecoin Address of the receiver.",
+		"TransactionIndex":     "Integer of the transactions index position in the block.",
+		"Type":                 "Type of transactions.",
+		"V":                    "Transaction’s signature. Recovery Identifier.",
+		"Value":                "Amount of FIL to transfer from sender to recipient.",
+	},
+	FEVMContract: {
+		"ActorID":      "Actor address.",
+		"Balance":      "Balance of EVM actor in attoFIL.",
+		"ByteCode":     "Contract Bytecode.",
+		"ByteCodeHash": "Contract Bytecode is encoded in hash by Keccak256.",
+		"EthAddress":   "Actor Address in ETH.",
+		"Height":       "Height message was executed at.",
+		"Nonce":        "The next actor nonce that is expected to appear on chain.",
+	},
+	FEVMTrace: {
+		"ActorCode":           "ActorCode of To (receiver) as a CID.",
+		"ExitCode":            "ExitCode of message execution.",
+		"From":                "ETH Address of the sender.",
+		"FromActorName":       "Human-readable identifier of sender (From).",
+		"FromFilecoinAddress": "Filecoin Address of the sender.",
+		"Height":              "Height message was executed at.",
+		"Index":               "Index indicating the order of the messages execution.",
+		"MessageCid":          "On-chain message triggering the message.",
+		"MessageStateRoot":    "StateRoot message was applied to.",
+		"Method":              "Method called on To (receiver).",
+		"Params":              "Params contained in message encode in eth bytes.",
+		"ParamsCodec":         "Params codec.",
+		"ParsedMethod":        "Method in readable name.",
+		"ParsedParams":        "Params contained in message.",
+		"ParsedReturns":       "Returns value of message receipt.",
+		"Returns":             "Returns value of message receipt encode in eth bytes.",
+		"ReturnsCodec":        "Returns codec.",
+		"To":                  "ETH Address of the receiver.",
+		"ToActorName":         "Human-readable identifier of receiver (To).",
+		"ToFilecoinAddress":   "Filecoin Address of the receiver.",
+		"TraceCid":            "Cid of the trace.",
+		"TransactionHash":     "On-chain message ETH transaction hash",
+		"Value":               "Value attoFIL contained in message.",
+	},
+	FEVMActorDump: {
+		"ActorID":      "Actor address.",
+		"ActorName":    "Actor Name",
+		"Balance":      "Balance of EVM actor in attoFIL.",
+		"ByteCode":     "Contract Bytecode.",
+		"ByteCodeHash": "Contract Bytecode is encoded in hash by Keccak256.",
+		"EthAddress":   "Actor Address in ETH.",
+		"Height":       "Height message was executed at.",
+		"Nonce":        "The next actor nonce that is expected to appear on chain.",
+	},
+	MinerActorDump: {
+		"AvailableBalance": "Balance",
+		"OwnerID":          "Miner Info",
+		"RawBytePower":     "Claims",
+		"TotalLockedFunds": "Locked Funds",
+	},
 }

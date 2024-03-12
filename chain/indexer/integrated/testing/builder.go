@@ -3,12 +3,13 @@ package testing
 import (
 	"context"
 
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/filecoin-project/lily/chain/indexer"
 	"github.com/filecoin-project/lily/chain/indexer/integrated/tipset"
 	"github.com/filecoin-project/lily/model"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 //revive:disable

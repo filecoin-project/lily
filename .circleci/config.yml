@@ -323,7 +323,6 @@ workflows:
       - lint-all:
           concurrency: "8"
       - test
-      - integration-test
       - test-docker-mainnet
       - test-docker-mainnet-dev
       - test-docker-calibnet

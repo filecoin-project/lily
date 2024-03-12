@@ -4,13 +4,14 @@ import (
 	"context"
 	"testing"
 
-	"github.com/filecoin-project/go-state-types/abi"
-	"github.com/filecoin-project/go-state-types/crypto"
-	"github.com/filecoin-project/lotus/chain/types"
-	tutils "github.com/filecoin-project/specs-actors/support/testing"
 	"github.com/ipfs/go-cid"
 
+	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/go-state-types/crypto"
 	"github.com/filecoin-project/lily/lens"
+	tutils "github.com/filecoin-project/specs-actors/support/testing"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 func FakeTipset(t testing.TB) *types.TipSet {

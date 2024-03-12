@@ -3,10 +3,10 @@ package processor
 import (
 	"testing"
 
-	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/require"
 
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/lily/chain/actors/builtin/datacap"
 	init_ "github.com/filecoin-project/lily/chain/actors/builtin/init"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
@@ -16,16 +16,8 @@ import (
 	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/chain/indexer/tasktype"
-	datacaptask "github.com/filecoin-project/lily/tasks/actorstate/datacap"
-	"github.com/filecoin-project/lily/tasks/messageexecutions/vm"
-	"github.com/filecoin-project/lily/tasks/messages/actorevent"
-	"github.com/filecoin-project/lily/tasks/messages/blockmessage"
-	"github.com/filecoin-project/lily/tasks/messages/gaseconomy"
-	"github.com/filecoin-project/lily/tasks/messages/message"
-	"github.com/filecoin-project/lily/tasks/messages/messageparam"
-	"github.com/filecoin-project/lily/tasks/messages/receiptreturn"
-
 	"github.com/filecoin-project/lily/tasks/actorstate"
+	datacaptask "github.com/filecoin-project/lily/tasks/actorstate/datacap"
 	inittask "github.com/filecoin-project/lily/tasks/actorstate/init_"
 	markettask "github.com/filecoin-project/lily/tasks/actorstate/market"
 	minertask "github.com/filecoin-project/lily/tasks/actorstate/miner"
@@ -34,7 +26,6 @@ import (
 	rawtask "github.com/filecoin-project/lily/tasks/actorstate/raw"
 	rewardtask "github.com/filecoin-project/lily/tasks/actorstate/reward"
 	verifregtask "github.com/filecoin-project/lily/tasks/actorstate/verifreg"
-
 	"github.com/filecoin-project/lily/tasks/blocks/drand"
 	"github.com/filecoin-project/lily/tasks/blocks/headers"
 	"github.com/filecoin-project/lily/tasks/blocks/parents"
@@ -42,9 +33,16 @@ import (
 	"github.com/filecoin-project/lily/tasks/consensus"
 	"github.com/filecoin-project/lily/tasks/messageexecutions/internalmessage"
 	"github.com/filecoin-project/lily/tasks/messageexecutions/internalparsedmessage"
+	"github.com/filecoin-project/lily/tasks/messageexecutions/vm"
+	"github.com/filecoin-project/lily/tasks/messages/actorevent"
+	"github.com/filecoin-project/lily/tasks/messages/blockmessage"
+	"github.com/filecoin-project/lily/tasks/messages/gaseconomy"
 	"github.com/filecoin-project/lily/tasks/messages/gasoutput"
+	"github.com/filecoin-project/lily/tasks/messages/message"
+	"github.com/filecoin-project/lily/tasks/messages/messageparam"
 	"github.com/filecoin-project/lily/tasks/messages/parsedmessage"
 	"github.com/filecoin-project/lily/tasks/messages/receipt"
+	"github.com/filecoin-project/lily/tasks/messages/receiptreturn"
 	"github.com/filecoin-project/lily/tasks/msapprovals"
 )
 
@@ -106,6 +104,7 @@ func TestNewProcessor(t *testing.T) {
 					miner.VersionCodes()[actorstypes.Version10]: {minertask.V7SectorInfoExtractor{}},
 					miner.VersionCodes()[actorstypes.Version11]: {minertask.V7SectorInfoExtractor{}},
 					miner.VersionCodes()[actorstypes.Version12]: {minertask.V7SectorInfoExtractor{}},
+					miner.VersionCodes()[actorstypes.Version13]: {minertask.V7SectorInfoExtractor{}},
 				}),
 			minertask.V7SectorInfoExtractor{},
 		),
@@ -127,6 +126,7 @@ func TestNewProcessor(t *testing.T) {
 				miner.VersionCodes()[actorstypes.Version10]: {minertask.PreCommitInfoExtractorV9{}},
 				miner.VersionCodes()[actorstypes.Version11]: {minertask.PreCommitInfoExtractorV9{}},
 				miner.VersionCodes()[actorstypes.Version12]: {minertask.PreCommitInfoExtractorV9{}},
+				miner.VersionCodes()[actorstypes.Version13]: {minertask.PreCommitInfoExtractorV9{}},
 			},
 		),
 		minertask.PreCommitInfoExtractorV9{},
@@ -153,6 +153,7 @@ func TestNewProcessor(t *testing.T) {
 			verifreg.VersionCodes()[actorstypes.Version10]: {verifregtask.ClaimExtractor{}},
 			verifreg.VersionCodes()[actorstypes.Version11]: {verifregtask.ClaimExtractor{}},
 			verifreg.VersionCodes()[actorstypes.Version12]: {verifregtask.ClaimExtractor{}},
+			verifreg.VersionCodes()[actorstypes.Version13]: {verifregtask.ClaimExtractor{}},
 		},
 	)), proc.actorProcessors[tasktype.VerifiedRegistryClaim])
 

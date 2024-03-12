@@ -11,18 +11,18 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/filecoin-project/go-jsonrpc"
-	"github.com/filecoin-project/go-jsonrpc/auth"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr/net"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 
+	"github.com/filecoin-project/go-jsonrpc"
+	"github.com/filecoin-project/go-jsonrpc/auth"
+	"github.com/filecoin-project/lily/lens/lily"
+
 	"github.com/filecoin-project/lotus/metrics"
 	"github.com/filecoin-project/lotus/node"
-
-	"github.com/filecoin-project/lily/lens/lily"
 )
 
 var (

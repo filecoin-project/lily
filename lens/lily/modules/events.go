@@ -1,10 +1,11 @@
 package modules
 
 import (
+	"go.uber.org/fx"
+
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/lotus/node/modules/helpers"
-	"go.uber.org/fx"
 )
 
 func NewEvents(mctx helpers.MetricsCtx, _ fx.Lifecycle, chainAPI full.ChainModuleAPI, stateAPI full.StateModuleAPI) (*events.Events, error) {

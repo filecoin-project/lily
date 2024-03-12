@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/filecoin-project/lotus/node/modules/helpers"
 	logging "github.com/ipfs/go-log/v2"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -16,6 +15,8 @@ import (
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/storage"
 	"github.com/filecoin-project/lily/wait"
+
+	"github.com/filecoin-project/lotus/node/modules/helpers"
 )
 
 var log = logging.Logger("lily/schedule")
