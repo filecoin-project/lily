@@ -71,6 +71,7 @@ type LilyAPIStruct struct {
 		ChainGetMessagesInTipset  func(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error)                           `perm:"read"`
 		EthGetTransactionByHash   func(ctx context.Context, txHash *ethtypes.EthHash) (*ethtypes.EthTx, error)                    `perm:"read"`
 		StateListActors           func(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error)                       `perm:"read"`
+		GetActorEvents            func(ctx context.Context, filter *types.ActorEventFilter) ([]*types.ActorEvent, error)
 
 		// SyncIncomingBlocks returns a channel streaming incoming, potentially not
 		// yet synced block headers.
@@ -95,6 +96,10 @@ type LilyAPIStruct struct {
 		FindOldestState func(ctx context.Context, limit int64) ([]*StateReport, error)      `perm:"read"`
 		StateCompute    func(ctx context.Context, tsk types.TipSetKey) (interface{}, error) `perm:"read"`
 	}
+}
+
+func (s *LilyAPIStruct) GetActorEvents(ctx context.Context, filter *types.ActorEventFilter) ([]*types.ActorEvent, error) {
+	return s.Internal.GetActorEvents(ctx, filter)
 }
 
 func (s *LilyAPIStruct) NetDisconnect(ctx context.Context, id peer.ID) error {

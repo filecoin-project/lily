@@ -59,6 +59,7 @@ type LilyNodeAPI struct {
 	full.StateAPI
 	full.SyncAPI
 	full.EthModuleAPI
+	full.ActorEventAPI
 	common.CommonAPI
 	Events    *events.Events
 	Scheduler *schedule.Scheduler
@@ -573,6 +574,10 @@ func (m *LilyNodeAPI) ChainGetMessagesInTipset(ctx context.Context, tsk types.Ti
 
 func (m *LilyNodeAPI) StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error) {
 	return m.StateAPI.StateListActors(ctx, tsk)
+}
+
+func (m *LilyNodeAPI) GetActorEvents(ctx context.Context, filter *types.ActorEventFilter) ([]*types.ActorEvent, error) {
+	return m.ActorEventAPI.GetActorEvents(ctx, filter)
 }
 
 // MessagesForTipSetBlocks returns messages stored in the blocks of the specified tipset, messages may be duplicated
