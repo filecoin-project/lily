@@ -135,7 +135,7 @@ func NewDatabase(_ context.Context, url string, poolSize int, name string, schem
 		opt.ApplicationName = name
 	}
 
-	onConnect := func(ctx context.Context, conn *pg.Conn) error {
+	onConnect := func(_ context.Context, conn *pg.Conn) error {
 		_, err := conn.Exec("set search_path=?", schemaName)
 		if err != nil {
 			log.Errorf("failed to set postgresql search_path: %v", err)

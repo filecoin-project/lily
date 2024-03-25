@@ -14,8 +14,8 @@ import (
 	"github.com/filecoin-project/lotus/node/repo"
 )
 
-func CacheConfig(blockstoreCacheSize uint, statestoreCacheSize uint) func(lc fx.Lifecycle, mctx helpers.MetricsCtx) (*util.CacheConfig, error) {
-	return func(lc fx.Lifecycle, mctx helpers.MetricsCtx) (*util.CacheConfig, error) {
+func CacheConfig(blockstoreCacheSize uint, statestoreCacheSize uint) func(_ fx.Lifecycle, mctx helpers.MetricsCtx) (*util.CacheConfig, error) {
+	return func(_ fx.Lifecycle, _ helpers.MetricsCtx) (*util.CacheConfig, error) {
 		return &util.CacheConfig{
 			BlockstoreCacheSize: blockstoreCacheSize,
 			StatestoreCacheSize: statestoreCacheSize,

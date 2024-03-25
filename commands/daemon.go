@@ -274,7 +274,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 			genesis,
 			liteModeDeps,
 
-			node.ApplyIf(func(s *node.Settings) bool { return c.IsSet("api") },
+			node.ApplyIf(func(_ *node.Settings) bool { return c.IsSet("api") },
 				node.Override(node.SetApiEndpointKey, func(lr repo.LockedRepo) error {
 					apima, err := multiaddr.NewMultiaddr(ClientAPIFlags.APIAddr)
 					if err != nil {
@@ -282,7 +282,7 @@ Note that jobs are not persisted between restarts of the daemon. See
 					}
 					return lr.SetAPIEndpoint(apima)
 				})),
-			node.ApplyIf(func(s *node.Settings) bool { return !daemonFlags.bootstrap },
+			node.ApplyIf(func(_ *node.Settings) bool { return !daemonFlags.bootstrap },
 				node.Unset(node.RunPeerMgrKey),
 				node.Unset(new(*peermgr.PeerMgr)),
 			),
