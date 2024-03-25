@@ -5,7 +5,17 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.17.4"></a>
+
+## [v0.17.4 - 2024-03-25]
+
+### Chore
+* chore: update the lotus to 1.26.0
+
+  
+
 <a name="v0.17.3"></a>
+
 ## [v0.17.3] - 2023-12-11
 
 ### Fix
@@ -150,6 +160,7 @@ This release includes a migration which must be applied before deploying against
 * chore: update go-amt-ipld (https://github.com/filecoin-project/lily/pull/1199)
 * chore: update go-hamt-ipld (https://github.com/filecoin-project/lily/pull/1200)
   
+
 <a name="v0.15.1"></a>
 ## [v0.15.1] - 2023-4-25
 
@@ -443,15 +454,15 @@ The following datasets are affected:
    ```bash
    NAME:
       lily index - Index the state of a tipset from the filecoin blockchain.
-
+    
    USAGE:
       lily index command [command options] [arguments...]
-
+    
    COMMANDS:
       tipset   Index the state of a tipset from the filecoin blockchain by tipset key
       height   Index the state of a tipset from the filecoin blockchain by height
       help, h  Shows a list of commands or help for one command
-
+    
    OPTIONS:
       --tasks value      Comma separated list of tasks to run. Each task is reported separately in the database. [$LILY_TASKS]
       --storage value    Name of storage that results will be written to. [$LILY_STORAGE]
@@ -518,11 +529,11 @@ The following datasets are affected:
     | receipt|receipts|
     | verified_registry_verified_client|verified_registry_clients|
     | verified_registry_verifier|verified_registry_verifier|
-  As an example, the command:
+    As an example, the command:
     ```bash
     $ lily index height 1741960 --tasks=actorstatesraw,actorstatespower,actorstatesreward,actorstatesminer,actorstatesinit,actorstatesmarket,actorstatesmultisig,actorstatesverifreg,block,messages,chaineconomics,msapprovals,implicitmessage,consensus
     ```
-  will produce the follow entries in the processing_reports table
+    will produce the follow entries in the processing_reports table
 
     | height | task | status |
     | --- | --- | --- |
