@@ -15,7 +15,7 @@ func NewStorageCatalog(_ helpers.MetricsCtx, _ fx.Lifecycle, cfg *config.Conf) (
 }
 
 func LoadConf(path string) func(mctx helpers.MetricsCtx, lc fx.Lifecycle) (*config.Conf, error) {
-	return func(_ helpers.MetricsCtx, lc fx.Lifecycle) (*config.Conf, error) {
+	return func(_ helpers.MetricsCtx, _ fx.Lifecycle) (*config.Conf, error) {
 		return config.FromFile(path)
 	}
 }

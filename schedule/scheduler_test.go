@@ -165,7 +165,7 @@ func TestScheduler(t *testing.T) {
 
 		stop := make(chan struct{})
 		s.Submit(&schedule.JobConfig{
-			Job: newTestJob(func(ctx context.Context) error {
+			Job: newTestJob(func(_ context.Context) error {
 				<-stop
 				return nil
 			}),
@@ -198,7 +198,7 @@ func TestScheduler(t *testing.T) {
 
 		stop := make(chan struct{})
 		s.Submit(&schedule.JobConfig{
-			Job: newTestJob(func(ctx context.Context) error {
+			Job: newTestJob(func(_ context.Context) error {
 				<-stop
 				return errors.New("error")
 			}),
