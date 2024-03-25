@@ -758,7 +758,7 @@ func (m *LilyNodeAPI) BurnFundsFn(ctx context.Context, ts *types.TipSet) (lens.S
 		return vmw.ShouldBurn, nil
 	}
 	// always burn after Network Version 12
-	return func(_ context.Context, msg *types.Message, errcode exitcode.ExitCode) (bool, error) {
+	return func(_ context.Context, _ *types.Message, errcode exitcode.ExitCode) (bool, error) {
 		return true, nil
 	}, nil
 }
