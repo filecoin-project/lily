@@ -35,7 +35,7 @@ The index command may be used to index a single tipset from the filecoin blockch
 		IndexTipSetCmd,
 		IndexHeightCmd,
 	},
-	Before: func(cctx *cli.Context) error {
+	Before: func(_ *cli.Context) error {
 		tasks := RunFlags.Tasks.Value()
 		for _, taskName := range tasks {
 			if _, found := tasktype.TaskLookup[taskName]; found {

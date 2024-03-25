@@ -103,7 +103,7 @@ func ServeRPC(a lily.LilyAPI, stop node.StopFunc, addr multiaddr.Multiaddr, shut
 
 	srv := &http.Server{
 		Handler: http.DefaultServeMux,
-		BaseContext: func(listener net.Listener) context.Context {
+		BaseContext: func(_ net.Listener) context.Context {
 			ctx, _ := tag.New(context.Background(), tag.Upsert(metrics.APIInterface, "lotus-daemon"))
 			return ctx
 		},

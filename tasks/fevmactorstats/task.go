@@ -64,7 +64,7 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 	placeholderCount := 0
 	bytecodeCIDs := []cid.Cid{}
 
-	_ = st.ForEach(func(addr address.Address, act *types.Actor) error {
+	_ = st.ForEach(func(_ address.Address, act *types.Actor) error {
 		count++
 
 		if builtin.IsEvmActor(act.Code) {

@@ -81,7 +81,7 @@ var ChainActorCodesCmd = &cli.Command{
 	Name:  "actor-codes",
 	Usage: "Print actor codes and names.",
 	Flags: []cli.Flag{configFlag, storageFlag},
-	Action: func(cctx *cli.Context) error {
+	Action: func(_ *cli.Context) error {
 		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version(actorVersions[len(actorVersions)-1]))
 		t := table.NewWriter()
 		t.AppendHeader(table.Row{"name", "family", "code"})
@@ -152,7 +152,7 @@ var ChainActorMethodsCmd = &cli.Command{
 	Name:  "actor-methods",
 	Usage: "Print actor method numbers and their human readable names.",
 	Flags: []cli.Flag{configFlag, storageFlag},
-	Action: func(cctx *cli.Context) error {
+	Action: func(_ *cli.Context) error {
 		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version(actorVersions[len(actorVersions)-1]))
 		t := table.NewWriter()
 		t.AppendHeader(table.Row{"actor_family", "method_name", "method_number"})

@@ -37,7 +37,7 @@ since visor_processing_report entries will not be present for imported data (mea
 		RangeFromFlag,
 		RangeToFlag,
 	},
-	Before: func(cctx *cli.Context) error {
+	Before: func(_ *cli.Context) error {
 		tasks := RunFlags.Tasks.Value()
 		for _, taskName := range tasks {
 			if _, found := tasktype.TaskLookup[taskName]; found {
