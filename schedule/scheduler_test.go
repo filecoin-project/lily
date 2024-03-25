@@ -43,7 +43,7 @@ func TestScheduler(t *testing.T) {
 
 		done := make(chan struct{})
 		_ = s.Submit(&schedule.JobConfig{
-			Job: newTestJob(func(ctx context.Context) error {
+			Job: newTestJob(func(_ context.Context) error {
 				time.Sleep(100 * time.Millisecond)
 				close(done)
 				return nil
@@ -63,7 +63,7 @@ func TestScheduler(t *testing.T) {
 		s := schedule.NewSchedulerDaemon(ctx, fxtest.NewLifecycle(t))
 
 		stop := make(chan struct{})
-		job := newTestJob(func(ctx context.Context) error {
+		job := newTestJob(func(_ context.Context) error {
 			<-stop
 			return nil
 		})
@@ -136,7 +136,7 @@ func TestScheduler(t *testing.T) {
 
 		stop := make(chan struct{})
 		s.Submit(&schedule.JobConfig{
-			Job: newTestJob(func(ctx context.Context) error {
+			Job: newTestJob(func(_ context.Context) error {
 				<-stop
 				return nil
 			}),

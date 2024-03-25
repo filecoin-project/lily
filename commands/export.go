@@ -108,7 +108,7 @@ Some examples:
 			Destination: &chainExportFlags.progress,
 		},
 	},
-	Before: func(cctx *cli.Context) error {
+	Before: func(_ *cli.Context) error {
 		from, to := chainExportFlags.from, chainExportFlags.to
 		if to < from {
 			return fmt.Errorf("value of --to (%d) should be >= --from (%d)", to, from)
