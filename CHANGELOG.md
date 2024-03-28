@@ -7,10 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 <a name="v0.17.4"></a>
 
-## [v0.17.4 - 2024-03-25]
+## [v0.17.5 - 2024-03-28]
 
 ### Chore
-* chore: update the lotus to 1.26.0
+* chore: update the lotus to 1.26.1
 
   
 
