@@ -26,6 +26,7 @@ var WalkIntervalFlag = &cli.IntFlag{
 	Destination: &walkFlags.interval,
 }
 
+//revive:disable
 var WalkCmd = &cli.Command{
 	Name:  "walk",
 	Usage: "walk and index a range of the filecoin blockchain.",
