@@ -25,6 +25,7 @@ type indexOps struct {
 
 var indexFlags indexOps
 
+//revive:disable
 var IndexCmd = &cli.Command{
 	Name:  "index",
 	Usage: "Index the state of a tipset from the filecoin blockchain.",

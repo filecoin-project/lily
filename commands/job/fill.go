@@ -13,6 +13,7 @@ import (
 	lotuscli "github.com/filecoin-project/lotus/cli"
 )
 
+//revive:disable
 var GapFillCmd = &cli.Command{
 	Name:  "fill",
 	Usage: "fill gaps in the database for a given range and set of tasks.",
