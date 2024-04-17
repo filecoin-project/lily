@@ -24,6 +24,7 @@ type API interface {
 	StateAPI
 	VMAPI
 	EthModuleAPI
+	ActorEventAPI
 
 	GetMessageExecutionsForTipSet(ctx context.Context, ts, pts *types.TipSet) ([]*MessageExecution, error)
 }
@@ -84,6 +85,10 @@ type EthModuleAPI interface {
 	EthGetBlockByHash(ctx context.Context, blkHash ethtypes.EthHash, fullTxInfo bool) (ethtypes.EthBlock, error)
 	EthGetTransactionReceipt(ctx context.Context, txHash ethtypes.EthHash) (*api.EthTxReceipt, error)
 	EthGetTransactionByHash(ctx context.Context, txHash *ethtypes.EthHash) (*ethtypes.EthTx, error)
+}
+
+type ActorEventAPI interface {
+	GetActorEventsRaw(ctx context.Context, filter *types.ActorEventFilter) ([]*types.ActorEvent, error)
 }
 
 type MessageExecution struct {

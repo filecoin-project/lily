@@ -71,6 +71,7 @@ type LilyAPIStruct struct {
 		ChainGetMessagesInTipset  func(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error)                           `perm:"read"`
 		EthGetTransactionByHash   func(ctx context.Context, txHash *ethtypes.EthHash) (*ethtypes.EthTx, error)                    `perm:"read"`
 		StateListActors           func(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error)                       `perm:"read"`
+		GetActorEventsRaw         func(ctx context.Context, filter *types.ActorEventFilter) ([]*types.ActorEvent, error)          `perm:"read"`
 
 		// SyncIncomingBlocks returns a channel streaming incoming, potentially not
 		// yet synced block headers.
@@ -303,4 +304,8 @@ func (s *LilyAPIStruct) EthGetTransactionByHash(ctx context.Context, txHash *eth
 
 func (s *LilyAPIStruct) SyncIncomingBlocks(ctx context.Context) (<-chan *types.BlockHeader, error) {
 	return s.Internal.SyncIncomingBlocks(ctx)
+}
+
+func (s *LilyAPIStruct) GetActorEventsRaw(ctx context.Context, filter *types.ActorEventFilter) ([]*types.ActorEvent, error) {
+	return s.Internal.GetActorEventsRaw(ctx, filter)
 }

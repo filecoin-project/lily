@@ -62,6 +62,7 @@ type LilyAPI interface {
 	ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error)                    //perm:read
 	EthGetTransactionByHash(ctx context.Context, txHash *ethtypes.EthHash) (*ethtypes.EthTx, error)              //perm:read
 	StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error)                         //perm:read
+	GetActorEventsRaw(ctx context.Context, filter *types.ActorEventFilter) ([]*types.ActorEvent, error)          //perm:read
 
 	// SyncIncomingBlocks returns a channel streaming incoming, potentially not
 	// yet synced block headers.
