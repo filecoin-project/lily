@@ -25,6 +25,7 @@ type indexOps struct {
 
 var indexFlags indexOps
 
+//revive:disable
 var IndexCmd = &cli.Command{
 	Name:  "index",
 	Usage: "Index the state of a tipset from the filecoin blockchain.",
@@ -64,7 +65,7 @@ var IndexTipSetCmd = &cli.Command{
 			Required:    true,
 		},
 	},
-	Before: func(cctx *cli.Context) error {
+	Before: func(_ *cli.Context) error {
 		tsk, err := parseTipSetKey(indexFlags.tsKey)
 		if err != nil {
 			return fmt.Errorf("failed to parse tipset key: %w", err)

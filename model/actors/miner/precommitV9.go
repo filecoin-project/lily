@@ -12,6 +12,7 @@ import (
 	"github.com/filecoin-project/lily/model"
 )
 
+//revive:disable
 type MinerPreCommitInfoV9 struct {
 	tableName struct{} `pg:"miner_pre_commit_infos_v9"` // nolint: structcheck
 
