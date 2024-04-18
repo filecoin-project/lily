@@ -53,6 +53,7 @@ const (
 	FEVMTrace                      = "fevm_traces"
 	FEVMActorDump                  = "fevm_actor_dumps"
 	MinerActorDump                 = "miner_actor_dumps"
+	BuiltInActorEvent              = "builtin_actor_event"
 )
 
 var AllTableTasks = []string{
@@ -107,6 +108,7 @@ var AllTableTasks = []string{
 	FEVMTrace,
 	FEVMActorDump,
 	MinerActorDump,
+	BuiltInActorEvent,
 }
 
 var TableLookup = map[string]struct{}{
@@ -161,6 +163,7 @@ var TableLookup = map[string]struct{}{
 	FEVMTrace:                      {},
 	FEVMActorDump:                  {},
 	MinerActorDump:                 {},
+	BuiltInActorEvent:              {},
 }
 
 var TableComment = map[string]string{
@@ -215,6 +218,7 @@ var TableComment = map[string]string{
 	FEVMTrace:                      ``,
 	FEVMActorDump:                  ``,
 	MinerActorDump:                 ``,
+	BuiltInActorEvent:              ``,
 }
 
 var TableFieldComments = map[string]map[string]string{
@@ -442,4 +446,5 @@ var TableFieldComments = map[string]map[string]string{
 		"RawBytePower":     "Claims",
 		"TotalLockedFunds": "Locked Funds",
 	},
+	BuiltInActorEvent: {},
 }

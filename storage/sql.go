@@ -17,6 +17,7 @@ import (
 
 	"github.com/filecoin-project/lily/model"
 	"github.com/filecoin-project/lily/model/actordumps"
+	"github.com/filecoin-project/lily/model/actors/builtinactor"
 	"github.com/filecoin-project/lily/model/actors/common"
 	"github.com/filecoin-project/lily/model/actors/datacap"
 	init_ "github.com/filecoin-project/lily/model/actors/init"
@@ -104,6 +105,7 @@ var Models = []interface{}{
 	(*fevm.FEVMTrace)(nil),
 	(*actordumps.FEVMActorDump)(nil),
 	(*actordumps.MinerActorDump)(nil),
+	(*builtinactor.BuiltInActorEvent)(nil),
 }
 
 var log = logging.Logger("lily/storage")

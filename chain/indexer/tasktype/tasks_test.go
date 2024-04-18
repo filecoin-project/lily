@@ -55,7 +55,8 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 		},
 		{
 			taskAlias: tasktype.MessagesTask,
-			tasks:     []string{tasktype.Message, tasktype.ParsedMessage, tasktype.Receipt, tasktype.GasOutputs, tasktype.MessageGasEconomy, tasktype.BlockMessage, tasktype.ActorEvent, tasktype.MessageParam, tasktype.ReceiptReturn},
+			tasks: []string{tasktype.Message, tasktype.ParsedMessage, tasktype.Receipt, tasktype.GasOutputs, tasktype.MessageGasEconomy, tasktype.BlockMessage, tasktype.ActorEvent, tasktype.MessageParam, tasktype.ReceiptReturn,
+				tasktype.BuiltInActorEvent},
 		},
 		{
 			taskAlias: tasktype.ChainEconomicsTask,
@@ -101,7 +102,7 @@ func TestMakeAllTaskAliasNames(t *testing.T) {
 }
 
 func TestMakeAllTaskNames(t *testing.T) {
-	const TotalTableTasks = 51
+	const TotalTableTasks = 52
 	actual, err := tasktype.MakeTaskNames(tasktype.AllTableTasks)
 	require.NoError(t, err)
 	// if this test fails it means a new task name was added, update the above test

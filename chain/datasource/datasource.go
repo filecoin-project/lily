@@ -172,6 +172,10 @@ func (t *DataSource) EthGetTransactionReceipt(ctx context.Context, txHash ethtyp
 	return t.node.EthGetTransactionReceipt(ctx, txHash)
 }
 
+func (t *DataSource) GetActorEventsRaw(ctx context.Context, filter *types.ActorEventFilter) ([]*types.ActorEvent, error) {
+	return t.node.GetActorEventsRaw(ctx, filter)
+}
+
 // TipSetMessageReceipts returns the blocks and messages in `pts` and their corresponding receipts from `ts` matching block order in tipset (`pts`).
 // TODO replace with lotus chainstore method when https://github.com/filecoin-project/lotus/pull/9186 lands
 func (t *DataSource) TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*lens.BlockMessageReceipts, error) {

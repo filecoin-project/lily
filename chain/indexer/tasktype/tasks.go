@@ -78,6 +78,7 @@ var TaskLookup = map[string][]string{
 		ActorEvent,
 		MessageParam,
 		ReceiptReturn,
+		BuiltInActorEvent,
 	},
 	ChainEconomicsTask: {
 		ChainEconomics,

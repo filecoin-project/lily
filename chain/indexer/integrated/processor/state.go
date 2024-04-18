@@ -31,6 +31,7 @@ import (
 	"github.com/filecoin-project/lily/tasks"
 	"github.com/filecoin-project/lily/tasks/messageexecutions/vm"
 	"github.com/filecoin-project/lily/tasks/messages/actorevent"
+	"github.com/filecoin-project/lily/tasks/messages/builtinactorevent"
 	"github.com/filecoin-project/lily/tasks/messages/messageparam"
 	"github.com/filecoin-project/lily/tasks/messages/receiptreturn"
 
@@ -779,6 +780,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			out.TipsetsProcessors[t] = vm.NewTask(api)
 		case tasktype.ActorEvent:
 			out.TipsetsProcessors[t] = actorevent.NewTask(api)
+		case tasktype.BuiltInActorEvent:
+			out.TipsetsProcessors[t] = builtinactorevent.NewTask(api)
 		case tasktype.ReceiptReturn:
 			out.TipsetsProcessors[t] = receiptreturn.NewTask(api)
 
