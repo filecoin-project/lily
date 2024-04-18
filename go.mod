@@ -65,6 +65,7 @@ require (
 	github.com/DataDog/zstd v1.4.5
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/filecoin-project/go-amt-ipld/v4 v4.2.0
+	github.com/fxamacker/cbor/v2 v2.6.0
 	github.com/hibiken/asynq v0.23.0
 	github.com/hibiken/asynq/x v0.0.0-20220413130846-5c723f597e01
 	github.com/ipfs/go-ipld-format v0.6.0
@@ -142,7 +143,6 @@ require (
 	github.com/filecoin-project/specs-actors/v8 v8.0.1 // indirect
 	github.com/flynn/noise v1.1.0 // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect
-	github.com/fxamacker/cbor/v2 v2.6.0 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/gbrlsnchs/jwt/v3 v3.0.1 // indirect
 	github.com/gdamore/encoding v1.0.0 // indirect

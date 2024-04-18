@@ -55,7 +55,8 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 		},
 		{
 			taskAlias: tasktype.MessagesTask,
-			tasks:     []string{tasktype.Message, tasktype.ParsedMessage, tasktype.Receipt, tasktype.GasOutputs, tasktype.MessageGasEconomy, tasktype.BlockMessage, tasktype.ActorEvent, tasktype.MessageParam, tasktype.ReceiptReturn},
+			tasks: []string{tasktype.Message, tasktype.ParsedMessage, tasktype.Receipt, tasktype.GasOutputs, tasktype.MessageGasEconomy, tasktype.BlockMessage, tasktype.ActorEvent, tasktype.MessageParam, tasktype.ReceiptReturn,
+				tasktype.BuiltInActorEvent},
 		},
 		{
 			taskAlias: tasktype.ChainEconomicsTask,

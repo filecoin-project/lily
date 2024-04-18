@@ -84,21 +84,21 @@ func init() {
 	sectorTerminatedByte, _ := b64.StdEncoding.DecodeString(SectorTerminated)
 
 	fields = map[string][]types.ActorEventBlock{
-		"$type": []types.ActorEventBlock{
-			{81, verifierBalanceByte},    // verifier-balance
-			{81, allocationByte},         // allocation
-			{81, allocationRemovedByte},  // allocation-removed
-			{81, claimByte},              // claim
-			{81, claimUpdatedByte},       // claim-updated
-			{81, claimRemovedByte},       // claim-removed
-			{81, dealPublishedByte},      // deal-published
-			{81, dealActivatedByte},      // deal-activated
-			{81, dealTerminatedByte},     // deal-terminated
-			{81, dealCompletedByte},      // deal-completed
-			{81, sectorPrecommittedByte}, // sector-precommitted
-			{81, sectorActivatedByte},    // sector-activated
-			{81, sectorUpdatedByte},      // sector-updated
-			{81, sectorTerminatedByte},   // sector-terminated
+		"$type": {
+			{Codec: 81, Value: verifierBalanceByte},    // verifier-balance
+			{Codec: 81, Value: allocationByte},         // allocation
+			{Codec: 81, Value: allocationRemovedByte},  // allocation-removed
+			{Codec: 81, Value: claimByte},              // claim
+			{Codec: 81, Value: claimUpdatedByte},       // claim-updated
+			{Codec: 81, Value: claimRemovedByte},       // claim-removed
+			{Codec: 81, Value: dealPublishedByte},      // deal-published
+			{Codec: 81, Value: dealActivatedByte},      // deal-activated
+			{Codec: 81, Value: dealTerminatedByte},     // deal-terminated
+			{Codec: 81, Value: dealCompletedByte},      // deal-completed
+			{Codec: 81, Value: sectorPrecommittedByte}, // sector-precommitted
+			{Codec: 81, Value: sectorActivatedByte},    // sector-activated
+			{Codec: 81, Value: sectorUpdatedByte},      // sector-updated
+			{Codec: 81, Value: sectorTerminatedByte},   // sector-terminated
 		},
 	}
 
@@ -195,8 +195,6 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		errs = append(errs, err)
 	}
 
-	log.Errorf("Get the events count: %v", len(events))
-
 	var (
 		builtInActorResult = make(builtinactor.BuiltInActorEvents, 0)
 	)
@@ -228,7 +226,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				kvEvent.Value = v.(types.BigInt).String()
 			case CID:
 				if v != nil {
-					kvEvent.Value = v.(string)
+					kvEvent.Value = v.(cid.Cid).String()
 				}
 			}
 			if kvEvent.Key != "$type" {
