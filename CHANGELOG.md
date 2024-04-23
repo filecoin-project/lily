@@ -5,6 +5,22 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.18.0"></a>
+
+## [v0.18.0] - 2023-04-23
+
+## DATABASE MIGRATION
+This release includes a migration which must be applied before deploying against an existing database.
+* [1.36](https://github.com/filecoin-project/lily/blob/master/schemas/v1/36_builtin_actor_event.go)
+
+### Feat
+* feat: Refine the market diff function (https://github.com/filecoin-project/lily/pull/1286)
+* feat: add builtin-actor-event task (https://github.com/filecoin-project/lily/pull/1287)
+
+### Chore
+* chore: upgrade the lotus version to v1.26.3 (https://github.com/filecoin-project/lily/pull/1288)
+
+
 <a name="v0.17.4"></a>
 
 ## [v0.17.5 - 2024-03-28]
