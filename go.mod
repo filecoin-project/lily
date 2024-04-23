@@ -13,8 +13,8 @@ require (
 	github.com/filecoin-project/go-hamt-ipld/v3 v3.3.1-0.20230511074215-a0b13f309e1b
 	github.com/filecoin-project/go-jsonrpc v0.3.1
 	github.com/filecoin-project/go-paramfetch v0.0.4
-	github.com/filecoin-project/go-state-types v0.13.1
-	github.com/filecoin-project/lotus v1.26.2
+	github.com/filecoin-project/go-state-types v0.13.3
+	github.com/filecoin-project/lotus v1.26.3
 	github.com/filecoin-project/specs-actors v0.9.15
 	github.com/filecoin-project/specs-actors/v2 v2.3.6
 	github.com/filecoin-project/specs-actors/v3 v3.1.2
@@ -44,7 +44,7 @@ require (
 	github.com/raulk/clock v1.1.0
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli/v2 v2.25.5
-	github.com/whyrusleeping/cbor-gen v0.1.0
+	github.com/whyrusleeping/cbor-gen v0.1.1
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/otel v1.21.0
 	go.opentelemetry.io/otel/bridge/opencensus v0.39.0
@@ -64,7 +64,7 @@ require k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 require (
 	github.com/DataDog/zstd v1.4.5
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/filecoin-project/go-amt-ipld/v4 v4.2.0
+	github.com/filecoin-project/go-amt-ipld/v4 v4.3.0
 	github.com/fxamacker/cbor/v2 v2.6.0
 	github.com/hibiken/asynq v0.23.0
 	github.com/hibiken/asynq/x v0.0.0-20220413130846-5c723f597e01
