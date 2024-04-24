@@ -240,6 +240,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			Cid:       event.MsgCid.String(),
 			Emitter:   event.Emitter.String(),
 			EventType: eventType,
+			EventIdx:  int64(evtIdx),
 		}
 
 		re, jsonErr := json.Marshal(eventsSlice)
