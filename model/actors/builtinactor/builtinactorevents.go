@@ -20,6 +20,7 @@ type BuiltInActorEvent struct {
 	EventType    string `pg:",pk,notnull"`
 	EventEntries string `pg:",type:jsonb"`
 	EventPayload string `pg:",type:jsonb"`
+	EventIdx     int64  `pg:",pk,notnull"`
 }
 
 func (ds *BuiltInActorEvent) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {

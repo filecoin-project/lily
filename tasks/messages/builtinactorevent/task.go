@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-var log = logging.Logger("lily/tasks/mineractordump")
+var log = logging.Logger("lily/tasks/builtinactorevent")
 
 type Task struct {
 	node tasks.DataSource
@@ -155,7 +155,7 @@ func cborValueDecode(key string, value []byte) interface{} {
 	case CID:
 		err = cbor.Unmarshal(value, &resultCID)
 		if err != nil {
-			log.Errorf("cbor.Unmarshal err: %v, key: %v", err, key)
+			log.Errorf("cbor.Unmarshal err: %v, key: %v, value: %v", err, key, value)
 			return nil
 		}
 		return resultCID
@@ -240,6 +240,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			Cid:       event.MsgCid.String(),
 			Emitter:   event.Emitter.String(),
 			EventType: eventType,
+			EventIdx:  int64(evtIdx),
 		}
 
 		re, jsonErr := json.Marshal(eventsSlice)
