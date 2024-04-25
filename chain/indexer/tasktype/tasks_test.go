@@ -39,7 +39,7 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 		},
 		{
 			taskAlias: tasktype.ActorStatesMarketTask,
-			tasks:     []string{tasktype.MarketDealProposal, tasktype.MarketDealState},
+			tasks:     []string{tasktype.MarketDealProposal, tasktype.MarketDealState, tasktype.MinerSectorDealV2},
 		},
 		{
 			taskAlias: tasktype.ActorStatesMultisigTask,
