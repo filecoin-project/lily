@@ -69,6 +69,7 @@ require (
 	github.com/hibiken/asynq v0.23.0
 	github.com/hibiken/asynq/x v0.0.0-20220413130846-5c723f597e01
 	github.com/ipfs/go-ipld-format v0.6.0
+	github.com/ipld/go-ipld-prime v0.21.0
 	github.com/jedib0t/go-pretty/v6 v6.2.7
 	github.com/libp2p/go-libp2p v0.33.2
 	github.com/multiformats/go-varint v0.0.7
@@ -209,7 +210,6 @@ require (
 	github.com/ipld/go-car/v2 v2.13.1 // indirect
 	github.com/ipld/go-codec-dagpb v1.6.0 // indirect
 	github.com/ipld/go-ipld-adl-hamt v0.0.0-20220616142416-9004dbd839e0 // indirect
-	github.com/ipld/go-ipld-prime v0.21.0 // indirect
 	github.com/ipld/go-ipld-selector-text-lite v0.0.1 // indirect
 	github.com/ipni/go-libipni v0.0.8 // indirect
 	github.com/ipni/index-provider v0.12.0 // indirect
