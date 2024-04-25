@@ -65,10 +65,14 @@ func (SectorDealStateExtractor) Extract(ctx context.Context, a actorstate.ActorI
 	}
 
 	result, err := ec.CurrState.GetProviderSectors()
+	if err != nil {
+		log.Errorf("Get the errors during getting provider sectors: %v", err)
+		return nil, nil
+	}
 	dealSectorMap := make(map[abi.DealID]abi.SectorID)
-	for sectorId, dealIDs := range result {
+	for sectorID, dealIDs := range result {
 		for _, dealID := range dealIDs {
-			dealSectorMap[dealID] = sectorId
+			dealSectorMap[dealID] = sectorID
 		}
 	}
 
