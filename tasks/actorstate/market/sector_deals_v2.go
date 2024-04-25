@@ -13,14 +13,11 @@ import (
 	marketmodel "github.com/filecoin-project/lily/model/actors/market"
 	"github.com/filecoin-project/lily/model/actors/miner"
 	"github.com/filecoin-project/lily/tasks/actorstate"
-	logging "github.com/ipfs/go-log/v2"
 )
 
 var _ actorstate.ActorStateExtractor = (*SectorDealStateExtractor)(nil)
 
 type SectorDealStateExtractor struct{}
-
-var logger = logging.Logger("lily/tasks/sector_deal_logger")
 
 func (SectorDealStateExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
 	log.Debugw("extract", zap.String("extractor", "SectorDealStateExtractor"), zap.Inline(a))

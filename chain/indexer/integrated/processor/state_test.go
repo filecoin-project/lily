@@ -439,7 +439,7 @@ func TestMakeProcessorsAllTasks(t *testing.T) {
 	// If this test fails it indicates a new processor and/or task name was added and test should be created for it in one of the above test cases.
 	proc, err := processor.MakeProcessors(nil, append(tasktype.AllTableTasks, processor.BuiltinTaskName))
 	require.NoError(t, err)
-	require.Len(t, proc.ActorProcessors, 25)
+	require.Len(t, proc.ActorProcessors, 26)
 	require.Len(t, proc.TipsetProcessors, 10)
 	require.Len(t, proc.TipsetsProcessors, 15)
 	require.Len(t, proc.ReportProcessors, 1)
