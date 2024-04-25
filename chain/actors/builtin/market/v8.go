@@ -281,3 +281,9 @@ func fromV8Label(v8 market8.DealLabel) (DealLabel, error) {
 	}
 	return markettypes.NewLabelFromBytes(bs)
 }
+
+func (s *state8) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error) {
+
+	return nil, nil
+
+}

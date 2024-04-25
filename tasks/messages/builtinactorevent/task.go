@@ -2,17 +2,11 @@ package builtinactorevent
 
 import (
 	"context"
+	b64 "encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
-	b64 "encoding/base64"
-	"encoding/json"
-
-	"github.com/filecoin-project/lily/model"
-	"github.com/filecoin-project/lily/model/actors/builtinactor"
-	visormodel "github.com/filecoin-project/lily/model/visor"
-	"github.com/filecoin-project/lily/tasks"
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/fxamacker/cbor/v2"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -21,6 +15,13 @@ import (
 	"github.com/ipld/go-ipld-prime/node/bindnode"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/filecoin-project/lily/model"
+	"github.com/filecoin-project/lily/model/actors/builtinactor"
+	visormodel "github.com/filecoin-project/lily/model/visor"
+	"github.com/filecoin-project/lily/tasks"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 var log = logging.Logger("lily/tasks/builtinactorevent")

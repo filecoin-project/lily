@@ -281,3 +281,9 @@ func fromV10Label(v10 market10.DealLabel) (DealLabel, error) {
 	}
 	return markettypes.NewLabelFromBytes(bs)
 }
+
+func (s *state10) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error) {
+
+	return nil, nil
+
+}

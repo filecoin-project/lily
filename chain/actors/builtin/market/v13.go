@@ -281,3 +281,41 @@ func fromV13Label(v13 market13.DealLabel) (DealLabel, error) {
 	}
 	return markettypes.NewLabelFromBytes(bs)
 }
+
+func (s *state13) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error) {
+
+	sectorDeals, err := adt13.AsMap(s.store, s.State.ProviderSectors, market13.ProviderSectorsHamtBitwidth)
+	if err != nil {
+		return nil, err
+	}
+	var sectorMapRoot cbg.CborCid
+	providerSectors := make(map[abi.SectorID][]abi.DealID)
+	err = sectorDeals.ForEach(&sectorMapRoot, func(providerID string) error {
+		provider, err := abi.ParseUIntKey(providerID)
+		if err != nil {
+			return nil
+		}
+
+		sectorMap, err := adt13.AsMap(s.store, cid.Cid(sectorMapRoot), market13.ProviderSectorsHamtBitwidth)
+		if err != nil {
+			return err
+		}
+
+		var dealIDs market13.SectorDealIDs
+		err = sectorMap.ForEach(&dealIDs, func(sectorID string) error {
+			sectorNumber, err := abi.ParseUIntKey(sectorID)
+			if err != nil {
+				return err
+			}
+
+			dealIDsCopy := make([]abi.DealID, len(dealIDs))
+			copy(dealIDsCopy, dealIDs)
+
+			providerSectors[abi.SectorID{Miner: abi.ActorID(provider), Number: abi.SectorNumber(sectorNumber)}] = dealIDsCopy
+			return nil
+		})
+		return err
+	})
+	return providerSectors, err
+
+}
