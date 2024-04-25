@@ -16,6 +16,9 @@ import (
 	"github.com/fxamacker/cbor/v2"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
+	"github.com/ipld/go-ipld-prime"
+	"github.com/ipld/go-ipld-prime/codec/dagcbor"
+	"github.com/ipld/go-ipld-prime/node/bindnode"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -153,11 +156,12 @@ func cborValueDecode(key string, value []byte) interface{} {
 		}
 		return resultBIGINT
 	case CID:
-		err = cbor.Unmarshal(value, &resultCID)
+		nd, err := ipld.DecodeUsingPrototype(value, dagcbor.Decode, bindnode.Prototype((*cid.Cid)(nil), nil))
 		if err != nil {
 			log.Errorf("cbor.Unmarshal err: %v, key: %v, value: %v", err, key, value)
 			return nil
 		}
+		resultCID = *bindnode.Unwrap(nd).(*cid.Cid)
 		return resultCID
 	}
 
