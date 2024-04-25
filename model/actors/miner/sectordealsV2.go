@@ -12,7 +12,7 @@ import (
 )
 
 type MinerSectorDealV2 struct {
-	tableName struct{} `pg:"miner_sector_deal_v2"` // nolint: structcheck
+	tableName struct{} `pg:"miner_sector_deals_v2"` // nolint: structcheck
 
 	Height   int64  `pg:",pk,notnull,use_zero"`
 	MinerID  string `pg:",pk,notnull"`
