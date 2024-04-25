@@ -80,25 +80,28 @@ func (SectorDealStateExtractor) Extract(ctx context.Context, a actorstate.ActorI
 		return nil, fmt.Errorf("diffing deal states: %w", err)
 	}
 
-	out := make(miner.MinerSectorDealListV2, len(changes.Added)+len(changes.Modified))
-	idx := 0
+	out := make(miner.MinerSectorDealListV2, 0)
 	for _, add := range changes.Added {
-		out[idx] = &miner.MinerSectorDealV2{
-			Height:   int64(ec.CurrTs.Height()),
-			DealID:   uint64(add.ID),
-			SectorID: uint64(dealSectorMap[add.ID].Number),
-			MinerID:  dealSectorMap[add.ID].Miner.String(),
+		sector, exists := dealSectorMap[add.ID]
+		if exists {
+			out = append(out, &miner.MinerSectorDealV2{
+				Height:   int64(ec.CurrTs.Height()),
+				DealID:   uint64(add.ID),
+				SectorID: uint64(dealSectorMap[add.ID].Number),
+				MinerID:  sector.Miner.String(),
+			})
 		}
-		idx++
 	}
 	for _, mod := range changes.Modified {
-		out[idx] = &miner.MinerSectorDealV2{
-			Height:   int64(ec.CurrTs.Height()),
-			DealID:   uint64(mod.ID),
-			SectorID: uint64(dealSectorMap[mod.ID].Number),
-			MinerID:  dealSectorMap[mod.ID].Miner.String(),
+		sector, exists := dealSectorMap[mod.ID]
+		if exists {
+			out = append(out, &miner.MinerSectorDealV2{
+				Height:   int64(ec.CurrTs.Height()),
+				DealID:   uint64(mod.ID),
+				SectorID: uint64(dealSectorMap[mod.ID].Number),
+				MinerID:  sector.Miner.String(),
+			})
 		}
-		idx++
 	}
 	return out, nil
 }
