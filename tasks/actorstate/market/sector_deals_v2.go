@@ -64,45 +64,44 @@ func (SectorDealStateExtractor) Extract(ctx context.Context, a actorstate.ActorI
 		return nil, nil
 	}
 
-	result, err := ec.CurrState.GetProviderSectors()
-	if err != nil {
-		log.Errorf("Get the errors during getting provider sectors: %v", err)
-		return nil, nil
-	}
-	dealSectorMap := make(map[abi.DealID]abi.SectorID)
-	for sectorID, dealIDs := range result {
-		for _, dealID := range dealIDs {
-			dealSectorMap[dealID] = sectorID
-		}
-	}
-
 	changes, err := market.DiffDealStates(ctx, ec.Store, ec.PrevState, ec.CurrState)
 	if err != nil {
 		return nil, fmt.Errorf("diffing deal states: %w", err)
 	}
 
+	dealIDs := make(map[abi.DealID]bool, 0)
+
 	out := make(miner.MinerSectorDealListV2, 0)
 	for _, add := range changes.Added {
-		sector, exists := dealSectorMap[add.ID]
-		if exists {
-			out = append(out, &miner.MinerSectorDealV2{
-				Height:   int64(ec.CurrTs.Height()),
-				DealID:   uint64(add.ID),
-				SectorID: uint64(dealSectorMap[add.ID].Number),
-				MinerID:  sector.Miner.String(),
-			})
-		}
+		out = append(out, &miner.MinerSectorDealV2{
+			Height: int64(ec.CurrTs.Height()),
+			DealID: uint64(add.ID),
+		})
+		dealIDs[add.ID] = true
 	}
 	for _, mod := range changes.Modified {
-		sector, exists := dealSectorMap[mod.ID]
-		if exists {
-			out = append(out, &miner.MinerSectorDealV2{
-				Height:   int64(ec.CurrTs.Height()),
-				DealID:   uint64(mod.ID),
-				SectorID: uint64(dealSectorMap[mod.ID].Number),
-				MinerID:  sector.Miner.String(),
-			})
+		out = append(out, &miner.MinerSectorDealV2{
+			Height: int64(ec.CurrTs.Height()),
+			DealID: uint64(mod.ID),
+		})
+		dealIDs[mod.ID] = true
+	}
+
+	dealIDSectorMap, err := ec.CurrState.GetProviderSectorsByDealID(dealIDs)
+	if err != nil {
+		log.Errorf("Get the errors during getting provider sectors: %v", err)
+		return nil, nil
+	}
+
+	completeSectorDeal := make(miner.MinerSectorDealListV2, 0)
+	for _, sectorDeal := range out {
+		sectorID, found := dealIDSectorMap[abi.DealID(sectorDeal.DealID)]
+		if found {
+			sectorDeal.MinerID = sectorID.Miner.String()
+			sectorDeal.SectorID = uint64(sectorID.Number)
+			completeSectorDeal = append(completeSectorDeal, sectorDeal)
 		}
 	}
-	return out, nil
+
+	return completeSectorDeal, nil
 }
