@@ -105,6 +105,8 @@ type State interface {
 
 	DealProposalsAmtBitwidth() int
 	DealStatesAmtBitwidth() int
+
+	GetProviderSectors() (map[abi.SectorID][]abi.DealID, error)
 }
 
 type BalanceTable interface {

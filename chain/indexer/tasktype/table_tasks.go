@@ -8,6 +8,7 @@ const (
 	DataCapBalance                 = "data_cap_balance"
 	MinerBeneficiary               = "miner_beneficiary"
 	MinerSectorDeal                = "miner_sector_deal"
+	MinerSectorDealV2              = "miner_sector_deal_v2"
 	MinerSectorInfoV7              = "miner_sector_infos_v7"
 	MinerSectorInfoV1_6            = "miner_sector_infos"
 	MinerSectorPost                = "miner_sector_post"
@@ -109,6 +110,7 @@ var AllTableTasks = []string{
 	FEVMActorDump,
 	MinerActorDump,
 	BuiltInActorEvent,
+	MinerSectorDealV2,
 }
 
 var TableLookup = map[string]struct{}{
@@ -164,6 +166,7 @@ var TableLookup = map[string]struct{}{
 	FEVMActorDump:                  {},
 	MinerActorDump:                 {},
 	BuiltInActorEvent:              {},
+	MinerSectorDealV2:              {},
 }
 
 var TableComment = map[string]string{
@@ -219,6 +222,7 @@ var TableComment = map[string]string{
 	FEVMActorDump:                  ``,
 	MinerActorDump:                 ``,
 	BuiltInActorEvent:              ``,
+	MinerSectorDealV2:              ``,
 }
 
 var TableFieldComments = map[string]map[string]string{
@@ -447,4 +451,5 @@ var TableFieldComments = map[string]map[string]string{
 		"TotalLockedFunds": "Locked Funds",
 	},
 	BuiltInActorEvent: {},
+	MinerSectorDealV2: {},
 }

@@ -53,6 +53,7 @@ var TaskLookup = map[string][]string{
 	ActorStatesMarketTask: {
 		MarketDealProposal,
 		MarketDealState,
+		MinerSectorDealV2,
 	},
 	ActorStatesMultisigTask: {
 		MultisigTransaction,

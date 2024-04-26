@@ -264,3 +264,9 @@ func (s *state5) Code() cid.Cid {
 
 	return code
 }
+
+func (s *state5) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error) {
+
+	return nil, nil
+
+}

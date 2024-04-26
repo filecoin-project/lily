@@ -695,6 +695,11 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				marketactors.AllCodes(),
 				markettask.DealProposalExtractor{},
 			))
+		case tasktype.MinerSectorDealV2:
+			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
+				marketactors.AllCodes(),
+				markettask.SectorDealStateExtractor{},
+			))
 
 			//
 			// Multisig

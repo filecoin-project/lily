@@ -50,7 +50,7 @@ func TestNewProcessor(t *testing.T) {
 	proc, err := New(nil, t.Name(), tasktype.AllTableTasks)
 	require.NoError(t, err)
 	require.Equal(t, t.Name(), proc.name)
-	require.Len(t, proc.actorProcessors, 25)
+	require.Len(t, proc.actorProcessors, 26)
 	require.Len(t, proc.tipsetProcessors, 10)
 	require.Len(t, proc.tipsetsProcessors, 15)
 	require.Len(t, proc.builtinProcessors, 1)
