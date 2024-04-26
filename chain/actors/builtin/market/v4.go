@@ -270,3 +270,9 @@ func (s *state4) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error) {
 	return nil, nil
 
 }
+
+func (s *state4) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) (map[abi.DealID]abi.SectorID, error) {
+
+	return nil, nil
+
+}
