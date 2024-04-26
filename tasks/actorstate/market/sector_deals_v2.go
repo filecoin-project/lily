@@ -93,13 +93,15 @@ func (SectorDealStateExtractor) Extract(ctx context.Context, a actorstate.ActorI
 		return nil, nil
 	}
 
+	completeSectorDeal := make(miner.MinerSectorDealListV2, 0)
 	for _, sectorDeal := range out {
 		sectorID, found := dealIDSectorMap[abi.DealID(sectorDeal.DealID)]
 		if found {
 			sectorDeal.MinerID = sectorID.Miner.String()
 			sectorDeal.SectorID = uint64(sectorID.Number)
+			completeSectorDeal = append(completeSectorDeal, sectorDeal)
 		}
 	}
 
-	return out, nil
+	return completeSectorDeal, nil
 }
