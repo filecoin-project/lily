@@ -2,7 +2,6 @@ package builtinactorevent
 
 import (
 	"context"
-	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -12,6 +11,7 @@ import (
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/codec/dagcbor"
+	"github.com/ipld/go-ipld-prime/node/basicnode"
 	"github.com/ipld/go-ipld-prime/node/bindnode"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -54,57 +54,32 @@ const (
 )
 
 func init() {
-	// ------------ fields ------------
-	const (
-		VerifierBalance    = "cHZlcmlmaWVyLWJhbGFuY2U="     // verifier-balance
-		Allocation         = "amFsbG9jYXRpb24="             // allocation
-		AllocationRemoved  = "cmFsbG9jYXRpb24tcmVtb3ZlZA==" // allocation-removed
-		Claim              = "ZWNsYWlt"                     // claim
-		ClaimUpdated       = "bWNsYWltLXVwZGF0ZWQ="         // claim-updated
-		ClaimRemoved       = "bWNsYWltLXJlbW92ZWQ="         // claim-removed
-		DealPublished      = "ZGVhbC1wdWJsaXNoZWQ="         // deal-published
-		DealActivated      = "bmRlYWwtYWN0aXZhdGVk"         // deal-activated
-		DealTerminated     = "b2RlYWwtdGVybWluYXRlZA=="     // deal-terminated
-		DealCompleted      = "bmRlYWwtY29tcGxldGVk"         // deal-completed
-		SectorPrecommitted = "c3NlY3Rvci1wcmVjb21taXR0ZWQ=" // sector-precommitted
-		SectorActivated    = "cHNlY3Rvci1hY3RpdmF0ZWQ="     // sector-activated
-		SectorUpdated      = "bnNlY3Rvci11cGRhdGVk"         // sector-updated
-		SectorTerminated   = "cXNlY3Rvci10ZXJtaW5hdGVk"     // sector-terminated
-	)
-
-	verifierBalanceByte, _ := b64.StdEncoding.DecodeString(VerifierBalance)
-	allocationByte, _ := b64.StdEncoding.DecodeString(Allocation)
-	allocationRemovedByte, _ := b64.StdEncoding.DecodeString(AllocationRemoved)
-	claimByte, _ := b64.StdEncoding.DecodeString(Claim)
-	claimUpdatedByte, _ := b64.StdEncoding.DecodeString(ClaimUpdated)
-	claimRemovedByte, _ := b64.StdEncoding.DecodeString(ClaimRemoved)
-	dealPublishedByte, _ := b64.StdEncoding.DecodeString(DealPublished)
-	dealActivatedByte, _ := b64.StdEncoding.DecodeString(DealActivated)
-	dealTerminatedByte, _ := b64.StdEncoding.DecodeString(DealTerminated)
-	dealCompletedByte, _ := b64.StdEncoding.DecodeString(DealCompleted)
-	sectorPrecommittedByte, _ := b64.StdEncoding.DecodeString(SectorPrecommitted)
-	sectorActivatedByte, _ := b64.StdEncoding.DecodeString(SectorActivated)
-	sectorUpdatedByte, _ := b64.StdEncoding.DecodeString(SectorUpdated)
-	sectorTerminatedByte, _ := b64.StdEncoding.DecodeString(SectorTerminated)
-
-	fields = map[string][]types.ActorEventBlock{
-		"$type": {
-			{Codec: 81, Value: verifierBalanceByte},    // verifier-balance
-			{Codec: 81, Value: allocationByte},         // allocation
-			{Codec: 81, Value: allocationRemovedByte},  // allocation-removed
-			{Codec: 81, Value: claimByte},              // claim
-			{Codec: 81, Value: claimUpdatedByte},       // claim-updated
-			{Codec: 81, Value: claimRemovedByte},       // claim-removed
-			{Codec: 81, Value: dealPublishedByte},      // deal-published
-			{Codec: 81, Value: dealActivatedByte},      // deal-activated
-			{Codec: 81, Value: dealTerminatedByte},     // deal-terminated
-			{Codec: 81, Value: dealCompletedByte},      // deal-completed
-			{Codec: 81, Value: sectorPrecommittedByte}, // sector-precommitted
-			{Codec: 81, Value: sectorActivatedByte},    // sector-activated
-			{Codec: 81, Value: sectorUpdatedByte},      // sector-updated
-			{Codec: 81, Value: sectorTerminatedByte},   // sector-terminated
-		},
+	targetEvents := []string{
+		"verifier-balance",
+		"allocation",
+		"allocation-removed",
+		"claim",
+		"claim-updated",
+		"claim-removed",
+		"deal-published",
+		"deal-activated",
+		"deal-terminated",
+		"deal-completed",
+		"sector-precommitted",
+		"sector-activated",
+		"sector-updated",
+		"sector-terminated",
 	}
+
+	filterFields := []types.ActorEventBlock{}
+	for _, filteredEvent := range targetEvents {
+		fieldByte, err := ipld.Encode(basicnode.NewString(filteredEvent), dagcbor.Encode)
+		if err == nil {
+			filterFields = append(filterFields, types.ActorEventBlock{Codec: 0x51, Value: fieldByte})
+		}
+	}
+
+	fields = map[string][]types.ActorEventBlock{"$type": filterFields}
 
 	// ------------ convert ------------
 	// https://fips.filecoin.io/FIPS/fip-0083.html
@@ -212,7 +187,6 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		for entryIdx, e := range event.Entries {
 			if e.Codec != 0x51 { // 81
 				log.Warnf("Codec not equal to cbor, height: %v, evtIdx: %v, emitter: %v, entryIdx: %v, e.Codec: %v", executed.Height(), evtIdx, event.Emitter.String(), entryIdx, e.Codec)
-				continue
 			}
 
 			var kvEvent KVEvent
@@ -257,8 +231,9 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		if jsonErr == nil {
 			obj.EventPayload = string(payload)
 		}
-
-		builtInActorResult = append(builtInActorResult, &obj)
+		if obj.EventType != "" {
+			builtInActorResult = append(builtInActorResult, &obj)
+		}
 	}
 
 	if len(errs) > 0 {
