@@ -100,7 +100,7 @@ func init() {
 		"unsealed-cid": CID,
 	}
 }
-func cborValueDecode(key string, value []byte) interface{} {
+func CborValueDecode(key string, value []byte) interface{} {
 	var (
 		resultSTR    string
 		resultINT    int
@@ -144,6 +144,45 @@ func cborValueDecode(key string, value []byte) interface{} {
 	return nil
 }
 
+func HandleEventEntries(event *types.ActorEvent) (string, map[string]interface{}, []*KVEvent) {
+	var eventsSlice []*KVEvent
+	var eventType string
+	actorEvent := make(map[string]interface{})
+	for _, e := range event.Entries {
+		if e.Codec != 0x51 { // 81
+			continue
+		}
+
+		var kvEvent KVEvent
+		kvEvent.Key = e.Key
+
+		v := CborValueDecode(e.Key, e.Value)
+		switch convert[e.Key] {
+		case STRING:
+			kvEvent.Value = v.(string)
+			if kvEvent.Key == "$type" {
+				eventType = kvEvent.Value
+			}
+		case INT:
+			kvEvent.Value = strconv.Itoa(v.(int))
+		case BIGINT:
+			kvEvent.Value = v.(types.BigInt).String()
+		case CID:
+			if v != nil {
+				kvEvent.Value = v.(cid.Cid).String()
+			} else {
+				kvEvent.Value = ""
+			}
+		}
+		if kvEvent.Key != "$type" {
+			actorEvent[kvEvent.Key] = kvEvent.Value
+		}
+		eventsSlice = append(eventsSlice, &kvEvent)
+	}
+
+	return eventType, actorEvent, eventsSlice
+}
+
 func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, executed *types.TipSet) (model.Persistable, *visormodel.ProcessingReport, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "ProcessTipSets")
 	if span.IsRecording() {
@@ -180,39 +219,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	)
 
 	for evtIdx, event := range events {
-		var eventsSlice []*KVEvent
-		var eventType string
-		actorEvent := make(map[string]interface{})
-
-		for entryIdx, e := range event.Entries {
-			if e.Codec != 0x51 { // 81
-				log.Warnf("Codec not equal to cbor, height: %v, evtIdx: %v, emitter: %v, entryIdx: %v, e.Codec: %v", executed.Height(), evtIdx, event.Emitter.String(), entryIdx, e.Codec)
-			}
-
-			var kvEvent KVEvent
-			kvEvent.Key = e.Key
-
-			v := cborValueDecode(e.Key, e.Value)
-			switch convert[e.Key] {
-			case STRING:
-				kvEvent.Value = v.(string)
-				if kvEvent.Key == "$type" {
-					eventType = kvEvent.Value
-				}
-			case INT:
-				kvEvent.Value = strconv.Itoa(v.(int))
-			case BIGINT:
-				kvEvent.Value = v.(types.BigInt).String()
-			case CID:
-				if v != nil {
-					kvEvent.Value = v.(cid.Cid).String()
-				}
-			}
-			if kvEvent.Key != "$type" {
-				actorEvent[kvEvent.Key] = kvEvent.Value
-			}
-			eventsSlice = append(eventsSlice, &kvEvent)
-		}
+		eventType, actorEvent, eventsSlice := HandleEventEntries(event)
 
 		obj := builtinactor.BuiltInActorEvent{
 			Height:    int64(executed.Height()),
