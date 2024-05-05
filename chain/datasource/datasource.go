@@ -356,6 +356,50 @@ func (t *DataSource) LookupRobustAddress(ctx context.Context, idAddr address.Add
 	return t.node.StateLookupRobustAddress(ctx, idAddr, tsk)
 }
 
+// For BuiltinActorEvent
+func genSectorEventCacheKey(tsk types.TipSetKey) string {
+	key, keyErr := asKey(KeyPrefix{"SectorAddedEvent"}, tsk)
+	if keyErr != nil {
+		return "SectorAddedEventDefaultkey"
+	}
+	return key
+}
+
+func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipSetKey) (map[uint64]bool, error) {
+	cacheKey := genSectorEventCacheKey(tsk)
+	sectorIDs := map[uint64]bool{}
+
+	value, cacheFound := t.diffSectorsCache.Get(cacheKey)
+	if cacheFound {
+		sectorIDs = value.(map[uint64]bool)
+		return sectorIDs, nil
+	}
+
+	// Create the cache from GetActorEventsRaw
+	fields := util.GenFilterFields([]string{"sector-activated"})
+	filter := types.ActorEventFilter{
+		TipSetKey: &tsk,
+		Fields:    fields,
+	}
+	events, err := t.GetActorEventsRaw(ctx, &filter)
+	if err == nil && events != nil {
+		for _, event := range events {
+			_, actorEvent, _ := util.HandleEventEntries(event)
+			// Try to get the key
+			val, found := actorEvent["sector"]
+			if found {
+				if sectorID, ok := val.(uint64); ok {
+					sectorIDs[sectorID] = true
+				}
+			}
+		}
+		t.diffSectorsCache.Add(cacheKey, &sectorIDs)
+	} else {
+		return nil, err
+	}
+	return sectorIDs, nil
+}
+
 func (t *DataSource) MinerPower(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.MinerPower, error) {
 	ctx, span := otel.Tracer("").Start(ctx, "DataSource.MinerPower")
 	if span.IsRecording() {

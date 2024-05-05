@@ -71,7 +71,7 @@ type ActorStateAPI interface {
 
 	LookupRobustAddress(ctx context.Context, idAddr address.Address, tsk types.TipSetKey) (address.Address, error)
 
-	GetActorEventsRaw(ctx context.Context, filter *types.ActorEventFilter) ([]*types.ActorEvent, error)
+	GetSectorAddedFromEvent(ctx context.Context, tsk types.TipSetKey) (map[uint64]bool, error)
 }
 
 // An ActorStateExtractor extracts actor state into a persistable format
