@@ -403,6 +403,8 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 					log.Errorf("Got the sector ID: %v", val)
 					if sectorID, ok := val.(int); ok {
 						sectorIDs[uint64(sectorID)] = true
+					} else {
+						log.Errorf("Covert Error: %v", val)
 					}
 				}
 			}
@@ -414,6 +416,7 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 			return nil, err
 		}
 
+		log.Errorf("Got sectorIDs in size: %v", len(sectorIDs))
 		return sectorIDs, nil
 	})
 
