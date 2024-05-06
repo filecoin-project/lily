@@ -401,8 +401,13 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 				val, found := actorEvent["sector"]
 				if found {
 					log.Errorf("Got the sector ID: %v", val)
-					if sectorID, ok := val.(int); ok {
-						sectorIDs[uint64(sectorID)] = true
+					if sectorID, ok := val.(string); ok {
+						i, err := strconv.Atoi(sectorID)
+						if err == nil {
+							sectorIDs[uint64(i)] = true
+						} else {
+							log.Errorf("String to Int error: %v", err)
+						}
 					} else {
 						log.Errorf("Covert Error: %v", val)
 					}
