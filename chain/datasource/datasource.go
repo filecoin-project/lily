@@ -379,11 +379,11 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 	cacheKey := genSectorEventCacheKey(tsk)
 	value, cacheFound := t.sectorAddedCache.Get(cacheKey)
 	if cacheFound {
-		log.Errorf("SectorAdded hit the cache at %v", tsk)
+		log.Infof("SectorAdded hit the cache at %v", tsk)
 		return value.(map[uint64]bool), nil
 	}
 
-	value, err, _ := t.sectorAddedGroup.Do(cacheKey, func() (interface{}, error) {
+	value, getSectorEventErr, _ := t.sectorAddedGroup.Do(cacheKey, func() (interface{}, error) {
 		sectorIDs := map[uint64]bool{}
 		// Create the cache from GetActorEventsRaw
 		filter := types.ActorEventFilter{
@@ -392,10 +392,12 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 		events, err := t.GetActorEventsRaw(ctx, &filter)
 		if err == nil && events != nil {
 			for _, event := range events {
-				actorType, actorEvent, _ := util.HandleEventEntries(event)
-				if actorType != "sector-activated" {
+				eventType, actorEvent, _ := util.HandleEventEntries(event)
+				// Do the filtering by eve
+				if eventType != "sector-activated" {
 					continue
 				}
+
 				// Try to get the key
 				val, found := actorEvent["sector"]
 				if found {
@@ -407,10 +409,12 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 							log.Errorf("String to Int error: %v", err)
 						}
 					} else {
-						log.Errorf("Covert Error: %v", val)
+						log.Errorf("SectorID Covert Error: %v", val)
 					}
 				}
 			}
+
+			// Save the cache
 			t.sectorAddedCache.Add(cacheKey, sectorIDs)
 		} else {
 			return nil, err
@@ -419,16 +423,15 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 		return sectorIDs, nil
 	})
 
-	if err != nil {
-		return nil, err
+	if getSectorEventErr != nil {
+		return nil, getSectorEventErr
 	}
 
 	if sectorIDs, ok := value.(map[uint64]bool); ok {
 		return sectorIDs, nil
-	} else {
-		return nil, err
 	}
 
+	return nil, nil
 }
 
 func (t *DataSource) MinerPower(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.MinerPower, error) {
