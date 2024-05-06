@@ -124,8 +124,10 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		}
 	}
 
+	sectorAddedIDs, err := node.GetSectorAddedFromEvent(ctx, extState.ParentTipSet().Key())
+
 	// transform the sector events to a model.
-	sectorEventModel, err := ExtractSectorEvents(extState, sectorChanges, preCommitChanges, sectorStateChanges)
+	sectorEventModel, err := ExtractSectorEvents(extState, sectorChanges, preCommitChanges, sectorStateChanges, sectorAddedIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -148,13 +150,13 @@ func (SectorEventsExtractor) Transform(_ context.Context, data model.Persistable
 }
 
 // ExtractSectorEvents transforms sectorChanges, preCommitChanges, and sectorStateChanges to a MinerSectorEventList.
-func ExtractSectorEvents(extState extraction.State, sectorChanges *miner.SectorChanges, preCommitChanges *miner.PreCommitChanges, sectorStateChanges *SectorStateEvents) (minermodel.MinerSectorEventList, error) {
+func ExtractSectorEvents(extState extraction.State, sectorChanges *miner.SectorChanges, preCommitChanges *miner.PreCommitChanges, sectorStateChanges *SectorStateEvents, sectorAddedIDs map[uint64]bool) (minermodel.MinerSectorEventList, error) {
 	sectorStateEvents, err := ExtractMinerSectorStateEvents(extState, sectorStateChanges)
 	if err != nil {
 		return nil, err
 	}
 
-	sectorEvents := ExtractMinerSectorEvents(extState, sectorChanges)
+	sectorEvents := ExtractMinerSectorEvents(extState, sectorChanges, sectorAddedIDs)
 
 	preCommitEvents := ExtractMinerPreCommitEvents(extState, preCommitChanges)
 
@@ -228,7 +230,7 @@ func ExtractMinerSectorStateEvents(extState extraction.State, events *SectorStat
 }
 
 // ExtractMinerSectorEvents transforms the added, extended and snapped sectors from `sectors` to a MinerSectorEventList.
-func ExtractMinerSectorEvents(extState extraction.State, sectors *miner.SectorChanges) minermodel.MinerSectorEventList {
+func ExtractMinerSectorEvents(extState extraction.State, sectors *miner.SectorChanges, sectorAddedIDs map[uint64]bool) minermodel.MinerSectorEventList {
 	out := make(minermodel.MinerSectorEventList, 0, len(sectors.Added)+len(sectors.Extended)+len(sectors.Snapped))
 
 	// track sector add and commit-capacity add
@@ -237,6 +239,13 @@ func ExtractMinerSectorEvents(extState extraction.State, sectors *miner.SectorCh
 		if len(add.DealIDs) == 0 {
 			event = minermodel.CommitCapacityAdded
 		}
+
+		// After network nv22, there is builtin_actor_event can identify the sector added
+		_, found := sectorAddedIDs[uint64(add.SectorNumber)]
+		if found {
+			event = minermodel.SectorAdded
+		}
+
 		out = append(out, &minermodel.MinerSectorEvent{
 			Height:    int64(extState.CurrentTipSet().Height()),
 			MinerID:   extState.Address().String(),

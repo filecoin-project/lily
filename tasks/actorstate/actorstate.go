@@ -70,6 +70,8 @@ type ActorStateAPI interface {
 	MinerLoad(store adt.Store, act *types.Actor) (miner.State, error)
 
 	LookupRobustAddress(ctx context.Context, idAddr address.Address, tsk types.TipSetKey) (address.Address, error)
+
+	GetSectorAddedFromEvent(ctx context.Context, tsk types.TipSetKey) (map[uint64]bool, error)
 }
 
 // An ActorStateExtractor extracts actor state into a persistable format

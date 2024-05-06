@@ -45,6 +45,7 @@ var (
 	diffSectorCacheSize           int
 	actorCacheSize                int
 	addressCacheSize              int
+	sectorAddedCacheSize          int
 
 	tipsetMessageReceiptSizeEnv = "LILY_TIPSET_MSG_RECEIPT_CACHE_SIZE"
 	executedTsCacheSizeEnv      = "LILY_EXECUTED_TS_CACHE_SIZE"
@@ -52,6 +53,7 @@ var (
 	diffSectorCacheSizeEnv      = "LILY_DIFF_SECTORS_CACHE_SIZE"
 	actorCacheSizeEnv           = "LILY_ACTOR_CACHE_SIZE"
 	addressCacheSizeEnv         = "LILY_ADDRESS_CACHE_SIZE"
+	sectorAddedCacheSizeEnv     = "LILY_SECTOR_ADDED_CACHE_SIZE"
 )
 
 func getCacheSizeFromEnv(env string, defaultValue int) int {
@@ -72,6 +74,7 @@ func init() {
 	diffSectorCacheSize = getCacheSizeFromEnv(diffSectorCacheSizeEnv, 500)
 	actorCacheSize = getCacheSizeFromEnv(actorCacheSizeEnv, 5000)
 	addressCacheSize = getCacheSizeFromEnv(addressCacheSizeEnv, 4)
+	sectorAddedCacheSize = getCacheSizeFromEnv(sectorAddedCacheSizeEnv, 1000)
 }
 
 var _ tasks.DataSource = (*DataSource)(nil)
@@ -113,6 +116,10 @@ func NewDataSource(node lens.API) (*DataSource, error) {
 	if err != nil {
 		return nil, err
 	}
+	t.sectorAddedCache, err = lru.New(sectorAddedCacheSize)
+	if err != nil {
+		return nil, err
+	}
 
 	return t, nil
 }
@@ -134,6 +141,9 @@ type DataSource struct {
 
 	actorCache   *lru.Cache
 	addressCache *lru.Cache
+
+	sectorAddedCache *lru.Cache
+	sectorAddedGroup singleflight.Group
 }
 
 func (t *DataSource) MessageReceiptEvents(ctx context.Context, root cid.Cid) ([]types.Event, error) {
@@ -354,6 +364,74 @@ func (t *DataSource) LookupRobustAddress(ctx context.Context, idAddr address.Add
 
 	// Use the default way: StateLookup
 	return t.node.StateLookupRobustAddress(ctx, idAddr, tsk)
+}
+
+// For BuiltinActorEvent
+func genSectorEventCacheKey(tsk types.TipSetKey) string {
+	key, keyErr := asKey(KeyPrefix{"SectorAddedEvent"}, tsk)
+	if keyErr != nil {
+		return "SectorAddedEventDefaultkey"
+	}
+	return key
+}
+
+func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipSetKey) (map[uint64]bool, error) {
+	cacheKey := genSectorEventCacheKey(tsk)
+	value, cacheFound := t.sectorAddedCache.Get(cacheKey)
+	if cacheFound {
+		log.Infof("SectorAdded hit the cache at %v", tsk)
+		return value.(map[uint64]bool), nil
+	}
+
+	value, getSectorEventErr, _ := t.sectorAddedGroup.Do(cacheKey, func() (interface{}, error) {
+		sectorIDs := map[uint64]bool{}
+		// Create the cache from GetActorEventsRaw
+		filter := types.ActorEventFilter{
+			TipSetKey: &tsk,
+		}
+		events, err := t.GetActorEventsRaw(ctx, &filter)
+		if err == nil && events != nil {
+			for _, event := range events {
+				eventType, actorEvent, _ := util.HandleEventEntries(event)
+				// Do the filtering by eve
+				if eventType != "sector-activated" {
+					continue
+				}
+
+				// Try to get the key
+				val, found := actorEvent["sector"]
+				if found {
+					if sectorID, ok := val.(string); ok {
+						i, err := strconv.Atoi(sectorID)
+						if err == nil {
+							sectorIDs[uint64(i)] = true
+						} else {
+							log.Errorf("String to Int error: %v", err)
+						}
+					} else {
+						log.Errorf("SectorID Covert Error: %v", val)
+					}
+				}
+			}
+
+			// Save the cache
+			t.sectorAddedCache.Add(cacheKey, sectorIDs)
+		} else {
+			return nil, err
+		}
+
+		return sectorIDs, nil
+	})
+
+	if getSectorEventErr != nil {
+		return nil, getSectorEventErr
+	}
+
+	if sectorIDs, ok := value.(map[uint64]bool); ok {
+		return sectorIDs, nil
+	}
+
+	return nil, nil
 }
 
 func (t *DataSource) MinerPower(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.MinerPower, error) {

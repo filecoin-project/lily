@@ -90,4 +90,5 @@ type DataSource interface {
 
 	SetIdRobustAddressMap(ctx context.Context, tsk types.TipSetKey) error
 	LookupRobustAddress(ctx context.Context, idAddr address.Address, tsk types.TipSetKey) (address.Address, error)
+	GetSectorAddedFromEvent(ctx context.Context, tsk types.TipSetKey) (map[uint64]bool, error)
 }
