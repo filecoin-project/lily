@@ -386,21 +386,19 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 	value, err, _ := t.sectorAddedGroup.Do(cacheKey, func() (interface{}, error) {
 		sectorIDs := map[uint64]bool{}
 		// Create the cache from GetActorEventsRaw
-		fields := util.GenFilterFields([]string{"sector-activated"})
 		filter := types.ActorEventFilter{
 			TipSetKey: &tsk,
-			Fields:    fields,
 		}
 		events, err := t.GetActorEventsRaw(ctx, &filter)
-		log.Errorf("Got the event for sector-activated: %v", len(events))
 		if err == nil && events != nil {
 			for _, event := range events {
-				_, actorEvent, _ := util.HandleEventEntries(event)
-				log.Errorf("Got actorEvent: %v", actorEvent)
+				actorType, actorEvent, _ := util.HandleEventEntries(event)
+				if actorType != "sector-activated" {
+					continue
+				}
 				// Try to get the key
 				val, found := actorEvent["sector"]
 				if found {
-					log.Errorf("Got the sector ID: %v", val)
 					if sectorID, ok := val.(string); ok {
 						i, err := strconv.Atoi(sectorID)
 						if err == nil {
@@ -418,7 +416,6 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 			return nil, err
 		}
 
-		log.Errorf("Got sectorIDs in size: %v", len(sectorIDs))
 		return sectorIDs, nil
 	})
 
