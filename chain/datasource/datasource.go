@@ -396,9 +396,11 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 		if err == nil && events != nil {
 			for _, event := range events {
 				_, actorEvent, _ := util.HandleEventEntries(event)
+				log.Errorf("Got actorEvent: %v", actorEvent)
 				// Try to get the key
 				val, found := actorEvent["sector"]
 				if found {
+					log.Errorf("Got the sector ID: %v", val)
 					if sectorID, ok := val.(int); ok {
 						sectorIDs[uint64(sectorID)] = true
 					}
