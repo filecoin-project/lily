@@ -377,16 +377,14 @@ func genSectorEventCacheKey(tsk types.TipSetKey) string {
 
 func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipSetKey) (map[uint64]bool, error) {
 	cacheKey := genSectorEventCacheKey(tsk)
-	sectorIDs := map[uint64]bool{}
-
 	value, cacheFound := t.sectorAddedCache.Get(cacheKey)
 	if cacheFound {
 		log.Errorf("SectorAdded hit the cache at %v", tsk)
-		sectorIDs = value.(map[uint64]bool)
-		return sectorIDs, nil
+		return value.(map[uint64]bool), nil
 	}
 
-	_, err, _ := t.sectorAddedGroup.Do(cacheKey, func() (interface{}, error) {
+	value, err, _ := t.sectorAddedGroup.Do(cacheKey, func() (interface{}, error) {
+		sectorIDs := map[uint64]bool{}
 		// Create the cache from GetActorEventsRaw
 		fields := util.GenFilterFields([]string{"sector-activated"})
 		filter := types.ActorEventFilter{
@@ -406,9 +404,9 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 					}
 				}
 			}
-			added := t.sectorAddedCache.Add(cacheKey, &sectorIDs)
+			added := t.sectorAddedCache.Add(cacheKey, sectorIDs)
 			if added {
-				log.Errorf("Save the cache.")
+				log.Errorf("SectorAdded save the cache.")
 			}
 		} else {
 			return nil, err
@@ -416,11 +414,12 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 
 		return sectorIDs, nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	return sectorIDs, nil
+	return value.(map[uint64]bool), nil
 }
 
 func (t *DataSource) MinerPower(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.MinerPower, error) {

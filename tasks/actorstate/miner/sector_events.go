@@ -241,11 +241,9 @@ func ExtractMinerSectorEvents(extState extraction.State, sectors *miner.SectorCh
 		}
 
 		// After network nv22, there is builtin_actor_event can identify the sector added
-		if extState.CurrentState().ActorVersion() >= actorstypes.Version13 {
-			_, found := sectorAddedIDs[uint64(add.SectorNumber)]
-			if found {
-				event = minermodel.SectorAdded
-			}
+		_, found := sectorAddedIDs[uint64(add.SectorNumber)]
+		if found {
+			event = minermodel.SectorAdded
 		}
 
 		out = append(out, &minermodel.MinerSectorEvent{
