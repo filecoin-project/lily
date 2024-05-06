@@ -45,6 +45,7 @@ var (
 	diffSectorCacheSize           int
 	actorCacheSize                int
 	addressCacheSize              int
+	sectorAddedCacheSize          int
 
 	tipsetMessageReceiptSizeEnv = "LILY_TIPSET_MSG_RECEIPT_CACHE_SIZE"
 	executedTsCacheSizeEnv      = "LILY_EXECUTED_TS_CACHE_SIZE"
@@ -52,6 +53,7 @@ var (
 	diffSectorCacheSizeEnv      = "LILY_DIFF_SECTORS_CACHE_SIZE"
 	actorCacheSizeEnv           = "LILY_ACTOR_CACHE_SIZE"
 	addressCacheSizeEnv         = "LILY_ADDRESS_CACHE_SIZE"
+	sectorAddedCacheSizeEnv     = "LILY_SECTOR_ADDED_CACHE_SIZE"
 )
 
 func getCacheSizeFromEnv(env string, defaultValue int) int {
@@ -72,6 +74,7 @@ func init() {
 	diffSectorCacheSize = getCacheSizeFromEnv(diffSectorCacheSizeEnv, 500)
 	actorCacheSize = getCacheSizeFromEnv(actorCacheSizeEnv, 5000)
 	addressCacheSize = getCacheSizeFromEnv(addressCacheSizeEnv, 4)
+	sectorAddedCacheSize = getCacheSizeFromEnv(sectorAddedCacheSizeEnv, 1000)
 }
 
 var _ tasks.DataSource = (*DataSource)(nil)
@@ -113,6 +116,10 @@ func NewDataSource(node lens.API) (*DataSource, error) {
 	if err != nil {
 		return nil, err
 	}
+	t.sectorAddedCache, err = lru.New(sectorAddedCacheSize)
+	if err != nil {
+		return nil, err
+	}
 
 	return t, nil
 }
@@ -134,6 +141,9 @@ type DataSource struct {
 
 	actorCache   *lru.Cache
 	addressCache *lru.Cache
+
+	sectorAddedCache *lru.Cache
+	sectorAddedGroup singleflight.Group
 }
 
 func (t *DataSource) MessageReceiptEvents(ctx context.Context, root cid.Cid) ([]types.Event, error) {
@@ -369,8 +379,9 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 	cacheKey := genSectorEventCacheKey(tsk)
 	sectorIDs := map[uint64]bool{}
 
-	value, cacheFound := t.diffSectorsCache.Get(cacheKey)
+	value, cacheFound := t.sectorAddedCache.Get(cacheKey)
 	if cacheFound {
+		log.Errorf("SectorAdded hit the cache at %v", tsk)
 		sectorIDs = value.(map[uint64]bool)
 		return sectorIDs, nil
 	}
@@ -382,6 +393,7 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 		Fields:    fields,
 	}
 	events, err := t.GetActorEventsRaw(ctx, &filter)
+	log.Errorf("Got the event for sector-activated: %v", len(events))
 	if err == nil && events != nil {
 		for _, event := range events {
 			_, actorEvent, _ := util.HandleEventEntries(event)
@@ -393,7 +405,10 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 				}
 			}
 		}
-		t.diffSectorsCache.Add(cacheKey, &sectorIDs)
+		added := t.sectorAddedCache.Add(cacheKey, &sectorIDs)
+		if added {
+			log.Errorf("Save the cache.")
+		}
 	} else {
 		return nil, err
 	}
