@@ -399,8 +399,8 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 				// Try to get the key
 				val, found := actorEvent["sector"]
 				if found {
-					if sectorID, ok := val.(uint64); ok {
-						sectorIDs[sectorID] = true
+					if sectorID, ok := val.(int); ok {
+						sectorIDs[uint64(sectorID)] = true
 					}
 				}
 			}
@@ -419,7 +419,12 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 		return nil, err
 	}
 
-	return value.(map[uint64]bool), nil
+	if sectorIDs, ok := value.(map[uint64]bool); ok {
+		return sectorIDs, nil
+	} else {
+		return nil, err
+	}
+
 }
 
 func (t *DataSource) MinerPower(ctx context.Context, addr address.Address, ts *types.TipSet) (*api.MinerPower, error) {
