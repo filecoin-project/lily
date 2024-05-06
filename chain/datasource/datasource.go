@@ -386,32 +386,40 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 		return sectorIDs, nil
 	}
 
-	// Create the cache from GetActorEventsRaw
-	fields := util.GenFilterFields([]string{"sector-activated"})
-	filter := types.ActorEventFilter{
-		TipSetKey: &tsk,
-		Fields:    fields,
-	}
-	events, err := t.GetActorEventsRaw(ctx, &filter)
-	log.Errorf("Got the event for sector-activated: %v", len(events))
-	if err == nil && events != nil {
-		for _, event := range events {
-			_, actorEvent, _ := util.HandleEventEntries(event)
-			// Try to get the key
-			val, found := actorEvent["sector"]
-			if found {
-				if sectorID, ok := val.(uint64); ok {
-					sectorIDs[sectorID] = true
+	_, err, _ := t.sectorAddedGroup.Do(cacheKey, func() (interface{}, error) {
+		// Create the cache from GetActorEventsRaw
+		fields := util.GenFilterFields([]string{"sector-activated"})
+		filter := types.ActorEventFilter{
+			TipSetKey: &tsk,
+			Fields:    fields,
+		}
+		events, err := t.GetActorEventsRaw(ctx, &filter)
+		log.Errorf("Got the event for sector-activated: %v", len(events))
+		if err == nil && events != nil {
+			for _, event := range events {
+				_, actorEvent, _ := util.HandleEventEntries(event)
+				// Try to get the key
+				val, found := actorEvent["sector"]
+				if found {
+					if sectorID, ok := val.(uint64); ok {
+						sectorIDs[sectorID] = true
+					}
 				}
 			}
+			added := t.sectorAddedCache.Add(cacheKey, &sectorIDs)
+			if added {
+				log.Errorf("Save the cache.")
+			}
+		} else {
+			return nil, err
 		}
-		added := t.sectorAddedCache.Add(cacheKey, &sectorIDs)
-		if added {
-			log.Errorf("Save the cache.")
-		}
-	} else {
+
+		return sectorIDs, nil
+	})
+	if err != nil {
 		return nil, err
 	}
+
 	return sectorIDs, nil
 }
 
