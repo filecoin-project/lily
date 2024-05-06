@@ -413,10 +413,7 @@ func (t *DataSource) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipS
 					}
 				}
 			}
-			added := t.sectorAddedCache.Add(cacheKey, sectorIDs)
-			if added {
-				log.Errorf("SectorAdded save the cache.")
-			}
+			t.sectorAddedCache.Add(cacheKey, sectorIDs)
 		} else {
 			return nil, err
 		}

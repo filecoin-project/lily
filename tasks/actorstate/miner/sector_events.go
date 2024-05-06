@@ -124,7 +124,7 @@ func (SectorEventsExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		}
 	}
 
-	sectorAddedIDs, err := node.GetSectorAddedFromEvent(ctx, extState.CurrentTipSet().Key())
+	sectorAddedIDs, err := node.GetSectorAddedFromEvent(ctx, extState.ParentTipSet().Key())
 
 	// transform the sector events to a model.
 	sectorEventModel, err := ExtractSectorEvents(extState, sectorChanges, preCommitChanges, sectorStateChanges, sectorAddedIDs)
