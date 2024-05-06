@@ -90,6 +90,6 @@ func (m *MockActorStateAPI) DiffSectors(ctx context.Context, addr address.Addres
 	return changes.(*miner.SectorChanges), err
 }
 
-func (m *MockActorStateAPI) GetSectorAddedFromEvent(ctx context.Context, tsk types.TipSetKey) (map[uint64]bool, error) {
+func (m *MockActorStateAPI) GetSectorAddedFromEvent(_ context.Context, _ types.TipSetKey) (map[uint64]bool, error) {
 	return nil, nil
 }
