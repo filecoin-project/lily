@@ -5,6 +5,7 @@ package market
 import (
 	"bytes"
 	"fmt"
+	"sync"
 
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -348,13 +349,19 @@ func (s *state13) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) (map
 
 			dealIDsCopy := make([]abi.DealID, len(dealIDs))
 			copy(dealIDsCopy, dealIDs)
-
+			var wg = &sync.WaitGroup{}
 			for _, dealID := range dealIDsCopy {
-				_, found := dealIDMap[dealID]
-				if found {
-					dealIDSectorMap[dealID] = abi.SectorID{Miner: abi.ActorID(provider), Number: abi.SectorNumber(sectorNumber)}
-				}
+				wg.Add(1)
+				go func(dealID abi.DealID) {
+					_, found := dealIDMap[dealID]
+					if found {
+						dealIDSectorMap[dealID] = abi.SectorID{Miner: abi.ActorID(provider), Number: abi.SectorNumber(sectorNumber)}
+					}
+					wg.Done()
+				}(dealID)
 			}
+
+			wg.Wait()
 
 			return nil
 		})
