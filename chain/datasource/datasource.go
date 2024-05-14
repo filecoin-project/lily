@@ -328,6 +328,7 @@ func (t *DataSource) SetMinerChanges(ctx context.Context, tsk types.TipSetKey, m
 	}
 	defer span.End()
 	key := genMinerChangeCacheKey(tsk)
+	log.Infof("Get the minerChanges count: %v", len(minerChanges))
 	t.addressCache.Add(key, minerChanges)
 	return nil
 }
