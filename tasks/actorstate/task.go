@@ -20,6 +20,8 @@ import (
 	"github.com/filecoin-project/lily/tasks"
 
 	"github.com/filecoin-project/lotus/chain/types"
+
+	mineractors "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 )
 
 // A Task processes the extraction of actor state according the allowed types in its extractor map.
@@ -157,6 +159,14 @@ func (t *Task) ProcessActors(ctx context.Context, current *types.TipSet, execute
 	return data, report, nil
 }
 
+func convertCidArrayToMap(cids []cid.Cid) map[cid.Cid]bool {
+	result := make(map[cid.Cid]bool, 0)
+	for _, actorCid := range cids {
+		result[actorCid] = true
+	}
+	return result
+}
+
 func (t *Task) startActorStateExtraction(ctx context.Context, current, executed *types.TipSet, actors tasks.ActorStateChangeDiff, results chan *ActorStateResult) {
 	var wg sync.WaitGroup
 
@@ -165,6 +175,16 @@ func (t *Task) startActorStateExtraction(ctx context.Context, current, executed 
 	if err != nil {
 		log.Errorf("Error at setting IdRobustAddressMap: %v", err)
 	}
+
+	// Setup the cache for miner
+	minerCodeMap := convertCidArrayToMap(mineractors.AllCodes())
+	minerAddress := make(map[address.Address]bool)
+	for addr, ac := range actors {
+		if _, found := minerCodeMap[ac.Actor.Code]; found {
+			minerAddress[addr] = true
+		}
+	}
+	t.node.SetMinerChanges(ctx, current.Key(), minerAddress)
 
 	for addr, ac := range actors {
 		addr := addr

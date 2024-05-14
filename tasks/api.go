@@ -89,6 +89,8 @@ type DataSource interface {
 	GetActorEventsRaw(ctx context.Context, filter *types.ActorEventFilter) ([]*types.ActorEvent, error)
 
 	SetIdRobustAddressMap(ctx context.Context, tsk types.TipSetKey) error
+	SetMinerChanges(ctx context.Context, tsk types.TipSetKey, minerChanges map[address.Address]bool) error
+	GetMinerChanges(ctx context.Context, tsk types.TipSetKey) (map[address.Address]bool, error)
 	LookupRobustAddress(ctx context.Context, idAddr address.Address, tsk types.TipSetKey) (address.Address, error)
 	GetSectorAddedFromEvent(ctx context.Context, tsk types.TipSetKey) (map[uint64]bool, error)
 }

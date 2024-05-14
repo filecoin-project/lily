@@ -69,6 +69,7 @@ type ActorStateAPI interface {
 
 	MinerLoad(store adt.Store, act *types.Actor) (miner.State, error)
 
+	GetMinerChanges(ctx context.Context, tsk types.TipSetKey) (map[address.Address]bool, error)
 	LookupRobustAddress(ctx context.Context, idAddr address.Address, tsk types.TipSetKey) (address.Address, error)
 
 	GetSectorAddedFromEvent(ctx context.Context, tsk types.TipSetKey) (map[uint64]bool, error)

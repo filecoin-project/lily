@@ -313,6 +313,41 @@ func genIdAddressCacheKey(tsk types.TipSetKey) string {
 	return key
 }
 
+func genMinerChangeCacheKey(tsk types.TipSetKey) string {
+	key, keyErr := asKey(KeyPrefix{"MinerChange"}, tsk)
+	if keyErr != nil {
+		return "MinerChangeDefaultkey"
+	}
+	return key
+}
+
+func (t *DataSource) SetMinerChanges(ctx context.Context, tsk types.TipSetKey, minerChanges map[address.Address]bool) error {
+	ctx, span := otel.Tracer("").Start(ctx, "DataSource.SetIdAddressMap")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.String("tipset", tsk.String()))
+	}
+	defer span.End()
+	key := genMinerChangeCacheKey(tsk)
+	t.addressCache.Add(key, minerChanges)
+	return nil
+}
+
+func (t *DataSource) GetMinerChanges(ctx context.Context, tsk types.TipSetKey) (map[address.Address]bool, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "DataSource.SetIdAddressMap")
+	if span.IsRecording() {
+		span.SetAttributes(attribute.String("tipset", tsk.String()))
+	}
+	defer span.End()
+	key := genMinerChangeCacheKey(tsk)
+	value, ok := t.addressCache.Get(key)
+	if ok {
+		minerChanges := value.(map[address.Address]bool)
+		return minerChanges, nil
+	}
+
+	return nil, fmt.Errorf("Can not find the cache for minerChange")
+}
+
 func (t *DataSource) SetIdRobustAddressMap(ctx context.Context, tsk types.TipSetKey) error {
 	ctx, span := otel.Tracer("").Start(ctx, "DataSource.SetIdAddressMap")
 	if span.IsRecording() {
