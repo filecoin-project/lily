@@ -87,12 +87,7 @@ func (SectorDealStateExtractor) Extract(ctx context.Context, a actorstate.ActorI
 		dealIDs[mod.ID] = true
 	}
 
-	minerIDs, err := market.DiffSectorProviderMap(ctx, ec.Store, ec.PrevState, ec.CurrState)
-	if err != nil {
-		log.Errorf("Get the errors during getting miners: %v", err)
-	}
-
-	dealIDSectorMap, err := ec.CurrState.GetProviderSectorsByDealID(dealIDs, minerIDs)
+	dealIDSectorMap, err := ec.CurrState.GetProviderSectorsByDealID(dealIDs, ec.PrevState)
 	if err != nil {
 		log.Errorf("Get the errors during getting provider sectors: %v", err)
 		return nil, nil

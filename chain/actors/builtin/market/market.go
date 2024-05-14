@@ -107,11 +107,13 @@ type State interface {
 	DealStatesAmtBitwidth() int
 
 	GetProviderSectors() (map[abi.SectorID][]abi.DealID, error)
-	GetProviderSectorsByDealID(map[abi.DealID]bool, map[string]bool) (map[abi.DealID]abi.SectorID, error)
+	GetProviderSectorsByDealID(map[abi.DealID]bool, State) (map[abi.DealID]abi.SectorID, error)
 
 	ProviderSectorMapHashFunction() func(input []byte) []byte
 
 	ProviderSectorsMap() (adt.Map, error)
+
+	ProviderSectorsCid() cid.Cid
 
 	ProviderSectorsHamtBitwidth() int
 }

@@ -364,24 +364,26 @@ func (s *state{{.v}}) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error
 	{{end}}
    }
 
-func (s *state{{.v}}) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool,  minerIDs map[string]bool) (map[abi.DealID]abi.SectorID, error) {
+func (s *state{{.v}}) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool,  prevState State) (map[abi.DealID]abi.SectorID, error) {
 	{{if (le .v 12)}}
 	return nil, nil
 	{{else}}
 	sectorDeals, err := adt{{.v}}.AsMap(s.store, s.State.ProviderSectors, market{{.v}}.ProviderSectorsHamtBitwidth)
+	prevSectorDeals, err := adt{{.v}}.AsMap(s.store, prevState.ProviderSectorsCid(), market{{.v}}.ProviderSectorsHamtBitwidth)
 	if err != nil {
 		return nil, err
 	}
 	var sectorMapRoot cbg.CborCid
+	var prevSectorMapRoot cbg.CborCid
 	dealIDSectorMap := make(map[abi.DealID]abi.SectorID)
 	err = sectorDeals.ForEach(&sectorMapRoot, func(providerID string) error {
-		_, providerFound := minerIDs[providerID]
-		if !providerFound {
+		provider, err := abi.ParseUIntKey(providerID)
+		if err != nil {
 			return nil
 		}
 		
-		provider, err := abi.ParseUIntKey(providerID)
-		if err != nil {
+		found, _ := prevSectorDeals.Get(abi.IntKey(int64(provider)), &prevSectorMapRoot)
+		if found && prevSectorMapRoot == sectorMapRoot{
 			return nil
 		}
 
@@ -434,5 +436,15 @@ func (s *state{{.v}}) ProviderSectorsMap() (adt.Map, error) {
 {{else}}
 func (s *state{{.v}}) ProviderSectorsMap() (adt.Map, error) {
 	return nil, nil
+}
+{{end}}
+
+{{if (ge .v 13)}}
+func (s *state{{.v}}) ProviderSectorsCid() cid.Cid {
+	return s.State.ProviderSectors
+}
+{{else}}
+func (s *state{{.v}}) ProviderSectorsCid() cid.Cid {
+	return cid.Cid{}
 }
 {{end}}

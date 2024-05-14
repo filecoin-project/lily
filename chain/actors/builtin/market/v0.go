@@ -281,7 +281,7 @@ func (s *state0) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error) {
 
 }
 
-func (s *state0) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, minerIDs map[string]bool) (map[abi.DealID]abi.SectorID, error) {
+func (s *state0) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, prevState State) (map[abi.DealID]abi.SectorID, error) {
 
 	return nil, nil
 
@@ -298,4 +298,8 @@ func (s *state0) ProviderSectorMapHashFunction() func(input []byte) []byte {
 
 func (s *state0) ProviderSectorsMap() (adt.Map, error) {
 	return nil, nil
+}
+
+func (s *state0) ProviderSectorsCid() cid.Cid {
+	return cid.Cid{}
 }

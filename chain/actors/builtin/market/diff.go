@@ -35,12 +35,7 @@ func DiffSectorProviderMap(ctx context.Context, store adt.Store, pre, cur State)
 		return providerIDs, err
 	}
 	for _, change := range changes {
-		switch change.Type {
-		case hamt.Add:
-			providerIDs[change.Key] = true
-		case hamt.Modify:
-			providerIDs[change.Key] = true
-		}
+		providerIDs[change.Key] = true
 	}
 
 	return providerIDs, nil
