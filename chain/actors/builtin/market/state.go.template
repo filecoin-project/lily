@@ -5,7 +5,6 @@ package market
 import (
 	"bytes"
 	"fmt"
-	"sync"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	lotusactors "github.com/filecoin-project/lotus/chain/actors"
@@ -16,6 +15,12 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lotus/chain/actors/adt"
+
+{{if (le .v 1)}}
+    sha256simd "github.com/minio/sha256-simd"
+{{else}}
+    "crypto/sha256"
+{{end}}
 
 {{if (ge .v 9)}}
 	verifregtypes "github.com/filecoin-project/lotus/chain/actors/builtin/verifreg"
@@ -270,6 +275,16 @@ func (s *state{{.v}}) DealProposalsAmtBitwidth() int {
     return {{if (ge .v 3)}}market{{.v}}.ProposalsAmtBitwidth{{else}}3{{end}}
 }
 
+{{if (ge .v 13)}}
+func (s *state{{.v}}) ProviderSectorsHamtBitwidth() int {
+    return {{if (ge .v 3)}}market{{.v}}.ProviderSectorsHamtBitwidth{{else}}3{{end}}
+}
+{{else}}
+func (s *state{{.v}}) ProviderSectorsHamtBitwidth() int {
+    return 0
+}
+{{end}}
+
 func (s *state{{.v}}) DealStatesAmtBitwidth() int {
     return {{if (ge .v 3)}}market{{.v}}.StatesAmtBitwidth{{else}}3{{end}}
 }
@@ -349,7 +364,7 @@ func (s *state{{.v}}) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error
 	{{end}}
    }
 
-func (s *state{{.v}}) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) (map[abi.DealID]abi.SectorID, error) {
+func (s *state{{.v}}) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool,  minerIDs map[string]bool) (map[abi.DealID]abi.SectorID, error) {
 	{{if (le .v 12)}}
 	return nil, nil
 	{{else}}
@@ -360,6 +375,11 @@ func (s *state{{.v}}) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) 
 	var sectorMapRoot cbg.CborCid
 	dealIDSectorMap := make(map[abi.DealID]abi.SectorID)
 	err = sectorDeals.ForEach(&sectorMapRoot, func(providerID string) error {
+		_, providerFound := minerIDs[providerID]
+		if !providerFound {
+			return nil
+		}
+		
 		provider, err := abi.ParseUIntKey(providerID)
 		if err != nil {
 			return nil
@@ -379,20 +399,12 @@ func (s *state{{.v}}) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) 
 
 			dealIDsCopy := make([]abi.DealID, len(dealIDs))
 			copy(dealIDsCopy, dealIDs)
-			var wg = &sync.WaitGroup{}
 			for _, dealID := range dealIDsCopy {
-				wg.Add(1)
-				go func(dealID abi.DealID) {
-					_, found := dealIDMap[dealID]
-					if found {
-						dealIDSectorMap[dealID] = abi.SectorID{Miner: abi.ActorID(provider), Number: abi.SectorNumber(sectorNumber)}
-					}
-					wg.Done()
-				}(dealID)
+				_, found := dealIDMap[dealID]
+				if found {
+					dealIDSectorMap[dealID] = abi.SectorID{Miner: abi.ActorID(provider), Number: abi.SectorNumber(sectorNumber)}
+				}
 			} 
-
-			wg.Wait()
-
 			return nil
 		})
 		return err
@@ -400,3 +412,27 @@ func (s *state{{.v}}) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) 
 	return dealIDSectorMap, err
 	{{end}}
    }
+
+func (s *state{{.v}}) ProviderSectorMapHashFunction() func(input []byte) []byte {
+    {{if (le .v 1)}}
+        return func(input []byte) []byte {
+            res := sha256simd.Sum256(input)
+            return res[:]
+        }
+    {{else}}
+        return func(input []byte) []byte {
+            res := sha256.Sum256(input)
+            return res[:]
+        }
+    {{end}}
+}
+
+{{if (ge .v 13)}}
+func (s *state{{.v}}) ProviderSectorsMap() (adt.Map, error) {
+	return adt{{.v}}.AsMap(s.store, s.State.ProviderSectors, market{{.v}}.ProviderSectorsHamtBitwidth)
+}
+{{else}}
+func (s *state{{.v}}) ProviderSectorsMap() (adt.Map, error) {
+	return nil, nil
+}
+{{end}}

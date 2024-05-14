@@ -4,6 +4,7 @@ package market
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 
 	"github.com/ipfs/go-cid"
@@ -249,6 +250,10 @@ func (s *state2) DealProposalsAmtBitwidth() int {
 	return 3
 }
 
+func (s *state2) ProviderSectorsHamtBitwidth() int {
+	return 0
+}
+
 func (s *state2) DealStatesAmtBitwidth() int {
 	return 3
 }
@@ -276,8 +281,21 @@ func (s *state2) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error) {
 
 }
 
-func (s *state2) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) (map[abi.DealID]abi.SectorID, error) {
+func (s *state2) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, minerIDs map[string]bool) (map[abi.DealID]abi.SectorID, error) {
 
 	return nil, nil
 
+}
+
+func (s *state2) ProviderSectorMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state2) ProviderSectorsMap() (adt.Map, error) {
+	return nil, nil
 }

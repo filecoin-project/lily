@@ -4,8 +4,8 @@ package market
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"fmt"
-	"sync"
 
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -246,6 +246,10 @@ func (s *state13) DealProposalsAmtBitwidth() int {
 	return market13.ProposalsAmtBitwidth
 }
 
+func (s *state13) ProviderSectorsHamtBitwidth() int {
+	return market13.ProviderSectorsHamtBitwidth
+}
+
 func (s *state13) DealStatesAmtBitwidth() int {
 	return market13.StatesAmtBitwidth
 }
@@ -321,7 +325,7 @@ func (s *state13) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error) {
 
 }
 
-func (s *state13) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) (map[abi.DealID]abi.SectorID, error) {
+func (s *state13) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, minerIDs map[string]bool) (map[abi.DealID]abi.SectorID, error) {
 
 	sectorDeals, err := adt13.AsMap(s.store, s.State.ProviderSectors, market13.ProviderSectorsHamtBitwidth)
 	if err != nil {
@@ -330,6 +334,11 @@ func (s *state13) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) (map
 	var sectorMapRoot cbg.CborCid
 	dealIDSectorMap := make(map[abi.DealID]abi.SectorID)
 	err = sectorDeals.ForEach(&sectorMapRoot, func(providerID string) error {
+		_, providerFound := minerIDs[providerID]
+		if !providerFound {
+			return nil
+		}
+
 		provider, err := abi.ParseUIntKey(providerID)
 		if err != nil {
 			return nil
@@ -349,24 +358,29 @@ func (s *state13) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) (map
 
 			dealIDsCopy := make([]abi.DealID, len(dealIDs))
 			copy(dealIDsCopy, dealIDs)
-			var wg = &sync.WaitGroup{}
 			for _, dealID := range dealIDsCopy {
-				wg.Add(1)
-				go func(dealID abi.DealID) {
-					_, found := dealIDMap[dealID]
-					if found {
-						dealIDSectorMap[dealID] = abi.SectorID{Miner: abi.ActorID(provider), Number: abi.SectorNumber(sectorNumber)}
-					}
-					wg.Done()
-				}(dealID)
+				_, found := dealIDMap[dealID]
+				if found {
+					dealIDSectorMap[dealID] = abi.SectorID{Miner: abi.ActorID(provider), Number: abi.SectorNumber(sectorNumber)}
+				}
 			}
-
-			wg.Wait()
-
 			return nil
 		})
 		return err
 	})
 	return dealIDSectorMap, err
 
+}
+
+func (s *state13) ProviderSectorMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state13) ProviderSectorsMap() (adt.Map, error) {
+	return adt13.AsMap(s.store, s.State.ProviderSectors, market13.ProviderSectorsHamtBitwidth)
 }

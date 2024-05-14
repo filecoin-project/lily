@@ -8,6 +8,7 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/go-amt-ipld/v4"
+	"github.com/filecoin-project/go-hamt-ipld/v3"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/adt/diff"
@@ -16,6 +17,34 @@ import (
 )
 
 var log = logging.Logger("lily/actors")
+
+func DiffSectorProviderMap(ctx context.Context, store adt.Store, pre, cur State) (map[string]bool, error) {
+	providerIDs := make(map[string]bool, 0)
+	preMap, err := pre.ProviderSectorsMap()
+	if err != nil {
+		return providerIDs, err
+	}
+
+	curMap, err := cur.ProviderSectorsMap()
+	if err != nil {
+		return providerIDs, err
+	}
+
+	changes, err := diff.Hamt(ctx, preMap, curMap, store, store, hamt.UseHashFunction(hamt.HashFunc(pre.ProviderSectorMapHashFunction())), hamt.UseTreeBitWidth(pre.ProviderSectorsHamtBitwidth()))
+	if err != nil {
+		return providerIDs, err
+	}
+	for _, change := range changes {
+		switch change.Type {
+		case hamt.Add:
+			providerIDs[change.Key] = true
+		case hamt.Modify:
+			providerIDs[change.Key] = true
+		}
+	}
+
+	return providerIDs, nil
+}
 
 func DiffDealProposals(ctx context.Context, store adt.Store, pre, cur State) (*DealProposalChanges, error) {
 	preOpts := pre.DealProposalsAmtBitwidth()

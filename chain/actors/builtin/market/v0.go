@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/ipfs/go-cid"
+	sha256simd "github.com/minio/sha256-simd"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
@@ -249,6 +250,10 @@ func (s *state0) DealProposalsAmtBitwidth() int {
 	return 3
 }
 
+func (s *state0) ProviderSectorsHamtBitwidth() int {
+	return 0
+}
+
 func (s *state0) DealStatesAmtBitwidth() int {
 	return 3
 }
@@ -276,8 +281,21 @@ func (s *state0) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error) {
 
 }
 
-func (s *state0) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) (map[abi.DealID]abi.SectorID, error) {
+func (s *state0) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, minerIDs map[string]bool) (map[abi.DealID]abi.SectorID, error) {
 
 	return nil, nil
 
+}
+
+func (s *state0) ProviderSectorMapHashFunction() func(input []byte) []byte {
+
+	return func(input []byte) []byte {
+		res := sha256simd.Sum256(input)
+		return res[:]
+	}
+
+}
+
+func (s *state0) ProviderSectorsMap() (adt.Map, error) {
+	return nil, nil
 }
