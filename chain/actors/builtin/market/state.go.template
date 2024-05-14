@@ -5,6 +5,7 @@ package market
 import (
 	"bytes"
 	"fmt"
+	"sync"
 
 	"github.com/filecoin-project/go-state-types/abi"
 	lotusactors "github.com/filecoin-project/lotus/chain/actors"
@@ -376,7 +377,9 @@ func (s *state{{.v}}) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, 
 	var sectorMapRoot cbg.CborCid
 	var prevSectorMapRoot cbg.CborCid
 	dealIDSectorMap := make(map[abi.DealID]abi.SectorID)
+	var wg = &sync.WaitGroup{}
 	err = sectorDeals.ForEach(&sectorMapRoot, func(providerID string) error {
+		wg.Add(1)
 		provider, err := abi.ParseUIntKey(providerID)
 		if err != nil {
 			return nil
@@ -409,8 +412,10 @@ func (s *state{{.v}}) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, 
 			} 
 			return nil
 		})
+		wg.Done()
 		return err
 	})
+	wg.Wait()
 	return dealIDSectorMap, err
 	{{end}}
    }

@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"sync"
 
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
@@ -335,7 +336,9 @@ func (s *state13) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, prev
 	var sectorMapRoot cbg.CborCid
 	var prevSectorMapRoot cbg.CborCid
 	dealIDSectorMap := make(map[abi.DealID]abi.SectorID)
+	var wg = &sync.WaitGroup{}
 	err = sectorDeals.ForEach(&sectorMapRoot, func(providerID string) error {
+		wg.Add(1)
 		provider, err := abi.ParseUIntKey(providerID)
 		if err != nil {
 			return nil
@@ -368,8 +371,10 @@ func (s *state13) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, prev
 			}
 			return nil
 		})
+		wg.Done()
 		return err
 	})
+	wg.Wait()
 	return dealIDSectorMap, err
 
 }
