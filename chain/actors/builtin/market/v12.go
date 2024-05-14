@@ -11,6 +11,7 @@ import (
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	market12 "github.com/filecoin-project/go-state-types/builtin/v12/market"
@@ -293,7 +294,7 @@ func (s *state12) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error) {
 
 }
 
-func (s *state12) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, prevState State) (map[abi.DealID]abi.SectorID, error) {
+func (s *state12) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, prevState State, minerChanges map[address.Address]bool) (map[abi.DealID]abi.SectorID, error) {
 
 	return nil, nil
 

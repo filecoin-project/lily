@@ -6,12 +6,12 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
-	"sync"
 
 	"github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	market13 "github.com/filecoin-project/go-state-types/builtin/v13/market"
@@ -326,7 +326,7 @@ func (s *state13) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error) {
 
 }
 
-func (s *state13) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, prevState State) (map[abi.DealID]abi.SectorID, error) {
+func (s *state13) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, prevState State, minerChanges map[address.Address]bool) (map[abi.DealID]abi.SectorID, error) {
 
 	sectorDeals, err := adt13.AsMap(s.store, s.State.ProviderSectors, market13.ProviderSectorsHamtBitwidth)
 	prevSectorDeals, err := adt13.AsMap(s.store, prevState.ProviderSectorsCid(), market13.ProviderSectorsHamtBitwidth)
@@ -336,9 +336,17 @@ func (s *state13) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, prev
 	var sectorMapRoot cbg.CborCid
 	var prevSectorMapRoot cbg.CborCid
 	dealIDSectorMap := make(map[abi.DealID]abi.SectorID)
-	var wg = &sync.WaitGroup{}
+	minerChangesID := make(map[string]bool)
+	for key, val := range minerChanges {
+		minerChangesID[key.String()] = val
+	}
+
 	err = sectorDeals.ForEach(&sectorMapRoot, func(providerID string) error {
-		wg.Add(1)
+		minerAddress := "f0" + providerID
+		_, foundMiner := minerChangesID[minerAddress]
+		if !foundMiner {
+			return nil
+		}
 		provider, err := abi.ParseUIntKey(providerID)
 		if err != nil {
 			return nil
@@ -371,10 +379,8 @@ func (s *state13) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, prev
 			}
 			return nil
 		})
-		wg.Done()
 		return err
 	})
-	wg.Wait()
 	return dealIDSectorMap, err
 
 }

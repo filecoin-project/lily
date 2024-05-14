@@ -14,14 +14,13 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lily/chain/actors/builtin"
+	mineractors "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/metrics"
 	"github.com/filecoin-project/lily/model"
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
 
 	"github.com/filecoin-project/lotus/chain/types"
-
-	mineractors "github.com/filecoin-project/lily/chain/actors/builtin/miner"
 )
 
 // A Task processes the extraction of actor state according the allowed types in its extractor map.

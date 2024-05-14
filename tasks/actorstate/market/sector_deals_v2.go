@@ -93,7 +93,7 @@ func (SectorDealStateExtractor) Extract(ctx context.Context, a actorstate.ActorI
 		log.Errorf("Get the miner change: %v", minerChanges)
 	}
 
-	dealIDSectorMap, err := ec.CurrState.GetProviderSectorsByDealID(dealIDs, ec.PrevState)
+	dealIDSectorMap, err := ec.CurrState.GetProviderSectorsByDealID(dealIDs, ec.PrevState, minerChanges)
 	if err != nil {
 		log.Errorf("Get the errors during getting provider sectors: %v", err)
 		return nil, nil
