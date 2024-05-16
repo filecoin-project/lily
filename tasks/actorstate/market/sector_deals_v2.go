@@ -7,7 +7,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
-	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lily/chain/actors/builtin/market"
 	"github.com/filecoin-project/lily/model"
@@ -75,30 +74,32 @@ func (SectorDealStateExtractor) Extract(ctx context.Context, a actorstate.ActorI
 	proposals, _ := ec.CurrState.Proposals()
 
 	for _, add := range changes.Added {
-		dealProposal, found, _ := proposals.Get(add.ID)
-		minerID := address.Address{}
-		if found {
-			minerID = dealProposal.Provider
-		}
-		out = append(out, &miner.MinerSectorDealV2{
+		minerSectorDeal := miner.MinerSectorDealV2{
 			Height:   int64(ec.CurrTs.Height()),
 			DealID:   uint64(add.ID),
 			SectorID: uint64(add.Deal.SectorNumber()),
-			MinerID:  minerID.String(),
-		})
+		}
+
+		// Get the miner address from dealProposal
+		if dealProposal, found, err := proposals.Get(add.ID); found && err == nil {
+			minerSectorDeal.MinerID = dealProposal.Provider.String()
+		}
+
+		out = append(out, &minerSectorDeal)
 	}
 	for _, mod := range changes.Modified {
-		dealProposal, found, _ := proposals.Get(mod.ID)
-		minerID := address.Address{}
-		if found {
-			minerID = dealProposal.Provider
-		}
-		out = append(out, &miner.MinerSectorDealV2{
+		minerSectorDeal := miner.MinerSectorDealV2{
 			Height:   int64(ec.CurrTs.Height()),
 			DealID:   uint64(mod.ID),
 			SectorID: uint64(mod.To.SectorNumber()),
-			MinerID:  minerID.String(),
-		})
+		}
+
+		// Get the miner address from dealProposal
+		if dealProposal, found, err := proposals.Get(mod.ID); found && err == nil {
+			minerSectorDeal.MinerID = dealProposal.Provider.String()
+		}
+
+		out = append(out, &minerSectorDeal)
 	}
 
 	return out, nil
