@@ -70,24 +70,29 @@ func (SectorDealStateExtractor) Extract(ctx context.Context, a actorstate.ActorI
 	}
 
 	dealIDs := make(map[abi.DealID]bool, 0)
+	sectorIDs := make(map[abi.SectorNumber]bool, 0)
 
 	out := make(miner.MinerSectorDealListV2, 0)
 	for _, add := range changes.Added {
 		out = append(out, &miner.MinerSectorDealV2{
-			Height: int64(ec.CurrTs.Height()),
-			DealID: uint64(add.ID),
+			Height:   int64(ec.CurrTs.Height()),
+			DealID:   uint64(add.ID),
+			SectorID: uint64(add.Deal.SectorNumber()),
 		})
 		dealIDs[add.ID] = true
+		sectorIDs[add.Deal.SectorNumber()] = true
 	}
 	for _, mod := range changes.Modified {
 		out = append(out, &miner.MinerSectorDealV2{
-			Height: int64(ec.CurrTs.Height()),
-			DealID: uint64(mod.ID),
+			Height:   int64(ec.CurrTs.Height()),
+			DealID:   uint64(mod.ID),
+			SectorID: uint64(mod.To.SectorNumber()),
 		})
 		dealIDs[mod.ID] = true
+		sectorIDs[mod.To.SectorNumber()] = true
 	}
 
-	dealIDSectorMap, err := ec.CurrState.GetProviderSectorsByDealID(dealIDs)
+	dealIDSectorMap, err := ec.CurrState.GetProviderSectorsByDealID(dealIDs, sectorIDs)
 	if err != nil {
 		log.Errorf("Get the errors during getting provider sectors: %v", err)
 		return nil, nil

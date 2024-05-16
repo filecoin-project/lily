@@ -3,13 +3,14 @@ package util
 import (
 	"strconv"
 
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/fxamacker/cbor/v2"
 	"github.com/ipfs/go-cid"
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/codec/dagcbor"
 	"github.com/ipld/go-ipld-prime/node/basicnode"
 	"github.com/ipld/go-ipld-prime/node/bindnode"
+
+	"github.com/filecoin-project/lotus/chain/types"
 )
 
 type KVEvent struct {

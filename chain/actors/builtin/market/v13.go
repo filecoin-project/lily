@@ -326,7 +326,7 @@ func (s *state13) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error) {
 
 }
 
-func (s *state13) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) (map[abi.DealID]abi.SectorID, error) {
+func (s *state13) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, sectorIDMap map[abi.SectorNumber]bool) (map[abi.DealID]abi.SectorID, error) {
 
 	sectorDeals, err := adt13.AsMap(s.store, s.State.ProviderSectors, market13.ProviderSectorsHamtBitwidth)
 	if err != nil {
@@ -350,6 +350,10 @@ func (s *state13) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) (map
 			sectorNumber, err := abi.ParseUIntKey(sectorID)
 			if err != nil {
 				return err
+			}
+
+			if _, found := sectorIDMap[abi.SectorNumber(sectorNumber)]; !found {
+				return nil
 			}
 
 			dealIDsCopy := make([]abi.DealID, len(dealIDs))
