@@ -135,6 +135,12 @@ func (d dealStateV13) SectorStartEpoch() abi.ChainEpoch {
 	return d.ds13.SectorStartEpoch
 }
 
+func (d dealStateV13) SectorNumber() abi.SectorNumber {
+
+	return d.ds13.SectorNumber
+
+}
+
 func (d dealStateV13) LastUpdatedEpoch() abi.ChainEpoch {
 	return d.ds13.LastUpdatedEpoch
 }
