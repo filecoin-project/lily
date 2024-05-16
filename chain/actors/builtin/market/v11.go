@@ -135,6 +135,12 @@ func (d dealStateV11) SectorStartEpoch() abi.ChainEpoch {
 	return d.ds11.SectorStartEpoch
 }
 
+func (d dealStateV11) SectorNumber() abi.SectorNumber {
+
+	return 0
+
+}
+
 func (d dealStateV11) LastUpdatedEpoch() abi.ChainEpoch {
 	return d.ds11.LastUpdatedEpoch
 }
@@ -288,7 +294,7 @@ func (s *state11) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error) {
 
 }
 
-func (s *state11) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) (map[abi.DealID]abi.SectorID, error) {
+func (s *state11) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, sectorIDMap map[abi.SectorNumber]bool) (map[abi.DealID]abi.SectorID, error) {
 
 	return nil, nil
 

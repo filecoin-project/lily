@@ -156,6 +156,14 @@ func (d dealStateV{{.v}}) SectorStartEpoch() abi.ChainEpoch {
 	return d.ds{{.v}}.SectorStartEpoch
 }
 
+func (d dealStateV{{.v}}) SectorNumber() abi.SectorNumber {
+	{{if ge .v 13}}
+	return d.ds{{.v}}.SectorNumber
+	{{else}}
+	return 0
+	{{end}}
+}
+
 func (d dealStateV{{.v}}) LastUpdatedEpoch() abi.ChainEpoch {
 	return d.ds{{.v}}.LastUpdatedEpoch
 }
@@ -348,7 +356,7 @@ func (s *state{{.v}}) GetProviderSectors() (map[abi.SectorID][]abi.DealID, error
 	{{end}}
    }
 
-func (s *state{{.v}}) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) (map[abi.DealID]abi.SectorID, error) {
+func (s *state{{.v}}) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool, sectorIDMap map[abi.SectorNumber]bool) (map[abi.DealID]abi.SectorID, error) {
 	{{if (le .v 12)}}
 	return nil, nil
 	{{else}}
@@ -374,6 +382,10 @@ func (s *state{{.v}}) GetProviderSectorsByDealID(dealIDMap map[abi.DealID]bool) 
 			sectorNumber, err := abi.ParseUIntKey(sectorID)
 			if err != nil {
 				return err
+			}
+
+			if _, found := sectorIDMap[abi.SectorNumber(sectorNumber)]; !found {
+				return nil
 			}
 
 			dealIDsCopy := make([]abi.DealID, len(dealIDs))

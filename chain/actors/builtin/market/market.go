@@ -107,7 +107,7 @@ type State interface {
 	DealStatesAmtBitwidth() int
 
 	GetProviderSectors() (map[abi.SectorID][]abi.DealID, error)
-	GetProviderSectorsByDealID(map[abi.DealID]bool) (map[abi.DealID]abi.SectorID, error)
+	GetProviderSectorsByDealID(map[abi.DealID]bool, map[abi.SectorNumber]bool) (map[abi.DealID]abi.SectorID, error)
 }
 
 type BalanceTable interface {
@@ -135,6 +135,7 @@ type DealProposal = markettypes.DealProposal
 type DealLabel = markettypes.DealLabel
 
 type DealState interface {
+	SectorNumber() abi.SectorNumber
 	SectorStartEpoch() abi.ChainEpoch // -1 if not yet included in proven sector
 	LastUpdatedEpoch() abi.ChainEpoch // -1 if deal state never updated
 	SlashEpoch() abi.ChainEpoch       // -1 if deal never slashed
@@ -194,6 +195,10 @@ func (e *emptyDealState) LastUpdatedEpoch() abi.ChainEpoch {
 
 func (e *emptyDealState) SlashEpoch() abi.ChainEpoch {
 	return -1
+}
+
+func (e *emptyDealState) SectorNumber() abi.SectorNumber {
+	return 0
 }
 
 func (e *emptyDealState) Equals(other DealState) bool {
