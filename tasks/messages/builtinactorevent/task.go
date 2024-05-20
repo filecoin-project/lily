@@ -79,6 +79,12 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		StateRoot: current.ParentState().String(),
 	}
 
+	_, err := t.node.MessageExecutions(ctx, current, executed)
+	if err != nil {
+		report.ErrorsDetected = fmt.Errorf("getting messages executions for tipset: %w", err)
+		return nil, report, nil
+	}
+
 	events, err := t.node.GetActorEventsRaw(ctx, filter)
 	if err != nil {
 		log.Errorf("GetActorEventsRaw[pTs: %v, pHeight: %v, cTs: %v, cHeight: %v] err: %v", executed.Key().String(), executed.Height(), current.Key().String(), current.Height(), err)
