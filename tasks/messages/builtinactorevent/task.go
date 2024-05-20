@@ -72,7 +72,6 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	tsKey := executed.Key()
 	filter := &types.ActorEventFilter{
 		TipSetKey: &tsKey,
-		Fields:    fields,
 	}
 
 	report := &visormodel.ProcessingReport{
