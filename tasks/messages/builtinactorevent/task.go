@@ -72,12 +72,17 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	tsKey := executed.Key()
 	filter := &types.ActorEventFilter{
 		TipSetKey: &tsKey,
-		Fields:    fields,
 	}
 
 	report := &visormodel.ProcessingReport{
 		Height:    int64(current.Height()),
 		StateRoot: current.ParentState().String(),
+	}
+
+	_, err := t.node.MessageExecutions(ctx, current, executed)
+	if err != nil {
+		report.ErrorsDetected = fmt.Errorf("getting messages executions for tipset: %w", err)
+		return nil, report, nil
 	}
 
 	events, err := t.node.GetActorEventsRaw(ctx, filter)
