@@ -5,6 +5,37 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.19.0"></a>
+
+## [v0.19.0] - 2023-05-31
+
+* feat: add new column for builtin_actor_events by @Terryhung in https://github.com/filecoin-project/lily/pull/1290
+* feat: add new task miner sector deal v2 by @Terryhung in https://github.com/filecoin-project/lily/pull/1293
+* feat: refine the provider sectors func by @Terryhung in https://github.com/filecoin-project/lily/pull/1294
+* feat: Refine the filter for the GetActorEventsRaw by @Terryhung in https://github.com/filecoin-project/lily/pull/1295
+* feat: refine the miner sector event by using builtin_actor_event function by @Terryhung in https://github.com/filecoin-project/lily/pull/1298
+* feat: refine miner_sector_deal_v2 performance issue by @Terryhung in https://github.com/filecoin-project/lily/pull/1300
+* feat: refactor builtin actor event by @Terryhung in https://github.com/filecoin-project/lily/pull/1301
+
+
+## DATABASE MIGRATION
+This release includes a migration which must be applied before deploying against an existing database.
+* [1.37](https://github.com/filecoin-project/lily/blob/master/schemas/v1/37_change_pkey_builtin_actor_event.go)
+* [1.38](https://github.com/filecoin-project/lily/blob/master/schemas/v1/38_miner_sector_info_v2.go)
+
+### Feat
+* feat: add new column for builtin_actor_events (https://github.com/filecoin-project/lily/pull/1290)
+* feat: add new task miner sector deal v2 (https://github.com/filecoin-project/lily/pull/1293)
+* feat: refine the provider sectors func (https://github.com/filecoin-project/lily/pull/1294)
+* feat: Refine the filter for the GetActorEventsRaw (https://github.com/filecoin-project/lily/pull/1295)
+* feat: refine the miner sector event by using builtin_actor_event function (https://github.com/filecoin-project/lily/pull/1298)
+* feat: refine miner_sector_deal_v2 performance issue (https://github.com/filecoin-project/lily/pull/1300)
+* feat: refactor builtin actor event (https://github.com/filecoin-project/lily/pull/1301)
+
+### Fix
+* fix: use the new library to parse cid from builtin_actor_event (https://github.com/filecoin-project/lily/pull/1292)
+
+
 <a name="v0.18.0"></a>
 
 ## [v0.18.0] - 2023-04-23
