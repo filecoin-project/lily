@@ -21,7 +21,6 @@ var log = logging.Logger("lily/config")
 // Conf defines the daemon config. It should be compatible with Lotus config.
 type Conf struct {
 	config.Common
-	Client     config.Client
 	Chainstore config.Chainstore
 	Storage    StorageConf
 	Queue      QueueConfig
@@ -180,10 +179,6 @@ func DefaultConf() *Conf {
 				DirectPeers:  nil,
 				RemoteTracer: "/dns4/pubsub-tracer.filecoin.io/tcp/4001/p2p/QmTd6UvR47vUidRNZ1ZKXHrAFhqTJAD27rKL9XYghEKgKX",
 			},
-		},
-		Client: config.Client{
-			SimultaneousTransfersForStorage:   config.DefaultSimultaneousTransfers,
-			SimultaneousTransfersForRetrieval: config.DefaultSimultaneousTransfers,
 		},
 	}
 }
