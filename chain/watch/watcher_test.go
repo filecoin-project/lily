@@ -56,7 +56,7 @@ func init() {
 
 func TestWatcher(t *testing.T) {
 	if testing.Short() {
-		t.Skip("short testing requested")
+		t.Skip("short testing requested!")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
