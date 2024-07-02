@@ -2,6 +2,7 @@ package chaineconomics
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,7 @@ func (m *MockedChainEconomicsLens) Store() adt.Store {
 	return nil
 }
 func (m *MockedChainEconomicsLens) MinerLoad(store adt.Store, act *types.Actor) (miner.State, error) {
-	return nil, nil
+	return nil, fmt.Errorf("test error")
 }
 
 func TestEconomicsModelExtraction(t *testing.T) {
