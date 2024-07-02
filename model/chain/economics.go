@@ -22,6 +22,7 @@ type ChainEconomics struct {
 	BurntFil            string   `pg:"type:numeric,notnull"`
 	LockedFil           string   `pg:"type:numeric,notnull"`
 	FilReserveDisbursed string   `pg:"type:numeric,notnull"`
+	LockedFilV2         string   `pg:"type:numeric,notnull"`
 }
 
 type ChainEconomicsV0 struct {

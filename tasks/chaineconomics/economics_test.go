@@ -2,18 +2,23 @@ package chaineconomics
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/testutil"
 
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
 )
 
+// nolint: revive
 type MockedChainEconomicsLens struct {
 	mock.Mock
 }
@@ -21,6 +26,16 @@ type MockedChainEconomicsLens struct {
 func (m *MockedChainEconomicsLens) CirculatingSupply(ctx context.Context, ts *types.TipSet) (api.CirculatingSupply, error) {
 	args := m.Called(ctx, ts)
 	return args.Get(0).(api.CirculatingSupply), args.Error(1)
+}
+
+func (m *MockedChainEconomicsLens) Actor(_ context.Context, _ address.Address, _ types.TipSetKey) (*types.Actor, error) {
+	return nil, nil
+}
+func (m *MockedChainEconomicsLens) Store() adt.Store {
+	return nil
+}
+func (m *MockedChainEconomicsLens) MinerLoad(_ adt.Store, _ *types.Actor) (miner.State, error) {
+	return nil, fmt.Errorf("test error")
 }
 
 func TestEconomicsModelExtraction(t *testing.T) {
