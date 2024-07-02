@@ -7,7 +7,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/testutil"
 
 	"github.com/filecoin-project/lotus/api"
@@ -21,6 +24,16 @@ type MockedChainEconomicsLens struct {
 func (m *MockedChainEconomicsLens) CirculatingSupply(ctx context.Context, ts *types.TipSet) (api.CirculatingSupply, error) {
 	args := m.Called(ctx, ts)
 	return args.Get(0).(api.CirculatingSupply), args.Error(1)
+}
+
+func (m *MockedChainEconomicsLens) Actor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error) {
+	return nil, nil
+}
+func (m *MockedChainEconomicsLens) Store() adt.Store {
+	return nil
+}
+func (m *MockedChainEconomicsLens) MinerLoad(store adt.Store, act *types.Actor) (miner.State, error) {
+	return nil, nil
 }
 
 func TestEconomicsModelExtraction(t *testing.T) {
