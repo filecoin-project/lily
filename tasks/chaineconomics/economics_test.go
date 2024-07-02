@@ -18,6 +18,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 )
 
+// nolint: revive
 type MockedChainEconomicsLens struct {
 	mock.Mock
 }
@@ -27,13 +28,13 @@ func (m *MockedChainEconomicsLens) CirculatingSupply(ctx context.Context, ts *ty
 	return args.Get(0).(api.CirculatingSupply), args.Error(1)
 }
 
-func (m *MockedChainEconomicsLens) Actor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error) {
+func (m *MockedChainEconomicsLens) Actor(_ context.Context, _ address.Address, _ types.TipSetKey) (*types.Actor, error) {
 	return nil, nil
 }
 func (m *MockedChainEconomicsLens) Store() adt.Store {
 	return nil
 }
-func (m *MockedChainEconomicsLens) MinerLoad(store adt.Store, act *types.Actor) (miner.State, error) {
+func (m *MockedChainEconomicsLens) MinerLoad(_ adt.Store, _ *types.Actor) (miner.State, error) {
 	return nil, fmt.Errorf("test error")
 }
 
