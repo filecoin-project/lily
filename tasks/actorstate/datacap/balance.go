@@ -25,7 +25,7 @@ var log = logging.Logger("lily/tasks/datacap")
 
 type BalanceExtractor struct{}
 
-func (BalanceExtractor) getAddressType(verifierMap adt.Map, verifiedClientsMap adt.Map, address address.Address) string {
+func (BalanceExtractor) getAddressType(verifierMap adt.Map, address address.Address) string {
 	var dcap abi.StoragePower
 	ok, err := verifierMap.Get(abi.IdAddrKey(address), &dcap)
 
@@ -37,16 +37,7 @@ func (BalanceExtractor) getAddressType(verifierMap adt.Map, verifiedClientsMap a
 		return datacapmodel.Verifier
 	}
 
-	ok, err = verifiedClientsMap.Get(abi.IdAddrKey(address), &dcap)
-	if err != nil {
-		log.Errorf("got error of get verifiedClient address: %v from map, error: %v", address, err)
-	}
-
-	if ok {
-		return datacapmodel.VerifierClient
-	}
-
-	return "Undefined"
+	return datacapmodel.VerifierClient
 }
 
 func (extractor BalanceExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
@@ -66,15 +57,16 @@ func (extractor BalanceExtractor) Extract(ctx context.Context, a actorstate.Acto
 	if err != nil {
 		log.Errorf("get error during getting verifierMap: %v", err)
 	}
-	verifierClientsMap, err := verifregState.VerifiedClientsMap()
-	if err != nil {
-		log.Errorf("get error during getting verifiedClientsMap: %v", err)
-	}
 
 	ec, err := NewBalanceExtractionContext(ctx, a, node)
 	if err != nil {
 		return nil, err
 	}
+
+	verifregState.ForEachVerifier(func(addr address.Address, dcap abi.StoragePower) error {
+		log.Infof("Get verifier: %v", addr)
+		return nil
+	})
 
 	var balances datacapmodel.DataCapBalanceList
 
@@ -87,7 +79,7 @@ func (extractor BalanceExtractor) Extract(ctx context.Context, a actorstate.Acto
 				Address:     addr.String(),
 				Event:       datacapmodel.Added,
 				DataCap:     dcap.String(),
-				AddressType: extractor.getAddressType(verifierMap, verifierClientsMap, addr),
+				AddressType: extractor.getAddressType(verifierMap, addr),
 			})
 			return nil
 		}); err != nil {
@@ -108,7 +100,7 @@ func (extractor BalanceExtractor) Extract(ctx context.Context, a actorstate.Acto
 			Address:     change.Address.String(),
 			Event:       datacapmodel.Added,
 			DataCap:     change.DataCap.String(),
-			AddressType: extractor.getAddressType(verifierMap, verifierClientsMap, change.Address),
+			AddressType: extractor.getAddressType(verifierMap, change.Address),
 		})
 
 	}
@@ -120,7 +112,7 @@ func (extractor BalanceExtractor) Extract(ctx context.Context, a actorstate.Acto
 			Address:     change.Address.String(),
 			Event:       datacapmodel.Removed,
 			DataCap:     change.DataCap.String(),
-			AddressType: extractor.getAddressType(verifierMap, verifierClientsMap, change.Address),
+			AddressType: extractor.getAddressType(verifierMap, change.Address),
 		})
 	}
 
@@ -131,7 +123,7 @@ func (extractor BalanceExtractor) Extract(ctx context.Context, a actorstate.Acto
 			Address:     change.After.Address.String(),
 			Event:       datacapmodel.Modified,
 			DataCap:     change.After.DataCap.String(),
-			AddressType: extractor.getAddressType(verifierMap, verifierClientsMap, change.After.Address),
+			AddressType: extractor.getAddressType(verifierMap, change.After.Address),
 		})
 	}
 	return balances, nil
