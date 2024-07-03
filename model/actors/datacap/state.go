@@ -10,9 +10,11 @@ import (
 )
 
 const (
-	Added    = "ADDED"
-	Removed  = "REMOVED"
-	Modified = "MODIFIED"
+	Added          = "ADDED"
+	Removed        = "REMOVED"
+	Modified       = "MODIFIED"
+	Verifier       = "verifier"
+	VerifierClient = "verifier_client"
 )
 
 type DataCapBalance struct {
@@ -20,8 +22,9 @@ type DataCapBalance struct {
 	StateRoot string `pg:",pk,notnull"`
 	Address   string `pg:",pk,notnull"`
 
-	Event   string `pg:",notnull,type:data_cap_balance_event_type"`
-	DataCap string `pg:",notnull,type:numeric"`
+	Event       string `pg:",notnull,type:data_cap_balance_event_type"`
+	DataCap     string `pg:",notnull,type:numeric"`
+	AddressType string `pg:",notnull"`
 }
 
 func (d *DataCapBalance) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {

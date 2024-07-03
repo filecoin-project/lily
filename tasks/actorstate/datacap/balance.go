@@ -10,25 +10,44 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/datacap"
+	"github.com/filecoin-project/lily/chain/actors/builtin/verifreg"
 	"github.com/filecoin-project/lily/model"
 	datacapmodel "github.com/filecoin-project/lily/model/actors/datacap"
 	"github.com/filecoin-project/lily/tasks/actorstate"
 
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/specs-actors/actors/builtin"
 )
 
 var log = logging.Logger("lily/tasks/datacap")
 
 type BalanceExtractor struct{}
 
-func (BalanceExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
+func (BalanceExtractor) getAddressType(verifierMap adt.Map, address address.Address) string {
+	var dcap abi.StoragePower
+	ok, err := verifierMap.Get(abi.AddrKey(address), &dcap)
+	if ok && err == nil {
+		return datacapmodel.Verifier
+	}
+	return datacapmodel.VerifierClient
+}
+
+func (extractor BalanceExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (model.Persistable, error) {
 	log.Debugw("extract", zap.String("extractor", "BalanceExtractor"), zap.Inline(a))
 	ctx, span := otel.Tracer("").Start(ctx, "BalancesExtractor.Extract")
 	defer span.End()
 	if span.IsRecording() {
 		span.SetAttributes(a.Attributes()...)
 	}
+
+	verifregActor, actorErr := node.Actor(ctx, builtin.VerifiedRegistryActorAddr, a.Current.Key())
+	if actorErr != nil {
+		log.Errorf("get error during getting VerifiedRegistry: %v", actorErr)
+	}
+	verifregState, _ := verifreg.Load(node.Store(), verifregActor)
+	verifierMap, _ := verifregState.VerifiersMap()
 
 	ec, err := NewBalanceExtractionContext(ctx, a, node)
 	if err != nil {
@@ -41,11 +60,12 @@ func (BalanceExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, nod
 	if !ec.HasPreviousState() {
 		if err := ec.CurrState.ForEachClient(func(addr address.Address, dcap abi.StoragePower) error {
 			balances = append(balances, &datacapmodel.DataCapBalance{
-				Height:    int64(ec.CurrTs.Height()),
-				StateRoot: ec.CurrTs.ParentState().String(),
-				Address:   addr.String(),
-				Event:     datacapmodel.Added,
-				DataCap:   dcap.String(),
+				Height:      int64(ec.CurrTs.Height()),
+				StateRoot:   ec.CurrTs.ParentState().String(),
+				Address:     addr.String(),
+				Event:       datacapmodel.Added,
+				DataCap:     dcap.String(),
+				AddressType: extractor.getAddressType(verifierMap, addr),
 			})
 			return nil
 		}); err != nil {
@@ -61,31 +81,35 @@ func (BalanceExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, nod
 
 	for _, change := range changes.Added {
 		balances = append(balances, &datacapmodel.DataCapBalance{
-			Height:    int64(ec.CurrTs.Height()),
-			StateRoot: ec.CurrTs.ParentState().String(),
-			Address:   change.Address.String(),
-			Event:     datacapmodel.Added,
-			DataCap:   change.DataCap.String(),
+			Height:      int64(ec.CurrTs.Height()),
+			StateRoot:   ec.CurrTs.ParentState().String(),
+			Address:     change.Address.String(),
+			Event:       datacapmodel.Added,
+			DataCap:     change.DataCap.String(),
+			AddressType: extractor.getAddressType(verifierMap, change.Address),
 		})
+
 	}
 
 	for _, change := range changes.Removed {
 		balances = append(balances, &datacapmodel.DataCapBalance{
-			Height:    int64(ec.CurrTs.Height()),
-			StateRoot: ec.CurrTs.ParentState().String(),
-			Address:   change.Address.String(),
-			Event:     datacapmodel.Removed,
-			DataCap:   change.DataCap.String(),
+			Height:      int64(ec.CurrTs.Height()),
+			StateRoot:   ec.CurrTs.ParentState().String(),
+			Address:     change.Address.String(),
+			Event:       datacapmodel.Removed,
+			DataCap:     change.DataCap.String(),
+			AddressType: extractor.getAddressType(verifierMap, change.Address),
 		})
 	}
 
 	for _, change := range changes.Modified {
 		balances = append(balances, &datacapmodel.DataCapBalance{
-			Height:    int64(ec.CurrTs.Height()),
-			StateRoot: ec.CurrTs.ParentState().String(),
-			Address:   change.After.Address.String(),
-			Event:     datacapmodel.Modified,
-			DataCap:   change.After.DataCap.String(),
+			Height:      int64(ec.CurrTs.Height()),
+			StateRoot:   ec.CurrTs.ParentState().String(),
+			Address:     change.After.Address.String(),
+			Event:       datacapmodel.Modified,
+			DataCap:     change.After.DataCap.String(),
+			AddressType: extractor.getAddressType(verifierMap, change.After.Address),
 		})
 	}
 	return balances, nil
