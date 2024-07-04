@@ -109,13 +109,13 @@ func (extractor BalanceExtractor) Extract(ctx context.Context, a actorstate.Acto
 	}
 	preVerifregState, _ := verifreg.Load(node.Store(), preVerifregActor)
 
-	veriferChanges, err := verifreg.DiffVerifiers(ctx, node.Store(), preVerifregState, currentVerifregState)
+	verifierChanges, err := verifreg.DiffVerifiers(ctx, node.Store(), preVerifregState, currentVerifregState)
 	if err != nil {
 		return nil, fmt.Errorf("diffing verified registry verifiers: %w", err)
 	}
 
 	// a new verifier was added
-	for _, change := range veriferChanges.Added {
+	for _, change := range verifierChanges.Added {
 		balances = append(balances, &datacapmodel.DataCapBalance{
 			Height:      int64(ec.CurrTs.Height()),
 			StateRoot:   ec.CurrTs.ParentState().String(),
@@ -126,7 +126,7 @@ func (extractor BalanceExtractor) Extract(ctx context.Context, a actorstate.Acto
 		})
 	}
 	// a verifier was removed
-	for _, change := range changes.Removed {
+	for _, change := range verifierChanges.Removed {
 		balances = append(balances, &datacapmodel.DataCapBalance{
 			Height:      int64(ec.CurrTs.Height()),
 			StateRoot:   ec.CurrTs.ParentState().String(),
@@ -137,7 +137,7 @@ func (extractor BalanceExtractor) Extract(ctx context.Context, a actorstate.Acto
 		})
 	}
 	// an existing verifier's DataCap changed
-	for _, change := range changes.Modified {
+	for _, change := range verifierChanges.Modified {
 		balances = append(balances, &datacapmodel.DataCapBalance{
 			Height:      int64(ec.CurrTs.Height()),
 			StateRoot:   ec.CurrTs.ParentState().String(),
