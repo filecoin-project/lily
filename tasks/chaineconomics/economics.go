@@ -8,8 +8,13 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/lily/chain/actors/adt"
+	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/model"
 	chainmodel "github.com/filecoin-project/lily/model/chain"
+
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -22,6 +27,9 @@ type EconomicsStorage interface {
 
 type ChainEconomicsLens interface {
 	CirculatingSupply(context.Context, *types.TipSet) (api.CirculatingSupply, error)
+	Actor(ctx context.Context, addr address.Address, tsk types.TipSetKey) (*types.Actor, error)
+	Store() adt.Store
+	MinerLoad(store adt.Store, act *types.Actor) (miner.State, error)
 }
 
 func ExtractChainEconomicsModel(ctx context.Context, node ChainEconomicsLens, ts *types.TipSet) (*chainmodel.ChainEconomics, error) {
@@ -36,7 +44,7 @@ func ExtractChainEconomicsModel(ctx context.Context, node ChainEconomicsLens, ts
 		return nil, fmt.Errorf("get circulating supply: %w", err)
 	}
 
-	return &chainmodel.ChainEconomics{
+	chainEconomic := &chainmodel.ChainEconomics{
 		Height:              int64(ts.Height()),
 		ParentStateRoot:     ts.ParentState().String(),
 		VestedFil:           supply.FilVested.String(),
@@ -45,5 +53,18 @@ func ExtractChainEconomicsModel(ctx context.Context, node ChainEconomicsLens, ts
 		LockedFil:           supply.FilLocked.String(),
 		CirculatingFil:      supply.FilCirculating.String(),
 		FilReserveDisbursed: supply.FilReserveDisbursed.String(),
-	}, nil
+	}
+
+	m, err := node.Actor(ctx, ts.MinTicketBlock().Miner, ts.Key())
+
+	if err != nil {
+		return chainEconomic, nil
+	}
+
+	minerState, err := node.MinerLoad(node.Store(), m)
+	if err == nil && minerState.ActorVersion() >= actorstypes.Version14 {
+		chainEconomic.LockedFilV2 = supply.FilLocked.String()
+	}
+
+	return chainEconomic, nil
 }
