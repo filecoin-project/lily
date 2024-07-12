@@ -15,9 +15,9 @@ import (
 	"github.com/filecoin-project/lily/model"
 	datacapmodel "github.com/filecoin-project/lily/model/actors/datacap"
 	"github.com/filecoin-project/lily/tasks/actorstate"
+	"github.com/filecoin-project/specs-actors/actors/builtin"
 
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/specs-actors/actors/builtin"
 )
 
 var log = logging.Logger("lily/tasks/datacap")
