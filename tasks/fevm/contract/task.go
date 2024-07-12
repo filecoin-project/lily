@@ -60,11 +60,11 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	errs := []error{}
 	for _, change := range actorChanges {
 		actor := change.Actor
-		if actor.Address == nil {
+		if actor.DelegatedAddress == nil {
 			continue
 		}
 
-		if !util.IsEVMAddress(ctx, p.node, *actor.Address, current.Key()) {
+		if !util.IsEVMAddress(ctx, p.node, *actor.DelegatedAddress, current.Key()) {
 			continue
 		}
 
@@ -75,7 +75,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			continue
 		}
 
-		ethAddress, err := ethtypes.EthAddressFromFilecoinAddress(*actor.Address)
+		ethAddress, err := ethtypes.EthAddressFromFilecoinAddress(*actor.DelegatedAddress)
 		if err != nil {
 			log.Errorf("Error at getting eth address: [actor cid: %v] err: %v", actor.Code.String(), err)
 			errs = append(errs, err)
@@ -98,7 +98,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 		out = append(out, &fevm.FEVMContract{
 			Height:       int64(current.Height()),
-			ActorID:      actor.Address.String(),
+			ActorID:      actor.DelegatedAddress.String(),
 			EthAddress:   ethAddress.String(),
 			ByteCode:     hex.EncodeToString(byteCode),
 			ByteCodeHash: hex.EncodeToString(byteCodeHash[:]),

@@ -281,12 +281,12 @@ func (t *DataSource) ActorInfo(ctx context.Context, addr address.Address, tsk ty
 	act, err := t.Actor(ctx, addr, tsk)
 	actorInfo := tasks.ActorInfo{}
 	if err == nil {
-		if act.Address == nil {
+		if act.DelegatedAddress == nil {
 			robustAddress, err := t.LookupRobustAddress(ctx, addr, tsk)
 			if err == nil {
-				act.Address = &robustAddress
+				act.DelegatedAddress = &robustAddress
 			} else {
-				act.Address = &addr
+				act.DelegatedAddress = &addr
 			}
 		}
 		actorInfo.Actor = act
