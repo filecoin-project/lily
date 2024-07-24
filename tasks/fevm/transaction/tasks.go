@@ -89,23 +89,32 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		}
 
 		txnObj := &fevm.FEVMTransaction{
-			Height:               int64(current.Height()),
-			Hash:                 txn.Hash.String(),
-			ChainID:              uint64(txn.ChainID),
-			Nonce:                uint64(txn.Nonce),
-			From:                 txn.From.String(),
-			Value:                txn.Value.Int.String(),
-			Type:                 uint64(txn.Type),
-			Input:                txn.Input.String(),
-			Gas:                  uint64(txn.Gas),
-			MaxFeePerGas:         txn.MaxFeePerGas.Int.String(),
-			MaxPriorityFeePerGas: txn.MaxPriorityFeePerGas.Int.String(),
-			V:                    txn.V.String(),
-			R:                    txn.R.String(),
-			S:                    txn.S.String(),
-			FromFilecoinAddress:  fromActorInfo.Actor.Address.String(),
-			FromActorName:        fromActorInfo.ActorName,
-			MessageCid:           message.Cid.String(),
+			Height:        int64(current.Height()),
+			Hash:          txn.Hash.String(),
+			ChainID:       uint64(txn.ChainID),
+			Nonce:         uint64(txn.Nonce),
+			From:          txn.From.String(),
+			Value:         txn.Value.Int.String(),
+			Type:          uint64(txn.Type),
+			Input:         txn.Input.String(),
+			Gas:           uint64(txn.Gas),
+			V:             txn.V.String(),
+			R:             txn.R.String(),
+			S:             txn.S.String(),
+			FromActorName: fromActorInfo.ActorName,
+			MessageCid:    message.Cid.String(),
+		}
+
+		if fromActorInfo.Actor.DelegatedAddress != nil {
+			txnObj.FromFilecoinAddress = fromActorInfo.Actor.DelegatedAddress.String()
+		}
+
+		if txn.MaxFeePerGas != nil {
+			txnObj.MaxFeePerGas = txn.MaxFeePerGas.Int.String()
+		}
+
+		if txn.MaxPriorityFeePerGas != nil {
+			txnObj.MaxPriorityFeePerGas = txn.MaxPriorityFeePerGas.Int.String()
 		}
 
 		if txn.BlockHash != nil {
@@ -124,9 +133,9 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 			// Get the Actor from ActorInfo
 			toActorInfo, err := p.node.ActorInfo(ctx, message.Message.To, current.Key())
-			if err == nil && toActorInfo.Actor != nil && toActorInfo.Actor.Address != nil {
+			if err == nil && toActorInfo.Actor != nil && toActorInfo.Actor.DelegatedAddress != nil {
 				txnObj.ToActorName = toActorInfo.ActorName
-				txnObj.ToFilecoinAddress = toActorInfo.Actor.Address.String()
+				txnObj.ToFilecoinAddress = toActorInfo.Actor.DelegatedAddress.String()
 			}
 		}
 

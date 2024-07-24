@@ -54,7 +54,7 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 	out := make(actordumps.FEVMActorDumpList, 0)
 	errs := []error{}
 	for _, actor := range actors[manifest.EvmKey] {
-		if actor.Address == nil {
+		if actor.DelegatedAddress == nil {
 			continue
 		}
 
@@ -65,7 +65,7 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 			continue
 		}
 
-		ethAddress, err := ethtypes.EthAddressFromFilecoinAddress(*actor.Address)
+		ethAddress, err := ethtypes.EthAddressFromFilecoinAddress(*actor.DelegatedAddress)
 		if err != nil {
 			log.Errorf("Error at getting eth address: [actor cid: %v] err: %v", actor.Code.String(), err)
 			errs = append(errs, err)
@@ -87,7 +87,7 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 		}
 		out = append(out, &actordumps.FEVMActorDump{
 			Height:       int64(current.Height()),
-			ActorID:      actor.Address.String(),
+			ActorID:      actor.DelegatedAddress.String(),
 			ActorName:    builtin.ActorNameByCode(actor.Code),
 			EthAddress:   ethAddress.String(),
 			ByteCode:     hex.EncodeToString(byteCode),
@@ -99,7 +99,7 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 	}
 
 	for _, actor := range append(actors[manifest.EthAccountKey], actors[manifest.PlaceholderKey]...) {
-		ethAddress, err := ethtypes.EthAddressFromFilecoinAddress(*actor.Address)
+		ethAddress, err := ethtypes.EthAddressFromFilecoinAddress(*actor.DelegatedAddress)
 		if err != nil {
 			log.Errorf("Error at getting eth address: [actor cid: %v] err: %v", actor.Code.String(), err)
 			errs = append(errs, err)
@@ -107,7 +107,7 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 		}
 		out = append(out, &actordumps.FEVMActorDump{
 			Height:     int64(current.Height()),
-			ActorID:    actor.Address.String(),
+			ActorID:    actor.DelegatedAddress.String(),
 			ActorName:  builtin.ActorNameByCode(actor.Code),
 			EthAddress: ethAddress.String(),
 			Balance:    actor.Balance.String(),

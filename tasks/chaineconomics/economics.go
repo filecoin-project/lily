@@ -9,12 +9,11 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/filecoin-project/go-address"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/model"
 	chainmodel "github.com/filecoin-project/lily/model/chain"
-
-	actorstypes "github.com/filecoin-project/go-state-types/actors"
 
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"

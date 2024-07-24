@@ -42,7 +42,7 @@ func (p *Task) updateAddressFromID(ctx context.Context, current *types.TipSet, m
 	if err != nil {
 		return err
 	}
-	minerDumpObj.OwnerAddress = ownerActor.Actor.Address.String()
+	minerDumpObj.OwnerAddress = ownerActor.Actor.DelegatedAddress.String()
 
 	// Worker Address
 	workerAddr, err := address.NewFromString(minerDumpObj.WorkerID)
@@ -53,7 +53,7 @@ func (p *Task) updateAddressFromID(ctx context.Context, current *types.TipSet, m
 	if err != nil {
 		return err
 	}
-	minerDumpObj.WorkerAddress = workerActor.Actor.Address.String()
+	minerDumpObj.WorkerAddress = workerActor.Actor.DelegatedAddress.String()
 
 	// Beneficiary Address
 	beneficiaryAddr, err := address.NewFromString(minerDumpObj.Beneficiary)
@@ -64,7 +64,7 @@ func (p *Task) updateAddressFromID(ctx context.Context, current *types.TipSet, m
 	if err != nil {
 		return err
 	}
-	minerDumpObj.BeneficiaryAddress = beneficiaryWorkerActor.Actor.Address.String()
+	minerDumpObj.BeneficiaryAddress = beneficiaryWorkerActor.Actor.DelegatedAddress.String()
 
 	return nil
 }
@@ -111,7 +111,7 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 			if err != nil {
 				return err
 			}
-			minerDumpObj.MinerAddress = minerActor.Actor.Address.String()
+			minerDumpObj.MinerAddress = minerActor.Actor.DelegatedAddress.String()
 
 			minerState, err := builtinminer.Load(p.node.Store(), minerActor.Actor)
 			if err != nil {
