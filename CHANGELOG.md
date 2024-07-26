@@ -5,9 +5,26 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
+<a name="v0.20.0"></a>
+
+## [v0.20.0] - 2024-07-26
+
+## DATABASE MIGRATION
+This release includes a migration which must be applied before deploying against an existing database.
+* [1.39](https://github.com/filecoin-project/lily/blob/master/schemas/v1/39_add_locked_fil_v2_chaineconomics.go)
+
+### Feat
+* feat: add new column for locked_fil_v2 in chain_economics and address_type in data_cap_balances (https://github.com/filecoin-project/lily/pull/1306)
+
+### Chore
+* chore: upgrade the lotus version to 1.27.0 (https://github.com/filecoin-project/lily/pull/1303)
+* chore: upgrade lotus to 1.27.1 (https://github.com/filecoin-project/lily/pull/1304)
+* chore: update the actor versions (https://github.com/filecoin-project/lily/pull/1305)
+* chore: update lotus version for nv23 (1.28.0-rc5) (https://github.com/filecoin-project/lily/pull/1307)
+
 <a name="v0.19.0"></a>
 
-## [v0.19.0] - 2023-05-31
+## [v0.19.0] - 2024-05-31
 
 ## DATABASE MIGRATION
 This release includes a migration which must be applied before deploying against an existing database.
@@ -29,7 +46,7 @@ This release includes a migration which must be applied before deploying against
 
 <a name="v0.18.0"></a>
 
-## [v0.18.0] - 2023-04-23
+## [v0.18.0] - 2024-04-23
 
 ## DATABASE MIGRATION
 This release includes a migration which must be applied before deploying against an existing database.
