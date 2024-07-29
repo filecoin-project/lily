@@ -16,9 +16,9 @@ import (
 	prom "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"go.opencensus.io/stats/view"
-	octrace "go.opencensus.io/trace"
 	"go.opencensus.io/zpages"
 	"go.opentelemetry.io/otel"
+
 	"go.opentelemetry.io/otel/bridge/opencensus"
 
 	"github.com/filecoin-project/lily/metrics"
@@ -175,9 +175,8 @@ func setupTracing(flags LilyTracingOpts) error {
 		return fmt.Errorf("setup tracing: %w", err)
 	}
 	otel.SetTracerProvider(tp)
-	// upgrades libraries (lotus) that use OpenCensus to OpenTelemetry to facilitate a migration.
-	tracer := tp.Tracer(LilyTracingFlags.ServiceName)
-	octrace.DefaultTracer = opencensus.NewTracer(tracer)
+
+	opencensus.InstallTraceBridge(opencensus.WithTracerProvider(tp))
 
 	return nil
 }
