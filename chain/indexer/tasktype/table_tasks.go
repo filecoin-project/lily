@@ -41,6 +41,7 @@ const (
 	IDAddress                      = "id_addresses"
 	GasOutputs                     = "derived_gas_outputs"
 	ChainEconomics                 = "chain_economics"
+	ChainEconomicsV2               = "chain_economics_v2"
 	ChainConsensus                 = "chain_consensus"
 	MultisigApproval               = "multisig_approvals"
 	VerifiedRegistryVerifier       = "verified_registry_verifier"
@@ -96,6 +97,7 @@ var AllTableTasks = []string{
 	IDAddress,
 	GasOutputs,
 	ChainEconomics,
+	ChainEconomicsV2,
 	ChainConsensus,
 	MultisigApproval,
 	VerifiedRegistryVerifier,
@@ -152,6 +154,7 @@ var TableLookup = map[string]struct{}{
 	IDAddress:                      {},
 	GasOutputs:                     {},
 	ChainEconomics:                 {},
+	ChainEconomicsV2:               {},
 	ChainConsensus:                 {},
 	MultisigApproval:               {},
 	VerifiedRegistryVerifier:       {},
@@ -208,6 +211,7 @@ var TableComment = map[string]string{
 	IDAddress:                      `IDAddress contains a mapping of ID addresses to robust addresses from the init actor’s state.`,
 	GasOutputs:                     ``,
 	ChainEconomics:                 ``,
+	ChainEconomicsV2:               ``,
 	ChainConsensus:                 ``,
 	MultisigApproval:               ``,
 	VerifiedRegistryVerifier:       ``,
@@ -326,6 +330,7 @@ var TableFieldComments = map[string]map[string]string{
 	},
 	GasOutputs:                     {},
 	ChainEconomics:                 {},
+	ChainEconomicsV2:               {},
 	ChainConsensus:                 {},
 	MultisigApproval:               {},
 	VerifiedRegistryVerifier:       {},

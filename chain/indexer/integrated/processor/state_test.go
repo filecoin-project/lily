@@ -384,7 +384,7 @@ func TestMakeProcessorsTipSet(t *testing.T) {
 	require.Equal(t, headers.NewTask(), proc.TipsetProcessors[tasktype.BlockHeader])
 	require.Equal(t, parents.NewTask(), proc.TipsetProcessors[tasktype.BlockParent])
 	require.Equal(t, drand.NewTask(), proc.TipsetProcessors[tasktype.DrandBlockEntrie])
-	require.Equal(t, chaineconomics.NewTask(nil), proc.TipsetProcessors[tasktype.ChainEconomics])
+	require.Equal(t, chaineconomics.NewTask(nil, 0), proc.TipsetProcessors[tasktype.ChainEconomics])
 	require.Equal(t, consensus.NewTask(nil), proc.TipsetProcessors[tasktype.ChainConsensus])
 	require.Equal(t, gaseconomy.NewTask(nil), proc.TipsetProcessors[tasktype.MessageGasEconomy])
 }
@@ -443,7 +443,7 @@ func TestMakeProcessorsAllTasks(t *testing.T) {
 	proc, err := processor.MakeProcessors(nil, append(tasktype.AllTableTasks, processor.BuiltinTaskName))
 	require.NoError(t, err)
 	require.Len(t, proc.ActorProcessors, 26)
-	require.Len(t, proc.TipsetProcessors, 10)
+	require.Len(t, proc.TipsetProcessors, 11)
 	require.Len(t, proc.TipsetsProcessors, 15)
 	require.Len(t, proc.ReportProcessors, 1)
 }
