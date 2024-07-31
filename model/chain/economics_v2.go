@@ -23,7 +23,7 @@ type ChainEconomicsV2 struct {
 	FilReserveDisbursed string   `pg:"type:numeric,notnull"`
 }
 
-func (c *ChainEconomicsV2) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (c *ChainEconomicsV2) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	ctx, _ = tag.New(ctx, tag.Upsert(metrics.Table, "chain_economics"))
 
 	metrics.RecordCount(ctx, metrics.PersistModel, 1)
@@ -32,7 +32,7 @@ func (c *ChainEconomicsV2) Persist(ctx context.Context, s model.StorageBatch, ve
 
 type ChainEconomicsV2List []*ChainEconomicsV2
 
-func (l ChainEconomicsV2List) Persist(ctx context.Context, s model.StorageBatch, version model.Version) error {
+func (l ChainEconomicsV2List) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
 	if len(l) == 0 {
 		return nil
 	}
