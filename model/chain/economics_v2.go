@@ -12,7 +12,7 @@ import (
 )
 
 type ChainEconomicsV2 struct {
-	tableName           struct{} `pg:"chain_economics"` // nolint: structcheck
+	tableName           struct{} `pg:"chain_economics_v2"` // nolint: structcheck
 	Height              int64    `pg:",pk,notnull,use_zero"`
 	ParentStateRoot     string   `pg:",pk,notnull"`
 	CirculatingFilV2    string   `pg:"type:numeric,notnull"`
