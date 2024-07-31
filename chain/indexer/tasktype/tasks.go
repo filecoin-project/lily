@@ -83,6 +83,7 @@ var TaskLookup = map[string][]string{
 	},
 	ChainEconomicsTask: {
 		ChainEconomics,
+		ChainEconomicsV2,
 	},
 	MultisigApprovalsTask: {
 		MultisigApproval,
