@@ -60,7 +60,7 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 		},
 		{
 			taskAlias: tasktype.ChainEconomicsTask,
-			tasks:     []string{tasktype.ChainEconomics},
+			tasks:     []string{tasktype.ChainEconomics, tasktype.ChainEconomicsV2},
 		},
 		{
 			taskAlias: tasktype.MultisigApprovalsTask,

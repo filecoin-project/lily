@@ -90,6 +90,7 @@ var Models = []interface{}{
 	(*derived.GasOutputs)(nil),
 
 	(*chain.ChainEconomics)(nil),
+	(*chain.ChainEconomicsV2)(nil),
 	(*chain.ChainConsensus)(nil),
 
 	(*msapprovals.MultisigApproval)(nil),
