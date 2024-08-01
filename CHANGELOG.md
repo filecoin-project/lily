@@ -7,6 +7,15 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 <a name="v0.20.1"></a>
 
+## [v0.20.2] - 2024-08-01
+
+## DATABASE MIGRATION
+This release includes a migration which must be applied before deploying against an existing database.
+* [1.40](https://github.com/filecoin-project/lily/blob/master/schemas/v1/40_add_chaineconomics_v2.go)
+
+### feat
+* feat: add new table for nv23 by @Terryhung in https://github.com/filecoin-project/lily/pull/1311
+
 
 ## [v0.20.1] - 2024-07-30
 
