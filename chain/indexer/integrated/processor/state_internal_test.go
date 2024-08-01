@@ -51,7 +51,7 @@ func TestNewProcessor(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, t.Name(), proc.name)
 	require.Len(t, proc.actorProcessors, 26)
-	require.Len(t, proc.tipsetProcessors, 10)
+	require.Len(t, proc.tipsetProcessors, 11)
 	require.Len(t, proc.tipsetsProcessors, 15)
 	require.Len(t, proc.builtinProcessors, 1)
 
@@ -70,7 +70,7 @@ func TestNewProcessor(t *testing.T) {
 	require.Equal(t, headers.NewTask(), proc.tipsetProcessors[tasktype.BlockHeader])
 	require.Equal(t, parents.NewTask(), proc.tipsetProcessors[tasktype.BlockParent])
 	require.Equal(t, drand.NewTask(), proc.tipsetProcessors[tasktype.DrandBlockEntrie])
-	require.Equal(t, chaineconomics.NewTask(nil), proc.tipsetProcessors[tasktype.ChainEconomics])
+	require.Equal(t, chaineconomics.NewTask(nil, 0), proc.tipsetProcessors[tasktype.ChainEconomics])
 	require.Equal(t, consensus.NewTask(nil), proc.tipsetProcessors[tasktype.ChainConsensus])
 	require.Equal(t, gaseconomy.NewTask(nil), proc.tipsetProcessors[tasktype.MessageGasEconomy])
 	require.Equal(t, messageparam.NewTask(nil), proc.tipsetProcessors[tasktype.MessageParam])

@@ -804,7 +804,9 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			out.TipsetProcessors[t] = drandtask.NewTask()
 
 		case tasktype.ChainEconomics:
-			out.TipsetProcessors[t] = chainecontask.NewTask(api)
+			out.TipsetProcessors[t] = chainecontask.NewTask(api, 0)
+		case tasktype.ChainEconomicsV2:
+			out.TipsetProcessors[t] = chainecontask.NewTask(api, 2)
 		case tasktype.ChainConsensus:
 			out.TipsetProcessors[t] = consensustask.NewTask(api)
 

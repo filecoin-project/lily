@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/filecoin-project/go-address"
-	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/lily/chain/actors/adt"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
 	"github.com/filecoin-project/lily/model"
@@ -52,17 +51,6 @@ func ExtractChainEconomicsModel(ctx context.Context, node ChainEconomicsLens, ts
 		LockedFil:           supply.FilLocked.String(),
 		CirculatingFil:      supply.FilCirculating.String(),
 		FilReserveDisbursed: supply.FilReserveDisbursed.String(),
-	}
-
-	m, err := node.Actor(ctx, ts.MinTicketBlock().Miner, ts.Key())
-
-	if err != nil {
-		return chainEconomic, nil
-	}
-
-	minerState, err := node.MinerLoad(node.Store(), m)
-	if err == nil && minerState.ActorVersion() >= actorstypes.Version14 {
-		chainEconomic.LockedFilV2 = supply.FilLocked.String()
 	}
 
 	return chainEconomic, nil
