@@ -2,6 +2,7 @@ package chaineconomics
 
 import (
 	"context"
+	"fmt"
 
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
@@ -46,9 +47,8 @@ func (p *Task) ProcessTipSet(ctx context.Context, ts *types.TipSet) (model.Persi
 
 	if p.version == 2 {
 		currentNetworkVersion := util.DefaultNetwork.Version(ctx, ts.Height())
-		if currentNetworkVersion <= network2.Version23 {
-			log.Errorf("The chain_economics_v2 will be supported in nv23. Current network version is %v", currentNetworkVersion)
-			return nil, nil, nil
+		if currentNetworkVersion < network2.Version23 {
+			return nil, nil, fmt.Errorf("The chain_economics_v2 will be supported in nv23. Current network version is %v", currentNetworkVersion)
 		}
 		ce, err := ExtractChainEconomicsV2Model(ctx, p.node, ts)
 		if err != nil {
