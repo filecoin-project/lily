@@ -5,21 +5,46 @@ import (
 
 	// Other necessary imports, possibly including types from the Lily project
 
-	"github.com/filecoin-project/go-bitfield"
 	minertypes "github.com/filecoin-project/go-state-types/builtin/v14/miner"
 )
+
+type SectorNumber struct {
+	Elemcount int64
+	Rle       []uint64
+}
+
+type ProveCommitAggregateParams struct {
+	AggregateProof []byte
+	SectorNumbers  SectorNumber
+}
+
+func decodeRLE(rle []uint64) []uint64 {
+	result := make([]uint64, 0)
+	current := uint64(0)
+
+	for i, count := range rle {
+		if i%2 == 1 { // Odd indices represent runs of 1s
+			for j := uint64(0); j < count; j++ {
+				result = append(result, current+j)
+			}
+		}
+		current += count
+	}
+
+	return result
+}
 
 func parseParamsInDetail(method string, params string) ([]uint64, error) {
 	sectorNumbers := []uint64{}
 
 	switch method {
 	case "ProveCommitAggregate":
-		var aggregateParams minertypes.ProveCommitAggregateParams
+		var aggregateParams ProveCommitAggregateParams
 		if err := json.Unmarshal([]byte(params), &aggregateParams); err != nil {
 			return sectorNumbers, err
 		}
 		// Assuming AggregateProveCommitParams has a field SectorNumbers which is a slice
-		sectorNumbers, _ = aggregateParams.SectorNumbers.All(bitfield.MaxEncodedSize)
+		sectorNumbers = decodeRLE(aggregateParams.SectorNumbers.Rle)
 
 	case "ProveCommitSector":
 		var sectorParams minertypes.ProveCommitSectorParams
