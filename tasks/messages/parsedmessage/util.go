@@ -2,7 +2,6 @@ package parsedmessage
 
 import (
 	"encoding/json"
-	"fmt"
 
 	// Other necessary imports, possibly including types from the Lily project
 
@@ -54,7 +53,7 @@ func parseParamsInDetail(method string, params string) ([]uint64, error) {
 		}
 
 	default:
-		return sectorNumbers, fmt.Errorf("unsupported method: %s", method)
+		return sectorNumbers, nil
 	}
 
 	return sectorNumbers, nil
