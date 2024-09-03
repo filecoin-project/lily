@@ -147,6 +147,11 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				Method: method,
 				Params: params,
 			}
+
+			sectorIds, err := parseParamsInDetail(method, params)
+			if len(sectorIds) > 0 {
+				log.Infof("method: %v, params: %v, sector_ids: %v", method, params, sectorIds)
+			}
 			parsedMessageResults = append(parsedMessageResults, pm)
 		}
 	}
