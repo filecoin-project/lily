@@ -162,23 +162,6 @@ func DefaultConf() *Conf {
 				ListenAddress: "/ip4/127.0.0.1/tcp/1234/http",
 				Timeout:       config.Duration(30 * time.Second),
 			},
-			Libp2p: config.Libp2p{
-				ListenAddresses: []string{
-					"/ip4/0.0.0.0/tcp/0",
-					"/ip6/::/tcp/0",
-				},
-				AnnounceAddresses:   []string{},
-				NoAnnounceAddresses: []string{},
-
-				ConnMgrLow:   150,
-				ConnMgrHigh:  180,
-				ConnMgrGrace: config.Duration(20 * time.Second),
-			},
-			Pubsub: config.Pubsub{
-				Bootstrapper: false,
-				DirectPeers:  nil,
-				RemoteTracer: "/dns4/pubsub-tracer.filecoin.io/tcp/4001/p2p/QmTd6UvR47vUidRNZ1ZKXHrAFhqTJAD27rKL9XYghEKgKX",
-			},
 		},
 	}
 }
