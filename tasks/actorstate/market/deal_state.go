@@ -68,7 +68,7 @@ func (DealStateExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, n
 		return nil, fmt.Errorf("diffing deal states: %w", err)
 	}
 
-	out := make(marketmodel.MarketDealStates, len(changes.Added)+len(changes.Modified))
+	out := make(marketmodel.MarketDealStates, len(changes.Added)+len(changes.Modified)+len(changes.Removed))
 	idx := 0
 	for _, add := range changes.Added {
 		out[idx] = &marketmodel.MarketDealState{
@@ -88,6 +88,17 @@ func (DealStateExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, n
 			SectorStartEpoch: int64(mod.To.SectorStartEpoch()),
 			LastUpdateEpoch:  int64(mod.To.LastUpdatedEpoch()),
 			SlashEpoch:       int64(mod.To.SlashEpoch()),
+			StateRoot:        ec.CurrTs.ParentState().String(),
+		}
+		idx++
+	}
+	for _, mod := range changes.Removed {
+		out[idx] = &marketmodel.MarketDealState{
+			Height:           int64(ec.CurrTs.Height()),
+			DealID:           uint64(mod.ID),
+			SectorStartEpoch: int64(mod.Deal.SectorStartEpoch()),
+			LastUpdateEpoch:  int64(mod.Deal.LastUpdatedEpoch()),
+			SlashEpoch:       int64(mod.Deal.SlashEpoch()),
 			StateRoot:        ec.CurrTs.ParentState().String(),
 		}
 		idx++
