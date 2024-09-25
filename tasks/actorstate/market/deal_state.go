@@ -57,8 +57,14 @@ func (DealStateExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, n
 	// Test
 	// Store the whole deal and check
 	var out marketmodel.MarketDealStates
+	totalDeal := 0
+	matchCount := 0
 	currDealStates.ForEach(func(id abi.DealID, ds market.DealState) error {
-		if ds.LastUpdatedEpoch() >= 3855360 {
+		totalDeal += 1
+
+		// After nv22, we can not get the slash_epoch
+		// After nv23, we can not get the last_updated_epoch
+		if ds.SlashEpoch() >= 3855360 || ds.LastUpdatedEpoch() > 4154640 {
 			log.Infof("Got the updated deal state: [deal id=%v], last_updated_epoch=%v, slash_epoch=%v", id, ds.LastUpdatedEpoch(), ds.SlashEpoch())
 			out = append(out, &marketmodel.MarketDealState{
 				Height:           int64(ec.CurrTs.Height()),
@@ -68,11 +74,13 @@ func (DealStateExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, n
 				SlashEpoch:       int64(ds.SlashEpoch()),
 				StateRoot:        ec.CurrTs.ParentState().String(),
 			})
+			matchCount += 1
 		}
 
 		return nil
 	})
 
+	log.Infof("Got total deal %v and get the %v match deal", totalDeal, matchCount)
 	return out, nil
 
 	//changed, err := ec.CurrState.StatesChanged(ec.PrevState)
