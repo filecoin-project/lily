@@ -2,7 +2,7 @@ module github.com/filecoin-project/lily
 
 go 1.22
 
-toolchain go1.22.8
+toolchain go1.22.7
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2
