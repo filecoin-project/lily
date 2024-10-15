@@ -65,7 +65,7 @@ func (m *MockMinerState) API() actorstate.ActorStateAPI {
 	return args.Get(0).(actorstate.ActorStateAPI)
 }
 
-func (m *MockMinerState) DecodeSectorOnChainInfo(val *cbg.Deferred) (miner.SectorOnChainInfo, error) {
+func (m *MockMinerState) DecodeSectorOnChainInfo(_ *cbg.Deferred) (miner.SectorOnChainInfo, error) {
 	args := m.Called()
 	return args.Get(0).(miner.SectorOnChainInfo), nil
 }
