@@ -248,7 +248,6 @@ jobs:
           name: Lint
           command: |
             golangci-lint run -v --timeout 5m \
-              --disable varcheck --disable structcheck --disable deadcode \
               --concurrency << parameters.concurrency >> << parameters.args >>
   lint-all:
     <<: *lint
