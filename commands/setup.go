@@ -18,7 +18,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/zpages"
 	"go.opentelemetry.io/otel"
-
 	"go.opentelemetry.io/otel/bridge/opencensus"
 
 	"github.com/filecoin-project/lily/metrics"

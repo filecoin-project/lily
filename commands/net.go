@@ -200,7 +200,10 @@ var NetPeers = &cli.Command{
 						log.Warnf("getting agent version: %s", err)
 					}
 				}
-				fmt.Fprintf(w, "%s\t%s\t%s\n", peer.ID, peer.Addrs, agent)
+				_, err = fmt.Fprintf(w, "%s\t%s\t%s\n", peer.ID, peer.Addrs, agent)
+				if err != nil {
+					fmt.Printf("got error in command [peers]: %v", err)
+				}
 			}
 			if err := w.Flush(); err != nil {
 				return err
@@ -270,7 +273,10 @@ var NetScores = &cli.Command{
 		} else {
 			w := tabwriter.NewWriter(os.Stdout, 4, 0, 1, ' ', 0)
 			for _, peer := range scores {
-				fmt.Fprintf(w, "%s\t%f\n", peer.ID, peer.Score.Score)
+				_, err = fmt.Fprintf(w, "%s\t%f\n", peer.ID, peer.Score.Score)
+				if err != nil {
+					fmt.Printf("got error in command [socres]: %v", err)
+				}
 			}
 			if err := w.Flush(); err != nil {
 				return err

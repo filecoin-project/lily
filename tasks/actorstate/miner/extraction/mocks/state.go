@@ -9,6 +9,8 @@ import (
 	"github.com/filecoin-project/lily/tasks/actorstate"
 
 	"github.com/filecoin-project/lotus/chain/types"
+
+	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 type MockMinerState struct {
@@ -61,4 +63,9 @@ func (m *MockMinerState) ChangeType() tasks.ChangeType {
 func (m *MockMinerState) API() actorstate.ActorStateAPI {
 	args := m.Called()
 	return args.Get(0).(actorstate.ActorStateAPI)
+}
+
+func (m *MockMinerState) DecodeSectorOnChainInfo(_ *cbg.Deferred) (miner.SectorOnChainInfo, error) {
+	args := m.Called()
+	return args.Get(0).(miner.SectorOnChainInfo), nil
 }

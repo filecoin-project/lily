@@ -175,7 +175,10 @@ func main() {
 	app.Metadata["traceContext"] = ctx
 
 	if err := app.RunContext(ctx, os.Args); err != nil {
-		fmt.Fprintln(os.Stdout, err.Error())
+		_, err := fmt.Fprintln(os.Stdout, err.Error())
+		if err != nil {
+			fmt.Printf("got error in main: %v", err)
+		}
 		os.Exit(1)
 	}
 }

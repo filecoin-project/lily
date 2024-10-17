@@ -7,12 +7,11 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
+	network2 "github.com/filecoin-project/go-state-types/network"
 	"github.com/filecoin-project/lily/lens/util"
 	chainmodel "github.com/filecoin-project/lily/model/chain"
 
 	"github.com/filecoin-project/lotus/chain/types"
-
-	network2 "github.com/filecoin-project/go-state-types/network"
 )
 
 func ExtractChainEconomicsV2Model(ctx context.Context, node ChainEconomicsLens, ts *types.TipSet) (*chainmodel.ChainEconomicsV2, error) {

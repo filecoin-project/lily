@@ -91,7 +91,7 @@ var SyncStatusCmd = &cli.Command{
 				if err != nil {
 					return err
 				}
-				fmt.Printf(string(j) + "\n")
+				fmt.Printf("json format: %v\n", string(j))
 			case "":
 				fmt.Printf("worker %d:\n", ss.WorkerID)
 				fmt.Printf("\tBase:\t%s\n", base)
