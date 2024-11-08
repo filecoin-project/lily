@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"github.com/stretchr/testify/mock"
+	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -9,8 +10,6 @@ import (
 	"github.com/filecoin-project/lily/tasks/actorstate"
 
 	"github.com/filecoin-project/lotus/chain/types"
-
-	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
 type MockMinerState struct {
