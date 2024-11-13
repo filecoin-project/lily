@@ -5,7 +5,23 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
-<a name="v0.20.1"></a>
+<a name="v0.21.0"></a>
+
+## [v0.21.0] - 2024-11-13
+
+### Feat
+* feat: update README.md by @Terryhung in https://github.com/filecoin-project/lily/pull/1314
+* feat: upgrade filecoin-ffi version by @Terryhung in https://github.com/filecoin-project/lily/pull/1322
+
+
+### Chore
+* chore: upgrade lotus to v1.29.1 by @Terryhung in https://github.com/filecoin-project/lily/pull/1318
+* chore: upgrade lotus version and golang version by @Terryhung in https://github.com/filecoin-project/lily/pull/1320
+* chore: upgrade lotus to v1.30.0 for nv24 by @Terryhung in https://github.com/filecoin-project/lily/pull/1321
+
+### Fix
+* fix: the error of logic and return by @Terryhung in https://github.com/filecoin-project/lily/pull/1313
+* fix: downgrade the bls version to stable version by @Terryhung in https://github.com/filecoin-project/lily/pull/1323
 
 ## [v0.20.2] - 2024-08-01
 
