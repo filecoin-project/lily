@@ -191,6 +191,10 @@ func labelFromGoString(s string) (markettypes.DealLabel, error) {
 
 type emptyDealState struct{}
 
+func (e *emptyDealState) SectorNumber() abi.SectorNumber {
+	return 0
+}
+
 func (e *emptyDealState) SectorStartEpoch() abi.ChainEpoch {
 	return -1
 }
@@ -201,10 +205,6 @@ func (e *emptyDealState) LastUpdatedEpoch() abi.ChainEpoch {
 
 func (e *emptyDealState) SlashEpoch() abi.ChainEpoch {
 	return -1
-}
-
-func (e *emptyDealState) SectorNumber() abi.SectorNumber {
-	return 0
 }
 
 func (e *emptyDealState) Equals(other DealState) bool {
