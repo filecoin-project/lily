@@ -27,7 +27,9 @@ type MarketStateExtractionContext struct {
 }
 
 func NewMarketStateExtractionContext(ctx context.Context, a actorstate.ActorInfo, node actorstate.ActorStateAPI) (*MarketStateExtractionContext, error) {
+	fmt.Printf("Got the market actor with code: %v", a.Actor.Code)
 	curState, err := market.Load(node.Store(), &a.Actor)
+	fmt.Printf("Got the market actor version: %v", curState.ActorVersion())
 	if err != nil {
 		return nil, fmt.Errorf("loading current market state: %w", err)
 	}
