@@ -50,7 +50,7 @@ var CSVToCARCmd = &cli.Command{
 	Name:  "csv-to-car",
 	Usage: "Convert a CSV file to a CAR file",
 	Flags: csvToCARFlags,
-	Action: func(cctx *cli.Context) error {
+	Action: func(_ *cli.Context) error {
 		bs, err := util.ReadCSVFile(CSVToCARFlags.CSVFile)
 		if err != nil {
 			return fmt.Errorf("failed to read CSV file: %w", err)

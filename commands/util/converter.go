@@ -10,11 +10,11 @@ import (
 	"os"
 
 	"github.com/filecoin-project/lotus/blockstore"
+	"github.com/ipfs/boxo/ipld/unixfs"
 	blockservice "github.com/ipfs/go-blockservice"
 	"github.com/ipfs/go-cid"
 	offline "github.com/ipfs/go-ipfs-exchange-offline"
 	"github.com/ipfs/go-merkledag"
-	"github.com/ipfs/go-unixfs"
 	"github.com/ipld/go-car"
 )
 
@@ -27,7 +27,13 @@ func ReadCSVAsByteSlices(filePath string) ([][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+
+	defer func() {
+		if cerr := file.Close(); cerr != nil {
+			// Handle or log the error from file.Close
+			fmt.Printf("Error closing file: %v", cerr)
+		}
+	}()
 
 	reader := csv.NewReader(file)
 	headers, err := reader.Read() // Read headers
@@ -60,6 +66,7 @@ func ReadCSVAsByteSlices(filePath string) ([][]byte, error) {
 
 func MakeCar(name string, b []byte, mhType uint64) ([]byte, error) {
 	mbs := blockstore.NewMemory()
+	//lint:ignore
 	bsv := blockservice.New(mbs, offline.Exchange(mbs))
 	ds := merkledag.NewDAGService(bsv)
 
