@@ -18,6 +18,10 @@ import (
 	"github.com/ipld/go-car"
 )
 
+func ReadCSVFile(filePath string) ([]byte, error) {
+	return os.ReadFile(filePath)
+}
+
 func ReadCSVAsByteSlices(filePath string) ([][]byte, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -54,24 +58,22 @@ func ReadCSVAsByteSlices(filePath string) ([][]byte, error) {
 	return bs, nil
 }
 
-func MakeCar(name string, bs [][]byte, mhType uint64) ([]byte, error) {
+func MakeCar(name string, b []byte, mhType uint64) ([]byte, error) {
 	mbs := blockstore.NewMemory()
 	bsv := blockservice.New(mbs, offline.Exchange(mbs))
 	ds := merkledag.NewDAGService(bsv)
 
 	pn := merkledag.NodeWithData(unixfs.FolderPBData())
 
-	for i, bytes := range bs {
-		nd, err := merkledag.NewRawNodeWPrefix(bytes, cid.V1Builder{Codec: cid.Raw, MhType: mhType})
-		if err != nil {
-			return nil, err
-		}
-		if err := ds.Add(context.TODO(), nd); err != nil {
-			return nil, err
-		}
-		if err := pn.AddNodeLink(fmt.Sprintf("%s-%d", name, i), nd); err != nil {
-			return nil, err
-		}
+	nd, err := merkledag.NewRawNodeWPrefix(b, cid.V1Builder{Codec: cid.Raw, MhType: mhType})
+	if err != nil {
+		return nil, err
+	}
+	if err := ds.Add(context.TODO(), nd); err != nil {
+		return nil, err
+	}
+	if err := pn.AddNodeLink(fmt.Sprintf("%s", name), nd); err != nil {
+		return nil, err
 	}
 
 	if err := ds.Add(context.TODO(), pn); err != nil {

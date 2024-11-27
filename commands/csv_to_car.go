@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/filecoin-project/lily/commands/util"
 	"github.com/filecoin-project/lily/version"
@@ -50,13 +51,19 @@ var CSVToCARCmd = &cli.Command{
 	Usage: "Convert a CSV file to a CAR file",
 	Flags: csvToCARFlags,
 	Action: func(cctx *cli.Context) error {
-		bs, err := util.ReadCSVAsByteSlices(CSVToCARFlags.CSVFile)
+		bs, err := util.ReadCSVFile(CSVToCARFlags.CSVFile)
 		if err != nil {
 			return fmt.Errorf("failed to read CSV file: %w", err)
 		}
 
+		// Extract the filename from the CSV file path
+		filename := filepath.Base(CSVToCARFlags.CSVFile)
+		// Remove the extension to get the name
+		ext := filepath.Ext(filename)
+		name := filename[:len(filename)-len(ext)]
+
 		// Create the CAR file
-		carData, err := util.MakeCar("csv_data", bs, mh.SHA2_256)
+		carData, err := util.MakeCar(name, bs, mh.SHA2_256)
 		if err != nil {
 			return fmt.Errorf("failed to create CAR file: %w", err)
 		}
