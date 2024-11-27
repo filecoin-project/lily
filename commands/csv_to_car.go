@@ -58,12 +58,9 @@ var CSVToCARCmd = &cli.Command{
 
 		// Extract the filename from the CSV file path
 		filename := filepath.Base(CSVToCARFlags.CSVFile)
-		// Remove the extension to get the name
-		ext := filepath.Ext(filename)
-		name := filename[:len(filename)-len(ext)]
 
 		// Create the CAR file
-		carData, err := util.MakeCar(name, bs, mh.SHA2_256)
+		carData, err := util.MakeCar(filename, bs, mh.SHA2_256)
 		if err != nil {
 			return fmt.Errorf("failed to create CAR file: %w", err)
 		}

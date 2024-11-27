@@ -10,11 +10,11 @@ import (
 	"os"
 
 	"github.com/filecoin-project/lotus/blockstore"
+	blockservice "github.com/ipfs/boxo/blockservice"
+	"github.com/ipfs/boxo/ipld/merkledag"
 	"github.com/ipfs/boxo/ipld/unixfs"
-	blockservice "github.com/ipfs/go-blockservice"
 	"github.com/ipfs/go-cid"
 	offline "github.com/ipfs/go-ipfs-exchange-offline"
-	"github.com/ipfs/go-merkledag"
 	"github.com/ipld/go-car"
 )
 
