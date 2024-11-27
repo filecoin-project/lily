@@ -9,12 +9,17 @@ import (
 	"io"
 	"os"
 
+	commcid "github.com/filecoin-project/go-fil-commcid"
+
 	"github.com/filecoin-project/lotus/blockstore"
 	blockservice "github.com/ipfs/boxo/blockservice"
 	"github.com/ipfs/boxo/ipld/merkledag"
 	"github.com/ipfs/boxo/ipld/unixfs"
 	"github.com/ipfs/go-cid"
 	offline "github.com/ipfs/go-ipfs-exchange-offline"
+
+	commp "github.com/filecoin-project/go-fil-commp-hashhash"
+
 	"github.com/ipld/go-car"
 )
 
@@ -66,7 +71,6 @@ func ReadCSVAsByteSlices(filePath string) ([][]byte, error) {
 
 func MakeCar(name string, b []byte, mhType uint64) ([]byte, error) {
 	mbs := blockstore.NewMemory()
-	//lint:ignore SA1006
 	bsv := blockservice.New(mbs, offline.Exchange(mbs))
 	ds := merkledag.NewDAGService(bsv)
 
@@ -87,13 +91,35 @@ func MakeCar(name string, b []byte, mhType uint64) ([]byte, error) {
 		return nil, err
 	}
 
-	var out bytes.Buffer
-	if err := car.WriteCar(context.TODO(), ds, []cid.Cid{pn.Cid()}, &out); err != nil {
+	var carBuffer bytes.Buffer
+
+	cp := new(commp.Calc)
+
+	multiWriter := io.MultiWriter(&carBuffer, cp)
+
+	if err := car.WriteCar(context.TODO(), ds, []cid.Cid{pn.Cid()}, multiWriter); err != nil {
 		return nil, err
 	}
 
 	// Optionally log the size
-	fmt.Printf("CAR file size: %d bytes\n", out.Len())
+	fmt.Printf("CAR file size: %d bytes\n", carBuffer.Len())
 
-	return out.Bytes(), nil
+	// Calculate piece-size and piece-cid
+	rawCommP, pieceSize, err := cp.Digest()
+	if err != nil {
+		return nil, err
+	}
+
+	pieceCID, err := commcid.DataCommitmentV1ToCID(rawCommP)
+	if err != nil {
+		return nil, err
+	}
+
+	payloadCID := pn.Cid()
+	fmt.Printf("piece size: %v\n", pieceSize)
+	fmt.Printf("payload cid: %v\n", payloadCID)
+
+	fmt.Printf("piece cid: %v\n", pieceCID)
+
+	return carBuffer.Bytes(), nil
 }

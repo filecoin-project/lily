@@ -168,6 +168,7 @@ func main() {
 			commands.SyncCmd,
 			commands.WaitAPICmd,
 			commands.CSVToCARCmd,
+			commands.ImportFromCIDCmd,
 			job.JobCmd,
 		},
 	}
