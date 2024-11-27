@@ -66,7 +66,7 @@ func ReadCSVAsByteSlices(filePath string) ([][]byte, error) {
 
 func MakeCar(name string, b []byte, mhType uint64) ([]byte, error) {
 	mbs := blockstore.NewMemory()
-	//lint:ignore
+	//lint:ignore SA1006
 	bsv := blockservice.New(mbs, offline.Exchange(mbs))
 	ds := merkledag.NewDAGService(bsv)
 
