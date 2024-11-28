@@ -23,7 +23,7 @@ import (
 	"github.com/ipld/go-car"
 )
 
-func ReadCSVFile(filePath string) ([]byte, error) {
+func ReadTargetFile(filePath string) ([]byte, error) {
 	return os.ReadFile(filePath)
 }
 
