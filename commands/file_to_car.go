@@ -5,10 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/filecoin-project/lily/commands/util"
+	mh "github.com/multiformats/go-multihash"
 	"github.com/urfave/cli/v2"
 
-	mh "github.com/multiformats/go-multihash"
+	"github.com/filecoin-project/lily/commands/util"
 )
 
 type FileToCAROpts struct {
