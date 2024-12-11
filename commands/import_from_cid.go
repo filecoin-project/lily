@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/urfave/cli/v2"
+
 	"github.com/filecoin-project/lily/commands/util"
 	"github.com/filecoin-project/lily/version"
-	"github.com/urfave/cli/v2"
 )
 
 func init() {

@@ -5,22 +5,19 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/filecoin-project/lassie/pkg/lassie"
-	"github.com/filecoin-project/lassie/pkg/storage"
-	"github.com/filecoin-project/lassie/pkg/types"
 	"github.com/ipfs/go-cid"
+	"github.com/ipld/go-car/cmd/car/lib"
 	"github.com/ipld/go-car/v2"
+	carstorage "github.com/ipld/go-car/v2/storage"
 	"github.com/ipld/go-car/v2/storage/deferred"
+	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
+	pstorage "github.com/ipld/go-ipld-prime/storage"
 	trustlessutils "github.com/ipld/go-trustless-utils"
 	"github.com/urfave/cli/v2"
 
-	pstorage "github.com/ipld/go-ipld-prime/storage"
-
-	carstorage "github.com/ipld/go-car/v2/storage"
-
-	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
-
-	"github.com/ipld/go-car/cmd/car/lib"
+	"github.com/filecoin-project/lassie/pkg/lassie"
+	"github.com/filecoin-project/lassie/pkg/storage"
+	"github.com/filecoin-project/lassie/pkg/types"
 )
 
 func DownloadCarFile(ctx context.Context, cctx *cli.Context, cidStr, outputDir string) error {

@@ -12,7 +12,7 @@ import (
 	"github.com/filecoin-project/go-state-types/abi"
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	builtintypes "github.com/filecoin-project/go-state-types/builtin"
-	msig15 "github.com/filecoin-project/go-state-types/builtin/v15/multisig"
+	msig16 "github.com/filecoin-project/go-state-types/builtin/v16/multisig"
 	"github.com/filecoin-project/go-state-types/cbor"
 	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/filecoin-project/lily/chain/actors"
@@ -60,6 +60,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 		case actorstypes.Version15:
 			return load15(store, act.Head)
+
+		case actorstypes.Version16:
+			return load16(store, act.Head)
 
 		}
 	}
@@ -115,19 +118,19 @@ type State interface {
 	decodeTransaction(val *cbg.Deferred) (Transaction, error)
 }
 
-type Transaction = msig15.Transaction
+type Transaction = msig16.Transaction
 
 var Methods = builtintypes.MethodsMultisig
 
 // these types are the same between v0 and v6
-type ProposalHashData = msig15.ProposalHashData
-type ProposeReturn = msig15.ProposeReturn
-type ProposeParams = msig15.ProposeParams
-type ApproveReturn = msig15.ApproveReturn
-type TxnIDParams = msig15.TxnIDParams
+type ProposalHashData = msig16.ProposalHashData
+type ProposeReturn = msig16.ProposeReturn
+type ProposeParams = msig16.ProposeParams
+type ApproveReturn = msig16.ApproveReturn
+type TxnIDParams = msig16.TxnIDParams
 
 func txnParams(id uint64, data *ProposalHashData) ([]byte, error) {
-	params := msig15.TxnIDParams{ID: msig15.TxnID(id)}
+	params := msig16.TxnIDParams{ID: msig16.TxnID(id)}
 	if data != nil {
 		if data.Requester.Protocol() != address.ID {
 			return nil, fmt.Errorf("proposer address must be an ID address, was %s", data.Requester)
@@ -166,6 +169,7 @@ func AllCodes() []cid.Cid {
 		(&state13{}).Code(),
 		(&state14{}).Code(),
 		(&state15{}).Code(),
+		(&state16{}).Code(),
 	}
 }
 
@@ -186,5 +190,6 @@ func VersionCodes() map[actorstypes.Version]cid.Cid {
 		actorstypes.Version13: (&state13{}).Code(),
 		actorstypes.Version14: (&state14{}).Code(),
 		actorstypes.Version15: (&state15{}).Code(),
+		actorstypes.Version16: (&state16{}).Code(),
 	}
 }
