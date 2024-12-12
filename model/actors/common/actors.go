@@ -151,7 +151,7 @@ type ActorMethod struct {
 	tableName  struct{} `pg:"actor_methods"` // nolint: structcheck
 	Family     string   `pg:",pk,notnull"`
 	MethodName string   `pg:",notnull"`
-	Method     uint64   `pg:",pk,notnull"`
+	Method     uint64   `pg:",pk,notnull,use_zero"`
 }
 
 type ActorMethodList []*ActorMethod
