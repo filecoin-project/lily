@@ -177,7 +177,7 @@ var ChainActorMethodsCmd = &cli.Command{
 		var strg model.Storage
 		var ctx context.Context
 
-		if chainActorFlags.persist {
+		if chainActorFlags.config != "" {
 			cfg, err := config.FromFile(chainActorFlags.config)
 			if err != nil {
 				return err
@@ -229,7 +229,7 @@ var ChainActorMethodsCmd = &cli.Command{
 			}
 		}
 
-		if chainActorFlags.persist {
+		if chainActorFlags.config != "" {
 			err := strg.PersistBatch(ctx, actorMethodList)
 			if err != nil {
 				return err
