@@ -9,18 +9,17 @@ import (
 	"io"
 	"os"
 
-	commcid "github.com/filecoin-project/go-fil-commcid"
-
-	"github.com/filecoin-project/lotus/blockstore"
 	blockservice "github.com/ipfs/boxo/blockservice"
 	"github.com/ipfs/boxo/ipld/merkledag"
 	"github.com/ipfs/boxo/ipld/unixfs"
 	"github.com/ipfs/go-cid"
 	offline "github.com/ipfs/go-ipfs-exchange-offline"
+	"github.com/ipld/go-car"
 
+	commcid "github.com/filecoin-project/go-fil-commcid"
 	commp "github.com/filecoin-project/go-fil-commp-hashhash"
 
-	"github.com/ipld/go-car"
+	"github.com/filecoin-project/lotus/blockstore"
 )
 
 func ReadTargetFile(filePath string) ([]byte, error) {
