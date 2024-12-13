@@ -117,6 +117,7 @@ func (states ActorStateList) Persist(ctx context.Context, s model.StorageBatch, 
 }
 
 type ActorCode struct {
+	tableName struct{} `pg:"actor_codes"` // nolint: structcheck
 	// CID of the actor from builtin actors.
 	CID string `pg:",pk,notnull"`
 	// Human-readable identifier for the actor.
@@ -147,9 +148,10 @@ func (acl ActorCodeList) Persist(ctx context.Context, s model.StorageBatch, _ mo
 }
 
 type ActorMethod struct {
-	Family     string `pg:",pk,notnull"`
-	MethodName string `pg:",notnull"`
-	Method     uint64 `pg:",pk,notnull"`
+	tableName  struct{} `pg:"actor_methods"` // nolint: structcheck
+	Family     string   `pg:",pk,notnull"`
+	MethodName string   `pg:",notnull"`
+	Method     uint64   `pg:",pk,notnull,use_zero"`
 }
 
 type ActorMethodList []*ActorMethod

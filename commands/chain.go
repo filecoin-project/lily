@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,7 +31,9 @@ import (
 	lotusbuild "github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/actors"
 	lotusactors "github.com/filecoin-project/lotus/chain/actors"
+	"github.com/filecoin-project/lotus/chain/consensus"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/chain/vm"
 	lotuscli "github.com/filecoin-project/lotus/cli"
 )
 
@@ -148,21 +151,33 @@ var ChainActorCodesCmd = &cli.Command{
 	},
 }
 
+var ActorRegistry *vm.ActorRegistry
+
+func getTheActorCodeMap() map[cid.Cid]string {
+	actorCodeMap := make(map[cid.Cid]string)
+
+	for _, version := range lotusbuild.EmbeddedBuiltinActorsMetadata {
+		for actorfamily, cid := range version.Actors {
+			actorCodeMap[cid] = actorfamily
+		}
+	}
+
+	return actorCodeMap
+}
+
 var ChainActorMethodsCmd = &cli.Command{
 	Name:  "actor-methods",
 	Usage: "Print actor method numbers and their human readable names.",
 	Flags: []cli.Flag{configFlag, storageFlag},
 	Action: func(_ *cli.Context) error {
-		manifests := manifest.GetBuiltinActorsKeys(actorstypes.Version(actorVersions[len(actorVersions)-1]))
 		t := table.NewWriter()
 		t.AppendHeader(table.Row{"actor_family", "method_name", "method_number"})
 
 		// values that may be accessed if user wants to persist to Storage
-		var results common.ActorMethodList
 		var strg model.Storage
 		var ctx context.Context
 
-		if chainActorFlags.persist {
+		if chainActorFlags.config != "" {
 			cfg, err := config.FromFile(chainActorFlags.config)
 			if err != nil {
 				return err
@@ -185,33 +200,42 @@ var ChainActorMethodsCmd = &cli.Command{
 			}
 		}
 
-		for _, a := range manifests {
-			av := make(map[actorstypes.Version]cid.Cid)
-			for _, v := range actorVersions {
-				code, ok := actors.GetActorCodeID(actorstypes.Version(v), a)
-				if !ok {
+		ActorRegistry = consensus.NewActorRegistry()
+		actorCodeMap := getTheActorCodeMap()
+		actorMethodList := common.ActorMethodList{}
+		cache := map[string]bool{}
+
+		for key, value := range ActorRegistry.Methods {
+			actorFamily := actorCodeMap[key]
+			if actorFamily == "" {
+				fmt.Printf("can not get the family: %v\n", key)
+				continue
+			}
+			for methodNum, value := range value {
+				// fmt.Printf("actorFamily=%v, methodNum=%v, name=%v\n", actorFamily, methodNum, value.Name)
+				i, err := strconv.ParseInt(methodNum.String(), 10, 64)
+				if err != nil {
+					fmt.Printf("error at converting methodNum=%v to int64", methodNum)
 					continue
 				}
-				av[actorstypes.Version(v)] = code
-			}
-
-			var err error
-			if results, err = printActorMethods(a); err != nil {
-				return err
-			}
-
-			for _, result := range results {
-				t.AppendRow(table.Row{result.Family, result.Method, result.MethodName})
-				t.AppendSeparator()
-			}
-
-			if chainActorFlags.persist {
-				err := strg.PersistBatch(ctx, results)
-				if err != nil {
-					return err
+				_, exist := cache[actorFamily+methodNum.String()]
+				if exist {
+					continue
 				}
+				cache[actorFamily+methodNum.String()] = true
+				t.AppendRow(table.Row{actorFamily, value.Name, methodNum.String()})
+				t.AppendSeparator()
+				actorMethodList = append(actorMethodList, &common.ActorMethod{Family: actorFamily, Method: uint64(i), MethodName: value.Name})
 			}
 		}
+
+		if chainActorFlags.config != "" {
+			err := strg.PersistBatch(ctx, actorMethodList)
+			if err != nil {
+				return err
+			}
+		}
+
 		fmt.Println(t.RenderCSV())
 		return nil
 	},
