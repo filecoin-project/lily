@@ -5,7 +5,19 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
-<a name="v0.21.1"></a>
+<a name="v0.22.0"></a>
+
+## [v0.22.0] - 2024-12-13
+
+### Feat
+* feat: update the new actor version for specific tasks (https://github.com/filecoin-project/lily/pull/1325)
+* feat: update market actor gen (https://github.com/filecoin-project/lily/pull/1326)
+
+### Fix
+* fix: insert actor methods db error (https://github.com/filecoin-project/lily/pull/1331)
+
+### Chore:
+* chore: upgrade the lotus to v1.32.0-rc1 for nv25 (https://github.com/filecoin-project/lily/pull/1329)
 
 
 ## [v0.21.1] - 2024-11-19
