@@ -54,15 +54,6 @@ func (DealStateExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, n
 		return out, nil
 	}
 
-	changed, err := ec.CurrState.StatesChanged(ec.PrevState)
-	if err != nil {
-		return nil, fmt.Errorf("checking for deal state changes: %w", err)
-	}
-
-	if !changed {
-		return nil, nil
-	}
-
 	changes, err := market.DiffDealStates(ctx, ec.Store, ec.PrevState, ec.CurrState)
 	if err != nil {
 		return nil, fmt.Errorf("diffing deal states: %w", err)
