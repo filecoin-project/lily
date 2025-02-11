@@ -81,7 +81,7 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			PowerBaseEpoch:        int64(sector.PowerBaseEpoch),
 			SectorKeyCID:          sectorKeyCID,
 		}
-		log.Infof("sector: %+v, ReplacedDayReward: %v", sector.SectorNumber, replacedDayRewardStr)
+		log.Infof("sector: %+v, miner: %v,ReplacedDayReward: %v", sector.SectorNumber, a.Address.String(), replacedDayRewardStr)
 	}
 
 	return sectorModel, nil
