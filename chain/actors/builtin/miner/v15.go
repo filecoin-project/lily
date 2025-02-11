@@ -574,6 +574,9 @@ func fromV15SectorOnChainInfo(v15 miner15.SectorOnChainInfo) SectorOnChainInfo {
 		ExpectedStoragePledge: v15.ExpectedStoragePledge,
 
 		SectorKeyCID: v15.SectorKeyCID,
+
+		ReplacedDayReward: v15.ReplacedDayReward,
+		PowerBaseEpoch:    v15.PowerBaseEpoch,
 	}
 	return info
 }

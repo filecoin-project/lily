@@ -57,6 +57,13 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		if sector.SectorKeyCID != nil {
 			sectorKeyCID = sector.SectorKeyCID.String()
 		}
+
+		replacedDayReward := sector.ReplacedDayReward
+		replacedDayRewardStr := replacedDayReward.String()
+		if replacedDayReward.Nil() {
+			replacedDayRewardStr = "0"
+		}
+
 		sectorModel[i] = &minermodel.MinerSectorInfoV7{
 			Height:                int64(a.Current.Height()),
 			MinerID:               a.Address.String(),
@@ -70,6 +77,8 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			InitialPledge:         sector.InitialPledge.String(),
 			ExpectedDayReward:     sector.ExpectedDayReward.String(),
 			ExpectedStoragePledge: sector.ExpectedStoragePledge.String(),
+			ReplacedDayReward:     replacedDayRewardStr,
+			PowerBaseEpoch:        int64(sector.PowerBaseEpoch),
 			SectorKeyCID:          sectorKeyCID,
 		}
 	}
