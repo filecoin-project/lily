@@ -70,6 +70,8 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			InitialPledge:         sector.InitialPledge.String(),
 			ExpectedDayReward:     sector.ExpectedDayReward.String(),
 			ExpectedStoragePledge: sector.ExpectedStoragePledge.String(),
+			ReplacedDayReward:     sector.ReplacedDayReward.String(),
+			PowerBaseEpoch:        int64(sector.PowerBaseEpoch),
 			SectorKeyCID:          sectorKeyCID,
 		}
 	}

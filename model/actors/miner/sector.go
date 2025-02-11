@@ -36,6 +36,11 @@ type MinerSectorInfoV7 struct {
 
 	// added in specs-actors v7, will be null for all sectors and only gets set on the first ReplicaUpdate
 	SectorKeyCID string
+
+	//
+	ReplacedDayReward string `pg:"type:numeric,notnull"`
+
+	PowerBaseEpoch int64 `pg:",use_zero"`
 }
 
 // MinerSectorInfoV1_6 is exported from the miner actor iff the actor code is less than v7.
