@@ -54,6 +54,9 @@ type MinerActorDump struct {
 	AvailableBalance string `pg:"type:numeric,notnull"`
 	Balance          string `pg:"type:numeric,notnull"`
 
+	// Termination Fee
+	TerminationFee string `pg:"type:numeric,notnull"`
+
 	FeeDebt string `pg:"type:numeric,notnull"`
 }
 
