@@ -125,8 +125,6 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 			fee := getTerminationFeeForMiner(current.Height(), minerState)
 			minerDumpObj.TerminationFee = fee.String()
 
-			log.Errorf("Termination fee for miner %v: %v", miner.String(), fee.String())
-
 			err = minerDumpObj.UpdateMinerInfo(minerState)
 			if err != nil {
 				return err
