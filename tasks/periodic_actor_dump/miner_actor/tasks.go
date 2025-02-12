@@ -3,10 +3,12 @@ package mineractordump
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
@@ -93,6 +95,16 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 	out := make(actordumps.MinerActorDumpList, 0)
 	errs := []error{}
 
+	var (
+		mu sync.Mutex
+	)
+
+	// Create a semaphore channel with a buffer size of 10 to limit concurrency.
+	sem := make(chan struct{}, 10)
+
+	// Create an errgroup with the parent context.
+	g, ctx := errgroup.WithContext(ctx)
+
 	for _, actor := range actors[manifest.PowerKey] {
 		powerState, err := power.Load(p.node.Store(), actor)
 		if err != nil {
@@ -102,47 +114,69 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 		}
 
 		err = powerState.ForEachClaim(func(miner address.Address, claim power.Claim) error {
-			minerDumpObj := &actordumps.MinerActorDump{
-				Height:          int64(current.Height()),
-				StateRoot:       current.ParentState().String(),
-				MinerID:         miner.String(),
-				RawBytePower:    claim.RawBytePower.String(),
-				QualityAdjPower: claim.QualityAdjPower.String(),
-			}
+			// Capture loop variables.
+			minerLocal := miner
+			claimLocal := claim
 
-			// Update the minerInfo Field into dump model
-			minerActor, err := p.node.ActorInfo(ctx, miner, current.Key())
-			if err != nil {
-				return err
-			}
-			minerDumpObj.MinerAddress = minerActor.Actor.DelegatedAddress.String()
+			// Acquire a token from the semaphore to ensure only 10 goroutines run concurrently.
+			sem <- struct{}{}
 
-			minerState, err := builtinminer.Load(p.node.Store(), minerActor.Actor)
-			if err != nil {
-				return err
-			}
+			// Launch a goroutine for each claim.
+			g.Go(func() error {
+				// Ensure the token is released when this goroutine is done.
+				defer func() { <-sem }()
 
-			fee := getTerminationFeeForMiner(current.Height(), minerState)
-			minerDumpObj.TerminationFee = fee.String()
+				minerDumpObj := &actordumps.MinerActorDump{
+					Height:          int64(current.Height()),
+					StateRoot:       current.ParentState().String(),
+					MinerID:         minerLocal.String(),
+					RawBytePower:    claimLocal.RawBytePower.String(),
+					QualityAdjPower: claimLocal.QualityAdjPower.String(),
+				}
 
-			err = minerDumpObj.UpdateMinerInfo(minerState)
-			if err != nil {
-				return err
-			}
+				// Update the minerInfo Field into dump model
+				minerActor, err := p.node.ActorInfo(ctx, minerLocal, current.Key())
+				if err != nil {
+					return err
+				}
+				minerDumpObj.MinerAddress = minerActor.Actor.DelegatedAddress.String()
 
-			err = minerDumpObj.UpdateBalanceInfo(minerActor.Actor, minerState)
-			if err != nil {
-				return err
-			}
+				minerState, err := builtinminer.Load(p.node.Store(), minerActor.Actor)
+				if err != nil {
+					return err
+				}
 
-			err = p.updateAddressFromID(ctx, current, minerDumpObj)
-			if err != nil {
-				log.Error("Error at getting getting the actor address by actor id: %v", err)
-			}
-			out = append(out, minerDumpObj)
+				fee := getTerminationFeeForMiner(current.Height(), minerState)
+				minerDumpObj.TerminationFee = fee.String()
+
+				err = minerDumpObj.UpdateMinerInfo(minerState)
+				if err != nil {
+					return err
+				}
+
+				err = minerDumpObj.UpdateBalanceInfo(minerActor.Actor, minerState)
+				if err != nil {
+					return err
+				}
+
+				err = p.updateAddressFromID(ctx, current, minerDumpObj)
+				if err != nil {
+					log.Error("Error at getting getting the actor address by actor id: %v", err)
+				}
+				mu.Lock()
+				out = append(out, minerDumpObj)
+				mu.Unlock()
+
+				return nil
+			})
 
 			return nil
 		})
+
+		// Wait for all spawned goroutines to complete.
+		if err := g.Wait(); err != nil {
+			errs = append(errs, err)
+		}
 
 		if err != nil {
 			errs = append(errs, err)
