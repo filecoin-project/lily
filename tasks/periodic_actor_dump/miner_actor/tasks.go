@@ -149,20 +149,21 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 				fee := getTerminationFeeForMiner(current.Height(), minerState)
 				minerDumpObj.TerminationFee = fee.String()
 
-				err = minerDumpObj.UpdateMinerInfo(minerState)
-				if err != nil {
-					return err
-				}
+				// Stop the useless fields
+				// err = minerDumpObj.UpdateMinerInfo(minerState)
+				// if err != nil {
+				// 	return err
+				// }
 
-				err = minerDumpObj.UpdateBalanceInfo(minerActor.Actor, minerState)
-				if err != nil {
-					return err
-				}
+				// err = minerDumpObj.UpdateBalanceInfo(minerActor.Actor, minerState)
+				// if err != nil {
+				// 	return err
+				// }
 
-				err = p.updateAddressFromID(ctx, current, minerDumpObj)
-				if err != nil {
-					log.Error("Error at getting getting the actor address by actor id: %v", err)
-				}
+				// err = p.updateAddressFromID(ctx, current, minerDumpObj)
+				// if err != nil {
+				// 	log.Error("Error at getting getting the actor address by actor id: %v", err)
+				// }
 				mu.Lock()
 				out = append(out, minerDumpObj)
 				mu.Unlock()
