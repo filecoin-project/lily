@@ -403,20 +403,36 @@ func stripQuotes(s types.Safe) string {
 
 // PersistBatch persists a batch of persistables in a single transaction
 func (d *Database) PersistBatch(ctx context.Context, ps ...model.Persistable) error {
-	return d.db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		txs := &TxStorage{
-			tx:     tx,
-			upsert: d.Upsert,
+	const batchSize = 10000 // Adjust the batch size as needed
+
+	for i := 0; i < len(ps); i += batchSize {
+		end := i + batchSize
+		if end > len(ps) {
+			end = len(ps)
 		}
 
-		for _, p := range ps {
-			if err := p.Persist(ctx, txs, d.version); err != nil {
-				return fmt.Errorf("persisting %T: %w", p, err)
+		batch := ps[i:end]
+		err := d.db.RunInTransaction(ctx, func(tx *pg.Tx) error {
+			txs := &TxStorage{
+				tx:     tx,
+				upsert: d.Upsert,
 			}
-		}
 
-		return nil
-	})
+			for _, p := range batch {
+				if err := p.Persist(ctx, txs, d.version); err != nil {
+					return fmt.Errorf("persisting %T: %w", p, err)
+				}
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (d *Database) ExecContext(c context.Context, query interface{}, params ...interface{}) (pg.Result, error) {
