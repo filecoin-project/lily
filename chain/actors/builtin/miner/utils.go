@@ -1,8 +1,9 @@
 package miner
 
 import (
-	"github.com/filecoin-project/go-bitfield"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/go-bitfield"
 )
 
 func AllPartSectors(mas State, sget func(Partition) (bitfield.BitField, error)) (bitfield.BitField, error) {

@@ -61,7 +61,7 @@ func ExtractSectorDealsModel(ctx context.Context, ec extraction.State) (minermod
 	}
 
 	for _, sector := range sectors {
-		for _, dealID := range sector.DealIDs {
+		for _, dealID := range sector.DeprecatedDealIDs {
 			result = append(result, &minermodel.MinerSectorDeal{
 				Height:   int64(ec.CurrentTipSet().Height()),
 				MinerID:  ec.Address().String(),

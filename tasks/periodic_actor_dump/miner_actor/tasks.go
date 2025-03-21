@@ -228,15 +228,15 @@ func calculateTerminateFeeForSector(currentEpoch abi.ChainEpoch, sector *miner.S
 	// How long has the sector been in power? Cap this value.
 	cappedSectorAge := min(currentEpoch-sector.PowerBaseEpoch, lifetimeCap)
 	// expected_reward = ExpectedDayReward * cappedSectorAge
-	expectedReward := big.Mul(sector.ExpectedDayReward, big.NewInt(int64(cappedSectorAge)))
+	expectedReward := big.Mul(*sector.ExpectedDayReward, big.NewInt(int64(cappedSectorAge)))
 	// relevant_replaced_age = min(PowerBaseEpoch - Activation, lifetimeCap - cappedSectorAge)
 	relevantReplacedAge := big.NewInt(int64(min(sector.PowerBaseEpoch-sector.Activation, lifetimeCap-cappedSectorAge)))
 	// Add the replaced sector's contribution.
-	expectedReward = big.Add(expectedReward, big.Mul(sector.ReplacedDayReward, relevantReplacedAge))
+	expectedReward = big.Add(expectedReward, big.Mul(*sector.ReplacedDayReward, relevantReplacedAge))
 	// penalized_reward = expected_reward / TERMINATION_REWARD_FACTOR_DENOM
 	penalizedReward := big.Div(expectedReward, big.NewInt(int64(TERMINATION_REWARD_FACTOR_DENOM)))
 	// Termination fee = ExpectedStoragePledge + (penalized_reward / EPOCHS_IN_DAY)
-	return big.Add(sector.ExpectedStoragePledge, big.Div(penalizedReward, big.NewInt(int64(EPOCHS_IN_DAY))))
+	return big.Add(*sector.ExpectedStoragePledge, big.Div(penalizedReward, big.NewInt(int64(EPOCHS_IN_DAY))))
 }
 
 func queryMinerActiveSectorsFromChain(minerState miner.State) ([]*miner.SectorOnChainInfo, error) {
