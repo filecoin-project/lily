@@ -62,11 +62,11 @@ var SyncStatusCmd = &cli.Command{
 
 		output := cctx.String("output")
 
-		var max abi.ChainEpoch = -1
+		var maxHeight abi.ChainEpoch = -1
 		maxStateSync := api.StageIdle
 		for _, ss := range state.ActiveSyncs {
-			if max < ss.Height && maxStateSync <= ss.Stage {
-				max = ss.Height
+			if maxHeight < ss.Height && maxStateSync <= ss.Stage {
+				maxHeight = ss.Height
 				maxStateSync = ss.Stage
 			}
 
@@ -87,7 +87,7 @@ var SyncStatusCmd = &cli.Command{
 
 			switch output {
 			case "json":
-				j, err := json.Marshal(SyncStatus{Stage: maxStateSync, Height: max})
+				j, err := json.Marshal(SyncStatus{Stage: maxStateSync, Height: maxHeight})
 				if err != nil {
 					return err
 				}
@@ -109,7 +109,7 @@ var SyncStatusCmd = &cli.Command{
 			case "text":
 				fallthrough
 			default:
-				fmt.Printf("%s %d\n", maxStateSync, max)
+				fmt.Printf("%s %d\n", maxStateSync, maxHeight)
 			}
 
 			if ss.Stage == api.StageSyncErrored && output != "json" {
