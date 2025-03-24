@@ -64,6 +64,13 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			replacedDayRewardStr = "0"
 		}
 
+		// Daily Fee
+		dailyFee := sector.DailyFee
+		dailyFeeStr := dailyFee.String()
+		if dailyFee.Nil() {
+			dailyFeeStr = "0"
+		}
+
 		sectorModel[i] = &minermodel.MinerSectorInfoV7{
 			Height:                int64(a.Current.Height()),
 			MinerID:               a.Address.String(),
@@ -80,6 +87,7 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			ReplacedDayReward:     replacedDayRewardStr,
 			PowerBaseEpoch:        int64(sector.PowerBaseEpoch),
 			SectorKeyCID:          sectorKeyCID,
+			DailyFee:              dailyFeeStr,
 		}
 	}
 

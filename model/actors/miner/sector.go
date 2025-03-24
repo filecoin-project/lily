@@ -40,6 +40,9 @@ type MinerSectorInfoV7 struct {
 	ReplacedDayReward string `pg:"type:numeric,notnull"`
 
 	PowerBaseEpoch int64 `pg:",use_zero"`
+
+	// daily fee
+	DailyFee string `pg:"type:numeric,notnull"`
 }
 
 // MinerSectorInfoV1_6 is exported from the miner actor iff the actor code is less than v7.
