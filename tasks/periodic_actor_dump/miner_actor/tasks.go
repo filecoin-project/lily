@@ -155,10 +155,10 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 				// 	return err
 				// }
 
-				// err = minerDumpObj.UpdateBalanceInfo(minerActor.Actor, minerState)
-				// if err != nil {
-				// 	return err
-				// }
+				err = minerDumpObj.UpdateBalanceInfo(minerActor.Actor, minerState)
+				if err != nil {
+					log.Errorf("Error at updating balance info: %v", err)
+				}
 
 				// err = p.updateAddressFromID(ctx, current, minerDumpObj)
 				// if err != nil {
