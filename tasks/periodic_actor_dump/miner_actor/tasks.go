@@ -148,10 +148,12 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 
 				sectors, err := queryMinerActiveSectorsFromChain(minerState)
 				if err == nil {
-					fee := getTerminationFeeForMiner(current.Height(), sectors)
-					minerDumpObj.TerminationFee = fee.String()
+					// For each active sector, calculate and print the termination fee.
+					terminationFee := getTerminationFeeForMiner(current.Height(), sectors)
+					minerDumpObj.TerminationFee = terminationFee.String()
 
-					dailyFee := sumDailyFeeForMiner(current.Height(), sectors)
+					// Calculate the daily fee for each sector and sum them up.
+					dailyFee := sumDailyFeeForMiner(sectors)
 					minerDumpObj.DailyFee = dailyFee.String()
 				} else {
 					log.Errorf("Error at getting the active sectors: %v", err)
@@ -270,7 +272,7 @@ func queryMinerActiveSectorsFromChain(minerState miner.State) ([]*miner.SectorOn
 	return activeSectors, nil
 }
 
-func sumDailyFeeForMiner(currentEpoch abi.ChainEpoch, sectors []*miner.SectorOnChainInfo) abi.TokenAmount {
+func sumDailyFeeForMiner(sectors []*miner.SectorOnChainInfo) abi.TokenAmount {
 	// For each active sector, calculate and print the termination fee.
 	var totalFee big.Int
 	totalFee = big.Zero()
