@@ -13,8 +13,8 @@ require (
 	github.com/filecoin-project/go-hamt-ipld/v3 v3.4.0
 	github.com/filecoin-project/go-jsonrpc v0.7.0
 	github.com/filecoin-project/go-paramfetch v0.0.4
-	github.com/filecoin-project/go-state-types v0.16.0-rc7
-	github.com/filecoin-project/lotus v1.32.0-rc3
+	github.com/filecoin-project/go-state-types v0.16.0
+	github.com/filecoin-project/lotus v1.32.2
 	github.com/filecoin-project/specs-actors v0.9.15
 	github.com/filecoin-project/specs-actors/v2 v2.3.6
 	github.com/filecoin-project/specs-actors/v3 v3.1.2
@@ -131,7 +131,7 @@ require (
 	github.com/elastic/go-windows v1.0.0 // indirect
 	github.com/elastic/gosigar v0.14.3 // indirect
 	github.com/fatih/color v1.18.0 // indirect
-	github.com/filecoin-project/filecoin-ffi v1.31.0 // indirect
+	github.com/filecoin-project/filecoin-ffi v1.32.0 // indirect
 	github.com/filecoin-project/go-cbor-util v0.0.1 // indirect
 	github.com/filecoin-project/go-clock v0.1.0 // indirect
 	github.com/filecoin-project/go-commp-utils/v2 v2.1.0 // indirect

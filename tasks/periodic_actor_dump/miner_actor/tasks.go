@@ -146,8 +146,16 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 					return err
 				}
 
-				fee := getTerminationFeeForMiner(current.Height(), minerState)
-				minerDumpObj.TerminationFee = fee.String()
+				sectors, err := queryMinerActiveSectorsFromChain(minerState)
+				if err == nil {
+					fee := getTerminationFeeForMiner(current.Height(), sectors)
+					minerDumpObj.TerminationFee = fee.String()
+
+					dailyFee := sumDailyFeeForMiner(current.Height(), sectors)
+					minerDumpObj.DailyFee = dailyFee.String()
+				} else {
+					log.Errorf("Error at getting the active sectors: %v", err)
+				}
 
 				// Stop the useless fields
 				// err = minerDumpObj.UpdateMinerInfo(minerState)
@@ -201,13 +209,7 @@ const (
 	FROZEN_DURATION_AFTER_CONSENSUS_FAULT = 900
 )
 
-func getTerminationFeeForMiner(currentEpoch abi.ChainEpoch, minerState builtinminer.State) abi.TokenAmount {
-	sectors, err := queryMinerActiveSectorsFromChain(minerState)
-	if err != nil {
-		log.Errorf("Error at querying miner active sectors: %v", err)
-		return big.Zero()
-	}
-
+func getTerminationFeeForMiner(currentEpoch abi.ChainEpoch, sectors []*miner.SectorOnChainInfo) abi.TokenAmount {
 	// For each active sector, calculate and print the termination fee.
 	var totalFee big.Int
 	totalFee = big.Zero()
@@ -266,4 +268,22 @@ func queryMinerActiveSectorsFromChain(minerState miner.State) ([]*miner.SectorOn
 		return nil, err
 	}
 	return activeSectors, nil
+}
+
+func sumDailyFeeForMiner(currentEpoch abi.ChainEpoch, sectors []*miner.SectorOnChainInfo) abi.TokenAmount {
+	// For each active sector, calculate and print the termination fee.
+	var totalFee big.Int
+	totalFee = big.Zero()
+	for _, sector := range sectors {
+		fee := sector.DailyFee
+		if fee.Nil() {
+			fee = big.Zero()
+		}
+
+		fmt.Printf("Sector %d daily fee: %s\n", sector.SectorNumber, fee.String())
+		totalFee = big.Add(totalFee, fee)
+	}
+
+	fmt.Printf("Total daily fee: %s\n", totalFee.String())
+	return totalFee
 }
