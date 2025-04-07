@@ -12,6 +12,7 @@ import (
 	"github.com/filecoin-project/go-state-types/big"
 	minertypes13 "github.com/filecoin-project/go-state-types/builtin/v13/miner"
 	miner16 "github.com/filecoin-project/go-state-types/builtin/v16/miner"
+	minertypes16 "github.com/filecoin-project/go-state-types/builtin/v16/miner"
 	miner8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/filecoin-project/go-state-types/cbor"
@@ -219,6 +220,8 @@ type Deadline interface {
 
 	PartitionsChanged(Deadline) (bool, error)
 	DisputableProofCount() (uint64, error)
+
+	DailyFee() (abi.TokenAmount, error)
 }
 
 type Partition interface {
@@ -357,7 +360,7 @@ type ProveCommitSectors3Params = minertypes13.ProveCommitSectors3Params
 type SectorActivationManifest = minertypes13.SectorActivationManifest
 type ProveReplicaUpdates3Params = minertypes13.ProveReplicaUpdates3Params
 type SectorUpdateManifest = minertypes13.SectorUpdateManifest
-type SectorOnChainInfoFlags = minertypes13.SectorOnChainInfoFlags
+type SectorOnChainInfoFlags = minertypes16.SectorOnChainInfoFlags
 type VerifiedAllocationKey = minertypes13.VerifiedAllocationKey
 
 var QAPowerMax = minertypes.QAPowerMax

@@ -236,7 +236,7 @@ func ExtractMinerSectorEvents(extState extraction.State, sectors *miner.SectorCh
 	// track sector add and commit-capacity add
 	for _, add := range sectors.Added {
 		event := minermodel.SectorAdded
-		if len(add.DealIDs) == 0 {
+		if len(add.DeprecatedDealIDs) == 0 {
 			event = minermodel.CommitCapacityAdded
 		}
 

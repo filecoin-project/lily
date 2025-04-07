@@ -394,8 +394,8 @@ func TestExtractSectorEvents(t *testing.T) {
 
 func generateFakeSectorOnChainInfo(sectorNumber uint64, dealIDs ...abi.DealID) miner.SectorOnChainInfo {
 	return miner.SectorOnChainInfo{
-		SectorNumber: abi.SectorNumber(sectorNumber),
-		DealIDs:      dealIDs,
+		SectorNumber:      abi.SectorNumber(sectorNumber),
+		DeprecatedDealIDs: dealIDs,
 		// faked
 		SealProof:             0,
 		SealedCID:             cid.Undef,
@@ -404,8 +404,8 @@ func generateFakeSectorOnChainInfo(sectorNumber uint64, dealIDs ...abi.DealID) m
 		DealWeight:            abi.DealWeight{},
 		VerifiedDealWeight:    abi.DealWeight{},
 		InitialPledge:         abi.TokenAmount{},
-		ExpectedDayReward:     abi.TokenAmount{},
-		ExpectedStoragePledge: abi.TokenAmount{},
+		ExpectedDayReward:     &abi.TokenAmount{},
+		ExpectedStoragePledge: &abi.TokenAmount{},
 		SectorKeyCID:          nil,
 	}
 }

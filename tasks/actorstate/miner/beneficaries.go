@@ -130,21 +130,21 @@ type beneficiaryTermChanges struct {
 	expiration int64
 }
 
-func minerBeneficiaryTermChanged(old, new miner.MinerInfo) (*beneficiaryTermChanges, bool) {
+func minerBeneficiaryTermChanged(oldInfo, newInfo miner.MinerInfo) (*beneficiaryTermChanges, bool) {
 	// are they identical?
-	if old.Beneficiary == new.Beneficiary &&
-		old.BeneficiaryTerm.Quota.Equals(new.BeneficiaryTerm.Quota) &&
-		old.BeneficiaryTerm.UsedQuota.Equals(new.BeneficiaryTerm.UsedQuota) &&
-		old.BeneficiaryTerm.Expiration == new.BeneficiaryTerm.Expiration {
+	if oldInfo.Beneficiary == newInfo.Beneficiary &&
+		oldInfo.BeneficiaryTerm.Quota.Equals(newInfo.BeneficiaryTerm.Quota) &&
+		oldInfo.BeneficiaryTerm.UsedQuota.Equals(newInfo.BeneficiaryTerm.UsedQuota) &&
+		oldInfo.BeneficiaryTerm.Expiration == newInfo.BeneficiaryTerm.Expiration {
 		// not changed
 		return nil, false
 	}
 
 	// changed.
 	return &beneficiaryTermChanges{
-		quota:      new.BeneficiaryTerm.Quota.String(),
-		usedQuota:  new.BeneficiaryTerm.UsedQuota.String(),
-		expiration: int64(new.BeneficiaryTerm.Expiration),
+		quota:      newInfo.BeneficiaryTerm.Quota.String(),
+		usedQuota:  newInfo.BeneficiaryTerm.UsedQuota.String(),
+		expiration: int64(newInfo.BeneficiaryTerm.Expiration),
 	}, true
 }
 
@@ -156,35 +156,35 @@ type pendingBeneficiaryChanges struct {
 	ApprovedByNominee     bool
 }
 
-func minerPendingBeneficiaryChanged(old, new miner.MinerInfo) (*pendingBeneficiaryChanges, bool) {
+func minerPendingBeneficiaryChanged(oldInfo, newInfo miner.MinerInfo) (*pendingBeneficiaryChanges, bool) {
 	// if both nil there is no change
-	if old.PendingBeneficiaryTerm == nil && new.PendingBeneficiaryTerm == nil {
+	if oldInfo.PendingBeneficiaryTerm == nil && newInfo.PendingBeneficiaryTerm == nil {
 		return nil, false
 	}
 	// at least one of them isn't nil, something changed
 	// if they are both non-nil check if their contents differs
-	if old.PendingBeneficiaryTerm != nil && new.PendingBeneficiaryTerm != nil {
+	if oldInfo.PendingBeneficiaryTerm != nil && newInfo.PendingBeneficiaryTerm != nil {
 		// are they identical?
-		if old.PendingBeneficiaryTerm.ApprovedByBeneficiary == new.PendingBeneficiaryTerm.ApprovedByBeneficiary &&
-			old.PendingBeneficiaryTerm.ApprovedByNominee == new.PendingBeneficiaryTerm.ApprovedByNominee &&
-			old.PendingBeneficiaryTerm.NewBeneficiary == new.PendingBeneficiaryTerm.NewBeneficiary &&
-			old.PendingBeneficiaryTerm.NewExpiration == new.PendingBeneficiaryTerm.NewExpiration &&
-			old.PendingBeneficiaryTerm.NewQuota.Equals(new.PendingBeneficiaryTerm.NewQuota) {
+		if oldInfo.PendingBeneficiaryTerm.ApprovedByBeneficiary == newInfo.PendingBeneficiaryTerm.ApprovedByBeneficiary &&
+			oldInfo.PendingBeneficiaryTerm.ApprovedByNominee == newInfo.PendingBeneficiaryTerm.ApprovedByNominee &&
+			oldInfo.PendingBeneficiaryTerm.NewBeneficiary == newInfo.PendingBeneficiaryTerm.NewBeneficiary &&
+			oldInfo.PendingBeneficiaryTerm.NewExpiration == newInfo.PendingBeneficiaryTerm.NewExpiration &&
+			oldInfo.PendingBeneficiaryTerm.NewQuota.Equals(newInfo.PendingBeneficiaryTerm.NewQuota) {
 			return nil, false
 		}
 		// at least one field differs and both are non-nil, return the latest.
 		return &pendingBeneficiaryChanges{
-			NewBeneficiary:        new.PendingBeneficiaryTerm.NewBeneficiary.String(),
-			NewQuota:              new.PendingBeneficiaryTerm.NewQuota.String(),
-			NewExpiration:         int64(new.PendingBeneficiaryTerm.NewExpiration),
-			ApprovedByBeneficiary: new.PendingBeneficiaryTerm.ApprovedByBeneficiary,
-			ApprovedByNominee:     new.PendingBeneficiaryTerm.ApprovedByNominee,
+			NewBeneficiary:        newInfo.PendingBeneficiaryTerm.NewBeneficiary.String(),
+			NewQuota:              newInfo.PendingBeneficiaryTerm.NewQuota.String(),
+			NewExpiration:         int64(newInfo.PendingBeneficiaryTerm.NewExpiration),
+			ApprovedByBeneficiary: newInfo.PendingBeneficiaryTerm.ApprovedByBeneficiary,
+			ApprovedByNominee:     newInfo.PendingBeneficiaryTerm.ApprovedByNominee,
 		}, true
 	}
 	// we know at least 1 struct is non-nil
 
 	// new is empty, then old was populated, return struct with null-able sql values
-	if new.PendingBeneficiaryTerm == nil {
+	if newInfo.PendingBeneficiaryTerm == nil {
 		return &pendingBeneficiaryChanges{
 			NewBeneficiary:        "",
 			NewQuota:              "",
@@ -195,10 +195,10 @@ func minerPendingBeneficiaryChanged(old, new miner.MinerInfo) (*pendingBeneficia
 	} // else
 	// new is non-empty, old was empty, return latest values.
 	return &pendingBeneficiaryChanges{
-		NewBeneficiary:        new.PendingBeneficiaryTerm.NewBeneficiary.String(),
-		NewQuota:              new.PendingBeneficiaryTerm.NewQuota.String(),
-		NewExpiration:         int64(new.PendingBeneficiaryTerm.NewExpiration),
-		ApprovedByBeneficiary: new.PendingBeneficiaryTerm.ApprovedByBeneficiary,
-		ApprovedByNominee:     new.PendingBeneficiaryTerm.ApprovedByNominee,
+		NewBeneficiary:        newInfo.PendingBeneficiaryTerm.NewBeneficiary.String(),
+		NewQuota:              newInfo.PendingBeneficiaryTerm.NewQuota.String(),
+		NewExpiration:         int64(newInfo.PendingBeneficiaryTerm.NewExpiration),
+		ApprovedByBeneficiary: newInfo.PendingBeneficiaryTerm.ApprovedByBeneficiary,
+		ApprovedByNominee:     newInfo.PendingBeneficiaryTerm.ApprovedByNominee,
 	}, true
 }

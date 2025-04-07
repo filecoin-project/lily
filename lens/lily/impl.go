@@ -44,6 +44,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/filecoin-project/lotus/node/impl/common"
+	"github.com/filecoin-project/lotus/node/impl/eth"
 	"github.com/filecoin-project/lotus/node/impl/full"
 	"github.com/filecoin-project/lotus/node/impl/net"
 )
@@ -58,7 +59,8 @@ type LilyNodeAPI struct {
 	full.ChainAPI
 	full.StateAPI
 	full.SyncAPI
-	full.EthModuleAPI
+
+	eth.EthTransactionAPI
 	full.ActorEventAPI
 	common.CommonAPI
 	Events    *events.Events
@@ -557,15 +559,15 @@ func (m *LilyNodeAPI) ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi
 }
 
 func (m *LilyNodeAPI) EthGetBlockByHash(ctx context.Context, blkHash ethtypes.EthHash, fullTxInfo bool) (ethtypes.EthBlock, error) {
-	return m.EthModuleAPI.EthGetBlockByHash(ctx, blkHash, fullTxInfo)
+	return m.EthTransactionAPI.EthGetBlockByHash(ctx, blkHash, fullTxInfo)
 }
 
 func (m *LilyNodeAPI) EthGetTransactionByHash(ctx context.Context, txHash *ethtypes.EthHash) (*ethtypes.EthTx, error) {
-	return m.EthModuleAPI.EthGetTransactionByHash(ctx, txHash)
+	return m.EthTransactionAPI.EthGetTransactionByHash(ctx, txHash)
 }
 
 func (m *LilyNodeAPI) EthGetTransactionReceipt(ctx context.Context, txHash ethtypes.EthHash) (*api.EthTxReceipt, error) {
-	return m.EthModuleAPI.EthGetTransactionReceipt(ctx, txHash)
+	return m.EthTransactionAPI.EthGetTransactionReceipt(ctx, txHash)
 }
 
 func (m *LilyNodeAPI) ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error) {

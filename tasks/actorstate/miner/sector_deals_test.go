@@ -41,35 +41,35 @@ func TestExtractSectorDealsModelWithParentState(t *testing.T) {
 		Return(&minerstate.SectorChanges{
 			Added: []minerstate.SectorOnChainInfo{
 				{
-					DealIDs:      []abi.DealID{1},
-					SectorNumber: 1,
+					DeprecatedDealIDs: []abi.DealID{1},
+					SectorNumber:      1,
 				},
 				{
-					DealIDs:      []abi.DealID{2},
-					SectorNumber: 2,
+					DeprecatedDealIDs: []abi.DealID{2},
+					SectorNumber:      2,
 				},
 				{
-					DealIDs:      []abi.DealID{3},
-					SectorNumber: 3,
+					DeprecatedDealIDs: []abi.DealID{3},
+					SectorNumber:      3,
 				},
 			},
 			Snapped: []minerstate.SectorModification{
 				{
 					To: minerstate.SectorOnChainInfo{
-						DealIDs:      []abi.DealID{4},
-						SectorNumber: 4,
+						DeprecatedDealIDs: []abi.DealID{4},
+						SectorNumber:      4,
 					},
 				},
 				{
 					To: minerstate.SectorOnChainInfo{
-						DealIDs:      []abi.DealID{5},
-						SectorNumber: 5,
+						DeprecatedDealIDs: []abi.DealID{5},
+						SectorNumber:      5,
 					},
 				},
 				{
 					To: minerstate.SectorOnChainInfo{
-						DealIDs:      []abi.DealID{6},
-						SectorNumber: 6,
+						DeprecatedDealIDs: []abi.DealID{6},
+						SectorNumber:      6,
 					},
 				},
 			},
@@ -110,28 +110,28 @@ func TestExtractSectorDealsModelNoParentState(t *testing.T) {
 	var bf *bitfield.BitField
 	currentMinerState.On("LoadSectors", bf).Return([]*minerstate.SectorOnChainInfo{
 		{
-			SectorNumber: 1,
-			DealIDs:      []abi.DealID{1},
+			SectorNumber:      1,
+			DeprecatedDealIDs: []abi.DealID{1},
 		},
 		{
-			DealIDs:      []abi.DealID{2},
-			SectorNumber: 2,
+			DeprecatedDealIDs: []abi.DealID{2},
+			SectorNumber:      2,
 		},
 		{
-			DealIDs:      []abi.DealID{3},
-			SectorNumber: 3,
+			DeprecatedDealIDs: []abi.DealID{3},
+			SectorNumber:      3,
 		},
 		{
-			DealIDs:      []abi.DealID{4},
-			SectorNumber: 4,
+			DeprecatedDealIDs: []abi.DealID{4},
+			SectorNumber:      4,
 		},
 		{
-			DealIDs:      []abi.DealID{5},
-			SectorNumber: 5,
+			DeprecatedDealIDs: []abi.DealID{5},
+			SectorNumber:      5,
 		},
 		{
-			DealIDs:      []abi.DealID{6},
-			SectorNumber: 6,
+			DeprecatedDealIDs: []abi.DealID{6},
+			SectorNumber:      6,
 		},
 	}, nil)
 
