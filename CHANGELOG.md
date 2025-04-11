@@ -290,7 +290,7 @@ This release includes a migration which must be applied before deploying against
 * [1.21](https://github.com/filecoin-project/lily/blob/master/schemas/v1/21_actor_add_state.go)
 
 ### Feat
-* feat: Add retry opt for asynq https://github.com/filecoin-project/lily/pull/1167
+* feat: Add retry opt for async https://github.com/filecoin-project/lily/pull/1167
 * Create FEVM actor stats task https://github.com/filecoin-project/lily/pull/1173
   * implement fevm_actor_stats task and schema
     * task name `fevm_actor_stats`
@@ -313,7 +313,7 @@ This release includes a migration which must be applied before deploying against
 * fix: do not error on null or empty params for parsing message https://github.com/filecoin-project/lily/pull/1171
 
 ### Chore
-* feat:update the lotus version https://github.com/filecoin-project/lily/pull/1153
+* feat: update the lotus version https://github.com/filecoin-project/lily/pull/1153
 * feat: update the lotus version to v1.23.0 https://github.com/filecoin-project/lily/pull/1175
 
 
@@ -641,7 +641,7 @@ The following datasets are affected:
     ```bash
     $ lily index height 1741960 --tasks=actorstatesraw,actorstatespower,actorstatesreward,actorstatesminer,actorstatesinit,actorstatesmarket,actorstatesmultisig,actorstatesverifreg,block,messages,chaineconomics,msapprovals,implicitmessage,consensus
     ```
-    will produce the follow entries in the processing_reports table
+    will produce the following entries in the processing_reports table
 
     | height | task | status |
     | --- | --- | --- |
@@ -683,10 +683,10 @@ The following datasets are affected:
     | 1741960 | actor | OK |
 
 - Watcher Workers (#871)
-  - The `lily watch` command now has the option to specify the number of tipsets that may be indexed in parallel. This can be specified with the `--workers` flag (see `lily watch --help` for details). Note that using large values (greater than 2) will require significant resource to coupe with indexing demands.
+  - The `lily watch` command now has the option to specify the number of tipsets that may be indexed in parallel. This can be specified with the `--workers` flag (see `lily watch --help` for details). Note that using large values (greater than 2) will require significant resource to cope with indexing demands.
 
 - Blockstore and Statestore Caching (#766)
-  - The `lily daemon` command now as the option to use a `blockstore` and/or `statestore` cache. The `blockstore` cache caches values from the lotus blockstore, the `statestore` cache caches values from the lotus statestore. Setting these flags will increase the performance of the lily daemon, but will cause lily to use more memory. Assuming lily is operating on a system with 256 GiB of RAM we recommend the following values: `--blockstore-cache-size=5000000` and `--statestore-cache-size=3000000`. Some tuning will be required to find the values that work best for your deployment.
+  - The `lily daemon` command now has the option to use a `blockstore` and/or `statestore` cache. The `blockstore` cache caches values from the lotus blockstore, the `statestore` cache caches values from the lotus statestore. Setting these flags will increase the performance of the lily daemon, but will cause lily to use more memory. Assuming lily is operating on a system with 256 GiB of RAM we recommend the following values: `--blockstore-cache-size=5000000` and `--statestore-cache-size=3000000`. Some tuning will be required to find the values that work best for your deployment.
 
 ### Fix
 
@@ -875,7 +875,7 @@ If there are any questions or problems, please [open a support issue](https://gi
 Note: This is a major release. The project name has changed from `sentinel-visor` to `lily`, the binary
 produced when building the project has changed from `visor` to `lily`, and all lenses have been removed.
 This means lily will cease to work with the lotusAPI lens, CAR-file lens, and Repo lens. Henceforth, Lily
-will run as a deamonized process capable of both syncing and processing the Filecoin blockchain.
+will run as a daemonized process capable of both syncing and processing the Filecoin blockchain.
 
 ### Docs
 - strengthen constraints on schema migrations (#683)
@@ -1329,7 +1329,7 @@ Required schema version: `27`
 
 The CLI interface has shifted again to deprecate the `run` subcommand in favor of dedicated subcommands for `indexer` and `processor` behaviors.
 
-Previously the indexer and procerror would be started via:
+Previously the indexer and processor would be started via:
 
 ```sh
   sentinel-visor run --indexhead
@@ -1378,7 +1378,7 @@ The `run` subcommand will be removed in v0.5.0.
 
 ### Test
 - add multisig actor extractor tests
-- power actor claim extration test
+- power actor claim extraction test
 - **init:** test coverage for init actor extractor
 
 ### Chore
@@ -1474,7 +1474,7 @@ The `run` subcommand will be removed in v0.5.0.
 
 this changes the cli interface to remove the run subcommand.
 
-Previously the indexer and procerror would be started via:
+Previously the indexer and processor would be started via:
 
 ```sh
   sentinel-visor run indexer
@@ -1503,7 +1503,7 @@ After this change:
 - support v2 actor codes ([#84](https://github.com/filecoin-project/sentinel-visor/issues/84))
 - add test for create schema ([#3](https://github.com/filecoin-project/sentinel-visor/issues/3))
 - **api:** wrap lotus api and store with wrapper
-- **debug:** Process actor by head without persistance ([#86](https://github.com/filecoin-project/sentinel-visor/issues/86))
+- **debug:** Process actor by head without persistence ([#86](https://github.com/filecoin-project/sentinel-visor/issues/86))
 - **genesis:** add task for processing genesis state
 - **scheduler:** Refactor task scheduler impl ([#41](https://github.com/filecoin-project/sentinel-visor/issues/41))
 - **task:** add actor, actor-state, and init actor processing ([#14](https://github.com/filecoin-project/sentinel-visor/issues/14))
