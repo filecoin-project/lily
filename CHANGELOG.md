@@ -5,7 +5,25 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
-<a name="v0.22.0"></a>
+<a name="v0.23.0"></a>
+
+## [v0.23.0] - 2025-04-14
+
+## DATABASE MIGRATION
+This release includes a migration which must be applied before deploying against an existing database.
+* [1.41](https://github.com/filecoin-project/lily/blob/master/schemas/v1/41_add_fields_in_miner_sectro_info.go)
+* [1.42](https://github.com/filecoin-project/lily/blob/master/schemas/v1/42_add_fields_in_miner_dump.go)
+* [1.43](https://github.com/filecoin-project/lily/blob/master/schemas/v1/43_add_daily_fee_in_miner_sectro_info.go)
+* [1.44](https://github.com/filecoin-project/lily/blob/master/schemas/v1/44_add_daily_fee_in_miner_dump.go)
+
+### Feat
+* feat: add new fields in miner_sector_info_v7 (https://github.com/filecoin-project/lily/pull/1333)
+* feat: add new fields in miner actor dumps (https://github.com/filecoin-project/lily/pull/1334)
+* feat: refine the insert batch size (https://github.com/filecoin-project/lily/pull/1335)
+
+### Chore:
+* chore: update lotus to v1.32.0-rc3 (https://github.com/filecoin-project/lily/pull/1338)
+* chore: update lotus to v1.32.2 (https://github.com/filecoin-project/lily/pull/1339)
 
 ## [v0.22.0] - 2024-12-13
 
