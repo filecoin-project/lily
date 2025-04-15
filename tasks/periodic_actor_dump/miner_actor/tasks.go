@@ -229,17 +229,17 @@ func getTerminationFeeForMiner(currentEpoch abi.ChainEpoch, sectors []*miner.Sec
 func calculateTerminateFeeForSector(currentEpoch abi.ChainEpoch, sector *miner.SectorOnChainInfo) abi.TokenAmount {
 	// Set default values to 0 if any of the fields are nil
 	expectedDayReward := big.Zero()
-	if sector.ExpectedDayReward != nil {
+	if sector.ExpectedDayReward != nil && !sector.ExpectedDayReward.Nil() {
 		expectedDayReward = *sector.ExpectedDayReward
 	}
 
 	replacedDayReward := big.Zero()
-	if sector.ReplacedDayReward != nil {
+	if sector.ReplacedDayReward != nil && !sector.ReplacedDayReward.Nil() {
 		replacedDayReward = *sector.ReplacedDayReward
 	}
 
 	expectedStoragePledge := big.Zero()
-	if sector.ExpectedStoragePledge != nil {
+	if sector.ExpectedStoragePledge != nil && !sector.ExpectedStoragePledge.Nil() {
 		expectedStoragePledge = *sector.ExpectedStoragePledge
 	}
 

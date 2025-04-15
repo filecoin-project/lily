@@ -28,6 +28,8 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		return nil, fmt.Errorf("creating miner state extraction context: %w", err)
 	}
 
+	log.Infof("loading sectors for miner %s, height: %v", a.Address.String(), a.Current.Height())
+
 	var sectors []*miner.SectorOnChainInfo
 	if !ec.HasPreviousState() {
 		// If the miner doesn't have previous state list all of its current sectors.
@@ -39,6 +41,7 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		// If the miner has previous state compute the list of new sectors in its current state.
 		sectorChanges, err := node.DiffSectors(ctx, a.Address, a.Current, a.Executed, ec.PrevState, ec.CurrState)
 		if err != nil {
+			log.Errorf("diffing sectors for miner %s, height: %v: %v", a.Address.String(), a.Current.Height(), err)
 			return nil, err
 		}
 		for i := range sectorChanges.Added {
@@ -52,6 +55,7 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		}
 	}
 	sectorModel := make(minermodel.MinerSectorInfoV7List, len(sectors))
+
 	for i, sector := range sectors {
 		sectorKeyCID := ""
 		if sector.SectorKeyCID != nil {
@@ -59,16 +63,28 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		}
 
 		replacedDayReward := sector.ReplacedDayReward
-		replacedDayRewardStr := replacedDayReward.String()
-		if replacedDayReward.Nil() {
-			replacedDayRewardStr = "0"
+		replacedDayRewardStr := "0"
+		if replacedDayReward != nil && !replacedDayReward.Nil() {
+			replacedDayRewardStr = replacedDayReward.String()
+		}
+
+		expectedDayReward := sector.ExpectedDayReward
+		expectedDayRewardStr := "0"
+		if expectedDayReward != nil && !expectedDayReward.Nil() {
+			expectedDayRewardStr = expectedDayReward.String()
+		}
+
+		expectedStoragePledge := sector.ExpectedStoragePledge
+		expectedStoragePledgeStr := "0"
+		if expectedStoragePledge != nil && !expectedStoragePledge.Nil() {
+			expectedStoragePledgeStr = expectedStoragePledge.String()
 		}
 
 		// Daily Fee
 		dailyFee := sector.DailyFee
-		dailyFeeStr := dailyFee.String()
-		if dailyFee.Nil() {
-			dailyFeeStr = "0"
+		dailyFeeStr := "0"
+		if !dailyFee.Nil() {
+			dailyFeeStr = dailyFee.String()
 		}
 
 		sectorModel[i] = &minermodel.MinerSectorInfoV7{
@@ -82,8 +98,8 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			DealWeight:            sector.DealWeight.String(),
 			VerifiedDealWeight:    sector.VerifiedDealWeight.String(),
 			InitialPledge:         sector.InitialPledge.String(),
-			ExpectedDayReward:     sector.ExpectedDayReward.String(),
-			ExpectedStoragePledge: sector.ExpectedStoragePledge.String(),
+			ExpectedDayReward:     expectedDayRewardStr,
+			ExpectedStoragePledge: expectedStoragePledgeStr,
 			ReplacedDayReward:     replacedDayRewardStr,
 			PowerBaseEpoch:        int64(sector.PowerBaseEpoch),
 			SectorKeyCID:          sectorKeyCID,
