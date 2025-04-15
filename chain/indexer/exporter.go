@@ -45,6 +45,9 @@ func (me *ModelExporter) ExportResult(ctx context.Context, strg model.Storage, h
 		log.Debugw("no results to export", "height", height, "reporter", me.name)
 		return nil
 	}
+
+	log.Infof("exporting %d results for height %d", len(results), height)
+
 	// lock exporting based on height only allowing a single height to be persisted simultaneously
 	heightKey := strconv.FormatInt(height, 10)
 	me.heightKeyMu.LockKey(heightKey)
