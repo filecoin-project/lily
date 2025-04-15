@@ -5,7 +5,12 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
-<a name="v0.23.0"></a>
+<a name="v0.23.1"></a>
+
+## [v0.23.1] - 2025-04-15
+
+### Fix:
+* fix: nil pointer (https://github.com/filecoin-project/lily/pull/1342)
 
 ## [v0.23.0] - 2025-04-14
 
