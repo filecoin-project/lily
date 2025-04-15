@@ -132,6 +132,7 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 				Model: model.PersistableList{res.Report, res.Data},
 			})
 
+			lg.Infow("task completed", "task", res.Name, "reporter", i.name)
 		}
 
 		lg.Infow("exporting results", "height", ts.Height(), "reporter", i.name, "tasks_size", len(modelResults))
