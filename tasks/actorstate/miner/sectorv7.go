@@ -37,8 +37,11 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		}
 	} else {
 		// If the miner has previous state compute the list of new sectors in its current state.
+		log.Infof("diffing sectors for miner %s, height: %v", a.Address.String(), a.Current.Height())
 		sectorChanges, err := node.DiffSectors(ctx, a.Address, a.Current, a.Executed, ec.PrevState, ec.CurrState)
+		log.Infof("diffed sectors for miner %s, height: %v", a.Address.String(), a.Current.Height())
 		if err != nil {
+			log.Errorf("diffing sectors for miner %s, height: %v: %v", a.Address.String(), a.Current.Height(), err)
 			return nil, err
 		}
 		for i := range sectorChanges.Added {
