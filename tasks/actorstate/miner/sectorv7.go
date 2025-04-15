@@ -72,6 +72,18 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			replacedDayRewardStr = replacedDayReward.String()
 		}
 
+		expectedDayReward := sector.ExpectedDayReward
+		expectedDayRewardStr := "0"
+		if !expectedDayReward.Nil() {
+			expectedDayRewardStr = expectedDayReward.String()
+		}
+
+		expectedStoragePledge := sector.ExpectedStoragePledge
+		expectedStoragePledgeStr := "0"
+		if !expectedStoragePledge.Nil() {
+			expectedStoragePledgeStr = expectedStoragePledge.String()
+		}
+
 		// Daily Fee
 		dailyFee := sector.DailyFee
 		dailyFeeStr := dailyFee.String()
@@ -90,8 +102,8 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			DealWeight:            sector.DealWeight.String(),
 			VerifiedDealWeight:    sector.VerifiedDealWeight.String(),
 			InitialPledge:         sector.InitialPledge.String(),
-			ExpectedDayReward:     sector.ExpectedDayReward.String(),
-			ExpectedStoragePledge: sector.ExpectedStoragePledge.String(),
+			ExpectedDayReward:     expectedDayRewardStr,
+			ExpectedStoragePledge: expectedDayRewardStr,
 			ReplacedDayReward:     replacedDayRewardStr,
 			PowerBaseEpoch:        int64(sector.PowerBaseEpoch),
 			SectorKeyCID:          sectorKeyCID,
