@@ -64,19 +64,19 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 
 		replacedDayReward := sector.ReplacedDayReward
 		replacedDayRewardStr := "0"
-		if !replacedDayReward.Nil() {
+		if replacedDayReward != nil && !replacedDayReward.Nil() {
 			replacedDayRewardStr = replacedDayReward.String()
 		}
 
 		expectedDayReward := sector.ExpectedDayReward
 		expectedDayRewardStr := "0"
-		if !expectedDayReward.Nil() {
+		if expectedDayReward != nil && !expectedDayReward.Nil() {
 			expectedDayRewardStr = expectedDayReward.String()
 		}
 
 		expectedStoragePledge := sector.ExpectedStoragePledge
 		expectedStoragePledgeStr := "0"
-		if !expectedStoragePledge.Nil() {
+		if expectedStoragePledge != nil && !expectedStoragePledge.Nil() {
 			expectedStoragePledgeStr = expectedStoragePledge.String()
 		}
 
