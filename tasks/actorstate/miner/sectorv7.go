@@ -28,6 +28,8 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		return nil, fmt.Errorf("creating miner state extraction context: %w", err)
 	}
 
+	log.Infof("loading sectors for miner %s, height: %v", a.Address.String(), a.Current.Height())
+
 	var sectors []*miner.SectorOnChainInfo
 	if !ec.HasPreviousState() {
 		// If the miner doesn't have previous state list all of its current sectors.
@@ -55,6 +57,9 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		}
 	}
 	sectorModel := make(minermodel.MinerSectorInfoV7List, len(sectors))
+
+	log.Infof("got %d sectors for miner %s, height: %v", len(sectors), a.Address.String(), a.Current.Height())
+
 	for i, sector := range sectors {
 		sectorKeyCID := ""
 		if sector.SectorKeyCID != nil {
@@ -62,9 +67,9 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		}
 
 		replacedDayReward := sector.ReplacedDayReward
-		replacedDayRewardStr := replacedDayReward.String()
-		if replacedDayReward.Nil() {
-			replacedDayRewardStr = "0"
+		replacedDayRewardStr := "0"
+		if !replacedDayReward.Nil() {
+			replacedDayRewardStr = replacedDayReward.String()
 		}
 
 		// Daily Fee
@@ -93,6 +98,8 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			DailyFee:              dailyFeeStr,
 		}
 	}
+
+	log.Infof("loaded %d sectors model for miner %s, height: %v", len(sectorModel), a.Address.String(), a.Current.Height())
 
 	return sectorModel, nil
 }
