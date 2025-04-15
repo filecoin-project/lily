@@ -39,9 +39,7 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		}
 	} else {
 		// If the miner has previous state compute the list of new sectors in its current state.
-		log.Infof("diffing sectors for miner %s, height: %v", a.Address.String(), a.Current.Height())
 		sectorChanges, err := node.DiffSectors(ctx, a.Address, a.Current, a.Executed, ec.PrevState, ec.CurrState)
-		log.Infof("diffed sectors for miner %s, height: %v", a.Address.String(), a.Current.Height())
 		if err != nil {
 			log.Errorf("diffing sectors for miner %s, height: %v: %v", a.Address.String(), a.Current.Height(), err)
 			return nil, err
@@ -57,8 +55,6 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		}
 	}
 	sectorModel := make(minermodel.MinerSectorInfoV7List, len(sectors))
-
-	log.Infof("got %d sectors for miner %s, height: %v", len(sectors), a.Address.String(), a.Current.Height())
 
 	for i, sector := range sectors {
 		sectorKeyCID := ""
@@ -86,9 +82,9 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 
 		// Daily Fee
 		dailyFee := sector.DailyFee
-		dailyFeeStr := dailyFee.String()
-		if dailyFee.Nil() {
-			dailyFeeStr = "0"
+		dailyFeeStr := "0"
+		if !dailyFee.Nil() {
+			dailyFeeStr = dailyFee.String()
 		}
 
 		sectorModel[i] = &minermodel.MinerSectorInfoV7{
@@ -110,8 +106,6 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			DailyFee:              dailyFeeStr,
 		}
 	}
-
-	log.Infof("loaded %d sectors model for miner %s, height: %v", len(sectorModel), a.Address.String(), a.Current.Height())
 
 	return sectorModel, nil
 }
