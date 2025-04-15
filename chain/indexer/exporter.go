@@ -42,7 +42,7 @@ type ModelResult struct {
 // - if data with height N and SR2 is being persisted and a request to persist data with height N and SR1 is made, block
 func (me *ModelExporter) ExportResult(ctx context.Context, strg model.Storage, height int64, results []*ModelResult) error {
 	if len(results) == 0 {
-		log.Debugw("no results to export", "height", height, "reporter", me.name)
+		log.Infof("no results to export", "height", height, "reporter", me.name)
 		return nil
 	}
 
