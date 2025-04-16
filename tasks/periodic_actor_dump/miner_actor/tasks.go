@@ -93,7 +93,7 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 
 	log.Infof("Size of Power Actors: %v", len(actors[manifest.PowerKey]))
 
-	blockReward, err := util.GetBlockReward(ctx, p.node, current.Key())
+	blockReward, err := util.GetBlockReward(ctx, p.node, current.Key(), p.node.Store())
 	if err != nil {
 		log.Errorf("Error at getting the block reward: %v", err)
 	}
