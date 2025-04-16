@@ -237,25 +237,25 @@ func calculateTerminateFeeForSector(currentEpoch abi.ChainEpoch, sector *miner.S
 
 	// a = initialPledge * 8.5% * activatedDays / 140
 	// initialPledge * 8.5%
-	simpleTermFee := big.Mul(sector.InitialPledge, big.Div(big.NewInt(85), big.NewInt(1000)))
+	simpleTermFee := big.Div(big.Mul(sector.InitialPledge, big.NewInt(85)), big.NewInt(1000))
 
 	// activatedDays := (currentEpoch - sector.Activation) / EPOCHS_IN_DAY
 	activatedDays := big.Div(big.NewInt(int64(currentEpoch-sector.Activation)), big.NewInt(int64(EPOCHS_IN_DAY)))
 
 	// a
-	durationTerminationFee := big.Mul(simpleTermFee, big.Div(activatedDays, big.NewInt(140)))
+	durationTerminationFee := big.Div(big.Mul(simpleTermFee, activatedDays), big.NewInt(140))
 
 	log.Infof("Sector %d: InitialPledge: %v, Activation: %v\n",
 		sector.SectorNumber, sector.InitialPledge, sector.Activation)
 
 	// b = initialPledge * 2%
-	minimumFeeAbs := big.Mul(sector.InitialPledge, big.Div(big.NewInt(2), big.NewInt(100)))
+	minimumFeeAbs := big.Div(big.Mul(sector.InitialPledge, big.NewInt(2)), big.NewInt(100))
 
 	// c = faultFee * 105%  (faultFee ~= sector's 3.5 day BR)
 	// - The faultFee is essentially 3.5 days’ block rewards for the sector.
 	// faultFee = blockReward * 3.5
-	faultFee := big.Mul(blockReward, big.Div(big.NewInt(7), big.NewInt(2)))
-	minimumFeeFF := big.Mul(faultFee, big.Div(big.NewInt(105), big.NewInt(100)))
+	faultFee := big.Div(big.Mul(blockReward, big.NewInt(7)), big.NewInt(2))
+	minimumFeeFF := big.Div(big.Mul(faultFee, big.NewInt(105)), big.NewInt(100))
 
 	log.Infof("Sector %d: durationTerminationFee: %s, minimumFeeAbs: %s, minimumFeeFF: %s\n",
 		sector.SectorNumber, durationTerminationFee.String(), minimumFeeAbs.String(), minimumFeeFF.String())
