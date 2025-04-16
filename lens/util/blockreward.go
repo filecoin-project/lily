@@ -9,9 +9,6 @@ import (
 	builtin "github.com/filecoin-project/lotus/chain/actors/builtin"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
-
-	lotusapi "github.com/filecoin-project/lotus/api"
-	"github.com/filecoin-project/lotus/blockstore"
 )
 
 func GetBlockReward(ctx context.Context, ds tasks.DataSource, tsk types.TipSetKey, store adt.Store) (big.Int, error) {
@@ -39,11 +36,4 @@ func GetBlockReward(ctx context.Context, ds tasks.DataSource, tsk types.TipSetKe
 	log.Infof("[GetBlockReward] block reward: %s", blockReward.String())
 
 	return blockReward, nil
-}
-
-func newTieredBlockstore(api *lotusapi.FullNodeStruct) blockstore.Blockstore {
-	return blockstore.NewTieredBstore(
-		blockstore.NewAPIBlockstore(api),
-		blockstore.NewMemory(),
-	)
 }

@@ -245,9 +245,6 @@ func calculateTerminateFeeForSector(currentEpoch abi.ChainEpoch, sector *miner.S
 	// a
 	durationTerminationFee := big.Div(big.Mul(simpleTermFee, activatedDays), big.NewInt(140))
 
-	log.Infof("Sector %d: InitialPledge: %v, Activation: %v\n",
-		sector.SectorNumber, sector.InitialPledge, sector.Activation)
-
 	// b = initialPledge * 2%
 	minimumFeeAbs := big.Div(big.Mul(sector.InitialPledge, big.NewInt(2)), big.NewInt(100))
 
@@ -256,9 +253,6 @@ func calculateTerminateFeeForSector(currentEpoch abi.ChainEpoch, sector *miner.S
 	// faultFee = blockReward * 3.5
 	faultFee := big.Div(big.Mul(blockReward, big.NewInt(7)), big.NewInt(2))
 	minimumFeeFF := big.Div(big.Mul(faultFee, big.NewInt(105)), big.NewInt(100))
-
-	log.Infof("Sector %d: durationTerminationFee: %s, minimumFeeAbs: %s, minimumFeeFF: %s\n",
-		sector.SectorNumber, durationTerminationFee.String(), minimumFeeAbs.String(), minimumFeeFF.String())
 
 	return big.Max(big.Max(durationTerminationFee, minimumFeeAbs), minimumFeeFF)
 }
