@@ -224,11 +224,11 @@ func getTerminationFeeForMiner(currentEpoch abi.ChainEpoch, sectors []*miner.Sec
 	for _, sector := range sectors {
 		fee := calculateTerminateFeeForSector(currentEpoch, sector, blockReward)
 
-		fmt.Printf("Sector %d termination fee: %s\n", sector.SectorNumber, fee.String())
+		log.Infof("Sector %d termination fee: %s\n", sector.SectorNumber, fee.String())
 		totalFee = big.Add(totalFee, fee)
 	}
 
-	fmt.Printf("Total termination fee: %s\n", totalFee.String())
+	log.Infof("Total termination fee: %s\n", totalFee.String())
 	return totalFee
 }
 
@@ -253,6 +253,9 @@ func calculateTerminateFeeForSector(currentEpoch abi.ChainEpoch, sector *miner.S
 	// faultFee = blockReward * 3.5
 	faultFee := big.Mul(blockReward, big.Div(big.NewInt(7), big.NewInt(2)))
 	minimumFeeFF := big.Mul(faultFee, big.Div(big.NewInt(105), big.NewInt(100)))
+
+	log.Infof("Sector %d: durationTerminationFee: %s, minimumFeeAbs: %s, minimumFeeFF: %s\n",
+		sector.SectorNumber, durationTerminationFee.String(), minimumFeeAbs.String(), minimumFeeFF.String())
 
 	return big.Max(big.Max(durationTerminationFee, minimumFeeAbs), minimumFeeFF)
 }

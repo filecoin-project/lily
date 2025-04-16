@@ -18,6 +18,7 @@ import (
 func GetBlockReward(ctx context.Context, ds tasks.DataSource, tsk types.TipSetKey) (big.Int, error) {
 	ract, err := ds.Actor(ctx, reward.Address, tsk)
 	if err != nil {
+		log.Errorf("[GetBlockReward] failed to get reward actor: %v", err)
 		return big.Zero(), err
 	}
 
@@ -26,11 +27,13 @@ func GetBlockReward(ctx context.Context, ds tasks.DataSource, tsk types.TipSetKe
 
 	rst, err := reward.Load(adt.WrapStore(ctx, cbor.NewCborStore(tbsRew)), ract)
 	if err != nil {
+		log.Error("[GetBlockReward] failed to load reward actor state: %v", err)
 		return big.Zero(), err
 	}
 
 	epochReward, err := rst.ThisEpochReward()
 	if err != nil {
+		log.Error("[GetBlockReward] failed to get ThisEpochReward: %v", err)
 		return big.Zero(), err
 	}
 
