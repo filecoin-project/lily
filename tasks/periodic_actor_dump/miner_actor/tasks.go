@@ -233,18 +233,25 @@ func getTerminationFeeForMiner(currentEpoch abi.ChainEpoch, sectors []*miner.Sec
 }
 
 func calculateTerminateFeeForSector(currentEpoch abi.ChainEpoch, sector *miner.SectorOnChainInfo, blockReward big.Int) abi.TokenAmount {
-	// simpleTermFee := sector.InitialPledge * 85 / 1000
+	// sectorTerminateFee = max(a, b, c)
+
+	// a = initialPledge * 8.5% * activatedDays / 140
+	// initialPledge * 8.5%
 	simpleTermFee := big.Mul(sector.InitialPledge, big.Div(big.NewInt(85), big.NewInt(1000)))
 
 	// activatedDays := (currentEpoch - sector.Activation) / EPOCHS_IN_DAY
 	activatedDays := big.Div(big.NewInt(int64(currentEpoch-sector.Activation)), big.NewInt(int64(EPOCHS_IN_DAY)))
 
+	// a
 	durationTerminationFee := big.Mul(simpleTermFee, big.Div(activatedDays, big.NewInt(140)))
 
+	// b = initialPledge * 2%
 	minimumFeeAbs := big.Mul(sector.InitialPledge, big.Div(big.NewInt(2), big.NewInt(100)))
 
+	// c = faultFee * 105%  (faultFee ~= sector's 3.5 day BR)
+	// - The faultFee is essentially 3.5 days’ block rewards for the sector.
+	// faultFee = blockReward * 3.5
 	faultFee := big.Mul(blockReward, big.Div(big.NewInt(7), big.NewInt(2)))
-
 	minimumFeeFF := big.Mul(faultFee, big.Div(big.NewInt(105), big.NewInt(100)))
 
 	return big.Max(big.Max(durationTerminationFee, minimumFeeAbs), minimumFeeFF)
