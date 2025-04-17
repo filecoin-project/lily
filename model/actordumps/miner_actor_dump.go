@@ -61,6 +61,11 @@ type MinerActorDump struct {
 
 	// Daily Fee
 	DailyFee string `pg:"type:numeric,notnull"`
+
+	// Termination Fee V2
+	// Network Version >= 25
+	// Actor Version >= 16
+	TerminationFeeV2 string `pg:"type:numeric,notnull"`
 }
 
 func (m *MinerActorDump) Persist(ctx context.Context, s model.StorageBatch, _ model.Version) error {
