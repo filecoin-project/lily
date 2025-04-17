@@ -23,6 +23,7 @@ import (
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
 
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/lotus/chain/types"
 )
 
@@ -154,9 +155,17 @@ func (p *Task) ProcessPeriodicActorDump(ctx context.Context, current *types.TipS
 
 				sectors, err := queryMinerActiveSectorsFromChain(minerState)
 				if err == nil {
+
 					// For each active sector, calculate and print the termination fee.
-					terminationFee := getTerminationFeeForMiner(current.Height(), sectors, blockReward)
-					minerDumpObj.TerminationFee = terminationFee.String()
+					if minerState.ActorVersion() >= actorstypes.Version16 {
+						terminationFee := getTerminationFeeForMinerV2(current.Height(), sectors, blockReward)
+						minerDumpObj.TerminationFeeV2 = terminationFee.String()
+						minerDumpObj.TerminationFee = big.Zero().String()
+					} else {
+						terminationFee := getTerminationFeeForMiner(current.Height(), sectors)
+						minerDumpObj.TerminationFee = terminationFee.String()
+						minerDumpObj.TerminationFeeV2 = big.Zero().String()
+					}
 
 					// Calculate the daily fee for each sector and sum them up.
 					dailyFee := sumDailyFeeForMiner(sectors)
@@ -217,12 +226,27 @@ const (
 	FROZEN_DURATION_AFTER_CONSENSUS_FAULT = 900
 )
 
-func getTerminationFeeForMiner(currentEpoch abi.ChainEpoch, sectors []*miner.SectorOnChainInfo, blockReward big.Int) abi.TokenAmount {
+func getTerminationFeeForMinerV2(currentEpoch abi.ChainEpoch, sectors []*miner.SectorOnChainInfo, blockReward big.Int) abi.TokenAmount {
 	// For each active sector, calculate and print the termination fee.
 	var totalFee big.Int
 	totalFee = big.Zero()
 	for _, sector := range sectors {
-		fee := calculateTerminateFeeForSector(currentEpoch, sector, blockReward)
+		fee := calculateTerminateFeeForSectorV2(currentEpoch, sector, blockReward)
+
+		log.Infof("Sector %d termination fee v2: %s\n", sector.SectorNumber, fee.String())
+		totalFee = big.Add(totalFee, fee)
+	}
+
+	log.Infof("Total termination fee v2: %s\n", totalFee.String())
+	return totalFee
+}
+
+func getTerminationFeeForMiner(currentEpoch abi.ChainEpoch, sectors []*miner.SectorOnChainInfo) abi.TokenAmount {
+	// For each active sector, calculate and print the termination fee.
+	var totalFee big.Int
+	totalFee = big.Zero()
+	for _, sector := range sectors {
+		fee := calculateTerminateFeeForSector(currentEpoch, sector)
 
 		log.Infof("Sector %d termination fee: %s\n", sector.SectorNumber, fee.String())
 		totalFee = big.Add(totalFee, fee)
@@ -232,7 +256,7 @@ func getTerminationFeeForMiner(currentEpoch abi.ChainEpoch, sectors []*miner.Sec
 	return totalFee
 }
 
-func calculateTerminateFeeForSector(currentEpoch abi.ChainEpoch, sector *miner.SectorOnChainInfo, blockReward big.Int) abi.TokenAmount {
+func calculateTerminateFeeForSectorV2(currentEpoch abi.ChainEpoch, sector *miner.SectorOnChainInfo, blockReward big.Int) abi.TokenAmount {
 	// sectorTerminateFee = max(a, b, c)
 
 	// a = initialPledge * 8.5% * activatedDays / 140
@@ -255,6 +279,39 @@ func calculateTerminateFeeForSector(currentEpoch abi.ChainEpoch, sector *miner.S
 	minimumFeeFF := big.Div(big.Mul(faultFee, big.NewInt(105)), big.NewInt(100))
 
 	return big.Max(big.Max(durationTerminationFee, minimumFeeAbs), minimumFeeFF)
+}
+
+func calculateTerminateFeeForSector(currentEpoch abi.ChainEpoch, sector *miner.SectorOnChainInfo) abi.TokenAmount {
+	// Set default values to 0 if any of the fields are nil
+	expectedDayReward := big.Zero()
+	if sector.ExpectedDayReward != nil && !sector.ExpectedDayReward.Nil() {
+		expectedDayReward = *sector.ExpectedDayReward
+	}
+
+	replacedDayReward := big.Zero()
+	if sector.ReplacedDayReward != nil && !sector.ReplacedDayReward.Nil() {
+		replacedDayReward = *sector.ReplacedDayReward
+	}
+
+	expectedStoragePledge := big.Zero()
+	if sector.ExpectedStoragePledge != nil && !sector.ExpectedStoragePledge.Nil() {
+		expectedStoragePledge = *sector.ExpectedStoragePledge
+	}
+
+	// lifetime_cap in epochs.
+	lifetimeCap := abi.ChainEpoch(LIFETIME_CAP * EPOCHS_IN_DAY)
+	// How long has the sector been in power? Cap this value.
+	cappedSectorAge := min(currentEpoch-sector.PowerBaseEpoch, lifetimeCap)
+	// expected_reward = ExpectedDayReward * cappedSectorAge
+	expectedReward := big.Mul(expectedDayReward, big.NewInt(int64(cappedSectorAge)))
+	// relevant_replaced_age = min(PowerBaseEpoch - Activation, lifetimeCap - cappedSectorAge)
+	relevantReplacedAge := big.NewInt(int64(min(sector.PowerBaseEpoch-sector.Activation, lifetimeCap-cappedSectorAge)))
+	// Add the replaced sector's contribution.
+	expectedReward = big.Add(expectedReward, big.Mul(replacedDayReward, relevantReplacedAge))
+	// penalized_reward = expected_reward / TERMINATION_REWARD_FACTOR_DENOM
+	penalizedReward := big.Div(expectedReward, big.NewInt(int64(TERMINATION_REWARD_FACTOR_DENOM)))
+	// Termination fee = ExpectedStoragePledge + (penalized_reward / EPOCHS_IN_DAY)
+	return big.Add(expectedStoragePledge, big.Div(penalizedReward, big.NewInt(int64(EPOCHS_IN_DAY))))
 }
 
 func queryMinerActiveSectorsFromChain(minerState miner.State) ([]*miner.SectorOnChainInfo, error) {
