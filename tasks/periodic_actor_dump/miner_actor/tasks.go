@@ -259,7 +259,7 @@ func getTerminationFeeForMiner(currentEpoch abi.ChainEpoch, sectors []*miner.Sec
 func calculateTerminateFeeForSectorV2(currentEpoch abi.ChainEpoch, sector *miner.SectorOnChainInfo, blockReward big.Int) abi.TokenAmount {
 	// sectorTerminateFee = max(a, b, c)
 
-	// a = initialPledge * 8.5% * activatedDays / 140
+	// a = initialPledge * 8.5% * min(1, activatedDays / 140)
 	// initialPledge * 8.5%
 	simpleTermFee := big.Div(big.Mul(sector.InitialPledge, big.NewInt(85)), big.NewInt(1000))
 
