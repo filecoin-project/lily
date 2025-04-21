@@ -267,7 +267,11 @@ func calculateTerminateFeeForSectorV2(currentEpoch abi.ChainEpoch, sector *miner
 	activatedDays := big.Div(big.NewInt(int64(currentEpoch-sector.Activation)), big.NewInt(int64(EPOCHS_IN_DAY)))
 
 	// a
+	// age_factor = min(1, activated_days / TERMINATION_LIFETIME_CAP)
 	durationTerminationFee := big.Div(big.Mul(simpleTermFee, activatedDays), big.NewInt(140))
+	if activatedDays.GreaterThan(big.NewInt(140)) {
+		durationTerminationFee = simpleTermFee
+	}
 
 	// b = initialPledge * 2%
 	minimumFeeAbs := big.Div(big.Mul(sector.InitialPledge, big.NewInt(2)), big.NewInt(100))
