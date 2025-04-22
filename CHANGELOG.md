@@ -5,7 +5,20 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
-<a name="v0.23.1"></a>
+<a name="v0.23.2"></a>
+
+## [v0.23.2] - 2025-04-22
+
+## DATABASE MIGRATION
+* [1.45](https://github.com/filecoin-project/lily/blob/master/schemas/v1/45_add_fields_in_miner_dump.go)
+
+### Feat
+* feat: update termination fee (https://github.com/filecoin-project/lily/pull/1344)
+* feat: add new column for miner actor dump - termination_fee_v2 (https://github.com/filecoin-project/lily/pull/1345)
+
+### Fix
+* fix: migration scripts error (https://github.com/filecoin-project/lily/pull/1346)
+* fix: the formula error (https://github.com/filecoin-project/lily/pull/1347)
 
 ## [v0.23.1] - 2025-04-15
 
@@ -26,7 +39,7 @@ This release includes a migration which must be applied before deploying against
 * feat: add new fields in miner actor dumps (https://github.com/filecoin-project/lily/pull/1334)
 * feat: refine the insert batch size (https://github.com/filecoin-project/lily/pull/1335)
 
-### Chore:
+### Chore
 * chore: update lotus to v1.32.0-rc3 (https://github.com/filecoin-project/lily/pull/1338)
 * chore: update lotus to v1.32.2 (https://github.com/filecoin-project/lily/pull/1339)
 
@@ -39,7 +52,7 @@ This release includes a migration which must be applied before deploying against
 ### Fix
 * fix: insert actor methods db error (https://github.com/filecoin-project/lily/pull/1331)
 
-### Chore:
+### Chore
 * chore: upgrade the lotus to v1.32.0-rc1 for nv25 (https://github.com/filecoin-project/lily/pull/1329)
 
 
