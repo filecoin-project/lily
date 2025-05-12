@@ -12,6 +12,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
+	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -23,7 +24,6 @@ import (
 	visormodel "github.com/filecoin-project/lily/model/visor"
 	"github.com/filecoin-project/lily/tasks"
 
-	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/lotus/chain/types"
 )
 
@@ -341,10 +341,8 @@ func sumDailyFeeForMiner(sectors []*miner.SectorOnChainInfo) abi.TokenAmount {
 			fee = big.Zero()
 		}
 
-		fmt.Printf("Sector %d daily fee: %s\n", sector.SectorNumber, fee.String())
 		totalFee = big.Add(totalFee, fee)
 	}
 
-	fmt.Printf("Total daily fee: %s\n", totalFee.String())
 	return totalFee
 }
