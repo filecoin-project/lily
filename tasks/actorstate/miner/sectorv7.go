@@ -28,8 +28,6 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 		return nil, fmt.Errorf("creating miner state extraction context: %w", err)
 	}
 
-	log.Infof("loading sectors for miner %s, height: %v", a.Address.String(), a.Current.Height())
-
 	var sectors []*miner.SectorOnChainInfo
 	if !ec.HasPreviousState() {
 		// If the miner doesn't have previous state list all of its current sectors.
