@@ -159,13 +159,11 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			if child.Receipt.ExitCode.IsSuccess() {
 				params, _, err := util.ParseVmMessageParams(child.Message.Params, child.Message.ParamsCodec, child.Message.Method, toCode)
 				if err != nil {
-					// a failure here indicates an error in message param parsing, or in exitcode checks above.
-					errorsDetected = append(errorsDetected, &messages.MessageError{
-						Cid: parentMsg.Cid,
-						// hex encode the params for reproduction in a unit test.
-						Error: fmt.Errorf("failed parse child message params cid: %s to code: %s method: %d params (hex encoded): %s : %w",
-							childCid, toCode, child.Message.Method, hex.EncodeToString(child.Message.Params), err).Error(),
-					})
+					// don't have to return error, just log it
+					// actor method error could not be fixed in Lily
+					errMsg := fmt.Errorf("failed parse child message params cid: %s to code: %s method: %d params (hex encoded): %s : %w",
+						childCid, toCode, child.Message.Method, hex.EncodeToString(child.Message.Params), err).Error()
+					log.Warnf("[buildin-actor][params]: %v", errMsg)
 				} else {
 					// add the message params
 					vmMsg.Params = params
@@ -173,12 +171,11 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 				ret, _, err := util.ParseVmMessageReturn(child.Receipt.Return, child.Receipt.ReturnCodec, child.Message.Method, toCode)
 				if err != nil {
-					errorsDetected = append(errorsDetected, &messages.MessageError{
-						Cid: parentMsg.Cid,
-						// hex encode the return for reproduction in a unit test.
-						Error: fmt.Errorf("failed parse child message return cid: %s to code: %s method: %d return (hex encoded): %s : %w",
-							childCid, toCode, child.Message.Method, hex.EncodeToString(child.Receipt.Return), err).Error(),
-					})
+					// don't have to return error, just log it
+					// actor method error could not be fixed in Lily
+					errMsg := fmt.Errorf("failed parse child message return cid: %s to code: %s method: %d return (hex encoded): %s : %w",
+						childCid, toCode, child.Message.Method, hex.EncodeToString(child.Receipt.Return), err).Error()
+					log.Warnf("[buildin-actor][return]: %v", errMsg)
 				} else {
 					// add the message return.
 					vmMsg.Returns = ret
