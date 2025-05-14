@@ -7,7 +7,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 <a name="v0.23.2"></a>
 
-## [v0.23.2] - 2025-04-22
+## [v0.23.3] - 2025-05-14
+
+### Fix
+* fix: the wrong logging and return in vm_messages for parsing return and params (https://github.com/filecoin-project/lily/pull/1352)
+
+
+### Chore
+* chore: update lotus (https://github.com/filecoin-project/lily/pull/1350)
+* chore: clean the log in miner_actor_dump (https://github.com/filecoin-project/lily/pull/1351)
+* chore: clean the useless logging in sectorv7 (https://github.com/filecoin-project/lily/pull/1353)
+
 
 ## DATABASE MIGRATION
 * [1.45](https://github.com/filecoin-project/lily/blob/master/schemas/v1/45_add_fields_in_miner_dump.go)
