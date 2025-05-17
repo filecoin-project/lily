@@ -127,7 +127,7 @@ func (p *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			txnObj.TransactionIndex = uint64(*txn.TransactionIndex)
 		}
 
-		// Sometime the the "To" field could be nil
+		// Sometime the "To" field could be nil
 		if txn.To != nil {
 			txnObj.To = txn.To.String()
 
