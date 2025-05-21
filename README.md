@@ -3,9 +3,9 @@
 
 A component of [**Sentinel**](https://github.com/filecoin-project/sentinel), a collection of services which monitor the health and function of the Filecoin network. 
 
-Lily is a instrumentalized instance of a [**Lotus**](https://github.com/filecoin-project/lotus/) node that collects _permanent_ Filecoin chain metrics and writes them to a [**TimescaleDB**](https://github.com/timescale/timescaledb) time-series and relational datastore or to CSV files.
+Lily is an instrumentalized instance of a [**Lotus**](https://github.com/filecoin-project/lotus/) node that collects _permanent_ Filecoin chain metrics and writes them to a [**TimescaleDB**](https://github.com/timescale/timescaledb) time-series and relational datastore or to CSV files.
 
-## User documentation
+## User documentation 
 
 Lily documentation, including with [build](https://lily.starboard.ventures/software/lily/setup/), [operation instructions](https://lily.starboard.ventures/software/lily/operation/), [data models](https://lily.starboard.ventures/data/models/) and [access to data dumps](https://lily.starboard.ventures/data/dumps/) is available at https://lily.starboard.ventures/.
 
