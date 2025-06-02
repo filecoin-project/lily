@@ -14,7 +14,7 @@ require (
 	github.com/filecoin-project/go-jsonrpc v0.7.0
 	github.com/filecoin-project/go-paramfetch v0.0.4
 	github.com/filecoin-project/go-state-types v0.16.0
-	github.com/filecoin-project/lotus v1.32.3
+	github.com/filecoin-project/lotus v1.33.0
 	github.com/filecoin-project/specs-actors v0.9.15
 	github.com/filecoin-project/specs-actors/v2 v2.3.6
 	github.com/filecoin-project/specs-actors/v3 v3.1.2
@@ -138,7 +138,7 @@ require (
 	github.com/filecoin-project/go-crypto v0.1.0 // indirect
 	github.com/filecoin-project/go-data-transfer/v2 v2.0.0-rc7 // indirect
 	github.com/filecoin-project/go-ds-versioning v0.1.2 // indirect
-	github.com/filecoin-project/go-f3 v0.8.3 // indirect
+	github.com/filecoin-project/go-f3 v0.8.4 // indirect
 	github.com/filecoin-project/go-hamt-ipld v0.1.5 // indirect
 	github.com/filecoin-project/go-hamt-ipld/v2 v2.0.0 // indirect
 	github.com/filecoin-project/go-padreader v0.0.1 // indirect
@@ -329,8 +329,8 @@ require (
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	github.com/yugabyte/pgx/v5 v5.5.3-yb-2 // indirect
 	github.com/zondax/hid v0.9.2 // indirect
-	github.com/zondax/ledger-filecoin-go v0.11.1 // indirect
-	github.com/zondax/ledger-go v0.14.3 // indirect
+	github.com/zondax/ledger-filecoin-go v1.0.1 // indirect
+	github.com/zondax/ledger-go v1.0.0 // indirect
 	github.com/zyedidia/generic v1.2.1 // indirect
 	gitlab.com/yawning/secp256k1-voi v0.0.0-20230925100816-f2616030848b // indirect
 	gitlab.com/yawning/tuplehash v0.0.0-20230713102510-df83abbf9a02 // indirect
@@ -346,7 +346,7 @@ require (
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/term v0.30.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
