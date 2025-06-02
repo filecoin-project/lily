@@ -59,7 +59,7 @@ type LilyNodeAPI struct {
 	full.StateAPI
 	full.SyncAPI
 
-	full.EthTransactionAPIV2
+	full.EthTransactionAPIV1
 	full.ActorEventAPI
 	common.CommonAPI
 	Events    *events.Events
@@ -558,15 +558,15 @@ func (m *LilyNodeAPI) ComputeBaseFee(ctx context.Context, ts *types.TipSet) (abi
 }
 
 func (m *LilyNodeAPI) EthGetBlockByHash(ctx context.Context, blkHash ethtypes.EthHash, fullTxInfo bool) (ethtypes.EthBlock, error) {
-	return m.EthTransactionAPIV2.EthGetBlockByHash(ctx, blkHash, fullTxInfo)
+	return m.EthTransactionAPIV1.EthGetBlockByHash(ctx, blkHash, fullTxInfo)
 }
 
 func (m *LilyNodeAPI) EthGetTransactionByHash(ctx context.Context, txHash *ethtypes.EthHash) (*ethtypes.EthTx, error) {
-	return m.EthTransactionAPIV2.EthGetTransactionByHash(ctx, txHash)
+	return m.EthTransactionAPIV1.EthGetTransactionByHash(ctx, txHash)
 }
 
 func (m *LilyNodeAPI) EthGetTransactionReceipt(ctx context.Context, txHash ethtypes.EthHash) (*api.EthTxReceipt, error) {
-	return m.EthTransactionAPIV2.EthGetTransactionReceipt(ctx, txHash)
+	return m.EthTransactionAPIV1.EthGetTransactionReceipt(ctx, txHash)
 }
 
 func (m *LilyNodeAPI) ChainGetMessagesInTipset(ctx context.Context, tsk types.TipSetKey) ([]api.Message, error) {
