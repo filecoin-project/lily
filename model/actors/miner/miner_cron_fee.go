@@ -11,6 +11,8 @@ import (
 )
 
 type MinerCronFee struct {
+	tableName struct{} `pg:"miner_cron_fees"` // nolint: structcheck
+
 	Height  int64  `pg:",pk,notnull,use_zero"`
 	Address string `pg:",pk,notnull"`
 

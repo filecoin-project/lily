@@ -64,6 +64,11 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		penalty big.Int
 	}
 
+	report := &visormodel.ProcessingReport{
+		Height:    int64(current.Height()),
+		StateRoot: current.ParentState().String(),
+	}
+
 	// Calculate the expected penalty for a given power amount. This is unfortunately complicated
 	// by the need to fetch total network reward and power for the current tipset.
 	faultFeeForPower := func(qaPower abi.StoragePower) (abi.TokenAmount, error) {
@@ -142,7 +147,8 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 
 	compute, err := t.node.StateCompute(ctx, current.Height(), nil, current.Key())
 	if err != nil {
-		return nil, nil, fmt.Errorf("computing tipset at deadline end epoch: %w", err)
+		report.ErrorsDetected = fmt.Errorf("computing state at tipset: %w", err)
+		return nil, report, nil
 	}
 
 	cronMinerCallsCache := make(map[string]struct{})
@@ -192,11 +198,17 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		return nil
 	}
 
+	errors := make([]error, 0)
 	for _, invoc := range compute.Trace {
 		trace := invoc.ExecutionTrace
 		if err := traceBurns(0, trace, nil); err != nil {
 			log.Errorf("error processing execution trace: %v", err)
+			errors = append(errors, err)
 		}
+	}
+
+	if len(errors) > 0 {
+		report.ErrorsDetected = fmt.Errorf("errors processing cron fee burns: %v", errors)
 	}
 
 	result := make(minermodel.MinerCronFeeList, 0, len(burns))
@@ -204,5 +216,5 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		result = append(result, burn)
 	}
 
-	return result, nil, nil
+	return result, report, nil
 }
