@@ -548,6 +548,14 @@ func (d *deadline11) DailyFee() (abi.TokenAmount, error) {
 	return big.Zero(), nil
 }
 
+func (d *deadline11) FaultyPowerQA() (big.Int, error) {
+	return big.Zero(), nil
+}
+
+func (d *deadline11) LivePowerQA() (big.Int, error) {
+	return big.Zero(), nil
+}
+
 func (p *partition11) AllSectors() (bitfield.BitField, error) {
 	return p.Partition.Sectors, nil
 }

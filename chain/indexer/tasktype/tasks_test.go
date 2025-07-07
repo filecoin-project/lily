@@ -31,7 +31,7 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 			tasks: []string{tasktype.MinerSectorDeal, tasktype.MinerSectorInfoV7, tasktype.MinerSectorInfoV1_6,
 				tasktype.MinerSectorPost, tasktype.MinerPreCommitInfo, tasktype.MinerPreCommitInfoV9, tasktype.MinerSectorEvent,
 				tasktype.MinerCurrentDeadlineInfo, tasktype.MinerFeeDebt, tasktype.MinerLockedFund, tasktype.MinerInfo,
-				tasktype.MinerBeneficiary},
+				tasktype.MinerBeneficiary, tasktype.MinerCronFee},
 		},
 		{
 			taskAlias: tasktype.ActorStatesInitTask,

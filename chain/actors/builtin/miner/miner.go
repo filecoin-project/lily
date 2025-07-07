@@ -11,8 +11,6 @@ import (
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	"github.com/filecoin-project/go-state-types/big"
 	minertypes13 "github.com/filecoin-project/go-state-types/builtin/v13/miner"
-	minertypes14 "github.com/filecoin-project/go-state-types/builtin/v14/miner"
-	minertypes15 "github.com/filecoin-project/go-state-types/builtin/v15/miner"
 	miner16 "github.com/filecoin-project/go-state-types/builtin/v16/miner"
 	minertypes16 "github.com/filecoin-project/go-state-types/builtin/v16/miner"
 	miner8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
@@ -30,18 +28,9 @@ import (
 	builtin6 "github.com/filecoin-project/specs-actors/v6/actors/builtin"
 	builtin7 "github.com/filecoin-project/specs-actors/v7/actors/builtin"
 
-	smoothing13 "github.com/filecoin-project/go-state-types/builtin/v13/util/smoothing"
-	smoothing14 "github.com/filecoin-project/go-state-types/builtin/v14/util/smoothing"
-	smoothing15 "github.com/filecoin-project/go-state-types/builtin/v15/util/smoothing"
-	smoothing16 "github.com/filecoin-project/go-state-types/builtin/v16/util/smoothing"
-
-
 	lotusactors "github.com/filecoin-project/lotus/chain/actors"
 	"github.com/filecoin-project/lotus/chain/actors/adt"
 	"github.com/filecoin-project/lotus/chain/types"
-
-	lbuiltin "github.com/filecoin-project/lotus/chain/actors/builtin"
-
 )
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
@@ -233,6 +222,8 @@ type Deadline interface {
 	DisputableProofCount() (uint64, error)
 
 	DailyFee() (abi.TokenAmount, error)
+	FaultyPowerQA() (big.Int, error)
+	LivePowerQA() (big.Int, error)
 }
 
 type Partition interface {
@@ -460,121 +451,5 @@ func VersionCodes() map[actorstypes.Version]cid.Cid {
 		actorstypes.Version14: (&state14{}).Code(),
 		actorstypes.Version15: (&state15{}).Code(),
 		actorstypes.Version16: (&state16{}).Code(),
-	}
-}
-
-func PledgePenaltyForContinuedFault(
-	nwVer network.Version,
-	rewardEstimate lbuiltin.FilterEstimate,
-	networkQaPowerEstimate lbuiltin.FilterEstimate,
-	qaSectorPower abi.StoragePower,
-) (abi.TokenAmount, error) {
-	v, err := actorstypes.VersionForNetwork(nwVer)
-	if err != nil {
-		return big.Zero(), err
-	}
-
-	if v <= actorstypes.Version16 {
-		return minertypes16.PledgePenaltyForContinuedFault(
-			smoothing16.FilterEstimate{
-				PositionEstimate: rewardEstimate.PositionEstimate,
-				VelocityEstimate: rewardEstimate.VelocityEstimate,
-			},
-			smoothing16.FilterEstimate{
-				PositionEstimate: networkQaPowerEstimate.PositionEstimate,
-				VelocityEstimate: networkQaPowerEstimate.VelocityEstimate,
-			},
-			qaSectorPower,
-		), nil
-	}
-
-	return big.Zero(), xerrors.Errorf("unsupported network version: %d", nwVer)
-}
-
-func PledgePenaltyForTermination(
-	nwVer network.Version,
-	initialPledge abi.TokenAmount,
-	sectorAge abi.ChainEpoch,
-	faultFee abi.TokenAmount,
-) (abi.TokenAmount, error) {
-	v, err := actorstypes.VersionForNetwork(nwVer)
-	if err != nil {
-		return big.Zero(), err
-	}
-
-	switch v {
-	case actorstypes.Version16:
-		return minertypes16.PledgePenaltyForTermination(initialPledge, sectorAge, faultFee), nil
-	default:
-		return big.Zero(), xerrors.Errorf("unsupported network version: %d", nwVer)
-	}
-}
-
-func ExpectedRewardForPower(
-	nwVer network.Version,
-	rewardEstimate, networkQAPowerEstimate lbuiltin.FilterEstimate,
-	qaSectorPower abi.StoragePower,
-	projectionDuration abi.ChainEpoch,
-) (abi.TokenAmount, error) {
-	v, err := actorstypes.VersionForNetwork(nwVer)
-	if err != nil {
-		return big.Zero(), err
-	}
-
-	switch v {
-	case actorstypes.Version13:
-		return minertypes13.ExpectedRewardForPower(
-			smoothing13.FilterEstimate{
-				PositionEstimate: rewardEstimate.PositionEstimate,
-				VelocityEstimate: rewardEstimate.VelocityEstimate,
-			},
-			smoothing13.FilterEstimate{
-				PositionEstimate: networkQAPowerEstimate.PositionEstimate,
-				VelocityEstimate: networkQAPowerEstimate.VelocityEstimate,
-			},
-			qaSectorPower,
-			projectionDuration,
-		), nil
-	case actorstypes.Version14:
-		return minertypes14.ExpectedRewardForPower(
-			smoothing14.FilterEstimate{
-				PositionEstimate: rewardEstimate.PositionEstimate,
-				VelocityEstimate: rewardEstimate.VelocityEstimate,
-			},
-			smoothing14.FilterEstimate{
-				PositionEstimate: networkQAPowerEstimate.PositionEstimate,
-				VelocityEstimate: networkQAPowerEstimate.VelocityEstimate,
-			},
-			qaSectorPower,
-			projectionDuration,
-		), nil
-	case actorstypes.Version15:
-		return minertypes15.ExpectedRewardForPower(
-			smoothing15.FilterEstimate{
-				PositionEstimate: rewardEstimate.PositionEstimate,
-				VelocityEstimate: rewardEstimate.VelocityEstimate,
-			},
-			smoothing15.FilterEstimate{
-				PositionEstimate: networkQAPowerEstimate.PositionEstimate,
-				VelocityEstimate: networkQAPowerEstimate.VelocityEstimate,
-			},
-			qaSectorPower,
-			projectionDuration,
-		), nil
-	case actorstypes.Version16:
-		return minertypes16.ExpectedRewardForPower(
-			smoothing16.FilterEstimate{
-				PositionEstimate: rewardEstimate.PositionEstimate,
-				VelocityEstimate: rewardEstimate.VelocityEstimate,
-			},
-			smoothing16.FilterEstimate{
-				PositionEstimate: networkQAPowerEstimate.PositionEstimate,
-				VelocityEstimate: networkQAPowerEstimate.VelocityEstimate,
-			},
-			qaSectorPower,
-			projectionDuration,
-		), nil
-	default:
-		return big.Zero(), xerrors.Errorf("unsupported network version: %d", nwVer)
 	}
 }

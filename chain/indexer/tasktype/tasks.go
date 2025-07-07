@@ -46,6 +46,7 @@ var TaskLookup = map[string][]string{
 		MinerLockedFund,
 		MinerInfo,
 		MinerBeneficiary,
+		MinerCronFee,
 	},
 	ActorStatesInitTask: {
 		IDAddress,

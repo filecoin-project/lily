@@ -796,6 +796,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 			out.TipsetsProcessors[t] = actorevent.NewTask(api)
 		case tasktype.BuiltInActorEvent:
 			out.TipsetsProcessors[t] = builtinactorevent.NewTask(api)
+		case tasktype.MinerCronFee:
+			out.TipsetsProcessors[t] = minertask.NewTask(api)
 		case tasktype.ReceiptReturn:
 			out.TipsetsProcessors[t] = receiptreturn.NewTask(api)
 

@@ -186,6 +186,10 @@ func (t *DataSource) GetActorEventsRaw(ctx context.Context, filter *types.ActorE
 	return t.node.GetActorEventsRaw(ctx, filter)
 }
 
+func (t *DataSource) StateCompute(ctx context.Context, height abi.ChainEpoch, msgs []*types.Message, tsk types.TipSetKey) (*api.ComputeStateOutput, error) {
+	return t.node.StateCompute(ctx, height, msgs, tsk)
+}
+
 // TipSetMessageReceipts returns the blocks and messages in `pts` and their corresponding receipts from `ts` matching block order in tipset (`pts`).
 // TODO replace with lotus chainstore method when https://github.com/filecoin-project/lotus/pull/9186 lands
 func (t *DataSource) TipSetMessageReceipts(ctx context.Context, ts, pts *types.TipSet) ([]*lens.BlockMessageReceipts, error) {

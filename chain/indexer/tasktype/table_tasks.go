@@ -56,6 +56,7 @@ const (
 	FEVMActorDump                  = "fevm_actor_dumps"
 	MinerActorDump                 = "miner_actor_dumps"
 	BuiltInActorEvent              = "builtin_actor_event"
+	MinerCronFee                   = "miner_cron_fee"
 )
 
 var AllTableTasks = []string{
@@ -113,6 +114,7 @@ var AllTableTasks = []string{
 	MinerActorDump,
 	BuiltInActorEvent,
 	MinerSectorDealV2,
+	MinerCronFee,
 }
 
 var TableLookup = map[string]struct{}{
@@ -170,6 +172,7 @@ var TableLookup = map[string]struct{}{
 	MinerActorDump:                 {},
 	BuiltInActorEvent:              {},
 	MinerSectorDealV2:              {},
+	MinerCronFee:                   {},
 }
 
 var TableComment = map[string]string{
@@ -227,6 +230,7 @@ var TableComment = map[string]string{
 	MinerActorDump:                 ``,
 	BuiltInActorEvent:              ``,
 	MinerSectorDealV2:              ``,
+	MinerCronFee:                   ``,
 }
 
 var TableFieldComments = map[string]map[string]string{
@@ -457,4 +461,5 @@ var TableFieldComments = map[string]map[string]string{
 	},
 	BuiltInActorEvent: {},
 	MinerSectorDealV2: {},
+	MinerCronFee:{},
 }
