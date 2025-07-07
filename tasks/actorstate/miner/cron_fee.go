@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"time"
 
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
@@ -184,17 +183,16 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 		} else if thisExecCronMiner != nil && trace.Msg.From.String() == thisExecCronMiner.Address && trace.Msg.To == burnAddr {
 			// TODO: handle multiple burn? Shouldn't happen but maybe it should be checked?
 			thisExecCronMiner.Burn = trace.Msg.Value.String()
+
+			// if the burn is zero, we don't need to inspect the miner
 			if trace.Msg.Value.Equals(big.Zero()) {
 				return nil
 			}
 
-			startTs := time.Now()
 			fee, penalty, err := inspectMiner(trace.Msg.From)
 			if err != nil {
 				return fmt.Errorf("inspecting miner: %w", err)
 			}
-			endTs := time.Now()
-			log.Infof("[inspected miner] in %v", endTs.Sub(startTs))
 			thisExecCronMiner.Fee = fee.String()
 			thisExecCronMiner.Penalty = penalty.String()
 		}
