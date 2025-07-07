@@ -92,6 +92,9 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			return big.Zero(), big.Zero(), fmt.Errorf("getting miner actor: %w", err)
 		}
 		minerState, err := builtinminer.Load(t.node.Store(), minerActor.Actor)
+		if err != nil {
+			return big.Zero(), big.Zero(), fmt.Errorf("loading miner state: %w", err)
+		}
 
 		dinfo, err := minerState.DeadlineInfo(current.Height())
 		if err != nil {
@@ -152,7 +155,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			// cron call to miner
 			if thisExecCronMiner != nil {
 				if _, ok := cronMinerCallsCache[thisExecCronMiner.Address]; ok {
-					return fmt.Errorf("multiple cron calls to same miner in one message: %s", *thisExecCronMiner)
+					return fmt.Errorf("multiple cron calls to same miner in one message: %s", thisExecCronMiner.Address)
 				}
 			}
 
