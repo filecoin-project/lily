@@ -189,6 +189,11 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			thisExecCronMiner.Burn = trace.Msg.Value.String()
 		}
 
+		// If this is the first depth, we only want to process the cron call to the miner.
+		if depth == 0 && !(trace.Msg.From == power.Address && trace.Msg.Method == 12) {
+			return nil
+		}
+
 		for _, st := range trace.Subcalls {
 			if err := traceBurns(depth+1, st, thisExecCronMiner); err != nil {
 				return err
