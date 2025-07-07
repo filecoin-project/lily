@@ -87,6 +87,7 @@ type DataSource interface {
 	EthGetTransactionByHash(ctx context.Context, txHash *ethtypes.EthHash) (*ethtypes.EthTx, error)
 	StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error)
 	GetActorEventsRaw(ctx context.Context, filter *types.ActorEventFilter) ([]*types.ActorEvent, error)
+	StateCompute(ctx context.Context, height abi.ChainEpoch, msgs []*types.Message, tsk types.TipSetKey) (*api.ComputeStateOutput, error)
 
 	SetIdRobustAddressMap(ctx context.Context, tsk types.TipSetKey) error
 	LookupRobustAddress(ctx context.Context, idAddr address.Address, tsk types.TipSetKey) (address.Address, error)

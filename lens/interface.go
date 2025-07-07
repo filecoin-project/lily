@@ -73,6 +73,8 @@ type StateAPI interface {
 	StateGetReceipt(ctx context.Context, bcid cid.Cid, tsk types.TipSetKey) (*types.MessageReceipt, error)
 	CirculatingSupply(context.Context, types.TipSetKey) (api.CirculatingSupply, error)
 	StateNetworkName(context.Context) (dtypes.NetworkName, error)
+
+	StateCompute(ctx context.Context, height abi.ChainEpoch, msgs []*types.Message, tsk types.TipSetKey) (*api.ComputeStateOutput, error)
 }
 
 type ShouldBurnFn func(ctx context.Context, msg *types.Message, errcode exitcode.ExitCode) (bool, error)

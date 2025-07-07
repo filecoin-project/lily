@@ -581,6 +581,10 @@ func (m *LilyNodeAPI) GetActorEventsRaw(ctx context.Context, filter *types.Actor
 	return m.ActorEventAPI.GetActorEventsRaw(ctx, filter)
 }
 
+func (m *LilyNodeAPI) StateCompute(ctx context.Context, height abi.ChainEpoch, msgs []*types.Message, tsk types.TipSetKey) (*api.ComputeStateOutput, error) {
+	return m.StateAPI.StateCompute(ctx, height, msgs, tsk)
+}
+
 // MessagesForTipSetBlocks returns messages stored in the blocks of the specified tipset, messages may be duplicated
 // across the returned set of BlockMessages.
 func (m *LilyNodeAPI) MessagesForTipSetBlocks(ctx context.Context, ts *types.TipSet) ([]*lens.BlockMessages, error) {
@@ -870,7 +874,7 @@ type StateReport struct {
 	HasState    bool
 }
 
-func (m *LilyNodeAPI) StateCompute(ctx context.Context, key types.TipSetKey) (interface{}, error) {
+func (m *LilyNodeAPI) RunStateCompute(ctx context.Context, key types.TipSetKey) (interface{}, error) {
 	ts, err := m.ChainAPI.ChainGetTipSet(ctx, key)
 	if err != nil {
 		return nil, err

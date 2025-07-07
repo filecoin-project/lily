@@ -6,9 +6,10 @@ import (
 	"github.com/filecoin-project/go-state-types/big"
 	"github.com/filecoin-project/lily/chain/actors/builtin/reward"
 	"github.com/filecoin-project/lily/tasks"
+	"github.com/filecoin-project/specs-actors/actors/util/adt"
+
 	builtin "github.com/filecoin-project/lotus/chain/actors/builtin"
 	"github.com/filecoin-project/lotus/chain/types"
-	"github.com/filecoin-project/specs-actors/actors/util/adt"
 )
 
 func GetBlockReward(ctx context.Context, ds tasks.DataSource, tsk types.TipSetKey, store adt.Store) (big.Int, error) {
