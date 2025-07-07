@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
@@ -171,22 +172,31 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 			}
 			cronParams = &p
 
-			fee, penalty, err := inspectMiner(trace.Msg.To)
-			if err != nil {
-				return xerrors.Errorf("inspecting miner: %w", err)
-			}
 			thisExecCronMiner = &minermodel.MinerCronFee{
 				Height:  int64(current.Height()),
 				Address: trace.Msg.To.String(),
 				Burn:    big.Zero().String(),
-				Fee:     fee.String(),
-				Penalty: penalty.String(),
+				Fee:     big.Zero().String(),
+				Penalty: big.Zero().String(),
 			}
 			burns = append(burns, thisExecCronMiner)
 			cronMinerCallsCache[trace.Msg.To.String()] = struct{}{}
 		} else if thisExecCronMiner != nil && trace.Msg.From.String() == thisExecCronMiner.Address && trace.Msg.To == burnAddr {
 			// TODO: handle multiple burn? Shouldn't happen but maybe it should be checked?
 			thisExecCronMiner.Burn = trace.Msg.Value.String()
+			if trace.Msg.Value.Equals(big.Zero()) {
+				return nil
+			}
+
+			startTs := time.Now()
+			fee, penalty, err := inspectMiner(trace.Msg.From)
+			if err != nil {
+				return fmt.Errorf("inspecting miner: %w", err)
+			}
+			endTs := time.Now()
+			log.Infof("[inspected miner] in %v", endTs.Sub(startTs))
+			thisExecCronMiner.Fee = fee.String()
+			thisExecCronMiner.Penalty = penalty.String()
 		}
 
 		// Method 2 is CreateMiner
