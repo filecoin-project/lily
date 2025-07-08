@@ -73,6 +73,8 @@ type LilyAPIStruct struct {
 		StateListActors           func(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error)                       `perm:"read"`
 		GetActorEventsRaw         func(ctx context.Context, filter *types.ActorEventFilter) ([]*types.ActorEvent, error)          `perm:"read"`
 
+		StateCompute func(ctx context.Context, height abi.ChainEpoch, msgs []*types.Message, tsk types.TipSetKey) (*api.ComputeStateOutput, error) `perm:"read"`
+
 		// SyncIncomingBlocks returns a channel streaming incoming, potentially not
 		// yet synced block headers.
 		SyncIncomingBlocks func(ctx context.Context) (<-chan *types.BlockHeader, error) `perm:"read"`
@@ -94,7 +96,7 @@ type LilyAPIStruct struct {
 		StartTipSetWorker func(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error) `perm:"read"`
 
 		FindOldestState func(ctx context.Context, limit int64) ([]*StateReport, error)      `perm:"read"`
-		StateCompute    func(ctx context.Context, tsk types.TipSetKey) (interface{}, error) `perm:"read"`
+		RunStateCompute func(ctx context.Context, tsk types.TipSetKey) (interface{}, error) `perm:"read"`
 	}
 }
 
@@ -106,8 +108,8 @@ func (s *LilyAPIStruct) NetConnect(ctx context.Context, p peer.AddrInfo) error {
 	return s.Internal.NetConnect(ctx, p)
 }
 
-func (s *LilyAPIStruct) StateCompute(ctx context.Context, tsk types.TipSetKey) (interface{}, error) {
-	return s.Internal.StateCompute(ctx, tsk)
+func (s *LilyAPIStruct) RunStateCompute(ctx context.Context, tsk types.TipSetKey) (interface{}, error) {
+	return s.Internal.RunStateCompute(ctx, tsk)
 }
 
 func (s *LilyAPIStruct) FindOldestState(ctx context.Context, limit int64) ([]*StateReport, error) {
@@ -308,4 +310,8 @@ func (s *LilyAPIStruct) SyncIncomingBlocks(ctx context.Context) (<-chan *types.B
 
 func (s *LilyAPIStruct) GetActorEventsRaw(ctx context.Context, filter *types.ActorEventFilter) ([]*types.ActorEvent, error) {
 	return s.Internal.GetActorEventsRaw(ctx, filter)
+}
+
+func (s *LilyAPIStruct) StateCompute(ctx context.Context, height abi.ChainEpoch, msgs []*types.Message, tsk types.TipSetKey) (*api.ComputeStateOutput, error) {
+	return s.Internal.StateCompute(ctx, height, msgs, tsk)
 }

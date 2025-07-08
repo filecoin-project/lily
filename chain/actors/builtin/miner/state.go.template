@@ -626,7 +626,24 @@ func (d *deadline{{.v}}) DailyFee() (abi.TokenAmount, error) {
  {{- end}}
  	return big.Zero(), nil
  }
- 
+
+func (d *deadline{{.v}}) FaultyPowerQA() (big.Int, error) {
+ {{- if (ge .v 16)}}
+ 	if d.Deadline.FaultyPower.QA.Int != nil {
+		return d.Deadline.FaultyPower.QA, nil
+	}
+ {{- end}}
+ 	return big.Zero(), nil
+ }
+
+func (d *deadline{{.v}}) LivePowerQA() (big.Int, error) {
+ {{- if (ge .v 16)}}
+ 	if d.Deadline.LivePower.QA.Int != nil {
+		return d.Deadline.LivePower.QA, nil
+	}
+ {{- end}}
+ 	return big.Zero(), nil
+ }
 
 func (p *partition{{.v}}) AllSectors() (bitfield.BitField, error) {
 	return p.Partition.Sectors, nil

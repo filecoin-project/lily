@@ -64,6 +64,8 @@ type LilyAPI interface {
 	StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error)                         //perm:read
 	GetActorEventsRaw(ctx context.Context, filter *types.ActorEventFilter) ([]*types.ActorEvent, error)          //perm:read
 
+	StateCompute(ctx context.Context, height abi.ChainEpoch, msgs []*types.Message, tsk types.TipSetKey) (*api.ComputeStateOutput, error) //perm:read
+
 	// SyncIncomingBlocks returns a channel streaming incoming, potentially not
 	// yet synced block headers.
 	SyncIncomingBlocks(ctx context.Context) (<-chan *types.BlockHeader, error) //perm:read
@@ -90,7 +92,7 @@ type LilyAPI interface {
 	StartTipSetWorker(ctx context.Context, cfg *LilyTipSetWorkerConfig) (*schedule.JobSubmitResult, error)
 
 	FindOldestState(ctx context.Context, limit int64) ([]*StateReport, error)
-	StateCompute(ctx context.Context, tsk types.TipSetKey) (interface{}, error)
+	RunStateCompute(ctx context.Context, tsk types.TipSetKey) (interface{}, error)
 }
 type LilyJobConfig struct {
 	// Name is the name of the job.

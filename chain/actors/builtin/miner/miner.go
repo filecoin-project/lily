@@ -222,6 +222,8 @@ type Deadline interface {
 	DisputableProofCount() (uint64, error)
 
 	DailyFee() (abi.TokenAmount, error)
+	FaultyPowerQA() (big.Int, error)
+	LivePowerQA() (big.Int, error)
 }
 
 type Partition interface {

@@ -372,7 +372,7 @@ var ChainStateCompute = &cli.Command{
 			return err
 		}
 
-		_, err = lapi.StateCompute(ctx, ts.Key())
+		_, err = lapi.RunStateCompute(ctx, ts.Key())
 		return err
 
 	},
@@ -413,7 +413,7 @@ var ChainStateComputeRange = &cli.Command{
 				return err
 			}
 
-			_, err = lapi.StateCompute(ctx, ts.Key())
+			_, err = lapi.RunStateCompute(ctx, ts.Key())
 			if err != nil {
 				return err
 			}

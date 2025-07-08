@@ -108,6 +108,7 @@ var Models = []interface{}{
 	(*actordumps.FEVMActorDump)(nil),
 	(*actordumps.MinerActorDump)(nil),
 	(*builtinactor.BuiltInActorEvent)(nil),
+	(*miner.MinerCronFee)(nil),
 }
 
 var log = logging.Logger("lily/storage")
