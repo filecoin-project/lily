@@ -167,8 +167,6 @@ func main() {
 			commands.StopCmd,
 			commands.SyncCmd,
 			commands.WaitAPICmd,
-			commands.FileToCARCmd,
-			commands.ImportFromCIDCmd,
 			job.JobCmd,
 		},
 	}

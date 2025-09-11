@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/DataDog/zstd"
+	"github.com/ipfs/go-datastore"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/xerrors"
 	"gopkg.in/cheggaaa/pb.v1"
@@ -53,7 +54,9 @@ func ImportFromFsFile(ctx context.Context, r repo.Repo, fs fs.File, snapshot boo
 	cst := store.NewChainStore(bs, bs, mds, filcns.Weight, j)
 	defer cst.Close() //nolint:errcheck
 
-	ts, _, err := cst.Import(ctx, fs)
+	f3Ds := datastore.NewMapDatastore()
+
+	ts, _, err := cst.Import(ctx, f3Ds, fs)
 	if err != nil {
 		return fmt.Errorf("importing chain failed: %w", err)
 	}
@@ -179,7 +182,9 @@ func ImportChain(ctx context.Context, r repo.Repo, fname string, snapshot bool, 
 	}
 
 	bar.Start()
-	ts, _, err := cst.Import(ctx, ir)
+
+	f3Ds := datastore.NewMapDatastore()
+	ts, _, err := cst.Import(ctx, f3Ds, ir)
 	bar.Finish()
 
 	if err != nil {
