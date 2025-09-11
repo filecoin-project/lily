@@ -1,6 +1,6 @@
 SHELL=/usr/bin/env bash
 
-GO_BUILD_IMAGE?=golang:1.23.7
+GO_BUILD_IMAGE?=golang:1.23.10
 PG_IMAGE?=postgres:10
 REDIS_IMAGE?=redis:6
 LILY_IMAGE_NAME?=filecoin/lily
@@ -88,7 +88,7 @@ testfull: build
 # testshort runs tests that don't require external dependencies such as postgres or redis
 .PHONY: testshort
 testshort:
-	go test -short ./... 
+	go test -short ./...
 
 
 .PHONY: lily
@@ -135,7 +135,7 @@ actors-code-gen:
 	go run ./chain/actors/agen
 	go fmt ./...
 
-actors-gen: actors-code-gen 
+actors-gen: actors-code-gen
 	./scripts/fiximports
 .PHONY: actors-gen
 

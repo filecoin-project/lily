@@ -6,12 +6,12 @@ orbs:
 executors:
   dockerizer:
     docker:
-      - image: cimg/go:1.23.7
+      - image: cimg/go:1.23.10
     environment:
       IMAGE_NAME: filecoin/lily
   golang:
     docker:
-      - image: cimg/go:1.23.7
+      - image: cimg/go:1.23.10
 
 commands:
   install-deps:
@@ -148,7 +148,7 @@ jobs:
   test:
     resource_class: xlarge
     docker:
-      - image: cimg/go:1.23.7
+      - image: cimg/go:1.23.10
       - image: timescale/timescaledb:2.5.0-pg13
         environment:
           POSTGRES_PASSWORD: password
@@ -166,7 +166,7 @@ jobs:
       - run:
           name: waiting for db
           command: dockerize -wait tcp://localhost:5432 -timeout 1m
-      - run: 
+      - run:
           name: installing schema
           command: ./lily migrate --latest
           environment:
@@ -183,7 +183,7 @@ jobs:
   integration-test:
     resource_class: large
     docker:
-      - image: cimg/go:1.23.7
+      - image: cimg/go:1.23.10
       - image: timescale/timescaledb:2.5.0-pg13
         environment:
           POSTGRES_PASSWORD: password
