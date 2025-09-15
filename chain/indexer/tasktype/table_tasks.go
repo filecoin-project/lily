@@ -461,5 +461,5 @@ var TableFieldComments = map[string]map[string]string{
 	},
 	BuiltInActorEvent: {},
 	MinerSectorDealV2: {},
-	MinerCronFee:{},
+	MinerCronFee:      {},
 }

@@ -8,7 +8,7 @@ import (
 
 	"github.com/filecoin-project/go-state-types/abi"
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
-	builtin16 "github.com/filecoin-project/go-state-types/builtin"
+	builtin17 "github.com/filecoin-project/go-state-types/builtin"
 	"github.com/filecoin-project/go-state-types/cbor"
 	"github.com/filecoin-project/go-state-types/manifest"
 	"github.com/filecoin-project/lily/chain/actors/adt"
@@ -27,8 +27,8 @@ import (
 )
 
 var (
-	Address = builtin16.RewardActorAddr
-	Methods = builtin16.MethodsReward
+	Address = builtin17.RewardActorAddr
+	Methods = builtin17.MethodsReward
 )
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
@@ -65,6 +65,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 		case actorstypes.Version16:
 			return load16(store, act.Head)
+
+		case actorstypes.Version17:
+			return load17(store, act.Head)
 
 		}
 	}
@@ -147,6 +150,7 @@ func AllCodes() []cid.Cid {
 		(&state14{}).Code(),
 		(&state15{}).Code(),
 		(&state16{}).Code(),
+		(&state17{}).Code(),
 	}
 }
 
@@ -168,5 +172,6 @@ func VersionCodes() map[actorstypes.Version]cid.Cid {
 		actorstypes.Version14: (&state14{}).Code(),
 		actorstypes.Version15: (&state15{}).Code(),
 		actorstypes.Version16: (&state16{}).Code(),
+		actorstypes.Version17: (&state17{}).Code(),
 	}
 }
