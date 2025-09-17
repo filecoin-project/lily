@@ -3,7 +3,7 @@
 Between releases we keep track of notable changes in CHANGELOG.md.
 
 When we want to make a release we should update CHANGELOG.md to contain the release notes for the planned release in a section for
-the proposed release number. This update is the commit that will be tagged with as the actual release which ensures that each release
+the proposed release number. This update is the commit that will be tagged as the actual release which ensures that each release
 contains a copy of it's own release notes. 
 
 We should also copy the release notes to the Github releases page, but CHANGELOG.md is the primary place to keep the release notes. 
@@ -35,7 +35,7 @@ NOTE: `lily` pull requests prefer to be squash-merged into `master`, however con
 
 ## Updating CHANGELOG.md
 
-The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) combined with categories from [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/). This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The [github.com/git-chglog](https://github.com/git-chglog/git-chglog) utility assists us with maintaing CHANGELOG.md.
+The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) combined with categories from [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/). This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The [github.com/git-chglog](https://github.com/git-chglog/git-chglog) utility assists us with maintaining CHANGELOG.md.
 
 The sections within each release have a preferred order which prioritizes by largest-user-impact-first: `Feat > Refactor > Fix > {Area-specific or Custom Sections} > Chore`
 
