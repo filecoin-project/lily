@@ -5,7 +5,17 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
-<a name="v0.23.4"></a>
+<a name="v0.24.0"></a>
+
+## [v0.24.0] - 2025-09-23
+
+### Feat
+* feat: support cron burn (https://github.com/filecoin-project/lily/pull/1361)
+
+### Chore
+* chore: update lotus to v1.34.0 (https://github.com/filecoin-project/lily/pull/1362)
+* chore: update lotus version to v1.34.1 (https://github.com/filecoin-project/lily/pull/1363)
+
 
 ## [v0.23.4] - 2025-06-03
 
