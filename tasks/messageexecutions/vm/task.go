@@ -81,8 +81,9 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 	}
 
 	var (
-		vmMessageResults = make(messagemodel.VMMessageList, 0, len(mex))
+		vmMessageResults = make(messagemodel.VMMessageList, 0)
 		errorsDetected   = make([]*messages.MessageError, 0)
+		cidIndexMap      = make(map[string]uint64)
 	)
 	for _, parentMsg := range mex {
 		select {
@@ -114,6 +115,9 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				GasPremium: abi.NewTokenAmount(0),
 			}
 			childCid := childMsg.Cid()
+
+			index := cidIndexMap[childCid.String()]
+			cidIndexMap[childCid.String()]++
 
 			toCode, found := getActorCode(ctx, child.Message.To)
 			if !found && child.Receipt.ExitCode == 0 {
@@ -148,7 +152,7 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				ExitCode:  int64(child.Receipt.ExitCode),
 				ActorCode: toActorCode,
 				Method:    uint64(child.Message.Method),
-				Index:     child.Index,
+				Index:     index,
 				// Params will be filled below if exit code is non-zero
 				// Return will be filled below if exit code is non-zero
 			}
