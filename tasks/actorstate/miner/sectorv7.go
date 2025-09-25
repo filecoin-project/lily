@@ -52,9 +52,18 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			sectors = append(sectors, &sectorChanges.Snapped[i].To)
 		}
 	}
-	sectorModel := make(minermodel.MinerSectorInfoV7List, len(sectors))
 
-	for i, sector := range sectors {
+	sectorModel := make(minermodel.MinerSectorInfoV7List, 0)
+	// Prevent from duplicating sectors
+	seenSectors := make(map[uint64]bool)
+
+	for _, sector := range sectors {
+		unit64SectorNumber := uint64(sector.SectorNumber)
+		if seenSectors[unit64SectorNumber] {
+			continue
+		}
+		seenSectors[unit64SectorNumber] = true
+
 		sectorKeyCID := ""
 		if sector.SectorKeyCID != nil {
 			sectorKeyCID = sector.SectorKeyCID.String()
@@ -85,7 +94,7 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			dailyFeeStr = dailyFee.String()
 		}
 
-		sectorModel[i] = &minermodel.MinerSectorInfoV7{
+		sectorModel = append(sectorModel, &minermodel.MinerSectorInfoV7{
 			Height:                int64(a.Current.Height()),
 			MinerID:               a.Address.String(),
 			StateRoot:             a.Current.ParentState().String(),
@@ -102,7 +111,7 @@ func (V7SectorInfoExtractor) Extract(ctx context.Context, a actorstate.ActorInfo
 			PowerBaseEpoch:        int64(sector.PowerBaseEpoch),
 			SectorKeyCID:          sectorKeyCID,
 			DailyFee:              dailyFeeStr,
-		}
+		})
 	}
 
 	return sectorModel, nil
