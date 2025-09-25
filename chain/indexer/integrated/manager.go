@@ -142,7 +142,6 @@ func (i *Manager) TipSet(ctx context.Context, ts *types.TipSet, options ...index
 	grp.Go(func() error {
 		fatals := []error{}
 		for fatal := range taskErrors {
-			success.Store(false)
 			fatals = append(fatals, fatal)
 		}
 		if len(fatals) > 0 {
