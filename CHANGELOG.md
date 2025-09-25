@@ -5,7 +5,14 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
-<a name="v0.24.0"></a>
+<a name="v0.24.1"></a>
+
+
+
+## [v0.24.1] - 2025-09-25
+
+### Fix
+* fix: support miner_info in v17 (https://github.com/filecoin-project/lily/pull/1365)
 
 ## [v0.24.0] - 2025-09-23
 
