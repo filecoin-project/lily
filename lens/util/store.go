@@ -67,10 +67,6 @@ func (cs *CachingBlockstore) AllKeysChan(ctx context.Context) (<-chan cid.Cid, e
 	return cs.blocks.AllKeysChan(ctx)
 }
 
-func (cs *CachingBlockstore) HashOnRead(enabled bool) {
-	cs.blocks.HashOnRead(enabled)
-}
-
 func (cs *CachingBlockstore) Flush(ctx context.Context) error {
 	return cs.blocks.Flush(ctx)
 }
