@@ -5,9 +5,16 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
-<a name="v0.24.1"></a>
+<a name="v0.24.2"></a>
 
+## [v0.24.2] - 2026-01-05
 
+### Fix
+* fix: dup (https://github.com/filecoin-project/lily/pull/1367)
+
+### Chore
+* chore: add FUNDING.json for retroPGF (https://github.com/filecoin-project/lily/pull/1368)
+* chore: update lotus version to v1.34.3 (https://github.com/filecoin-project/lily/pull/1369)
 
 ## [v0.24.1] - 2025-09-25
 
