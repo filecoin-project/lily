@@ -601,6 +601,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 						mineractors.VersionCodes()[actorstypes.Version15]: {minertask.PreCommitInfoExtractorV9{}},
 						mineractors.VersionCodes()[actorstypes.Version16]: {minertask.PreCommitInfoExtractorV9{}},
 						mineractors.VersionCodes()[actorstypes.Version17]: {minertask.PreCommitInfoExtractorV9{}},
+						mineractors.VersionCodes()[actorstypes.Version18]: {minertask.PreCommitInfoExtractorV9{}},
 					},
 				),
 				minertask.PreCommitInfoExtractorV9{},
@@ -653,6 +654,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 						mineractors.VersionCodes()[actorstypes.Version15]: {minertask.V7SectorInfoExtractor{}},
 						mineractors.VersionCodes()[actorstypes.Version16]: {minertask.V7SectorInfoExtractor{}},
 						mineractors.VersionCodes()[actorstypes.Version17]: {minertask.V7SectorInfoExtractor{}},
+						mineractors.VersionCodes()[actorstypes.Version18]: {minertask.V7SectorInfoExtractor{}},
 					},
 				),
 				minertask.V7SectorInfoExtractor{},
@@ -752,6 +754,7 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 					verifregactors.VersionCodes()[actorstypes.Version15]: {verifregtask.ClaimExtractor{}},
 					verifregactors.VersionCodes()[actorstypes.Version16]: {verifregtask.ClaimExtractor{}},
 					verifregactors.VersionCodes()[actorstypes.Version17]: {verifregtask.ClaimExtractor{}},
+					verifregactors.VersionCodes()[actorstypes.Version18]: {verifregtask.ClaimExtractor{}},
 				},
 			))
 
