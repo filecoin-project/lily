@@ -10,6 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/filecoin-project/go-bitfield"
+	"github.com/filecoin-project/go-state-types/abi"
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
 	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/filecoin-project/lily/chain/actors/builtin/miner"
@@ -174,13 +175,25 @@ func ExtractMinerSectorStateEvents(extState extraction.State, events *SectorStat
 	out := minermodel.MinerSectorEventList{}
 
 	// all sectors removed this epoch are considered terminated, this includes both early terminations and expirations.
+
 	if err := events.Removed.ForEach(func(u uint64) error {
+		event := minermodel.SectorTerminated
+		// Use parent state to check expiration since the sector may already be removed from current state
+		// Check if sector expired on-time (OnTime <= current epoch) vs early termination
+		if expiration, err := extState.ParentState().GetSectorExpiration(abi.SectorNumber(u)); err == nil {
+			currentEpoch := extState.CurrentTipSet().Height()
+			// Sector expired if OnTime <= current epoch (normal expiration, accounting for quantization)
+			// Early != 0 means faulty sector that will be removed early, not a normal expiration
+			if expiration.OnTime != 0 && expiration.OnTime <= currentEpoch {
+				event = minermodel.SectorExpired
+			}
+		}
 		out = append(out, &minermodel.MinerSectorEvent{
 			Height:    int64(extState.CurrentTipSet().Height()),
 			MinerID:   extState.Address().String(),
 			StateRoot: extState.CurrentTipSet().ParentState().String(),
 			SectorID:  u,
-			Event:     minermodel.SectorTerminated,
+			Event:     event,
 		})
 		return nil
 	}); err != nil {

@@ -55,6 +55,10 @@ func TestExtractMinerSectorStateEvents(t *testing.T) {
 	// 2 removed sectors, 3 recovered, 4 faulted, and 5 recovering, total of 14 sector events
 	fakeSectorStateChanges := generateFakeSectorStateChanges(numTerminated, numRecovered, numFaulted, numRecovering)
 	currentMinerState.On("LoadSectors", mock.Anything).Return([]*miner.SectorOnChainInfo{}, nil)
+
+	// Mock GetSectorExpiration for removed sectors (0 and 1) to return OnTime=0 so they are marked as SectorTerminated
+	parentMinerState.On("GetSectorExpiration", abi.SectorNumber(0)).Return(&miner.SectorExpiration{OnTime: 0, Early: 0}, nil)
+	parentMinerState.On("GetSectorExpiration", abi.SectorNumber(1)).Return(&miner.SectorExpiration{OnTime: 0, Early: 0}, nil)
 	result, err := minerex.ExtractMinerSectorStateEvents(minerContext, fakeSectorStateChanges)
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -272,6 +276,9 @@ func TestExtractSectorEvents(t *testing.T) {
 	// 2 removed sectors, 3 recovered, 4 faulted, and 5 recovering, total of 15 sector events
 	fakeSectorStateChanges := generateFakeSectorStateChanges(numTerminated, numRecovered, numFaulted, numRecovering)
 	currentMinerState.On("LoadSectors", mock.Anything).Return([]*miner.SectorOnChainInfo{}, nil)
+	// Mock GetSectorExpiration for removed sectors (0 and 1) to return OnTime=0 so they are marked as SectorTerminated
+	parentMinerState.On("GetSectorExpiration", abi.SectorNumber(0)).Return(&miner.SectorExpiration{OnTime: 0, Early: 0}, nil)
+	parentMinerState.On("GetSectorExpiration", abi.SectorNumber(1)).Return(&miner.SectorExpiration{OnTime: 0, Early: 0}, nil)
 
 	result, err := minerex.ExtractSectorEvents(minerContext, sectorChanges, fakePrecommitChanges, fakeSectorStateChanges, nil)
 	require.NoError(t, err)
