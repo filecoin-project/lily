@@ -72,6 +72,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 		case actorstypes.Version17:
 			return load17(store, act.Head)
 
+		case actorstypes.Version18:
+			return load18(store, act.Head)
+
 		}
 	}
 
@@ -249,6 +252,7 @@ func AllCodes() []cid.Cid {
 		(&state15{}).Code(),
 		(&state16{}).Code(),
 		(&state17{}).Code(),
+		(&state18{}).Code(),
 	}
 }
 
@@ -271,5 +275,6 @@ func VersionCodes() map[actorstypes.Version]cid.Cid {
 		actorstypes.Version15: (&state15{}).Code(),
 		actorstypes.Version16: (&state16{}).Code(),
 		actorstypes.Version17: (&state17{}).Code(),
+		actorstypes.Version18: (&state18{}).Code(),
 	}
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/filecoin-project/go-state-types/big"
 	minertypes13 "github.com/filecoin-project/go-state-types/builtin/v13/miner"
 	minertypes16 "github.com/filecoin-project/go-state-types/builtin/v16/miner"
-	miner17 "github.com/filecoin-project/go-state-types/builtin/v17/miner"
+	miner18 "github.com/filecoin-project/go-state-types/builtin/v18/miner"
 	miner8 "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	minertypes "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	"github.com/filecoin-project/go-state-types/cbor"
@@ -70,6 +70,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 		case actorstypes.Version17:
 			return load17(store, act.Head)
+
+		case actorstypes.Version18:
+			return load18(store, act.Head)
 
 		}
 	}
@@ -155,6 +158,9 @@ func MakeState(store adt.Store, av actorstypes.Version) (State, error) {
 
 	case actorstypes.Version17:
 		return make17(store)
+
+	case actorstypes.Version18:
+		return make18(store)
 
 	}
 	return nil, xerrors.Errorf("unknown actor version %d", av)
@@ -257,7 +263,7 @@ type Partition interface {
 	UnprovenSectors() (bitfield.BitField, error)
 }
 
-type SectorOnChainInfo = miner17.SectorOnChainInfo
+type SectorOnChainInfo = miner18.SectorOnChainInfo
 
 func PreferredSealProofTypeFromWindowPoStType(nver network.Version, proof abi.RegisteredPoStProof, configWantSynthetic bool) (abi.RegisteredSealProof, error) {
 	// We added support for the new proofs in network version 7, and removed support for the old
@@ -437,6 +443,7 @@ func AllCodes() []cid.Cid {
 		(&state15{}).Code(),
 		(&state16{}).Code(),
 		(&state17{}).Code(),
+		(&state18{}).Code(),
 	}
 }
 
@@ -459,5 +466,6 @@ func VersionCodes() map[actorstypes.Version]cid.Cid {
 		actorstypes.Version15: (&state15{}).Code(),
 		actorstypes.Version16: (&state16{}).Code(),
 		actorstypes.Version17: (&state17{}).Code(),
+		actorstypes.Version18: (&state18{}).Code(),
 	}
 }
