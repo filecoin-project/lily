@@ -6,12 +6,12 @@ orbs:
 executors:
   dockerizer:
     docker:
-      - image: cimg/go:1.24.7
+      - image: cimg/go:1.25.0
     environment:
       IMAGE_NAME: filecoin/lily
   golang:
     docker:
-      - image: cimg/go:1.24.7
+      - image: cimg/go:1.25.0
 
 commands:
   install-deps:
@@ -148,7 +148,7 @@ jobs:
   test:
     resource_class: xlarge
     docker:
-      - image: cimg/go:1.24.7
+      - image: cimg/go:1.25.0
       - image: timescale/timescaledb:2.5.0-pg13
         environment:
           POSTGRES_PASSWORD: password
@@ -183,7 +183,7 @@ jobs:
   integration-test:
     resource_class: large
     docker:
-      - image: cimg/go:1.24.7
+      - image: cimg/go:1.25.0
       - image: timescale/timescaledb:2.5.0-pg13
         environment:
           POSTGRES_PASSWORD: password
@@ -247,7 +247,7 @@ jobs:
       - run:
           name: Lint
           command: |
-            golangci-lint run -v --timeout 5m \
+            support/tools/bin/golangci-lint run -v --timeout 5m \
               --concurrency << parameters.concurrency >> << parameters.args >>
   lint-all:
     <<: *lint
