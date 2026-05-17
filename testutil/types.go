@@ -31,6 +31,7 @@ func MustFakeTipSet(t *testing.T, height int64) *types.TipSet {
 		ParentMessageReceipts: dummyCid,
 		BlockSig:              &crypto.Signature{Type: crypto.SigTypeBLS},
 		BLSAggregate:          &crypto.Signature{Type: crypto.SigTypeBLS},
+		Ticket:                &types.Ticket{VRFProof: []byte{byte(height % 256)}},
 		Timestamp:             1,
 	}})
 	if err != nil {
