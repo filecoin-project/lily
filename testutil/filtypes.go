@@ -32,6 +32,7 @@ func FakeBlockHeader(t testing.TB, height int64, stateRoot cid.Cid) *types.Block
 		ParentMessageReceipts: RandomCid(),
 		BlockSig:              &crypto.Signature{Type: crypto.SigTypeBLS},
 		BLSAggregate:          &crypto.Signature{Type: crypto.SigTypeBLS},
+		Ticket:                &types.Ticket{VRFProof: []byte{byte(height % 256)}},
 		Timestamp:             0,
 	}
 }

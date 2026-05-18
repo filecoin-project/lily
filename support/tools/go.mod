@@ -1,6 +1,6 @@
 module github.com/filecoin-project/lily/support/tools
 
-go 1.25.0
+go 1.25.7
 
 require github.com/golangci/golangci-lint v1.64.8
 
