@@ -13,7 +13,7 @@ import (
 	abi "github.com/filecoin-project/go-state-types/abi"
 	actors "github.com/filecoin-project/go-state-types/actors"
 	big "github.com/filecoin-project/go-state-types/big"
-	v18miner "github.com/filecoin-project/go-state-types/builtin/v18/miner"
+	v19miner "github.com/filecoin-project/go-state-types/builtin/v19/miner"
 	v8miner "github.com/filecoin-project/go-state-types/builtin/v8/miner"
 	v9miner "github.com/filecoin-project/go-state-types/builtin/v9/miner"
 	dline "github.com/filecoin-project/go-state-types/dline"
@@ -156,14 +156,14 @@ func (_m *State) DeadlinesChanged(_a0 miner.State) (bool, error) {
 }
 
 // DecodeSectorOnChainInfo provides a mock function with given fields: _a0
-func (_m *State) DecodeSectorOnChainInfo(_a0 *typegen.Deferred) (v18miner.SectorOnChainInfo, error) {
+func (_m *State) DecodeSectorOnChainInfo(_a0 *typegen.Deferred) (v19miner.SectorOnChainInfo, error) {
 	ret := _m.Called(_a0)
 
-	var r0 v18miner.SectorOnChainInfo
-	if rf, ok := ret.Get(0).(func(*typegen.Deferred) v18miner.SectorOnChainInfo); ok {
+	var r0 v19miner.SectorOnChainInfo
+	if rf, ok := ret.Get(0).(func(*typegen.Deferred) v19miner.SectorOnChainInfo); ok {
 		r0 = rf(_a0)
 	} else {
-		r0 = ret.Get(0).(v18miner.SectorOnChainInfo)
+		r0 = ret.Get(0).(v19miner.SectorOnChainInfo)
 	}
 
 	var r1 error
@@ -386,15 +386,15 @@ func (_m *State) GetProvingPeriodStart() (abi.ChainEpoch, error) {
 }
 
 // GetSector provides a mock function with given fields: _a0
-func (_m *State) GetSector(_a0 abi.SectorNumber) (*v18miner.SectorOnChainInfo, error) {
+func (_m *State) GetSector(_a0 abi.SectorNumber) (*v19miner.SectorOnChainInfo, error) {
 	ret := _m.Called(_a0)
 
-	var r0 *v18miner.SectorOnChainInfo
-	if rf, ok := ret.Get(0).(func(abi.SectorNumber) *v18miner.SectorOnChainInfo); ok {
+	var r0 *v19miner.SectorOnChainInfo
+	if rf, ok := ret.Get(0).(func(abi.SectorNumber) *v19miner.SectorOnChainInfo); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v18miner.SectorOnChainInfo)
+			r0 = ret.Get(0).(*v19miner.SectorOnChainInfo)
 		}
 	}
 
@@ -513,15 +513,15 @@ func (_m *State) LoadDeadline(idx uint64) (miner.Deadline, error) {
 }
 
 // LoadSectors provides a mock function with given fields: sectorNos
-func (_m *State) LoadSectors(sectorNos *bitfield.BitField) ([]*v18miner.SectorOnChainInfo, error) {
+func (_m *State) LoadSectors(sectorNos *bitfield.BitField) ([]*v19miner.SectorOnChainInfo, error) {
 	ret := _m.Called(sectorNos)
 
-	var r0 []*v18miner.SectorOnChainInfo
-	if rf, ok := ret.Get(0).(func(*bitfield.BitField) []*v18miner.SectorOnChainInfo); ok {
+	var r0 []*v19miner.SectorOnChainInfo
+	if rf, ok := ret.Get(0).(func(*bitfield.BitField) []*v19miner.SectorOnChainInfo); ok {
 		r0 = rf(sectorNos)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*v18miner.SectorOnChainInfo)
+			r0 = ret.Get(0).([]*v19miner.SectorOnChainInfo)
 		}
 	}
 
