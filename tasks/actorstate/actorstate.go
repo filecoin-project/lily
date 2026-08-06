@@ -41,7 +41,7 @@ func (a ActorInfo) Attributes() []attribute.KeyValue {
 
 func (a ActorInfo) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	for _, a := range a.Attributes() {
-		enc.AddString(string(a.Key), a.Value.Emit())
+		enc.AddString(string(a.Key), a.Value.String())
 	}
 	return nil
 }
