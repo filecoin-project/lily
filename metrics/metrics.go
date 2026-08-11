@@ -42,7 +42,7 @@ var (
 	ProcessingFailure       = stats.Int64("processing_failure", "Number of processing failures", stats.UnitDimensionless)
 	PersistFailure          = stats.Int64("persist_failure", "Number of persistence failures", stats.UnitDimensionless)
 	WatchHeight             = stats.Int64("watch_height", "The height of the tipset last seen by the watch command", stats.UnitDimensionless)
-	TipSetSkip              = stats.Int64("tipset_skip", "Number of tipsets that were not processed. This is is an indication that lily cannot keep up with chain.", stats.UnitDimensionless)
+	TipSetSkip              = stats.Int64("tipset_skip", "Number of tipsets that were not processed. This is an indication that lily cannot keep up with chain.", stats.UnitDimensionless)
 	JobStart                = stats.Int64("job_start", "Number of jobs started", stats.UnitDimensionless)
 	JobRunning              = stats.Int64("job_running", "Numer of jobs currently running", stats.UnitDimensionless)
 	JobComplete             = stats.Int64("job_complete", "Number of jobs completed without error", stats.UnitDimensionless)
