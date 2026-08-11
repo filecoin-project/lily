@@ -39,5 +39,9 @@ lily job run --tasks=${tasks} --storage="Database1" watch --confidence=5
 
 lily job run --tasks="peeragents" --storage="Database1" survey  --interval="24h"
 
+lily job run --tasks="fevm_actor_dump,miner_actor_dump" --storage="Database1" watch --confidence=5 --interval=120
+
+lily sync blocks --config=/var/lib/lily/upsert_config.toml --storage=Database1 &
+
 # resume daemon stdout
 lily job wait --id=1
