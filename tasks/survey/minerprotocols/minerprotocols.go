@@ -148,9 +148,11 @@ func (t *Task) Close() error {
 func fetchMinerProtocolModel(ctx context.Context, api API, addr address.Address, minerInfo lapi.MinerInfo, start time.Time, results chan *observed.MinerProtocol) {
 	// since miners may choose if their peerID is set in their info
 	var peerID string
-	if minerInfo.PeerId != nil {
-		peerID = minerInfo.PeerId.String()
+	if minerInfo.PeerId == nil {
+		log.Debugw("failed with empty peer id for miner", "miner", addr)
+		return
 	}
+	peerID = minerInfo.PeerId.String()
 
 	// extract any multiaddresses the miner has set in their info, they may have none bail if that is the case.
 	minerPeerInfo, err := getMinerAddrInfo(minerInfo)
