@@ -8,7 +8,6 @@ const (
 	DataCapBalance                 = "data_cap_balance"
 	MinerBeneficiary               = "miner_beneficiary"
 	MinerSectorDeal                = "miner_sector_deal"
-	MinerSectorDealV2              = "miner_sector_deal_v2"
 	MinerSectorInfoV7              = "miner_sector_infos_v7"
 	MinerSectorInfoV1_6            = "miner_sector_infos"
 	MinerSectorPost                = "miner_sector_post"
@@ -19,6 +18,7 @@ const (
 	MinerFeeDebt                   = "miner_fee_debt"
 	MinerLockedFund                = "miner_locked_fund"
 	MinerInfo                      = "miner_info"
+	MinerSectorDealV2              = "miner_sector_deals_v2"
 	MarketDealProposal             = "market_deal_proposal"
 	MarketDealState                = "market_deal_state"
 	Message                        = "message"
@@ -36,6 +36,7 @@ const (
 	ChainPower                     = "chain_power"
 	PowerActorClaim                = "power_actor_claim"
 	ChainReward                    = "chain_reward"
+	ChainRewardStream              = "chain_reward_streams"
 	Actor                          = "actor"
 	ActorState                     = "actor_state"
 	IDAddress                      = "id_addresses"
@@ -55,8 +56,8 @@ const (
 	FEVMTrace                      = "fevm_traces"
 	FEVMActorDump                  = "fevm_actor_dumps"
 	MinerActorDump                 = "miner_actor_dumps"
-	BuiltInActorEvent              = "builtin_actor_event"
-	MinerCronFee                   = "miner_cron_fee"
+	BuiltInActorEvent              = "builtin_actor_events"
+	MinerCronFee                   = "miner_cron_fees"
 )
 
 var AllTableTasks = []string{
@@ -76,6 +77,7 @@ var AllTableTasks = []string{
 	MinerFeeDebt,
 	MinerLockedFund,
 	MinerInfo,
+	MinerSectorDealV2,
 	MarketDealProposal,
 	MarketDealState,
 	Message,
@@ -93,6 +95,7 @@ var AllTableTasks = []string{
 	ChainPower,
 	PowerActorClaim,
 	ChainReward,
+	ChainRewardStream,
 	Actor,
 	ActorState,
 	IDAddress,
@@ -113,7 +116,6 @@ var AllTableTasks = []string{
 	FEVMActorDump,
 	MinerActorDump,
 	BuiltInActorEvent,
-	MinerSectorDealV2,
 	MinerCronFee,
 }
 
@@ -134,6 +136,7 @@ var TableLookup = map[string]struct{}{
 	MinerFeeDebt:                   {},
 	MinerLockedFund:                {},
 	MinerInfo:                      {},
+	MinerSectorDealV2:              {},
 	MarketDealProposal:             {},
 	MarketDealState:                {},
 	Message:                        {},
@@ -151,6 +154,7 @@ var TableLookup = map[string]struct{}{
 	ChainPower:                     {},
 	PowerActorClaim:                {},
 	ChainReward:                    {},
+	ChainRewardStream:              {},
 	Actor:                          {},
 	ActorState:                     {},
 	IDAddress:                      {},
@@ -171,7 +175,6 @@ var TableLookup = map[string]struct{}{
 	FEVMActorDump:                  {},
 	MinerActorDump:                 {},
 	BuiltInActorEvent:              {},
-	MinerSectorDealV2:              {},
 	MinerCronFee:                   {},
 }
 
@@ -192,6 +195,7 @@ var TableComment = map[string]string{
 	MinerFeeDebt:                   ``,
 	MinerLockedFund:                ``,
 	MinerInfo:                      ``,
+	MinerSectorDealV2:              ``,
 	MarketDealProposal:             `MarketDealProposal contains all storage deal states with latest values applied to end_epoch when updates are detected on-chain.`,
 	MarketDealState:                ``,
 	Message:                        ``,
@@ -209,6 +213,7 @@ var TableComment = map[string]string{
 	ChainPower:                     ``,
 	PowerActorClaim:                ``,
 	ChainReward:                    ``,
+	ChainRewardStream:              `ChainRewardStream is one epoch of FIP-0118 block-reward stream state from the reward actor (f02). Weights are DENOM (1e18) fixed-point integers. Burn is the residual and has no stream record.`,
 	Actor:                          `Actor on chain that were added or updated at an epoch. Associates the actor's state root CID (head) with the chain state root CID from which it decends. Includes account ID nonce and balance at each state.`,
 	ActorState:                     `ActorState that were changed at an epoch. Associates actors states as single-level trees with CIDs pointing to complete state tree with the root CID (head) for that actor’s state.`,
 	IDAddress:                      `IDAddress contains a mapping of ID addresses to robust addresses from the init actor’s state.`,
@@ -229,7 +234,6 @@ var TableComment = map[string]string{
 	FEVMActorDump:                  ``,
 	MinerActorDump:                 ``,
 	BuiltInActorEvent:              ``,
-	MinerSectorDealV2:              ``,
 	MinerCronFee:                   ``,
 }
 
@@ -244,6 +248,7 @@ var TableFieldComments = map[string]map[string]string{
 	MinerBeneficiary: {},
 	MinerSectorDeal:  {},
 	MinerSectorInfoV7: {
+		"DailyFee":     "daily fee",
 		"SectorKeyCID": "added in specs-actors v7, will be null for all sectors and only gets set on the first ReplicaUpdate",
 	},
 	MinerSectorInfoV1_6:      {},
@@ -255,6 +260,7 @@ var TableFieldComments = map[string]map[string]string{
 	MinerFeeDebt:             {},
 	MinerLockedFund:          {},
 	MinerInfo:                {},
+	MinerSectorDealV2:        {},
 	MarketDealProposal: {
 		"ClientCollateral":     "The amount of FIL (in attoFIL) the client has pledged as collateral.",
 		"ClientID":             "Address of the actor proposing the deal.",
@@ -308,6 +314,24 @@ var TableFieldComments = map[string]map[string]string{
 	ChainPower:      {},
 	PowerActorClaim: {},
 	ChainReward:     {},
+	ChainRewardStream: {
+		"BurnWeight":          "BurnWeight is w0 at this epoch, in DENOM fixed point.",
+		"ConsensusCap":        "ConsensusCap is the consensus stream upper clamp, in DENOM fixed point.",
+		"ConsensusFloor":      "ConsensusFloor is the consensus stream lower clamp, in DENOM fixed point.",
+		"ConsensusSlope":      "ConsensusSlope is the consensus stream weight change per epoch, in DENOM fixed point.",
+		"ConsensusTStart":     "ConsensusTStart is the epoch at which ConsensusVStart applies.",
+		"ConsensusVStart":     "ConsensusVStart is the consensus stream weight at ConsensusTStart, in DENOM fixed point.",
+		"ConsensusWeight":     "ConsensusWeight is w1 (stream id 1) at this epoch, in DENOM fixed point.",
+		"ServiceCap":          "ServiceCap is the service stream upper clamp, in DENOM fixed point.",
+		"ServiceFloor":        "ServiceFloor is the service stream lower clamp, in DENOM fixed point.",
+		"ServiceSlope":        "ServiceSlope is the service stream weight change per epoch, in DENOM fixed point.",
+		"ServiceTStart":       "ServiceTStart is the epoch at which ServiceVStart applies.",
+		"ServiceVStart":       "ServiceVStart is the service stream weight at ServiceTStart, in DENOM fixed point.",
+		"ServiceWeight":       "ServiceWeight is w2 (stream id 2) at this epoch, in DENOM fixed point.",
+		"TotalBurnMinted":     "TotalBurnMinted is the cumulative block-reward residual sent to the burn actor.",
+		"TotalExplicitMinted": "TotalExplicitMinted is the cumulative block reward accrued to explicit streams.",
+		"TotalMintedReward":   "TotalMintedReward is all FIL minted through block rewards at this epoch.",
+	},
 	Actor: {
 		"Balance":   "Balance of Actor in attoFIL.",
 		"Code":      "Human-readable identifier for the type of the actor.",
@@ -455,11 +479,13 @@ var TableFieldComments = map[string]map[string]string{
 	},
 	MinerActorDump: {
 		"AvailableBalance": "Balance",
+		"DailyFee":         "Daily Fee",
 		"OwnerID":          "Miner Info",
 		"RawBytePower":     "Claims",
+		"TerminationFee":   "Termination Fee",
+		"TerminationFeeV2": "Actor Version >= 16",
 		"TotalLockedFunds": "Locked Funds",
 	},
 	BuiltInActorEvent: {},
-	MinerSectorDealV2: {},
 	MinerCronFee:      {},
 }

@@ -81,6 +81,7 @@ var Models = []interface{}{
 	(*power.PowerActorClaim)(nil),
 
 	(*reward.ChainReward)(nil),
+	(*reward.ChainRewardStream)(nil),
 
 	(*common.Actor)(nil),
 	(*common.ActorState)(nil),

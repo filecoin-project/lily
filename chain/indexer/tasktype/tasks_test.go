@@ -24,7 +24,7 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 		},
 		{
 			taskAlias: tasktype.ActorStatesRewardTask,
-			tasks:     []string{tasktype.ChainReward},
+			tasks:     []string{tasktype.ChainReward, tasktype.ChainRewardStream},
 		},
 		{
 			taskAlias: tasktype.ActorStatesMinerTask,
@@ -102,7 +102,7 @@ func TestMakeAllTaskAliasNames(t *testing.T) {
 }
 
 func TestMakeAllTaskNames(t *testing.T) {
-	const TotalTableTasks = 55
+	const TotalTableTasks = 56
 	actual, err := tasktype.MakeTaskNames(tasktype.AllTableTasks)
 	require.NoError(t, err)
 	// if this test fails it means a new task name was added, update the above test
