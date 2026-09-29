@@ -32,6 +32,7 @@ var TaskLookup = map[string][]string{
 	},
 	ActorStatesRewardTask: {
 		ChainReward,
+		ChainRewardStream,
 	},
 	ActorStatesMinerTask: {
 		MinerSectorDeal,

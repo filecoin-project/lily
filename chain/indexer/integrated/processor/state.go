@@ -684,6 +684,11 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				rewardactors.AllCodes(),
 				rewardtask.RewardExtractor{},
 			))
+		case tasktype.ChainRewardStream:
+			out.ActorProcessors[t] = actorstate.NewTask(api, actorstate.NewTypedActorExtractorMap(
+				rewardactors.AllCodes(),
+				rewardtask.StreamExtractor{},
+			))
 
 			//
 			// Init
