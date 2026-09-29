@@ -80,7 +80,7 @@ func fillStreamWeights(row *rewardmodel.ChainRewardStream, streams *reward19.Str
 	row.ServiceVStart, row.ServiceSlope, row.ServiceTStart, row.ServiceFloor, row.ServiceCap = weightFields(service)
 }
 
-func weightFields(w *reward19.WeightRecord) (vStart, slope string, tStart int64, floor, cap string) {
+func weightFields(w *reward19.WeightRecord) (vStart, slope string, tStart int64, floor, weightCap string) {
 	if w == nil {
 		return "0", "0", 0, "0", "0"
 	}
