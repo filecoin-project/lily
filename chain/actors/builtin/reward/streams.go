@@ -54,8 +54,8 @@ func ComputeStreamWeight(w reward19.WeightRecord, epoch abi.ChainEpoch) big.Int 
 	return v
 }
 
-// BurnWeight is the residual DENOM - sum(evaluated stream weights).
-// It counts every live stream, including any stream other than consensus and service.
+// BurnWeight is the residual DENOM - sum(evaluated stream weights), i.e. w0 = DENOM - (w1 + w2 + ...).
+// It counts every live stream, including any stream other than consensus and service, so w0+w1+w2 always sums to DENOM (1e18).
 func BurnWeight(evaluated []big.Int) big.Int {
 	sum := big.Zero()
 	for _, w := range evaluated {

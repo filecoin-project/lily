@@ -213,7 +213,7 @@ var TableComment = map[string]string{
 	ChainPower:                     ``,
 	PowerActorClaim:                ``,
 	ChainReward:                    ``,
-	ChainRewardStream:              `ChainRewardStream is one epoch of FIP-0118 block-reward stream state from the reward actor (f02). Weights are DENOM (1e18) fixed-point integers. Burn is the residual and has no stream record.`,
+	ChainRewardStream:              `ChainRewardStream is one epoch of FIP-0118 block-reward stream state from the reward actor (f02). Weights are DENOM (1e18) fixed-point integers. Burn is the residual and has no stream record. BurnWeight + ConsensusWeight + ServiceWeight always sums to DENOM (1e18).`,
 	Actor:                          `Actor on chain that were added or updated at an epoch. Associates the actor's state root CID (head) with the chain state root CID from which it decends. Includes account ID nonce and balance at each state.`,
 	ActorState:                     `ActorState that were changed at an epoch. Associates actors states as single-level trees with CIDs pointing to complete state tree with the root CID (head) for that actor’s state.`,
 	IDAddress:                      `IDAddress contains a mapping of ID addresses to robust addresses from the init actor’s state.`,

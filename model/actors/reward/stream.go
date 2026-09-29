@@ -12,6 +12,7 @@ import (
 
 // ChainRewardStream is one epoch of FIP-0118 block-reward stream state from the reward actor (f02).
 // Weights are DENOM (1e18) fixed-point integers. Burn is the residual and has no stream record.
+// BurnWeight + ConsensusWeight + ServiceWeight always sums to DENOM (1e18).
 type ChainRewardStream struct {
 	tableName struct{} `pg:"chain_reward_streams"` // nolint: structcheck
 
