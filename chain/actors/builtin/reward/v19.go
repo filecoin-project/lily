@@ -52,7 +52,9 @@ func (s *state19) ThisEpochBaselinePower() (abi.StoragePower, error) {
 }
 
 func (s *state19) TotalStoragePowerReward() (abi.TokenAmount, error) {
-	return s.State.TotalStoragePowerReward, nil
+	// Since v19 this adapter reports all FIL minted by f02, not only miner rewards.
+	// Circulating supply subtracts the burnt-funds balance, cancelling f02's residual burn.
+	return s.State.TotalMintedReward, nil
 }
 
 func (s *state19) EffectiveBaselinePower() (abi.StoragePower, error) {
