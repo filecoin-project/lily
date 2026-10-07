@@ -7,14 +7,14 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/filecoin-project/go-address v1.2.0
-	github.com/filecoin-project/go-amt-ipld/v2 v2.1.1-0.20201006184820-924ee87a1349 // indirect
+	github.com/filecoin-project/go-amt-ipld/v2 v2.2.0 // indirect
 	github.com/filecoin-project/go-amt-ipld/v3 v3.1.1 // indirect
 	github.com/filecoin-project/go-bitfield v0.2.4
 	github.com/filecoin-project/go-hamt-ipld/v3 v3.4.1
 	github.com/filecoin-project/go-jsonrpc v0.10.2
 	github.com/filecoin-project/go-paramfetch v0.0.6
 	github.com/filecoin-project/go-state-types v0.19.0
-	github.com/filecoin-project/lotus v1.37.0-rc1
+	github.com/filecoin-project/lotus v1.37.0
 	github.com/filecoin-project/specs-actors v0.9.15
 	github.com/filecoin-project/specs-actors/v2 v2.3.6
 	github.com/filecoin-project/specs-actors/v3 v3.1.2
@@ -183,7 +183,6 @@ require (
 	github.com/ipfs/go-dsqueue v0.2.0 // indirect
 	github.com/ipfs/go-ipfs-pq v0.0.4 // indirect
 	github.com/ipfs/go-ipld-legacy v0.3.0 // indirect
-	github.com/ipfs/go-log v1.0.5 // indirect
 	github.com/ipfs/go-metrics-interface v0.3.0 // indirect
 	github.com/ipfs/go-peertaskqueue v0.8.3 // indirect
 	github.com/ipld/go-car/v2 v2.17.0 // indirect
@@ -238,7 +237,6 @@ require (
 	github.com/nikkolasg/hexjson v0.1.0 // indirect
 	github.com/nkovacs/streamquote v1.0.0 // indirect
 	github.com/opencontainers/runtime-spec v1.2.1 // indirect
-	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/petar/GoLLRB v0.0.0-20210522233825-ae3b015fd3e9 // indirect
