@@ -56,7 +56,7 @@ services:
     restart: always
 
   redis-queue:
-    image: bitnami/redis:7.0
+    image: soldevelo/redis:7.0
     env_file:
       # Check envvars for configurable options
       - ./build/lily/redis-queue.env
