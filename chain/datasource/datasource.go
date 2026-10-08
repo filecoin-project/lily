@@ -31,6 +31,7 @@ import (
 	"github.com/filecoin-project/lily/tasks"
 
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/api/v2api"
 	initactor "github.com/filecoin-project/lotus/chain/actors/builtin/init"
 	"github.com/filecoin-project/lotus/chain/state"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -188,6 +189,10 @@ func (t *DataSource) GetActorEventsRaw(ctx context.Context, filter *types.ActorE
 
 func (t *DataSource) StateCompute(ctx context.Context, height abi.ChainEpoch, msgs []*types.Message, tsk types.TipSetKey) (*api.ComputeStateOutput, error) {
 	return t.node.StateCompute(ctx, height, msgs, tsk)
+}
+
+func (t *DataSource) RewardDistribution(ctx context.Context, ts *types.TipSet) (*v2api.RewardDistribution, error) {
+	return t.node.RewardDistribution(ctx, ts)
 }
 
 // TipSetMessageReceipts returns the blocks and messages in `pts` and their corresponding receipts from `ts` matching block order in tipset (`pts`).

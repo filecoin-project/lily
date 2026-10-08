@@ -27,6 +27,10 @@ func TestMakeTaskNamesAlias(t *testing.T) {
 			tasks:     []string{tasktype.ChainReward, tasktype.ChainRewardStream},
 		},
 		{
+			taskAlias: tasktype.RewardDistributionTask,
+			tasks:     []string{tasktype.ChainRewardDistribution},
+		},
+		{
 			taskAlias: tasktype.ActorStatesMinerTask,
 			tasks: []string{tasktype.MinerSectorDeal, tasktype.MinerSectorInfoV7, tasktype.MinerSectorInfoV1_6,
 				tasktype.MinerSectorPost, tasktype.MinerPreCommitInfo, tasktype.MinerPreCommitInfoV9, tasktype.MinerSectorEvent,

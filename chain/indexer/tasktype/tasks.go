@@ -6,6 +6,7 @@ const (
 	ActorStatesRawTask      = "actorstatesraw"      // task that only extracts raw actor state
 	ActorStatesPowerTask    = "actorstatespower"    // task that only extracts power actor states (but not the raw state)
 	ActorStatesRewardTask   = "actorstatesreward"   // task that only extracts reward actor states (but not the raw state)
+	RewardDistributionTask  = "rewarddistribution"  // task that extracts the block reward distribution of executed tipsets
 	ActorStatesMinerTask    = "actorstatesminer"    // task that only extracts miner actor states (but not the raw state)
 	ActorStatesInitTask     = "actorstatesinit"     // task that only extracts init actor states (but not the raw state)
 	ActorStatesMarketTask   = "actorstatesmarket"   // task that only extracts market actor states (but not the raw state)
@@ -29,6 +30,9 @@ var TaskLookup = map[string][]string{
 	ActorStatesPowerTask: {
 		ChainPower,
 		PowerActorClaim,
+	},
+	RewardDistributionTask: {
+		ChainRewardDistribution,
 	},
 	ActorStatesRewardTask: {
 		ChainReward,
