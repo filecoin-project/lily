@@ -106,7 +106,7 @@ func TestMakeAllTaskAliasNames(t *testing.T) {
 }
 
 func TestMakeAllTaskNames(t *testing.T) {
-	const TotalTableTasks = 56
+	const TotalTableTasks = 57
 	actual, err := tasktype.MakeTaskNames(tasktype.AllTableTasks)
 	require.NoError(t, err)
 	// if this test fails it means a new task name was added, update the above test

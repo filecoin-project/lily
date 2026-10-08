@@ -14,7 +14,7 @@ type ChainRewardDistribution struct {
 	tableName struct{} `pg:"chain_reward_distributions"` // nolint: structcheck
 
 	Height       int64  `pg:",pk,notnull,use_zero"`
-	TipSetKey    string `pg:",pk,notnull"`
+	TipSetKey    string `pg:"tipset_key,pk,notnull"`
 	Distribution string `pg:",type:jsonb,notnull"`
 }
 
