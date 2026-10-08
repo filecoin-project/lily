@@ -37,6 +37,7 @@ const (
 	PowerActorClaim                = "power_actor_claim"
 	ChainReward                    = "chain_reward"
 	ChainRewardStream              = "chain_reward_streams"
+	ChainRewardDistribution        = "chain_reward_distributions"
 	Actor                          = "actor"
 	ActorState                     = "actor_state"
 	IDAddress                      = "id_addresses"
@@ -96,6 +97,7 @@ var AllTableTasks = []string{
 	PowerActorClaim,
 	ChainReward,
 	ChainRewardStream,
+	ChainRewardDistribution,
 	Actor,
 	ActorState,
 	IDAddress,
@@ -155,6 +157,7 @@ var TableLookup = map[string]struct{}{
 	PowerActorClaim:                {},
 	ChainReward:                    {},
 	ChainRewardStream:              {},
+	ChainRewardDistribution:        {},
 	Actor:                          {},
 	ActorState:                     {},
 	IDAddress:                      {},
@@ -214,6 +217,7 @@ var TableComment = map[string]string{
 	PowerActorClaim:                ``,
 	ChainReward:                    ``,
 	ChainRewardStream:              `ChainRewardStream is one epoch of FIP-0118 block-reward stream state from the reward actor (f02). Weights are DENOM (1e18) fixed-point integers. Burn is the residual and has no stream record. BurnWeight + ConsensusWeight + ServiceWeight always sums to DENOM (1e18).`,
+	ChainRewardDistribution:        `ChainRewardDistribution is the FIP-0118 block reward distribution produced by executing one tipset, stored as json.`,
 	Actor:                          `Actor on chain that were added or updated at an epoch. Associates the actor's state root CID (head) with the chain state root CID from which it decends. Includes account ID nonce and balance at each state.`,
 	ActorState:                     `ActorState that were changed at an epoch. Associates actors states as single-level trees with CIDs pointing to complete state tree with the root CID (head) for that actor’s state.`,
 	IDAddress:                      `IDAddress contains a mapping of ID addresses to robust addresses from the init actor’s state.`,
@@ -331,6 +335,11 @@ var TableFieldComments = map[string]map[string]string{
 		"TotalBurnMinted":     "TotalBurnMinted is the cumulative block-reward residual sent to the burn actor.",
 		"TotalExplicitMinted": "TotalExplicitMinted is the cumulative block reward accrued to explicit streams.",
 		"TotalMintedReward":   "TotalMintedReward is all FIL minted through block rewards at this epoch.",
+	},
+	ChainRewardDistribution: {
+		"Distribution": "Distribution is the reward distribution as json: Totals plus per-block, per-stream and per-recipient amounts, weights and shares.",
+		"Height":       "Height is the epoch of the executed tipset.",
+		"TipSetKey":    "TipSetKey is the key of the executed tipset.",
 	},
 	Actor: {
 		"Balance":   "Balance of Actor in attoFIL.",

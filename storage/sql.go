@@ -82,6 +82,7 @@ var Models = []interface{}{
 
 	(*reward.ChainReward)(nil),
 	(*reward.ChainRewardStream)(nil),
+	(*reward.ChainRewardDistribution)(nil),
 
 	(*common.Actor)(nil),
 	(*common.ActorState)(nil),
