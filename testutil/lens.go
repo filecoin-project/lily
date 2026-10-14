@@ -13,6 +13,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/api/v2api"
 	"github.com/filecoin-project/lotus/chain/types"
 	itestkit "github.com/filecoin-project/lotus/itests/kit"
 )
@@ -59,6 +60,10 @@ func (aw *APIWrapper) MessagesWithDeduplicationForTipSet(ctx context.Context, ts
 
 func (aw *APIWrapper) CirculatingSupply(ctx context.Context, key types.TipSetKey) (api.CirculatingSupply, error) {
 	return aw.StateVMCirculatingSupplyInternal(ctx, key)
+}
+
+func (aw *APIWrapper) RewardDistribution(ctx context.Context, ts *types.TipSet) (*v2api.RewardDistribution, error) {
+	panic("implement me")
 }
 
 func (aw *APIWrapper) ChainGetTipSetAfterHeight(ctx context.Context, epoch abi.ChainEpoch, key types.TipSetKey) (*types.TipSet, error) {

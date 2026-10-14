@@ -36,6 +36,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/api/v2api"
 	"github.com/filecoin-project/lotus/chain/consensus"
 	"github.com/filecoin-project/lotus/chain/events"
 	"github.com/filecoin-project/lotus/chain/state"
@@ -583,6 +584,13 @@ func (m *LilyNodeAPI) GetActorEventsRaw(ctx context.Context, filter *types.Actor
 
 func (m *LilyNodeAPI) StateCompute(ctx context.Context, height abi.ChainEpoch, msgs []*types.Message, tsk types.TipSetKey) (*api.ComputeStateOutput, error) {
 	return m.StateAPI.StateCompute(ctx, height, msgs, tsk)
+}
+
+func (m *LilyNodeAPI) RewardDistribution(ctx context.Context, ts *types.TipSet) (*v2api.RewardDistribution, error) {
+	if m.StateManager.GetNetworkVersion(ctx, ts.Height()) < network2.Version29 {
+		return nil, nil
+	}
+	return m.StateManager.RewardDistribution(ctx, ts)
 }
 
 // MessagesForTipSetBlocks returns messages stored in the blocks of the specified tipset, messages may be duplicated

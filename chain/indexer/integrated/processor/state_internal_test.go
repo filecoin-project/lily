@@ -44,6 +44,7 @@ import (
 	"github.com/filecoin-project/lily/tasks/messages/receipt"
 	"github.com/filecoin-project/lily/tasks/messages/receiptreturn"
 	"github.com/filecoin-project/lily/tasks/msapprovals"
+	"github.com/filecoin-project/lily/tasks/rewarddistribution"
 )
 
 func TestNewProcessor(t *testing.T) {
@@ -52,7 +53,7 @@ func TestNewProcessor(t *testing.T) {
 	require.Equal(t, t.Name(), proc.name)
 	require.Len(t, proc.actorProcessors, 27)
 	require.Len(t, proc.tipsetProcessors, 11)
-	require.Len(t, proc.tipsetsProcessors, 16)
+	require.Len(t, proc.tipsetsProcessors, 17)
 	require.Len(t, proc.builtinProcessors, 1)
 
 	require.Equal(t, gasoutput.NewTask(nil), proc.tipsetsProcessors[tasktype.GasOutputs])
@@ -64,6 +65,7 @@ func TestNewProcessor(t *testing.T) {
 	require.Equal(t, vm.NewTask(nil), proc.tipsetsProcessors[tasktype.VMMessage])
 	require.Equal(t, actorevent.NewTask(nil), proc.tipsetsProcessors[tasktype.ActorEvent])
 	require.Equal(t, receiptreturn.NewTask(nil), proc.tipsetsProcessors[tasktype.ReceiptReturn])
+	require.Equal(t, rewarddistribution.NewTask(nil), proc.tipsetsProcessors[tasktype.ChainRewardDistribution])
 
 	require.Equal(t, message.NewTask(nil), proc.tipsetProcessors[tasktype.Message])
 	require.Equal(t, blockmessage.NewTask(nil), proc.tipsetProcessors[tasktype.BlockMessage])

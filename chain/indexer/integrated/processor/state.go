@@ -63,6 +63,7 @@ import (
 	parentmessagetask "github.com/filecoin-project/lily/tasks/messages/parsedmessage"
 	receipttask "github.com/filecoin-project/lily/tasks/messages/receipt"
 	msapprovaltask "github.com/filecoin-project/lily/tasks/msapprovals"
+	rewarddistributiontask "github.com/filecoin-project/lily/tasks/rewarddistribution"
 
 	// fevm task
 	fevmblockheadertask "github.com/filecoin-project/lily/tasks/fevm/blockheader"
@@ -689,6 +690,8 @@ func MakeProcessors(api tasks.DataSource, indexerTasks []string) (*IndexerProces
 				rewardactors.AllCodes(),
 				rewardtask.StreamExtractor{},
 			))
+		case tasktype.ChainRewardDistribution:
+			out.TipsetsProcessors[t] = rewarddistributiontask.NewTask(api)
 
 			//
 			// Init

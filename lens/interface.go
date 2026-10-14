@@ -12,6 +12,7 @@ import (
 	"github.com/filecoin-project/specs-actors/actors/util/adt"
 
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/api/v2api"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 	"github.com/filecoin-project/lotus/chain/vm"
@@ -75,6 +76,9 @@ type StateAPI interface {
 	StateNetworkName(context.Context) (dtypes.NetworkName, error)
 
 	StateCompute(ctx context.Context, height abi.ChainEpoch, msgs []*types.Message, tsk types.TipSetKey) (*api.ComputeStateOutput, error)
+
+	// RewardDistribution executes ts and returns its block reward distribution. It returns nil, nil for tipsets before network version 29.
+	RewardDistribution(ctx context.Context, ts *types.TipSet) (*v2api.RewardDistribution, error)
 }
 
 type ShouldBurnFn func(ctx context.Context, msg *types.Message, errcode exitcode.ExitCode) (bool, error)

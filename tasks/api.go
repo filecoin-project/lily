@@ -12,6 +12,7 @@ import (
 	"github.com/filecoin-project/lily/lens"
 
 	"github.com/filecoin-project/lotus/api"
+	"github.com/filecoin-project/lotus/api/v2api"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/types/ethtypes"
 )
@@ -88,6 +89,8 @@ type DataSource interface {
 	StateListActors(ctx context.Context, tsk types.TipSetKey) ([]address.Address, error)
 	GetActorEventsRaw(ctx context.Context, filter *types.ActorEventFilter) ([]*types.ActorEvent, error)
 	StateCompute(ctx context.Context, height abi.ChainEpoch, msgs []*types.Message, tsk types.TipSetKey) (*api.ComputeStateOutput, error)
+	// RewardDistribution returns nil, nil for tipsets before network version 29.
+	RewardDistribution(ctx context.Context, ts *types.TipSet) (*v2api.RewardDistribution, error)
 
 	SetIdRobustAddressMap(ctx context.Context, tsk types.TipSetKey) error
 	LookupRobustAddress(ctx context.Context, idAddr address.Address, tsk types.TipSetKey) (address.Address, error)
