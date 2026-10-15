@@ -5,7 +5,24 @@ The format is a variant of [Keep a Changelog](https://keepachangelog.com/en/1.0.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Breaking changes should trigger an increment to the major version. Features increment the minor version and fixes or other changes increment the patch number.
 
-<a name="v0.24.4"></a>
+<a name="v0.25.0"></a>
+## [v0.25.0] - 2026-10-15
+## DATABASE MIGRATION
+* [1.47](https://github.com/filecoin-project/lily/blob/master/schemas/v1/47_chain_reward_streams.go)
+* [1.48](https://github.com/filecoin-project/lily/blob/master/schemas/v1/48_chain_reward_distributions.go)
+
+### Feat
+* feat: add new table -- chain_reward_stream (https://github.com/filecoin-project/lily/pull/1381)
+* feat: add chain reward distributions (https://github.com/filecoin-project/lily/pull/1383)
+
+### Chore
+* chore: update lotus to v1.36.1 (https://github.com/filecoin-project/lily/pull/1377)
+* chore: update lotus to v1.36.2 (https://github.com/filecoin-project/lily/pull/1379)
+* chore: update lotus to v1-36-3 (https://github.com/filecoin-project/lily/pull/1380)
+* chore: update lotus to v1.37.0 (https://github.com/filecoin-project/lily/pull/1382)
+* chore: update lotus to v1.38.1 (https://github.com/filecoin-project/lily/pull/1384)
+
+
 ## [v0.24.4] - 2026-05-18
 
 ### Chore
