@@ -18,6 +18,7 @@ services:
       - ./snapshot:/var/lib/lily/snapshot
       # lily config
       - ./lily/config.toml:/var/lib/lily/config.toml
+      - ./lily/upsert_config.toml:/var/lib/lily/upsert_config.toml
       - ./lily/docker_init.sh:/usr/bin/docker_init.sh
     entrypoint: /usr/bin/docker_init.sh
     restart: always
