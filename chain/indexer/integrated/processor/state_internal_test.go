@@ -113,6 +113,7 @@ func TestNewProcessor(t *testing.T) {
 					miner.VersionCodes()[actorstypes.Version17]: {minertask.V7SectorInfoExtractor{}},
 					miner.VersionCodes()[actorstypes.Version18]: {minertask.V7SectorInfoExtractor{}},
 					miner.VersionCodes()[actorstypes.Version19]: {minertask.V7SectorInfoExtractor{}},
+					miner.VersionCodes()[actorstypes.Version20]: {minertask.V7SectorInfoExtractor{}},
 				}),
 			minertask.V7SectorInfoExtractor{},
 		),
@@ -142,6 +143,7 @@ func TestNewProcessor(t *testing.T) {
 				miner.VersionCodes()[actorstypes.Version17]: {minertask.PreCommitInfoExtractorV9{}},
 				miner.VersionCodes()[actorstypes.Version18]: {minertask.PreCommitInfoExtractorV9{}},
 				miner.VersionCodes()[actorstypes.Version19]: {minertask.PreCommitInfoExtractorV9{}},
+				miner.VersionCodes()[actorstypes.Version20]: {minertask.PreCommitInfoExtractorV9{}},
 			},
 		),
 		minertask.PreCommitInfoExtractorV9{},
@@ -175,6 +177,7 @@ func TestNewProcessor(t *testing.T) {
 			verifreg.VersionCodes()[actorstypes.Version17]: {verifregtask.ClaimExtractor{}},
 			verifreg.VersionCodes()[actorstypes.Version18]: {verifregtask.ClaimExtractor{}},
 			verifreg.VersionCodes()[actorstypes.Version19]: {verifregtask.ClaimExtractor{}},
+			verifreg.VersionCodes()[actorstypes.Version20]: {verifregtask.ClaimExtractor{}},
 		},
 	)), proc.actorProcessors[tasktype.VerifiedRegistryClaim])
 

@@ -120,6 +120,7 @@ func TestMakeProcessorsActors(t *testing.T) {
 						miner.VersionCodes()[actorstypes.Version17]: {minertask.V7SectorInfoExtractor{}},
 						miner.VersionCodes()[actorstypes.Version18]: {minertask.V7SectorInfoExtractor{}},
 						miner.VersionCodes()[actorstypes.Version19]: {minertask.V7SectorInfoExtractor{}},
+						miner.VersionCodes()[actorstypes.Version20]: {minertask.V7SectorInfoExtractor{}},
 					},
 				),
 				transformer: minertask.V7SectorInfoExtractor{},
@@ -155,6 +156,7 @@ func TestMakeProcessorsActors(t *testing.T) {
 						miner.VersionCodes()[actorstypes.Version17]: {minertask.PreCommitInfoExtractorV9{}},
 						miner.VersionCodes()[actorstypes.Version18]: {minertask.PreCommitInfoExtractorV9{}},
 						miner.VersionCodes()[actorstypes.Version19]: {minertask.PreCommitInfoExtractorV9{}},
+						miner.VersionCodes()[actorstypes.Version20]: {minertask.PreCommitInfoExtractorV9{}},
 					},
 				),
 				transformer: minertask.PreCommitInfoExtractorV9{},
@@ -322,6 +324,7 @@ func TestMakeProcessorsActors(t *testing.T) {
 						verifreg.VersionCodes()[actorstypes.Version17]: {verifregtask.ClaimExtractor{}},
 						verifreg.VersionCodes()[actorstypes.Version18]: {verifregtask.ClaimExtractor{}},
 						verifreg.VersionCodes()[actorstypes.Version19]: {verifregtask.ClaimExtractor{}},
+						verifreg.VersionCodes()[actorstypes.Version20]: {verifregtask.ClaimExtractor{}},
 					}),
 			},
 		}
