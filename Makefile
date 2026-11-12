@@ -1,6 +1,6 @@
 SHELL=/usr/bin/env bash
 
-GO_BUILD_IMAGE?=golang:1.26.8
+GO_BUILD_IMAGE?=golang:1.26.10
 PG_IMAGE?=postgres:10
 REDIS_IMAGE?=redis:6
 LILY_IMAGE_NAME?=filecoin/lily
