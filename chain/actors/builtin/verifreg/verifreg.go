@@ -9,7 +9,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
 	actorstypes "github.com/filecoin-project/go-state-types/actors"
-	builtin19 "github.com/filecoin-project/go-state-types/builtin"
+	builtin20 "github.com/filecoin-project/go-state-types/builtin"
 	verifregtypes12 "github.com/filecoin-project/go-state-types/builtin/v12/verifreg"
 	verifregtypes "github.com/filecoin-project/go-state-types/builtin/v9/verifreg"
 	"github.com/filecoin-project/go-state-types/cbor"
@@ -28,8 +28,8 @@ import (
 )
 
 var (
-	Address = builtin19.VerifiedRegistryActorAddr
-	Methods = builtin19.MethodsVerifiedRegistry
+	Address = builtin20.VerifiedRegistryActorAddr
+	Methods = builtin20.MethodsVerifiedRegistry
 )
 
 func Load(store adt.Store, act *types.Actor) (State, error) {
@@ -75,6 +75,9 @@ func Load(store adt.Store, act *types.Actor) (State, error) {
 
 		case actorstypes.Version19:
 			return load19(store, act.Head)
+
+		case actorstypes.Version20:
+			return load20(store, act.Head)
 
 		}
 	}
@@ -177,6 +180,7 @@ func AllCodes() []cid.Cid {
 		(&state17{}).Code(),
 		(&state18{}).Code(),
 		(&state19{}).Code(),
+		(&state20{}).Code(),
 	}
 }
 
@@ -201,6 +205,7 @@ func VersionCodes() map[actorstypes.Version]cid.Cid {
 		actorstypes.Version17: (&state17{}).Code(),
 		actorstypes.Version18: (&state18{}).Code(),
 		actorstypes.Version19: (&state19{}).Code(),
+		actorstypes.Version20: (&state20{}).Code(),
 	}
 }
 
