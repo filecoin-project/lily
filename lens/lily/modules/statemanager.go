@@ -93,7 +93,7 @@ func (b *BufferedExecMonitor) MessageApplied(_ context.Context, ts *types.TipSet
 	return nil
 }
 
-// So long as we are are always driving this method with tipsets we get from HeadEvents then we should always find a tipset in here.
+// So long as we are always driving this method with tipsets we get from HeadEvents then we should always find a tipset in here.
 func (b *BufferedExecMonitor) ExecutionFor(ts *types.TipSet) ([]*BufferedExecution, error) {
 	log.Debugw("execution for", "ts", ts.String())
 	b.cacheMu.Lock()
