@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 
@@ -17,6 +18,8 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/types"
 )
+
+var log = logging.Logger("lily/tasks/receipt")
 
 type Task struct {
 	node tasks.DataSource
@@ -96,6 +99,8 @@ func (t *Task) ProcessTipSets(ctx context.Context, current *types.TipSet, execut
 				parsedReturn, _, err := util.ParseReturn(rec.Return, msg.VMMessage().Method, toCode)
 				if err == nil {
 					rcpt.ParsedReturn = parsedReturn
+				} else {
+					log.Errorf("got error during parsed_return: %v", err)
 				}
 			}
 			receiptResults = append(receiptResults, rcpt)
