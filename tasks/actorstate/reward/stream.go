@@ -2,6 +2,7 @@ package reward
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -33,7 +34,8 @@ func (StreamExtractor) Extract(ctx context.Context, a actorstate.ActorInfo, node
 	}
 	ledger, ok := rstate.(reward.StreamLedger)
 	if !ok {
-		return nil, nil
+		// StreamLedger is only available in v19+, return error for versions that don't support it
+		return nil, fmt.Errorf("reward actor version does not support StreamLedger: actor version %s", a.Actor.Code)
 	}
 
 	streams, err := ledger.LoadStreams()
