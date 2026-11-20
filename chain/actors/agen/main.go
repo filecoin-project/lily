@@ -137,7 +137,7 @@ func generateState(actDir string, versions []int) error {
 	return nil
 }
 
-func generateStreams(actDir string, versions []int) error {
+func generateStreams(actDir string, _ []int) error {
 	af, err := os.ReadFile(filepath.Join(actDir, "streams.go.template"))
 	if err != nil {
 		if os.IsNotExist(err) {
