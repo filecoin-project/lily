@@ -64,6 +64,13 @@ func generateAdapters() error {
 			return err
 		}
 
+		// Generate reward-specific streams.go from template for v19+
+		if act == "reward" {
+			if err := generateStreams(actDir, versions); err != nil {
+				return err
+			}
+		}
+
 		{
 			af, err := os.ReadFile(filepath.Join(actDir, "actor.go.template"))
 			if err != nil {
@@ -125,6 +132,41 @@ func generateState(actDir string, versions []int) error {
 		if err := os.WriteFile(filepath.Join(actDir, fmt.Sprintf("v%d.go", version)), b.Bytes(), 0666); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func generateStreams(actDir string, versions []int) error {
+	af, err := os.ReadFile(filepath.Join(actDir, "streams.go.template"))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil // skip
+		}
+
+		return xerrors.Errorf("loading streams template: %w", err)
+	}
+
+	tpl := template.Must(template.New("").Funcs(template.FuncMap{}).Parse(string(af)))
+
+	var b bytes.Buffer
+
+	// Find minimum version that supports StreamLedger (v19+)
+	minStreamVersion := 19
+	err = tpl.Execute(&b, map[string]interface{}{
+		"minStreamVersion": minStreamVersion,
+	})
+	if err != nil {
+		return err
+	}
+
+	fmted, err := format.Source(b.Bytes())
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(filepath.Join(actDir, "streams.go"), fmted, 0666); err != nil {
+		return err
 	}
 
 	return nil

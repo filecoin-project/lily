@@ -5,6 +5,8 @@ import (
 	"github.com/filecoin-project/go-state-types/big"
 	reward19 "github.com/filecoin-project/go-state-types/builtin/v19/reward"
 	adt19 "github.com/filecoin-project/go-state-types/builtin/v19/util/adt"
+	reward20 "github.com/filecoin-project/go-state-types/builtin/v20/reward"
+	adt20 "github.com/filecoin-project/go-state-types/builtin/v20/util/adt"
 )
 
 // Stream ids pinned by the FIP-0118 activation migration.
@@ -13,7 +15,7 @@ const (
 	ServiceStreamID   reward19.StreamID = 2
 )
 
-// StreamLedger is the v19 reward-actor view of block-reward streams.
+// StreamLedger is the v19+ reward-actor view of block-reward streams.
 // Earlier reward actor versions do not implement it.
 type StreamLedger interface {
 	TotalMintedReward() abi.TokenAmount
@@ -36,6 +38,48 @@ func (s *state19) TotalExplicitMinted() abi.TokenAmount {
 
 func (s *state19) LoadStreams() (*reward19.StreamsState, error) {
 	return s.State.LoadStreams(adt19.WrapStore(s.store.Context(), s.store))
+}
+
+func (s *state20) TotalMintedReward() abi.TokenAmount {
+	return s.State.TotalMintedReward
+}
+
+func (s *state20) TotalBurnMinted() abi.TokenAmount {
+	return s.State.TotalBurnMinted
+}
+
+func (s *state20) TotalExplicitMinted() abi.TokenAmount {
+	return s.State.TotalExplicitMinted
+}
+
+func (s *state20) LoadStreams() (*reward19.StreamsState, error) {
+	streams20, err := s.State.LoadStreams(adt20.WrapStore(s.store.Context(), s.store))
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert v20 StreamsState to v19 for compatibility with existing code
+	// Both have identical structure; only the package differs
+	return &reward19.StreamsState{
+		Streams: convertStreamArray(streams20.Streams),
+	}, nil
+}
+
+func convertStreamArray(v20Streams []reward20.Stream) []reward19.Stream {
+	out := make([]reward19.Stream, len(v20Streams))
+	for i, s := range v20Streams {
+		out[i] = reward19.Stream{
+			ID: reward19.StreamID(s.ID),
+			Weight: reward19.WeightRecord{
+				VStart: s.Weight.VStart,
+				Slope:  s.Weight.Slope,
+				TStart: s.Weight.TStart,
+				Floor:  s.Weight.Floor,
+				Cap:    s.Weight.Cap,
+			},
+		}
+	}
+	return out
 }
 
 // ComputeStreamWeight evaluates one clamped linear weight at epoch.
