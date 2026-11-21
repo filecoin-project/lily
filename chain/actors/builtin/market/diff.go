@@ -198,7 +198,9 @@ func (d *marketStatesDiffContainer) Modify(key uint64, from, to *cbg.Deferred) e
 	if err != nil {
 		return err
 	}
-	if dsFrom != dsTo {
+
+	log.Warnf("got the modify: key: %v, slash_epoch: %v", key, dsTo.SlashEpoch())
+	if !dsFrom.Equals(dsTo) {
 		d.Results.Modified = append(d.Results.Modified, DealStateChange{abi.DealID(key), dsFrom, dsTo})
 	}
 	return nil
